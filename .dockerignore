@@ -1,0 +1,16 @@
+.git
+.github
+**/node_modules
+web/dist
+server/internal/webui/dist/*
+!server/internal/webui/dist/.gitkeep
+server/bin
+data
+*.db
+*.db-wal
+*.db-shm
+**/*.tsbuildinfo
+.env
+.env.*
+*.md
+docker-compose.yml
