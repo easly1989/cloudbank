@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/easly1989/cloudbank/server/internal/auth"
+	"github.com/easly1989/cloudbank/server/internal/wallet"
 	"github.com/easly1989/cloudbank/server/internal/webui"
 )
 
@@ -29,6 +30,8 @@ type Options struct {
 	Health HealthChecker
 	// Auth, if non-nil, mounts the authentication, setup and admin endpoints.
 	Auth *auth.Service
+	// Wallets, if non-nil, mounts the wallet endpoints (requires Auth).
+	Wallets *wallet.Service
 	// SecureCookies sets the Secure flag on the session cookie.
 	SecureCookies bool
 }
@@ -56,7 +59,17 @@ func New(opts Options) http.Handler {
 			writeJSON(w, http.StatusOK, map[string]string{"message": "pong"})
 		})
 		if opts.Auth != nil {
-			(&authHandlers{svc: opts.Auth, secure: opts.SecureCookies}).routes(r)
+			ah := &authHandlers{svc: opts.Auth, secure: opts.SecureCookies}
+			ah.publicRoutes(r)
+			// Authenticated API: one requireAuth group shared by auth-protected
+			// endpoints and the wallet endpoints.
+			r.Group(func(pr chi.Router) {
+				pr.Use(ah.requireAuth)
+				ah.protectedRoutes(pr)
+				if opts.Wallets != nil {
+					(&walletHandlers{svc: opts.Wallets}).routes(pr)
+				}
+			})
 		}
 	})
 

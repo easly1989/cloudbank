@@ -13,6 +13,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
+	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
 
 type testClient struct {
@@ -30,11 +31,19 @@ func newTestAPI(t *testing.T) *testClient {
 	t.Cleanup(func() { _ = st.Close() })
 
 	svc := auth.NewService(db.New(st.Write()))
-	srv := httptest.NewServer(New(Options{Auth: svc, Health: st}))
+	wsvc := wallet.NewService(st.Write())
+	srv := httptest.NewServer(New(Options{Auth: svc, Wallets: wsvc, Health: st}))
 	t.Cleanup(srv.Close)
 
 	jar, _ := cookiejar.New(nil)
 	return &testClient{t: t, base: srv.URL, hc: &http.Client{Jar: jar}}
+}
+
+// fork returns a second client against the same server with its own cookie jar,
+// for testing cross-user isolation.
+func (c *testClient) fork() *testClient {
+	jar, _ := cookiejar.New(nil)
+	return &testClient{t: c.t, base: c.base, hc: &http.Client{Jar: jar}}
 }
 
 // do issues a request. When csrf is true the X-Requested-With header is sent.
