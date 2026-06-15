@@ -23,6 +23,9 @@ RUN go mod download
 COPY server/ ./
 # Bring in the built SPA so go:embed includes it in the binary.
 COPY --from=web /src/server/internal/webui/dist ./internal/webui/dist
+# Create the data dir here so it can be copied with the runtime user's
+# ownership into the distroless stage (which has no shell to mkdir/chown).
+RUN mkdir -p /data
 ARG VERSION=dev
 RUN CGO_ENABLED=0 GOOS=linux go build \
     -ldflags "-s -w -X main.version=${VERSION}" \
@@ -35,7 +38,11 @@ LABEL org.opencontainers.image.title="CloudBank" \
       org.opencontainers.image.source="https://github.com/easly1989/cloudbank" \
       org.opencontainers.image.licenses="AGPL-3.0-or-later"
 COPY --from=build /out/cloudbank /cloudbank
-# Data (SQLite db + backups) persists here; nonroot must be able to write it.
+# Data (SQLite db + backups) persists here. The directory is copied with the
+# distroless nonroot uid/gid (65532) so that anonymous volumes (plain
+# `docker run`) and named volumes (compose) initialize writable by nonroot —
+# otherwise a root-owned /data makes SQLite fail with SQLITE_CANTOPEN (14).
+COPY --from=build --chown=65532:65532 /data /data
 ENV CB_DATA_DIR=/data
 VOLUME /data
 EXPOSE 8080

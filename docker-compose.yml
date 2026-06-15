@@ -26,6 +26,9 @@ services:
     volumes:
       - cloudbank-data:/data
     read_only: true
+    # With a read-only root filesystem, give SQLite a writable scratch dir.
+    tmpfs:
+      - /tmp
     security_opt:
       - no-new-privileges:true
 
