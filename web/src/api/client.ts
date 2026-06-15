@@ -43,6 +43,8 @@ export const api = {
     request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
   put: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "PUT", body: body ? JSON.stringify(body) : undefined }),
+  patch: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
   del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };
 
@@ -98,3 +100,28 @@ export const setUserDisabled = (id: number, disabled: boolean) =>
 
 export const resetUserPassword = (id: number, password: string) =>
   api.post<void>(`/api/v1/admin/users/${id}/password`, { password });
+
+// --- Wallets ---
+
+export interface Wallet {
+  id: number;
+  title: string;
+  ownerName: string;
+  baseCurrencyId?: number | null;
+  role: "owner" | "member";
+  createdAt: string;
+}
+
+export interface WalletInput {
+  title: string;
+  ownerName?: string;
+}
+
+export const listWallets = () => api.get<Wallet[]>("/api/v1/wallets");
+
+export const createWallet = (body: WalletInput) => api.post<Wallet>("/api/v1/wallets", body);
+
+export const updateWallet = (id: number, body: WalletInput) =>
+  api.patch<Wallet>(`/api/v1/wallets/${id}`, body);
+
+export const deleteWallet = (id: number) => api.del<void>(`/api/v1/wallets/${id}`);

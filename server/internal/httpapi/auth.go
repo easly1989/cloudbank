@@ -46,24 +46,25 @@ func toUserResponse(u auth.User) userResponse {
 	}
 }
 
-// routes registers the auth/setup/admin endpoints on r (mounted under /api/v1).
-func (h *authHandlers) routes(r chi.Router) {
+// publicRoutes registers the unauthenticated auth/setup endpoints.
+func (h *authHandlers) publicRoutes(r chi.Router) {
 	r.Get("/setup/status", h.setupStatus)
 	r.Post("/setup", h.setup)
 	r.Post("/auth/login", h.login)
+}
+
+// protectedRoutes registers endpoints that require an authenticated session;
+// it must be mounted inside a group that applies h.requireAuth.
+func (h *authHandlers) protectedRoutes(r chi.Router) {
+	r.Post("/auth/logout", h.logout)
+	r.Get("/auth/me", h.me)
 
 	r.Group(func(r chi.Router) {
-		r.Use(h.requireAuth)
-		r.Post("/auth/logout", h.logout)
-		r.Get("/auth/me", h.me)
-
-		r.Group(func(r chi.Router) {
-			r.Use(h.requireAdmin)
-			r.Get("/admin/users", h.listUsers)
-			r.Post("/admin/users", h.createUser)
-			r.Post("/admin/users/{id}/disable", h.disableUser)
-			r.Post("/admin/users/{id}/password", h.resetPassword)
-		})
+		r.Use(h.requireAdmin)
+		r.Get("/admin/users", h.listUsers)
+		r.Post("/admin/users", h.createUser)
+		r.Post("/admin/users/{id}/disable", h.disableUser)
+		r.Post("/admin/users/{id}/password", h.resetPassword)
 	})
 }
 

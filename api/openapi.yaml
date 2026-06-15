@@ -216,6 +216,81 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/wallets:
+    get:
+      operationId: listWallets
+      summary: List the current user's wallets
+      responses:
+        "200":
+          description: The user's wallets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Wallet"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: createWallet
+      summary: Create a wallet (creator becomes owner)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalletInput"
+      responses:
+        "201":
+          description: Wallet created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/wallets/{walletId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getWallet
+      summary: Get a wallet
+      responses:
+        "200":
+          description: The wallet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateWallet
+      summary: Rename a wallet (owner only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalletInput"
+      responses:
+        "200":
+          description: Updated wallet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteWallet
+      summary: Delete a wallet and all its data (owner only)
+      responses:
+        "204": { description: Deleted. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
 components:
   responses:
     BadRequest:
@@ -232,6 +307,12 @@ components:
             $ref: "#/components/schemas/Error"
     Forbidden:
       description: Administrator access required.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Not found.
       content:
         application/json:
           schema:
@@ -285,3 +366,19 @@ components:
         password: { type: string, minLength: 8 }
         isAdmin: { type: boolean }
       required: [username, password]
+    Wallet:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        title: { type: string }
+        ownerName: { type: string }
+        baseCurrencyId: { type: integer, format: int64, nullable: true }
+        role: { type: string, enum: [owner, member] }
+        createdAt: { type: string }
+      required: [id, title, ownerName, role, createdAt]
+    WalletInput:
+      type: object
+      properties:
+        title: { type: string }
+        ownerName: { type: string }
+      required: [title]
