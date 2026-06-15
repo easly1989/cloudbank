@@ -52,3 +52,49 @@ export interface Health {
 }
 
 export const getHealth = () => api.get<Health>("/healthz");
+
+// --- Auth, setup and admin ---
+
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  isAdmin: boolean;
+  locale: string;
+  theme: string;
+  disabled: boolean;
+  createdAt: string;
+}
+
+export interface Credentials {
+  username: string;
+  email?: string;
+  password: string;
+}
+
+export const getSetupStatus = () => api.get<{ needsSetup: boolean }>("/api/v1/setup/status");
+
+export const postSetup = (body: Credentials) => api.post<User>("/api/v1/setup", body);
+
+export const login = (body: Credentials) => api.post<User>("/api/v1/auth/login", body);
+
+export const logout = () => api.post<void>("/api/v1/auth/logout");
+
+export const getMe = () => api.get<User>("/api/v1/auth/me");
+
+export const listUsers = () => api.get<User[]>("/api/v1/admin/users");
+
+export interface CreateUserRequest {
+  username: string;
+  email?: string;
+  password: string;
+  isAdmin: boolean;
+}
+
+export const createUser = (body: CreateUserRequest) => api.post<User>("/api/v1/admin/users", body);
+
+export const setUserDisabled = (id: number, disabled: boolean) =>
+  api.post<void>(`/api/v1/admin/users/${id}/disable`, { disabled });
+
+export const resetUserPassword = (id: number, password: string) =>
+  api.post<void>(`/api/v1/admin/users/${id}/password`, { password });

@@ -49,7 +49,193 @@ paths:
                     type: string
                     example: pong
                 required: [message]
+  /api/v1/setup/status:
+    get:
+      operationId: getSetupStatus
+      summary: First-run setup status
+      description: Reports whether the instance has no users yet and needs the setup wizard.
+      security: []
+      responses:
+        "200":
+          description: Setup status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  needsSetup:
+                    type: boolean
+                required: [needsSetup]
+  /api/v1/setup:
+    post:
+      operationId: postSetup
+      summary: Create the first (admin) user
+      description: Allowed only when no user exists yet; creates an administrator and starts a session.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "201":
+          description: Admin created and logged in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409":
+          description: Setup has already been completed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      summary: Log in
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "200":
+          description: Logged in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429":
+          description: Too many attempts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      summary: Log out (revoke the current session)
+      responses:
+        "204":
+          description: Logged out.
+  /api/v1/auth/me:
+    get:
+      operationId: getMe
+      summary: Current authenticated user
+      responses:
+        "200":
+          description: The current user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/admin/users:
+    get:
+      operationId: listUsers
+      summary: List users (admin)
+      responses:
+        "200":
+          description: All users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      operationId: createUser
+      summary: Create a user (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: User created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Username already taken.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/admin/users/{id}/disable:
+    post:
+      operationId: setUserDisabled
+      summary: Enable or disable a user (admin)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                disabled: { type: boolean }
+              required: [disabled]
+      responses:
+        "204": { description: Updated. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/admin/users/{id}/password:
+    post:
+      operationId: resetUserPassword
+      summary: Reset a user's password (admin)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password: { type: string, minLength: 8 }
+              required: [password]
+      responses:
+        "204": { description: Password reset. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 components:
+  responses:
+    BadRequest:
+      description: Invalid request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Authentication required.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Administrator access required.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     Health:
       type: object
@@ -72,3 +258,30 @@ components:
               type: string
           required: [code, message]
       required: [error]
+    User:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        username: { type: string }
+        email: { type: string }
+        isAdmin: { type: boolean }
+        locale: { type: string }
+        theme: { type: string }
+        disabled: { type: boolean }
+        createdAt: { type: string }
+      required: [id, username, email, isAdmin, locale, theme, disabled, createdAt]
+    Credentials:
+      type: object
+      properties:
+        username: { type: string }
+        email: { type: string }
+        password: { type: string, minLength: 8 }
+      required: [username, password]
+    CreateUserRequest:
+      type: object
+      properties:
+        username: { type: string }
+        email: { type: string }
+        password: { type: string, minLength: 8 }
+        isAdmin: { type: boolean }
+      required: [username, password]
