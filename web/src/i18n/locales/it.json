@@ -56,6 +56,22 @@
     "userCreated": "Utente creato",
     "passwordReset": "Password reimpostata"
   },
+  "wallet": {
+    "firstTitle": "Crea il tuo primo portafoglio",
+    "createTitle": "Nuovo portafoglio",
+    "subtitle": "Un portafoglio contiene conti, categorie e transazioni — come un file di HomeBank.",
+    "title": "Nome del portafoglio",
+    "ownerName": "Nome del proprietario",
+    "create": "Crea portafoglio",
+    "switch": "Cambia portafoglio",
+    "settings": "Impostazioni portafoglio",
+    "save": "Salva",
+    "saved": "Portafoglio aggiornato",
+    "dangerZone": "Zona pericolosa",
+    "deleteWarning": "Eliminare un portafoglio rimuove definitivamente tutti i suoi dati. L'operazione è irreversibile.",
+    "deleteConfirmLabel": "Digita \"{{title}}\" per confermare l'eliminazione.",
+    "delete": "Elimina portafoglio"
+  },
   "dashboard": {
     "title": "Cruscotto",
     "welcome": "Benvenuto in CloudBank",

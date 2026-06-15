@@ -2,6 +2,7 @@ import {
   AppShell,
   Avatar,
   Burger,
+  Button,
   Group,
   Menu,
   NavLink,
@@ -11,16 +12,19 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import {
   IconChartBar,
+  IconChevronDown,
   IconLayoutDashboard,
   IconLogout,
+  IconPlus,
   IconSettings,
   IconUsers,
   IconWallet,
 } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
-import { NavLink as RouterNavLink, Outlet } from "react-router-dom";
+import { NavLink as RouterNavLink, Outlet, useNavigate } from "react-router-dom";
 
 import { useAuth, useLogout } from "../auth/AuthProvider";
+import { useWallet } from "../wallet/WalletProvider";
 import { ColorSchemeToggle } from "./ColorSchemeToggle";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
@@ -31,6 +35,42 @@ const navItems = [
   { to: "/settings", labelKey: "nav.settings", icon: IconSettings, end: false, adminOnly: false },
   { to: "/admin/users", labelKey: "nav.admin", icon: IconUsers, end: false, adminOnly: true },
 ];
+
+function WalletSwitcher() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { wallets, currentWallet, setCurrentWalletId } = useWallet();
+
+  return (
+    <Menu position="bottom-start" withinPortal>
+      <Menu.Target>
+        <Button variant="default" size="xs" rightSection={<IconChevronDown size={14} />}>
+          {currentWallet?.title ?? "—"}
+        </Button>
+      </Menu.Target>
+      <Menu.Dropdown>
+        <Menu.Label>{t("wallet.switch")}</Menu.Label>
+        {wallets.map((w) => (
+          <Menu.Item
+            key={w.id}
+            onClick={() => setCurrentWalletId(w.id)}
+            leftSection={<IconWallet size={16} />}
+            fw={w.id === currentWallet?.id ? 700 : 400}
+          >
+            {w.title}
+          </Menu.Item>
+        ))}
+        <Menu.Divider />
+        <Menu.Item leftSection={<IconSettings size={16} />} onClick={() => navigate("/wallet")}>
+          {t("wallet.settings")}
+        </Menu.Item>
+        <Menu.Item leftSection={<IconPlus size={16} />} onClick={() => navigate("/wallet/new")}>
+          {t("wallet.create")}
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
+  );
+}
 
 export function AppLayout() {
   const [opened, { toggle }] = useDisclosure();
@@ -51,6 +91,7 @@ export function AppLayout() {
             <Text fw={700} size="lg">
               {t("app.name")}
             </Text>
+            <WalletSwitcher />
           </Group>
           <Group>
             <LanguageSwitcher />

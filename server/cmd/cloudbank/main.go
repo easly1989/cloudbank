@@ -20,6 +20,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/httpapi"
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
+	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
 
 // version is overridden at build time via -ldflags "-X main.version=...".
@@ -81,13 +82,15 @@ func run() error {
 	}()
 	logger.Info("database ready", "path", filepath.Join(cfg.DataDir, "cloudbank.db"))
 
-	// Writes (including auth) go through the single write connection.
+	// Writes (including auth and wallets) go through the single write connection.
 	authSvc := auth.NewService(db.New(st.Write()))
+	walletSvc := wallet.NewService(st.Write())
 
 	handler := httpapi.New(httpapi.Options{
 		Logger:        logger,
 		Health:        st,
 		Auth:          authSvc,
+		Wallets:       walletSvc,
 		SecureCookies: cfg.SecureCookies,
 	})
 

@@ -56,6 +56,22 @@
     "userCreated": "User created",
     "passwordReset": "Password reset"
   },
+  "wallet": {
+    "firstTitle": "Create your first wallet",
+    "createTitle": "New wallet",
+    "subtitle": "A wallet holds your accounts, categories and transactions — like a HomeBank file.",
+    "title": "Wallet name",
+    "ownerName": "Owner name",
+    "create": "Create wallet",
+    "switch": "Switch wallet",
+    "settings": "Wallet settings",
+    "save": "Save",
+    "saved": "Wallet updated",
+    "dangerZone": "Danger zone",
+    "deleteWarning": "Deleting a wallet permanently removes all of its data. This cannot be undone.",
+    "deleteConfirmLabel": "Type \"{{title}}\" to confirm deletion.",
+    "delete": "Delete wallet"
+  },
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome to CloudBank",

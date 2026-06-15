@@ -184,6 +184,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's wallets */
+        get: operations["listWallets"];
+        put?: never;
+        /** Create a wallet (creator becomes owner) */
+        post: operations["createWallet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Get a wallet */
+        get: operations["getWallet"];
+        put?: never;
+        post?: never;
+        /** Delete a wallet and all its data (owner only) */
+        delete: operations["deleteWallet"];
+        options?: never;
+        head?: never;
+        /** Rename a wallet (owner only) */
+        patch: operations["updateWallet"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -221,6 +260,21 @@ export interface components {
             password: string;
             isAdmin?: boolean;
         };
+        Wallet: {
+            /** Format: int64 */
+            id: number;
+            title: string;
+            ownerName: string;
+            /** Format: int64 */
+            baseCurrencyId?: number | null;
+            /** @enum {string} */
+            role: "owner" | "member";
+            createdAt: string;
+        };
+        WalletInput: {
+            title: string;
+            ownerName?: string;
+        };
     };
     responses: {
         /** @description Invalid request. */
@@ -243,6 +297,15 @@ export interface components {
         };
         /** @description Administrator access required. */
         Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Not found. */
+        NotFound: {
             headers: {
                 [name: string]: unknown;
             };
@@ -553,6 +616,130 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    listWallets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The user's wallets. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wallet"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WalletInput"];
+            };
+        };
+        responses: {
+            /** @description Wallet created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wallet"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The wallet. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wallet"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WalletInput"];
+            };
+        };
+        responses: {
+            /** @description Updated wallet. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wallet"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
 }
