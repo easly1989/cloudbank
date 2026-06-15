@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/webui"
 )
 
@@ -26,6 +27,10 @@ type Options struct {
 	// Health, if non-nil, is pinged by /healthz. When nil, /healthz reports OK
 	// as long as the process is serving.
 	Health HealthChecker
+	// Auth, if non-nil, mounts the authentication, setup and admin endpoints.
+	Auth *auth.Service
+	// SecureCookies sets the Secure flag on the session cookie.
+	SecureCookies bool
 }
 
 // New builds the application's http.Handler.
@@ -46,9 +51,13 @@ func New(opts Options) http.Handler {
 
 	// JSON API. Concrete resources are mounted by later milestones.
 	r.Route("/api/v1", func(r chi.Router) {
+		r.Use(csrf)
 		r.Get("/ping", func(w http.ResponseWriter, _ *http.Request) {
 			writeJSON(w, http.StatusOK, map[string]string{"message": "pong"})
 		})
+		if opts.Auth != nil {
+			(&authHandlers{svc: opts.Auth, secure: opts.SecureCookies}).routes(r)
+		}
 	})
 
 	// Everything else is the single-page app.
