@@ -1,0 +1,32 @@
+{
+  "app": {
+    "name": "CloudBank",
+    "tagline": "Gestione delle finanze personali self-hosted"
+  },
+  "nav": {
+    "dashboard": "Cruscotto",
+    "accounts": "Conti",
+    "reports": "Report",
+    "settings": "Impostazioni"
+  },
+  "actions": {
+    "signIn": "Accedi",
+    "signOut": "Esci",
+    "language": "Lingua",
+    "toggleTheme": "Cambia tema"
+  },
+  "login": {
+    "title": "Accedi a CloudBank",
+    "username": "Nome utente",
+    "password": "Password",
+    "submit": "Accedi"
+  },
+  "dashboard": {
+    "title": "Cruscotto",
+    "welcome": "Benvenuto in CloudBank",
+    "backendStatus": "Stato del backend",
+    "checking": "Verifica in corso…",
+    "online": "Online",
+    "offline": "Offline"
+  }
+}
