@@ -9,11 +9,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/config"
 	"github.com/easly1989/cloudbank/server/internal/httpapi"
+	"github.com/easly1989/cloudbank/server/internal/store"
 )
 
 // version is overridden at build time via -ldflags "-X main.version=...".
@@ -35,7 +37,18 @@ func run() error {
 	slog.SetDefault(logger)
 	logger.Info("starting cloudbank", "version", version, "addr", cfg.Addr, "data_dir", cfg.DataDir)
 
-	handler := httpapi.New(httpapi.Options{Logger: logger})
+	db, err := store.Open(cfg.DataDir)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cerr := db.Close(); cerr != nil {
+			logger.Error("closing database", "error", cerr)
+		}
+	}()
+	logger.Info("database ready", "path", filepath.Join(cfg.DataDir, "cloudbank.db"))
+
+	handler := httpapi.New(httpapi.Options{Logger: logger, Health: db})
 
 	srv := &http.Server{
 		Addr:              cfg.Addr,

@@ -24,10 +24,10 @@ web-dev:
 	cd $(WEB_DIR) && npm run dev
 
 gen:
-	@echo ">> regenerating Go code (sqlc, oapi-codegen) — wired in later milestones"
-	cd $(SERVER_DIR) && go generate ./... || true
+	@echo ">> regenerating Go code from SQL (sqlc)"
+	cd $(SERVER_DIR) && sqlc generate
 	@echo ">> regenerating TypeScript API types from api/openapi.yaml"
-	cd $(WEB_DIR) && npm run gen:api || true
+	cd $(WEB_DIR) && npm run gen:api
 
 lint: lint-go lint-web
 
