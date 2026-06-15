@@ -7,7 +7,8 @@
     "dashboard": "Cruscotto",
     "accounts": "Conti",
     "reports": "Report",
-    "settings": "Impostazioni"
+    "settings": "Impostazioni",
+    "admin": "Utenti"
   },
   "actions": {
     "signIn": "Accedi",
@@ -19,7 +20,41 @@
     "title": "Accedi a CloudBank",
     "username": "Nome utente",
     "password": "Password",
-    "submit": "Accedi"
+    "submit": "Accedi",
+    "invalid": "Nome utente o password non validi"
+  },
+  "setup": {
+    "title": "Benvenuto in CloudBank",
+    "subtitle": "Crea l'account amministratore per iniziare.",
+    "username": "Nome utente",
+    "email": "Email (facoltativa)",
+    "password": "Password",
+    "confirmPassword": "Conferma password",
+    "submit": "Crea account amministratore",
+    "passwordMismatch": "Le password non coincidono",
+    "passwordTooShort": "La password deve avere almeno 8 caratteri"
+  },
+  "admin": {
+    "title": "Utenti",
+    "create": "Aggiungi utente",
+    "createTitle": "Crea un utente",
+    "username": "Nome utente",
+    "email": "Email",
+    "password": "Password",
+    "makeAdmin": "Amministratore",
+    "role": "Ruolo",
+    "admin": "Admin",
+    "status": "Stato",
+    "active": "Attivo",
+    "disabled": "Disabilitato",
+    "actions": "Azioni",
+    "resetPassword": "Reimposta password",
+    "newPassword": "Nuova password",
+    "enable": "Abilita",
+    "disable": "Disabilita",
+    "you": "tu",
+    "userCreated": "Utente creato",
+    "passwordReset": "Password reimpostata"
   },
   "dashboard": {
     "title": "Cruscotto",
