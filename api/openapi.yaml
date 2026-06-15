@@ -1,0 +1,74 @@
+openapi: 3.1.0
+info:
+  title: CloudBank API
+  version: 0.1.0
+  description: >
+    HTTP API for CloudBank, a self-hosted web port of HomeBank. This document is
+    the single source of truth for the contract: the Go server interfaces and
+    the TypeScript client types are both generated from it. Resources are added
+    milestone by milestone; this initial version covers the health and ping
+    endpoints established by the server skeleton.
+  license:
+    name: AGPL-3.0-or-later
+    url: https://www.gnu.org/licenses/agpl-3.0.html
+servers:
+  - url: /
+paths:
+  /healthz:
+    get:
+      operationId: getHealth
+      summary: Liveness/readiness probe
+      description: Returns 200 when the server (and its database, once wired) is healthy.
+      security: []
+      responses:
+        "200":
+          description: Service is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: A dependency is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /api/v1/ping:
+    get:
+      operationId: getPing
+      summary: Connectivity check
+      responses:
+        "200":
+          description: Pong.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: pong
+                required: [message]
+components:
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, unhealthy]
+        error:
+          type: string
+      required: [status]
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+          required: [code, message]
+      required: [error]
