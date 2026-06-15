@@ -1,5 +1,7 @@
-# golangci-lint v1 configuration. Conservative set: the default linters plus a
-# few high-signal additions. Tests are allowed to skip error checks.
+# golangci-lint v2 configuration. Conservative set: the default linters plus a
+# few high-signal additions. Formatters (gofmt, goimports) are separate in v2.
+version: "2"
+
 run:
   timeout: 5m
 
@@ -10,15 +12,15 @@ linters:
     - ineffassign
     - staticcheck
     - unused
-    - gofmt
-    - goimports
     - misspell
     - revive
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
 
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
-  max-issues-per-linter: 0
-  max-same-issues: 0
+formatters:
+  enable:
+    - gofmt
+    - goimports
