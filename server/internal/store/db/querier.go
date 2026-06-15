@@ -9,19 +9,26 @@ import (
 )
 
 type Querier interface {
+	AddWalletMember(ctx context.Context, arg AddWalletMemberParams) error
 	CountUsers(ctx context.Context) (int64, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	CreateWallet(ctx context.Context, arg CreateWalletParams) (Wallet, error)
 	DeleteExpiredSessions(ctx context.Context, expiresAt string) error
 	DeleteSession(ctx context.Context, id string) error
 	DeleteUserSessions(ctx context.Context, userID int64) error
+	DeleteWallet(ctx context.Context, id int64) error
 	GetSession(ctx context.Context, id string) (Session, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	GetWallet(ctx context.Context, id int64) (Wallet, error)
+	GetWalletMembership(ctx context.Context, arg GetWalletMembershipParams) (string, error)
 	ListUsers(ctx context.Context) ([]User, error)
+	ListWalletsForUser(ctx context.Context, userID int64) ([]ListWalletsForUserRow, error)
 	SetUserDisabled(ctx context.Context, arg SetUserDisabledParams) error
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
+	UpdateWallet(ctx context.Context, arg UpdateWalletParams) error
 }
 
 var _ Querier = (*Queries)(nil)

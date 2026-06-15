@@ -56,20 +56,39 @@ describe("App routing", () => {
     expect(await screen.findByText("Sign in to CloudBank")).toBeInTheDocument();
   });
 
-  it("shows the dashboard when authenticated", async () => {
-    const admin = {
+  const admin = {
+    id: 1,
+    username: "admin",
+    email: "",
+    isAdmin: true,
+    locale: "en",
+    theme: "auto",
+    disabled: false,
+    createdAt: "2026-01-01T00:00:00Z",
+  };
+
+  it("shows the first-wallet wizard when authenticated with no wallets", async () => {
+    mockFetch({
+      "/api/v1/setup/status": { body: { needsSetup: false } },
+      "/api/v1/auth/me": { body: admin },
+      "/api/v1/wallets": { body: [] },
+    });
+    renderApp("/");
+    expect(await screen.findByText("Create your first wallet")).toBeInTheDocument();
+  });
+
+  it("shows the dashboard when authenticated with a wallet", async () => {
+    const wallet = {
       id: 1,
-      username: "admin",
-      email: "",
-      isAdmin: true,
-      locale: "en",
-      theme: "auto",
-      disabled: false,
+      title: "Home",
+      ownerName: "",
+      role: "owner",
       createdAt: "2026-01-01T00:00:00Z",
     };
     mockFetch({
       "/api/v1/setup/status": { body: { needsSetup: false } },
       "/api/v1/auth/me": { body: admin },
+      "/api/v1/wallets": { body: [wallet] },
       "/healthz": { body: { status: "ok" } },
     });
     renderApp("/");

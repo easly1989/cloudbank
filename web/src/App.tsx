@@ -5,11 +5,22 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { getSetupStatus } from "./api/client";
 import { useAuth } from "./auth/AuthProvider";
 import { AppLayout } from "./components/AppLayout";
+import { CreateWalletPage } from "./pages/CreateWalletPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { SetupPage } from "./pages/SetupPage";
+import { WalletSettingsPage } from "./pages/WalletSettingsPage";
 import { UsersPage } from "./pages/admin/UsersPage";
+import { WalletProvider, useWallet } from "./wallet/WalletProvider";
+
+function FullScreenLoader() {
+  return (
+    <Center mih="100vh">
+      <Loader />
+    </Center>
+  );
+}
 
 export function App() {
   const setupStatus = useQuery({
@@ -20,13 +31,7 @@ export function App() {
   });
   const { user, isLoading } = useAuth();
 
-  if (setupStatus.isLoading || isLoading) {
-    return (
-      <Center mih="100vh">
-        <Loader />
-      </Center>
-    );
-  }
+  if (setupStatus.isLoading || isLoading) return <FullScreenLoader />;
 
   // First run: force the setup wizard.
   if (setupStatus.data?.needsSetup) {
@@ -48,7 +53,22 @@ export function App() {
     );
   }
 
-  // Authenticated app.
+  // Authenticated: wallet context decides the rest.
+  return (
+    <WalletProvider>
+      <AuthenticatedApp isAdmin={user.isAdmin} />
+    </WalletProvider>
+  );
+}
+
+function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
+  const { wallets, isLoading } = useWallet();
+
+  if (isLoading) return <FullScreenLoader />;
+
+  // No wallets yet: first-wallet wizard.
+  if (wallets.length === 0) return <CreateWalletPage firstRun />;
+
   return (
     <Routes>
       <Route element={<AppLayout />}>
@@ -56,7 +76,9 @@ export function App() {
         <Route path="accounts" element={<PlaceholderPage titleKey="nav.accounts" />} />
         <Route path="reports" element={<PlaceholderPage titleKey="nav.reports" />} />
         <Route path="settings" element={<PlaceholderPage titleKey="nav.settings" />} />
-        {user.isAdmin && <Route path="admin/users" element={<UsersPage />} />}
+        <Route path="wallet" element={<WalletSettingsPage />} />
+        <Route path="wallet/new" element={<CreateWalletPage />} />
+        {isAdmin && <Route path="admin/users" element={<UsersPage />} />}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
