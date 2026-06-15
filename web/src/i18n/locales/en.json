@@ -7,7 +7,8 @@
     "dashboard": "Dashboard",
     "accounts": "Accounts",
     "reports": "Reports",
-    "settings": "Settings"
+    "settings": "Settings",
+    "admin": "Users"
   },
   "actions": {
     "signIn": "Sign in",
@@ -19,7 +20,41 @@
     "title": "Sign in to CloudBank",
     "username": "Username",
     "password": "Password",
-    "submit": "Sign in"
+    "submit": "Sign in",
+    "invalid": "Invalid username or password"
+  },
+  "setup": {
+    "title": "Welcome to CloudBank",
+    "subtitle": "Create the administrator account to get started.",
+    "username": "Username",
+    "email": "Email (optional)",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "submit": "Create admin account",
+    "passwordMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 8 characters"
+  },
+  "admin": {
+    "title": "Users",
+    "create": "Add user",
+    "createTitle": "Create a user",
+    "username": "Username",
+    "email": "Email",
+    "password": "Password",
+    "makeAdmin": "Administrator",
+    "role": "Role",
+    "admin": "Admin",
+    "status": "Status",
+    "active": "Active",
+    "disabled": "Disabled",
+    "actions": "Actions",
+    "resetPassword": "Reset password",
+    "newPassword": "New password",
+    "enable": "Enable",
+    "disable": "Disable",
+    "you": "you",
+    "userCreated": "User created",
+    "passwordReset": "Password reset"
   },
   "dashboard": {
     "title": "Dashboard",

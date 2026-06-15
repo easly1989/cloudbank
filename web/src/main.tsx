@@ -9,6 +9,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
 import { App } from "./App";
+import { AuthProvider } from "./auth/AuthProvider";
 import "./i18n";
 import { theme } from "./theme";
 
@@ -24,9 +25,11 @@ createRoot(rootElement).render(
     <MantineProvider theme={theme} defaultColorScheme="auto">
       <Notifications />
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <AuthProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </AuthProvider>
       </QueryClientProvider>
     </MantineProvider>
   </StrictMode>,
