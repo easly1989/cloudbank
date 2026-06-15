@@ -1,0 +1,33 @@
+# Example deployment for CloudBank.
+#
+# Tag convention on GHCR (intentional, see README):
+#   :main    -> latest stable release  (recommended for self-hosting)
+#   :latest  -> nightly build from main (bleeding edge)
+#   :vX.Y.Z  -> a specific release
+#
+# For a stable install, pin `image: ghcr.io/easly1989/cloudbank:main`.
+
+services:
+  cloudbank:
+    image: ghcr.io/easly1989/cloudbank:main
+    # To build locally instead of pulling, comment out `image:` above and use:
+    # build:
+    #   context: .
+    #   args:
+    #     VERSION: dev
+    container_name: cloudbank
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Set to "false" only for plain-HTTP LAN installs without TLS in front.
+      CB_SECURE_COOKIES: "false"
+      CB_LOG_LEVEL: "info"
+    volumes:
+      - cloudbank-data:/data
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  cloudbank-data:
