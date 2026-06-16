@@ -176,3 +176,71 @@ export const setBaseCurrency = (walletId: number, currencyId: number) =>
 
 export const deleteCurrency = (walletId: number, currencyId: number) =>
   api.del<void>(`/api/v1/wallets/${walletId}/currencies/${currencyId}`);
+
+// --- Accounts ---
+
+export type AccountType =
+  | "bank"
+  | "cash"
+  | "checking"
+  | "savings"
+  | "creditcard"
+  | "liability"
+  | "asset"
+  | "investment";
+
+export interface Account {
+  id: number;
+  name: string;
+  type: AccountType;
+  currencyId: number;
+  institution: string;
+  number: string;
+  initialBalance: number;
+  minimumBalance: number;
+  balance: number;
+  closed: boolean;
+  noSummary: boolean;
+  noBudget: boolean;
+  noReport: boolean;
+  position: number;
+  groupName: string;
+  notes: string;
+  website: string;
+  createdAt: string;
+  currencyCode: string;
+  currencySymbol: string;
+  currencySymbolPrefix: boolean;
+  currencyDecimalChar: string;
+  currencyGroupChar: string;
+  currencyFracDigits: number;
+}
+
+export interface AccountInput {
+  name: string;
+  type: AccountType;
+  currencyId?: number;
+  institution?: string;
+  number?: string;
+  initialBalance?: number;
+  minimumBalance?: number;
+  closed?: boolean;
+  noSummary?: boolean;
+  noBudget?: boolean;
+  noReport?: boolean;
+  groupName?: string;
+  notes?: string;
+  website?: string;
+}
+
+export const listAccounts = (walletId: number) =>
+  api.get<Account[]>(`/api/v1/wallets/${walletId}/accounts`);
+
+export const createAccount = (walletId: number, body: AccountInput) =>
+  api.post<Account>(`/api/v1/wallets/${walletId}/accounts`, body);
+
+export const updateAccount = (walletId: number, accountId: number, body: AccountInput) =>
+  api.patch<Account>(`/api/v1/wallets/${walletId}/accounts/${accountId}`, body);
+
+export const deleteAccount = (walletId: number, accountId: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/accounts/${accountId}`);
