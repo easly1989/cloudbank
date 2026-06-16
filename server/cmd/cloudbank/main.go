@@ -17,6 +17,7 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/config"
+	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/httpapi"
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
@@ -85,12 +86,14 @@ func run() error {
 	// Writes (including auth and wallets) go through the single write connection.
 	authSvc := auth.NewService(db.New(st.Write()))
 	walletSvc := wallet.NewService(st.Write())
+	currencySvc := currency.NewService(st.Write())
 
 	handler := httpapi.New(httpapi.Options{
 		Logger:        logger,
 		Health:        st,
 		Auth:          authSvc,
 		Wallets:       walletSvc,
+		Currencies:    currencySvc,
 		SecureCookies: cfg.SecureCookies,
 	})
 
