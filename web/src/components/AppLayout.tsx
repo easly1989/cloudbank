@@ -18,6 +18,8 @@ import {
   IconLogout,
   IconPlus,
   IconSettings,
+  IconTags,
+  IconUserDollar,
   IconUsers,
   IconWallet,
 } from "@tabler/icons-react";
@@ -62,6 +64,12 @@ function WalletSwitcher() {
           </Menu.Item>
         ))}
         <Menu.Divider />
+        <Menu.Item leftSection={<IconTags size={16} />} onClick={() => navigate("/categories")}>
+          {t("categories.title")}
+        </Menu.Item>
+        <Menu.Item leftSection={<IconUserDollar size={16} />} onClick={() => navigate("/payees")}>
+          {t("payees.title")}
+        </Menu.Item>
         <Menu.Item leftSection={<IconCoin size={16} />} onClick={() => navigate("/currencies")}>
           {t("currencies.title")}
         </Menu.Item>
