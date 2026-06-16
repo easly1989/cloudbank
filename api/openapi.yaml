@@ -401,6 +401,113 @@ paths:
                 items:
                   $ref: "#/components/schemas/ExchangeRate"
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/accounts:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listAccounts
+      summary: List a wallet's accounts
+      responses:
+        "200":
+          description: Accounts (ordered by position/group/name).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Account"
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: createAccount
+      summary: Create an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountInput"
+      responses:
+        "201":
+          description: Account created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Account name already used.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/wallets/{walletId}/accounts/reorder:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: reorderAccounts
+      summary: Reorder accounts (positions and groups)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: integer, format: int64 }
+                  position: { type: integer }
+                  groupName: { type: string }
+                required: [id, position]
+      responses:
+        "204": { description: Reordered. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/accounts/{accountId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: accountId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getAccount
+      summary: Get an account
+      responses:
+        "200":
+          description: The account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateAccount
+      summary: Update an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountInput"
+      responses:
+        "200":
+          description: Updated account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Account name already used.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteAccount
+      summary: Delete an account and its data
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
 components:
   responses:
     BadRequest:
@@ -539,3 +646,55 @@ components:
         rate: { type: number }
         source: { type: string }
       required: [date, rate, source]
+    Account:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        type:
+          type: string
+          enum: [bank, cash, checking, savings, creditcard, liability, asset, investment]
+        currencyId: { type: integer, format: int64 }
+        institution: { type: string }
+        number: { type: string }
+        initialBalance: { type: integer, format: int64, description: "minor units" }
+        minimumBalance: { type: integer, format: int64, description: "minor units" }
+        balance: { type: integer, format: int64, description: "minor units" }
+        closed: { type: boolean }
+        noSummary: { type: boolean }
+        noBudget: { type: boolean }
+        noReport: { type: boolean }
+        position: { type: integer }
+        groupName: { type: string }
+        notes: { type: string }
+        website: { type: string }
+        createdAt: { type: string }
+        currencyCode: { type: string }
+        currencySymbol: { type: string }
+        currencySymbolPrefix: { type: boolean }
+        currencyDecimalChar: { type: string }
+        currencyGroupChar: { type: string }
+        currencyFracDigits: { type: integer }
+      required:
+        [id, name, type, currencyId, initialBalance, minimumBalance, balance, closed, position,
+         currencyCode, currencySymbol, currencySymbolPrefix, currencyDecimalChar, currencyGroupChar, currencyFracDigits]
+    AccountInput:
+      type: object
+      properties:
+        name: { type: string }
+        type:
+          type: string
+          enum: [bank, cash, checking, savings, creditcard, liability, asset, investment]
+        currencyId: { type: integer, format: int64, description: "defaults to the wallet base currency" }
+        institution: { type: string }
+        number: { type: string }
+        initialBalance: { type: integer, format: int64 }
+        minimumBalance: { type: integer, format: int64 }
+        closed: { type: boolean }
+        noSummary: { type: boolean }
+        noBudget: { type: boolean }
+        noReport: { type: boolean }
+        groupName: { type: string }
+        notes: { type: string }
+        website: { type: string }
+      required: [name, type]

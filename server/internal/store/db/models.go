@@ -8,6 +8,27 @@ import (
 	"database/sql"
 )
 
+type Account struct {
+	ID             int64
+	WalletID       int64
+	Name           string
+	Type           string
+	CurrencyID     int64
+	Institution    string
+	Number         string
+	InitialBalance int64
+	MinimumBalance int64
+	Closed         int64
+	NoSummary      int64
+	NoBudget       int64
+	NoReport       int64
+	Position       int64
+	GroupName      string
+	Notes          string
+	Website        string
+	CreatedAt      string
+}
+
 type Currency struct {
 	ID            int64
 	WalletID      int64
