@@ -524,6 +524,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List a wallet's tags */
+        get: operations["listTags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List an account's transactions (newest first) */
+        get: operations["listTransactions"];
+        put?: never;
+        /** Create a transaction */
+        post: operations["createTransaction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/transactions/duplicates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Find possible duplicate transactions (same account/amount near a date) */
+        get: operations["findDuplicateTransactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/transactions/{transactionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                transactionId: number;
+            };
+            cookie?: never;
+        };
+        /** Get a transaction (with splits and tags) */
+        get: operations["getTransaction"];
+        put?: never;
+        post?: never;
+        /** Delete a transaction */
+        delete: operations["deleteTransaction"];
+        options?: never;
+        head?: never;
+        /** Update a transaction */
+        patch: operations["updateTransaction"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -701,6 +781,8 @@ export interface components {
             subcategories: number;
             /** Format: int64 */
             payees: number;
+            /** Format: int64 */
+            transactions: number;
         };
         Payee: {
             /** Format: int64 */
@@ -721,6 +803,60 @@ export interface components {
         MergeRequest: {
             /** Format: int64 */
             targetId: number;
+        };
+        Split: {
+            /** Format: int64 */
+            categoryId?: number | null;
+            /** Format: int64 */
+            amount: number;
+            memo?: string;
+        };
+        Transaction: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            accountId: number;
+            date: string;
+            /** Format: int64 */
+            amount: number;
+            paymentMode: number;
+            status: number;
+            info: string;
+            /** Format: int64 */
+            payeeId?: number | null;
+            /** Format: int64 */
+            categoryId?: number | null;
+            memo: string;
+            isSplit: boolean;
+            tags: string[];
+            splits?: components["schemas"]["Split"][];
+            payeeName?: string;
+            categoryName?: string;
+            createdAt?: string;
+            updatedAt?: string;
+        };
+        TransactionInput: {
+            /** Format: int64 */
+            accountId: number;
+            /** @description YYYY-MM-DD */
+            date: string;
+            /**
+             * Format: int64
+             * @description signed minor units
+             */
+            amount: number;
+            /** @description 0..11 */
+            paymentMode?: number;
+            /** @description 0 none, 1 cleared, 2 reconciled, 3 remind, 4 void */
+            status?: number;
+            info?: string;
+            /** Format: int64 */
+            payeeId?: number | null;
+            /** Format: int64 */
+            categoryId?: number | null;
+            memo?: string;
+            tags?: string[];
+            splits?: components["schemas"]["Split"][];
         };
     };
     responses: {
@@ -1847,6 +1983,192 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listTags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tags. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listTransactions: {
+        parameters: {
+            query: {
+                accountId: number;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of transactions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        transactions: components["schemas"]["Transaction"][];
+                        /** Format: int64 */
+                        total: number;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createTransaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransactionInput"];
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transaction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    findDuplicateTransactions: {
+        parameters: {
+            query: {
+                accountId: number;
+                date: string;
+                amount: number;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Candidates. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transaction"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getTransaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                transactionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The transaction. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transaction"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteTransaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                transactionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateTransaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                transactionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransactionInput"];
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transaction"];
+                };
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];

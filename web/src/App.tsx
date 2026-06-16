@@ -10,6 +10,7 @@ import { CategoriesPage } from "./pages/CategoriesPage";
 import { CreateWalletPage } from "./pages/CreateWalletPage";
 import { CurrenciesPage } from "./pages/CurrenciesPage";
 import { PayeesPage } from "./pages/PayeesPage";
+import { TransactionsPage } from "./pages/TransactionsPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
@@ -78,6 +79,7 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
       <Route element={<AppLayout />}>
         <Route index element={<DashboardPage />} />
         <Route path="accounts" element={<AccountsPage />} />
+        <Route path="transactions" element={<TransactionsPage />} />
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="payees" element={<PayeesPage />} />
         <Route path="reports" element={<PlaceholderPage titleKey="nav.reports" />} />

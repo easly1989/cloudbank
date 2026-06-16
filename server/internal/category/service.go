@@ -32,10 +32,10 @@ type Category struct {
 }
 
 // Usage counts references to a category (shown before destructive operations).
-// Transaction/split/budget references are added when those tables land.
 type Usage struct {
 	Subcategories int64 `json:"subcategories"`
 	Payees        int64 `json:"payees"`
+	Transactions  int64 `json:"transactions"`
 }
 
 func toCategory(c db.Category) Category {
@@ -166,7 +166,11 @@ func (s *Service) Usage(ctx context.Context, id int64) (Usage, error) {
 	if err != nil {
 		return Usage{}, err
 	}
-	return Usage{Subcategories: subs, Payees: pays}, nil
+	txns, err := s.q.CountTransactionsWithCategory(ctx, nullID(&id))
+	if err != nil {
+		return Usage{}, err
+	}
+	return Usage{Subcategories: subs, Payees: pays, Transactions: txns}, nil
 }
 
 // Merge reassigns everything pointing at source to target, then deletes source.
@@ -238,8 +242,13 @@ func (s *Service) reassignAndDelete(ctx context.Context, sourceID int64, target 
 	if err := qtx.ReassignPayeeCategory(ctx, db.ReassignPayeeCategoryParams{DefaultCategoryID: nullID(target), DefaultCategoryID_2: nullID(&sourceID)}); err != nil {
 		return err
 	}
-	// Future: reassign transactions.category_id, splits.category_id,
-	// budgets.category_id and assignments.set_category_id here (#12+).
+	if err := qtx.ReassignTransactionCategory(ctx, db.ReassignTransactionCategoryParams{CategoryID: nullID(target), CategoryID_2: nullID(&sourceID)}); err != nil {
+		return err
+	}
+	if err := qtx.ReassignSplitCategory(ctx, db.ReassignSplitCategoryParams{CategoryID: nullID(target), CategoryID_2: nullID(&sourceID)}); err != nil {
+		return err
+	}
+	// Future: reassign budgets.category_id and assignments.set_category_id (#19, #20).
 	if err := qtx.DeleteCategory(ctx, sourceID); err != nil {
 		return err
 	}

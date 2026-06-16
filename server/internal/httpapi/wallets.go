@@ -13,6 +13,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/payee"
+	"github.com/easly1989/cloudbank/server/internal/transaction"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
 
@@ -21,11 +22,12 @@ const walletCtxKey ctxKey = iota + 1
 // walletHandlers serves the wallet CRUD endpoints. They are mounted inside the
 // authenticated API group, so the current user is always in context.
 type walletHandlers struct {
-	svc        *wallet.Service
-	currencies *currency.Service
-	accounts   *account.Service
-	categories *category.Service
-	payees     *payee.Service
+	svc          *wallet.Service
+	currencies   *currency.Service
+	accounts     *account.Service
+	categories   *category.Service
+	payees       *payee.Service
+	transactions *transaction.Service
 }
 
 type walletResponse struct {
@@ -63,6 +65,9 @@ func (h *walletHandlers) routes(r chi.Router) {
 		}
 		if h.payees != nil {
 			(&payeeHandlers{svc: h.payees}).walletRoutes(r)
+		}
+		if h.transactions != nil {
+			(&transactionHandlers{svc: h.transactions}).walletRoutes(r)
 		}
 	})
 }
