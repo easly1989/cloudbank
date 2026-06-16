@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/easly1989/cloudbank/server/internal/auth"
+	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
@@ -32,7 +33,8 @@ func newTestAPI(t *testing.T) *testClient {
 
 	svc := auth.NewService(db.New(st.Write()))
 	wsvc := wallet.NewService(st.Write())
-	srv := httptest.NewServer(New(Options{Auth: svc, Wallets: wsvc, Health: st}))
+	csvc := currency.NewService(st.Write())
+	srv := httptest.NewServer(New(Options{Auth: svc, Wallets: wsvc, Currencies: csvc, Health: st}))
 	t.Cleanup(srv.Close)
 
 	jar, _ := cookiejar.New(nil)

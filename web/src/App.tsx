@@ -6,6 +6,7 @@ import { getSetupStatus } from "./api/client";
 import { useAuth } from "./auth/AuthProvider";
 import { AppLayout } from "./components/AppLayout";
 import { CreateWalletPage } from "./pages/CreateWalletPage";
+import { CurrenciesPage } from "./pages/CurrenciesPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
@@ -78,6 +79,7 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
         <Route path="settings" element={<PlaceholderPage titleKey="nav.settings" />} />
         <Route path="wallet" element={<WalletSettingsPage />} />
         <Route path="wallet/new" element={<CreateWalletPage />} />
+        <Route path="currencies" element={<CurrenciesPage />} />
         {isAdmin && <Route path="admin/users" element={<UsersPage />} />}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

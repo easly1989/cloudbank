@@ -8,6 +8,29 @@ import (
 	"database/sql"
 )
 
+type Currency struct {
+	ID            int64
+	WalletID      int64
+	IsoCode       string
+	Name          string
+	Symbol        string
+	SymbolPrefix  int64
+	DecimalChar   string
+	GroupChar     string
+	FracDigits    int64
+	IsBase        int64
+	Rate          float64
+	RateUpdatedAt sql.NullString
+}
+
+type ExchangeRate struct {
+	ID         int64
+	CurrencyID int64
+	Date       string
+	Rate       float64
+	Source     string
+}
+
 type Session struct {
 	ID         string
 	UserID     int64

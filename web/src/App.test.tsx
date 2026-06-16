@@ -72,6 +72,9 @@ describe("App routing", () => {
       "/api/v1/setup/status": { body: { needsSetup: false } },
       "/api/v1/auth/me": { body: admin },
       "/api/v1/wallets": { body: [] },
+      "/api/v1/catalog/currencies": {
+        body: [{ code: "EUR", name: "Euro", symbol: "€", fracDigits: 2, symbolPrefix: false }],
+      },
     });
     renderApp("/");
     expect(await screen.findByText("Create your first wallet")).toBeInTheDocument();

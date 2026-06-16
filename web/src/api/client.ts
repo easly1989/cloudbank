@@ -115,6 +115,7 @@ export interface Wallet {
 export interface WalletInput {
   title: string;
   ownerName?: string;
+  baseCurrency?: string;
 }
 
 export const listWallets = () => api.get<Wallet[]>("/api/v1/wallets");
@@ -125,3 +126,53 @@ export const updateWallet = (id: number, body: WalletInput) =>
   api.patch<Wallet>(`/api/v1/wallets/${id}`, body);
 
 export const deleteWallet = (id: number) => api.del<void>(`/api/v1/wallets/${id}`);
+
+// --- Currencies ---
+
+export interface CatalogEntry {
+  code: string;
+  name: string;
+  symbol: string;
+  fracDigits: number;
+  symbolPrefix: boolean;
+}
+
+export interface Currency {
+  id: number;
+  isoCode: string;
+  name: string;
+  symbol: string;
+  symbolPrefix: boolean;
+  decimalChar: string;
+  groupChar: string;
+  fracDigits: number;
+  isBase: boolean;
+  rate: number;
+  rateUpdatedAt?: string;
+}
+
+export interface CurrencyUpdate {
+  rate?: number;
+  symbol?: string;
+  symbolPrefix?: boolean;
+  decimalChar?: string;
+  groupChar?: string;
+  fracDigits?: number;
+}
+
+export const getCurrencyCatalog = () => api.get<CatalogEntry[]>("/api/v1/catalog/currencies");
+
+export const listCurrencies = (walletId: number) =>
+  api.get<Currency[]>(`/api/v1/wallets/${walletId}/currencies`);
+
+export const addCurrency = (walletId: number, isoCode: string, makeBase = false) =>
+  api.post<Currency>(`/api/v1/wallets/${walletId}/currencies`, { isoCode, makeBase });
+
+export const updateCurrency = (walletId: number, currencyId: number, patch: CurrencyUpdate) =>
+  api.patch<Currency>(`/api/v1/wallets/${walletId}/currencies/${currencyId}`, patch);
+
+export const setBaseCurrency = (walletId: number, currencyId: number) =>
+  api.post<void>(`/api/v1/wallets/${walletId}/currencies/${currencyId}/base`);
+
+export const deleteCurrency = (walletId: number, currencyId: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/currencies/${currencyId}`);

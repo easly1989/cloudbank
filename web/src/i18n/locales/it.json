@@ -62,6 +62,7 @@
     "subtitle": "Un portafoglio contiene conti, categorie e transazioni — come un file di HomeBank.",
     "title": "Nome del portafoglio",
     "ownerName": "Nome del proprietario",
+    "baseCurrency": "Valuta base",
     "create": "Crea portafoglio",
     "switch": "Cambia portafoglio",
     "settings": "Impostazioni portafoglio",
@@ -71,6 +72,19 @@
     "deleteWarning": "Eliminare un portafoglio rimuove definitivamente tutti i suoi dati. L'operazione è irreversibile.",
     "deleteConfirmLabel": "Digita \"{{title}}\" per confermare l'eliminazione.",
     "delete": "Elimina portafoglio"
+  },
+  "currencies": {
+    "title": "Valute",
+    "add": "Aggiungi valuta",
+    "addPlaceholder": "Cerca una valuta…",
+    "code": "Valuta",
+    "name": "Nome",
+    "base": "Base",
+    "rate": "Tasso (per base)",
+    "actions": "Azioni",
+    "setBase": "Imposta come base",
+    "delete": "Rimuovi",
+    "save": "Salva"
   },
   "dashboard": {
     "title": "Cruscotto",
