@@ -78,6 +78,43 @@ type Session struct {
 	UserAgent  string
 }
 
+type Split struct {
+	ID            int64
+	TransactionID int64
+	CategoryID    sql.NullInt64
+	Amount        int64
+	Memo          string
+	Position      int64
+}
+
+type Tag struct {
+	ID       int64
+	WalletID int64
+	Name     string
+}
+
+type Transaction struct {
+	ID          int64
+	WalletID    int64
+	AccountID   int64
+	Date        string
+	Amount      int64
+	PaymentMode int64
+	Status      int64
+	Info        string
+	PayeeID     sql.NullInt64
+	CategoryID  sql.NullInt64
+	Memo        string
+	IsSplit     int64
+	CreatedAt   string
+	UpdatedAt   string
+}
+
+type TransactionTag struct {
+	TransactionID int64
+	TagID         int64
+}
+
 type User struct {
 	ID           int64
 	Username     string

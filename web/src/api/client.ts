@@ -265,6 +265,7 @@ export interface CategoryInput {
 export interface CategoryUsage {
   subcategories: number;
   payees: number;
+  transactions: number;
 }
 
 export const listCategories = (walletId: number) =>
@@ -316,3 +317,79 @@ export const deletePayee = (walletId: number, id: number) =>
 
 export const mergePayee = (walletId: number, id: number, targetId: number) =>
   api.post<void>(`/api/v1/wallets/${walletId}/payees/${id}/merge`, { targetId });
+
+// --- Transactions ---
+
+export interface Split {
+  categoryId?: number | null;
+  amount: number;
+  memo?: string;
+}
+
+export interface Transaction {
+  id: number;
+  accountId: number;
+  date: string;
+  amount: number;
+  paymentMode: number;
+  status: number;
+  info: string;
+  payeeId?: number | null;
+  categoryId?: number | null;
+  memo: string;
+  isSplit: boolean;
+  tags: string[];
+  splits?: Split[];
+  payeeName?: string;
+  categoryName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TransactionInput {
+  accountId: number;
+  date: string;
+  amount: number;
+  paymentMode?: number;
+  status?: number;
+  info?: string;
+  payeeId?: number | null;
+  categoryId?: number | null;
+  memo?: string;
+  tags?: string[];
+  splits?: Split[];
+}
+
+export interface TransactionPage {
+  transactions: Transaction[];
+  total: number;
+}
+
+export const listTransactions = (walletId: number, accountId: number, limit = 100, offset = 0) =>
+  api.get<TransactionPage>(
+    `/api/v1/wallets/${walletId}/transactions?accountId=${accountId}&limit=${limit}&offset=${offset}`,
+  );
+
+export const createTransaction = (walletId: number, body: TransactionInput) =>
+  api.post<Transaction>(`/api/v1/wallets/${walletId}/transactions`, body);
+
+export const getTransaction = (walletId: number, id: number) =>
+  api.get<Transaction>(`/api/v1/wallets/${walletId}/transactions/${id}`);
+
+export const updateTransaction = (walletId: number, id: number, body: TransactionInput) =>
+  api.patch<Transaction>(`/api/v1/wallets/${walletId}/transactions/${id}`, body);
+
+export const deleteTransaction = (walletId: number, id: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/transactions/${id}`);
+
+export const findDuplicateTransactions = (
+  walletId: number,
+  accountId: number,
+  date: string,
+  amount: number,
+) =>
+  api.get<Transaction[]>(
+    `/api/v1/wallets/${walletId}/transactions/duplicates?accountId=${accountId}&date=${date}&amount=${amount}`,
+  );
+
+export const listTags = (walletId: number) => api.get<string[]>(`/api/v1/wallets/${walletId}/tags`);

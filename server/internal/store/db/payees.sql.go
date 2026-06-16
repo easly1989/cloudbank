@@ -10,6 +10,17 @@ import (
 	"database/sql"
 )
 
+const countTransactionsWithPayee = `-- name: CountTransactionsWithPayee :one
+SELECT COUNT(*) FROM transactions WHERE payee_id = ?
+`
+
+func (q *Queries) CountTransactionsWithPayee(ctx context.Context, payeeID sql.NullInt64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countTransactionsWithPayee, payeeID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deletePayee = `-- name: DeletePayee :exec
 DELETE FROM payees WHERE id = ?
 `
@@ -98,6 +109,20 @@ func (q *Queries) ListPayeesForWallet(ctx context.Context, walletID int64) ([]Pa
 		return nil, err
 	}
 	return items, nil
+}
+
+const reassignTransactionPayee = `-- name: ReassignTransactionPayee :exec
+UPDATE transactions SET payee_id = ? WHERE payee_id = ?
+`
+
+type ReassignTransactionPayeeParams struct {
+	PayeeID   sql.NullInt64
+	PayeeID_2 sql.NullInt64
+}
+
+func (q *Queries) ReassignTransactionPayee(ctx context.Context, arg ReassignTransactionPayeeParams) error {
+	_, err := q.db.ExecContext(ctx, reassignTransactionPayee, arg.PayeeID, arg.PayeeID_2)
+	return err
 }
 
 const updatePayee = `-- name: UpdatePayee :exec

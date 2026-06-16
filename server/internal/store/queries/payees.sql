@@ -14,3 +14,9 @@ UPDATE payees SET name = ?, default_category_id = ?, default_payment_mode = ? WH
 
 -- name: DeletePayee :exec
 DELETE FROM payees WHERE id = ?;
+
+-- name: ReassignTransactionPayee :exec
+UPDATE transactions SET payee_id = ? WHERE payee_id = ?;
+
+-- name: CountTransactionsWithPayee :one
+SELECT COUNT(*) FROM transactions WHERE payee_id = ?;
