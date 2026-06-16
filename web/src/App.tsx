@@ -5,6 +5,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { getSetupStatus } from "./api/client";
 import { useAuth } from "./auth/AuthProvider";
 import { AppLayout } from "./components/AppLayout";
+import { AccountsPage } from "./pages/AccountsPage";
 import { CreateWalletPage } from "./pages/CreateWalletPage";
 import { CurrenciesPage } from "./pages/CurrenciesPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -74,7 +75,7 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<DashboardPage />} />
-        <Route path="accounts" element={<PlaceholderPage titleKey="nav.accounts" />} />
+        <Route path="accounts" element={<AccountsPage />} />
         <Route path="reports" element={<PlaceholderPage titleKey="nav.reports" />} />
         <Route path="settings" element={<PlaceholderPage titleKey="nav.settings" />} />
         <Route path="wallet" element={<WalletSettingsPage />} />

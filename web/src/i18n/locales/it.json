@@ -73,6 +73,38 @@
     "deleteConfirmLabel": "Digita \"{{title}}\" per confermare l'eliminazione.",
     "delete": "Elimina portafoglio"
   },
+  "accounts": {
+    "title": "Conti",
+    "add": "Aggiungi conto",
+    "addTitle": "Nuovo conto",
+    "editTitle": "Modifica conto",
+    "showClosed": "Mostra chiusi",
+    "closed": "Chiuso",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "cancel": "Annulla",
+    "save": "Salva",
+    "empty": "Nessun conto. Aggiungi il primo conto per iniziare.",
+    "confirmDelete": "Eliminare il conto \"{{name}}\" e tutti i suoi dati?",
+    "name": "Nome del conto",
+    "type": "Tipo",
+    "currency": "Valuta",
+    "initialBalance": "Saldo iniziale",
+    "minimumBalance": "Saldo minimo",
+    "institution": "Istituto",
+    "number": "Numero di conto",
+    "group": "Gruppo",
+    "types": {
+      "bank": "Banca",
+      "cash": "Contanti",
+      "checking": "Conto corrente",
+      "savings": "Risparmio",
+      "creditcard": "Carta di credito",
+      "liability": "Passività",
+      "asset": "Attività",
+      "investment": "Investimento"
+    }
+  },
   "currencies": {
     "title": "Valute",
     "add": "Aggiungi valuta",

@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
@@ -20,6 +21,7 @@ const walletCtxKey ctxKey = iota + 1
 type walletHandlers struct {
 	svc        *wallet.Service
 	currencies *currency.Service
+	accounts   *account.Service
 }
 
 type walletResponse struct {
@@ -48,6 +50,9 @@ func (h *walletHandlers) routes(r chi.Router) {
 		r.Delete("/", h.delete)
 		if h.currencies != nil {
 			(&currencyHandlers{svc: h.currencies}).walletRoutes(r)
+		}
+		if h.accounts != nil {
+			(&accountHandlers{svc: h.accounts}).walletRoutes(r)
 		}
 	})
 }
