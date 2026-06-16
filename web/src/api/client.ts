@@ -244,3 +244,75 @@ export const updateAccount = (walletId: number, accountId: number, body: Account
 
 export const deleteAccount = (walletId: number, accountId: number) =>
   api.del<void>(`/api/v1/wallets/${walletId}/accounts/${accountId}`);
+
+// --- Categories ---
+
+export interface Category {
+  id: number;
+  parentId?: number | null;
+  name: string;
+  isIncome: boolean;
+  noBudget: boolean;
+}
+
+export interface CategoryInput {
+  name: string;
+  parentId?: number | null;
+  isIncome?: boolean;
+  noBudget?: boolean;
+}
+
+export interface CategoryUsage {
+  subcategories: number;
+  payees: number;
+}
+
+export const listCategories = (walletId: number) =>
+  api.get<Category[]>(`/api/v1/wallets/${walletId}/categories`);
+
+export const createCategory = (walletId: number, body: CategoryInput) =>
+  api.post<Category>(`/api/v1/wallets/${walletId}/categories`, body);
+
+export const updateCategory = (walletId: number, id: number, body: CategoryInput) =>
+  api.patch<Category>(`/api/v1/wallets/${walletId}/categories/${id}`, body);
+
+export const deleteCategory = (walletId: number, id: number, reassignTo?: number) => {
+  const q = reassignTo ? `?reassignTo=${reassignTo}` : "";
+  return api.del<void>(`/api/v1/wallets/${walletId}/categories/${id}${q}`);
+};
+
+export const getCategoryUsage = (walletId: number, id: number) =>
+  api.get<CategoryUsage>(`/api/v1/wallets/${walletId}/categories/${id}/usage`);
+
+export const mergeCategory = (walletId: number, id: number, targetId: number) =>
+  api.post<void>(`/api/v1/wallets/${walletId}/categories/${id}/merge`, { targetId });
+
+// --- Payees ---
+
+export interface Payee {
+  id: number;
+  name: string;
+  defaultCategoryId?: number | null;
+  defaultPaymentMode?: number | null;
+}
+
+export interface PayeeInput {
+  name: string;
+  defaultCategoryId?: number | null;
+  defaultPaymentMode?: number | null;
+}
+
+export const listPayees = (walletId: number) =>
+  api.get<Payee[]>(`/api/v1/wallets/${walletId}/payees`);
+
+export const createPayee = (walletId: number, body: PayeeInput) =>
+  api.post<Payee>(`/api/v1/wallets/${walletId}/payees`, body);
+
+export const updatePayee = (walletId: number, id: number, body: PayeeInput) =>
+  api.patch<Payee>(`/api/v1/wallets/${walletId}/payees/${id}`, body);
+
+export const deletePayee = (walletId: number, id: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/payees/${id}`);
+
+export const mergePayee = (walletId: number, id: number, targetId: number) =>
+  api.post<void>(`/api/v1/wallets/${walletId}/payees/${id}/merge`, { targetId });

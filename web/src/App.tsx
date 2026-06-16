@@ -6,8 +6,10 @@ import { getSetupStatus } from "./api/client";
 import { useAuth } from "./auth/AuthProvider";
 import { AppLayout } from "./components/AppLayout";
 import { AccountsPage } from "./pages/AccountsPage";
+import { CategoriesPage } from "./pages/CategoriesPage";
 import { CreateWalletPage } from "./pages/CreateWalletPage";
 import { CurrenciesPage } from "./pages/CurrenciesPage";
+import { PayeesPage } from "./pages/PayeesPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
@@ -76,6 +78,8 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
       <Route element={<AppLayout />}>
         <Route index element={<DashboardPage />} />
         <Route path="accounts" element={<AccountsPage />} />
+        <Route path="categories" element={<CategoriesPage />} />
+        <Route path="payees" element={<PayeesPage />} />
         <Route path="reports" element={<PlaceholderPage titleKey="nav.reports" />} />
         <Route path="settings" element={<PlaceholderPage titleKey="nav.settings" />} />
         <Route path="wallet" element={<WalletSettingsPage />} />
