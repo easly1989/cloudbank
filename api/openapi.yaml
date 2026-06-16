@@ -291,6 +291,116 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/catalog/currencies:
+    get:
+      operationId: getCurrencyCatalog
+      summary: The ISO 4217 currency catalog
+      responses:
+        "200":
+          description: Catalog entries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogEntry"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/wallets/{walletId}/currencies:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listCurrencies
+      summary: List a wallet's currencies
+      responses:
+        "200":
+          description: Currencies (base first).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Currency"
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: addCurrency
+      summary: Add a currency to a wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddCurrencyRequest"
+      responses:
+        "201":
+          description: Currency added.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Currency"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Currency already added.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/wallets/{walletId}/currencies/{currencyId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: currencyId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: updateCurrency
+      summary: Update a currency's rate and/or formatting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CurrencyUpdate"
+      responses:
+        "200":
+          description: Updated currency.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Currency"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteCurrency
+      summary: Remove a currency (not the base)
+      responses:
+        "204": { description: Deleted. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/currencies/{currencyId}/base:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: currencyId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: setBaseCurrency
+      summary: Make a currency the wallet's base
+      responses:
+        "204": { description: Base currency set. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/currencies/{currencyId}/rates:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: currencyId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getCurrencyRates
+      summary: A currency's exchange-rate history
+      responses:
+        "200":
+          description: Rate history (newest first).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExchangeRate"
+        "404": { $ref: "#/components/responses/NotFound" }
 components:
   responses:
     BadRequest:
@@ -381,4 +491,51 @@ components:
       properties:
         title: { type: string }
         ownerName: { type: string }
+        baseCurrency: { type: string, description: "ISO 4217 code for the base currency (create only)" }
       required: [title]
+    CatalogEntry:
+      type: object
+      properties:
+        code: { type: string }
+        name: { type: string }
+        symbol: { type: string }
+        fracDigits: { type: integer }
+        symbolPrefix: { type: boolean }
+      required: [code, name, symbol, fracDigits, symbolPrefix]
+    Currency:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        isoCode: { type: string }
+        name: { type: string }
+        symbol: { type: string }
+        symbolPrefix: { type: boolean }
+        decimalChar: { type: string }
+        groupChar: { type: string }
+        fracDigits: { type: integer }
+        isBase: { type: boolean }
+        rate: { type: number }
+        rateUpdatedAt: { type: string }
+      required: [id, isoCode, name, symbol, symbolPrefix, decimalChar, groupChar, fracDigits, isBase, rate]
+    AddCurrencyRequest:
+      type: object
+      properties:
+        isoCode: { type: string }
+        makeBase: { type: boolean }
+      required: [isoCode]
+    CurrencyUpdate:
+      type: object
+      properties:
+        rate: { type: number }
+        symbol: { type: string }
+        symbolPrefix: { type: boolean }
+        decimalChar: { type: string }
+        groupChar: { type: string }
+        fracDigits: { type: integer }
+    ExchangeRate:
+      type: object
+      properties:
+        date: { type: string }
+        rate: { type: number }
+        source: { type: string }
+      required: [date, rate, source]

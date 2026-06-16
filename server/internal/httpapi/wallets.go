@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
 
@@ -17,7 +18,8 @@ const walletCtxKey ctxKey = iota + 1
 // walletHandlers serves the wallet CRUD endpoints. They are mounted inside the
 // authenticated API group, so the current user is always in context.
 type walletHandlers struct {
-	svc *wallet.Service
+	svc        *wallet.Service
+	currencies *currency.Service
 }
 
 type walletResponse struct {
@@ -44,6 +46,9 @@ func (h *walletHandlers) routes(r chi.Router) {
 		r.Get("/", h.get)
 		r.Patch("/", h.update)
 		r.Delete("/", h.delete)
+		if h.currencies != nil {
+			(&currencyHandlers{svc: h.currencies}).walletRoutes(r)
+		}
 	})
 }
 
@@ -62,8 +67,9 @@ func (h *walletHandlers) list(w http.ResponseWriter, r *http.Request) {
 }
 
 type walletInput struct {
-	Title     string `json:"title"`
-	OwnerName string `json:"ownerName"`
+	Title        string `json:"title"`
+	OwnerName    string `json:"ownerName"`
+	BaseCurrency string `json:"baseCurrency"`
 }
 
 func (h *walletHandlers) create(w http.ResponseWriter, r *http.Request) {
@@ -75,11 +81,31 @@ func (h *walletHandlers) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid", "title is required")
 		return
 	}
+
+	// Resolve the base currency (default EUR) up front so we never create a
+	// wallet with an invalid currency code.
+	baseCode := strings.TrimSpace(in.BaseCurrency)
+	if baseCode == "" {
+		baseCode = "EUR"
+	}
+	if h.currencies != nil {
+		if _, ok := currency.Lookup(baseCode); !ok {
+			writeError(w, http.StatusBadRequest, "unknown_code", "unknown base currency code")
+			return
+		}
+	}
+
 	user := userFromContext(r.Context())
 	wl, err := h.svc.Create(r.Context(), user.ID, strings.TrimSpace(in.Title), strings.TrimSpace(in.OwnerName))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not create wallet")
 		return
+	}
+	if h.currencies != nil {
+		if _, err := h.currencies.AddCurrency(r.Context(), wl.ID, baseCode, true); err != nil {
+			writeError(w, http.StatusInternalServerError, "internal", "could not set base currency")
+			return
+		}
 	}
 	writeJSON(w, http.StatusCreated, toWalletResponse(wl))
 }
