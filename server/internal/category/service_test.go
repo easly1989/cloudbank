@@ -98,6 +98,37 @@ func TestDeleteWithChildren(t *testing.T) {
 	}
 }
 
+func TestMergeReassignsTransactions(t *testing.T) {
+	s, q, wid := newTestService(t)
+	ctx := context.Background()
+	food, _ := s.Create(ctx, wid, "Food", nil, false, false)
+	dining, _ := s.Create(ctx, wid, "Dining", nil, false, false)
+
+	cur, err := q.InsertCurrency(ctx, db.InsertCurrencyParams{WalletID: wid, IsoCode: "EUR", Name: "Euro", DecimalChar: ".", GroupChar: ",", FracDigits: 2, IsBase: 1, Rate: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	acc, err := q.InsertAccount(ctx, db.InsertAccountParams{WalletID: wid, Name: "A", Type: "bank", CurrencyID: cur.ID, Position: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	txn, err := q.InsertTransaction(ctx, db.InsertTransactionParams{
+		WalletID: wid, AccountID: acc.ID, Date: "2026-01-01", Amount: -100,
+		CategoryID: sql.NullInt64{Int64: food.ID, Valid: true},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := s.Merge(ctx, wid, food.ID, dining.ID); err != nil {
+		t.Fatalf("Merge: %v", err)
+	}
+	got, _ := q.GetTransaction(ctx, txn.ID)
+	if !got.CategoryID.Valid || got.CategoryID.Int64 != dining.ID {
+		t.Fatalf("transaction category not reassigned: %+v", got.CategoryID)
+	}
+}
+
 func TestUsage(t *testing.T) {
 	s, q, wid := newTestService(t)
 	ctx := context.Background()

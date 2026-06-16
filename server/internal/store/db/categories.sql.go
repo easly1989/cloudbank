@@ -32,6 +32,17 @@ func (q *Queries) CountSubcategories(ctx context.Context, parentID sql.NullInt64
 	return count, err
 }
 
+const countTransactionsWithCategory = `-- name: CountTransactionsWithCategory :one
+SELECT COUNT(*) FROM transactions WHERE category_id = ?
+`
+
+func (q *Queries) CountTransactionsWithCategory(ctx context.Context, categoryID sql.NullInt64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countTransactionsWithCategory, categoryID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteCategory = `-- name: DeleteCategory :exec
 DELETE FROM categories WHERE id = ?
 `
@@ -138,6 +149,34 @@ type ReassignPayeeCategoryParams struct {
 
 func (q *Queries) ReassignPayeeCategory(ctx context.Context, arg ReassignPayeeCategoryParams) error {
 	_, err := q.db.ExecContext(ctx, reassignPayeeCategory, arg.DefaultCategoryID, arg.DefaultCategoryID_2)
+	return err
+}
+
+const reassignSplitCategory = `-- name: ReassignSplitCategory :exec
+UPDATE splits SET category_id = ? WHERE category_id = ?
+`
+
+type ReassignSplitCategoryParams struct {
+	CategoryID   sql.NullInt64
+	CategoryID_2 sql.NullInt64
+}
+
+func (q *Queries) ReassignSplitCategory(ctx context.Context, arg ReassignSplitCategoryParams) error {
+	_, err := q.db.ExecContext(ctx, reassignSplitCategory, arg.CategoryID, arg.CategoryID_2)
+	return err
+}
+
+const reassignTransactionCategory = `-- name: ReassignTransactionCategory :exec
+UPDATE transactions SET category_id = ? WHERE category_id = ?
+`
+
+type ReassignTransactionCategoryParams struct {
+	CategoryID   sql.NullInt64
+	CategoryID_2 sql.NullInt64
+}
+
+func (q *Queries) ReassignTransactionCategory(ctx context.Context, arg ReassignTransactionCategoryParams) error {
+	_, err := q.db.ExecContext(ctx, reassignTransactionCategory, arg.CategoryID, arg.CategoryID_2)
 	return err
 }
 

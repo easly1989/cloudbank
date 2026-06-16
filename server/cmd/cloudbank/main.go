@@ -24,6 +24,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
+	"github.com/easly1989/cloudbank/server/internal/transaction"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
 
@@ -93,6 +94,7 @@ func run() error {
 	accountSvc := account.NewService(st.Write())
 	categorySvc := category.NewService(st.Write())
 	payeeSvc := payee.NewService(st.Write())
+	transactionSvc := transaction.NewService(st.Write())
 
 	handler := httpapi.New(httpapi.Options{
 		Logger:        logger,
@@ -103,6 +105,7 @@ func run() error {
 		Accounts:      accountSvc,
 		Categories:    categorySvc,
 		Payees:        payeeSvc,
+		Transactions:  transactionSvc,
 		SecureCookies: cfg.SecureCookies,
 	})
 

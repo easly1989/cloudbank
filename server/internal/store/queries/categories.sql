@@ -29,3 +29,12 @@ SELECT COUNT(*) FROM payees WHERE default_category_id = ?;
 
 -- name: ReassignPayeeCategory :exec
 UPDATE payees SET default_category_id = ? WHERE default_category_id = ?;
+
+-- name: ReassignTransactionCategory :exec
+UPDATE transactions SET category_id = ? WHERE category_id = ?;
+
+-- name: ReassignSplitCategory :exec
+UPDATE splits SET category_id = ? WHERE category_id = ?;
+
+-- name: CountTransactionsWithCategory :one
+SELECT COUNT(*) FROM transactions WHERE category_id = ?;
