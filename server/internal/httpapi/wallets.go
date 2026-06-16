@@ -10,7 +10,9 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/account"
+	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/currency"
+	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
 
@@ -22,6 +24,8 @@ type walletHandlers struct {
 	svc        *wallet.Service
 	currencies *currency.Service
 	accounts   *account.Service
+	categories *category.Service
+	payees     *payee.Service
 }
 
 type walletResponse struct {
@@ -53,6 +57,12 @@ func (h *walletHandlers) routes(r chi.Router) {
 		}
 		if h.accounts != nil {
 			(&accountHandlers{svc: h.accounts}).walletRoutes(r)
+		}
+		if h.categories != nil {
+			(&categoryHandlers{svc: h.categories}).walletRoutes(r)
+		}
+		if h.payees != nil {
+			(&payeeHandlers{svc: h.payees}).walletRoutes(r)
 		}
 	})
 }

@@ -382,6 +382,148 @@ export interface paths {
         patch: operations["updateAccount"];
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List a wallet's categories (two-level) */
+        get: operations["listCategories"];
+        put?: never;
+        /** Create a category or subcategory */
+        post: operations["createCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/categories/{categoryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                categoryId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a category (optionally reassigning references) */
+        delete: operations["deleteCategory"];
+        options?: never;
+        head?: never;
+        /** Rename/retype a category */
+        patch: operations["updateCategory"];
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/categories/{categoryId}/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                categoryId: number;
+            };
+            cookie?: never;
+        };
+        /** Reference counts for a category */
+        get: operations["getCategoryUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/categories/{categoryId}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                categoryId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge a category into another */
+        post: operations["mergeCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/payees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List a wallet's payees */
+        get: operations["listPayees"];
+        put?: never;
+        /** Create a payee */
+        post: operations["createPayee"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/payees/{payeeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                payeeId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a payee */
+        delete: operations["deletePayee"];
+        options?: never;
+        head?: never;
+        /** Update a payee */
+        patch: operations["updatePayee"];
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/payees/{payeeId}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                payeeId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge a payee into another */
+        post: operations["mergePayee"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -537,6 +679,48 @@ export interface components {
             groupName?: string;
             notes?: string;
             website?: string;
+        };
+        Category: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            parentId?: number | null;
+            name: string;
+            isIncome: boolean;
+            noBudget: boolean;
+        };
+        CategoryInput: {
+            name: string;
+            /** Format: int64 */
+            parentId?: number | null;
+            isIncome?: boolean;
+            noBudget?: boolean;
+        };
+        CategoryUsage: {
+            /** Format: int64 */
+            subcategories: number;
+            /** Format: int64 */
+            payees: number;
+        };
+        Payee: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** Format: int64 */
+            defaultCategoryId?: number | null;
+            /** Format: int64 */
+            defaultPaymentMode?: number | null;
+        };
+        PayeeInput: {
+            name: string;
+            /** Format: int64 */
+            defaultCategoryId?: number | null;
+            /** Format: int64 */
+            defaultPaymentMode?: number | null;
+        };
+        MergeRequest: {
+            /** Format: int64 */
+            targetId: number;
         };
     };
     responses: {
@@ -1356,6 +1540,316 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+        };
+    };
+    listCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Categories. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Category"][];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryInput"];
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Category"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            /** @description Duplicate name. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    deleteCategory: {
+        parameters: {
+            query?: {
+                reassignTo?: number;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+                categoryId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description Has subcategories. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                categoryId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryInput"];
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Category"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getCategoryUsage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                categoryId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Usage. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryUsage"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    mergeCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                categoryId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MergeRequest"];
+            };
+        };
+        responses: {
+            /** @description Merged. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listPayees: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Payees. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Payee"][];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createPayee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayeeInput"];
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Payee"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            /** @description Duplicate name. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    deletePayee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                payeeId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updatePayee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                payeeId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayeeInput"];
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Payee"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    mergePayee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                payeeId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MergeRequest"];
+            };
+        };
+        responses: {
+            /** @description Merged. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
         };
     };
 }

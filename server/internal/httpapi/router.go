@@ -13,7 +13,9 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/auth"
+	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/currency"
+	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 	"github.com/easly1989/cloudbank/server/internal/webui"
 )
@@ -38,6 +40,10 @@ type Options struct {
 	Currencies *currency.Service
 	// Accounts, if non-nil, mounts the account endpoints (requires Wallets).
 	Accounts *account.Service
+	// Categories, if non-nil, mounts the category endpoints (requires Wallets).
+	Categories *category.Service
+	// Payees, if non-nil, mounts the payee endpoints (requires Wallets).
+	Payees *payee.Service
 	// SecureCookies sets the Secure flag on the session cookie.
 	SecureCookies bool
 }
@@ -73,7 +79,10 @@ func New(opts Options) http.Handler {
 				pr.Use(ah.requireAuth)
 				ah.protectedRoutes(pr)
 				if opts.Wallets != nil {
-					(&walletHandlers{svc: opts.Wallets, currencies: opts.Currencies, accounts: opts.Accounts}).routes(pr)
+					(&walletHandlers{
+						svc: opts.Wallets, currencies: opts.Currencies, accounts: opts.Accounts,
+						categories: opts.Categories, payees: opts.Payees,
+					}).routes(pr)
 					if opts.Currencies != nil {
 						pr.Get("/catalog/currencies", (&currencyHandlers{svc: opts.Currencies}).catalog)
 					}
