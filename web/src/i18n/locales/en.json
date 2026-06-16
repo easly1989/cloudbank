@@ -62,6 +62,7 @@
     "subtitle": "A wallet holds your accounts, categories and transactions — like a HomeBank file.",
     "title": "Wallet name",
     "ownerName": "Owner name",
+    "baseCurrency": "Base currency",
     "create": "Create wallet",
     "switch": "Switch wallet",
     "settings": "Wallet settings",
@@ -71,6 +72,19 @@
     "deleteWarning": "Deleting a wallet permanently removes all of its data. This cannot be undone.",
     "deleteConfirmLabel": "Type \"{{title}}\" to confirm deletion.",
     "delete": "Delete wallet"
+  },
+  "currencies": {
+    "title": "Currencies",
+    "add": "Add currency",
+    "addPlaceholder": "Search a currency…",
+    "code": "Currency",
+    "name": "Name",
+    "base": "Base",
+    "rate": "Rate (per base)",
+    "actions": "Actions",
+    "setBase": "Set as base",
+    "delete": "Remove",
+    "save": "Save"
   },
   "dashboard": {
     "title": "Dashboard",

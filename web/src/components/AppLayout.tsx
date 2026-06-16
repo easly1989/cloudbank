@@ -13,6 +13,7 @@ import { useDisclosure } from "@mantine/hooks";
 import {
   IconChartBar,
   IconChevronDown,
+  IconCoin,
   IconLayoutDashboard,
   IconLogout,
   IconPlus,
@@ -61,6 +62,9 @@ function WalletSwitcher() {
           </Menu.Item>
         ))}
         <Menu.Divider />
+        <Menu.Item leftSection={<IconCoin size={16} />} onClick={() => navigate("/currencies")}>
+          {t("currencies.title")}
+        </Menu.Item>
         <Menu.Item leftSection={<IconSettings size={16} />} onClick={() => navigate("/wallet")}>
           {t("wallet.settings")}
         </Menu.Item>

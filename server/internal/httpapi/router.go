@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/easly1989/cloudbank/server/internal/auth"
+	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 	"github.com/easly1989/cloudbank/server/internal/webui"
 )
@@ -32,6 +33,8 @@ type Options struct {
 	Auth *auth.Service
 	// Wallets, if non-nil, mounts the wallet endpoints (requires Auth).
 	Wallets *wallet.Service
+	// Currencies, if non-nil, mounts the currency endpoints (requires Wallets).
+	Currencies *currency.Service
 	// SecureCookies sets the Secure flag on the session cookie.
 	SecureCookies bool
 }
@@ -67,7 +70,10 @@ func New(opts Options) http.Handler {
 				pr.Use(ah.requireAuth)
 				ah.protectedRoutes(pr)
 				if opts.Wallets != nil {
-					(&walletHandlers{svc: opts.Wallets}).routes(pr)
+					(&walletHandlers{svc: opts.Wallets, currencies: opts.Currencies}).routes(pr)
+					if opts.Currencies != nil {
+						pr.Get("/catalog/currencies", (&currencyHandlers{svc: opts.Currencies}).catalog)
+					}
 				}
 			})
 		}

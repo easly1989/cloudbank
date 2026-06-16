@@ -10,25 +10,38 @@ import (
 
 type Querier interface {
 	AddWalletMember(ctx context.Context, arg AddWalletMemberParams) error
+	ClearWalletBase(ctx context.Context, walletID int64) error
 	CountUsers(ctx context.Context) (int64, error)
+	CountWalletCurrencies(ctx context.Context, walletID int64) (int64, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateWallet(ctx context.Context, arg CreateWalletParams) (Wallet, error)
+	DeleteCurrency(ctx context.Context, id int64) error
 	DeleteExpiredSessions(ctx context.Context, expiresAt string) error
 	DeleteSession(ctx context.Context, id string) error
 	DeleteUserSessions(ctx context.Context, userID int64) error
 	DeleteWallet(ctx context.Context, id int64) error
+	GetBaseCurrency(ctx context.Context, walletID int64) (Currency, error)
+	GetCurrency(ctx context.Context, id int64) (Currency, error)
 	GetSession(ctx context.Context, id string) (Session, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	GetWallet(ctx context.Context, id int64) (Wallet, error)
 	GetWalletMembership(ctx context.Context, arg GetWalletMembershipParams) (string, error)
+	InsertCurrency(ctx context.Context, arg InsertCurrencyParams) (Currency, error)
+	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)
+	ListExchangeRates(ctx context.Context, currencyID int64) ([]ExchangeRate, error)
 	ListUsers(ctx context.Context) ([]User, error)
 	ListWalletsForUser(ctx context.Context, userID int64) ([]ListWalletsForUserRow, error)
+	SetCurrencyBase(ctx context.Context, id int64) error
 	SetUserDisabled(ctx context.Context, arg SetUserDisabledParams) error
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
+	UpdateCurrencyFormat(ctx context.Context, arg UpdateCurrencyFormatParams) error
+	UpdateCurrencyRate(ctx context.Context, arg UpdateCurrencyRateParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpdateWallet(ctx context.Context, arg UpdateWalletParams) error
+	UpdateWalletBaseCurrency(ctx context.Context, arg UpdateWalletBaseCurrencyParams) error
+	UpsertExchangeRate(ctx context.Context, arg UpsertExchangeRateParams) error
 }
 
 var _ Querier = (*Queries)(nil)
