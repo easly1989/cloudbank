@@ -11,6 +11,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
+  IconArrowsExchange,
   IconChartBar,
   IconChevronDown,
   IconCoin,
@@ -34,6 +35,13 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 const navItems = [
   { to: "/", labelKey: "nav.dashboard", icon: IconLayoutDashboard, end: true, adminOnly: false },
   { to: "/accounts", labelKey: "nav.accounts", icon: IconWallet, end: false, adminOnly: false },
+  {
+    to: "/transactions",
+    labelKey: "nav.transactions",
+    icon: IconArrowsExchange,
+    end: false,
+    adminOnly: false,
+  },
   { to: "/reports", labelKey: "nav.reports", icon: IconChartBar, end: false, adminOnly: false },
   { to: "/settings", labelKey: "nav.settings", icon: IconSettings, end: false, adminOnly: false },
   { to: "/admin/users", labelKey: "nav.admin", icon: IconUsers, end: false, adminOnly: true },

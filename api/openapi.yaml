@@ -648,6 +648,92 @@ paths:
         "204": { description: Merged. }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/tags:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listTags
+      summary: List a wallet's tags
+      responses:
+        "200": { description: Tags., content: { application/json: { schema: { type: array, items: { type: string } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listTransactions
+      summary: List an account's transactions (newest first)
+      parameters:
+        - { name: accountId, in: query, required: true, schema: { type: integer, format: int64 } }
+        - { name: limit, in: query, required: false, schema: { type: integer } }
+        - { name: offset, in: query, required: false, schema: { type: integer } }
+      responses:
+        "200":
+          description: A page of transactions.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions: { type: array, items: { $ref: "#/components/schemas/Transaction" } }
+                  total: { type: integer, format: int64 }
+                required: [transactions, total]
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: createTransaction
+      summary: Create a transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TransactionInput" }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Transaction" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/duplicates:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: findDuplicateTransactions
+      summary: Find possible duplicate transactions (same account/amount near a date)
+      parameters:
+        - { name: accountId, in: query, required: true, schema: { type: integer, format: int64 } }
+        - { name: date, in: query, required: true, schema: { type: string } }
+        - { name: amount, in: query, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        "200": { description: Candidates., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Transaction" } } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/{transactionId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: transactionId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getTransaction
+      summary: Get a transaction (with splits and tags)
+      responses:
+        "200": { description: The transaction., content: { application/json: { schema: { $ref: "#/components/schemas/Transaction" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateTransaction
+      summary: Update a transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TransactionInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Transaction" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteTransaction
+      summary: Delete a transaction
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
 components:
   responses:
     BadRequest:
@@ -860,7 +946,8 @@ components:
       properties:
         subcategories: { type: integer, format: int64 }
         payees: { type: integer, format: int64 }
-      required: [subcategories, payees]
+        transactions: { type: integer, format: int64 }
+      required: [subcategories, payees, transactions]
     Payee:
       type: object
       properties:
@@ -881,3 +968,46 @@ components:
       properties:
         targetId: { type: integer, format: int64 }
       required: [targetId]
+    Split:
+      type: object
+      properties:
+        categoryId: { type: integer, format: int64, nullable: true }
+        amount: { type: integer, format: int64 }
+        memo: { type: string }
+      required: [amount]
+    Transaction:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        accountId: { type: integer, format: int64 }
+        date: { type: string }
+        amount: { type: integer, format: int64 }
+        paymentMode: { type: integer }
+        status: { type: integer }
+        info: { type: string }
+        payeeId: { type: integer, format: int64, nullable: true }
+        categoryId: { type: integer, format: int64, nullable: true }
+        memo: { type: string }
+        isSplit: { type: boolean }
+        tags: { type: array, items: { type: string } }
+        splits: { type: array, items: { $ref: "#/components/schemas/Split" } }
+        payeeName: { type: string }
+        categoryName: { type: string }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+      required: [id, accountId, date, amount, paymentMode, status, info, memo, isSplit, tags]
+    TransactionInput:
+      type: object
+      properties:
+        accountId: { type: integer, format: int64 }
+        date: { type: string, description: "YYYY-MM-DD" }
+        amount: { type: integer, format: int64, description: "signed minor units" }
+        paymentMode: { type: integer, description: "0..11" }
+        status: { type: integer, description: "0 none, 1 cleared, 2 reconciled, 3 remind, 4 void" }
+        info: { type: string }
+        payeeId: { type: integer, format: int64, nullable: true }
+        categoryId: { type: integer, format: int64, nullable: true }
+        memo: { type: string }
+        tags: { type: array, items: { type: string } }
+        splits: { type: array, items: { $ref: "#/components/schemas/Split" } }
+      required: [accountId, date, amount]

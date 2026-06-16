@@ -141,9 +141,22 @@ func (s *Service) Merge(ctx context.Context, walletID, sourceID, targetID int64)
 	if source.WalletID != walletID || target.WalletID != walletID {
 		return ErrBadTarget
 	}
-	// Future: reassign transactions.payee_id and assignments.set_payee_id from
-	// source to target here (#12+). For now the source simply goes away.
-	return s.q.DeletePayee(ctx, sourceID)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	qtx := s.q.WithTx(tx)
+	if err := qtx.ReassignTransactionPayee(ctx, db.ReassignTransactionPayeeParams{
+		PayeeID: sql.NullInt64{Int64: targetID, Valid: true}, PayeeID_2: sql.NullInt64{Int64: sourceID, Valid: true},
+	}); err != nil {
+		return err
+	}
+	// Future: reassign assignments.set_payee_id (#19).
+	if err := qtx.DeletePayee(ctx, sourceID); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func isUnique(err error) bool {
