@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/config"
 	"github.com/easly1989/cloudbank/server/internal/currency"
@@ -87,6 +88,7 @@ func run() error {
 	authSvc := auth.NewService(db.New(st.Write()))
 	walletSvc := wallet.NewService(st.Write())
 	currencySvc := currency.NewService(st.Write())
+	accountSvc := account.NewService(st.Write())
 
 	handler := httpapi.New(httpapi.Options{
 		Logger:        logger,
@@ -94,6 +96,7 @@ func run() error {
 		Auth:          authSvc,
 		Wallets:       walletSvc,
 		Currencies:    currencySvc,
+		Accounts:      accountSvc,
 		SecureCookies: cfg.SecureCookies,
 	})
 

@@ -321,6 +321,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List a wallet's accounts */
+        get: operations["listAccounts"];
+        put?: never;
+        /** Create an account */
+        post: operations["createAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/accounts/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reorder accounts (positions and groups) */
+        post: operations["reorderAccounts"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/accounts/{accountId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                accountId: number;
+            };
+            cookie?: never;
+        };
+        /** Get an account */
+        get: operations["getAccount"];
+        put?: never;
+        post?: never;
+        /** Delete an account and its data */
+        delete: operations["deleteAccount"];
+        options?: never;
+        head?: never;
+        /** Update an account */
+        patch: operations["updateAccount"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -412,6 +473,70 @@ export interface components {
             date: string;
             rate: number;
             source: string;
+        };
+        Account: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** @enum {string} */
+            type: "bank" | "cash" | "checking" | "savings" | "creditcard" | "liability" | "asset" | "investment";
+            /** Format: int64 */
+            currencyId: number;
+            institution?: string;
+            number?: string;
+            /**
+             * Format: int64
+             * @description minor units
+             */
+            initialBalance: number;
+            /**
+             * Format: int64
+             * @description minor units
+             */
+            minimumBalance: number;
+            /**
+             * Format: int64
+             * @description minor units
+             */
+            balance: number;
+            closed: boolean;
+            noSummary?: boolean;
+            noBudget?: boolean;
+            noReport?: boolean;
+            position: number;
+            groupName?: string;
+            notes?: string;
+            website?: string;
+            createdAt?: string;
+            currencyCode: string;
+            currencySymbol: string;
+            currencySymbolPrefix: boolean;
+            currencyDecimalChar: string;
+            currencyGroupChar: string;
+            currencyFracDigits: number;
+        };
+        AccountInput: {
+            name: string;
+            /** @enum {string} */
+            type: "bank" | "cash" | "checking" | "savings" | "creditcard" | "liability" | "asset" | "investment";
+            /**
+             * Format: int64
+             * @description defaults to the wallet base currency
+             */
+            currencyId?: number;
+            institution?: string;
+            number?: string;
+            /** Format: int64 */
+            initialBalance?: number;
+            /** Format: int64 */
+            minimumBalance?: number;
+            closed?: boolean;
+            noSummary?: boolean;
+            noBudget?: boolean;
+            noReport?: boolean;
+            groupName?: string;
+            notes?: string;
+            website?: string;
         };
     };
     responses: {
@@ -1057,6 +1182,180 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+        };
+    };
+    listAccounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accounts (ordered by position/group/name). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"][];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountInput"];
+            };
+        };
+        responses: {
+            /** @description Account created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description Account name already used. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reorderAccounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    id: number;
+                    position: number;
+                    groupName?: string;
+                }[];
+            };
+        };
+        responses: {
+            /** @description Reordered. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                accountId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The account. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                accountId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                accountId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountInput"];
+            };
+        };
+        responses: {
+            /** @description Updated account. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description Account name already used. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
 }

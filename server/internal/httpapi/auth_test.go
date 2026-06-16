@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/store"
@@ -34,7 +35,8 @@ func newTestAPI(t *testing.T) *testClient {
 	svc := auth.NewService(db.New(st.Write()))
 	wsvc := wallet.NewService(st.Write())
 	csvc := currency.NewService(st.Write())
-	srv := httptest.NewServer(New(Options{Auth: svc, Wallets: wsvc, Currencies: csvc, Health: st}))
+	asvc := account.NewService(st.Write())
+	srv := httptest.NewServer(New(Options{Auth: svc, Wallets: wsvc, Currencies: csvc, Accounts: asvc, Health: st}))
 	t.Cleanup(srv.Close)
 
 	jar, _ := cookiejar.New(nil)

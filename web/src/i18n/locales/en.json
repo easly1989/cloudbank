@@ -73,6 +73,38 @@
     "deleteConfirmLabel": "Type \"{{title}}\" to confirm deletion.",
     "delete": "Delete wallet"
   },
+  "accounts": {
+    "title": "Accounts",
+    "add": "Add account",
+    "addTitle": "New account",
+    "editTitle": "Edit account",
+    "showClosed": "Show closed",
+    "closed": "Closed",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "empty": "No accounts yet. Add your first account to get started.",
+    "confirmDelete": "Delete the account \"{{name}}\" and all its data?",
+    "name": "Account name",
+    "type": "Type",
+    "currency": "Currency",
+    "initialBalance": "Initial balance",
+    "minimumBalance": "Minimum balance",
+    "institution": "Institution",
+    "number": "Account number",
+    "group": "Group",
+    "types": {
+      "bank": "Bank",
+      "cash": "Cash",
+      "checking": "Checking",
+      "savings": "Savings",
+      "creditcard": "Credit card",
+      "liability": "Liability",
+      "asset": "Asset",
+      "investment": "Investment"
+    }
+  },
   "currencies": {
     "title": "Currencies",
     "add": "Add currency",
