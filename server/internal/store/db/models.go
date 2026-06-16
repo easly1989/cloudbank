@@ -29,6 +29,15 @@ type Account struct {
 	CreatedAt      string
 }
 
+type Category struct {
+	ID       int64
+	WalletID int64
+	ParentID sql.NullInt64
+	Name     string
+	IsIncome int64
+	NoBudget int64
+}
+
 type Currency struct {
 	ID            int64
 	WalletID      int64
@@ -50,6 +59,14 @@ type ExchangeRate struct {
 	Date       string
 	Rate       float64
 	Source     string
+}
+
+type Payee struct {
+	ID                 int64
+	WalletID           int64
+	Name               string
+	DefaultCategoryID  sql.NullInt64
+	DefaultPaymentMode sql.NullInt64
 }
 
 type Session struct {

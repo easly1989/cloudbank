@@ -508,6 +508,146 @@ paths:
       responses:
         "204": { description: Deleted. }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/categories:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listCategories
+      summary: List a wallet's categories (two-level)
+      responses:
+        "200":
+          description: Categories.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Category" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: createCategory
+      summary: Create a category or subcategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Category" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { description: Duplicate name., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/wallets/{walletId}/categories/{categoryId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: categoryId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: updateCategory
+      summary: Rename/retype a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Category" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteCategory
+      summary: Delete a category (optionally reassigning references)
+      parameters:
+        - { name: reassignTo, in: query, required: false, schema: { type: integer, format: int64 } }
+      responses:
+        "204": { description: Deleted. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: Has subcategories., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/wallets/{walletId}/categories/{categoryId}/usage:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: categoryId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getCategoryUsage
+      summary: Reference counts for a category
+      responses:
+        "200": { description: Usage., content: { application/json: { schema: { $ref: "#/components/schemas/CategoryUsage" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/categories/{categoryId}/merge:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: categoryId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: mergeCategory
+      summary: Merge a category into another
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MergeRequest" }
+      responses:
+        "204": { description: Merged. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/payees:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listPayees
+      summary: List a wallet's payees
+      responses:
+        "200": { description: Payees., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Payee" } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: createPayee
+      summary: Create a payee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PayeeInput" }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Payee" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { description: Duplicate name., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/wallets/{walletId}/payees/{payeeId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: payeeId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: updatePayee
+      summary: Update a payee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PayeeInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Payee" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deletePayee
+      summary: Delete a payee
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/payees/{payeeId}/merge:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: payeeId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: mergePayee
+      summary: Merge a payee into another
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MergeRequest" }
+      responses:
+        "204": { description: Merged. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
 components:
   responses:
     BadRequest:
@@ -698,3 +838,46 @@ components:
         notes: { type: string }
         website: { type: string }
       required: [name, type]
+    Category:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        parentId: { type: integer, format: int64, nullable: true }
+        name: { type: string }
+        isIncome: { type: boolean }
+        noBudget: { type: boolean }
+      required: [id, name, isIncome, noBudget]
+    CategoryInput:
+      type: object
+      properties:
+        name: { type: string }
+        parentId: { type: integer, format: int64, nullable: true }
+        isIncome: { type: boolean }
+        noBudget: { type: boolean }
+      required: [name]
+    CategoryUsage:
+      type: object
+      properties:
+        subcategories: { type: integer, format: int64 }
+        payees: { type: integer, format: int64 }
+      required: [subcategories, payees]
+    Payee:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        defaultCategoryId: { type: integer, format: int64, nullable: true }
+        defaultPaymentMode: { type: integer, format: int64, nullable: true }
+      required: [id, name]
+    PayeeInput:
+      type: object
+      properties:
+        name: { type: string }
+        defaultCategoryId: { type: integer, format: int64, nullable: true }
+        defaultPaymentMode: { type: integer, format: int64, nullable: true }
+      required: [name]
+    MergeRequest:
+      type: object
+      properties:
+        targetId: { type: integer, format: int64 }
+      required: [targetId]
