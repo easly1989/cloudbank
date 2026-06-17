@@ -53,6 +53,13 @@
     "sameAccount": "Il conto di origine e di destinazione devono essere diversi.",
     "confirmDelete": "Eliminare questo trasferimento? Verranno rimosse entrambe le righe."
   },
+  "templates": {
+    "apply": "Usa un modello",
+    "applyPlaceholder": "Scegli un modello per precompilare…",
+    "saveAs": "Salva come modello",
+    "namePrompt": "Nome del modello:",
+    "saved": "Modello salvato"
+  },
   "register": {
     "bank": "Banca",
     "today": "Oggi",

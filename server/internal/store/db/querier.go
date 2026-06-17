@@ -37,6 +37,8 @@ type Querier interface {
 	DeletePayee(ctx context.Context, id int64) error
 	DeleteSession(ctx context.Context, id string) error
 	DeleteSplits(ctx context.Context, transactionID int64) error
+	DeleteTemplate(ctx context.Context, id int64) error
+	DeleteTemplateSplits(ctx context.Context, templateID int64) error
 	DeleteTransaction(ctx context.Context, id int64) error
 	DeleteTransactionTags(ctx context.Context, transactionID int64) error
 	DeleteTransfer(ctx context.Context, id int64) error
@@ -50,6 +52,7 @@ type Querier interface {
 	GetPayee(ctx context.Context, id int64) (Payee, error)
 	GetSession(ctx context.Context, id string) (Session, error)
 	GetTagByName(ctx context.Context, arg GetTagByNameParams) (Tag, error)
+	GetTemplate(ctx context.Context, id int64) (Template, error)
 	GetTransaction(ctx context.Context, id int64) (Transaction, error)
 	GetTransfer(ctx context.Context, id int64) (Transfer, error)
 	GetTransferByTransaction(ctx context.Context, arg GetTransferByTransactionParams) (Transfer, error)
@@ -63,6 +66,8 @@ type Querier interface {
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
 	InsertSplit(ctx context.Context, arg InsertSplitParams) error
 	InsertTag(ctx context.Context, arg InsertTagParams) (Tag, error)
+	InsertTemplate(ctx context.Context, arg InsertTemplateParams) (Template, error)
+	InsertTemplateSplit(ctx context.Context, arg InsertTemplateSplitParams) error
 	InsertTransaction(ctx context.Context, arg InsertTransactionParams) (Transaction, error)
 	InsertTransfer(ctx context.Context, arg InsertTransferParams) (Transfer, error)
 	// The full account ledger ordered chronologically (date, then id) with a
@@ -76,6 +81,8 @@ type Querier interface {
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
 	ListSplits(ctx context.Context, transactionID int64) ([]Split, error)
 	ListTagsForWallet(ctx context.Context, walletID int64) ([]Tag, error)
+	ListTemplateSplits(ctx context.Context, templateID int64) ([]TemplateSplit, error)
+	ListTemplatesForWallet(ctx context.Context, walletID int64) ([]Template, error)
 	ListTransactionTags(ctx context.Context, transactionID int64) ([]string, error)
 	ListTransactionsForAccount(ctx context.Context, arg ListTransactionsForAccountParams) ([]ListTransactionsForAccountRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
@@ -99,6 +106,7 @@ type Querier interface {
 	UpdateCurrencyFormat(ctx context.Context, arg UpdateCurrencyFormatParams) error
 	UpdateCurrencyRate(ctx context.Context, arg UpdateCurrencyRateParams) error
 	UpdatePayee(ctx context.Context, arg UpdatePayeeParams) error
+	UpdateTemplate(ctx context.Context, arg UpdateTemplateParams) error
 	UpdateTransaction(ctx context.Context, arg UpdateTransactionParams) error
 	UpdateTransactionStatus(ctx context.Context, arg UpdateTransactionStatusParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error

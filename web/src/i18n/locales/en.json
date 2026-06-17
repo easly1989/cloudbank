@@ -53,6 +53,13 @@
     "sameAccount": "Source and destination accounts must differ.",
     "confirmDelete": "Delete this transfer? Both legs will be removed."
   },
+  "templates": {
+    "apply": "Use a template",
+    "applyPlaceholder": "Pick a template to pre-fill…",
+    "saveAs": "Save as template",
+    "namePrompt": "Template name:",
+    "saved": "Template saved"
+  },
   "register": {
     "bank": "Bank",
     "today": "Today",

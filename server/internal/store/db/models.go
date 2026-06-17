@@ -93,6 +93,34 @@ type Tag struct {
 	Name     string
 }
 
+type Template struct {
+	ID          int64
+	WalletID    int64
+	Name        string
+	AccountID   sql.NullInt64
+	Amount      int64
+	PaymentMode int64
+	Status      int64
+	Info        string
+	PayeeID     sql.NullInt64
+	CategoryID  sql.NullInt64
+	Memo        string
+	Tags        string
+	IsSplit     int64
+	IsTransfer  int64
+	ToAccountID sql.NullInt64
+	CreatedAt   string
+}
+
+type TemplateSplit struct {
+	ID         int64
+	TemplateID int64
+	CategoryID sql.NullInt64
+	Amount     int64
+	Memo       string
+	Position   int64
+}
+
 type Transaction struct {
 	ID          int64
 	WalletID    int64

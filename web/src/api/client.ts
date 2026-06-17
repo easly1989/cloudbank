@@ -479,6 +479,61 @@ export const getDashboard = (walletId: number, from?: string, to?: string) => {
   return api.get<Dashboard>(`/api/v1/wallets/${walletId}/dashboard${q}`);
 };
 
+// --- Templates ---
+
+export interface Template {
+  id: number;
+  name: string;
+  accountId?: number | null;
+  amount: number;
+  paymentMode: number;
+  status: number;
+  info: string;
+  payeeId?: number | null;
+  categoryId?: number | null;
+  memo: string;
+  tags: string[];
+  isSplit: boolean;
+  isTransfer: boolean;
+  toAccountId?: number | null;
+  splits?: Split[];
+  createdAt: string;
+}
+
+export interface TemplateInput {
+  name: string;
+  accountId?: number | null;
+  amount?: number;
+  paymentMode?: number;
+  status?: number;
+  info?: string;
+  payeeId?: number | null;
+  categoryId?: number | null;
+  memo?: string;
+  tags?: string[];
+  isTransfer?: boolean;
+  toAccountId?: number | null;
+  splits?: Split[];
+}
+
+export const listTemplates = (walletId: number) =>
+  api.get<Template[]>(`/api/v1/wallets/${walletId}/templates`);
+
+export const createTemplate = (walletId: number, body: TemplateInput) =>
+  api.post<Template>(`/api/v1/wallets/${walletId}/templates`, body);
+
+export const createTemplateFromTransaction = (
+  walletId: number,
+  transactionId: number,
+  name: string,
+) =>
+  api.post<Template>(`/api/v1/wallets/${walletId}/templates/from-transaction/${transactionId}`, {
+    name,
+  });
+
+export const deleteTemplate = (walletId: number, id: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/templates/${id}`);
+
 // --- Transfers ---
 
 export interface Transfer {
