@@ -703,6 +703,25 @@ export interface paths {
         patch: operations["updateTransfer"];
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Home-screen overview (accounts, base-currency totals, spending) */
+        get: operations["getDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -990,6 +1009,54 @@ export interface components {
              * @description initial + all amounts
              */
             future: number;
+        };
+        CurrencyInfo: {
+            code: string;
+            symbol: string;
+            symbolPrefix: boolean;
+            decimalChar: string;
+            groupChar: string;
+            fracDigits: number;
+        };
+        AccountSummary: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            type: string;
+            groupName?: string;
+            closed: boolean;
+            noSummary: boolean;
+            /** Format: int64 */
+            bank: number;
+            /** Format: int64 */
+            today: number;
+            /** Format: int64 */
+            future: number;
+            currency: components["schemas"]["CurrencyInfo"];
+            /** Format: int64 */
+            currencyId: number;
+        };
+        CategorySlice: {
+            /**
+             * Format: int64
+             * @description 0 = the rolled-up Other slice
+             */
+            categoryId: number;
+            name: string;
+            /**
+             * Format: int64
+             * @description positive magnitude, base currency
+             */
+            amount: number;
+        };
+        Dashboard: {
+            accounts: components["schemas"]["AccountSummary"][];
+            totals: components["schemas"]["RegisterSummary"];
+            baseCurrency?: components["schemas"]["CurrencyInfo"];
+            topCategories: components["schemas"]["CategorySlice"][];
+            from: string;
+            to: string;
+            upcoming: unknown[];
         };
         Transfer: {
             /** Format: int64 */
@@ -2551,6 +2618,33 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getDashboard: {
+        parameters: {
+            query?: {
+                /** @description donut range start (defaults to current month) */
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The dashboard. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dashboard"];
+                };
+            };
             404: components["responses"]["NotFound"];
         };
     };

@@ -853,6 +853,18 @@ paths:
       responses:
         "204": { description: Deleted. }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/dashboard:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getDashboard
+      summary: Home-screen overview (accounts, base-currency totals, spending)
+      parameters:
+        - { name: from, in: query, required: false, schema: { type: string }, description: "donut range start (defaults to current month)" }
+        - { name: to, in: query, required: false, schema: { type: string } }
+      responses:
+        "200": { description: The dashboard., content: { application/json: { schema: { $ref: "#/components/schemas/Dashboard" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
 components:
   responses:
     BadRequest:
@@ -1146,6 +1158,49 @@ components:
         today: { type: integer, format: int64, description: "initial + amounts dated on or before today" }
         future: { type: integer, format: int64, description: "initial + all amounts" }
       required: [bank, today, future]
+    CurrencyInfo:
+      type: object
+      properties:
+        code: { type: string }
+        symbol: { type: string }
+        symbolPrefix: { type: boolean }
+        decimalChar: { type: string }
+        groupChar: { type: string }
+        fracDigits: { type: integer }
+      required: [code, symbol, symbolPrefix, decimalChar, groupChar, fracDigits]
+    AccountSummary:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        type: { type: string }
+        groupName: { type: string }
+        closed: { type: boolean }
+        noSummary: { type: boolean }
+        bank: { type: integer, format: int64 }
+        today: { type: integer, format: int64 }
+        future: { type: integer, format: int64 }
+        currency: { $ref: "#/components/schemas/CurrencyInfo" }
+        currencyId: { type: integer, format: int64 }
+      required: [id, name, type, closed, noSummary, bank, today, future, currency, currencyId]
+    CategorySlice:
+      type: object
+      properties:
+        categoryId: { type: integer, format: int64, description: "0 = the rolled-up Other slice" }
+        name: { type: string }
+        amount: { type: integer, format: int64, description: "positive magnitude, base currency" }
+      required: [categoryId, name, amount]
+    Dashboard:
+      type: object
+      properties:
+        accounts: { type: array, items: { $ref: "#/components/schemas/AccountSummary" } }
+        totals: { $ref: "#/components/schemas/RegisterSummary" }
+        baseCurrency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
+        topCategories: { type: array, items: { $ref: "#/components/schemas/CategorySlice" } }
+        from: { type: string }
+        to: { type: string }
+        upcoming: { type: array, items: {} }
+      required: [accounts, totals, topCategories, from, to, upcoming]
     Transfer:
       type: object
       properties:

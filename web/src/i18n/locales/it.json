@@ -281,10 +281,12 @@
   },
   "dashboard": {
     "title": "Cruscotto",
-    "welcome": "Benvenuto in CloudBank",
-    "backendStatus": "Stato del backend",
-    "checking": "Verifica in corso…",
-    "online": "Online",
-    "offline": "Offline"
+    "yourAccounts": "I tuoi conti",
+    "noAccounts": "Nessun conto da riepilogare.",
+    "whereMoneyGoes": "Dove vanno i tuoi soldi",
+    "noSpending": "Nessuna spesa in questo periodo.",
+    "other": "Altro",
+    "upcoming": "Programmate in arrivo",
+    "noUpcoming": "Nessuna transazione programmata in arrivo."
   }
 }

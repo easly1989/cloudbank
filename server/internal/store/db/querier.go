@@ -10,8 +10,15 @@ import (
 )
 
 type Querier interface {
+	// Per-account transaction sums using the same definitions as the register
+	// header: future = all, today = dated on/before today, bank = cleared(1) or
+	// reconciled(2). The application adds each account's initial balance.
+	AccountBalanceDeltas(ctx context.Context, arg AccountBalanceDeltasParams) ([]AccountBalanceDeltasRow, error)
 	AddTransactionTag(ctx context.Context, arg AddTransactionTagParams) error
 	AddWalletMember(ctx context.Context, arg AddWalletMemberParams) error
+	// Category amounts in a date range, from both plain transactions and split
+	// lines, with each row's account currency so the app can convert to base.
+	CategoryExpenseTotals(ctx context.Context, arg CategoryExpenseTotalsParams) ([]CategoryExpenseTotalsRow, error)
 	ClearWalletBase(ctx context.Context, walletID int64) error
 	CountPayeesWithCategory(ctx context.Context, defaultCategoryID sql.NullInt64) (int64, error)
 	CountSubcategories(ctx context.Context, parentID sql.NullInt64) (int64, error)

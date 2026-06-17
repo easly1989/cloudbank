@@ -92,9 +92,19 @@ describe("App routing", () => {
       "/api/v1/setup/status": { body: { needsSetup: false } },
       "/api/v1/auth/me": { body: admin },
       "/api/v1/wallets": { body: [wallet] },
-      "/healthz": { body: { status: "ok" } },
+      "/api/v1/wallets/1/dashboard": {
+        body: {
+          accounts: [],
+          totals: { bank: 0, today: 0, future: 0 },
+          baseCurrency: null,
+          topCategories: [],
+          from: "2026-06-01",
+          to: "2026-06-30",
+          upcoming: [],
+        },
+      },
     });
     renderApp("/");
-    await waitFor(() => expect(screen.getByText("Backend status")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Your accounts")).toBeInTheDocument());
   });
 });
