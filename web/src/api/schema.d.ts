@@ -604,6 +604,47 @@ export interface paths {
         patch: operations["updateTransaction"];
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create an internal transfer (two linked transaction legs) */
+        post: operations["createTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/transfers/{transferId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                transferId: number;
+            };
+            cookie?: never;
+        };
+        /** Get an internal transfer */
+        get: operations["getTransfer"];
+        put?: never;
+        post?: never;
+        /** Delete an internal transfer (removes both legs) */
+        delete: operations["deleteTransfer"];
+        options?: never;
+        head?: never;
+        /** Update an internal transfer (date and amounts; accounts are fixed) */
+        patch: operations["updateTransfer"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -832,6 +873,16 @@ export interface components {
             splits?: components["schemas"]["Split"][];
             payeeName?: string;
             categoryName?: string;
+            /**
+             * Format: int64
+             * @description set when the transaction is one leg of an internal transfer
+             */
+            transferId?: number;
+            /**
+             * Format: int64
+             * @description the counterpart leg's account
+             */
+            transferAccountId?: number;
             createdAt?: string;
             updatedAt?: string;
         };
@@ -857,6 +908,52 @@ export interface components {
             memo?: string;
             tags?: string[];
             splits?: components["schemas"]["Split"][];
+        };
+        Transfer: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            fromAccountId: number;
+            /** Format: int64 */
+            toAccountId: number;
+            date: string;
+            /**
+             * Format: int64
+             * @description positive magnitude in the source account currency
+             */
+            fromAmount: number;
+            /**
+             * Format: int64
+             * @description positive magnitude in the destination account currency
+             */
+            toAmount: number;
+            memo: string;
+            status: number;
+            /** Format: int64 */
+            txnFromId: number;
+            /** Format: int64 */
+            txnToId: number;
+        };
+        TransferInput: {
+            /** Format: int64 */
+            fromAccountId: number;
+            /** Format: int64 */
+            toAccountId: number;
+            /** @description YYYY-MM-DD */
+            date: string;
+            /**
+             * Format: int64
+             * @description positive minor units in the source currency
+             */
+            fromAmount: number;
+            /**
+             * Format: int64
+             * @description positive minor units in the destination currency; defaults to fromAmount
+             */
+            toAmount?: number;
+            memo?: string;
+            /** @description 0 none, 1 cleared, 2 reconciled, 3 remind, 4 void */
+            status?: number;
         };
     };
     responses: {
@@ -2168,6 +2265,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Transaction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createTransfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferInput"];
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getTransfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                transferId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The transfer. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteTransfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                transferId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateTransfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                transferId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferInput"];
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
                 };
             };
             400: components["responses"]["BadRequest"];

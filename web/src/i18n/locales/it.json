@@ -41,6 +41,18 @@
     "save": "Salva",
     "duplicateWarning": "Trovate {{count}} transazioni simili — possibile duplicato."
   },
+  "transfers": {
+    "add": "Trasferimento",
+    "addTitle": "Nuovo trasferimento",
+    "editTitle": "Modifica trasferimento",
+    "transfer": "Trasferimento",
+    "from": "Conto di origine",
+    "to": "Conto di destinazione",
+    "fromAmount": "Importo inviato",
+    "toAmount": "Importo ricevuto",
+    "sameAccount": "Il conto di origine e di destinazione devono essere diversi.",
+    "confirmDelete": "Eliminare questo trasferimento? Verranno rimosse entrambe le righe."
+  },
   "paymentModes": {
     "0": "Nessuna",
     "1": "Carta di credito",

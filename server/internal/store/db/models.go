@@ -115,6 +115,12 @@ type TransactionTag struct {
 	TagID         int64
 }
 
+type Transfer struct {
+	ID        int64
+	TxnFromID int64
+	TxnToID   int64
+}
+
 type User struct {
 	ID           int64
 	Username     string

@@ -17,7 +17,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconArrowsExchange, IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -28,15 +28,20 @@ import {
   type Split,
   type Transaction,
   type TransactionInput,
+  type TransferInput,
   createTransaction,
+  createTransfer,
   deleteTransaction,
+  deleteTransfer,
   findDuplicateTransactions,
+  getTransfer,
   listAccounts,
   listCategories,
   listPayees,
   listTags,
   listTransactions,
   updateTransaction,
+  updateTransfer,
 } from "../api/client";
 import { formatMinor, parseMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
@@ -80,9 +85,16 @@ export function TransactionsPage() {
 
   const [formOpened, form] = useDisclosure(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
+  const [transferOpened, transferForm] = useDisclosure(false);
+  const [editingTransferId, setEditingTransferId] = useState<number | null>(null);
 
   const remove = useMutation({
     mutationFn: (id: number) => deleteTransaction(walletId, id),
+    onSuccess: invalidate,
+    onError,
+  });
+  const removeTransfer = useMutation({
+    mutationFn: (id: number) => deleteTransfer(walletId, id),
     onSuccess: invalidate,
     onError,
   });
@@ -111,6 +123,17 @@ export function TransactionsPage() {
             allowDeselect={false}
             w={220}
           />
+          <Button
+            variant="default"
+            leftSection={<IconArrowsExchange size={16} />}
+            disabled={accounts.length < 2}
+            onClick={() => {
+              setEditingTransferId(null);
+              transferForm.open();
+            }}
+          >
+            {t("transfers.add")}
+          </Button>
           <Button
             leftSection={<IconPlus size={16} />}
             disabled={!account}
@@ -141,40 +164,71 @@ export function TransactionsPage() {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {txQuery.data?.transactions.map((tx) => (
-              <Table.Tr key={tx.id}>
-                <Table.Td>{tx.date}</Table.Td>
-                <Table.Td>{tx.payeeName}</Table.Td>
-                <Table.Td>{tx.isSplit ? t("transactions.split") : tx.categoryName}</Table.Td>
-                <Table.Td ta="right">
-                  <Text c={tx.amount < 0 ? "red" : "teal"}>{formatMinor(tx.amount, fmt)}</Text>
-                </Table.Td>
-                <Table.Td ta="right" w={90}>
-                  <Group gap={4} justify="flex-end" wrap="nowrap">
-                    <ActionIcon
-                      variant="subtle"
-                      aria-label={t("transactions.edit")}
-                      onClick={() => {
-                        setEditing(tx);
-                        form.open();
-                      }}
-                    >
-                      <IconPencil size={16} />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      aria-label={t("transactions.delete")}
-                      onClick={() => {
-                        if (window.confirm(t("transactions.confirmDelete"))) remove.mutate(tx.id);
-                      }}
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  </Group>
-                </Table.Td>
-              </Table.Tr>
-            ))}
+            {txQuery.data?.transactions.map((tx) => {
+              const counterpart =
+                tx.transferId != null
+                  ? accounts.find((a) => a.id === tx.transferAccountId)?.name
+                  : undefined;
+              return (
+                <Table.Tr key={tx.id}>
+                  <Table.Td>{tx.date}</Table.Td>
+                  <Table.Td>
+                    {tx.transferId != null ? (
+                      <Group gap={4} wrap="nowrap">
+                        <IconArrowsExchange size={14} />
+                        <Text size="sm">{counterpart ?? t("transfers.transfer")}</Text>
+                      </Group>
+                    ) : (
+                      tx.payeeName
+                    )}
+                  </Table.Td>
+                  <Table.Td>
+                    {tx.transferId != null
+                      ? t("transfers.transfer")
+                      : tx.isSplit
+                        ? t("transactions.split")
+                        : tx.categoryName}
+                  </Table.Td>
+                  <Table.Td ta="right">
+                    <Text c={tx.amount < 0 ? "red" : "teal"}>{formatMinor(tx.amount, fmt)}</Text>
+                  </Table.Td>
+                  <Table.Td ta="right" w={90}>
+                    <Group gap={4} justify="flex-end" wrap="nowrap">
+                      <ActionIcon
+                        variant="subtle"
+                        aria-label={t("transactions.edit")}
+                        onClick={() => {
+                          if (tx.transferId != null) {
+                            setEditingTransferId(tx.transferId);
+                            transferForm.open();
+                          } else {
+                            setEditing(tx);
+                            form.open();
+                          }
+                        }}
+                      >
+                        <IconPencil size={16} />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        aria-label={t("transactions.delete")}
+                        onClick={() => {
+                          if (tx.transferId != null) {
+                            if (window.confirm(t("transfers.confirmDelete")))
+                              removeTransfer.mutate(tx.transferId);
+                          } else if (window.confirm(t("transactions.confirmDelete"))) {
+                            remove.mutate(tx.id);
+                          }
+                        }}
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              );
+            })}
           </Table.Tbody>
         </Table>
       )}
@@ -189,6 +243,15 @@ export function TransactionsPage() {
           onSaved={invalidate}
         />
       )}
+
+      <TransferForm
+        opened={transferOpened}
+        onClose={transferForm.close}
+        walletId={walletId}
+        accounts={accounts}
+        editingId={editingTransferId}
+        onSaved={invalidate}
+      />
     </Stack>
   );
 }
@@ -475,6 +538,197 @@ function TransactionForm({
             loading={save.isPending}
             disabled={!date || totalMinor === 0 || splitMismatch}
           >
+            {t("transactions.save")}
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+}
+
+function TransferForm({
+  opened,
+  onClose,
+  walletId,
+  accounts,
+  editingId,
+  onSaved,
+}: {
+  opened: boolean;
+  onClose: () => void;
+  walletId: number;
+  accounts: Account[];
+  editingId: number | null;
+  onSaved: () => void;
+}) {
+  const { t } = useTranslation();
+
+  const transferQuery = useQuery({
+    queryKey: ["transfer", walletId, editingId],
+    queryFn: () => getTransfer(walletId, editingId as number),
+    enabled: opened && editingId != null,
+  });
+  const loaded = transferQuery.data;
+
+  const [fromId, setFromId] = useState<string | null>(null);
+  const [toId, setToId] = useState<string | null>(null);
+  const [date, setDate] = useState("");
+  const [fromAmount, setFromAmount] = useState("");
+  const [toAmount, setToAmount] = useState("");
+  const [memo, setMemo] = useState("");
+  const [status, setStatus] = useState("0");
+
+  useEffect(() => {
+    if (!opened) return;
+    if (editingId != null) {
+      if (!loaded) return;
+      const from = accounts.find((a) => a.id === loaded.fromAccountId);
+      const to = accounts.find((a) => a.id === loaded.toAccountId);
+      setFromId(String(loaded.fromAccountId));
+      setToId(String(loaded.toAccountId));
+      setDate(loaded.date);
+      setFromAmount(
+        from
+          ? minorToInput(loaded.fromAmount, from.currencyFracDigits, from.currencyDecimalChar)
+          : "",
+      );
+      setToAmount(
+        to ? minorToInput(loaded.toAmount, to.currencyFracDigits, to.currencyDecimalChar) : "",
+      );
+      setMemo(loaded.memo);
+      setStatus(String(loaded.status));
+    } else {
+      setFromId(accounts[0] ? String(accounts[0].id) : null);
+      setToId(accounts[1] ? String(accounts[1].id) : null);
+      setDate(new Date().toISOString().slice(0, 10));
+      setFromAmount("");
+      setToAmount("");
+      setMemo("");
+      setStatus("0");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened, editingId, loaded?.id]);
+
+  const fromAccount = accounts.find((a) => String(a.id) === fromId);
+  const toAccount = accounts.find((a) => String(a.id) === toId);
+  const crossCurrency =
+    !!fromAccount && !!toAccount && fromAccount.currencyId !== toAccount.currencyId;
+  const fromMinor = fromAccount
+    ? (parseMinor(fromAmount, fromAccount.currencyFracDigits, fromAccount.currencyDecimalChar) ?? 0)
+    : 0;
+  const toMinor = toAccount
+    ? (parseMinor(toAmount, toAccount.currencyFracDigits, toAccount.currencyDecimalChar) ?? 0)
+    : 0;
+
+  const save = useMutation({
+    mutationFn: () => {
+      const body: TransferInput = {
+        fromAccountId: Number(fromId),
+        toAccountId: Number(toId),
+        date,
+        fromAmount: fromMinor,
+        toAmount: crossCurrency ? toMinor : undefined,
+        memo,
+        status: Number(status),
+      };
+      return editingId != null
+        ? updateTransfer(walletId, editingId, body)
+        : createTransfer(walletId, body);
+    },
+    onSuccess: () => {
+      onSaved();
+      onClose();
+    },
+    onError: (err: unknown) =>
+      notifications.show({
+        color: "red",
+        message: err instanceof ApiError ? err.message : String(err),
+      }),
+  });
+
+  const accountOptions = accounts.map((a) => ({ value: String(a.id), label: a.name }));
+  const invalid =
+    !date ||
+    !fromId ||
+    !toId ||
+    fromId === toId ||
+    fromMinor <= 0 ||
+    (crossCurrency && toMinor <= 0);
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      size="lg"
+      title={editingId != null ? t("transfers.editTitle") : t("transfers.addTitle")}
+    >
+      <Stack>
+        <Group grow>
+          <Select
+            label={t("transfers.from")}
+            data={accountOptions}
+            value={fromId}
+            onChange={setFromId}
+            disabled={editingId != null}
+            allowDeselect={false}
+            searchable
+          />
+          <Select
+            label={t("transfers.to")}
+            data={accountOptions}
+            value={toId}
+            onChange={setToId}
+            disabled={editingId != null}
+            allowDeselect={false}
+            searchable
+          />
+        </Group>
+        {fromId != null && fromId === toId && (
+          <Text size="sm" c="red">
+            {t("transfers.sameAccount")}
+          </Text>
+        )}
+        <Group grow>
+          <TextInput
+            type="date"
+            label={t("transactions.date")}
+            value={date}
+            onChange={(e) => setDate(e.currentTarget.value)}
+          />
+          <TextInput
+            label={crossCurrency ? t("transfers.fromAmount") : t("transactions.amount")}
+            value={fromAmount}
+            onChange={(e) => setFromAmount(e.currentTarget.value)}
+            rightSection={<Text size="xs">{fromAccount?.currencyCode}</Text>}
+          />
+        </Group>
+        {crossCurrency && (
+          <TextInput
+            label={t("transfers.toAmount")}
+            value={toAmount}
+            onChange={(e) => setToAmount(e.currentTarget.value)}
+            rightSection={<Text size="xs">{toAccount?.currencyCode}</Text>}
+          />
+        )}
+        <Group grow>
+          <Select
+            label={t("transactions.status")}
+            data={STATUSES.map((st) => ({ value: String(st), label: t(`status.${st}`) }))}
+            value={status}
+            onChange={(v) => v && setStatus(v)}
+            allowDeselect={false}
+          />
+          <TextInput
+            label={t("transactions.memo")}
+            value={memo}
+            onChange={(e) => setMemo(e.currentTarget.value)}
+          />
+        </Group>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={onClose}>
+            {t("transactions.cancel")}
+          </Button>
+          <Button onClick={() => save.mutate()} loading={save.isPending} disabled={invalid}>
             {t("transactions.save")}
           </Button>
         </Group>
