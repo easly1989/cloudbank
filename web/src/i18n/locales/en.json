@@ -9,6 +9,7 @@
     "transactions": "Transactions",
     "schedules": "Schedules",
     "assignments": "Rules",
+    "budget": "Budget",
     "reports": "Reports",
     "settings": "Settings",
     "admin": "Users"
@@ -54,6 +55,40 @@
     "toAmount": "Amount received",
     "sameAccount": "Source and destination accounts must differ.",
     "confirmDelete": "Delete this transfer? Both legs will be removed."
+  },
+  "budget": {
+    "title": "Budget",
+    "editor": "Budget",
+    "report": "Report",
+    "category": "Category",
+    "mode": "Mode",
+    "amounts": "Amounts",
+    "same": "Same",
+    "monthly": "Monthly",
+    "noCategories": "Create categories first.",
+    "from": "From",
+    "to": "To",
+    "rollup": "Roll up subcategories",
+    "exportCsv": "Export CSV",
+    "empty": "No budget or spending in this period.",
+    "budgeted": "Budget",
+    "actual": "Actual",
+    "difference": "Difference",
+    "total": "Total",
+    "months": {
+      "0": "Jan",
+      "1": "Feb",
+      "2": "Mar",
+      "3": "Apr",
+      "4": "May",
+      "5": "Jun",
+      "6": "Jul",
+      "7": "Aug",
+      "8": "Sep",
+      "9": "Oct",
+      "10": "Nov",
+      "11": "Dec"
+    }
   },
   "assignments": {
     "title": "Assignment rules",

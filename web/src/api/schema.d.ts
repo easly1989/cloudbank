@@ -983,6 +983,65 @@ export interface paths {
         patch: operations["updateAssignment"];
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/budgets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List the wallet's per-category budgets */
+        get: operations["listBudgets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/budgets/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Budget vs actual per category over a period */
+        get: operations["getBudgetReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/budgets/{categoryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                categoryId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Set a category's budget (same every month or 12 per-month values) */
+        put: operations["setCategoryBudget"];
+        post?: never;
+        /** Clear a category's budget */
+        delete: operations["clearCategoryBudget"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/dashboard": {
         parameters: {
             query?: never;
@@ -1467,6 +1526,47 @@ export interface components {
             date: string;
             memo: string;
             payeeName: string;
+        };
+        CategoryBudget: {
+            /** Format: int64 */
+            categoryId: number;
+            /** @enum {string} */
+            mode: "same" | "monthly";
+            /** Format: int64 */
+            same: number;
+            monthly: number[];
+        };
+        BudgetInput: {
+            /** @enum {string} */
+            mode: "same" | "monthly";
+            /**
+             * Format: int64
+             * @description used when mode = same
+             */
+            same?: number;
+            /** @description 12 values, Jan..Dec; used when mode = monthly */
+            monthly?: number[];
+        };
+        BudgetReportRow: {
+            /** Format: int64 */
+            categoryId: number;
+            name: string;
+            isIncome: boolean;
+            /** Format: int64 */
+            budget: number;
+            /** Format: int64 */
+            actual: number;
+        };
+        BudgetReport: {
+            rows: components["schemas"]["BudgetReportRow"][];
+            /** Format: int64 */
+            totalBudget: number;
+            /** Format: int64 */
+            totalActual: number;
+            from: string;
+            to: string;
+            rollup: boolean;
+            currency?: components["schemas"]["CurrencyInfo"];
         };
         Transfer: {
             /** Format: int64 */
@@ -3596,6 +3696,105 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listBudgets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Budgets. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryBudget"][];
+                };
+            };
+        };
+    };
+    getBudgetReport: {
+        parameters: {
+            query?: {
+                /** @description defaults to the current year */
+                from?: string;
+                to?: string;
+                /** @description roll subcategories into parents (default true) */
+                rollup?: boolean;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The report. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetReport"];
+                };
+            };
+        };
+    };
+    setCategoryBudget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                categoryId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BudgetInput"];
+            };
+        };
+        responses: {
+            /** @description Saved. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    clearCategoryBudget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                categoryId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cleared. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             404: components["responses"]["NotFound"];
         };
     };

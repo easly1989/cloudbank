@@ -18,6 +18,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
+	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/config"
 	"github.com/easly1989/cloudbank/server/internal/currency"
@@ -105,6 +106,7 @@ func run() error {
 	templateSvc := template.NewService(st.Write())
 	scheduleSvc := schedule.NewService(st.Write(), transactionSvc, transferSvc, logger)
 	assignmentSvc := assignment.NewService(st.Write())
+	budgetSvc := budget.NewService(st.Write())
 
 	handler := httpapi.New(httpapi.Options{
 		Logger:        logger,
@@ -121,6 +123,7 @@ func run() error {
 		Templates:     templateSvc,
 		Schedules:     scheduleSvc,
 		Assignments:   assignmentSvc,
+		Budgets:       budgetSvc,
 		SecureCookies: cfg.SecureCookies,
 	})
 
