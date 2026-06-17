@@ -696,3 +696,52 @@ export const applyAssignments = (
 
 export const suggestAssignment = (walletId: number, memo: string, payee: string) =>
   api.post<Suggestion>(`/api/v1/wallets/${walletId}/assignments/suggest`, { memo, payee });
+
+// --- Budgets ---
+
+export type BudgetMode = "same" | "monthly";
+
+export interface CategoryBudget {
+  categoryId: number;
+  mode: BudgetMode;
+  same: number;
+  monthly: number[];
+}
+
+export interface BudgetInput {
+  mode: BudgetMode;
+  same?: number;
+  monthly?: number[];
+}
+
+export interface BudgetReportRow {
+  categoryId: number;
+  name: string;
+  isIncome: boolean;
+  budget: number;
+  actual: number;
+}
+
+export interface BudgetReport {
+  rows: BudgetReportRow[];
+  totalBudget: number;
+  totalActual: number;
+  from: string;
+  to: string;
+  rollup: boolean;
+  currency: CurrencyInfo | null;
+}
+
+export const listBudgets = (walletId: number) =>
+  api.get<CategoryBudget[]>(`/api/v1/wallets/${walletId}/budgets`);
+
+export const setCategoryBudget = (walletId: number, categoryId: number, body: BudgetInput) =>
+  api.put<void>(`/api/v1/wallets/${walletId}/budgets/${categoryId}`, body);
+
+export const clearCategoryBudget = (walletId: number, categoryId: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/budgets/${categoryId}`);
+
+export const getBudgetReport = (walletId: number, from: string, to: string, rollup: boolean) =>
+  api.get<BudgetReport>(
+    `/api/v1/wallets/${walletId}/budgets/report?from=${from}&to=${to}&rollup=${rollup}`,
+  );

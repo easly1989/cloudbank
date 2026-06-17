@@ -9,6 +9,7 @@
     "transactions": "Transazioni",
     "schedules": "Pianificazioni",
     "assignments": "Regole",
+    "budget": "Budget",
     "reports": "Report",
     "settings": "Impostazioni",
     "admin": "Utenti"
@@ -54,6 +55,40 @@
     "toAmount": "Importo ricevuto",
     "sameAccount": "Il conto di origine e di destinazione devono essere diversi.",
     "confirmDelete": "Eliminare questo trasferimento? Verranno rimosse entrambe le righe."
+  },
+  "budget": {
+    "title": "Budget",
+    "editor": "Budget",
+    "report": "Report",
+    "category": "Categoria",
+    "mode": "Modalità",
+    "amounts": "Importi",
+    "same": "Fisso",
+    "monthly": "Mensile",
+    "noCategories": "Crea prima delle categorie.",
+    "from": "Da",
+    "to": "A",
+    "rollup": "Raggruppa sottocategorie",
+    "exportCsv": "Esporta CSV",
+    "empty": "Nessun budget o spesa in questo periodo.",
+    "budgeted": "Budget",
+    "actual": "Effettivo",
+    "difference": "Differenza",
+    "total": "Totale",
+    "months": {
+      "0": "Gen",
+      "1": "Feb",
+      "2": "Mar",
+      "3": "Apr",
+      "4": "Mag",
+      "5": "Giu",
+      "6": "Lug",
+      "7": "Ago",
+      "8": "Set",
+      "9": "Ott",
+      "10": "Nov",
+      "11": "Dic"
+    }
   },
   "assignments": {
     "title": "Regole di assegnazione",

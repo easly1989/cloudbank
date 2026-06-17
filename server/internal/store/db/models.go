@@ -45,6 +45,14 @@ type Assignment struct {
 	CreatedAt      string
 }
 
+type Budget struct {
+	ID         int64
+	WalletID   int64
+	CategoryID int64
+	Month      int64
+	Amount     int64
+}
+
 type Category struct {
 	ID       int64
 	WalletID int64
