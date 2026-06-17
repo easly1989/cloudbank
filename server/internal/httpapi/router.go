@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/easly1989/cloudbank/server/internal/account"
+	"github.com/easly1989/cloudbank/server/internal/assignment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/currency"
@@ -59,6 +60,8 @@ type Options struct {
 	Templates *template.Service
 	// Schedules, if non-nil, mounts the schedule endpoints (requires Wallets).
 	Schedules *schedule.Service
+	// Assignments, if non-nil, mounts the assignment-rule endpoints (requires Wallets).
+	Assignments *assignment.Service
 	// SecureCookies sets the Secure flag on the session cookie.
 	SecureCookies bool
 }
@@ -98,7 +101,7 @@ func New(opts Options) http.Handler {
 						svc: opts.Wallets, currencies: opts.Currencies, accounts: opts.Accounts,
 						categories: opts.Categories, payees: opts.Payees, transactions: opts.Transactions,
 						transfers: opts.Transfers, dashboard: opts.Dashboard, templates: opts.Templates,
-						schedules: opts.Schedules,
+						schedules: opts.Schedules, assignments: opts.Assignments,
 					}).routes(pr)
 					if opts.Currencies != nil {
 						pr.Get("/catalog/currencies", (&currencyHandlers{svc: opts.Currencies}).catalog)

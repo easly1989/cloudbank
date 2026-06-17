@@ -32,6 +32,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateWallet(ctx context.Context, arg CreateWalletParams) (Wallet, error)
 	DeleteAccount(ctx context.Context, id int64) error
+	DeleteAssignment(ctx context.Context, id int64) error
 	DeleteCategory(ctx context.Context, id int64) error
 	DeleteCurrency(ctx context.Context, id int64) error
 	DeleteExpiredSessions(ctx context.Context, expiresAt string) error
@@ -48,6 +49,7 @@ type Querier interface {
 	DeleteWallet(ctx context.Context, id int64) error
 	FindDuplicateTransactions(ctx context.Context, arg FindDuplicateTransactionsParams) ([]Transaction, error)
 	GetAccount(ctx context.Context, id int64) (Account, error)
+	GetAssignment(ctx context.Context, id int64) (Assignment, error)
 	GetBaseCurrency(ctx context.Context, walletID int64) (Currency, error)
 	GetCategory(ctx context.Context, id int64) (Category, error)
 	GetCurrency(ctx context.Context, id int64) (Currency, error)
@@ -64,6 +66,7 @@ type Querier interface {
 	GetWallet(ctx context.Context, id int64) (Wallet, error)
 	GetWalletMembership(ctx context.Context, arg GetWalletMembershipParams) (string, error)
 	InsertAccount(ctx context.Context, arg InsertAccountParams) (Account, error)
+	InsertAssignment(ctx context.Context, arg InsertAssignmentParams) (Assignment, error)
 	InsertCategory(ctx context.Context, arg InsertCategoryParams) (Category, error)
 	InsertCurrency(ctx context.Context, arg InsertCurrencyParams) (Currency, error)
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
@@ -80,6 +83,7 @@ type Querier interface {
 	ListAccountRegister(ctx context.Context, accountID int64) ([]ListAccountRegisterRow, error)
 	ListAccountsForWallet(ctx context.Context, walletID int64) ([]ListAccountsForWalletRow, error)
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
+	ListAssignmentsForWallet(ctx context.Context, walletID int64) ([]Assignment, error)
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
 	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)
 	ListExchangeRates(ctx context.Context, currencyID int64) ([]ExchangeRate, error)
@@ -93,13 +97,16 @@ type Querier interface {
 	ListTransactionsForAccount(ctx context.Context, arg ListTransactionsForAccountParams) ([]ListTransactionsForAccountRow, error)
 	ListUpcomingSchedules(ctx context.Context, arg ListUpcomingSchedulesParams) ([]ListUpcomingSchedulesRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
+	ListWalletTransactionsForRules(ctx context.Context, walletID int64) ([]ListWalletTransactionsForRulesRow, error)
 	ListWalletsForUser(ctx context.Context, userID int64) ([]ListWalletsForUserRow, error)
 	NextAccountPosition(ctx context.Context, walletID int64) (int64, error)
+	NextAssignmentPosition(ctx context.Context, walletID int64) (int64, error)
 	ReassignPayeeCategory(ctx context.Context, arg ReassignPayeeCategoryParams) error
 	ReassignSplitCategory(ctx context.Context, arg ReassignSplitCategoryParams) error
 	ReassignTransactionCategory(ctx context.Context, arg ReassignTransactionCategoryParams) error
 	ReassignTransactionPayee(ctx context.Context, arg ReassignTransactionPayeeParams) error
 	ReparentChildren(ctx context.Context, arg ReparentChildrenParams) error
+	SetAssignmentPosition(ctx context.Context, arg SetAssignmentPositionParams) error
 	SetChildrenIncome(ctx context.Context, arg SetChildrenIncomeParams) error
 	SetCurrencyBase(ctx context.Context, id int64) error
 	SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error
@@ -110,6 +117,7 @@ type Querier interface {
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
 	UpdateAccountPosition(ctx context.Context, arg UpdateAccountPositionParams) error
+	UpdateAssignment(ctx context.Context, arg UpdateAssignmentParams) error
 	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) error
 	UpdateCurrencyFormat(ctx context.Context, arg UpdateCurrencyFormatParams) error
 	UpdateCurrencyRate(ctx context.Context, arg UpdateCurrencyRateParams) error
