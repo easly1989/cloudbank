@@ -14,6 +14,7 @@ import { TransactionsPage } from "./pages/TransactionsPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { SchedulesPage } from "./pages/SchedulesPage";
 import { SetupPage } from "./pages/SetupPage";
 import { WalletSettingsPage } from "./pages/WalletSettingsPage";
 import { UsersPage } from "./pages/admin/UsersPage";
@@ -82,6 +83,7 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="payees" element={<PayeesPage />} />
+        <Route path="schedules" element={<SchedulesPage />} />
         <Route path="reports" element={<PlaceholderPage titleKey="nav.reports" />} />
         <Route path="settings" element={<PlaceholderPage titleKey="nav.settings" />} />
         <Route path="wallet" element={<WalletSettingsPage />} />

@@ -112,7 +112,22 @@ export function DashboardPage() {
             <Title order={4} mb="sm">
               {t("dashboard.upcoming")}
             </Title>
-            <Text c="dimmed">{t("dashboard.noUpcoming")}</Text>
+            {(data?.upcoming ?? []).length === 0 ? (
+              <Text c="dimmed">{t("dashboard.noUpcoming")}</Text>
+            ) : (
+              <Stack gap={6}>
+                {(data?.upcoming ?? []).map((u) => (
+                  <Group key={u.id} justify="space-between" wrap="nowrap">
+                    <Text size="sm" truncate>
+                      {u.templateName}
+                    </Text>
+                    <Text size="sm" c="dimmed">
+                      {u.nextDue}
+                    </Text>
+                  </Group>
+                ))}
+              </Stack>
+            )}
           </Card>
         </Stack>
       </SimpleGrid>
