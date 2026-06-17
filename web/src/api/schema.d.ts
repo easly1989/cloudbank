@@ -563,6 +563,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/transactions/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Atomically set one field across many transactions (all-or-nothing) */
+        post: operations["bulkEditTransactions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/transactions/register": {
         parameters: {
             query?: never;
@@ -2225,6 +2244,45 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Transaction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    bulkEditTransactions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: number[];
+                    /** @enum {string} */
+                    field: "status" | "category" | "payee" | "paymentMode";
+                    /**
+                     * Format: int64
+                     * @description required for status/paymentMode; null clears category/payee
+                     */
+                    value?: number | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Applied. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        updated: number;
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];

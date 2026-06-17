@@ -1,5 +1,5 @@
-import { ActionIcon, Badge, Box, Group, Text } from "@mantine/core";
-import { IconArrowsExchange, IconPencil, IconTrash } from "@tabler/icons-react";
+import { ActionIcon, Badge, Box, Checkbox, Group, Text } from "@mantine/core";
+import { IconArrowsExchange, IconLock, IconPencil, IconTrash } from "@tabler/icons-react";
 import {
   createColumnHelper,
   flexRender,
@@ -14,34 +14,43 @@ import type { Account, RegisterRow } from "../api/client";
 import { formatMinor, type MoneyFormat } from "../money";
 
 const ROW_HEIGHT = 40;
-const GRID = "110px minmax(120px, 1fr) minmax(120px, 1fr) 96px 130px 140px 64px";
+const GRID = "36px 110px minmax(120px, 1fr) minmax(110px, 1fr) 96px 120px 130px 60px";
 // Status badge colours indexed by status value (none..void).
 const STATUS_COLORS = ["gray", "blue", "teal", "orange", "red"];
+const STATUS_RECONCILED = 2;
 
 export interface RegisterTableProps {
   rows: RegisterRow[];
   accounts: Account[];
   fmt: MoneyFormat;
+  selected: Set<number>;
+  onToggleSelect: (id: number) => void;
+  onToggleAll: (ids: number[], on: boolean) => void;
   onEdit: (row: RegisterRow) => void;
   onDelete: (row: RegisterRow) => void;
   onToggleStatus: (row: RegisterRow, status: number) => void;
 }
 
 // RegisterTable renders the account ledger newest-first with a chronological
-// running balance, virtualized so very large accounts scroll smoothly.
-// Keyboard: ↑/↓ move the selection, Enter edits, c/r toggle cleared/reconciled,
-// Delete removes.
+// running balance, virtualized so very large accounts scroll smoothly. A
+// checkbox column drives multi-edit and reconciliation. Reconciled rows show a
+// lock glyph (edits go through an explicit unreconcile in the page).
+// Keyboard: ↑/↓ move the selection cursor, Space toggles the checkbox, Enter
+// edits, c/r toggle cleared/reconciled, Delete removes.
 export function RegisterTable({
   rows,
   accounts,
   fmt,
+  selected,
+  onToggleSelect,
+  onToggleAll,
   onEdit,
   onDelete,
   onToggleStatus,
 }: RegisterTableProps) {
   const { t } = useTranslation();
   const parentRef = useRef<HTMLDivElement>(null);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [cursorId, setCursorId] = useState<number | null>(null);
 
   // Newest-first display; each row keeps its chronological running balance.
   const display = useMemo(() => [...rows].reverse(), [rows]);
@@ -49,6 +58,7 @@ export function RegisterTable({
     (id?: number | null) => accounts.find((a) => a.id === id)?.name,
     [accounts],
   );
+  const allSelected = display.length > 0 && display.every((r) => selected.has(r.id));
 
   const columns = useMemo(() => {
     const col = createColumnHelper<RegisterRow>();
@@ -87,18 +97,21 @@ export function RegisterTable({
       col.accessor("status", {
         header: () => t("transactions.status"),
         cell: ({ row }) => (
-          <Badge
-            variant="light"
-            color={STATUS_COLORS[row.original.status] ?? "gray"}
-            style={{ cursor: "pointer" }}
-            title={t("register.cycleStatus")}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleStatus(row.original, (row.original.status + 1) % STATUS_COLORS.length);
-            }}
-          >
-            {t(`status.${row.original.status}`)}
-          </Badge>
+          <Group gap={4} wrap="nowrap">
+            <Badge
+              variant="light"
+              color={STATUS_COLORS[row.original.status] ?? "gray"}
+              style={{ cursor: "pointer" }}
+              title={t("register.cycleStatus")}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleStatus(row.original, (row.original.status + 1) % STATUS_COLORS.length);
+              }}
+            >
+              {t(`status.${row.original.status}`)}
+            </Badge>
+            {row.original.status === STATUS_RECONCILED && <IconLock size={12} opacity={0.5} />}
+          </Group>
         ),
       }),
       col.accessor("amount", {
@@ -125,11 +138,7 @@ export function RegisterTable({
     ];
   }, [t, fmt, accountName, onToggleStatus]);
 
-  const table = useReactTable({
-    data: display,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
+  const table = useReactTable({ data: display, columns, getCoreRowModel: getCoreRowModel() });
   const tableRows = table.getRowModel().rows;
 
   const virtualizer = useVirtualizer({
@@ -139,22 +148,22 @@ export function RegisterTable({
     overscan: 12,
   });
 
-  const selectedIndex = useMemo(
-    () => display.findIndex((r) => r.id === selectedId),
-    [display, selectedId],
+  const cursorIndex = useMemo(
+    () => display.findIndex((r) => r.id === cursorId),
+    [display, cursorId],
   );
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (display.length === 0) return;
     const move = (delta: number) => {
       const next = Math.min(
-        Math.max(selectedIndex < 0 ? 0 : selectedIndex + delta, 0),
+        Math.max(cursorIndex < 0 ? 0 : cursorIndex + delta, 0),
         display.length - 1,
       );
-      setSelectedId(display[next].id);
+      setCursorId(display[next].id);
       virtualizer.scrollToIndex(next, { align: "auto" });
     };
-    const sel = selectedIndex >= 0 ? display[selectedIndex] : null;
+    const sel = cursorIndex >= 0 ? display[cursorIndex] : null;
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
@@ -163,6 +172,12 @@ export function RegisterTable({
       case "ArrowUp":
         e.preventDefault();
         move(-1);
+        break;
+      case " ":
+        if (sel) {
+          e.preventDefault();
+          onToggleSelect(sel.id);
+        }
         break;
       case "Enter":
         if (sel) {
@@ -176,7 +191,7 @@ export function RegisterTable({
         break;
       case "r":
       case "R":
-        if (sel) onToggleStatus(sel, sel.status === 2 ? 0 : 2);
+        if (sel) onToggleStatus(sel, sel.status === STATUS_RECONCILED ? 0 : STATUS_RECONCILED);
         break;
       case "Delete":
       case "Backspace":
@@ -189,8 +204,8 @@ export function RegisterTable({
   };
 
   useEffect(() => {
-    if (selectedId != null && !display.some((r) => r.id === selectedId)) setSelectedId(null);
-  }, [display, selectedId]);
+    if (cursorId != null && !display.some((r) => r.id === cursorId)) setCursorId(null);
+  }, [display, cursorId]);
 
   return (
     <Box>
@@ -205,6 +220,18 @@ export function RegisterTable({
           borderBottom: "1px solid var(--mantine-color-default-border)",
         }}
       >
+        <Checkbox
+          size="xs"
+          aria-label={t("register.selectAll")}
+          checked={allSelected}
+          indeterminate={!allSelected && display.some((r) => selected.has(r.id))}
+          onChange={(e) =>
+            onToggleAll(
+              display.map((r) => r.id),
+              e.currentTarget.checked,
+            )
+          }
+        />
         {table.getFlatHeaders().map((h) => (
           <Box key={h.id}>{flexRender(h.column.columnDef.header, h.getContext())}</Box>
         ))}
@@ -220,11 +247,12 @@ export function RegisterTable({
         <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
           {virtualizer.getVirtualItems().map((vi) => {
             const row = tableRows[vi.index];
-            const selected = row.original.id === selectedId;
+            const r = row.original;
+            const onCursor = r.id === cursorId;
             return (
               <div
                 key={row.id}
-                onClick={() => setSelectedId(row.original.id)}
+                onClick={() => setCursorId(r.id)}
                 style={{
                   position: "absolute",
                   top: 0,
@@ -237,11 +265,21 @@ export function RegisterTable({
                   gap: 8,
                   alignItems: "center",
                   padding: "0 8px",
-                  cursor: "default",
-                  background: selected ? "var(--mantine-color-default-hover)" : undefined,
+                  background: selected.has(r.id)
+                    ? "var(--mantine-color-blue-light)"
+                    : onCursor
+                      ? "var(--mantine-color-default-hover)"
+                      : undefined,
                   borderBottom: "1px solid var(--mantine-color-default-border)",
                 }}
               >
+                <Checkbox
+                  size="xs"
+                  aria-label={t("register.selectRow")}
+                  checked={selected.has(r.id)}
+                  onChange={() => onToggleSelect(r.id)}
+                  onClick={(e) => e.stopPropagation()}
+                />
                 {row.getVisibleCells().map((cell) => (
                   <Box key={cell.id} style={{ minWidth: 0 }}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -254,7 +292,7 @@ export function RegisterTable({
                     aria-label={t("transactions.edit")}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onEdit(row.original);
+                      onEdit(r);
                     }}
                   >
                     <IconPencil size={15} />
@@ -266,7 +304,7 @@ export function RegisterTable({
                     aria-label={t("transactions.delete")}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onDelete(row.original);
+                      onDelete(r);
                     }}
                   >
                     <IconTrash size={15} />
