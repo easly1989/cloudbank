@@ -419,6 +419,20 @@ export const getRegister = (walletId: number, accountId: number) =>
 export const setTransactionStatus = (walletId: number, id: number, status: number) =>
   api.patch<void>(`/api/v1/wallets/${walletId}/transactions/${id}/status`, { status });
 
+export type BulkField = "status" | "category" | "payee" | "paymentMode";
+
+export const bulkEditTransactions = (
+  walletId: number,
+  ids: number[],
+  field: BulkField,
+  value: number | null,
+) =>
+  api.post<{ updated: number }>(`/api/v1/wallets/${walletId}/transactions/bulk`, {
+    ids,
+    field,
+    value,
+  });
+
 // --- Transfers ---
 
 export interface Transfer {

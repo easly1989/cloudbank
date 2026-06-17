@@ -167,6 +167,40 @@ func TestTransactionRegisterAndStatus(t *testing.T) {
 	}
 }
 
+func TestTransactionBulkEdit(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	txns := base + "/transactions"
+
+	a := int64(decodeTxn(t, c.do(http.MethodPost, txns, map[string]any{"accountId": acc, "date": "2026-01-15", "amount": -100}, true))["id"].(float64))
+	b := int64(decodeTxn(t, c.do(http.MethodPost, txns, map[string]any{"accountId": acc, "date": "2026-01-16", "amount": -200}, true))["id"].(float64))
+
+	resp := c.do(http.MethodPost, txns+"/bulk", map[string]any{"ids": []int64{a, b}, "field": "status", "value": 2}, true)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("bulk = %d, want 200", resp.StatusCode)
+	}
+	var out struct {
+		Updated int `json:"updated"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&out)
+	if out.Updated != 2 {
+		t.Fatalf("updated = %d, want 2", out.Updated)
+	}
+	got := decodeTxn(t, c.do(http.MethodGet, txns+"/"+strconv.FormatInt(a, 10), nil, false))
+	if int64(got["status"].(float64)) != 2 {
+		t.Fatalf("status = %v, want 2", got["status"])
+	}
+
+	// Unknown field → 400.
+	bad := c.do(http.MethodPost, txns+"/bulk", map[string]any{"ids": []int64{a}, "field": "nope"}, true)
+	defer bad.Body.Close()
+	if bad.StatusCode != http.StatusBadRequest {
+		t.Fatalf("bad field = %d, want 400", bad.StatusCode)
+	}
+}
+
 func TestTransactionCrossUserIsolation(t *testing.T) {
 	admin := newTestAPI(t)
 	wid, acc := makeAccount(t, admin)

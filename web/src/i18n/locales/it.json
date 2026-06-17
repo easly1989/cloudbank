@@ -60,7 +60,51 @@
     "balance": "Saldo",
     "ledger": "Registro del conto",
     "quickAdd": "Aggiungi",
-    "cycleStatus": "Clicca per cambiare stato"
+    "cycleStatus": "Clicca per cambiare stato",
+    "selectAll": "Seleziona tutto",
+    "selectRow": "Seleziona riga"
+  },
+  "filters": {
+    "dateRange": "Intervallo date",
+    "from": "Da",
+    "to": "A",
+    "amountMin": "Importo min",
+    "amountMax": "Importo max",
+    "search": "Cerca",
+    "clear": "Azzera filtri",
+    "presets": {
+      "all": "Tutte le date",
+      "thisMonth": "Questo mese",
+      "thisQuarter": "Questo trimestre",
+      "thisYear": "Quest'anno",
+      "last30": "Ultimi 30 giorni",
+      "last90": "Ultimi 90 giorni",
+      "custom": "Intervallo personalizzato"
+    }
+  },
+  "bulk": {
+    "title": "{{count}} selezionate",
+    "field": "Imposta campo",
+    "apply": "Applica",
+    "clearSelection": "Deseleziona",
+    "done": "Aggiornate {{count}} transazioni",
+    "fields": {
+      "status": "Stato",
+      "category": "Categoria",
+      "payee": "Beneficiario",
+      "paymentMode": "Modalità di pagamento"
+    }
+  },
+  "reconcile": {
+    "start": "Riconcilia",
+    "statementBalance": "Saldo estratto conto",
+    "clearedBalance": "Saldo verificato",
+    "difference": "Differenza",
+    "finish": "Termina ({{count}})",
+    "cancel": "Annulla",
+    "help": "Spunta ogni transazione presente sull'estratto conto finché la differenza è zero, poi termina per contrassegnarle come riconciliate.",
+    "lockedEdit": "Questa transazione è riconciliata. Modificarla comunque (verrà annullata la riconciliazione)?",
+    "lockedDelete": "Questa transazione è riconciliata. Eliminarla comunque?"
   },
   "paymentModes": {
     "0": "Nessuna",

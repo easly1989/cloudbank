@@ -60,7 +60,51 @@
     "balance": "Balance",
     "ledger": "Account ledger",
     "quickAdd": "Add",
-    "cycleStatus": "Click to change status"
+    "cycleStatus": "Click to change status",
+    "selectAll": "Select all",
+    "selectRow": "Select row"
+  },
+  "filters": {
+    "dateRange": "Date range",
+    "from": "From",
+    "to": "To",
+    "amountMin": "Min amount",
+    "amountMax": "Max amount",
+    "search": "Search",
+    "clear": "Clear filters",
+    "presets": {
+      "all": "All dates",
+      "thisMonth": "This month",
+      "thisQuarter": "This quarter",
+      "thisYear": "This year",
+      "last30": "Last 30 days",
+      "last90": "Last 90 days",
+      "custom": "Custom range"
+    }
+  },
+  "bulk": {
+    "title": "{{count}} selected",
+    "field": "Set field",
+    "apply": "Apply",
+    "clearSelection": "Clear",
+    "done": "Updated {{count}} transaction(s)",
+    "fields": {
+      "status": "Status",
+      "category": "Category",
+      "payee": "Payee",
+      "paymentMode": "Payment mode"
+    }
+  },
+  "reconcile": {
+    "start": "Reconcile",
+    "statementBalance": "Statement balance",
+    "clearedBalance": "Cleared balance",
+    "difference": "Difference",
+    "finish": "Finish ({{count}})",
+    "cancel": "Cancel",
+    "help": "Tick each transaction on your statement until the difference is zero, then finish to mark them reconciled.",
+    "lockedEdit": "This transaction is reconciled. Edit it anyway (it will be unreconciled)?",
+    "lockedDelete": "This transaction is reconciled. Delete it anyway?"
   },
   "paymentModes": {
     "0": "None",

@@ -29,6 +29,7 @@ SELECT
     c.name AS category_name,
     tr.id AS transfer_id,
     ot.account_id AS transfer_account_id,
+    COALESCE((SELECT group_concat(tg.name, ',') FROM transaction_tags tt JOIN tags tg ON tg.id = tt.tag_id WHERE tt.transaction_id = t.id), '') AS tags,
     CAST(SUM(t.amount) OVER (ORDER BY t.date, t.id ROWS UNBOUNDED PRECEDING) AS INTEGER) AS running_delta
 FROM transactions t
 LEFT JOIN payees p ON p.id = t.payee_id
@@ -51,6 +52,21 @@ WHERE id = ?;
 -- name: UpdateTransactionStatus :exec
 UPDATE transactions SET
     status = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE id = ?;
+
+-- name: SetTransactionCategory :exec
+UPDATE transactions SET
+    category_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE id = ?;
+
+-- name: SetTransactionPayee :exec
+UPDATE transactions SET
+    payee_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE id = ?;
+
+-- name: SetTransactionPaymentMode :exec
+UPDATE transactions SET
+    payment_mode = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 WHERE id = ?;
 
 -- name: DeleteTransaction :exec

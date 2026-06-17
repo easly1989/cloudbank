@@ -414,7 +414,8 @@ func (s *Service) Register(ctx context.Context, accountID int64) ([]RegisterRow,
 				ID: r.ID, AccountID: r.AccountID, Date: r.Date, Amount: r.Amount,
 				PaymentMode: int(r.PaymentMode), Status: int(r.Status), Info: r.Info,
 				PayeeID: idPtr(r.PayeeID), CategoryID: idPtr(r.CategoryID), Memo: r.Memo,
-				IsSplit: r.IsSplit != 0, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt, Tags: []string{},
+				IsSplit: r.IsSplit != 0, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
+				Tags:       splitTags(r.Tags),
 				TransferID: idPtr(r.TransferID), TransferAccountID: idPtr(r.TransferAccountID),
 			},
 			RunningBalance: acc.InitialBalance + r.RunningDelta,
@@ -435,6 +436,114 @@ func (s *Service) Register(ctx context.Context, accountID int64) ([]RegisterRow,
 		out = append(out, row)
 	}
 	return out, sum, nil
+}
+
+// splitTags turns a group_concat list ("a,b,c") into a slice (empty when none).
+// The column is an untyped expression, so the driver hands back string/[]byte.
+func splitTags(v any) []string {
+	var s string
+	switch t := v.(type) {
+	case string:
+		s = t
+	case []byte:
+		s = string(t)
+	}
+	if s == "" {
+		return []string{}
+	}
+	return strings.Split(s, ",")
+}
+
+// Bulk-edit fields (each request sets exactly one of these across the selection).
+const (
+	BulkFieldStatus      = "status"
+	BulkFieldCategory    = "category"
+	BulkFieldPayee       = "payee"
+	BulkFieldPaymentMode = "paymentMode"
+)
+
+// ErrInvalidBulkField is returned for an unknown bulk-edit field.
+var ErrInvalidBulkField = errors.New("transaction: invalid bulk field")
+
+// BulkUpdate atomically sets one field across the given transactions (all must
+// belong to walletID). It is all-or-nothing: any failure rolls the whole batch
+// back. value is nil to clear category/payee; it is required for status and
+// payment mode. Returns the number of transactions updated.
+func (s *Service) BulkUpdate(ctx context.Context, walletID int64, ids []int64, field string, value *int64) (int, error) {
+	switch field {
+	case BulkFieldStatus:
+		if value == nil || *value < 0 || *value >= statusCount {
+			return 0, ErrInvalidStatus
+		}
+	case BulkFieldPaymentMode:
+		if value == nil || *value < minPaymentMode || *value > maxPaymentMode {
+			return 0, ErrInvalidPaymentMode
+		}
+	case BulkFieldCategory, BulkFieldPayee:
+		// value may be nil (clear) or an id; ownership of a non-nil target is
+		// validated below against the wallet.
+	default:
+		return 0, ErrInvalidBulkField
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	qtx := s.q.WithTx(tx)
+
+	if value != nil && (field == BulkFieldCategory || field == BulkFieldPayee) {
+		if err := s.validateTarget(ctx, qtx, walletID, field, *value); err != nil {
+			return 0, err
+		}
+	}
+
+	for _, id := range ids {
+		row, err := qtx.GetTransaction(ctx, id)
+		if errors.Is(err, sql.ErrNoRows) || (err == nil && row.WalletID != walletID) {
+			return 0, ErrNotFound
+		}
+		if err != nil {
+			return 0, err
+		}
+		if err := applyBulkField(ctx, qtx, id, field, value); err != nil {
+			return 0, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return len(ids), nil
+}
+
+func (s *Service) validateTarget(ctx context.Context, qtx *db.Queries, walletID int64, field string, id int64) error {
+	if field == BulkFieldCategory {
+		cat, err := qtx.GetCategory(ctx, id)
+		if errors.Is(err, sql.ErrNoRows) || (err == nil && cat.WalletID != walletID) {
+			return ErrNotFound
+		}
+		return err
+	}
+	pe, err := qtx.GetPayee(ctx, id)
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && pe.WalletID != walletID) {
+		return ErrNotFound
+	}
+	return err
+}
+
+func applyBulkField(ctx context.Context, qtx *db.Queries, id int64, field string, value *int64) error {
+	switch field {
+	case BulkFieldStatus:
+		return qtx.UpdateTransactionStatus(ctx, db.UpdateTransactionStatusParams{Status: *value, ID: id})
+	case BulkFieldPaymentMode:
+		return qtx.SetTransactionPaymentMode(ctx, db.SetTransactionPaymentModeParams{PaymentMode: *value, ID: id})
+	case BulkFieldCategory:
+		return qtx.SetTransactionCategory(ctx, db.SetTransactionCategoryParams{CategoryID: nullID(value), ID: id})
+	case BulkFieldPayee:
+		return qtx.SetTransactionPayee(ctx, db.SetTransactionPayeeParams{PayeeID: nullID(value), ID: id})
+	}
+	return ErrInvalidBulkField
 }
 
 // Delete removes a transaction (its splits and tag links cascade). When the

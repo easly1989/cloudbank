@@ -228,6 +228,82 @@ func TestRegisterSummaryAndInitialBalance(t *testing.T) {
 	_ = past
 }
 
+func TestRegisterIncludesTags(t *testing.T) {
+	s, _, wid, acc := newTestService(t)
+	ctx := context.Background()
+	_, _ = s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-01-15", Amount: -100, Tags: []string{"food", "cash"}})
+	_, _ = s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-01-16", Amount: -200})
+
+	rows, _, err := s.Register(ctx, acc)
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+	if len(rows[0].Tags) != 2 {
+		t.Fatalf("row 0 tags = %v, want 2", rows[0].Tags)
+	}
+	if len(rows[1].Tags) != 0 {
+		t.Fatalf("row 1 tags = %v, want empty", rows[1].Tags)
+	}
+}
+
+func TestBulkUpdate(t *testing.T) {
+	s, q, wid, acc := newTestService(t)
+	ctx := context.Background()
+	cat, _ := q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: wid, Name: "Food"})
+	a, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-01-15", Amount: -100})
+	b, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-01-16", Amount: -200})
+
+	// Bulk set status across both → one transaction.
+	n, err := s.BulkUpdate(ctx, wid, []int64{a.ID, b.ID}, BulkFieldStatus, iptr(StatusReconciled))
+	if err != nil || n != 2 {
+		t.Fatalf("bulk status: n=%d err=%v", n, err)
+	}
+	ga, _ := s.Get(ctx, a.ID)
+	gb, _ := s.Get(ctx, b.ID)
+	if ga.Status != StatusReconciled || gb.Status != StatusReconciled {
+		t.Fatalf("statuses = %d/%d, want reconciled", ga.Status, gb.Status)
+	}
+
+	// Bulk set category.
+	if _, err := s.BulkUpdate(ctx, wid, []int64{a.ID}, BulkFieldCategory, iptr(cat.ID)); err != nil {
+		t.Fatalf("bulk category: %v", err)
+	}
+	if ga, _ = s.Get(ctx, a.ID); ga.CategoryID == nil || *ga.CategoryID != cat.ID {
+		t.Fatalf("category not set: %+v", ga.CategoryID)
+	}
+
+	// Invalid field / value.
+	if _, err := s.BulkUpdate(ctx, wid, []int64{a.ID}, "nope", nil); err != ErrInvalidBulkField {
+		t.Fatalf("bad field = %v", err)
+	}
+	if _, err := s.BulkUpdate(ctx, wid, []int64{a.ID}, BulkFieldStatus, iptr(99)); err != ErrInvalidStatus {
+		t.Fatalf("bad status = %v", err)
+	}
+}
+
+func TestBulkUpdateAtomicAcrossWallets(t *testing.T) {
+	s, q, wid, acc := newTestService(t)
+	ctx := context.Background()
+	mine, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-01-15", Amount: -100})
+
+	// A transaction in a different wallet.
+	w2, _ := q.CreateWallet(ctx, db.CreateWalletParams{Title: "Other"})
+	cur2, _ := q.InsertCurrency(ctx, db.InsertCurrencyParams{
+		WalletID: w2.ID, IsoCode: "USD", Name: "USD", Symbol: "$",
+		DecimalChar: ".", GroupChar: ",", FracDigits: 2, IsBase: 1, Rate: 1,
+	})
+	acc2, _ := q.InsertAccount(ctx, db.InsertAccountParams{WalletID: w2.ID, Name: "X", Type: "bank", CurrencyID: cur2.ID, Position: 1})
+	foreign, _ := s.Create(ctx, w2.ID, Input{AccountID: acc2.ID, Date: "2026-01-15", Amount: -100})
+
+	// Bulk touching a foreign id must fail and roll back entirely.
+	if _, err := s.BulkUpdate(ctx, wid, []int64{mine.ID, foreign.ID}, BulkFieldStatus, iptr(StatusReconciled)); err != ErrNotFound {
+		t.Fatalf("cross-wallet bulk = %v, want ErrNotFound", err)
+	}
+	if got, _ := s.Get(ctx, mine.ID); got.Status != StatusNone {
+		t.Fatalf("mine.status = %d, want unchanged (rollback)", got.Status)
+	}
+}
+
 func TestSetStatus(t *testing.T) {
 	s, _, wid, acc := newTestService(t)
 	ctx := context.Background()
