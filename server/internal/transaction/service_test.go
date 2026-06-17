@@ -162,3 +162,84 @@ func TestFindDuplicatesAndList(t *testing.T) {
 		t.Fatalf("list total=%d len=%d, want 3 and 2", total, len(list))
 	}
 }
+
+func TestRegisterRunningBalanceOrdering(t *testing.T) {
+	s, _, wid, acc := newTestService(t)
+	ctx := context.Background()
+	// Inserted out of date order; the register must order by (date, id).
+	tx1, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-01-10", Amount: 10000})
+	_, _ = s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-01-05", Amount: -3000})
+	tx3, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-01-10", Amount: 2000})
+
+	rows, summary, err := s.Register(ctx, acc)
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+	if len(rows) != 3 {
+		t.Fatalf("rows = %d, want 3", len(rows))
+	}
+	// Chronological: 01-05 (-3000), 01-10/tx1 (+10000), 01-10/tx3 (+2000).
+	want := []struct {
+		date string
+		bal  int64
+	}{{"2026-01-05", -3000}, {"2026-01-10", 7000}, {"2026-01-10", 9000}}
+	for i, w := range want {
+		if rows[i].Date != w.date || rows[i].RunningBalance != w.bal {
+			t.Fatalf("row %d = (%s, %d), want (%s, %d)", i, rows[i].Date, rows[i].RunningBalance, w.date, w.bal)
+		}
+	}
+	// Same-date tie broken by id (tx1 before tx3).
+	if rows[1].ID != tx1.ID || rows[2].ID != tx3.ID {
+		t.Fatalf("same-date tie not ordered by id: %d then %d", rows[1].ID, rows[2].ID)
+	}
+	if summary.Future != 9000 {
+		t.Fatalf("future = %d, want 9000", summary.Future)
+	}
+}
+
+func TestRegisterSummaryAndInitialBalance(t *testing.T) {
+	s, q, wid, _ := newTestService(t)
+	ctx := context.Background()
+	cur, _ := q.InsertCurrency(ctx, db.InsertCurrencyParams{
+		WalletID: wid, IsoCode: "USD", Name: "USD", Symbol: "$",
+		DecimalChar: ".", GroupChar: ",", FracDigits: 2, IsBase: 0, Rate: 1,
+	})
+	acc, _ := q.InsertAccount(ctx, db.InsertAccountParams{
+		WalletID: wid, Name: "Savings", Type: "savings", CurrencyID: cur.ID,
+		InitialBalance: 100000, Position: 2,
+	})
+	// A past, reconciled inflow and a far-future inflow.
+	past, _ := s.Create(ctx, wid, Input{AccountID: acc.ID, Date: "2000-01-01", Amount: 5000, Status: StatusReconciled})
+	_, _ = s.Create(ctx, wid, Input{AccountID: acc.ID, Date: "2099-12-31", Amount: 1000})
+
+	_, summary, err := s.Register(ctx, acc.ID)
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+	if summary.Future != 106000 {
+		t.Fatalf("future = %d, want 106000 (initial + 5000 + 1000)", summary.Future)
+	}
+	if summary.Today != 105000 {
+		t.Fatalf("today = %d, want 105000 (excludes far-future row)", summary.Today)
+	}
+	if summary.Bank != 105000 {
+		t.Fatalf("bank = %d, want 105000 (initial + reconciled only)", summary.Bank)
+	}
+	_ = past
+}
+
+func TestSetStatus(t *testing.T) {
+	s, _, wid, acc := newTestService(t)
+	ctx := context.Background()
+	tx, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-01-15", Amount: -100})
+	if err := s.SetStatus(ctx, tx.ID, StatusReconciled); err != nil {
+		t.Fatalf("SetStatus: %v", err)
+	}
+	got, _ := s.Get(ctx, tx.ID)
+	if got.Status != StatusReconciled {
+		t.Fatalf("status = %d, want reconciled", got.Status)
+	}
+	if err := s.SetStatus(ctx, tx.ID, 99); err != ErrInvalidStatus {
+		t.Fatalf("invalid status = %v, want ErrInvalidStatus", err)
+	}
+}
