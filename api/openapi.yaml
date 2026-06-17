@@ -853,6 +853,73 @@ paths:
       responses:
         "204": { description: Deleted. }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/templates:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listTemplates
+      summary: List the wallet's transaction templates
+      responses:
+        "200": { description: Templates., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Template" } } } } }
+    post:
+      operationId: createTemplate
+      summary: Create a transaction template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TemplateInput" }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Template" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/templates/from-transaction/{transactionId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: transactionId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: createTemplateFromTransaction
+      summary: Create a template capturing an existing transaction (incl. transfer)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+              required: [name]
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Template" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/templates/{templateId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: templateId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getTemplate
+      summary: Get a template
+      responses:
+        "200": { description: The template., content: { application/json: { schema: { $ref: "#/components/schemas/Template" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateTemplate
+      summary: Update a template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TemplateInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Template" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteTemplate
+      summary: Delete a template
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/dashboard:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -1158,6 +1225,43 @@ components:
         today: { type: integer, format: int64, description: "initial + amounts dated on or before today" }
         future: { type: integer, format: int64, description: "initial + all amounts" }
       required: [bank, today, future]
+    Template:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        accountId: { type: integer, format: int64, nullable: true }
+        amount: { type: integer, format: int64 }
+        paymentMode: { type: integer }
+        status: { type: integer }
+        info: { type: string }
+        payeeId: { type: integer, format: int64, nullable: true }
+        categoryId: { type: integer, format: int64, nullable: true }
+        memo: { type: string }
+        tags: { type: array, items: { type: string } }
+        isSplit: { type: boolean }
+        isTransfer: { type: boolean }
+        toAccountId: { type: integer, format: int64, nullable: true }
+        splits: { type: array, items: { $ref: "#/components/schemas/Split" } }
+        createdAt: { type: string }
+      required: [id, name, amount, paymentMode, status, info, memo, tags, isSplit, isTransfer, createdAt]
+    TemplateInput:
+      type: object
+      properties:
+        name: { type: string }
+        accountId: { type: integer, format: int64, nullable: true }
+        amount: { type: integer, format: int64, description: "signed minor units" }
+        paymentMode: { type: integer }
+        status: { type: integer }
+        info: { type: string }
+        payeeId: { type: integer, format: int64, nullable: true }
+        categoryId: { type: integer, format: int64, nullable: true }
+        memo: { type: string }
+        tags: { type: array, items: { type: string } }
+        isTransfer: { type: boolean }
+        toAccountId: { type: integer, format: int64, nullable: true }
+        splits: { type: array, items: { $ref: "#/components/schemas/Split" } }
+      required: [name]
     CurrencyInfo:
       type: object
       properties:

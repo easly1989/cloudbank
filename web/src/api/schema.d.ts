@@ -703,6 +703,68 @@ export interface paths {
         patch: operations["updateTransfer"];
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List the wallet's transaction templates */
+        get: operations["listTemplates"];
+        put?: never;
+        /** Create a transaction template */
+        post: operations["createTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/templates/from-transaction/{transactionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                transactionId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a template capturing an existing transaction (incl. transfer) */
+        post: operations["createTemplateFromTransaction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/templates/{templateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                templateId: number;
+            };
+            cookie?: never;
+        };
+        /** Get a template */
+        get: operations["getTemplate"];
+        put?: never;
+        post?: never;
+        /** Delete a template */
+        delete: operations["deleteTemplate"];
+        options?: never;
+        head?: never;
+        /** Update a template */
+        patch: operations["updateTemplate"];
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/dashboard": {
         parameters: {
             query?: never;
@@ -1009,6 +1071,53 @@ export interface components {
              * @description initial + all amounts
              */
             future: number;
+        };
+        Template: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** Format: int64 */
+            accountId?: number | null;
+            /** Format: int64 */
+            amount: number;
+            paymentMode: number;
+            status: number;
+            info: string;
+            /** Format: int64 */
+            payeeId?: number | null;
+            /** Format: int64 */
+            categoryId?: number | null;
+            memo: string;
+            tags: string[];
+            isSplit: boolean;
+            isTransfer: boolean;
+            /** Format: int64 */
+            toAccountId?: number | null;
+            splits?: components["schemas"]["Split"][];
+            createdAt: string;
+        };
+        TemplateInput: {
+            name: string;
+            /** Format: int64 */
+            accountId?: number | null;
+            /**
+             * Format: int64
+             * @description signed minor units
+             */
+            amount?: number;
+            paymentMode?: number;
+            status?: number;
+            info?: string;
+            /** Format: int64 */
+            payeeId?: number | null;
+            /** Format: int64 */
+            categoryId?: number | null;
+            memo?: string;
+            tags?: string[];
+            isTransfer?: boolean;
+            /** Format: int64 */
+            toAccountId?: number | null;
+            splits?: components["schemas"]["Split"][];
         };
         CurrencyInfo: {
             code: string;
@@ -2615,6 +2724,161 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Templates. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Template"][];
+                };
+            };
+        };
+    };
+    createTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateInput"];
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Template"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    createTemplateFromTransaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                transactionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Template"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                templateId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The template. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Template"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                templateId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                templateId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateInput"];
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Template"];
                 };
             };
             400: components["responses"]["BadRequest"];
