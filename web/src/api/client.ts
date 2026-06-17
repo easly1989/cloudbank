@@ -342,6 +342,8 @@ export interface Transaction {
   splits?: Split[];
   payeeName?: string;
   categoryName?: string;
+  transferId?: number | null;
+  transferAccountId?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -393,3 +395,40 @@ export const findDuplicateTransactions = (
   );
 
 export const listTags = (walletId: number) => api.get<string[]>(`/api/v1/wallets/${walletId}/tags`);
+
+// --- Transfers ---
+
+export interface Transfer {
+  id: number;
+  fromAccountId: number;
+  toAccountId: number;
+  date: string;
+  fromAmount: number;
+  toAmount: number;
+  memo: string;
+  status: number;
+  txnFromId: number;
+  txnToId: number;
+}
+
+export interface TransferInput {
+  fromAccountId: number;
+  toAccountId: number;
+  date: string;
+  fromAmount: number;
+  toAmount?: number;
+  memo?: string;
+  status?: number;
+}
+
+export const createTransfer = (walletId: number, body: TransferInput) =>
+  api.post<Transfer>(`/api/v1/wallets/${walletId}/transfers`, body);
+
+export const getTransfer = (walletId: number, id: number) =>
+  api.get<Transfer>(`/api/v1/wallets/${walletId}/transfers/${id}`);
+
+export const updateTransfer = (walletId: number, id: number, body: TransferInput) =>
+  api.patch<Transfer>(`/api/v1/wallets/${walletId}/transfers/${id}`, body);
+
+export const deleteTransfer = (walletId: number, id: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/transfers/${id}`);

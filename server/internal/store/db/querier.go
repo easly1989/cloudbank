@@ -32,6 +32,7 @@ type Querier interface {
 	DeleteSplits(ctx context.Context, transactionID int64) error
 	DeleteTransaction(ctx context.Context, id int64) error
 	DeleteTransactionTags(ctx context.Context, transactionID int64) error
+	DeleteTransfer(ctx context.Context, id int64) error
 	DeleteUserSessions(ctx context.Context, userID int64) error
 	DeleteWallet(ctx context.Context, id int64) error
 	FindDuplicateTransactions(ctx context.Context, arg FindDuplicateTransactionsParams) ([]Transaction, error)
@@ -43,6 +44,8 @@ type Querier interface {
 	GetSession(ctx context.Context, id string) (Session, error)
 	GetTagByName(ctx context.Context, arg GetTagByNameParams) (Tag, error)
 	GetTransaction(ctx context.Context, id int64) (Transaction, error)
+	GetTransfer(ctx context.Context, id int64) (Transfer, error)
+	GetTransferByTransaction(ctx context.Context, arg GetTransferByTransactionParams) (Transfer, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	GetWallet(ctx context.Context, id int64) (Wallet, error)
@@ -54,6 +57,7 @@ type Querier interface {
 	InsertSplit(ctx context.Context, arg InsertSplitParams) error
 	InsertTag(ctx context.Context, arg InsertTagParams) (Tag, error)
 	InsertTransaction(ctx context.Context, arg InsertTransactionParams) (Transaction, error)
+	InsertTransfer(ctx context.Context, arg InsertTransferParams) (Transfer, error)
 	ListAccountsForWallet(ctx context.Context, walletID int64) ([]ListAccountsForWalletRow, error)
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
 	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)

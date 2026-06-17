@@ -41,6 +41,18 @@
     "save": "Save",
     "duplicateWarning": "Found {{count}} similar transaction(s) — possible duplicate."
   },
+  "transfers": {
+    "add": "Transfer",
+    "addTitle": "New transfer",
+    "editTitle": "Edit transfer",
+    "transfer": "Transfer",
+    "from": "From account",
+    "to": "To account",
+    "fromAmount": "Amount sent",
+    "toAmount": "Amount received",
+    "sameAccount": "Source and destination accounts must differ.",
+    "confirmDelete": "Delete this transfer? Both legs will be removed."
+  },
   "paymentModes": {
     "0": "None",
     "1": "Credit card",
