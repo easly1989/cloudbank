@@ -169,6 +169,90 @@ func (q *Queries) InsertTransaction(ctx context.Context, arg InsertTransactionPa
 	return i, err
 }
 
+const listAccountRegister = `-- name: ListAccountRegister :many
+SELECT
+    t.id, t.account_id, t.date, t.amount, t.payment_mode, t.status, t.info,
+    t.payee_id, t.category_id, t.memo, t.is_split, t.created_at, t.updated_at,
+    p.name AS payee_name,
+    c.name AS category_name,
+    tr.id AS transfer_id,
+    ot.account_id AS transfer_account_id,
+    CAST(SUM(t.amount) OVER (ORDER BY t.date, t.id ROWS UNBOUNDED PRECEDING) AS INTEGER) AS running_delta
+FROM transactions t
+LEFT JOIN payees p ON p.id = t.payee_id
+LEFT JOIN categories c ON c.id = t.category_id
+LEFT JOIN transfers tr ON tr.txn_from_id = t.id OR tr.txn_to_id = t.id
+LEFT JOIN transactions ot ON ot.id = (CASE WHEN tr.txn_from_id = t.id THEN tr.txn_to_id ELSE tr.txn_from_id END)
+WHERE t.account_id = ?
+ORDER BY t.date, t.id
+`
+
+type ListAccountRegisterRow struct {
+	ID                int64
+	AccountID         int64
+	Date              string
+	Amount            int64
+	PaymentMode       int64
+	Status            int64
+	Info              string
+	PayeeID           sql.NullInt64
+	CategoryID        sql.NullInt64
+	Memo              string
+	IsSplit           int64
+	CreatedAt         string
+	UpdatedAt         string
+	PayeeName         sql.NullString
+	CategoryName      sql.NullString
+	TransferID        sql.NullInt64
+	TransferAccountID sql.NullInt64
+	RunningDelta      int64
+}
+
+// The full account ledger ordered chronologically (date, then id) with a
+// server-computed cumulative delta. The application adds the account's initial
+// balance to produce each row's running balance.
+func (q *Queries) ListAccountRegister(ctx context.Context, accountID int64) ([]ListAccountRegisterRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAccountRegister, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAccountRegisterRow{}
+	for rows.Next() {
+		var i ListAccountRegisterRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccountID,
+			&i.Date,
+			&i.Amount,
+			&i.PaymentMode,
+			&i.Status,
+			&i.Info,
+			&i.PayeeID,
+			&i.CategoryID,
+			&i.Memo,
+			&i.IsSplit,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.PayeeName,
+			&i.CategoryName,
+			&i.TransferID,
+			&i.TransferAccountID,
+			&i.RunningDelta,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTransactionsForAccount = `-- name: ListTransactionsForAccount :many
 SELECT t.id, t.wallet_id, t.account_id, t.date, t.amount, t.payment_mode, t.status, t.info, t.payee_id, t.category_id, t.memo, t.is_split, t.created_at, t.updated_at, p.name AS payee_name, c.name AS category_name
 FROM transactions t
@@ -278,5 +362,21 @@ func (q *Queries) UpdateTransaction(ctx context.Context, arg UpdateTransactionPa
 		arg.IsSplit,
 		arg.ID,
 	)
+	return err
+}
+
+const updateTransactionStatus = `-- name: UpdateTransactionStatus :exec
+UPDATE transactions SET
+    status = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE id = ?
+`
+
+type UpdateTransactionStatusParams struct {
+	Status int64
+	ID     int64
+}
+
+func (q *Queries) UpdateTransactionStatus(ctx context.Context, arg UpdateTransactionStatusParams) error {
+	_, err := q.db.ExecContext(ctx, updateTransactionStatus, arg.Status, arg.ID)
 	return err
 }

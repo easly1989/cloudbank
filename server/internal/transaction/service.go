@@ -378,6 +378,65 @@ func (s *Service) List(ctx context.Context, accountID int64, limit, offset int64
 	return out, total, nil
 }
 
+// RegisterRow is a register ledger row: a transaction plus its chronological
+// running balance (initial balance + cumulative amount up to and including it).
+type RegisterRow struct {
+	Transaction
+	RunningBalance int64 `json:"runningBalance"`
+}
+
+// RegisterSummary holds an account's headline balances (HomeBank semantics).
+type RegisterSummary struct {
+	Bank   int64 `json:"bank"`   // initial + cleared/reconciled amounts
+	Today  int64 `json:"today"`  // initial + amounts dated on or before today
+	Future int64 `json:"future"` // initial + all amounts
+}
+
+// Register returns the full account ledger in chronological order (date, then
+// id) with a server-computed running balance per row, plus the account's
+// bank/today/future headline balances. Transfer legs carry transferId so the
+// register can flag them. Splits/tags are omitted (fetch a single transaction).
+func (s *Service) Register(ctx context.Context, accountID int64) ([]RegisterRow, RegisterSummary, error) {
+	acc, err := s.q.GetAccount(ctx, accountID)
+	if err != nil {
+		return nil, RegisterSummary{}, err
+	}
+	rows, err := s.q.ListAccountRegister(ctx, accountID)
+	if err != nil {
+		return nil, RegisterSummary{}, err
+	}
+	today := time.Now().UTC().Format(dateLayout)
+	out := make([]RegisterRow, 0, len(rows))
+	sum := RegisterSummary{Bank: acc.InitialBalance, Today: acc.InitialBalance, Future: acc.InitialBalance}
+	for _, r := range rows {
+		row := RegisterRow{
+			Transaction: Transaction{
+				ID: r.ID, AccountID: r.AccountID, Date: r.Date, Amount: r.Amount,
+				PaymentMode: int(r.PaymentMode), Status: int(r.Status), Info: r.Info,
+				PayeeID: idPtr(r.PayeeID), CategoryID: idPtr(r.CategoryID), Memo: r.Memo,
+				IsSplit: r.IsSplit != 0, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt, Tags: []string{},
+				TransferID: idPtr(r.TransferID), TransferAccountID: idPtr(r.TransferAccountID),
+			},
+			RunningBalance: acc.InitialBalance + r.RunningDelta,
+		}
+		if r.PayeeName.Valid {
+			row.PayeeName = r.PayeeName.String
+		}
+		if r.CategoryName.Valid {
+			row.CategoryName = r.CategoryName.String
+		}
+		sum.Future += r.Amount
+		if r.Date <= today {
+			sum.Today += r.Amount
+		}
+		if r.Status == StatusCleared || r.Status == StatusReconciled {
+			sum.Bank += r.Amount
+		}
+		out = append(out, row)
+	}
+	return out, sum, nil
+}
+
 // Delete removes a transaction (its splits and tag links cascade). When the
 // transaction is one leg of an internal transfer, the paired leg is removed too
 // (and the transfers row cascades) so no orphan legs are ever left behind.
@@ -402,6 +461,18 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+// SetStatus updates only a transaction's reconciliation status (used by the
+// register's inline status toggle); tags and splits are left untouched. Status
+// is per-transaction, so a transfer leg's status is independent of its pair.
+func (s *Service) SetStatus(ctx context.Context, id int64, status int) error {
+	if status < 0 || status >= statusCount {
+		return ErrInvalidStatus
+	}
+	return s.q.UpdateTransactionStatus(ctx, db.UpdateTransactionStatusParams{
+		Status: int64(status), ID: id,
+	})
 }
 
 // FindDuplicates returns transactions in the same account with the same amount
