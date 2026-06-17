@@ -2,14 +2,15 @@ import {
   ActionIcon,
   Alert,
   Button,
+  Card,
   Group,
   Modal,
   NumberFormatter,
   SegmentedControl,
   Select,
+  SimpleGrid,
   Stack,
   Switch,
-  Table,
   TagsInput,
   Text,
   TextInput,
@@ -17,7 +18,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconArrowsExchange, IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconArrowsExchange, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -25,6 +26,7 @@ import { useTranslation } from "react-i18next";
 import {
   ApiError,
   type Account,
+  type RegisterRow,
   type Split,
   type Transaction,
   type TransactionInput,
@@ -34,17 +36,19 @@ import {
   deleteTransaction,
   deleteTransfer,
   findDuplicateTransactions,
+  getRegister,
   getTransfer,
   listAccounts,
   listCategories,
   listPayees,
   listTags,
-  listTransactions,
+  setTransactionStatus,
   updateTransaction,
   updateTransfer,
 } from "../api/client";
-import { formatMinor, parseMinor } from "../money";
+import { formatMinor, type MoneyFormat, parseMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
+import { RegisterTable } from "./RegisterTable";
 
 const PAYMENT_MODES = Array.from({ length: 12 }, (_, i) => i);
 const STATUSES = [0, 1, 2, 3, 4];
@@ -67,14 +71,15 @@ export function TransactionsPage() {
   }, [accounts, accountId]);
   const account = accounts.find((a) => String(a.id) === accountId);
 
-  const txQuery = useQuery({
-    queryKey: ["transactions", walletId, accountId],
-    queryFn: () => listTransactions(walletId, Number(accountId)),
+  const registerQuery = useQuery({
+    queryKey: ["register", walletId, accountId],
+    queryFn: () => getRegister(walletId, Number(accountId)),
     enabled: walletId > 0 && !!accountId,
   });
+  const rows = registerQuery.data?.rows ?? [];
 
   const invalidate = () => {
-    void qc.invalidateQueries({ queryKey: ["transactions", walletId, accountId] });
+    void qc.invalidateQueries({ queryKey: ["register", walletId, accountId] });
     void qc.invalidateQueries({ queryKey: ["accounts", walletId] });
   };
   const onError = (err: unknown) =>
@@ -98,6 +103,29 @@ export function TransactionsPage() {
     onSuccess: invalidate,
     onError,
   });
+  const toggleStatus = useMutation({
+    mutationFn: (v: { id: number; status: number }) =>
+      setTransactionStatus(walletId, v.id, v.status),
+    onSuccess: invalidate,
+    onError,
+  });
+
+  const editRow = (row: RegisterRow) => {
+    if (row.transferId != null) {
+      setEditingTransferId(row.transferId);
+      transferForm.open();
+    } else {
+      setEditing(row);
+      form.open();
+    }
+  };
+  const deleteRow = (row: RegisterRow) => {
+    if (row.transferId != null) {
+      if (window.confirm(t("transfers.confirmDelete"))) removeTransfer.mutate(row.transferId);
+    } else if (window.confirm(t("transactions.confirmDelete"))) {
+      remove.mutate(row.id);
+    }
+  };
 
   if (!currentWallet) return null;
   const fmt = account
@@ -148,89 +176,42 @@ export function TransactionsPage() {
       </Group>
 
       {accounts.length === 0 && <Text c="dimmed">{t("transactions.noAccounts")}</Text>}
-      {account && (txQuery.data?.transactions.length ?? 0) === 0 && (
-        <Text c="dimmed">{t("transactions.empty")}</Text>
+
+      {account && registerQuery.data && (
+        <SimpleGrid cols={{ base: 1, sm: 3 }}>
+          <BalanceCard
+            label={t("register.bank")}
+            value={registerQuery.data.summary.bank}
+            fmt={fmt}
+          />
+          <BalanceCard
+            label={t("register.today")}
+            value={registerQuery.data.summary.today}
+            fmt={fmt}
+          />
+          <BalanceCard
+            label={t("register.future")}
+            value={registerQuery.data.summary.future}
+            fmt={fmt}
+          />
+        </SimpleGrid>
       )}
 
-      {account && (txQuery.data?.transactions.length ?? 0) > 0 && (
-        <Table striped highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>{t("transactions.date")}</Table.Th>
-              <Table.Th>{t("transactions.payee")}</Table.Th>
-              <Table.Th>{t("transactions.category")}</Table.Th>
-              <Table.Th ta="right">{t("transactions.amount")}</Table.Th>
-              <Table.Th />
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {txQuery.data?.transactions.map((tx) => {
-              const counterpart =
-                tx.transferId != null
-                  ? accounts.find((a) => a.id === tx.transferAccountId)?.name
-                  : undefined;
-              return (
-                <Table.Tr key={tx.id}>
-                  <Table.Td>{tx.date}</Table.Td>
-                  <Table.Td>
-                    {tx.transferId != null ? (
-                      <Group gap={4} wrap="nowrap">
-                        <IconArrowsExchange size={14} />
-                        <Text size="sm">{counterpart ?? t("transfers.transfer")}</Text>
-                      </Group>
-                    ) : (
-                      tx.payeeName
-                    )}
-                  </Table.Td>
-                  <Table.Td>
-                    {tx.transferId != null
-                      ? t("transfers.transfer")
-                      : tx.isSplit
-                        ? t("transactions.split")
-                        : tx.categoryName}
-                  </Table.Td>
-                  <Table.Td ta="right">
-                    <Text c={tx.amount < 0 ? "red" : "teal"}>{formatMinor(tx.amount, fmt)}</Text>
-                  </Table.Td>
-                  <Table.Td ta="right" w={90}>
-                    <Group gap={4} justify="flex-end" wrap="nowrap">
-                      <ActionIcon
-                        variant="subtle"
-                        aria-label={t("transactions.edit")}
-                        onClick={() => {
-                          if (tx.transferId != null) {
-                            setEditingTransferId(tx.transferId);
-                            transferForm.open();
-                          } else {
-                            setEditing(tx);
-                            form.open();
-                          }
-                        }}
-                      >
-                        <IconPencil size={16} />
-                      </ActionIcon>
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        aria-label={t("transactions.delete")}
-                        onClick={() => {
-                          if (tx.transferId != null) {
-                            if (window.confirm(t("transfers.confirmDelete")))
-                              removeTransfer.mutate(tx.transferId);
-                          } else if (window.confirm(t("transactions.confirmDelete"))) {
-                            remove.mutate(tx.id);
-                          }
-                        }}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              );
-            })}
-          </Table.Tbody>
-        </Table>
+      {account && (
+        <QuickAdd walletId={walletId} account={account} onAdded={invalidate} onError={onError} />
+      )}
+
+      {account && rows.length === 0 && <Text c="dimmed">{t("transactions.empty")}</Text>}
+
+      {account && rows.length > 0 && (
+        <RegisterTable
+          rows={rows}
+          accounts={accounts}
+          fmt={fmt}
+          onEdit={editRow}
+          onDelete={deleteRow}
+          onToggleStatus={(row, status) => toggleStatus.mutate({ id: row.id, status })}
+        />
       )}
 
       {account && (
@@ -253,6 +234,149 @@ export function TransactionsPage() {
         onSaved={invalidate}
       />
     </Stack>
+  );
+}
+
+function BalanceCard({ label, value, fmt }: { label: string; value: number; fmt: MoneyFormat }) {
+  return (
+    <Card withBorder padding="sm">
+      <Text size="xs" c="dimmed" tt="uppercase">
+        {label}
+      </Text>
+      <Text size="lg" fw={600} c={value < 0 ? "red" : undefined}>
+        {formatMinor(value, fmt)}
+      </Text>
+    </Card>
+  );
+}
+
+// QuickAdd is the register's one-line entry: pick a payee (its default category
+// and payment mode are applied automatically), type an amount, and add without
+// leaving the page.
+function QuickAdd({
+  walletId,
+  account,
+  onAdded,
+  onError,
+}: {
+  walletId: number;
+  account: Account;
+  onAdded: () => void;
+  onError: (err: unknown) => void;
+}) {
+  const { t } = useTranslation();
+  const payeesQuery = useQuery({
+    queryKey: ["payees", walletId],
+    queryFn: () => listPayees(walletId),
+  });
+  const categoriesQuery = useQuery({
+    queryKey: ["categories", walletId],
+    queryFn: () => listCategories(walletId),
+  });
+  const fd = account.currencyFracDigits;
+  const dc = account.currencyDecimalChar;
+
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [payeeId, setPayeeId] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [amount, setAmount] = useState("");
+  const [direction, setDirection] = useState<"expense" | "income">("expense");
+
+  const onPayee = (v: string | null) => {
+    setPayeeId(v);
+    const p = (payeesQuery.data ?? []).find((x) => String(x.id) === v);
+    if (p?.defaultCategoryId != null) setCategoryId(String(p.defaultCategoryId));
+  };
+
+  const add = useMutation({
+    mutationFn: () => {
+      const p = (payeesQuery.data ?? []).find((x) => String(x.id) === payeeId);
+      return createTransaction(walletId, {
+        accountId: account.id,
+        date,
+        amount: (parseMinor(amount, fd, dc) ?? 0) * (direction === "expense" ? -1 : 1),
+        paymentMode: p?.defaultPaymentMode ?? 0,
+        payeeId: payeeId ? Number(payeeId) : null,
+        categoryId: categoryId ? Number(categoryId) : null,
+      });
+    },
+    onSuccess: () => {
+      setAmount("");
+      setPayeeId(null);
+      setCategoryId(null);
+      onAdded();
+    },
+    onError,
+  });
+
+  const categoryOptions = useMemo(
+    () =>
+      (categoriesQuery.data ?? []).map((c) => ({
+        value: String(c.id),
+        label: c.parentId
+          ? `   ${(categoriesQuery.data ?? []).find((p) => p.id === c.parentId)?.name ?? ""} › ${c.name}`
+          : c.name,
+      })),
+    [categoriesQuery.data],
+  );
+  const canAdd = !!date && (parseMinor(amount, fd, dc) ?? 0) > 0;
+
+  return (
+    <Card withBorder padding="xs">
+      <Group gap="xs" align="flex-end" wrap="nowrap">
+        <TextInput
+          type="date"
+          aria-label={t("transactions.date")}
+          value={date}
+          onChange={(e) => setDate(e.currentTarget.value)}
+          w={150}
+        />
+        <Select
+          placeholder={t("transactions.payee")}
+          data={(payeesQuery.data ?? []).map((p) => ({ value: String(p.id), label: p.name }))}
+          value={payeeId}
+          onChange={onPayee}
+          clearable
+          searchable
+          style={{ flex: 1 }}
+        />
+        <Select
+          placeholder={t("transactions.category")}
+          data={categoryOptions}
+          value={categoryId}
+          onChange={setCategoryId}
+          clearable
+          searchable
+          style={{ flex: 1 }}
+        />
+        <SegmentedControl
+          value={direction}
+          onChange={(v) => setDirection(v as "expense" | "income")}
+          data={[
+            { value: "expense", label: "−" },
+            { value: "income", label: "+" },
+          ]}
+        />
+        <TextInput
+          placeholder={t("transactions.amount")}
+          aria-label={t("transactions.amount")}
+          value={amount}
+          onChange={(e) => setAmount(e.currentTarget.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && canAdd) add.mutate();
+          }}
+          w={130}
+        />
+        <Button
+          leftSection={<IconPlus size={16} />}
+          onClick={() => add.mutate()}
+          loading={add.isPending}
+          disabled={!canAdd}
+        >
+          {t("register.quickAdd")}
+        </Button>
+      </Group>
+    </Card>
   );
 }
 

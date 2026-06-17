@@ -20,12 +20,49 @@ func (h *transactionHandlers) walletRoutes(r chi.Router) {
 	r.Get("/tags", h.listTags)
 	r.Get("/transactions", h.list)
 	r.Post("/transactions", h.create)
+	r.Get("/transactions/register", h.register)
 	r.Get("/transactions/duplicates", h.duplicates)
 	r.Route("/transactions/{transactionId}", func(r chi.Router) {
 		r.Get("/", h.get)
 		r.Patch("/", h.update)
+		r.Patch("/status", h.setStatus)
 		r.Delete("/", h.delete)
 	})
+}
+
+func (h *transactionHandlers) register(w http.ResponseWriter, r *http.Request) {
+	accountID, ok := h.requireAccountInWallet(w, r)
+	if !ok {
+		return
+	}
+	rows, summary, err := h.svc.Register(r.Context(), accountID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not load register")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"rows": rows, "summary": summary})
+}
+
+func (h *transactionHandlers) setStatus(w http.ResponseWriter, r *http.Request) {
+	t, ok := h.transactionFromPath(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Status int `json:"status"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if err := h.svc.SetStatus(r.Context(), t.ID, body.Status); err != nil {
+		if errors.Is(err, transaction.ErrInvalidStatus) {
+			writeError(w, http.StatusBadRequest, "invalid_status", "invalid status")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal", "could not update status")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *transactionHandlers) listTags(w http.ResponseWriter, r *http.Request) {

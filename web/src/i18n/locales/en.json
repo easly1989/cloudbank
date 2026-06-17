@@ -53,6 +53,15 @@
     "sameAccount": "Source and destination accounts must differ.",
     "confirmDelete": "Delete this transfer? Both legs will be removed."
   },
+  "register": {
+    "bank": "Bank",
+    "today": "Today",
+    "future": "Future",
+    "balance": "Balance",
+    "ledger": "Account ledger",
+    "quickAdd": "Add",
+    "cycleStatus": "Click to change status"
+  },
   "paymentModes": {
     "0": "None",
     "1": "Credit card",
