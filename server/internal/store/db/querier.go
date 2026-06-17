@@ -17,6 +17,9 @@ type Querier interface {
 	AddTransactionTag(ctx context.Context, arg AddTransactionTagParams) error
 	AddWalletMember(ctx context.Context, arg AddWalletMemberParams) error
 	AdvanceSchedule(ctx context.Context, arg AdvanceScheduleParams) error
+	// Category amounts in a date range (plain transactions + split lines), excluding
+	// accounts flagged no_budget, with each row's currency so the app can convert.
+	CategoryActualsForBudget(ctx context.Context, arg CategoryActualsForBudgetParams) ([]CategoryActualsForBudgetRow, error)
 	// Category amounts in a date range, from both plain transactions and split
 	// lines, with each row's account currency so the app can convert to base.
 	CategoryExpenseTotals(ctx context.Context, arg CategoryExpenseTotalsParams) ([]CategoryExpenseTotalsRow, error)
@@ -34,6 +37,7 @@ type Querier interface {
 	DeleteAccount(ctx context.Context, id int64) error
 	DeleteAssignment(ctx context.Context, id int64) error
 	DeleteCategory(ctx context.Context, id int64) error
+	DeleteCategoryBudget(ctx context.Context, arg DeleteCategoryBudgetParams) error
 	DeleteCurrency(ctx context.Context, id int64) error
 	DeleteExpiredSessions(ctx context.Context, expiresAt string) error
 	DeletePayee(ctx context.Context, id int64) error
@@ -67,6 +71,7 @@ type Querier interface {
 	GetWalletMembership(ctx context.Context, arg GetWalletMembershipParams) (string, error)
 	InsertAccount(ctx context.Context, arg InsertAccountParams) (Account, error)
 	InsertAssignment(ctx context.Context, arg InsertAssignmentParams) (Assignment, error)
+	InsertBudget(ctx context.Context, arg InsertBudgetParams) error
 	InsertCategory(ctx context.Context, arg InsertCategoryParams) (Category, error)
 	InsertCurrency(ctx context.Context, arg InsertCurrencyParams) (Currency, error)
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
@@ -84,6 +89,7 @@ type Querier interface {
 	ListAccountsForWallet(ctx context.Context, walletID int64) ([]ListAccountsForWalletRow, error)
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
 	ListAssignmentsForWallet(ctx context.Context, walletID int64) ([]Assignment, error)
+	ListBudgetsForWallet(ctx context.Context, walletID int64) ([]Budget, error)
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
 	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)
 	ListExchangeRates(ctx context.Context, currencyID int64) ([]ExchangeRate, error)

@@ -13,6 +13,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
+	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
@@ -52,9 +53,10 @@ func newTestAPI(t *testing.T) *testClient {
 	tplsvc := template.NewService(st.Write())
 	ssvc := schedule.NewService(st.Write(), tsvc, xsvc, nil)
 	asvc2 := assignment.NewService(st.Write())
+	bsvc := budget.NewService(st.Write())
 	srv := httptest.NewServer(New(Options{
 		Auth: svc, Wallets: wsvc, Currencies: csvc, Accounts: asvc,
-		Categories: catsvc, Payees: psvc, Transactions: tsvc, Transfers: xsvc, Dashboard: dsvc, Templates: tplsvc, Schedules: ssvc, Assignments: asvc2, Health: st,
+		Categories: catsvc, Payees: psvc, Transactions: tsvc, Transfers: xsvc, Dashboard: dsvc, Templates: tplsvc, Schedules: ssvc, Assignments: asvc2, Budgets: bsvc, Health: st,
 	}))
 	t.Cleanup(srv.Close)
 
