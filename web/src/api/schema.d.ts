@@ -765,6 +765,107 @@ export interface paths {
         patch: operations["updateTemplate"];
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List the wallet's scheduled transactions */
+        get: operations["listSchedules"];
+        put?: never;
+        /** Create a schedule on a template */
+        post: operations["createSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/schedules/upcoming": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Schedules due on or before a date (defaults to 30 days ahead) */
+        get: operations["listUpcomingSchedules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/schedules/{scheduleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                scheduleId: number;
+            };
+            cookie?: never;
+        };
+        /** Get a schedule */
+        get: operations["getSchedule"];
+        put?: never;
+        post?: never;
+        /** Delete a schedule */
+        delete: operations["deleteSchedule"];
+        options?: never;
+        head?: never;
+        /** Update a schedule's configuration */
+        patch: operations["updateSchedule"];
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/schedules/{scheduleId}/post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                scheduleId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post the current occurrence now and advance the schedule */
+        post: operations["postScheduleNow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/schedules/{scheduleId}/skip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                scheduleId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Skip the current occurrence and advance the schedule */
+        post: operations["skipSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/dashboard": {
         parameters: {
             query?: never;
@@ -1165,7 +1266,48 @@ export interface components {
             topCategories: components["schemas"]["CategorySlice"][];
             from: string;
             to: string;
-            upcoming: unknown[];
+            upcoming: components["schemas"]["Schedule"][];
+        };
+        Schedule: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            templateId: number;
+            templateName: string;
+            /** Format: int64 */
+            templateAmount: number;
+            templateIsTransfer: boolean;
+            /** @enum {string} */
+            unit: "day" | "week" | "month" | "year";
+            everyN: number;
+            nextDue: string;
+            /** @description 0 none, 1 before, 2 after, 3 skip */
+            weekendMode: number;
+            /** Format: int64 */
+            remaining?: number | null;
+            postAdvance: number;
+            autoPost: boolean;
+            lastPosted?: string;
+        };
+        ScheduleInput: {
+            /** Format: int64 */
+            templateId: number;
+            /** @enum {string} */
+            unit: "day" | "week" | "month" | "year";
+            /** @description every N units, >= 1 */
+            everyN: number;
+            /** @description YYYY-MM-DD */
+            nextDue: string;
+            /** @description 0 none, 1 before, 2 after, 3 skip */
+            weekendMode?: number;
+            /**
+             * Format: int64
+             * @description occurrence limit; null = unlimited
+             */
+            remaining?: number | null;
+            /** @description post this many days early */
+            postAdvance?: number;
+            autoPost?: boolean;
         };
         Transfer: {
             /** Format: int64 */
@@ -2882,6 +3024,198 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listSchedules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Schedules. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Schedule"][];
+                };
+            };
+        };
+    };
+    createSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleInput"];
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Schedule"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    listUpcomingSchedules: {
+        parameters: {
+            query?: {
+                before?: string;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Schedules. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Schedule"][];
+                };
+            };
+        };
+    };
+    getSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                scheduleId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The schedule. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Schedule"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                scheduleId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                scheduleId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleInput"];
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Schedule"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    postScheduleNow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                scheduleId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Posted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    skipSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                scheduleId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Skipped. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             404: components["responses"]["NotFound"];
         };
     };

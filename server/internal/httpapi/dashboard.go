@@ -7,12 +7,16 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
+	"github.com/easly1989/cloudbank/server/internal/schedule"
 )
 
 // dashboardHandlers serves the wallet-scoped dashboard (mounted inside the
 // walletContext middleware).
 type dashboardHandlers struct {
 	svc *dashboard.Service
+	// schedules, if set, fills the dashboard's upcoming list with the next
+	// scheduled occurrences.
+	schedules *schedule.Service
 }
 
 func (h *dashboardHandlers) walletRoutes(r chi.Router) {
@@ -23,13 +27,26 @@ func (h *dashboardHandlers) get(w http.ResponseWriter, r *http.Request) {
 	wl, _ := walletFromContext(r.Context())
 	from := r.URL.Query().Get("from")
 	to := r.URL.Query().Get("to")
+	now := time.Now().UTC()
 	if from == "" || to == "" {
-		from, to = currentMonth(time.Now().UTC())
+		from, to = currentMonth(now)
 	}
 	data, err := h.svc.Build(r.Context(), wl.ID, from, to)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not build dashboard")
 		return
+	}
+	if h.schedules != nil {
+		within := now.AddDate(0, 0, 30).Format("2006-01-02")
+		upcoming, err := h.schedules.Upcoming(r.Context(), wl.ID, within)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "internal", "could not load upcoming")
+			return
+		}
+		data.Upcoming = make([]any, len(upcoming))
+		for i := range upcoming {
+			data.Upcoming[i] = upcoming[i]
+		}
 	}
 	writeJSON(w, http.StatusOK, data)
 }

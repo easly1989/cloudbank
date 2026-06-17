@@ -23,6 +23,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
 	"github.com/easly1989/cloudbank/server/internal/httpapi"
 	"github.com/easly1989/cloudbank/server/internal/payee"
+	"github.com/easly1989/cloudbank/server/internal/schedule"
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/template"
@@ -101,6 +102,7 @@ func run() error {
 	transferSvc := transfer.NewService(st.Write())
 	dashboardSvc := dashboard.NewService(st.Write())
 	templateSvc := template.NewService(st.Write())
+	scheduleSvc := schedule.NewService(st.Write(), transactionSvc, transferSvc, logger)
 
 	handler := httpapi.New(httpapi.Options{
 		Logger:        logger,
@@ -115,6 +117,7 @@ func run() error {
 		Transfers:     transferSvc,
 		Dashboard:     dashboardSvc,
 		Templates:     templateSvc,
+		Schedules:     scheduleSvc,
 		SecureCookies: cfg.SecureCookies,
 	})
 
@@ -135,6 +138,10 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	// Post any schedules due now (startup catch-up after downtime), then keep
+	// auto-posting on a ticker until shutdown.
+	go runScheduler(ctx, scheduleSvc, logger)
+
 	select {
 	case err := <-errCh:
 		return err
@@ -143,6 +150,27 @@ func run() error {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		return srv.Shutdown(shutdownCtx)
+	}
+}
+
+// runScheduler does a startup catch-up and then auto-posts due schedules every
+// hour until the context is cancelled.
+func runScheduler(ctx context.Context, svc *schedule.Service, logger *slog.Logger) {
+	post := func() {
+		if _, err := svc.RunDue(ctx, time.Now().UTC()); err != nil {
+			logger.Error("scheduler run failed", "error", err)
+		}
+	}
+	post()
+	ticker := time.NewTicker(time.Hour)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			post()
+		}
 	}
 }
 

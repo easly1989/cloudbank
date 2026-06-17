@@ -165,11 +165,6 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Transac
 	if err := s.validate(ctx, walletID, &in); err != nil {
 		return Transaction{}, err
 	}
-	isSplit := len(in.Splits) > 0
-	categoryID := in.CategoryID
-	if isSplit {
-		categoryID = nil
-	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -178,21 +173,38 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Transac
 	defer func() { _ = tx.Rollback() }()
 	qtx := s.q.WithTx(tx)
 
+	id, err := s.CreateInTx(ctx, qtx, walletID, in)
+	if err != nil {
+		return Transaction{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return Transaction{}, err
+	}
+	return s.Get(ctx, id)
+}
+
+// CreateInTx inserts a transaction (with splits and tags) using the supplied
+// querier, without committing — so callers (e.g. the scheduler) can post and
+// advance their own state atomically in one transaction. It does not validate;
+// callers that accept untrusted input should validate first.
+func (s *Service) CreateInTx(ctx context.Context, qtx *db.Queries, walletID int64, in Input) (int64, error) {
+	isSplit := len(in.Splits) > 0
+	categoryID := in.CategoryID
+	if isSplit {
+		categoryID = nil
+	}
 	row, err := qtx.InsertTransaction(ctx, db.InsertTransactionParams{
 		WalletID: walletID, AccountID: in.AccountID, Date: in.Date, Amount: in.Amount,
 		PaymentMode: int64(in.PaymentMode), Status: int64(in.Status), Info: in.Info,
 		PayeeID: nullID(in.PayeeID), CategoryID: nullID(categoryID), Memo: in.Memo, IsSplit: b2i(isSplit),
 	})
 	if err != nil {
-		return Transaction{}, err
+		return 0, err
 	}
 	if err := s.writeSplitsAndTags(ctx, qtx, walletID, row.ID, in); err != nil {
-		return Transaction{}, err
+		return 0, err
 	}
-	if err := tx.Commit(); err != nil {
-		return Transaction{}, err
-	}
-	return s.Get(ctx, row.ID)
+	return row.ID, nil
 }
 
 // Update replaces a transaction's fields, splits and tags.
