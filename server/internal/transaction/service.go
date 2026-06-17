@@ -61,8 +61,13 @@ type Transaction struct {
 	Splits       []Split  `json:"splits,omitempty"`
 	PayeeName    string   `json:"payeeName,omitempty"`
 	CategoryName string   `json:"categoryName,omitempty"`
-	CreatedAt    string   `json:"createdAt"`
-	UpdatedAt    string   `json:"updatedAt"`
+	// TransferID and TransferAccountID are set when the transaction is one leg of
+	// an internal transfer; the UI uses them to open the transfer editor and to
+	// warn that deleting the row also removes the paired leg.
+	TransferID        *int64 `json:"transferId,omitempty"`
+	TransferAccountID *int64 `json:"transferAccountId,omitempty"`
+	CreatedAt         string `json:"createdAt"`
+	UpdatedAt         string `json:"updatedAt"`
 }
 
 // Input carries the editable fields of a transaction. When Splits is non-empty
@@ -297,7 +302,32 @@ func (s *Service) Get(ctx context.Context, id int64) (Transaction, error) {
 			out.Splits = append(out.Splits, Split{CategoryID: idPtr(sp.CategoryID), Amount: sp.Amount, Memo: sp.Memo})
 		}
 	}
+	if out.TransferID, out.TransferAccountID, err = s.transferInfo(ctx, id); err != nil {
+		return Transaction{}, err
+	}
 	return out, nil
+}
+
+// transferInfo returns the transfer id and the counterpart leg's account id when
+// txnID is one leg of an internal transfer; (nil, nil) otherwise.
+func (s *Service) transferInfo(ctx context.Context, txnID int64) (*int64, *int64, error) {
+	tr, err := s.q.GetTransferByTransaction(ctx, db.GetTransferByTransactionParams{TxnFromID: txnID, TxnToID: txnID})
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil, nil
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	otherTxn := tr.TxnToID
+	if otherTxn == txnID {
+		otherTxn = tr.TxnFromID
+	}
+	other, err := s.q.GetTransaction(ctx, otherTxn)
+	if err != nil {
+		return nil, nil, err
+	}
+	id, acc := tr.ID, other.AccountID
+	return &id, &acc, nil
 }
 
 // WalletOf returns the wallet id a transaction belongs to (for ownership
@@ -340,14 +370,38 @@ func (s *Service) List(ctx context.Context, accountID int64, limit, offset int64
 		if r.CategoryName.Valid {
 			t.CategoryName = r.CategoryName.String
 		}
+		if t.TransferID, t.TransferAccountID, err = s.transferInfo(ctx, r.ID); err != nil {
+			return nil, 0, err
+		}
 		out = append(out, t)
 	}
 	return out, total, nil
 }
 
-// Delete removes a transaction (its splits and tag links cascade).
+// Delete removes a transaction (its splits and tag links cascade). When the
+// transaction is one leg of an internal transfer, the paired leg is removed too
+// (and the transfers row cascades) so no orphan legs are ever left behind.
 func (s *Service) Delete(ctx context.Context, id int64) error {
-	return s.q.DeleteTransaction(ctx, id)
+	tr, err := s.q.GetTransferByTransaction(ctx, db.GetTransferByTransactionParams{TxnFromID: id, TxnToID: id})
+	if errors.Is(err, sql.ErrNoRows) {
+		return s.q.DeleteTransaction(ctx, id)
+	}
+	if err != nil {
+		return err
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	qtx := s.q.WithTx(tx)
+	if err := qtx.DeleteTransaction(ctx, tr.TxnFromID); err != nil {
+		return err
+	}
+	if err := qtx.DeleteTransaction(ctx, tr.TxnToID); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // FindDuplicates returns transactions in the same account with the same amount

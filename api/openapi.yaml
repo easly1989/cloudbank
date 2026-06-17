@@ -734,6 +734,49 @@ paths:
       responses:
         "204": { description: Deleted. }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transfers:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: createTransfer
+      summary: Create an internal transfer (two linked transaction legs)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TransferInput" }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Transfer" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transfers/{transferId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: transferId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getTransfer
+      summary: Get an internal transfer
+      responses:
+        "200": { description: The transfer., content: { application/json: { schema: { $ref: "#/components/schemas/Transfer" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateTransfer
+      summary: Update an internal transfer (date and amounts; accounts are fixed)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TransferInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Transfer" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteTransfer
+      summary: Delete an internal transfer (removes both legs)
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
 components:
   responses:
     BadRequest:
@@ -993,6 +1036,8 @@ components:
         splits: { type: array, items: { $ref: "#/components/schemas/Split" } }
         payeeName: { type: string }
         categoryName: { type: string }
+        transferId: { type: integer, format: int64, description: "set when the transaction is one leg of an internal transfer" }
+        transferAccountId: { type: integer, format: int64, description: "the counterpart leg's account" }
         createdAt: { type: string }
         updatedAt: { type: string }
       required: [id, accountId, date, amount, paymentMode, status, info, memo, isSplit, tags]
@@ -1011,3 +1056,28 @@ components:
         tags: { type: array, items: { type: string } }
         splits: { type: array, items: { $ref: "#/components/schemas/Split" } }
       required: [accountId, date, amount]
+    Transfer:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        fromAccountId: { type: integer, format: int64 }
+        toAccountId: { type: integer, format: int64 }
+        date: { type: string }
+        fromAmount: { type: integer, format: int64, description: "positive magnitude in the source account currency" }
+        toAmount: { type: integer, format: int64, description: "positive magnitude in the destination account currency" }
+        memo: { type: string }
+        status: { type: integer }
+        txnFromId: { type: integer, format: int64 }
+        txnToId: { type: integer, format: int64 }
+      required: [id, fromAccountId, toAccountId, date, fromAmount, toAmount, memo, status, txnFromId, txnToId]
+    TransferInput:
+      type: object
+      properties:
+        fromAccountId: { type: integer, format: int64 }
+        toAccountId: { type: integer, format: int64 }
+        date: { type: string, description: "YYYY-MM-DD" }
+        fromAmount: { type: integer, format: int64, description: "positive minor units in the source currency" }
+        toAmount: { type: integer, format: int64, description: "positive minor units in the destination currency; defaults to fromAmount" }
+        memo: { type: string }
+        status: { type: integer, description: "0 none, 1 cleared, 2 reconciled, 3 remind, 4 void" }
+      required: [fromAccountId, toAccountId, date, fromAmount]
