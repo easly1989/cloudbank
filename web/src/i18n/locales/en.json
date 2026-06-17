@@ -7,6 +7,7 @@
     "dashboard": "Dashboard",
     "accounts": "Accounts",
     "transactions": "Transactions",
+    "schedules": "Schedules",
     "reports": "Reports",
     "settings": "Settings",
     "admin": "Users"
@@ -52,6 +53,47 @@
     "toAmount": "Amount received",
     "sameAccount": "Source and destination accounts must differ.",
     "confirmDelete": "Delete this transfer? Both legs will be removed."
+  },
+  "schedules": {
+    "title": "Scheduled transactions",
+    "add": "New schedule",
+    "addTitle": "New schedule",
+    "editTitle": "Edit schedule",
+    "empty": "No scheduled transactions yet.",
+    "template": "Template",
+    "noTemplates": "Create a template first",
+    "unit": "Unit",
+    "everyN": "Every",
+    "nextDue": "Next due",
+    "weekendMode": "Weekend handling",
+    "postAdvance": "Post days early",
+    "limit": "Limit occurrences",
+    "remaining": "Occurrences left",
+    "autoPost": "Post automatically",
+    "cadenceLabel": "Repeats",
+    "cadence": "Every {{n}} {{unit}}",
+    "mode": "Mode",
+    "autoLabel": "Auto",
+    "remindLabel": "Remind",
+    "postNow": "Post now",
+    "skip": "Skip",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Delete this schedule?",
+    "save": "Save",
+    "cancel": "Cancel",
+    "units": {
+      "day": "day(s)",
+      "week": "week(s)",
+      "month": "month(s)",
+      "year": "year(s)"
+    },
+    "weekend": {
+      "0": "Keep weekend date",
+      "1": "Move to previous Friday",
+      "2": "Move to next Monday",
+      "3": "Skip weekend occurrences"
+    }
   },
   "templates": {
     "apply": "Use a template",

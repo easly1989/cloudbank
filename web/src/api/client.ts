@@ -471,7 +471,7 @@ export interface Dashboard {
   topCategories: CategorySlice[];
   from: string;
   to: string;
-  upcoming: unknown[];
+  upcoming: Schedule[];
 }
 
 export const getDashboard = (walletId: number, from?: string, to?: string) => {
@@ -533,6 +533,60 @@ export const createTemplateFromTransaction = (
 
 export const deleteTemplate = (walletId: number, id: number) =>
   api.del<void>(`/api/v1/wallets/${walletId}/templates/${id}`);
+
+// --- Schedules ---
+
+export type ScheduleUnit = "day" | "week" | "month" | "year";
+
+export interface Schedule {
+  id: number;
+  templateId: number;
+  templateName: string;
+  templateAmount: number;
+  templateIsTransfer: boolean;
+  unit: ScheduleUnit;
+  everyN: number;
+  nextDue: string;
+  weekendMode: number;
+  remaining?: number | null;
+  postAdvance: number;
+  autoPost: boolean;
+  lastPosted?: string;
+}
+
+export interface ScheduleInput {
+  templateId: number;
+  unit: ScheduleUnit;
+  everyN: number;
+  nextDue: string;
+  weekendMode?: number;
+  remaining?: number | null;
+  postAdvance?: number;
+  autoPost?: boolean;
+}
+
+export const listSchedules = (walletId: number) =>
+  api.get<Schedule[]>(`/api/v1/wallets/${walletId}/schedules`);
+
+export const listUpcomingSchedules = (walletId: number, before?: string) => {
+  const q = before ? `?before=${before}` : "";
+  return api.get<Schedule[]>(`/api/v1/wallets/${walletId}/schedules/upcoming${q}`);
+};
+
+export const createSchedule = (walletId: number, body: ScheduleInput) =>
+  api.post<Schedule>(`/api/v1/wallets/${walletId}/schedules`, body);
+
+export const updateSchedule = (walletId: number, id: number, body: ScheduleInput) =>
+  api.patch<Schedule>(`/api/v1/wallets/${walletId}/schedules/${id}`, body);
+
+export const deleteSchedule = (walletId: number, id: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/schedules/${id}`);
+
+export const postScheduleNow = (walletId: number, id: number) =>
+  api.post<void>(`/api/v1/wallets/${walletId}/schedules/${id}/post`);
+
+export const skipSchedule = (walletId: number, id: number) =>
+  api.post<void>(`/api/v1/wallets/${walletId}/schedules/${id}/skip`);
 
 // --- Transfers ---
 

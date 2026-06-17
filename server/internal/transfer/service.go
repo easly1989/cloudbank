@@ -101,15 +101,11 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Transfe
 	defer func() { _ = tx.Rollback() }()
 	qtx := s.q.WithTx(tx)
 
-	from, err := s.insertLeg(ctx, qtx, walletID, in.FromAccountID, -in.FromAmount, in)
+	fromID, toID, err := s.CreateInTx(ctx, qtx, walletID, in)
 	if err != nil {
 		return Transfer{}, err
 	}
-	to, err := s.insertLeg(ctx, qtx, walletID, in.ToAccountID, in.ToAmount, in)
-	if err != nil {
-		return Transfer{}, err
-	}
-	tr, err := qtx.InsertTransfer(ctx, db.InsertTransferParams{TxnFromID: from.ID, TxnToID: to.ID})
+	tr, err := qtx.GetTransferByTransaction(ctx, db.GetTransferByTransactionParams{TxnFromID: fromID, TxnToID: fromID})
 	if err != nil {
 		return Transfer{}, err
 	}
@@ -119,8 +115,30 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Transfe
 	return Transfer{
 		ID: tr.ID, FromAccountID: in.FromAccountID, ToAccountID: in.ToAccountID, Date: in.Date,
 		FromAmount: in.FromAmount, ToAmount: in.ToAmount, Memo: in.Memo, Status: in.Status,
-		TxnFromID: from.ID, TxnToID: to.ID,
+		TxnFromID: fromID, TxnToID: toID,
 	}, nil
+}
+
+// CreateInTx inserts both transfer legs and the pairing row using the supplied
+// querier, without committing — so callers (e.g. the scheduler) can post and
+// advance their own state atomically. Returns the two leg ids. It defaults
+// ToAmount to FromAmount but does not otherwise validate.
+func (s *Service) CreateInTx(ctx context.Context, qtx *db.Queries, walletID int64, in Input) (fromID, toID int64, err error) {
+	if in.ToAmount == 0 {
+		in.ToAmount = in.FromAmount
+	}
+	from, err := s.insertLeg(ctx, qtx, walletID, in.FromAccountID, -in.FromAmount, in)
+	if err != nil {
+		return 0, 0, err
+	}
+	to, err := s.insertLeg(ctx, qtx, walletID, in.ToAccountID, in.ToAmount, in)
+	if err != nil {
+		return 0, 0, err
+	}
+	if _, err := qtx.InsertTransfer(ctx, db.InsertTransferParams{TxnFromID: from.ID, TxnToID: to.ID}); err != nil {
+		return 0, 0, err
+	}
+	return from.ID, to.ID, nil
 }
 
 // Get returns a transfer by id (composed from its two legs).

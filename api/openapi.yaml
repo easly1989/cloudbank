@@ -920,6 +920,83 @@ paths:
       responses:
         "204": { description: Deleted. }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/schedules:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listSchedules
+      summary: List the wallet's scheduled transactions
+      responses:
+        "200": { description: Schedules., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Schedule" } } } } }
+    post:
+      operationId: createSchedule
+      summary: Create a schedule on a template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScheduleInput" }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/schedules/upcoming:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listUpcomingSchedules
+      summary: Schedules due on or before a date (defaults to 30 days ahead)
+      parameters:
+        - { name: before, in: query, required: false, schema: { type: string } }
+      responses:
+        "200": { description: Schedules., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Schedule" } } } } }
+  /api/v1/wallets/{walletId}/schedules/{scheduleId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: scheduleId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getSchedule
+      summary: Get a schedule
+      responses:
+        "200": { description: The schedule., content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateSchedule
+      summary: Update a schedule's configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScheduleInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteSchedule
+      summary: Delete a schedule
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/schedules/{scheduleId}/post:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: scheduleId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: postScheduleNow
+      summary: Post the current occurrence now and advance the schedule
+      responses:
+        "204": { description: Posted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/schedules/{scheduleId}/skip:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: scheduleId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: skipSchedule
+      summary: Skip the current occurrence and advance the schedule
+      responses:
+        "204": { description: Skipped. }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/dashboard:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -1303,8 +1380,37 @@ components:
         topCategories: { type: array, items: { $ref: "#/components/schemas/CategorySlice" } }
         from: { type: string }
         to: { type: string }
-        upcoming: { type: array, items: {} }
+        upcoming: { type: array, items: { $ref: "#/components/schemas/Schedule" } }
       required: [accounts, totals, topCategories, from, to, upcoming]
+    Schedule:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        templateId: { type: integer, format: int64 }
+        templateName: { type: string }
+        templateAmount: { type: integer, format: int64 }
+        templateIsTransfer: { type: boolean }
+        unit: { type: string, enum: [day, week, month, year] }
+        everyN: { type: integer }
+        nextDue: { type: string }
+        weekendMode: { type: integer, description: "0 none, 1 before, 2 after, 3 skip" }
+        remaining: { type: integer, format: int64, nullable: true }
+        postAdvance: { type: integer }
+        autoPost: { type: boolean }
+        lastPosted: { type: string }
+      required: [id, templateId, templateName, templateAmount, templateIsTransfer, unit, everyN, nextDue, weekendMode, postAdvance, autoPost]
+    ScheduleInput:
+      type: object
+      properties:
+        templateId: { type: integer, format: int64 }
+        unit: { type: string, enum: [day, week, month, year] }
+        everyN: { type: integer, description: "every N units, >= 1" }
+        nextDue: { type: string, description: "YYYY-MM-DD" }
+        weekendMode: { type: integer, description: "0 none, 1 before, 2 after, 3 skip" }
+        remaining: { type: integer, format: int64, nullable: true, description: "occurrence limit; null = unlimited" }
+        postAdvance: { type: integer, description: "post this many days early" }
+        autoPost: { type: boolean }
+      required: [templateId, unit, everyN, nextDue]
     Transfer:
       type: object
       properties:
