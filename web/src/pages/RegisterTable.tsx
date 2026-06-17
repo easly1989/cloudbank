@@ -1,5 +1,11 @@
 import { ActionIcon, Badge, Box, Checkbox, Group, Text } from "@mantine/core";
-import { IconArrowsExchange, IconLock, IconPencil, IconTrash } from "@tabler/icons-react";
+import {
+  IconArrowsExchange,
+  IconDeviceFloppy,
+  IconLock,
+  IconPencil,
+  IconTrash,
+} from "@tabler/icons-react";
 import {
   createColumnHelper,
   flexRender,
@@ -14,7 +20,7 @@ import type { Account, RegisterRow } from "../api/client";
 import { formatMinor, type MoneyFormat } from "../money";
 
 const ROW_HEIGHT = 40;
-const GRID = "36px 110px minmax(120px, 1fr) minmax(110px, 1fr) 96px 120px 130px 60px";
+const GRID = "36px 104px minmax(110px, 1fr) minmax(104px, 1fr) 94px 116px 124px 92px";
 // Status badge colours indexed by status value (none..void).
 const STATUS_COLORS = ["gray", "blue", "teal", "orange", "red"];
 const STATUS_RECONCILED = 2;
@@ -29,6 +35,7 @@ export interface RegisterTableProps {
   onEdit: (row: RegisterRow) => void;
   onDelete: (row: RegisterRow) => void;
   onToggleStatus: (row: RegisterRow, status: number) => void;
+  onSaveTemplate: (row: RegisterRow) => void;
 }
 
 // RegisterTable renders the account ledger newest-first with a chronological
@@ -47,6 +54,7 @@ export function RegisterTable({
   onEdit,
   onDelete,
   onToggleStatus,
+  onSaveTemplate,
 }: RegisterTableProps) {
   const { t } = useTranslation();
   const parentRef = useRef<HTMLDivElement>(null);
@@ -286,6 +294,18 @@ export function RegisterTable({
                   </Box>
                 ))}
                 <Group gap={2} justify="flex-end" wrap="nowrap">
+                  <ActionIcon
+                    variant="subtle"
+                    size="sm"
+                    color="gray"
+                    aria-label={t("templates.saveAs")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSaveTemplate(r);
+                    }}
+                  >
+                    <IconDeviceFloppy size={15} />
+                  </ActionIcon>
                   <ActionIcon
                     variant="subtle"
                     size="sm"
