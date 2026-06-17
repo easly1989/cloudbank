@@ -433,6 +433,52 @@ export const bulkEditTransactions = (
     value,
   });
 
+// --- Dashboard ---
+
+export interface CurrencyInfo {
+  code: string;
+  symbol: string;
+  symbolPrefix: boolean;
+  decimalChar: string;
+  groupChar: string;
+  fracDigits: number;
+}
+
+export interface DashboardAccount {
+  id: number;
+  name: string;
+  type: AccountType;
+  groupName: string;
+  closed: boolean;
+  noSummary: boolean;
+  bank: number;
+  today: number;
+  future: number;
+  currency: CurrencyInfo;
+  currencyId: number;
+}
+
+export interface CategorySlice {
+  categoryId: number;
+  name: string;
+  amount: number;
+}
+
+export interface Dashboard {
+  accounts: DashboardAccount[];
+  totals: { bank: number; today: number; future: number };
+  baseCurrency: CurrencyInfo | null;
+  topCategories: CategorySlice[];
+  from: string;
+  to: string;
+  upcoming: unknown[];
+}
+
+export const getDashboard = (walletId: number, from?: string, to?: string) => {
+  const q = from && to ? `?from=${from}&to=${to}` : "";
+  return api.get<Dashboard>(`/api/v1/wallets/${walletId}/dashboard${q}`);
+};
+
 // --- Transfers ---
 
 export interface Transfer {

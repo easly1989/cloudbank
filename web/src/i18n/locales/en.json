@@ -281,10 +281,12 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "welcome": "Welcome to CloudBank",
-    "backendStatus": "Backend status",
-    "checking": "Checking…",
-    "online": "Online",
-    "offline": "Offline"
+    "yourAccounts": "Your accounts",
+    "noAccounts": "No accounts to summarize yet.",
+    "whereMoneyGoes": "Where your money goes",
+    "noSpending": "No spending in this period.",
+    "other": "Other",
+    "upcoming": "Upcoming scheduled",
+    "noUpcoming": "No upcoming scheduled transactions."
   }
 }
