@@ -13,6 +13,7 @@ import { PayeesPage } from "./pages/PayeesPage";
 import { TransactionsPage } from "./pages/TransactionsPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { SchedulesPage } from "./pages/SchedulesPage";
 import { SetupPage } from "./pages/SetupPage";
@@ -84,6 +85,7 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="payees" element={<PayeesPage />} />
         <Route path="schedules" element={<SchedulesPage />} />
+        <Route path="assignments" element={<AssignmentsPage />} />
         <Route path="reports" element={<PlaceholderPage titleKey="nav.reports" />} />
         <Route path="settings" element={<PlaceholderPage titleKey="nav.settings" />} />
         <Route path="wallet" element={<WalletSettingsPage />} />

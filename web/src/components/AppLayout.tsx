@@ -24,6 +24,7 @@ import {
   IconUserDollar,
   IconUsers,
   IconWallet,
+  IconWand,
 } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import { NavLink as RouterNavLink, Outlet, useNavigate } from "react-router-dom";
@@ -50,6 +51,7 @@ const navItems = [
     end: false,
     adminOnly: false,
   },
+  { to: "/assignments", labelKey: "nav.assignments", icon: IconWand, end: false, adminOnly: false },
   { to: "/reports", labelKey: "nav.reports", icon: IconChartBar, end: false, adminOnly: false },
   { to: "/settings", labelKey: "nav.settings", icon: IconSettings, end: false, adminOnly: false },
   { to: "/admin/users", labelKey: "nav.admin", icon: IconUsers, end: false, adminOnly: true },
