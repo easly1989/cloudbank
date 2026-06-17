@@ -16,6 +16,7 @@ type Querier interface {
 	AccountBalanceDeltas(ctx context.Context, arg AccountBalanceDeltasParams) ([]AccountBalanceDeltasRow, error)
 	AddTransactionTag(ctx context.Context, arg AddTransactionTagParams) error
 	AddWalletMember(ctx context.Context, arg AddWalletMemberParams) error
+	AdvanceSchedule(ctx context.Context, arg AdvanceScheduleParams) error
 	// Category amounts in a date range, from both plain transactions and split
 	// lines, with each row's account currency so the app can convert to base.
 	CategoryExpenseTotals(ctx context.Context, arg CategoryExpenseTotalsParams) ([]CategoryExpenseTotalsRow, error)
@@ -35,6 +36,7 @@ type Querier interface {
 	DeleteCurrency(ctx context.Context, id int64) error
 	DeleteExpiredSessions(ctx context.Context, expiresAt string) error
 	DeletePayee(ctx context.Context, id int64) error
+	DeleteSchedule(ctx context.Context, id int64) error
 	DeleteSession(ctx context.Context, id string) error
 	DeleteSplits(ctx context.Context, transactionID int64) error
 	DeleteTemplate(ctx context.Context, id int64) error
@@ -50,6 +52,7 @@ type Querier interface {
 	GetCategory(ctx context.Context, id int64) (Category, error)
 	GetCurrency(ctx context.Context, id int64) (Currency, error)
 	GetPayee(ctx context.Context, id int64) (Payee, error)
+	GetSchedule(ctx context.Context, id int64) (Schedule, error)
 	GetSession(ctx context.Context, id string) (Session, error)
 	GetTagByName(ctx context.Context, arg GetTagByNameParams) (Tag, error)
 	GetTemplate(ctx context.Context, id int64) (Template, error)
@@ -64,6 +67,7 @@ type Querier interface {
 	InsertCategory(ctx context.Context, arg InsertCategoryParams) (Category, error)
 	InsertCurrency(ctx context.Context, arg InsertCurrencyParams) (Currency, error)
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
+	InsertSchedule(ctx context.Context, arg InsertScheduleParams) (Schedule, error)
 	InsertSplit(ctx context.Context, arg InsertSplitParams) error
 	InsertTag(ctx context.Context, arg InsertTagParams) (Tag, error)
 	InsertTemplate(ctx context.Context, arg InsertTemplateParams) (Template, error)
@@ -75,16 +79,19 @@ type Querier interface {
 	// balance to produce each row's running balance.
 	ListAccountRegister(ctx context.Context, accountID int64) ([]ListAccountRegisterRow, error)
 	ListAccountsForWallet(ctx context.Context, walletID int64) ([]ListAccountsForWalletRow, error)
+	ListAllSchedules(ctx context.Context) ([]Schedule, error)
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
 	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)
 	ListExchangeRates(ctx context.Context, currencyID int64) ([]ExchangeRate, error)
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
+	ListSchedulesForWallet(ctx context.Context, walletID int64) ([]ListSchedulesForWalletRow, error)
 	ListSplits(ctx context.Context, transactionID int64) ([]Split, error)
 	ListTagsForWallet(ctx context.Context, walletID int64) ([]Tag, error)
 	ListTemplateSplits(ctx context.Context, templateID int64) ([]TemplateSplit, error)
 	ListTemplatesForWallet(ctx context.Context, walletID int64) ([]Template, error)
 	ListTransactionTags(ctx context.Context, transactionID int64) ([]string, error)
 	ListTransactionsForAccount(ctx context.Context, arg ListTransactionsForAccountParams) ([]ListTransactionsForAccountRow, error)
+	ListUpcomingSchedules(ctx context.Context, arg ListUpcomingSchedulesParams) ([]ListUpcomingSchedulesRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
 	ListWalletsForUser(ctx context.Context, userID int64) ([]ListWalletsForUserRow, error)
 	NextAccountPosition(ctx context.Context, walletID int64) (int64, error)
@@ -98,6 +105,7 @@ type Querier interface {
 	SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error
 	SetTransactionPayee(ctx context.Context, arg SetTransactionPayeeParams) error
 	SetTransactionPaymentMode(ctx context.Context, arg SetTransactionPaymentModeParams) error
+	SetTransactionTemplate(ctx context.Context, arg SetTransactionTemplateParams) error
 	SetUserDisabled(ctx context.Context, arg SetUserDisabledParams) error
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
@@ -106,6 +114,7 @@ type Querier interface {
 	UpdateCurrencyFormat(ctx context.Context, arg UpdateCurrencyFormatParams) error
 	UpdateCurrencyRate(ctx context.Context, arg UpdateCurrencyRateParams) error
 	UpdatePayee(ctx context.Context, arg UpdatePayeeParams) error
+	UpdateScheduleConfig(ctx context.Context, arg UpdateScheduleConfigParams) error
 	UpdateTemplate(ctx context.Context, arg UpdateTemplateParams) error
 	UpdateTransaction(ctx context.Context, arg UpdateTransactionParams) error
 	UpdateTransactionStatus(ctx context.Context, arg UpdateTransactionStatusParams) error

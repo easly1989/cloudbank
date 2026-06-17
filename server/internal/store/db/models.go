@@ -69,6 +69,21 @@ type Payee struct {
 	DefaultPaymentMode sql.NullInt64
 }
 
+type Schedule struct {
+	ID          int64
+	WalletID    int64
+	TemplateID  int64
+	Unit        string
+	EveryN      int64
+	NextDue     string
+	WeekendMode int64
+	Remaining   sql.NullInt64
+	PostAdvance int64
+	AutoPost    int64
+	LastPosted  sql.NullString
+	CreatedAt   string
+}
+
 type Session struct {
 	ID         string
 	UserID     int64
@@ -136,6 +151,7 @@ type Transaction struct {
 	IsSplit     int64
 	CreatedAt   string
 	UpdatedAt   string
+	TemplateID  sql.NullInt64
 }
 
 type TransactionTag struct {

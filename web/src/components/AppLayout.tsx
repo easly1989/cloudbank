@@ -12,6 +12,7 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import {
   IconArrowsExchange,
+  IconCalendarRepeat,
   IconChartBar,
   IconChevronDown,
   IconCoin,
@@ -39,6 +40,13 @@ const navItems = [
     to: "/transactions",
     labelKey: "nav.transactions",
     icon: IconArrowsExchange,
+    end: false,
+    adminOnly: false,
+  },
+  {
+    to: "/schedules",
+    labelKey: "nav.schedules",
+    icon: IconCalendarRepeat,
     end: false,
     adminOnly: false,
   },

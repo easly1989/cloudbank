@@ -7,6 +7,7 @@
     "dashboard": "Cruscotto",
     "accounts": "Conti",
     "transactions": "Transazioni",
+    "schedules": "Pianificazioni",
     "reports": "Report",
     "settings": "Impostazioni",
     "admin": "Utenti"
@@ -52,6 +53,47 @@
     "toAmount": "Importo ricevuto",
     "sameAccount": "Il conto di origine e di destinazione devono essere diversi.",
     "confirmDelete": "Eliminare questo trasferimento? Verranno rimosse entrambe le righe."
+  },
+  "schedules": {
+    "title": "Transazioni pianificate",
+    "add": "Nuova pianificazione",
+    "addTitle": "Nuova pianificazione",
+    "editTitle": "Modifica pianificazione",
+    "empty": "Nessuna transazione pianificata.",
+    "template": "Modello",
+    "noTemplates": "Crea prima un modello",
+    "unit": "Unità",
+    "everyN": "Ogni",
+    "nextDue": "Prossima scadenza",
+    "weekendMode": "Gestione weekend",
+    "postAdvance": "Giorni di anticipo",
+    "limit": "Limita occorrenze",
+    "remaining": "Occorrenze rimaste",
+    "autoPost": "Registra automaticamente",
+    "cadenceLabel": "Ricorrenza",
+    "cadence": "Ogni {{n}} {{unit}}",
+    "mode": "Modalità",
+    "autoLabel": "Auto",
+    "remindLabel": "Promemoria",
+    "postNow": "Registra ora",
+    "skip": "Salta",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "confirmDelete": "Eliminare questa pianificazione?",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "units": {
+      "day": "giorno/i",
+      "week": "settimana/e",
+      "month": "mese/i",
+      "year": "anno/i"
+    },
+    "weekend": {
+      "0": "Mantieni la data del weekend",
+      "1": "Sposta al venerdì precedente",
+      "2": "Sposta al lunedì successivo",
+      "3": "Salta le occorrenze nel weekend"
+    }
   },
   "templates": {
     "apply": "Usa un modello",
