@@ -692,6 +692,27 @@ paths:
         "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Transaction" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/register:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getAccountRegister
+      summary: The full account ledger with running balance and headline balances
+      parameters:
+        - { name: accountId, in: query, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        "200":
+          description: The register.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rows: { type: array, items: { $ref: "#/components/schemas/RegisterRow" } }
+                  summary: { $ref: "#/components/schemas/RegisterSummary" }
+                required: [rows, summary]
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/transactions/duplicates:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -733,6 +754,26 @@ paths:
       summary: Delete a transaction
       responses:
         "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/{transactionId}/status:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: transactionId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: setTransactionStatus
+      summary: Update only a transaction's reconciliation status (register inline edit)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: integer, description: "0 none, 1 cleared, 2 reconciled, 3 remind, 4 void" }
+              required: [status]
+      responses:
+        "204": { description: Updated. }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/transfers:
     parameters:
@@ -1056,6 +1097,20 @@ components:
         tags: { type: array, items: { type: string } }
         splits: { type: array, items: { $ref: "#/components/schemas/Split" } }
       required: [accountId, date, amount]
+    RegisterRow:
+      allOf:
+        - $ref: "#/components/schemas/Transaction"
+        - type: object
+          properties:
+            runningBalance: { type: integer, format: int64, description: "initial balance + cumulative amount through this row (chronological)" }
+          required: [runningBalance]
+    RegisterSummary:
+      type: object
+      properties:
+        bank: { type: integer, format: int64, description: "initial + cleared/reconciled amounts" }
+        today: { type: integer, format: int64, description: "initial + amounts dated on or before today" }
+        future: { type: integer, format: int64, description: "initial + all amounts" }
+      required: [bank, today, future]
     Transfer:
       type: object
       properties:

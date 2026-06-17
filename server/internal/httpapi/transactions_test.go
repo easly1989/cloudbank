@@ -118,6 +118,55 @@ func TestTransactionDuplicateCheck(t *testing.T) {
 	}
 }
 
+func TestTransactionRegisterAndStatus(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	txns := base + "/transactions"
+
+	// Insert out of date order; the register must order by (date, id).
+	c.do(http.MethodPost, txns, map[string]any{"accountId": acc, "date": "2026-01-10", "amount": 10000}, true).Body.Close()
+	c.do(http.MethodPost, txns, map[string]any{"accountId": acc, "date": "2026-01-05", "amount": -3000}, true).Body.Close()
+	last := decodeTxn(t, c.do(http.MethodPost, txns, map[string]any{"accountId": acc, "date": "2026-01-10", "amount": 2000}, true))
+	lastID := int64(last["id"].(float64))
+
+	resp := c.do(http.MethodGet, txns+"/register?accountId="+strconv.FormatInt(acc, 10), nil, false)
+	defer resp.Body.Close()
+	var reg struct {
+		Rows []struct {
+			ID             int64 `json:"id"`
+			Date           string
+			RunningBalance int64 `json:"runningBalance"`
+		} `json:"rows"`
+		Summary struct {
+			Bank, Today, Future int64
+		} `json:"summary"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&reg); err != nil {
+		t.Fatalf("decode register: %v", err)
+	}
+	if len(reg.Rows) != 3 {
+		t.Fatalf("rows = %d, want 3", len(reg.Rows))
+	}
+	if reg.Rows[0].Date != "2026-01-05" || reg.Rows[0].RunningBalance != -3000 {
+		t.Fatalf("row 0 = %+v", reg.Rows[0])
+	}
+	if reg.Rows[2].RunningBalance != 9000 || reg.Summary.Future != 9000 {
+		t.Fatalf("final balance = %d / future = %d, want 9000", reg.Rows[2].RunningBalance, reg.Summary.Future)
+	}
+
+	// Inline status toggle.
+	sresp := c.do(http.MethodPatch, txns+"/"+strconv.FormatInt(lastID, 10)+"/status", map[string]any{"status": 2}, true)
+	if sresp.StatusCode != http.StatusNoContent {
+		t.Fatalf("set status = %d, want 204", sresp.StatusCode)
+	}
+	sresp.Body.Close()
+	got := decodeTxn(t, c.do(http.MethodGet, txns+"/"+strconv.FormatInt(lastID, 10), nil, false))
+	if int64(got["status"].(float64)) != 2 {
+		t.Fatalf("status after toggle = %v, want 2", got["status"])
+	}
+}
+
 func TestTransactionCrossUserIsolation(t *testing.T) {
 	admin := newTestAPI(t)
 	wid, acc := makeAccount(t, admin)

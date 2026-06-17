@@ -396,6 +396,29 @@ export const findDuplicateTransactions = (
 
 export const listTags = (walletId: number) => api.get<string[]>(`/api/v1/wallets/${walletId}/tags`);
 
+// --- Register (account ledger with running balance) ---
+
+export interface RegisterRow extends Transaction {
+  runningBalance: number;
+}
+
+export interface RegisterSummary {
+  bank: number;
+  today: number;
+  future: number;
+}
+
+export interface RegisterPage {
+  rows: RegisterRow[];
+  summary: RegisterSummary;
+}
+
+export const getRegister = (walletId: number, accountId: number) =>
+  api.get<RegisterPage>(`/api/v1/wallets/${walletId}/transactions/register?accountId=${accountId}`);
+
+export const setTransactionStatus = (walletId: number, id: number, status: number) =>
+  api.patch<void>(`/api/v1/wallets/${walletId}/transactions/${id}/status`, { status });
+
 // --- Transfers ---
 
 export interface Transfer {

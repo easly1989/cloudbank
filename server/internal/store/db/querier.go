@@ -58,6 +58,10 @@ type Querier interface {
 	InsertTag(ctx context.Context, arg InsertTagParams) (Tag, error)
 	InsertTransaction(ctx context.Context, arg InsertTransactionParams) (Transaction, error)
 	InsertTransfer(ctx context.Context, arg InsertTransferParams) (Transfer, error)
+	// The full account ledger ordered chronologically (date, then id) with a
+	// server-computed cumulative delta. The application adds the account's initial
+	// balance to produce each row's running balance.
+	ListAccountRegister(ctx context.Context, accountID int64) ([]ListAccountRegisterRow, error)
 	ListAccountsForWallet(ctx context.Context, walletID int64) ([]ListAccountsForWalletRow, error)
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
 	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)
@@ -86,6 +90,7 @@ type Querier interface {
 	UpdateCurrencyRate(ctx context.Context, arg UpdateCurrencyRateParams) error
 	UpdatePayee(ctx context.Context, arg UpdatePayeeParams) error
 	UpdateTransaction(ctx context.Context, arg UpdateTransactionParams) error
+	UpdateTransactionStatus(ctx context.Context, arg UpdateTransactionStatusParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpdateWallet(ctx context.Context, arg UpdateWalletParams) error
 	UpdateWalletBaseCurrency(ctx context.Context, arg UpdateWalletBaseCurrencyParams) error

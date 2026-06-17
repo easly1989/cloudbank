@@ -53,6 +53,15 @@
     "sameAccount": "Il conto di origine e di destinazione devono essere diversi.",
     "confirmDelete": "Eliminare questo trasferimento? Verranno rimosse entrambe le righe."
   },
+  "register": {
+    "bank": "Banca",
+    "today": "Oggi",
+    "future": "Futuro",
+    "balance": "Saldo",
+    "ledger": "Registro del conto",
+    "quickAdd": "Aggiungi",
+    "cycleStatus": "Clicca per cambiare stato"
+  },
   "paymentModes": {
     "0": "Nessuna",
     "1": "Carta di credito",

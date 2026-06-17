@@ -563,6 +563,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/transactions/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** The full account ledger with running balance and headline balances */
+        get: operations["getAccountRegister"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/transactions/duplicates": {
         parameters: {
             query?: never;
@@ -602,6 +621,26 @@ export interface paths {
         head?: never;
         /** Update a transaction */
         patch: operations["updateTransaction"];
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/transactions/{transactionId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                transactionId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update only a transaction's reconciliation status (register inline edit) */
+        patch: operations["setTransactionStatus"];
         trace?: never;
     };
     "/api/v1/wallets/{walletId}/transfers": {
@@ -908,6 +947,30 @@ export interface components {
             memo?: string;
             tags?: string[];
             splits?: components["schemas"]["Split"][];
+        };
+        RegisterRow: components["schemas"]["Transaction"] & {
+            /**
+             * Format: int64
+             * @description initial balance + cumulative amount through this row (chronological)
+             */
+            runningBalance: number;
+        };
+        RegisterSummary: {
+            /**
+             * Format: int64
+             * @description initial + cleared/reconciled amounts
+             */
+            bank: number;
+            /**
+             * Format: int64
+             * @description initial + amounts dated on or before today
+             */
+            today: number;
+            /**
+             * Format: int64
+             * @description initial + all amounts
+             */
+            future: number;
         };
         Transfer: {
             /** Format: int64 */
@@ -2168,6 +2231,35 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    getAccountRegister: {
+        parameters: {
+            query: {
+                accountId: number;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The register. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        rows: components["schemas"]["RegisterRow"][];
+                        summary: components["schemas"]["RegisterSummary"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     findDuplicateTransactions: {
         parameters: {
             query: {
@@ -2266,6 +2358,36 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Transaction"];
                 };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setTransactionStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                transactionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description 0 none, 1 cleared, 2 reconciled, 3 remind, 4 void */
+                    status: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
