@@ -20,6 +20,7 @@ func (h *transactionHandlers) walletRoutes(r chi.Router) {
 	r.Get("/tags", h.listTags)
 	r.Get("/transactions", h.list)
 	r.Post("/transactions", h.create)
+	r.Post("/transactions/bulk", h.bulk)
 	r.Get("/transactions/register", h.register)
 	r.Get("/transactions/duplicates", h.duplicates)
 	r.Route("/transactions/{transactionId}", func(r chi.Router) {
@@ -41,6 +42,37 @@ func (h *transactionHandlers) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"rows": rows, "summary": summary})
+}
+
+func (h *transactionHandlers) bulk(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body struct {
+		IDs   []int64 `json:"ids"`
+		Field string  `json:"field"`
+		Value *int64  `json:"value"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if len(body.IDs) == 0 {
+		writeError(w, http.StatusBadRequest, "invalid", "ids is required")
+		return
+	}
+	n, err := h.svc.BulkUpdate(r.Context(), wl.ID, body.IDs, body.Field, body.Value)
+	switch {
+	case err == nil:
+		writeJSON(w, http.StatusOK, map[string]int{"updated": n})
+	case errors.Is(err, transaction.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "transaction, category or payee not found")
+	case errors.Is(err, transaction.ErrInvalidBulkField):
+		writeError(w, http.StatusBadRequest, "invalid_field", "invalid bulk field")
+	case errors.Is(err, transaction.ErrInvalidStatus):
+		writeError(w, http.StatusBadRequest, "invalid_status", "invalid status")
+	case errors.Is(err, transaction.ErrInvalidPaymentMode):
+		writeError(w, http.StatusBadRequest, "invalid_payment_mode", "invalid payment mode")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", "could not apply bulk edit")
+	}
 }
 
 func (h *transactionHandlers) setStatus(w http.ResponseWriter, r *http.Request) {
