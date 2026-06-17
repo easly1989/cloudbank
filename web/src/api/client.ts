@@ -624,3 +624,75 @@ export const updateTransfer = (walletId: number, id: number, body: TransferInput
 
 export const deleteTransfer = (walletId: number, id: number) =>
   api.del<void>(`/api/v1/wallets/${walletId}/transfers/${id}`);
+
+// --- Assignment rules ---
+
+export type MatchField = "memo" | "payee" | "both";
+export type MatchType = "exact" | "contains" | "regex";
+
+export interface Assignment {
+  id: number;
+  position: number;
+  matchField: MatchField;
+  matchType: MatchType;
+  pattern: string;
+  caseSensitive: boolean;
+  setPayeeId?: number | null;
+  setCategoryId?: number | null;
+  setPaymentMode?: number | null;
+  applyOnManual: boolean;
+  applyOnImport: boolean;
+}
+
+export interface AssignmentInput {
+  matchField: MatchField;
+  matchType: MatchType;
+  pattern: string;
+  caseSensitive?: boolean;
+  setPayeeId?: number | null;
+  setCategoryId?: number | null;
+  setPaymentMode?: number | null;
+  applyOnManual?: boolean;
+  applyOnImport?: boolean;
+}
+
+export interface MatchedTransaction {
+  id: number;
+  accountId: number;
+  date: string;
+  memo: string;
+  payeeName: string;
+}
+
+export interface Suggestion {
+  matched: boolean;
+  payeeId?: number | null;
+  categoryId?: number | null;
+  paymentMode?: number | null;
+}
+
+export const listAssignments = (walletId: number) =>
+  api.get<Assignment[]>(`/api/v1/wallets/${walletId}/assignments`);
+
+export const createAssignment = (walletId: number, body: AssignmentInput) =>
+  api.post<Assignment>(`/api/v1/wallets/${walletId}/assignments`, body);
+
+export const updateAssignment = (walletId: number, id: number, body: AssignmentInput) =>
+  api.patch<Assignment>(`/api/v1/wallets/${walletId}/assignments/${id}`, body);
+
+export const deleteAssignment = (walletId: number, id: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/assignments/${id}`);
+
+export const reorderAssignments = (walletId: number, ids: number[]) =>
+  api.post<void>(`/api/v1/wallets/${walletId}/assignments/reorder`, { ids });
+
+export const testAssignment = (walletId: number, body: AssignmentInput) =>
+  api.post<MatchedTransaction[]>(`/api/v1/wallets/${walletId}/assignments/test`, body);
+
+export const applyAssignments = (
+  walletId: number,
+  opts: { accountId?: number | null; onlyFillEmpty: boolean },
+) => api.post<{ changed: number }>(`/api/v1/wallets/${walletId}/assignments/apply`, opts);
+
+export const suggestAssignment = (walletId: number, memo: string, payee: string) =>
+  api.post<Suggestion>(`/api/v1/wallets/${walletId}/assignments/suggest`, { memo, payee });

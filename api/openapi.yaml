@@ -997,6 +997,120 @@ paths:
       responses:
         "204": { description: Skipped. }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/assignments:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listAssignments
+      summary: List the wallet's assignment rules (first-match-wins order)
+      responses:
+        "200": { description: Rules., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Assignment" } } } } }
+    post:
+      operationId: createAssignment
+      summary: Create an assignment rule (regex validated here)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssignmentInput" }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Assignment" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/assignments/reorder:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: reorderAssignments
+      summary: Set the rules' match order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { ids: { type: array, items: { type: integer, format: int64 } } }
+              required: [ids]
+      responses:
+        "204": { description: Reordered. }
+  /api/v1/wallets/{walletId}/assignments/test:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: testAssignment
+      summary: Preview which existing transactions a candidate rule would match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssignmentInput" }
+      responses:
+        "200": { description: Matches., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/MatchedTransaction" } } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/assignments/apply:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: applyAssignments
+      summary: Apply all rules to existing transactions (first match per transaction)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountId: { type: integer, format: int64, nullable: true }
+                onlyFillEmpty: { type: boolean }
+      responses:
+        "200": { description: Applied., content: { application/json: { schema: { type: object, properties: { changed: { type: integer } }, required: [changed] } } } }
+  /api/v1/wallets/{walletId}/assignments/suggest:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: suggestAssignment
+      summary: First apply-on-manual rule matching the given memo/payee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { memo: { type: string }, payee: { type: string } }
+      responses:
+        "200":
+          description: Suggestion.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matched: { type: boolean }
+                  payeeId: { type: integer, format: int64, nullable: true }
+                  categoryId: { type: integer, format: int64, nullable: true }
+                  paymentMode: { type: integer, nullable: true }
+                required: [matched]
+  /api/v1/wallets/{walletId}/assignments/{assignmentId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: assignmentId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: updateAssignment
+      summary: Update an assignment rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssignmentInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Assignment" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteAssignment
+      summary: Delete an assignment rule
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/dashboard:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -1411,6 +1525,43 @@ components:
         postAdvance: { type: integer, description: "post this many days early" }
         autoPost: { type: boolean }
       required: [templateId, unit, everyN, nextDue]
+    Assignment:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        position: { type: integer }
+        matchField: { type: string, enum: [memo, payee, both] }
+        matchType: { type: string, enum: [exact, contains, regex] }
+        pattern: { type: string }
+        caseSensitive: { type: boolean }
+        setPayeeId: { type: integer, format: int64, nullable: true }
+        setCategoryId: { type: integer, format: int64, nullable: true }
+        setPaymentMode: { type: integer, nullable: true }
+        applyOnManual: { type: boolean }
+        applyOnImport: { type: boolean }
+      required: [id, position, matchField, matchType, pattern, caseSensitive, applyOnManual, applyOnImport]
+    AssignmentInput:
+      type: object
+      properties:
+        matchField: { type: string, enum: [memo, payee, both] }
+        matchType: { type: string, enum: [exact, contains, regex] }
+        pattern: { type: string }
+        caseSensitive: { type: boolean }
+        setPayeeId: { type: integer, format: int64, nullable: true }
+        setCategoryId: { type: integer, format: int64, nullable: true }
+        setPaymentMode: { type: integer, nullable: true }
+        applyOnManual: { type: boolean }
+        applyOnImport: { type: boolean }
+      required: [matchField, matchType, pattern]
+    MatchedTransaction:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        accountId: { type: integer, format: int64 }
+        date: { type: string }
+        memo: { type: string }
+        payeeName: { type: string }
+      required: [id, accountId, date, memo, payeeName]
     Transfer:
       type: object
       properties:
