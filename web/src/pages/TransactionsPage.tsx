@@ -18,7 +18,13 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconArrowsExchange, IconChecklist, IconPlus, IconTrash } from "@tabler/icons-react";
+import {
+  IconArrowsExchange,
+  IconChecklist,
+  IconDeviceFloppy,
+  IconPlus,
+  IconTrash,
+} from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -32,10 +38,13 @@ import {
   type Payee,
   type RegisterRow,
   type Split,
+  type Template,
   type Transaction,
   type TransactionInput,
   type TransferInput,
   bulkEditTransactions,
+  createTemplate,
+  createTemplateFromTransaction,
   createTransaction,
   createTransfer,
   deleteTransaction,
@@ -47,6 +56,7 @@ import {
   listCategories,
   listPayees,
   listTags,
+  listTemplates,
   setTransactionStatus,
   updateTransaction,
   updateTransfer,
@@ -94,6 +104,14 @@ export function TransactionsPage() {
     queryFn: () => listCategories(walletId),
   });
   const tagsQuery = useQuery({ queryKey: ["tags", walletId], queryFn: () => listTags(walletId) });
+  const templatesQuery = useQuery({
+    queryKey: ["templates", walletId],
+    queryFn: () => listTemplates(walletId),
+    enabled: walletId > 0,
+  });
+  const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data]);
+  const invalidateTemplates = () =>
+    void qc.invalidateQueries({ queryKey: ["templates", walletId] });
 
   // Filters live in the URL query string so they round-trip and are shareable.
   const [searchParams, setSearchParams] = useSearchParams();
@@ -189,6 +207,20 @@ export function TransactionsPage() {
     } else if (window.confirm(t("transactions.confirmDelete"))) {
       remove.mutate(row.id);
     }
+  };
+
+  const saveTemplateFromRow = useMutation({
+    mutationFn: (v: { id: number; name: string }) =>
+      createTemplateFromTransaction(walletId, v.id, v.name),
+    onSuccess: () => {
+      invalidateTemplates();
+      notifications.show({ color: "green", message: t("templates.saved") });
+    },
+    onError,
+  });
+  const templateFromRow = (row: RegisterRow) => {
+    const name = window.prompt(t("templates.namePrompt"));
+    if (name && name.trim()) saveTemplateFromRow.mutate({ id: row.id, name: name.trim() });
   };
 
   if (!currentWallet) return null;
@@ -329,6 +361,7 @@ export function TransactionsPage() {
           onEdit={editRow}
           onDelete={deleteRow}
           onToggleStatus={(row, status) => toggleStatus.mutate({ id: row.id, status })}
+          onSaveTemplate={templateFromRow}
         />
       )}
 
@@ -340,6 +373,8 @@ export function TransactionsPage() {
           account={account}
           editing={editing}
           onSaved={invalidate}
+          templates={templates.filter((tpl) => !tpl.isTransfer)}
+          onTemplateSaved={invalidateTemplates}
         />
       )}
 
@@ -350,6 +385,8 @@ export function TransactionsPage() {
         accounts={accounts}
         editingId={editingTransferId}
         onSaved={invalidate}
+        templates={templates.filter((tpl) => tpl.isTransfer)}
+        onTemplateSaved={invalidateTemplates}
       />
     </Stack>
   );
@@ -678,6 +715,8 @@ function TransactionForm({
   account,
   editing,
   onSaved,
+  templates,
+  onTemplateSaved,
 }: {
   opened: boolean;
   onClose: () => void;
@@ -685,6 +724,8 @@ function TransactionForm({
   account: Account;
   editing: Transaction | null;
   onSaved: () => void;
+  templates: Template[];
+  onTemplateSaved: () => void;
 }) {
   const { t } = useTranslation();
   const payeesQuery = useQuery({
@@ -787,6 +828,59 @@ function TransactionForm({
       }),
   });
 
+  // Apply a template into the form (user reviews, then saves).
+  const applyTemplate = (id: string | null) => {
+    const tpl = templates.find((x) => String(x.id) === id);
+    if (!tpl) return;
+    setDirection(tpl.amount < 0 ? "expense" : "income");
+    setAmount(tpl.amount !== 0 ? minorToInput(Math.abs(tpl.amount), fd, dc) : "");
+    setPaymentMode(String(tpl.paymentMode));
+    setStatus(String(tpl.status));
+    setPayeeId(tpl.payeeId ? String(tpl.payeeId) : null);
+    setCategoryId(tpl.categoryId ? String(tpl.categoryId) : null);
+    setMemo(tpl.memo);
+    setInfo(tpl.info);
+    setTags(tpl.tags);
+    setIsSplit(tpl.isSplit);
+    setSplits(
+      tpl.splits?.map((s) => ({
+        categoryId: s.categoryId ? String(s.categoryId) : null,
+        amount: minorToInput(Math.abs(s.amount), fd, dc),
+      })) ?? [],
+    );
+  };
+
+  const saveTemplate = useMutation({
+    mutationFn: (name: string) =>
+      createTemplate(walletId, {
+        name,
+        accountId: account.id,
+        amount: totalMinor,
+        paymentMode: Number(paymentMode),
+        status: Number(status),
+        info,
+        memo,
+        payeeId: payeeId ? Number(payeeId) : null,
+        categoryId: isSplit ? null : categoryId ? Number(categoryId) : null,
+        tags,
+        splits: isSplit
+          ? splits.map<Split>((s) => ({
+              categoryId: s.categoryId ? Number(s.categoryId) : null,
+              amount: (parseMinor(s.amount, fd, dc) ?? 0) * sign,
+            }))
+          : [],
+      }),
+    onSuccess: () => {
+      onTemplateSaved();
+      notifications.show({ color: "green", message: t("templates.saved") });
+    },
+    onError: (err: unknown) =>
+      notifications.show({
+        color: "red",
+        message: err instanceof ApiError ? err.message : String(err),
+      }),
+  });
+
   const payeeOptions = (payeesQuery.data ?? []).map((p) => ({
     value: String(p.id),
     label: p.name,
@@ -810,6 +904,16 @@ function TransactionForm({
       title={editing ? t("transactions.editTitle") : t("transactions.addTitle")}
     >
       <Stack>
+        {!editing && templates.length > 0 && (
+          <Select
+            label={t("templates.apply")}
+            placeholder={t("templates.applyPlaceholder")}
+            data={templates.map((tpl) => ({ value: String(tpl.id), label: tpl.name }))}
+            onChange={applyTemplate}
+            searchable
+            clearable
+          />
+        )}
         {duplicates.length > 0 && (
           <Alert color="yellow">
             {t("transactions.duplicateWarning", { count: duplicates.length })}
@@ -944,17 +1048,32 @@ function TransactionForm({
           value={memo}
           onChange={(e) => setMemo(e.currentTarget.value)}
         />
-        <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>
-            {t("transactions.cancel")}
-          </Button>
+        <Group justify="space-between">
           <Button
-            onClick={() => save.mutate()}
-            loading={save.isPending}
-            disabled={!date || totalMinor === 0 || splitMismatch}
+            variant="subtle"
+            color="gray"
+            leftSection={<IconDeviceFloppy size={16} />}
+            loading={saveTemplate.isPending}
+            disabled={totalMinor === 0 && !isSplit}
+            onClick={() => {
+              const name = window.prompt(t("templates.namePrompt"));
+              if (name && name.trim()) saveTemplate.mutate(name.trim());
+            }}
           >
-            {t("transactions.save")}
+            {t("templates.saveAs")}
           </Button>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={onClose}>
+              {t("transactions.cancel")}
+            </Button>
+            <Button
+              onClick={() => save.mutate()}
+              loading={save.isPending}
+              disabled={!date || totalMinor === 0 || splitMismatch}
+            >
+              {t("transactions.save")}
+            </Button>
+          </Group>
         </Group>
       </Stack>
     </Modal>
@@ -968,6 +1087,8 @@ function TransferForm({
   accounts,
   editingId,
   onSaved,
+  templates,
+  onTemplateSaved,
 }: {
   opened: boolean;
   onClose: () => void;
@@ -975,6 +1096,8 @@ function TransferForm({
   accounts: Account[];
   editingId: number | null;
   onSaved: () => void;
+  templates: Template[];
+  onTemplateSaved: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -1061,6 +1184,43 @@ function TransferForm({
       }),
   });
 
+  // Apply a transfer template: pre-fill from/to accounts, amount and memo.
+  const applyTemplate = (id: string | null) => {
+    const tpl = templates.find((x) => String(x.id) === id);
+    if (!tpl || tpl.accountId == null || tpl.toAccountId == null) return;
+    const from = accounts.find((a) => a.id === tpl.accountId);
+    const to = accounts.find((a) => a.id === tpl.toAccountId);
+    setFromId(String(tpl.accountId));
+    setToId(String(tpl.toAccountId));
+    setMemo(tpl.memo);
+    setStatus(String(tpl.status));
+    const mag = Math.abs(tpl.amount);
+    if (from) setFromAmount(minorToInput(mag, from.currencyFracDigits, from.currencyDecimalChar));
+    if (to) setToAmount(minorToInput(mag, to.currencyFracDigits, to.currencyDecimalChar));
+  };
+
+  const saveTemplate = useMutation({
+    mutationFn: (name: string) =>
+      createTemplate(walletId, {
+        name,
+        isTransfer: true,
+        accountId: fromId ? Number(fromId) : null,
+        toAccountId: toId ? Number(toId) : null,
+        amount: -fromMinor,
+        memo,
+        status: Number(status),
+      }),
+    onSuccess: () => {
+      onTemplateSaved();
+      notifications.show({ color: "green", message: t("templates.saved") });
+    },
+    onError: (err: unknown) =>
+      notifications.show({
+        color: "red",
+        message: err instanceof ApiError ? err.message : String(err),
+      }),
+  });
+
   const accountOptions = accounts.map((a) => ({ value: String(a.id), label: a.name }));
   const invalid =
     !date ||
@@ -1078,6 +1238,16 @@ function TransferForm({
       title={editingId != null ? t("transfers.editTitle") : t("transfers.addTitle")}
     >
       <Stack>
+        {editingId == null && templates.length > 0 && (
+          <Select
+            label={t("templates.apply")}
+            placeholder={t("templates.applyPlaceholder")}
+            data={templates.map((tpl) => ({ value: String(tpl.id), label: tpl.name }))}
+            onChange={applyTemplate}
+            searchable
+            clearable
+          />
+        )}
         <Group grow>
           <Select
             label={t("transfers.from")}
@@ -1139,13 +1309,28 @@ function TransferForm({
             onChange={(e) => setMemo(e.currentTarget.value)}
           />
         </Group>
-        <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>
-            {t("transactions.cancel")}
+        <Group justify="space-between">
+          <Button
+            variant="subtle"
+            color="gray"
+            leftSection={<IconDeviceFloppy size={16} />}
+            loading={saveTemplate.isPending}
+            disabled={!fromId || !toId || fromId === toId || fromMinor <= 0}
+            onClick={() => {
+              const name = window.prompt(t("templates.namePrompt"));
+              if (name && name.trim()) saveTemplate.mutate(name.trim());
+            }}
+          >
+            {t("templates.saveAs")}
           </Button>
-          <Button onClick={() => save.mutate()} loading={save.isPending} disabled={invalid}>
-            {t("transactions.save")}
-          </Button>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={onClose}>
+              {t("transactions.cancel")}
+            </Button>
+            <Button onClick={() => save.mutate()} loading={save.isPending} disabled={invalid}>
+              {t("transactions.save")}
+            </Button>
+          </Group>
         </Group>
       </Stack>
     </Modal>
