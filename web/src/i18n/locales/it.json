@@ -8,6 +8,7 @@
     "accounts": "Conti",
     "transactions": "Transazioni",
     "schedules": "Pianificazioni",
+    "assignments": "Regole",
     "reports": "Report",
     "settings": "Impostazioni",
     "admin": "Utenti"
@@ -53,6 +54,47 @@
     "toAmount": "Importo ricevuto",
     "sameAccount": "Il conto di origine e di destinazione devono essere diversi.",
     "confirmDelete": "Eliminare questo trasferimento? Verranno rimosse entrambe le righe."
+  },
+  "assignments": {
+    "title": "Regole di assegnazione",
+    "add": "Nuova regola",
+    "addTitle": "Nuova regola",
+    "editTitle": "Modifica regola",
+    "empty": "Nessuna regola.",
+    "help": "Le regole vengono valutate dall'alto in basso; la prima corrispondenza compila la transazione. Trascina per riordinare.",
+    "match": "Corrispondenza",
+    "sets": "Imposta",
+    "applies": "Applica",
+    "matchField": "Cerca in",
+    "matchType": "Tipo di corrispondenza",
+    "pattern": "Modello",
+    "caseSensitive": "Distingui maiuscole",
+    "caseSensitiveShort": "maiuscole",
+    "setPayee": "Imposta beneficiario",
+    "setCategory": "Imposta categoria",
+    "setPaymentMode": "Imposta modalità di pagamento",
+    "onManual": "All'inserimento manuale",
+    "onImport": "All'importazione",
+    "test": "Prova regola",
+    "testResult": "{{count}} transazioni corrisponderebbero",
+    "applyToExisting": "Applica alle esistenti",
+    "confirmApply": "Applicare tutte le regole alle transazioni esistenti (solo campi vuoti)?",
+    "applied": "Aggiornate {{count}} transazioni",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "confirmDelete": "Eliminare questa regola?",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "fields": {
+      "memo": "note",
+      "payee": "beneficiario",
+      "both": "note o beneficiario"
+    },
+    "types": {
+      "exact": "uguale a",
+      "contains": "contiene",
+      "regex": "regex"
+    }
   },
   "schedules": {
     "title": "Transazioni pianificate",

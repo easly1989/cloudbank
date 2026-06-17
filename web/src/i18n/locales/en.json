@@ -8,6 +8,7 @@
     "accounts": "Accounts",
     "transactions": "Transactions",
     "schedules": "Schedules",
+    "assignments": "Rules",
     "reports": "Reports",
     "settings": "Settings",
     "admin": "Users"
@@ -53,6 +54,47 @@
     "toAmount": "Amount received",
     "sameAccount": "Source and destination accounts must differ.",
     "confirmDelete": "Delete this transfer? Both legs will be removed."
+  },
+  "assignments": {
+    "title": "Assignment rules",
+    "add": "New rule",
+    "addTitle": "New rule",
+    "editTitle": "Edit rule",
+    "empty": "No rules yet.",
+    "help": "Rules are tried top to bottom; the first match fills the transaction. Drag to reorder.",
+    "match": "Match",
+    "sets": "Sets",
+    "applies": "Applies",
+    "matchField": "Match in",
+    "matchType": "Match type",
+    "pattern": "Pattern",
+    "caseSensitive": "Case sensitive",
+    "caseSensitiveShort": "case",
+    "setPayee": "Set payee",
+    "setCategory": "Set category",
+    "setPaymentMode": "Set payment mode",
+    "onManual": "On manual entry",
+    "onImport": "On import",
+    "test": "Test rule",
+    "testResult": "{{count}} transaction(s) would match",
+    "applyToExisting": "Apply to existing",
+    "confirmApply": "Apply all rules to existing transactions (only filling empty fields)?",
+    "applied": "Updated {{count}} transaction(s)",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Delete this rule?",
+    "save": "Save",
+    "cancel": "Cancel",
+    "fields": {
+      "memo": "memo",
+      "payee": "payee",
+      "both": "memo or payee"
+    },
+    "types": {
+      "exact": "equals",
+      "contains": "contains",
+      "regex": "regex"
+    }
   },
   "schedules": {
     "title": "Scheduled transactions",

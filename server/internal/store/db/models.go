@@ -29,6 +29,22 @@ type Account struct {
 	CreatedAt      string
 }
 
+type Assignment struct {
+	ID             int64
+	WalletID       int64
+	Position       int64
+	MatchField     string
+	MatchType      string
+	Pattern        string
+	CaseSensitive  int64
+	SetPayeeID     sql.NullInt64
+	SetCategoryID  sql.NullInt64
+	SetPaymentMode sql.NullInt64
+	ApplyOnManual  int64
+	ApplyOnImport  int64
+	CreatedAt      string
+}
+
 type Category struct {
 	ID       int64
 	WalletID int64

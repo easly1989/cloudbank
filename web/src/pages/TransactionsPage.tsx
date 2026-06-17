@@ -58,6 +58,7 @@ import {
   listTags,
   listTemplates,
   setTransactionStatus,
+  suggestAssignment,
   updateTransaction,
   updateTransfer,
 } from "../api/client";
@@ -896,6 +897,23 @@ function TransactionForm({
     [categoriesQuery.data],
   );
 
+  // Apply-on-manual: when adding a transaction, the first matching rule fills
+  // any empty payee/category/payment-mode fields (the user can still override).
+  const runSuggest = async () => {
+    if (editing) return;
+    const name = (payeesQuery.data ?? []).find((p) => String(p.id) === payeeId)?.name ?? "";
+    if (!memo.trim() && !name) return;
+    try {
+      const res = await suggestAssignment(walletId, memo, name);
+      if (!res.matched) return;
+      if (!payeeId && res.payeeId != null) setPayeeId(String(res.payeeId));
+      if (!isSplit && !categoryId && res.categoryId != null) setCategoryId(String(res.categoryId));
+      if (paymentMode === "0" && res.paymentMode != null) setPaymentMode(String(res.paymentMode));
+    } catch {
+      // suggestion is best-effort; ignore failures
+    }
+  };
+
   return (
     <Modal
       opened={opened}
@@ -1047,6 +1065,7 @@ function TransactionForm({
           label={t("transactions.memo")}
           value={memo}
           onChange={(e) => setMemo(e.currentTarget.value)}
+          onBlur={() => void runSuggest()}
         />
         <Group justify="space-between">
           <Button

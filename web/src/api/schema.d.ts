@@ -866,6 +866,123 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List the wallet's assignment rules (first-match-wins order) */
+        get: operations["listAssignments"];
+        put?: never;
+        /** Create an assignment rule (regex validated here) */
+        post: operations["createAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/assignments/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set the rules' match order */
+        post: operations["reorderAssignments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/assignments/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview which existing transactions a candidate rule would match */
+        post: operations["testAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/assignments/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply all rules to existing transactions (first match per transaction) */
+        post: operations["applyAssignments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/assignments/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** First apply-on-manual rule matching the given memo/payee */
+        post: operations["suggestAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/assignments/{assignmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                assignmentId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an assignment rule */
+        delete: operations["deleteAssignment"];
+        options?: never;
+        head?: never;
+        /** Update an assignment rule */
+        patch: operations["updateAssignment"];
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/dashboard": {
         parameters: {
             query?: never;
@@ -1308,6 +1425,48 @@ export interface components {
             /** @description post this many days early */
             postAdvance?: number;
             autoPost?: boolean;
+        };
+        Assignment: {
+            /** Format: int64 */
+            id: number;
+            position: number;
+            /** @enum {string} */
+            matchField: "memo" | "payee" | "both";
+            /** @enum {string} */
+            matchType: "exact" | "contains" | "regex";
+            pattern: string;
+            caseSensitive: boolean;
+            /** Format: int64 */
+            setPayeeId?: number | null;
+            /** Format: int64 */
+            setCategoryId?: number | null;
+            setPaymentMode?: number | null;
+            applyOnManual: boolean;
+            applyOnImport: boolean;
+        };
+        AssignmentInput: {
+            /** @enum {string} */
+            matchField: "memo" | "payee" | "both";
+            /** @enum {string} */
+            matchType: "exact" | "contains" | "regex";
+            pattern: string;
+            caseSensitive?: boolean;
+            /** Format: int64 */
+            setPayeeId?: number | null;
+            /** Format: int64 */
+            setCategoryId?: number | null;
+            setPaymentMode?: number | null;
+            applyOnManual?: boolean;
+            applyOnImport?: boolean;
+        };
+        MatchedTransaction: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            accountId: number;
+            date: string;
+            memo: string;
+            payeeName: string;
         };
         Transfer: {
             /** Format: int64 */
@@ -3216,6 +3375,227 @@ export interface operations {
                 };
                 content?: never;
             };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listAssignments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rules. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Assignment"][];
+                };
+            };
+        };
+    };
+    createAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentInput"];
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Assignment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    reorderAssignments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: number[];
+                };
+            };
+        };
+        responses: {
+            /** @description Reordered. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    testAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentInput"];
+            };
+        };
+        responses: {
+            /** @description Matches. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatchedTransaction"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    applyAssignments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    accountId?: number | null;
+                    onlyFillEmpty?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Applied. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        changed: number;
+                    };
+                };
+            };
+        };
+    };
+    suggestAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    memo?: string;
+                    payee?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Suggestion. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        matched: boolean;
+                        /** Format: int64 */
+                        payeeId?: number | null;
+                        /** Format: int64 */
+                        categoryId?: number | null;
+                        paymentMode?: number | null;
+                    };
+                };
+            };
+        };
+    };
+    deleteAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                assignmentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                assignmentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentInput"];
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Assignment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
         };
     };
