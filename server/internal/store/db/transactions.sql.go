@@ -177,6 +177,7 @@ SELECT
     c.name AS category_name,
     tr.id AS transfer_id,
     ot.account_id AS transfer_account_id,
+    COALESCE((SELECT group_concat(tg.name, ',') FROM transaction_tags tt JOIN tags tg ON tg.id = tt.tag_id WHERE tt.transaction_id = t.id), '') AS tags,
     CAST(SUM(t.amount) OVER (ORDER BY t.date, t.id ROWS UNBOUNDED PRECEDING) AS INTEGER) AS running_delta
 FROM transactions t
 LEFT JOIN payees p ON p.id = t.payee_id
@@ -205,6 +206,7 @@ type ListAccountRegisterRow struct {
 	CategoryName      sql.NullString
 	TransferID        sql.NullInt64
 	TransferAccountID sql.NullInt64
+	Tags              interface{}
 	RunningDelta      int64
 }
 
@@ -238,6 +240,7 @@ func (q *Queries) ListAccountRegister(ctx context.Context, accountID int64) ([]L
 			&i.CategoryName,
 			&i.TransferID,
 			&i.TransferAccountID,
+			&i.Tags,
 			&i.RunningDelta,
 		); err != nil {
 			return nil, err
@@ -326,6 +329,54 @@ func (q *Queries) ListTransactionsForAccount(ctx context.Context, arg ListTransa
 		return nil, err
 	}
 	return items, nil
+}
+
+const setTransactionCategory = `-- name: SetTransactionCategory :exec
+UPDATE transactions SET
+    category_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE id = ?
+`
+
+type SetTransactionCategoryParams struct {
+	CategoryID sql.NullInt64
+	ID         int64
+}
+
+func (q *Queries) SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error {
+	_, err := q.db.ExecContext(ctx, setTransactionCategory, arg.CategoryID, arg.ID)
+	return err
+}
+
+const setTransactionPayee = `-- name: SetTransactionPayee :exec
+UPDATE transactions SET
+    payee_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE id = ?
+`
+
+type SetTransactionPayeeParams struct {
+	PayeeID sql.NullInt64
+	ID      int64
+}
+
+func (q *Queries) SetTransactionPayee(ctx context.Context, arg SetTransactionPayeeParams) error {
+	_, err := q.db.ExecContext(ctx, setTransactionPayee, arg.PayeeID, arg.ID)
+	return err
+}
+
+const setTransactionPaymentMode = `-- name: SetTransactionPaymentMode :exec
+UPDATE transactions SET
+    payment_mode = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE id = ?
+`
+
+type SetTransactionPaymentModeParams struct {
+	PaymentMode int64
+	ID          int64
+}
+
+func (q *Queries) SetTransactionPaymentMode(ctx context.Context, arg SetTransactionPaymentModeParams) error {
+	_, err := q.db.ExecContext(ctx, setTransactionPaymentMode, arg.PaymentMode, arg.ID)
+	return err
 }
 
 const updateTransaction = `-- name: UpdateTransaction :exec

@@ -692,6 +692,41 @@ paths:
         "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Transaction" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/bulk:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: bulkEditTransactions
+      summary: Atomically set one field across many transactions (all-or-nothing)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids: { type: array, items: { type: integer, format: int64 } }
+                field:
+                  type: string
+                  enum: [status, category, payee, paymentMode]
+                value:
+                  type: integer
+                  format: int64
+                  nullable: true
+                  description: "required for status/paymentMode; null clears category/payee"
+              required: [ids, field]
+      responses:
+        "200":
+          description: Applied.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated: { type: integer }
+                required: [updated]
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/transactions/register:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }

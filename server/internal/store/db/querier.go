@@ -81,6 +81,9 @@ type Querier interface {
 	ReparentChildren(ctx context.Context, arg ReparentChildrenParams) error
 	SetChildrenIncome(ctx context.Context, arg SetChildrenIncomeParams) error
 	SetCurrencyBase(ctx context.Context, id int64) error
+	SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error
+	SetTransactionPayee(ctx context.Context, arg SetTransactionPayeeParams) error
+	SetTransactionPaymentMode(ctx context.Context, arg SetTransactionPaymentModeParams) error
 	SetUserDisabled(ctx context.Context, arg SetUserDisabledParams) error
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
