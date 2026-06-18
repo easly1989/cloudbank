@@ -9,6 +9,7 @@ import { AccountsPage } from "./pages/AccountsPage";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { CreateWalletPage } from "./pages/CreateWalletPage";
 import { CurrenciesPage } from "./pages/CurrenciesPage";
+import { ImportPage } from "./pages/ImportPage";
 import { PayeesPage } from "./pages/PayeesPage";
 import { TransactionsPage } from "./pages/TransactionsPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -93,6 +94,7 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
         <Route path="settings" element={<PlaceholderPage titleKey="nav.settings" />} />
         <Route path="wallet" element={<WalletSettingsPage />} />
         <Route path="wallet/new" element={<CreateWalletPage />} />
+        <Route path="import" element={<ImportPage />} />
         <Route path="currencies" element={<CurrenciesPage />} />
         {isAdmin && <Route path="admin/users" element={<UsersPage />} />}
         <Route path="*" element={<Navigate to="/" replace />} />
