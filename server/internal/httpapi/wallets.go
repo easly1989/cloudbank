@@ -16,6 +16,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
 	"github.com/easly1989/cloudbank/server/internal/payee"
+	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
 	"github.com/easly1989/cloudbank/server/internal/template"
 	"github.com/easly1989/cloudbank/server/internal/transaction"
@@ -40,6 +41,7 @@ type walletHandlers struct {
 	schedules    *schedule.Service
 	assignments  *assignment.Service
 	budgets      *budget.Service
+	reports      *report.Service
 }
 
 type walletResponse struct {
@@ -98,6 +100,9 @@ func (h *walletHandlers) routes(r chi.Router) {
 		}
 		if h.budgets != nil {
 			(&budgetHandlers{svc: h.budgets}).walletRoutes(r)
+		}
+		if h.reports != nil {
+			(&reportHandlers{svc: h.reports}).walletRoutes(r)
 		}
 	})
 }

@@ -1153,6 +1153,48 @@ paths:
       responses:
         "204": { description: Cleared. }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/reports/statistics:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getStatistics
+      summary: Aggregated totals by a dimension (SQL group-by), filtered
+      parameters:
+        - { name: groupBy, in: query, required: true, schema: { type: string, enum: [category, subcategory, payee, tag, month, year] } }
+        - { name: from, in: query, required: false, schema: { type: string } }
+        - { name: to, in: query, required: false, schema: { type: string } }
+        - { name: status, in: query, required: false, schema: { type: integer } }
+        - { name: payeeId, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: categoryId, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: tags, in: query, required: false, schema: { type: string }, description: "comma-separated" }
+        - { name: amountMin, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: amountMax, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: text, in: query, required: false, schema: { type: string } }
+        - { name: format, in: query, required: false, schema: { type: string, enum: [json, csv] } }
+      responses:
+        "200": { description: The report (JSON, or CSV when format=csv)., content: { application/json: { schema: { $ref: "#/components/schemas/StatisticsResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/reports/statistics/drilldown:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getStatisticsDrilldown
+      summary: Filtered transactions belonging to one group bucket
+      parameters:
+        - { name: groupBy, in: query, required: true, schema: { type: string } }
+        - { name: groupKey, in: query, required: true, schema: { type: string } }
+        - { name: from, in: query, required: false, schema: { type: string } }
+        - { name: to, in: query, required: false, schema: { type: string } }
+        - { name: status, in: query, required: false, schema: { type: integer } }
+        - { name: payeeId, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: categoryId, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: tags, in: query, required: false, schema: { type: string } }
+        - { name: amountMin, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: amountMax, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: text, in: query, required: false, schema: { type: string } }
+      responses:
+        "200": { description: Transactions., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ReportTransaction" } } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
   /api/v1/wallets/{walletId}/dashboard:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -1604,6 +1646,32 @@ components:
         memo: { type: string }
         payeeName: { type: string }
       required: [id, accountId, date, memo, payeeName]
+    StatisticsGroup:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        amount: { type: integer, format: int64, description: "base currency, signed" }
+      required: [key, label, amount]
+    StatisticsResult:
+      type: object
+      properties:
+        groups: { type: array, items: { $ref: "#/components/schemas/StatisticsGroup" } }
+        total: { type: integer, format: int64 }
+        groupBy: { type: string }
+        currency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
+      required: [groups, total, groupBy]
+    ReportTransaction:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        accountId: { type: integer, format: int64 }
+        date: { type: string }
+        amount: { type: integer, format: int64 }
+        memo: { type: string }
+        payeeName: { type: string }
+        categoryName: { type: string }
+      required: [id, accountId, date, amount, memo, payeeName, categoryName]
     CategoryBudget:
       type: object
       properties:

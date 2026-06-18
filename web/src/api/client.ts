@@ -745,3 +745,61 @@ export const getBudgetReport = (walletId: number, from: string, to: string, roll
   api.get<BudgetReport>(
     `/api/v1/wallets/${walletId}/budgets/report?from=${from}&to=${to}&rollup=${rollup}`,
   );
+
+// --- Reports ---
+
+export type ReportGroupBy = "category" | "subcategory" | "payee" | "tag" | "month" | "year";
+
+export interface StatisticsGroup {
+  key: string;
+  label: string;
+  amount: number;
+}
+
+export interface StatisticsResult {
+  groups: StatisticsGroup[];
+  total: number;
+  groupBy: string;
+  currency: CurrencyInfo | null;
+}
+
+export interface ReportTransaction {
+  id: number;
+  accountId: number;
+  date: string;
+  amount: number;
+  memo: string;
+  payeeName: string;
+  categoryName: string;
+}
+
+const reportQuery = (params: Record<string, string>) => {
+  const q = new URLSearchParams(params);
+  return q.toString();
+};
+
+export const getStatistics = (
+  walletId: number,
+  groupBy: ReportGroupBy,
+  params: Record<string, string>,
+) =>
+  api.get<StatisticsResult>(
+    `/api/v1/wallets/${walletId}/reports/statistics?groupBy=${groupBy}&${reportQuery(params)}`,
+  );
+
+export const statisticsCsvUrl = (
+  walletId: number,
+  groupBy: ReportGroupBy,
+  params: Record<string, string>,
+) =>
+  `/api/v1/wallets/${walletId}/reports/statistics?groupBy=${groupBy}&format=csv&${reportQuery(params)}`;
+
+export const getStatisticsDrilldown = (
+  walletId: number,
+  groupBy: ReportGroupBy,
+  groupKey: string,
+  params: Record<string, string>,
+) =>
+  api.get<ReportTransaction[]>(
+    `/api/v1/wallets/${walletId}/reports/statistics/drilldown?groupBy=${groupBy}&groupKey=${encodeURIComponent(groupKey)}&${reportQuery(params)}`,
+  );

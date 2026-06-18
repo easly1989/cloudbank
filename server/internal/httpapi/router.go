@@ -19,6 +19,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
 	"github.com/easly1989/cloudbank/server/internal/payee"
+	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
 	"github.com/easly1989/cloudbank/server/internal/template"
 	"github.com/easly1989/cloudbank/server/internal/transaction"
@@ -65,6 +66,8 @@ type Options struct {
 	Assignments *assignment.Service
 	// Budgets, if non-nil, mounts the budget endpoints (requires Wallets).
 	Budgets *budget.Service
+	// Reports, if non-nil, mounts the report endpoints (requires Wallets).
+	Reports *report.Service
 	// SecureCookies sets the Secure flag on the session cookie.
 	SecureCookies bool
 }
@@ -105,6 +108,7 @@ func New(opts Options) http.Handler {
 						categories: opts.Categories, payees: opts.Payees, transactions: opts.Transactions,
 						transfers: opts.Transfers, dashboard: opts.Dashboard, templates: opts.Templates,
 						schedules: opts.Schedules, assignments: opts.Assignments, budgets: opts.Budgets,
+						reports: opts.Reports,
 					}).routes(pr)
 					if opts.Currencies != nil {
 						pr.Get("/catalog/currencies", (&currencyHandlers{svc: opts.Currencies}).catalog)

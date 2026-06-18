@@ -56,6 +56,27 @@
     "sameAccount": "Source and destination accounts must differ.",
     "confirmDelete": "Delete this transfer? Both legs will be removed."
   },
+  "reports": {
+    "title": "Statistics",
+    "exportCsv": "Export CSV",
+    "exportPng": "Export PNG",
+    "chart": "Chart",
+    "table": "Table",
+    "pie": "Pie",
+    "column": "Column",
+    "group": "Group",
+    "amount": "Amount",
+    "total": "Total",
+    "empty": "No data for these filters.",
+    "groups": {
+      "category": "Category",
+      "subcategory": "Subcategory",
+      "payee": "Payee",
+      "tag": "Tag",
+      "month": "Month",
+      "year": "Year"
+    }
+  },
   "budget": {
     "title": "Budget",
     "editor": "Budget",
