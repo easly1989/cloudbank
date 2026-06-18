@@ -16,6 +16,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/category"
+	"github.com/easly1989/cloudbank/server/internal/csvio"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
 	"github.com/easly1989/cloudbank/server/internal/importer"
@@ -71,6 +72,8 @@ type Options struct {
 	Reports *report.Service
 	// Import, if non-nil, mounts the file-import endpoints (requires Auth).
 	Import *importer.Service
+	// CSV, if non-nil, mounts the CSV import/export endpoints (requires Wallets).
+	CSV *csvio.Service
 	// SecureCookies sets the Secure flag on the session cookie.
 	SecureCookies bool
 }
@@ -114,7 +117,7 @@ func New(opts Options) http.Handler {
 						categories: opts.Categories, payees: opts.Payees, transactions: opts.Transactions,
 						transfers: opts.Transfers, dashboard: opts.Dashboard, templates: opts.Templates,
 						schedules: opts.Schedules, assignments: opts.Assignments, budgets: opts.Budgets,
-						reports: opts.Reports,
+						reports: opts.Reports, csv: opts.CSV,
 					}).routes(pr)
 					if opts.Currencies != nil {
 						pr.Get("/catalog/currencies", (&currencyHandlers{svc: opts.Currencies}).catalog)

@@ -1156,6 +1156,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/import/csv/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parse a CSV, rescale amounts, flag duplicates and (optionally) apply import rules */
+        post: operations["previewCSVImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/import/csv/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create transactions from previewed CSV rows (creating payees/categories/tags by name) */
+        post: operations["commitCSVImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/export/csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Export an account's transactions as a HomeBank-dialect CSV */
+        get: operations["exportAccountCSV"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/import/xhb": {
         parameters: {
             query?: never;
@@ -1813,6 +1870,73 @@ export interface components {
                 [key: string]: number;
             };
             warnings: string[];
+        };
+        CSVPreviewRequest: {
+            /** Format: int64 */
+            accountId: number;
+            /** @description the raw CSV text */
+            content: string;
+            /** @enum {string} */
+            dialect: "homebank" | "generic";
+            /** @description single character; defaults ';' (homebank) or ',' (generic) */
+            delimiter?: string;
+            /** @description generic only: skip the first row */
+            hasHeader?: boolean;
+            /**
+             * @description field order of the date column
+             * @enum {string}
+             */
+            dateFormat?: "" | "iso" | "dmy" | "mdy";
+            /** @description '.' or ','; defaults '.' */
+            decimalChar?: string;
+            /** @description generic: field name → column index */
+            mapping?: {
+                [key: string]: number;
+            };
+            /** @description apply on-import assignment rules to the preview */
+            applyRules?: boolean;
+        };
+        CSVPreviewRow: {
+            line: number;
+            include: boolean;
+            duplicate: boolean;
+            ruleApplied: boolean;
+            error?: string;
+            date: string;
+            /** Format: int64 */
+            amount: number;
+            paymentMode: number;
+            info: string;
+            payee: string;
+            memo: string;
+            category: string;
+            tags: string[];
+        };
+        CSVPreview: {
+            /** @description detected/generated column names for the mapping UI */
+            columns: string[];
+            rows: components["schemas"]["CSVPreviewRow"][];
+        };
+        CSVCommitRow: {
+            /** @description YYYY-MM-DD */
+            date: string;
+            /** Format: int64 */
+            amount: number;
+            paymentMode?: number;
+            info?: string;
+            payee?: string;
+            memo?: string;
+            /** @description full name 'Parent:Sub' or empty */
+            category?: string;
+            tags?: string[];
+        };
+        CSVCommitRequest: {
+            /** Format: int64 */
+            accountId: number;
+            rows: components["schemas"]["CSVCommitRow"][];
+        };
+        CSVCommitResult: {
+            created: number;
         };
     };
     responses: {
@@ -4182,6 +4306,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Dashboard"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    previewCSVImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CSVPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description The preview. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CSVPreview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    commitCSVImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CSVCommitRequest"];
+            };
+        };
+        responses: {
+            /** @description The rows were imported. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CSVCommitResult"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    exportAccountCSV: {
+        parameters: {
+            query: {
+                accountId: number;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The CSV file. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
                 };
             };
             404: components["responses"]["NotFound"];

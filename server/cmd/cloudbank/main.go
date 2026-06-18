@@ -21,6 +21,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/config"
+	"github.com/easly1989/cloudbank/server/internal/csvio"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
 	"github.com/easly1989/cloudbank/server/internal/httpapi"
@@ -111,6 +112,7 @@ func run() error {
 	budgetSvc := budget.NewService(st.Write())
 	reportSvc := report.NewService(st.Write())
 	importSvc := importer.NewService(st.Write())
+	csvSvc := csvio.NewService(st.Write(), transactionSvc, assignmentSvc, accountSvc)
 
 	handler := httpapi.New(httpapi.Options{
 		Logger:        logger,
@@ -130,6 +132,7 @@ func run() error {
 		Budgets:       budgetSvc,
 		Reports:       reportSvc,
 		Import:        importSvc,
+		CSV:           csvSvc,
 		SecureCookies: cfg.SecureCookies,
 	})
 

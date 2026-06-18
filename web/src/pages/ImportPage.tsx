@@ -1,5 +1,22 @@
-import { Alert, Button, Card, FileInput, List, Stack, Table, Text, Title } from "@mantine/core";
-import { IconAlertTriangle, IconFileImport, IconUpload } from "@tabler/icons-react";
+import {
+  Alert,
+  Button,
+  Card,
+  FileInput,
+  List,
+  Stack,
+  Table,
+  Tabs,
+  Text,
+  Title,
+} from "@mantine/core";
+import {
+  IconAlertTriangle,
+  IconFileImport,
+  IconFileSpreadsheet,
+  IconTableExport,
+  IconUpload,
+} from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,8 +24,10 @@ import { useNavigate } from "react-router-dom";
 
 import { ApiError, importXHB, type ImportResult } from "../api/client";
 import { useWallet } from "../wallet/WalletProvider";
+import { ExportCsvPanel } from "./ExportCsvPanel";
+import { ImportCsvWizard } from "./ImportCsvWizard";
 
-export function ImportPage() {
+function XhbImportPanel() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -33,7 +52,6 @@ export function ImportPage() {
 
   return (
     <Stack maw={640}>
-      <Title order={2}>{t("import.title")}</Title>
       <Text c="dimmed">{t("import.description")}</Text>
 
       <Card withBorder>
@@ -101,6 +119,39 @@ export function ImportPage() {
           </Stack>
         </Card>
       )}
+    </Stack>
+  );
+}
+
+export function ImportPage() {
+  const { t } = useTranslation();
+
+  return (
+    <Stack>
+      <Title order={2}>{t("import.title")}</Title>
+      <Tabs defaultValue="xhb">
+        <Tabs.List>
+          <Tabs.Tab value="xhb" leftSection={<IconFileImport size={16} />}>
+            {t("import.tabs.xhb")}
+          </Tabs.Tab>
+          <Tabs.Tab value="csv" leftSection={<IconFileSpreadsheet size={16} />}>
+            {t("import.tabs.csv")}
+          </Tabs.Tab>
+          <Tabs.Tab value="export" leftSection={<IconTableExport size={16} />}>
+            {t("import.tabs.export")}
+          </Tabs.Tab>
+        </Tabs.List>
+
+        <Tabs.Panel value="xhb" pt="md">
+          <XhbImportPanel />
+        </Tabs.Panel>
+        <Tabs.Panel value="csv" pt="md">
+          <ImportCsvWizard />
+        </Tabs.Panel>
+        <Tabs.Panel value="export" pt="md">
+          <ExportCsvPanel />
+        </Tabs.Panel>
+      </Tabs>
     </Stack>
   );
 }
