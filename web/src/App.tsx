@@ -16,6 +16,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { BudgetPage } from "./pages/BudgetPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { ReportsPage } from "./pages/ReportsPage";
 import { SchedulesPage } from "./pages/SchedulesPage";
 import { SetupPage } from "./pages/SetupPage";
 import { WalletSettingsPage } from "./pages/WalletSettingsPage";
@@ -88,7 +89,7 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
         <Route path="schedules" element={<SchedulesPage />} />
         <Route path="assignments" element={<AssignmentsPage />} />
         <Route path="budget" element={<BudgetPage />} />
-        <Route path="reports" element={<PlaceholderPage titleKey="nav.reports" />} />
+        <Route path="reports" element={<ReportsPage />} />
         <Route path="settings" element={<PlaceholderPage titleKey="nav.settings" />} />
         <Route path="wallet" element={<WalletSettingsPage />} />
         <Route path="wallet/new" element={<CreateWalletPage />} />
