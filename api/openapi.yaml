@@ -1255,6 +1255,23 @@ paths:
       responses:
         "200": { description: The dashboard., content: { application/json: { schema: { $ref: "#/components/schemas/Dashboard" } } } }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/import/xhb:
+    post:
+      operationId: importXHB
+      summary: Import a HomeBank .xhb file into a new wallet owned by the current user
+      description: >
+        The raw .xhb XML is sent as the request body. The import is atomic: a fresh
+        wallet is created and populated with the file's currencies, accounts, payees,
+        categories, tags, transactions (with splits and re-paired transfers),
+        budgets, assignments, templates and schedules.
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema: { type: string, format: binary }
+      responses:
+        "201": { description: The file was imported., content: { application/json: { schema: { $ref: "#/components/schemas/ImportResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
 components:
   responses:
     BadRequest:
@@ -1832,3 +1849,10 @@ components:
         memo: { type: string }
         status: { type: integer, description: "0 none, 1 cleared, 2 reconciled, 3 remind, 4 void" }
       required: [fromAccountId, toAccountId, date, fromAmount]
+    ImportResult:
+      type: object
+      properties:
+        walletId: { type: integer, format: int64, description: "the newly created wallet" }
+        counts: { type: object, additionalProperties: { type: integer }, description: "imported entity counts keyed by type (accounts, transactions, ...)" }
+        warnings: { type: array, items: { type: string } }
+      required: [walletId, counts, warnings]

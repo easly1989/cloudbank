@@ -12,7 +12,8 @@
     "budget": "Budget",
     "reports": "Reports",
     "settings": "Settings",
-    "admin": "Users"
+    "admin": "Users",
+    "import": "Import"
   },
   "transactions": {
     "title": "Transactions",
@@ -469,5 +470,29 @@
     "other": "Other",
     "upcoming": "Upcoming scheduled",
     "noUpcoming": "No upcoming scheduled transactions."
+  },
+  "import": {
+    "title": "Import",
+    "description": "Import a HomeBank .xhb file. A new wallet is created and filled with its currencies, accounts, payees, categories, transactions and settings.",
+    "fileLabel": "HomeBank file",
+    "filePlaceholder": "Choose a .xhb file",
+    "submit": "Import",
+    "success": "Import complete",
+    "failed": "Import failed",
+    "warnings": "Warnings",
+    "goToDashboard": "Go to dashboard",
+    "entities": {
+      "currencies": "Currencies",
+      "accounts": "Accounts",
+      "payees": "Payees",
+      "categories": "Categories",
+      "tags": "Tags",
+      "transactions": "Transactions",
+      "transfers": "Transfers",
+      "budgets": "Budgets",
+      "assignments": "Rules",
+      "templates": "Templates",
+      "schedules": "Schedules"
+    }
   }
 }
