@@ -12,7 +12,8 @@
     "budget": "Budget",
     "reports": "Report",
     "settings": "Impostazioni",
-    "admin": "Utenti"
+    "admin": "Utenti",
+    "import": "Importa"
   },
   "transactions": {
     "title": "Transazioni",
@@ -469,5 +470,29 @@
     "other": "Altro",
     "upcoming": "Programmate in arrivo",
     "noUpcoming": "Nessuna transazione programmata in arrivo."
+  },
+  "import": {
+    "title": "Importa",
+    "description": "Importa un file HomeBank .xhb. Verrà creato un nuovo portafoglio con valute, conti, beneficiari, categorie, operazioni e impostazioni.",
+    "fileLabel": "File HomeBank",
+    "filePlaceholder": "Scegli un file .xhb",
+    "submit": "Importa",
+    "success": "Importazione completata",
+    "failed": "Importazione non riuscita",
+    "warnings": "Avvisi",
+    "goToDashboard": "Vai alla dashboard",
+    "entities": {
+      "currencies": "Valute",
+      "accounts": "Conti",
+      "payees": "Beneficiari",
+      "categories": "Categorie",
+      "tags": "Etichette",
+      "transactions": "Operazioni",
+      "transfers": "Trasferimenti",
+      "budgets": "Budget",
+      "assignments": "Regole",
+      "templates": "Modelli",
+      "schedules": "Pianificazioni"
+    }
   }
 }

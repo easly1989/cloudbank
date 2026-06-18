@@ -18,6 +18,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
+	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
@@ -68,6 +69,8 @@ type Options struct {
 	Budgets *budget.Service
 	// Reports, if non-nil, mounts the report endpoints (requires Wallets).
 	Reports *report.Service
+	// Import, if non-nil, mounts the file-import endpoints (requires Auth).
+	Import *importer.Service
 	// SecureCookies sets the Secure flag on the session cookie.
 	SecureCookies bool
 }
@@ -102,6 +105,9 @@ func New(opts Options) http.Handler {
 			r.Group(func(pr chi.Router) {
 				pr.Use(ah.requireAuth)
 				ah.protectedRoutes(pr)
+				if opts.Import != nil {
+					pr.Post("/import/xhb", (&importHandlers{svc: opts.Import}).xhb)
+				}
 				if opts.Wallets != nil {
 					(&walletHandlers{
 						svc: opts.Wallets, currencies: opts.Currencies, accounts: opts.Accounts,

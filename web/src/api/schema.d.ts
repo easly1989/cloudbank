@@ -1156,6 +1156,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/import/xhb": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a HomeBank .xhb file into a new wallet owned by the current user
+         * @description The raw .xhb XML is sent as the request body. The import is atomic: a fresh wallet is created and populated with the file's currencies, accounts, payees, categories, tags, transactions (with splits and re-paired transfers), budgets, assignments, templates and schedules.
+         */
+        post: operations["importXHB"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1781,6 +1801,18 @@ export interface components {
             memo?: string;
             /** @description 0 none, 1 cleared, 2 reconciled, 3 remind, 4 void */
             status?: number;
+        };
+        ImportResult: {
+            /**
+             * Format: int64
+             * @description the newly created wallet
+             */
+            walletId: number;
+            /** @description imported entity counts keyed by type (accounts, transactions, ...) */
+            counts: {
+                [key: string]: number;
+            };
+            warnings: string[];
         };
     };
     responses: {
@@ -4153,6 +4185,31 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+        };
+    };
+    importXHB: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/xml": string;
+            };
+        };
+        responses: {
+            /** @description The file was imported. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
         };
     };
 }

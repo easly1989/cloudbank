@@ -888,3 +888,36 @@ export const getVehicleReport = (
   if (to) q.set("to", to);
   return api.get<VehicleReport>(`/api/v1/wallets/${walletId}/reports/vehicle?${q.toString()}`);
 };
+
+// --- Imports ---
+
+export interface ImportResult {
+  walletId: number;
+  counts: Record<string, number>;
+  warnings: string[];
+}
+
+// importXHB uploads the raw contents of a HomeBank .xhb file. It bypasses the
+// JSON request wrapper because the body is the XML document itself.
+export async function importXHB(file: File): Promise<ImportResult> {
+  const res = await fetch("/api/v1/import/xhb", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/xml",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: file,
+  });
+  if (!res.ok) {
+    let message = res.statusText;
+    try {
+      const body = (await res.json()) as { error?: { message?: string } };
+      if (body?.error?.message) message = body.error.message;
+    } catch {
+      // non-JSON error body; keep statusText
+    }
+    throw new ApiError(res.status, message);
+  }
+  return (await res.json()) as ImportResult;
+}
