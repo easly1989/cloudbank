@@ -57,13 +57,21 @@
     "confirmDelete": "Delete this transfer? Both legs will be removed."
   },
   "reports": {
-    "title": "Statistics",
+    "title": "Reports",
+    "statistics": "Statistics",
+    "trend": "Trend",
+    "balance": "Balance",
     "exportCsv": "Export CSV",
     "exportPng": "Export PNG",
     "chart": "Chart",
     "table": "Table",
     "pie": "Pie",
     "column": "Column",
+    "line": "Line",
+    "cumulative": "Cumulative",
+    "overdraft": "Minimum",
+    "accounts": "Accounts",
+    "allAccounts": "All accounts",
     "group": "Group",
     "amount": "Amount",
     "total": "Total",
@@ -75,6 +83,19 @@
       "tag": "Tag",
       "month": "Month",
       "year": "Year"
+    },
+    "buckets": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month",
+      "quarter": "Quarter",
+      "year": "Year"
+    },
+    "breakdowns": {
+      "none": "Total",
+      "account": "Account",
+      "payee": "Payee",
+      "category": "Category"
     }
   },
   "budget": {
