@@ -1042,6 +1042,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/reports/statistics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Aggregated totals by a dimension (SQL group-by), filtered */
+        get: operations["getStatistics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/reports/statistics/drilldown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Filtered transactions belonging to one group bucket */
+        get: operations["getStatisticsDrilldown"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/dashboard": {
         parameters: {
             query?: never;
@@ -1526,6 +1564,34 @@ export interface components {
             date: string;
             memo: string;
             payeeName: string;
+        };
+        StatisticsGroup: {
+            key: string;
+            label: string;
+            /**
+             * Format: int64
+             * @description base currency, signed
+             */
+            amount: number;
+        };
+        StatisticsResult: {
+            groups: components["schemas"]["StatisticsGroup"][];
+            /** Format: int64 */
+            total: number;
+            groupBy: string;
+            currency?: components["schemas"]["CurrencyInfo"];
+        };
+        ReportTransaction: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            accountId: number;
+            date: string;
+            /** Format: int64 */
+            amount: number;
+            memo: string;
+            payeeName: string;
+            categoryName: string;
         };
         CategoryBudget: {
             /** Format: int64 */
@@ -3796,6 +3862,77 @@ export interface operations {
                 content?: never;
             };
             404: components["responses"]["NotFound"];
+        };
+    };
+    getStatistics: {
+        parameters: {
+            query: {
+                groupBy: "category" | "subcategory" | "payee" | "tag" | "month" | "year";
+                from?: string;
+                to?: string;
+                status?: number;
+                payeeId?: number;
+                categoryId?: number;
+                /** @description comma-separated */
+                tags?: string;
+                amountMin?: number;
+                amountMax?: number;
+                text?: string;
+                format?: "json" | "csv";
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The report (JSON */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatisticsResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getStatisticsDrilldown: {
+        parameters: {
+            query: {
+                groupBy: string;
+                groupKey: string;
+                from?: string;
+                to?: string;
+                status?: number;
+                payeeId?: number;
+                categoryId?: number;
+                tags?: string;
+                amountMin?: number;
+                amountMax?: number;
+                text?: string;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Transactions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportTransaction"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
         };
     };
     getDashboard: {

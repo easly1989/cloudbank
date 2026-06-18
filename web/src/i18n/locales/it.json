@@ -56,6 +56,27 @@
     "sameAccount": "Il conto di origine e di destinazione devono essere diversi.",
     "confirmDelete": "Eliminare questo trasferimento? Verranno rimosse entrambe le righe."
   },
+  "reports": {
+    "title": "Statistiche",
+    "exportCsv": "Esporta CSV",
+    "exportPng": "Esporta PNG",
+    "chart": "Grafico",
+    "table": "Tabella",
+    "pie": "Torta",
+    "column": "Colonne",
+    "group": "Gruppo",
+    "amount": "Importo",
+    "total": "Totale",
+    "empty": "Nessun dato per questi filtri.",
+    "groups": {
+      "category": "Categoria",
+      "subcategory": "Sottocategoria",
+      "payee": "Beneficiario",
+      "tag": "Tag",
+      "month": "Mese",
+      "year": "Anno"
+    }
+  },
   "budget": {
     "title": "Budget",
     "editor": "Budget",
