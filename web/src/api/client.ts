@@ -803,3 +803,55 @@ export const getStatisticsDrilldown = (
   api.get<ReportTransaction[]>(
     `/api/v1/wallets/${walletId}/reports/statistics/drilldown?groupBy=${groupBy}&groupKey=${encodeURIComponent(groupKey)}&${reportQuery(params)}`,
   );
+
+export interface TrendSeries {
+  key: string;
+  label: string;
+  values: number[];
+}
+
+export interface TrendResult {
+  buckets: string[];
+  series: TrendSeries[];
+  currency: CurrencyInfo | null;
+}
+
+export interface BalanceSeries {
+  accountId: number;
+  label: string;
+  minimumBalance: number;
+  values: number[];
+}
+
+export interface BalanceResult {
+  buckets: string[];
+  series: BalanceSeries[];
+  currency: CurrencyInfo | null;
+}
+
+export type ReportBucket = "day" | "week" | "month" | "quarter" | "year";
+export type TrendBreakdown = "none" | "account" | "payee" | "category";
+
+export const getTrend = (
+  walletId: number,
+  bucket: ReportBucket,
+  breakdown: TrendBreakdown,
+  params: Record<string, string>,
+) =>
+  api.get<TrendResult>(
+    `/api/v1/wallets/${walletId}/reports/trend?bucket=${bucket}&breakdown=${breakdown}&${new URLSearchParams(params).toString()}`,
+  );
+
+export const getBalanceReport = (
+  walletId: number,
+  bucket: ReportBucket,
+  accountIds: number[],
+  from?: string,
+  to?: string,
+) => {
+  const q = new URLSearchParams({ bucket });
+  if (accountIds.length > 0) q.set("accountIds", accountIds.join(","));
+  if (from) q.set("from", from);
+  if (to) q.set("to", to);
+  return api.get<BalanceResult>(`/api/v1/wallets/${walletId}/reports/balance?${q.toString()}`);
+};

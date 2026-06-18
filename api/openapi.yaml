@@ -1195,6 +1195,41 @@ paths:
       responses:
         "200": { description: Transactions., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ReportTransaction" } } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/reports/trend:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getTrend
+      summary: Bucketed evolution over time, optionally split into series
+      parameters:
+        - { name: bucket, in: query, required: true, schema: { type: string, enum: [day, week, month, quarter, year] } }
+        - { name: breakdown, in: query, required: false, schema: { type: string, enum: [none, account, payee, category] } }
+        - { name: from, in: query, required: false, schema: { type: string } }
+        - { name: to, in: query, required: false, schema: { type: string } }
+        - { name: status, in: query, required: false, schema: { type: integer } }
+        - { name: payeeId, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: categoryId, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: tags, in: query, required: false, schema: { type: string } }
+        - { name: amountMin, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: amountMax, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: text, in: query, required: false, schema: { type: string } }
+      responses:
+        "200": { description: The trend., content: { application/json: { schema: { $ref: "#/components/schemas/TrendResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/reports/balance:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getBalanceReport
+      summary: Account balance(s) over time (initial balance + transactions)
+      parameters:
+        - { name: bucket, in: query, required: true, schema: { type: string, enum: [day, week, month, quarter, year] } }
+        - { name: accountIds, in: query, required: false, schema: { type: string }, description: "comma-separated; empty = all accounts" }
+        - { name: from, in: query, required: false, schema: { type: string } }
+        - { name: to, in: query, required: false, schema: { type: string } }
+      responses:
+        "200": { description: The balance report., content: { application/json: { schema: { $ref: "#/components/schemas/BalanceResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
   /api/v1/wallets/{walletId}/dashboard:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -1672,6 +1707,35 @@ components:
         payeeName: { type: string }
         categoryName: { type: string }
       required: [id, accountId, date, amount, memo, payeeName, categoryName]
+    ReportSeries:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        values: { type: array, items: { type: integer, format: int64 } }
+      required: [key, label, values]
+    TrendResult:
+      type: object
+      properties:
+        buckets: { type: array, items: { type: string } }
+        series: { type: array, items: { $ref: "#/components/schemas/ReportSeries" } }
+        currency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
+      required: [buckets, series]
+    BalanceSeries:
+      type: object
+      properties:
+        accountId: { type: integer, format: int64 }
+        label: { type: string }
+        minimumBalance: { type: integer, format: int64 }
+        values: { type: array, items: { type: integer, format: int64 } }
+      required: [accountId, label, minimumBalance, values]
+    BalanceResult:
+      type: object
+      properties:
+        buckets: { type: array, items: { type: string } }
+        series: { type: array, items: { $ref: "#/components/schemas/BalanceSeries" } }
+        currency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
+      required: [buckets, series]
     CategoryBudget:
       type: object
       properties:
