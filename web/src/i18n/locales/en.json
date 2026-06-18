@@ -493,6 +493,62 @@
       "assignments": "Rules",
       "templates": "Templates",
       "schedules": "Schedules"
+    },
+    "tabs": {
+      "xhb": "HomeBank file",
+      "csv": "CSV import",
+      "export": "CSV export"
     }
+  },
+  "importCsv": {
+    "steps": {
+      "source": "Source",
+      "map": "Map columns",
+      "review": "Review",
+      "done": "Done"
+    },
+    "dialect": {
+      "homebank": "HomeBank CSV",
+      "generic": "Generic CSV"
+    },
+    "account": "Target account",
+    "accountPlaceholder": "Choose an account",
+    "file": "CSV file",
+    "filePlaceholder": "Choose a .csv file",
+    "delimiter": "Delimiter",
+    "dateFormat": "Date format",
+    "decimal": "Decimal",
+    "dates": {
+      "auto": "Auto-detect"
+    },
+    "hasHeader": "First row is a header",
+    "next": "Next",
+    "back": "Back",
+    "preview": "Preview",
+    "mapHint": "Match each transaction field to a column in your file. Date and amount are required.",
+    "fields": {
+      "date": "Date",
+      "amount": "Amount",
+      "payee": "Payee",
+      "memo": "Memo",
+      "category": "Category",
+      "info": "Info",
+      "paymode": "Payment mode",
+      "tags": "Tags"
+    },
+    "applyRules": "Apply import rules",
+    "willImport": "{{count}} rows will be imported",
+    "duplicate": "Duplicate",
+    "rule": "Rule",
+    "import": "Import {{count}}",
+    "done": "Import complete",
+    "createdCount": "Created {{count}} transactions.",
+    "importAnother": "Import another file"
+  },
+  "exportCsv": {
+    "description": "Download an account's transactions as a HomeBank-dialect CSV (re-importable into HomeBank).",
+    "account": "Account",
+    "accountPlaceholder": "Choose an account",
+    "download": "Download CSV"
   }
 }
