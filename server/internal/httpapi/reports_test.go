@@ -116,3 +116,46 @@ func TestReportTrendAndBalance(t *testing.T) {
 		r.Body.Close()
 	}
 }
+
+func TestReportVehicle(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	car := decodeCategory(t, c.do(http.MethodPost, base+"/categories", map[string]any{"name": "Car"}, true))
+
+	for _, e := range []struct {
+		date, memo string
+		amount     int
+	}{
+		{"2026-01-01", "d=10000 v=40", -6000},
+		{"2026-01-10", "d=10500 v=35", -5250},
+		{"2026-01-25", "d=11000 v=50", -7500},
+	} {
+		c.do(http.MethodPost, base+"/transactions", map[string]any{
+			"accountId": acc, "date": e.date, "amount": e.amount, "categoryId": car.ID, "memo": e.memo,
+		}, true).Body.Close()
+	}
+
+	resp := c.do(http.MethodGet, base+"/reports/vehicle?categoryId="+strconv.FormatInt(car.ID, 10), nil, false)
+	defer resp.Body.Close()
+	var rep struct {
+		Entries        []struct{ Consumption float64 }
+		TotalDistance  float64 `json:"totalDistance"`
+		AvgConsumption float64 `json:"avgConsumption"`
+		TotalCost      int64   `json:"totalCost"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&rep); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	// (35+50)/(500+500)*100 = 8.5.
+	if rep.TotalDistance != 1000 || rep.AvgConsumption != 8.5 || rep.TotalCost != 18750 {
+		t.Fatalf("vehicle report = %+v", rep)
+	}
+
+	// Missing categoryId → 400.
+	if r := c.do(http.MethodGet, base+"/reports/vehicle", nil, false); r.StatusCode != http.StatusBadRequest {
+		t.Fatalf("missing categoryId = %d, want 400", r.StatusCode)
+	} else {
+		r.Body.Close()
+	}
+}

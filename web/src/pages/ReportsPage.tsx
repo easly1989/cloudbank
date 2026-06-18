@@ -4,6 +4,7 @@ import {
   Modal,
   MultiSelect,
   SegmentedControl,
+  Select,
   Stack,
   Switch,
   Table,
@@ -22,10 +23,12 @@ import {
   type ReportGroupBy,
   type ReportTransaction,
   type TrendBreakdown,
+  type VehicleReport,
   getBalanceReport,
   getStatistics,
   getStatisticsDrilldown,
   getTrend,
+  getVehicleReport,
   listAccounts,
   listCategories,
   listCurrencies,
@@ -85,12 +88,16 @@ export function ReportsPage() {
           <Tabs.Tab value="statistics">{t("reports.statistics")}</Tabs.Tab>
           <Tabs.Tab value="trend">{t("reports.trend")}</Tabs.Tab>
           <Tabs.Tab value="balance">{t("reports.balance")}</Tabs.Tab>
+          <Tabs.Tab value="vehicle">{t("reports.vehicle")}</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="statistics" pt="md">
           <StatisticsTab />
         </Tabs.Panel>
         <Tabs.Panel value="trend" pt="md">
           <TrendTab />
+        </Tabs.Panel>
+        <Tabs.Panel value="vehicle" pt="md">
+          <VehicleTab />
         </Tabs.Panel>
         <Tabs.Panel value="balance" pt="md">
           <BalanceTab />
@@ -575,5 +582,133 @@ function BalanceTab() {
       {result && result.buckets.length === 0 && <Text c="dimmed">{t("reports.empty")}</Text>}
       {result && result.buckets.length > 0 && <Chart ref={chartRef} option={option} />}
     </Stack>
+  );
+}
+
+function VehicleTab() {
+  const { t } = useTranslation();
+  const { currentWallet } = useWallet();
+  const walletId = currentWallet?.id ?? 0;
+
+  const categoriesQuery = useQuery({
+    queryKey: ["categories", walletId],
+    queryFn: () => listCategories(walletId),
+    enabled: walletId > 0,
+  });
+  const currenciesQuery = useQuery({
+    queryKey: ["currencies", walletId],
+    queryFn: () => listCurrencies(walletId),
+    enabled: walletId > 0,
+  });
+  const base = (currenciesQuery.data ?? []).find((c) => c.isBase);
+
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["vehicle", walletId, categoryId],
+    queryFn: () => getVehicleReport(walletId, Number(categoryId)),
+    enabled: walletId > 0 && !!categoryId,
+  });
+  const report: VehicleReport | undefined = query.data;
+  const fmt = useMemo(() => baseFmt(report?.currency ?? base), [report?.currency, base]);
+
+  const num = (v: number, digits = 1) =>
+    v.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
+  return (
+    <Stack>
+      <Group align="flex-end">
+        <Select
+          label={t("reports.vehicleCategory")}
+          placeholder={t("reports.pickCategory")}
+          data={(categoriesQuery.data ?? []).map((c) => ({
+            value: String(c.id),
+            label: c.parentId
+              ? `${(categoriesQuery.data ?? []).find((p) => p.id === c.parentId)?.name ?? ""} › ${c.name}`
+              : c.name,
+          }))}
+          value={categoryId}
+          onChange={setCategoryId}
+          searchable
+          clearable
+          w={280}
+        />
+      </Group>
+
+      {report && (
+        <Group gap="xl">
+          <Stat
+            label={t("reports.distance")}
+            value={`${num(report.totalDistance, 0)} ${t("reports.unitDistance")}`}
+          />
+          <Stat
+            label={t("reports.volume")}
+            value={`${num(report.totalVolume)} ${t("reports.unitVolume")}`}
+          />
+          <Stat
+            label={t("reports.consumption")}
+            value={`${num(report.avgConsumption)} ${t("reports.unitConsumption")}`}
+          />
+          <Stat label={t("reports.totalCost")} value={formatMinor(report.totalCost, fmt)} />
+          <Stat
+            label={t("reports.costPerDistance")}
+            value={
+              report.totalDistance > 0
+                ? `${formatMinor(Math.round(report.totalCost / report.totalDistance), fmt)} / ${t("reports.unitDistance")}`
+                : "—"
+            }
+          />
+        </Group>
+      )}
+
+      {report && report.entries.length === 0 && categoryId && (
+        <Text c="dimmed">{t("reports.empty")}</Text>
+      )}
+
+      {report && report.entries.length > 0 && (
+        <Table striped>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>{t("transactions.date")}</Table.Th>
+              <Table.Th ta="right">{t("reports.meter")}</Table.Th>
+              <Table.Th ta="right">{t("reports.distance")}</Table.Th>
+              <Table.Th ta="right">{t("reports.volume")}</Table.Th>
+              <Table.Th ta="right">{t("reports.consumption")}</Table.Th>
+              <Table.Th ta="right">{t("reports.amount")}</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {report.entries.map((e) => (
+              <Table.Tr key={e.transactionId}>
+                <Table.Td>{e.date}</Table.Td>
+                <Table.Td ta="right">{num(e.meter, 0)}</Table.Td>
+                <Table.Td ta="right">{e.distance > 0 ? num(e.distance, 0) : "—"}</Table.Td>
+                <Table.Td ta="right">
+                  {e.partial ? (
+                    <Text span c="dimmed">
+                      {t("reports.partial")}
+                    </Text>
+                  ) : (
+                    num(e.volume)
+                  )}
+                </Table.Td>
+                <Table.Td ta="right">{e.consumption > 0 ? num(e.consumption) : "—"}</Table.Td>
+                <Table.Td ta="right">{formatMinor(e.cost, fmt)}</Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      )}
+    </Stack>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <Text size="xs" c="dimmed" tt="uppercase">
+        {label}
+      </Text>
+      <Text fw={600}>{value}</Text>
+    </div>
   );
 }
