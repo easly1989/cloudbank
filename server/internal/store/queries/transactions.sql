@@ -1,10 +1,15 @@
 -- name: InsertTransaction :one
 INSERT INTO transactions (
     wallet_id, account_id, date, amount, payment_mode, status, info,
-    payee_id, category_id, memo, is_split
+    payee_id, category_id, memo, is_split, import_ref
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
+
+-- name: ListImportRefsForAccount :many
+SELECT DISTINCT import_ref
+FROM transactions
+WHERE account_id = ? AND import_ref <> '';
 
 -- name: GetTransaction :one
 SELECT * FROM transactions WHERE id = ? LIMIT 1;

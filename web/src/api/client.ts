@@ -926,6 +926,7 @@ export interface CSVPreviewRow {
   memo: string;
   category: string;
   tags: string[];
+  importRef?: string;
 }
 
 export interface CSVPreview {
@@ -942,6 +943,15 @@ export interface CSVCommitRow {
   memo: string;
   category: string;
   tags: string[];
+  importRef?: string;
+}
+
+// ParsedPreviewRequest is the body for the QIF and OFX previews (no column map).
+export interface ParsedPreviewRequest {
+  accountId: number;
+  content: string;
+  dateFormat?: CSVDateFormat;
+  applyRules?: boolean;
 }
 
 // CSV field names used by the generic column mapping.
@@ -959,20 +969,27 @@ export const CSV_FIELDS = [
 export const previewCSV = (walletId: number, body: CSVPreviewRequest) =>
   api.post<CSVPreview>(`/api/v1/wallets/${walletId}/import/csv/preview`, body);
 
-export const commitCSV = (walletId: number, accountId: number, rows: CSVCommitRow[]) =>
-  api.post<{ created: number }>(`/api/v1/wallets/${walletId}/import/csv/commit`, {
+export const previewQIF = (walletId: number, body: ParsedPreviewRequest) =>
+  api.post<CSVPreview>(`/api/v1/wallets/${walletId}/import/qif/preview`, body);
+
+export const previewOFX = (walletId: number, body: ParsedPreviewRequest) =>
+  api.post<CSVPreview>(`/api/v1/wallets/${walletId}/import/ofx/preview`, body);
+
+export const commitImport = (walletId: number, accountId: number, rows: CSVCommitRow[]) =>
+  api.post<{ created: number }>(`/api/v1/wallets/${walletId}/import/commit`, {
     accountId,
     rows,
   });
 
-// downloadAccountCSV fetches the account's HomeBank-dialect CSV export and saves
-// it to a file via a temporary object URL.
-export async function downloadAccountCSV(
+// downloadExport fetches an account's export (CSV or QIF) and saves it to a file
+// via a temporary object URL.
+export async function downloadExport(
   walletId: number,
   accountId: number,
+  format: "csv" | "qif",
   filename: string,
 ): Promise<void> {
-  const res = await fetch(`/api/v1/wallets/${walletId}/export/csv?accountId=${accountId}`, {
+  const res = await fetch(`/api/v1/wallets/${walletId}/export/${format}?accountId=${accountId}`, {
     credentials: "same-origin",
     headers: { "X-Requested-With": "XMLHttpRequest" },
   });
