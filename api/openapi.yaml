@@ -1230,6 +1230,19 @@ paths:
       responses:
         "200": { description: The balance report., content: { application/json: { schema: { $ref: "#/components/schemas/BalanceResult" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/reports/vehicle:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getVehicleReport
+      summary: Fuel-consumption report for a vehicle category (memo d=/v=/p=)
+      parameters:
+        - { name: categoryId, in: query, required: true, schema: { type: integer, format: int64 } }
+        - { name: from, in: query, required: false, schema: { type: string } }
+        - { name: to, in: query, required: false, schema: { type: string } }
+      responses:
+        "200": { description: The report., content: { application/json: { schema: { $ref: "#/components/schemas/VehicleReport" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
   /api/v1/wallets/{walletId}/dashboard:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -1707,6 +1720,29 @@ components:
         payeeName: { type: string }
         categoryName: { type: string }
       required: [id, accountId, date, amount, memo, payeeName, categoryName]
+    VehicleEntry:
+      type: object
+      properties:
+        transactionId: { type: integer, format: int64 }
+        date: { type: string }
+        meter: { type: number }
+        distance: { type: number }
+        volume: { type: number }
+        price: { type: number }
+        cost: { type: integer, format: int64 }
+        partial: { type: boolean }
+        consumption: { type: number }
+      required: [transactionId, date, meter, distance, volume, price, cost, partial, consumption]
+    VehicleReport:
+      type: object
+      properties:
+        entries: { type: array, items: { $ref: "#/components/schemas/VehicleEntry" } }
+        totalDistance: { type: number }
+        totalVolume: { type: number }
+        totalCost: { type: integer, format: int64 }
+        avgConsumption: { type: number }
+        currency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
+      required: [entries, totalDistance, totalVolume, totalCost, avgConsumption]
     ReportSeries:
       type: object
       properties:

@@ -103,6 +103,10 @@ type Querier interface {
 	ListTransactionsForAccount(ctx context.Context, arg ListTransactionsForAccountParams) ([]ListTransactionsForAccountRow, error)
 	ListUpcomingSchedules(ctx context.Context, arg ListUpcomingSchedulesParams) ([]ListUpcomingSchedulesRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
+	// Fuel transactions for a vehicle category in a date range, with the account
+	// currency so costs can be converted to base. Ordered for sequential odometer
+	// processing.
+	ListVehicleTransactions(ctx context.Context, arg ListVehicleTransactionsParams) ([]ListVehicleTransactionsRow, error)
 	ListWalletTransactionsForRules(ctx context.Context, walletID int64) ([]ListWalletTransactionsForRulesRow, error)
 	ListWalletsForUser(ctx context.Context, userID int64) ([]ListWalletsForUserRow, error)
 	NextAccountPosition(ctx context.Context, walletID int64) (int64, error)
