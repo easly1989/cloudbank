@@ -84,6 +84,10 @@ type Input struct {
 	Memo        string
 	Tags        []string
 	Splits      []Split
+	// ImportRef is an optional external reference (e.g. an OFX FITID) recorded so
+	// re-importing the same file can detect already-imported rows. Empty for
+	// manual entry.
+	ImportRef string
 }
 
 // Service implements transaction management.
@@ -197,6 +201,7 @@ func (s *Service) CreateInTx(ctx context.Context, qtx *db.Queries, walletID int6
 		WalletID: walletID, AccountID: in.AccountID, Date: in.Date, Amount: in.Amount,
 		PaymentMode: int64(in.PaymentMode), Status: int64(in.Status), Info: in.Info,
 		PayeeID: nullID(in.PayeeID), CategoryID: nullID(categoryID), Memo: in.Memo, IsSplit: b2i(isSplit),
+		ImportRef: in.ImportRef,
 	})
 	if err != nil {
 		return 0, err

@@ -54,7 +54,7 @@ func TestCSVImportExportEndpoints(t *testing.T) {
 			"payee": r.Payee, "memo": r.Memo, "category": r.Category, "tags": r.Tags,
 		})
 	}
-	cresp := c.do(http.MethodPost, base+"/import/csv/commit", map[string]any{
+	cresp := c.do(http.MethodPost, base+"/import/commit", map[string]any{
 		"accountId": acc, "rows": commitRows,
 	}, true)
 	if cresp.StatusCode != http.StatusCreated {
@@ -116,5 +116,89 @@ func TestCSVImportCrossWalletIsolation(t *testing.T) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("cross-wallet preview = %d, want 404", resp.StatusCode)
+	}
+}
+
+type previewRowsResp struct {
+	Rows []struct {
+		Include   bool   `json:"include"`
+		Duplicate bool   `json:"duplicate"`
+		Date      string `json:"date"`
+		Amount    int64  `json:"amount"`
+		Payee     string `json:"payee"`
+		ImportRef string `json:"importRef"`
+	} `json:"rows"`
+}
+
+func TestQIFOFXImportEndpoints(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+
+	qif := "!Type:Bank\nD2026-04-01\nT-9.99\nPCafe\nMcoffee\nLFood\n^\n"
+	qresp := c.do(http.MethodPost, base+"/import/qif/preview", map[string]any{
+		"accountId": acc, "content": qif,
+	}, true)
+	if qresp.StatusCode != http.StatusOK {
+		t.Fatalf("qif preview = %d, want 200", qresp.StatusCode)
+	}
+	var qp previewRowsResp
+	_ = json.NewDecoder(qresp.Body).Decode(&qp)
+	qresp.Body.Close()
+	if len(qp.Rows) != 1 || qp.Rows[0].Amount != -999 || qp.Rows[0].Payee != "Cafe" {
+		t.Fatalf("qif rows = %+v", qp.Rows)
+	}
+
+	ofx := "<OFX><STMTTRN><DTPOSTED>20260402</DTPOSTED><TRNAMT>-5.00</TRNAMT>" +
+		"<FITID>FIT-1</FITID><NAME>Bus</NAME></STMTTRN></OFX>"
+	oresp := c.do(http.MethodPost, base+"/import/ofx/preview", map[string]any{
+		"accountId": acc, "content": ofx,
+	}, true)
+	if oresp.StatusCode != http.StatusOK {
+		t.Fatalf("ofx preview = %d, want 200", oresp.StatusCode)
+	}
+	var op previewRowsResp
+	_ = json.NewDecoder(oresp.Body).Decode(&op)
+	oresp.Body.Close()
+	if len(op.Rows) != 1 || op.Rows[0].ImportRef != "FIT-1" {
+		t.Fatalf("ofx rows = %+v", op.Rows)
+	}
+
+	// Commit the OFX row, then re-preview: FITID dedupe flags it.
+	row := op.Rows[0]
+	c.do(http.MethodPost, base+"/import/commit", map[string]any{
+		"accountId": acc, "rows": []map[string]any{{
+			"date": row.Date, "amount": row.Amount, "payee": row.Payee, "importRef": row.ImportRef,
+		}},
+	}, true).Body.Close()
+
+	oresp2 := c.do(http.MethodPost, base+"/import/ofx/preview", map[string]any{
+		"accountId": acc, "content": ofx,
+	}, true)
+	var op2 previewRowsResp
+	_ = json.NewDecoder(oresp2.Body).Decode(&op2)
+	oresp2.Body.Close()
+	if !op2.Rows[0].Duplicate || op2.Rows[0].Include {
+		t.Fatalf("re-imported OFX row should be a flagged duplicate: %+v", op2.Rows[0])
+	}
+
+	// QIF export returns a QIF attachment.
+	eresp := c.do(http.MethodGet, base+"/export/qif?accountId="+strconv.FormatInt(acc, 10), nil, false)
+	if eresp.StatusCode != http.StatusOK {
+		t.Fatalf("qif export = %d, want 200", eresp.StatusCode)
+	}
+	body, _ := io.ReadAll(eresp.Body)
+	eresp.Body.Close()
+	if !strings.HasPrefix(string(body), "!Type:") {
+		t.Fatalf("qif export body:\n%s", body)
+	}
+
+	// A non-OFX body is rejected.
+	bad := c.do(http.MethodPost, base+"/import/ofx/preview", map[string]any{
+		"accountId": acc, "content": "not ofx",
+	}, true)
+	defer bad.Body.Close()
+	if bad.StatusCode != http.StatusBadRequest {
+		t.Fatalf("bad ofx = %d, want 400", bad.StatusCode)
 	}
 }

@@ -176,6 +176,7 @@ type Transaction struct {
 	CreatedAt   string
 	UpdatedAt   string
 	TemplateID  sql.NullInt64
+	ImportRef   string
 }
 
 type TransactionTag struct {

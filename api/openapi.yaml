@@ -1270,12 +1270,42 @@ paths:
         "200": { description: The preview., content: { application/json: { schema: { $ref: "#/components/schemas/CSVPreview" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
-  /api/v1/wallets/{walletId}/import/csv/commit:
+  /api/v1/wallets/{walletId}/import/qif/preview:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
     post:
-      operationId: commitCSVImport
-      summary: Create transactions from previewed CSV rows (creating payees/categories/tags by name)
+      operationId: previewQIFImport
+      summary: Parse a QIF file, rescale amounts, flag duplicates and (optionally) apply import rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ParsedPreviewRequest" }
+      responses:
+        "200": { description: The preview., content: { application/json: { schema: { $ref: "#/components/schemas/CSVPreview" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/import/ofx/preview:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: previewOFXImport
+      summary: Parse an OFX/QFX file (SGML or XML), flag duplicates by FITID and (optionally) apply import rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ParsedPreviewRequest" }
+      responses:
+        "200": { description: The preview., content: { application/json: { schema: { $ref: "#/components/schemas/CSVPreview" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/import/commit:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: commitImport
+      summary: Create transactions from previewed rows (any format; creates payees/categories/tags by name)
       requestBody:
         required: true
         content:
@@ -1294,6 +1324,17 @@ paths:
         - { name: accountId, in: query, required: true, schema: { type: integer, format: int64 } }
       responses:
         "200": { description: The CSV file., content: { text/csv: { schema: { type: string } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/export/qif:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: exportAccountQIF
+      summary: Export an account's transactions as a QIF file
+      parameters:
+        - { name: accountId, in: query, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        "200": { description: The QIF file., content: { application/qif: { schema: { type: string } } } }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/import/xhb:
     post:
@@ -1925,7 +1966,16 @@ components:
         memo: { type: string }
         category: { type: string }
         tags: { type: array, items: { type: string } }
+        importRef: { type: string, description: "OFX FITID, when present (used for duplicate detection)" }
       required: [line, include, duplicate, ruleApplied, date, amount, paymentMode, info, payee, memo, category, tags]
+    ParsedPreviewRequest:
+      type: object
+      properties:
+        accountId: { type: integer, format: int64 }
+        content: { type: string, description: "the raw QIF or OFX text" }
+        dateFormat: { type: string, enum: ["", iso, dmy, mdy], description: "QIF date field order; ignored for OFX" }
+        applyRules: { type: boolean }
+      required: [accountId, content]
     CSVPreview:
       type: object
       properties:
@@ -1943,6 +1993,7 @@ components:
         memo: { type: string }
         category: { type: string, description: "full name 'Parent:Sub' or empty" }
         tags: { type: array, items: { type: string } }
+        importRef: { type: string, description: "OFX FITID to persist for future duplicate detection" }
       required: [date, amount]
     CSVCommitRequest:
       type: object

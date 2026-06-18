@@ -496,7 +496,7 @@
     },
     "tabs": {
       "xhb": "HomeBank file",
-      "csv": "CSV import",
+      "csv": "CSV / QIF / OFX",
       "export": "CSV export"
     }
   },
@@ -507,9 +507,11 @@
       "review": "Review",
       "done": "Done"
     },
-    "dialect": {
+    "format": {
       "homebank": "HomeBank CSV",
-      "generic": "Generic CSV"
+      "generic": "Generic CSV",
+      "qif": "QIF",
+      "ofx": "OFX/QFX"
     },
     "account": "Target account",
     "accountPlaceholder": "Choose an account",
@@ -549,6 +551,10 @@
     "description": "Download an account's transactions as a HomeBank-dialect CSV (re-importable into HomeBank).",
     "account": "Account",
     "accountPlaceholder": "Choose an account",
-    "download": "Download CSV"
+    "download": "Download CSV",
+    "formats": {
+      "csv": "HomeBank CSV",
+      "qif": "QIF"
+    }
   }
 }
