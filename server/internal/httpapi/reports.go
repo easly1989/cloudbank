@@ -22,6 +22,30 @@ func (h *reportHandlers) walletRoutes(r chi.Router) {
 	r.Get("/reports/statistics/drilldown", h.drilldown)
 	r.Get("/reports/trend", h.trend)
 	r.Get("/reports/balance", h.balance)
+	r.Get("/reports/vehicle", h.vehicle)
+}
+
+func (h *reportHandlers) vehicle(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	q := r.URL.Query()
+	categoryID, err := strconv.ParseInt(q.Get("categoryId"), 10, 64)
+	if err != nil || categoryID <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid", "categoryId is required")
+		return
+	}
+	from, to := q.Get("from"), q.Get("to")
+	if from == "" {
+		from = "0000-01-01"
+	}
+	if to == "" {
+		to = "9999-12-31"
+	}
+	res, err := h.svc.Vehicle(r.Context(), wl.ID, categoryID, from, to)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not build vehicle report")
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 func (h *reportHandlers) trend(w http.ResponseWriter, r *http.Request) {
