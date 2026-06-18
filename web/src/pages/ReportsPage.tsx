@@ -1,4 +1,16 @@
-import { Button, Group, Modal, SegmentedControl, Stack, Table, Text, Title } from "@mantine/core";
+import {
+  Button,
+  Group,
+  Modal,
+  MultiSelect,
+  SegmentedControl,
+  Stack,
+  Switch,
+  Table,
+  Tabs,
+  Text,
+  Title,
+} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { EChartsOption } from "echarts";
@@ -6,10 +18,15 @@ import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
+  type ReportBucket,
   type ReportGroupBy,
   type ReportTransaction,
+  type TrendBreakdown,
+  getBalanceReport,
   getStatistics,
   getStatisticsDrilldown,
+  getTrend,
+  listAccounts,
   listCategories,
   listCurrencies,
   listPayees,
@@ -21,6 +38,67 @@ import { type MoneyFormat, formatMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
 import { RegisterFilters } from "./RegisterFilters";
 import { type Filters, dateBounds, emptyFilters } from "./registerFilters";
+
+const BUCKETS: ReportBucket[] = ["day", "week", "month", "quarter", "year"];
+const BREAKDOWNS: TrendBreakdown[] = ["none", "account", "payee", "category"];
+const SERIES_PALETTE = [
+  "#4dabf7",
+  "#ff8787",
+  "#69db7c",
+  "#ffd43b",
+  "#da77f2",
+  "#3bc9db",
+  "#ffa94d",
+  "#a9e34b",
+];
+
+function baseFmt(
+  currency:
+    | {
+        fracDigits: number;
+        decimalChar: string;
+        groupChar: string;
+        symbol: string;
+        symbolPrefix: boolean;
+      }
+    | null
+    | undefined,
+): MoneyFormat {
+  return currency
+    ? {
+        fracDigits: currency.fracDigits,
+        decimalChar: currency.decimalChar,
+        groupChar: currency.groupChar,
+        symbol: currency.symbol,
+        symbolPrefix: currency.symbolPrefix,
+      }
+    : { fracDigits: 2, decimalChar: ".", groupChar: ",", symbol: "", symbolPrefix: false };
+}
+
+export function ReportsPage() {
+  const { t } = useTranslation();
+  return (
+    <Stack>
+      <Title order={2}>{t("reports.title")}</Title>
+      <Tabs defaultValue="statistics">
+        <Tabs.List>
+          <Tabs.Tab value="statistics">{t("reports.statistics")}</Tabs.Tab>
+          <Tabs.Tab value="trend">{t("reports.trend")}</Tabs.Tab>
+          <Tabs.Tab value="balance">{t("reports.balance")}</Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="statistics" pt="md">
+          <StatisticsTab />
+        </Tabs.Panel>
+        <Tabs.Panel value="trend" pt="md">
+          <TrendTab />
+        </Tabs.Panel>
+        <Tabs.Panel value="balance" pt="md">
+          <BalanceTab />
+        </Tabs.Panel>
+      </Tabs>
+    </Stack>
+  );
+}
 
 const GROUPS: ReportGroupBy[] = ["category", "subcategory", "payee", "tag", "month", "year"];
 const PALETTE = [
@@ -51,7 +129,7 @@ function filterToParams(f: Filters): Record<string, string> {
   return out;
 }
 
-export function ReportsPage() {
+function StatisticsTab() {
   const { t } = useTranslation();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
@@ -158,22 +236,15 @@ export function ReportsPage() {
 
   return (
     <Stack>
-      <Group justify="space-between">
-        <Title order={2}>{t("reports.title")}</Title>
-        <Group>
-          <Button
-            component="a"
-            href={statisticsCsvUrl(walletId, groupBy, params)}
-            variant="default"
-          >
-            {t("reports.exportCsv")}
+      <Group justify="flex-end">
+        <Button component="a" href={statisticsCsvUrl(walletId, groupBy, params)} variant="default">
+          {t("reports.exportCsv")}
+        </Button>
+        {view === "chart" && (
+          <Button variant="default" onClick={exportPng}>
+            {t("reports.exportPng")}
           </Button>
-          {view === "chart" && (
-            <Button variant="default" onClick={exportPng}>
-              {t("reports.exportPng")}
-            </Button>
-          )}
-        </Group>
+        )}
       </Group>
 
       <RegisterFilters
@@ -270,6 +341,239 @@ export function ReportsPage() {
           </Table.Tbody>
         </Table>
       </Modal>
+    </Stack>
+  );
+}
+
+function cumulate(values: number[]): number[] {
+  let acc = 0;
+  return values.map((v) => (acc += v));
+}
+
+function TrendTab() {
+  const { t } = useTranslation();
+  const { currentWallet } = useWallet();
+  const walletId = currentWallet?.id ?? 0;
+
+  const [filters, setFilters] = useState<Filters>({ ...emptyFilters, preset: "thisYear" });
+  const [bucket, setBucket] = useState<ReportBucket>("month");
+  const [breakdown, setBreakdown] = useState<TrendBreakdown>("none");
+  const [chartType, setChartType] = useState<"line" | "bar">("line");
+  const [cumulative, setCumulative] = useState(false);
+  const chartRef = useRef<ChartHandle>(null);
+
+  const payeesQuery = useQuery({
+    queryKey: ["payees", walletId],
+    queryFn: () => listPayees(walletId),
+  });
+  const categoriesQuery = useQuery({
+    queryKey: ["categories", walletId],
+    queryFn: () => listCategories(walletId),
+  });
+  const tagsQuery = useQuery({ queryKey: ["tags", walletId], queryFn: () => listTags(walletId) });
+
+  const params = useMemo(() => {
+    const out: Record<string, string> = {};
+    const { from, to } = dateBounds(filters);
+    if (from) out.from = from;
+    if (to) out.to = to;
+    if (filters.status !== null) out.status = String(filters.status);
+    if (filters.payeeId !== null) out.payeeId = String(filters.payeeId);
+    if (filters.categoryId !== null) out.categoryId = String(filters.categoryId);
+    if (filters.tags.length > 0) out.tags = filters.tags.join(",");
+    if (filters.amountMin !== null) out.amountMin = String(filters.amountMin);
+    if (filters.amountMax !== null) out.amountMax = String(filters.amountMax);
+    if (filters.text.trim()) out.text = filters.text.trim();
+    return out;
+  }, [filters]);
+
+  const query = useQuery({
+    queryKey: ["trend", walletId, bucket, breakdown, params],
+    queryFn: () => getTrend(walletId, bucket, breakdown, params),
+    enabled: walletId > 0,
+  });
+  const result = query.data;
+  const fmt = useMemo(() => baseFmt(result?.currency), [result?.currency]);
+
+  const option: EChartsOption = useMemo(() => {
+    const buckets = result?.buckets ?? [];
+    const series = (result?.series ?? []).map((s, i) => ({
+      name: s.label,
+      type: chartType,
+      smooth: chartType === "line",
+      data: cumulative ? cumulate(s.values) : s.values,
+      itemStyle: { color: SERIES_PALETTE[i % SERIES_PALETTE.length] },
+    }));
+    return {
+      tooltip: {
+        trigger: "axis",
+        valueFormatter: (v: unknown) =>
+          formatMinor(typeof v === "number" ? v : typeof v === "string" ? Number(v) : 0, fmt),
+      },
+      legend: { type: "scroll", show: breakdown !== "none" },
+      grid: { left: 80, right: 20, bottom: 60, top: 40 },
+      xAxis: { type: "category", data: buckets, axisLabel: { rotate: 30 } },
+      yAxis: { type: "value" },
+      series,
+    };
+  }, [result, chartType, cumulative, breakdown, fmt]);
+
+  const exportPng = () => {
+    const url = chartRef.current?.getPng();
+    if (!url) return;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `trend-${bucket}.png`;
+    a.click();
+  };
+
+  if (!currentWallet) return null;
+
+  return (
+    <Stack>
+      <Group justify="flex-end">
+        <Button variant="default" onClick={exportPng}>
+          {t("reports.exportPng")}
+        </Button>
+      </Group>
+      <RegisterFilters
+        filters={filters}
+        onChange={setFilters}
+        payees={payeesQuery.data ?? []}
+        categories={categoriesQuery.data ?? []}
+        tags={tagsQuery.data ?? []}
+        fmt={fmt}
+      />
+      <Group>
+        <SegmentedControl
+          value={bucket}
+          onChange={(v) => setBucket(v as ReportBucket)}
+          data={BUCKETS.map((b) => ({ value: b, label: t(`reports.buckets.${b}`) }))}
+        />
+        <SegmentedControl
+          value={breakdown}
+          onChange={(v) => setBreakdown(v as TrendBreakdown)}
+          data={BREAKDOWNS.map((b) => ({ value: b, label: t(`reports.breakdowns.${b}`) }))}
+        />
+        <SegmentedControl
+          value={chartType}
+          onChange={(v) => setChartType(v as "line" | "bar")}
+          data={[
+            { value: "line", label: t("reports.line") },
+            { value: "bar", label: t("reports.column") },
+          ]}
+        />
+        <Switch
+          label={t("reports.cumulative")}
+          checked={cumulative}
+          onChange={(e) => setCumulative(e.currentTarget.checked)}
+        />
+      </Group>
+      {result && result.buckets.length === 0 && <Text c="dimmed">{t("reports.empty")}</Text>}
+      {result && result.buckets.length > 0 && <Chart ref={chartRef} option={option} />}
+    </Stack>
+  );
+}
+
+function BalanceTab() {
+  const { t } = useTranslation();
+  const { currentWallet } = useWallet();
+  const walletId = currentWallet?.id ?? 0;
+
+  const accountsQuery = useQuery({
+    queryKey: ["accounts", walletId],
+    queryFn: () => listAccounts(walletId),
+    enabled: walletId > 0,
+  });
+  const accounts = accountsQuery.data ?? [];
+
+  const [accountIds, setAccountIds] = useState<string[]>([]);
+  const [bucket, setBucket] = useState<ReportBucket>("month");
+  const year = new Date().getFullYear();
+  const [from, setFrom] = useState(`${year}-01-01`);
+  const [to, setTo] = useState(`${year}-12-31`);
+  const chartRef = useRef<ChartHandle>(null);
+
+  const query = useQuery({
+    queryKey: ["balance", walletId, bucket, accountIds, from, to],
+    queryFn: () => getBalanceReport(walletId, bucket, accountIds.map(Number), from, to),
+    enabled: walletId > 0,
+  });
+  const result = query.data;
+  const fmt = useMemo(() => baseFmt(result?.currency), [result?.currency]);
+
+  const option: EChartsOption = useMemo(() => {
+    const buckets = result?.buckets ?? [];
+    const series = (result?.series ?? []).map((s, i) => ({
+      name: s.label,
+      type: "line" as const,
+      smooth: true,
+      data: s.values,
+      itemStyle: { color: SERIES_PALETTE[i % SERIES_PALETTE.length] },
+      markLine:
+        s.minimumBalance !== 0
+          ? {
+              symbol: "none",
+              lineStyle: { type: "dashed" as const, color: "#fa5252" },
+              data: [{ yAxis: s.minimumBalance, name: t("reports.overdraft") }],
+            }
+          : undefined,
+    }));
+    return {
+      tooltip: {
+        trigger: "axis",
+        valueFormatter: (v: unknown) =>
+          formatMinor(typeof v === "number" ? v : typeof v === "string" ? Number(v) : 0, fmt),
+      },
+      legend: { type: "scroll" },
+      grid: { left: 90, right: 20, bottom: 60, top: 40 },
+      xAxis: { type: "category", data: buckets, axisLabel: { rotate: 30 } },
+      yAxis: { type: "value" },
+      series,
+    };
+  }, [result, fmt, t]);
+
+  const exportPng = () => {
+    const url = chartRef.current?.getPng();
+    if (!url) return;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `balance-${bucket}.png`;
+    a.click();
+  };
+
+  if (!currentWallet) return null;
+
+  return (
+    <Stack>
+      <Group justify="flex-end">
+        <Button variant="default" onClick={exportPng}>
+          {t("reports.exportPng")}
+        </Button>
+      </Group>
+      <Group align="flex-end">
+        <MultiSelect
+          label={t("reports.accounts")}
+          placeholder={t("reports.allAccounts")}
+          data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
+          value={accountIds}
+          onChange={setAccountIds}
+          searchable
+          clearable
+          w={300}
+        />
+        <SegmentedControl
+          value={bucket}
+          onChange={(v) => setBucket(v as ReportBucket)}
+          data={BUCKETS.map((b) => ({ value: b, label: t(`reports.buckets.${b}`) }))}
+        />
+      </Group>
+      <Group>
+        <input type="date" value={from} onChange={(e) => setFrom(e.currentTarget.value)} />
+        <input type="date" value={to} onChange={(e) => setTo(e.currentTarget.value)} />
+      </Group>
+      {result && result.buckets.length === 0 && <Text c="dimmed">{t("reports.empty")}</Text>}
+      {result && result.buckets.length > 0 && <Chart ref={chartRef} option={option} />}
     </Stack>
   );
 }

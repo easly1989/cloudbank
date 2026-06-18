@@ -20,6 +20,56 @@ type reportHandlers struct {
 func (h *reportHandlers) walletRoutes(r chi.Router) {
 	r.Get("/reports/statistics", h.statistics)
 	r.Get("/reports/statistics/drilldown", h.drilldown)
+	r.Get("/reports/trend", h.trend)
+	r.Get("/reports/balance", h.balance)
+}
+
+func (h *reportHandlers) trend(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	q := r.URL.Query()
+	bucket := q.Get("bucket")
+	if !report.ValidBucket(bucket) {
+		writeError(w, http.StatusBadRequest, "invalid_bucket", "invalid bucket")
+		return
+	}
+	breakdown := q.Get("breakdown")
+	if breakdown == "" {
+		breakdown = report.BreakdownNone
+	}
+	if !report.ValidBreakdown(breakdown) {
+		writeError(w, http.StatusBadRequest, "invalid_breakdown", "invalid breakdown")
+		return
+	}
+	res, err := h.svc.Trend(r.Context(), wl.ID, parseReportFilter(r), bucket, breakdown)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not build trend")
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
+}
+
+func (h *reportHandlers) balance(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	q := r.URL.Query()
+	bucket := q.Get("bucket")
+	if !report.ValidBucket(bucket) {
+		writeError(w, http.StatusBadRequest, "invalid_bucket", "invalid bucket")
+		return
+	}
+	var accountIDs []int64
+	if v := q.Get("accountIds"); v != "" {
+		for _, p := range strings.Split(v, ",") {
+			if n, err := strconv.ParseInt(p, 10, 64); err == nil {
+				accountIDs = append(accountIDs, n)
+			}
+		}
+	}
+	res, err := h.svc.Balance(r.Context(), wl.ID, q.Get("from"), q.Get("to"), bucket, accountIDs)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not build balance report")
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 func parseReportFilter(r *http.Request) report.Filter {
