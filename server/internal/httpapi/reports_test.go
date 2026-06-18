@@ -8,6 +8,17 @@ import (
 	"testing"
 )
 
+// makeAccountWithBalance sets up admin + wallet (EUR) + an account with an
+// initial balance.
+func makeAccountWithBalance(t *testing.T, c *testClient, initial int64) (int64, int64) {
+	t.Helper()
+	wid := createWalletWithBase(t, c, "EUR")
+	acc := decodeAccount(t, c.do(http.MethodPost,
+		"/api/v1/wallets/"+strconv.FormatInt(wid, 10)+"/accounts",
+		map[string]any{"name": "Main", "type": "checking", "initialBalance": initial}, true))
+	return wid, acc.ID
+}
+
 func TestReportStatisticsAndDrilldown(t *testing.T) {
 	c := newTestAPI(t)
 	wid, acc := makeAccount(t, c)
@@ -59,6 +70,48 @@ func TestReportStatisticsAndDrilldown(t *testing.T) {
 	// Invalid groupBy → 400.
 	if r := c.do(http.MethodGet, base+"/reports/statistics?groupBy=nope", nil, false); r.StatusCode != http.StatusBadRequest {
 		t.Fatalf("bad group = %d, want 400", r.StatusCode)
+	} else {
+		r.Body.Close()
+	}
+}
+
+func TestReportTrendAndBalance(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccountWithBalance(t, c, 100000)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+
+	c.do(http.MethodPost, base+"/transactions", map[string]any{"accountId": acc, "date": "2026-01-10", "amount": -3000}, true).Body.Close()
+	c.do(http.MethodPost, base+"/transactions", map[string]any{"accountId": acc, "date": "2026-02-10", "amount": 5000}, true).Body.Close()
+
+	// Trend by month.
+	tr := c.do(http.MethodGet, base+"/reports/trend?bucket=month&from=2026-01-01&to=2026-02-28", nil, false)
+	defer tr.Body.Close()
+	var trend struct {
+		Buckets []string
+		Series  []struct{ Values []int64 }
+	}
+	_ = json.NewDecoder(tr.Body).Decode(&trend)
+	if len(trend.Buckets) != 2 || len(trend.Series) != 1 || trend.Series[0].Values[0] != -3000 {
+		t.Fatalf("trend = %+v", trend)
+	}
+
+	// Balance over time.
+	br := c.do(http.MethodGet, base+"/reports/balance?bucket=month&from=2026-01-01&to=2026-02-28&accountIds="+strconv.FormatInt(acc, 10), nil, false)
+	defer br.Body.Close()
+	var bal struct {
+		Series []struct {
+			Values         []int64
+			MinimumBalance int64 `json:"minimumBalance"`
+		}
+	}
+	_ = json.NewDecoder(br.Body).Decode(&bal)
+	if len(bal.Series) != 1 || bal.Series[0].Values[0] != 97000 || bal.Series[0].Values[1] != 102000 {
+		t.Fatalf("balance = %+v", bal)
+	}
+
+	// Bad bucket → 400.
+	if r := c.do(http.MethodGet, base+"/reports/trend?bucket=decade", nil, false); r.StatusCode != http.StatusBadRequest {
+		t.Fatalf("bad bucket = %d, want 400", r.StatusCode)
 	} else {
 		r.Body.Close()
 	}

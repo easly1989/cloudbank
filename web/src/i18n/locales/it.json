@@ -57,13 +57,21 @@
     "confirmDelete": "Eliminare questo trasferimento? Verranno rimosse entrambe le righe."
   },
   "reports": {
-    "title": "Statistiche",
+    "title": "Report",
+    "statistics": "Statistiche",
+    "trend": "Andamento",
+    "balance": "Saldo",
     "exportCsv": "Esporta CSV",
     "exportPng": "Esporta PNG",
     "chart": "Grafico",
     "table": "Tabella",
     "pie": "Torta",
     "column": "Colonne",
+    "line": "Linea",
+    "cumulative": "Cumulativo",
+    "overdraft": "Minimo",
+    "accounts": "Conti",
+    "allAccounts": "Tutti i conti",
     "group": "Gruppo",
     "amount": "Importo",
     "total": "Totale",
@@ -75,6 +83,19 @@
       "tag": "Tag",
       "month": "Mese",
       "year": "Anno"
+    },
+    "buckets": {
+      "day": "Giorno",
+      "week": "Settimana",
+      "month": "Mese",
+      "quarter": "Trimestre",
+      "year": "Anno"
+    },
+    "breakdowns": {
+      "none": "Totale",
+      "account": "Conto",
+      "payee": "Beneficiario",
+      "category": "Categoria"
     }
   },
   "budget": {

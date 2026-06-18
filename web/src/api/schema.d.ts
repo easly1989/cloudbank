@@ -1080,6 +1080,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/reports/trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Bucketed evolution over time, optionally split into series */
+        get: operations["getTrend"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/reports/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Account balance(s) over time (initial balance + transactions) */
+        get: operations["getBalanceReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/dashboard": {
         parameters: {
             query?: never;
@@ -1592,6 +1630,29 @@ export interface components {
             memo: string;
             payeeName: string;
             categoryName: string;
+        };
+        ReportSeries: {
+            key: string;
+            label: string;
+            values: number[];
+        };
+        TrendResult: {
+            buckets: string[];
+            series: components["schemas"]["ReportSeries"][];
+            currency?: components["schemas"]["CurrencyInfo"];
+        };
+        BalanceSeries: {
+            /** Format: int64 */
+            accountId: number;
+            label: string;
+            /** Format: int64 */
+            minimumBalance: number;
+            values: number[];
+        };
+        BalanceResult: {
+            buckets: string[];
+            series: components["schemas"]["BalanceSeries"][];
+            currency?: components["schemas"]["CurrencyInfo"];
         };
         CategoryBudget: {
             /** Format: int64 */
@@ -3930,6 +3991,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportTransaction"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getTrend: {
+        parameters: {
+            query: {
+                bucket: "day" | "week" | "month" | "quarter" | "year";
+                breakdown?: "none" | "account" | "payee" | "category";
+                from?: string;
+                to?: string;
+                status?: number;
+                payeeId?: number;
+                categoryId?: number;
+                tags?: string;
+                amountMin?: number;
+                amountMax?: number;
+                text?: string;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The trend. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getBalanceReport: {
+        parameters: {
+            query: {
+                bucket: "day" | "week" | "month" | "quarter" | "year";
+                /** @description comma-separated; empty = all accounts */
+                accountIds?: string;
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The balance report. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BalanceResult"];
                 };
             };
             400: components["responses"]["BadRequest"];
