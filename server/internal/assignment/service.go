@@ -252,6 +252,34 @@ func (s *Service) Suggest(ctx context.Context, walletID int64, memo, payee strin
 	return res, ok, nil
 }
 
+// ImportRules returns the compiled apply-on-import rules for the wallet, in
+// priority order. The file importers use them to auto-categorise rows.
+func (s *Service) ImportRules(ctx context.Context, walletID int64) ([]Rule, error) {
+	rows, err := s.q.ListAssignmentsForWallet(ctx, walletID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Rule, 0, len(rows))
+	for _, a := range rows {
+		if a.ApplyOnImport == 0 {
+			continue
+		}
+		r := toEngineRule(a)
+		if err := r.Compile(); err != nil {
+			continue // skip a rule that somehow no longer compiles
+		}
+		out = append(out, r)
+	}
+	return out, nil
+}
+
+// MatchRow applies the first matching rule (from ImportRules) to a memo/payee
+// pair and returns the assignment to apply, if any. It is a thin convenience
+// wrapper around FirstMatch for the importers.
+func MatchRow(rules []Rule, memo, payee string) (Result, bool) {
+	return FirstMatch(rules, memo, payee)
+}
+
 // Test compiles a candidate rule and returns up to `limit` existing transactions
 // it would match (the "which transactions would match" preview).
 func (s *Service) Test(ctx context.Context, walletID int64, in Input, limit int) ([]MatchedTransaction, error) {

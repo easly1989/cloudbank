@@ -493,6 +493,62 @@
       "assignments": "Regole",
       "templates": "Modelli",
       "schedules": "Pianificazioni"
+    },
+    "tabs": {
+      "xhb": "File HomeBank",
+      "csv": "Importa CSV",
+      "export": "Esporta CSV"
     }
+  },
+  "importCsv": {
+    "steps": {
+      "source": "Sorgente",
+      "map": "Mappa colonne",
+      "review": "Verifica",
+      "done": "Fatto"
+    },
+    "dialect": {
+      "homebank": "CSV HomeBank",
+      "generic": "CSV generico"
+    },
+    "account": "Conto di destinazione",
+    "accountPlaceholder": "Scegli un conto",
+    "file": "File CSV",
+    "filePlaceholder": "Scegli un file .csv",
+    "delimiter": "Separatore",
+    "dateFormat": "Formato data",
+    "decimal": "Decimale",
+    "dates": {
+      "auto": "Rilevamento automatico"
+    },
+    "hasHeader": "La prima riga è un'intestazione",
+    "next": "Avanti",
+    "back": "Indietro",
+    "preview": "Anteprima",
+    "mapHint": "Associa ogni campo dell'operazione a una colonna del file. Data e importo sono obbligatori.",
+    "fields": {
+      "date": "Data",
+      "amount": "Importo",
+      "payee": "Beneficiario",
+      "memo": "Note",
+      "category": "Categoria",
+      "info": "Info",
+      "paymode": "Modalità",
+      "tags": "Etichette"
+    },
+    "applyRules": "Applica regole di importazione",
+    "willImport": "{{count}} righe verranno importate",
+    "duplicate": "Duplicato",
+    "rule": "Regola",
+    "import": "Importa {{count}}",
+    "done": "Importazione completata",
+    "createdCount": "Create {{count}} operazioni.",
+    "importAnother": "Importa un altro file"
+  },
+  "exportCsv": {
+    "description": "Scarica le operazioni di un conto come CSV in formato HomeBank (re-importabile in HomeBank).",
+    "account": "Conto",
+    "accountPlaceholder": "Scegli un conto",
+    "download": "Scarica CSV"
   }
 }
