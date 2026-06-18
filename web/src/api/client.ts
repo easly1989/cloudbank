@@ -897,6 +897,97 @@ export interface ImportResult {
   warnings: string[];
 }
 
+export type CSVDialect = "homebank" | "generic";
+export type CSVDateFormat = "" | "iso" | "dmy" | "mdy";
+
+export interface CSVPreviewRequest {
+  accountId: number;
+  content: string;
+  dialect: CSVDialect;
+  delimiter?: string;
+  hasHeader?: boolean;
+  dateFormat?: CSVDateFormat;
+  decimalChar?: string;
+  mapping?: Record<string, number>;
+  applyRules?: boolean;
+}
+
+export interface CSVPreviewRow {
+  line: number;
+  include: boolean;
+  duplicate: boolean;
+  ruleApplied: boolean;
+  error?: string;
+  date: string;
+  amount: number;
+  paymentMode: number;
+  info: string;
+  payee: string;
+  memo: string;
+  category: string;
+  tags: string[];
+}
+
+export interface CSVPreview {
+  columns: string[];
+  rows: CSVPreviewRow[];
+}
+
+export interface CSVCommitRow {
+  date: string;
+  amount: number;
+  paymentMode: number;
+  info: string;
+  payee: string;
+  memo: string;
+  category: string;
+  tags: string[];
+}
+
+// CSV field names used by the generic column mapping.
+export const CSV_FIELDS = [
+  "date",
+  "amount",
+  "payee",
+  "memo",
+  "category",
+  "info",
+  "paymode",
+  "tags",
+] as const;
+
+export const previewCSV = (walletId: number, body: CSVPreviewRequest) =>
+  api.post<CSVPreview>(`/api/v1/wallets/${walletId}/import/csv/preview`, body);
+
+export const commitCSV = (walletId: number, accountId: number, rows: CSVCommitRow[]) =>
+  api.post<{ created: number }>(`/api/v1/wallets/${walletId}/import/csv/commit`, {
+    accountId,
+    rows,
+  });
+
+// downloadAccountCSV fetches the account's HomeBank-dialect CSV export and saves
+// it to a file via a temporary object URL.
+export async function downloadAccountCSV(
+  walletId: number,
+  accountId: number,
+  filename: string,
+): Promise<void> {
+  const res = await fetch(`/api/v1/wallets/${walletId}/export/csv?accountId=${accountId}`, {
+    credentials: "same-origin",
+    headers: { "X-Requested-With": "XMLHttpRequest" },
+  });
+  if (!res.ok) throw new ApiError(res.status, res.statusText);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 // importXHB uploads the raw contents of a HomeBank .xhb file. It bypasses the
 // JSON request wrapper because the body is the XML document itself.
 export async function importXHB(file: File): Promise<ImportResult> {

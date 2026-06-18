@@ -1255,6 +1255,46 @@ paths:
       responses:
         "200": { description: The dashboard., content: { application/json: { schema: { $ref: "#/components/schemas/Dashboard" } } } }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/import/csv/preview:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: previewCSVImport
+      summary: Parse a CSV, rescale amounts, flag duplicates and (optionally) apply import rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CSVPreviewRequest" }
+      responses:
+        "200": { description: The preview., content: { application/json: { schema: { $ref: "#/components/schemas/CSVPreview" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/import/csv/commit:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: commitCSVImport
+      summary: Create transactions from previewed CSV rows (creating payees/categories/tags by name)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CSVCommitRequest" }
+      responses:
+        "201": { description: The rows were imported., content: { application/json: { schema: { $ref: "#/components/schemas/CSVCommitResult" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/export/csv:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: exportAccountCSV
+      summary: Export an account's transactions as a HomeBank-dialect CSV
+      parameters:
+        - { name: accountId, in: query, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        "200": { description: The CSV file., content: { text/csv: { schema: { type: string } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/import/xhb:
     post:
       operationId: importXHB
@@ -1856,3 +1896,62 @@ components:
         counts: { type: object, additionalProperties: { type: integer }, description: "imported entity counts keyed by type (accounts, transactions, ...)" }
         warnings: { type: array, items: { type: string } }
       required: [walletId, counts, warnings]
+    CSVPreviewRequest:
+      type: object
+      properties:
+        accountId: { type: integer, format: int64 }
+        content: { type: string, description: "the raw CSV text" }
+        dialect: { type: string, enum: [homebank, generic] }
+        delimiter: { type: string, description: "single character; defaults ';' (homebank) or ',' (generic)" }
+        hasHeader: { type: boolean, description: "generic only: skip the first row" }
+        dateFormat: { type: string, enum: ["", iso, dmy, mdy], description: "field order of the date column" }
+        decimalChar: { type: string, description: "'.' or ','; defaults '.'" }
+        mapping: { type: object, additionalProperties: { type: integer }, description: "generic: field name → column index" }
+        applyRules: { type: boolean, description: "apply on-import assignment rules to the preview" }
+      required: [accountId, content, dialect]
+    CSVPreviewRow:
+      type: object
+      properties:
+        line: { type: integer }
+        include: { type: boolean }
+        duplicate: { type: boolean }
+        ruleApplied: { type: boolean }
+        error: { type: string }
+        date: { type: string }
+        amount: { type: integer, format: int64 }
+        paymentMode: { type: integer }
+        info: { type: string }
+        payee: { type: string }
+        memo: { type: string }
+        category: { type: string }
+        tags: { type: array, items: { type: string } }
+      required: [line, include, duplicate, ruleApplied, date, amount, paymentMode, info, payee, memo, category, tags]
+    CSVPreview:
+      type: object
+      properties:
+        columns: { type: array, items: { type: string }, description: "detected/generated column names for the mapping UI" }
+        rows: { type: array, items: { $ref: "#/components/schemas/CSVPreviewRow" } }
+      required: [columns, rows]
+    CSVCommitRow:
+      type: object
+      properties:
+        date: { type: string, description: "YYYY-MM-DD" }
+        amount: { type: integer, format: int64 }
+        paymentMode: { type: integer }
+        info: { type: string }
+        payee: { type: string }
+        memo: { type: string }
+        category: { type: string, description: "full name 'Parent:Sub' or empty" }
+        tags: { type: array, items: { type: string } }
+      required: [date, amount]
+    CSVCommitRequest:
+      type: object
+      properties:
+        accountId: { type: integer, format: int64 }
+        rows: { type: array, items: { $ref: "#/components/schemas/CSVCommitRow" } }
+      required: [accountId, rows]
+    CSVCommitResult:
+      type: object
+      properties:
+        created: { type: integer }
+      required: [created]
