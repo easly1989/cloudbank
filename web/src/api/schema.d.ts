@@ -1118,6 +1118,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/reports/vehicle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Fuel-consumption report for a vehicle category (memo d=/v=/p=) */
+        get: operations["getVehicleReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/dashboard": {
         parameters: {
             query?: never;
@@ -1630,6 +1649,28 @@ export interface components {
             memo: string;
             payeeName: string;
             categoryName: string;
+        };
+        VehicleEntry: {
+            /** Format: int64 */
+            transactionId: number;
+            date: string;
+            meter: number;
+            distance: number;
+            volume: number;
+            price: number;
+            /** Format: int64 */
+            cost: number;
+            partial: boolean;
+            consumption: number;
+        };
+        VehicleReport: {
+            entries: components["schemas"]["VehicleEntry"][];
+            totalDistance: number;
+            totalVolume: number;
+            /** Format: int64 */
+            totalCost: number;
+            avgConsumption: number;
+            currency?: components["schemas"]["CurrencyInfo"];
         };
         ReportSeries: {
             key: string;
@@ -4055,6 +4096,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BalanceResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getVehicleReport: {
+        parameters: {
+            query: {
+                categoryId: number;
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The report. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VehicleReport"];
                 };
             };
             400: components["responses"]["BadRequest"];

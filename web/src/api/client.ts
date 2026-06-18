@@ -855,3 +855,36 @@ export const getBalanceReport = (
   if (to) q.set("to", to);
   return api.get<BalanceResult>(`/api/v1/wallets/${walletId}/reports/balance?${q.toString()}`);
 };
+
+export interface VehicleEntry {
+  transactionId: number;
+  date: string;
+  meter: number;
+  distance: number;
+  volume: number;
+  price: number;
+  cost: number;
+  partial: boolean;
+  consumption: number;
+}
+
+export interface VehicleReport {
+  entries: VehicleEntry[];
+  totalDistance: number;
+  totalVolume: number;
+  totalCost: number;
+  avgConsumption: number;
+  currency: CurrencyInfo | null;
+}
+
+export const getVehicleReport = (
+  walletId: number,
+  categoryId: number,
+  from?: string,
+  to?: string,
+) => {
+  const q = new URLSearchParams({ categoryId: String(categoryId) });
+  if (from) q.set("from", from);
+  if (to) q.set("to", to);
+  return api.get<VehicleReport>(`/api/v1/wallets/${walletId}/reports/vehicle?${q.toString()}`);
+};
