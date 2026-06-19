@@ -103,6 +103,7 @@ type Querier interface {
 	ListTemplatesForWallet(ctx context.Context, walletID int64) ([]Template, error)
 	ListTransactionTags(ctx context.Context, transactionID int64) ([]string, error)
 	ListTransactionsForAccount(ctx context.Context, arg ListTransactionsForAccountParams) ([]ListTransactionsForAccountRow, error)
+	ListTransfersForWallet(ctx context.Context, walletID int64) ([]Transfer, error)
 	ListUpcomingSchedules(ctx context.Context, arg ListUpcomingSchedulesParams) ([]ListUpcomingSchedulesRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
 	// Fuel transactions for a vehicle category in a date range, with the account
@@ -139,6 +140,7 @@ type Querier interface {
 	UpdateTransaction(ctx context.Context, arg UpdateTransactionParams) error
 	UpdateTransactionStatus(ctx context.Context, arg UpdateTransactionStatusParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
+	UpdateUserSettings(ctx context.Context, arg UpdateUserSettingsParams) error
 	UpdateWallet(ctx context.Context, arg UpdateWalletParams) error
 	UpdateWalletBaseCurrency(ctx context.Context, arg UpdateWalletBaseCurrencyParams) error
 	UpsertExchangeRate(ctx context.Context, arg UpsertExchangeRateParams) error

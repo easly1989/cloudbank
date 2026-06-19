@@ -16,7 +16,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { BudgetPage } from "./pages/BudgetPage";
-import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { PreferencesPage } from "./pages/PreferencesPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { SchedulesPage } from "./pages/SchedulesPage";
 import { SetupPage } from "./pages/SetupPage";
@@ -91,7 +91,7 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
         <Route path="assignments" element={<AssignmentsPage />} />
         <Route path="budget" element={<BudgetPage />} />
         <Route path="reports" element={<ReportsPage />} />
-        <Route path="settings" element={<PlaceholderPage titleKey="nav.settings" />} />
+        <Route path="settings" element={<PreferencesPage />} />
         <Route path="wallet" element={<WalletSettingsPage />} />
         <Route path="wallet/new" element={<CreateWalletPage />} />
         <Route path="import" element={<ImportPage />} />
