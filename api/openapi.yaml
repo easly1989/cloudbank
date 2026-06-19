@@ -136,6 +136,68 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
         "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      operationId: updateMe
+      summary: Update the current user's language, theme and UI preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateMeRequest" }
+      responses:
+        "200": { description: The updated user., content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/admin/backup:
+    get:
+      operationId: hotBackup
+      summary: Download a consistent copy of the whole database (admin only)
+      responses:
+        "200": { description: A SQLite database file., content: { application/octet-stream: { schema: { type: string, format: binary } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/backup/restore:
+    post:
+      operationId: restoreBackup
+      summary: Restore a wallet backup JSON into a brand-new wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        "201": { description: The wallet was restored., content: { application/json: { schema: { type: object, properties: { walletId: { type: integer, format: int64 } }, required: [walletId] } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/backup:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: exportWalletBackup
+      summary: Download a self-contained JSON backup of the wallet
+      responses:
+        "200": { description: The backup document., content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/integrity:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: checkIntegrity
+      summary: Run the wallet anomaly check
+      responses:
+        "200": { description: The issues found., content: { application/json: { schema: { type: object, properties: { issues: { type: array, items: { $ref: "#/components/schemas/IntegrityIssue" } } }, required: [issues] } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/integrity/fix:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: fixIntegrity
+      summary: Apply the automatic fix for a fixable issue type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { type: { type: string } }, required: [type] }
+      responses:
+        "200": { description: The fix result., content: { application/json: { schema: { type: object, properties: { fixed: { type: integer } }, required: [fixed] } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
   /api/v1/admin/users:
     get:
       operationId: listUsers
@@ -1425,9 +1487,26 @@ components:
         isAdmin: { type: boolean }
         locale: { type: string }
         theme: { type: string }
+        preferences: { type: object, additionalProperties: true, description: "opaque UI preferences blob" }
         disabled: { type: boolean }
         createdAt: { type: string }
       required: [id, username, email, isAdmin, locale, theme, disabled, createdAt]
+    UpdateMeRequest:
+      type: object
+      properties:
+        locale: { type: string }
+        theme: { type: string }
+        preferences: { type: object, additionalProperties: true }
+    IntegrityIssue:
+      type: object
+      properties:
+        type: { type: string }
+        description: { type: string }
+        suggestion: { type: string }
+        count: { type: integer }
+        ids: { type: array, items: { type: integer, format: int64 } }
+        fixable: { type: boolean }
+      required: [type, description, suggestion, count, ids, fixable]
     Credentials:
       type: object
       properties:

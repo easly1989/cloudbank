@@ -60,3 +60,32 @@ func (q *Queries) InsertTransfer(ctx context.Context, arg InsertTransferParams) 
 	err := row.Scan(&i.ID, &i.TxnFromID, &i.TxnToID)
 	return i, err
 }
+
+const listTransfersForWallet = `-- name: ListTransfersForWallet :many
+SELECT tr.id, tr.txn_from_id, tr.txn_to_id FROM transfers tr
+JOIN transactions t ON t.id = tr.txn_from_id
+WHERE t.wallet_id = ?
+`
+
+func (q *Queries) ListTransfersForWallet(ctx context.Context, walletID int64) ([]Transfer, error) {
+	rows, err := q.db.QueryContext(ctx, listTransfersForWallet, walletID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Transfer{}
+	for rows.Next() {
+		var i Transfer
+		if err := rows.Scan(&i.ID, &i.TxnFromID, &i.TxnToID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

@@ -6,6 +6,8 @@ import { useTranslation } from "react-i18next";
 
 import { ApiError, deleteWallet, updateWallet } from "../api/client";
 import { useWallet } from "../wallet/WalletProvider";
+import { BackupCard } from "./BackupCard";
+import { IntegrityCard } from "./IntegrityCard";
 
 export function WalletSettingsPage() {
   const { t } = useTranslation();
@@ -72,6 +74,9 @@ export function WalletSettingsPage() {
           </Group>
         </Stack>
       </Card>
+
+      <IntegrityCard />
+      <BackupCard />
 
       {isOwner && (
         <Card withBorder>

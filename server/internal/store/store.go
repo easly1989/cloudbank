@@ -3,6 +3,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/url"
@@ -82,6 +83,20 @@ func (s *Store) Write() *sql.DB { return s.write }
 
 // Ping verifies the database is reachable; it satisfies the health check.
 func (s *Store) Ping() error { return s.read.Ping() }
+
+// Backup writes a consistent, fully-vacuumed copy of the database to destPath
+// using SQLite's `VACUUM INTO`. It runs on the write connection so it is
+// transactionally consistent with concurrent writers. destPath must not already
+// exist.
+func (s *Store) Backup(ctx context.Context, destPath string) error {
+	if _, err := os.Stat(destPath); err == nil {
+		return fmt.Errorf("backup destination already exists: %s", destPath)
+	}
+	if _, err := s.write.ExecContext(ctx, "VACUUM INTO ?", destPath); err != nil {
+		return fmt.Errorf("vacuum into: %w", err)
+	}
+	return nil
+}
 
 // Close closes both connection pools.
 func (s *Store) Close() error {

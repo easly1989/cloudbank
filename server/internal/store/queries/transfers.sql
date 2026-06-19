@@ -9,3 +9,8 @@ SELECT * FROM transfers WHERE txn_from_id = ? OR txn_to_id = ? LIMIT 1;
 
 -- name: DeleteTransfer :exec
 DELETE FROM transfers WHERE id = ?;
+
+-- name: ListTransfersForWallet :many
+SELECT tr.* FROM transfers tr
+JOIN transactions t ON t.id = tr.txn_from_id
+WHERE t.wallet_id = ?;

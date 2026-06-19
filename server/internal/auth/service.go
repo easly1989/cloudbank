@@ -25,27 +25,50 @@ const sessionTTL = 7 * 24 * time.Hour
 
 // User is the public representation of an account — never includes the hash.
 type User struct {
-	ID        int64
-	Username  string
-	Email     string
-	IsAdmin   bool
-	Locale    string
-	Theme     string
-	Disabled  bool
-	CreatedAt string
+	ID          int64
+	Username    string
+	Email       string
+	IsAdmin     bool
+	Locale      string
+	Theme       string
+	Preferences string // opaque JSON blob of UI preferences
+	Disabled    bool
+	CreatedAt   string
 }
 
 func toUser(u db.User) User {
-	return User{
-		ID:        u.ID,
-		Username:  u.Username,
-		Email:     u.Email,
-		IsAdmin:   u.IsAdmin != 0,
-		Locale:    u.Locale,
-		Theme:     u.Theme,
-		Disabled:  u.Disabled != 0,
-		CreatedAt: u.CreatedAt,
+	prefs := u.Preferences
+	if prefs == "" {
+		prefs = "{}"
 	}
+	return User{
+		ID:          u.ID,
+		Username:    u.Username,
+		Email:       u.Email,
+		IsAdmin:     u.IsAdmin != 0,
+		Locale:      u.Locale,
+		Theme:       u.Theme,
+		Preferences: prefs,
+		Disabled:    u.Disabled != 0,
+		CreatedAt:   u.CreatedAt,
+	}
+}
+
+// UpdateSettings updates the current user's locale, theme and preferences blob.
+func (s *Service) UpdateSettings(ctx context.Context, userID int64, locale, theme, preferences string) (User, error) {
+	if preferences == "" {
+		preferences = "{}"
+	}
+	if err := s.q.UpdateUserSettings(ctx, db.UpdateUserSettingsParams{
+		Locale: locale, Theme: theme, Preferences: preferences, ID: userID,
+	}); err != nil {
+		return User{}, err
+	}
+	u, err := s.q.GetUserByID(ctx, userID)
+	if err != nil {
+		return User{}, err
+	}
+	return toUser(u), nil
 }
 
 // Service implements authentication, the first-run setup, and user management.
