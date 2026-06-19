@@ -459,7 +459,14 @@
     "actions": "Actions",
     "setBase": "Set as base",
     "delete": "Remove",
-    "save": "Save"
+    "save": "Save",
+    "refresh": "Update rates now",
+    "refreshed": "Rates updated ({{count}} currencies)",
+    "providerDown": "Rate provider unavailable",
+    "providerDownHint": "The online rate service could not be reached or does not support this base currency. Your manual rates are unchanged.",
+    "notOnEcb": "manual",
+    "notOnEcbHint": "Not published by the ECB; this rate stays manual.",
+    "updatedAt": "updated {{date}}"
   },
   "dashboard": {
     "title": "Dashboard",

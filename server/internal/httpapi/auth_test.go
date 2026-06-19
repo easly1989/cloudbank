@@ -2,7 +2,9 @@ package httpapi
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -29,6 +31,18 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/transfer"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
+
+// stubRateProvider returns fixed rates against an EUR base for the currency
+// refresh tests (no network).
+type stubRateProvider struct{}
+
+func (stubRateProvider) Latest(_ context.Context, base string) (map[string]float64, string, error) {
+	if base != "EUR" {
+		return nil, "", errors.New("unsupported base")
+	}
+	// USD and GBP are covered; other codes deliberately are not.
+	return map[string]float64{"USD": 1.10, "GBP": 0.80}, "2026-06-18", nil
+}
 
 type testClient struct {
 	t    *testing.T
@@ -62,7 +76,7 @@ func newTestAPI(t *testing.T) *testClient {
 	csvsvc := importio.NewService(st.Write(), tsvc, asvc2, asvc)
 	srv := httptest.NewServer(New(Options{
 		Auth: svc, Wallets: wsvc, Currencies: csvc, Accounts: asvc,
-		Categories: catsvc, Payees: psvc, Transactions: tsvc, Transfers: xsvc, Dashboard: dsvc, Templates: tplsvc, Schedules: ssvc, Assignments: asvc2, Budgets: bsvc, Reports: rsvc, Import: impsvc, CSV: csvsvc, Health: st,
+		Categories: catsvc, Payees: psvc, Transactions: tsvc, Transfers: xsvc, Dashboard: dsvc, Templates: tplsvc, Schedules: ssvc, Assignments: asvc2, Budgets: bsvc, Reports: rsvc, Import: impsvc, CSV: csvsvc, RateProvider: stubRateProvider{}, Health: st,
 	}))
 	t.Cleanup(srv.Close)
 

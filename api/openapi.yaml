@@ -374,6 +374,21 @@ paths:
         "204": { description: Deleted. }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/currencies/refresh:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: refreshRates
+      summary: Fetch the latest online exchange rates (ECB via frankfurter.app)
+      description: >
+        Updates the wallet's non-base currencies from the online provider and
+        records history. Always returns 200: if the provider is unreachable or
+        does not support the base currency, manual rates are kept and
+        providerError is set. Currencies the provider does not cover are listed
+        in unsupported and remain manual.
+      responses:
+        "200": { description: The refresh result., content: { application/json: { schema: { $ref: "#/components/schemas/RateRefreshResult" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/currencies/{currencyId}/base:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -1693,6 +1708,14 @@ components:
         groupChar: { type: string }
         fracDigits: { type: integer }
       required: [code, symbol, symbolPrefix, decimalChar, groupChar, fracDigits]
+    RateRefreshResult:
+      type: object
+      properties:
+        date: { type: string, description: "provider quotation date (YYYY-MM-DD), when available" }
+        updated: { type: array, items: { type: string }, description: "ISO codes refreshed from the provider" }
+        unsupported: { type: array, items: { type: string }, description: "wallet currencies the provider does not cover (kept manual)" }
+        providerError: { type: string, description: "set when the provider was unreachable or the base is unsupported; manual rates are kept" }
+      required: [date, updated, unsupported]
     AccountSummary:
       type: object
       properties:

@@ -19,15 +19,19 @@ type Config struct {
 	// SecureCookies controls the Secure flag on session cookies. Set false
 	// for plain-HTTP LAN installs that do not terminate TLS.
 	SecureCookies bool
+	// RateProviderURL overrides the online exchange-rate API root (default
+	// frankfurter.app). Useful for a self-hosted mirror or for testing.
+	RateProviderURL string
 }
 
 // Load reads the configuration from the environment, applying defaults.
 func Load() Config {
 	return Config{
-		Addr:          getenv("CB_ADDR", ":8080"),
-		DataDir:       getenv("CB_DATA_DIR", "/data"),
-		LogLevel:      getenv("CB_LOG_LEVEL", "info"),
-		SecureCookies: getBoolEnv("CB_SECURE_COOKIES", true),
+		Addr:            getenv("CB_ADDR", ":8080"),
+		DataDir:         getenv("CB_DATA_DIR", "/data"),
+		LogLevel:        getenv("CB_LOG_LEVEL", "info"),
+		SecureCookies:   getBoolEnv("CB_SECURE_COOKIES", true),
+		RateProviderURL: getenv("CB_RATE_URL", ""),
 	}
 }
 

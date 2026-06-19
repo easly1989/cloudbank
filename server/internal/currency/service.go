@@ -180,15 +180,101 @@ func (s *Service) UpdateRate(ctx context.Context, currencyID int64, rate float64
 	if c.IsBase {
 		return ErrBaseCurrency
 	}
+	return s.setRate(ctx, currencyID, rate, time.Now().UTC().Format("2006-01-02"), "manual")
+}
+
+// setRate writes a currency's current rate and appends a history record.
+func (s *Service) setRate(ctx context.Context, currencyID int64, rate float64, date, source string) error {
 	if err := s.q.UpdateCurrencyRate(ctx, db.UpdateCurrencyRateParams{Rate: rate, ID: currencyID}); err != nil {
 		return err
 	}
 	return s.q.UpsertExchangeRate(ctx, db.UpsertExchangeRateParams{
 		CurrencyID: currencyID,
-		Date:       time.Now().UTC().Format("2006-01-02"),
+		Date:       date,
 		Rate:       rate,
-		Source:     "manual",
+		Source:     source,
 	})
+}
+
+// RefreshResult summarises an online rate refresh for one wallet.
+type RefreshResult struct {
+	Date        string   `json:"date"`        // provider quotation date, when available
+	Updated     []string `json:"updated"`     // ISO codes refreshed from the provider
+	Unsupported []string `json:"unsupported"` // wallet currencies the provider does not cover
+	// ProviderError is set (and Updated empty) when the provider was unreachable
+	// or does not support the base currency; existing manual rates are kept.
+	ProviderError string `json:"providerError,omitempty"`
+}
+
+// RefreshRates updates a wallet's non-base currencies from the provider,
+// recording history with source "frankfurter". Currencies the provider does not
+// cover are left untouched (manual) and listed in Unsupported. Provider failure
+// degrades gracefully: manual rates are kept and ProviderError is set.
+func (s *Service) RefreshRates(ctx context.Context, walletID int64, provider RateProvider) (RefreshResult, error) {
+	res := RefreshResult{Updated: []string{}, Unsupported: []string{}}
+	if provider == nil {
+		res.ProviderError = "no rate provider configured"
+		return res, nil
+	}
+	currencies, err := s.ListForWallet(ctx, walletID)
+	if err != nil {
+		return res, err
+	}
+	var base *Currency
+	others := make([]Currency, 0, len(currencies))
+	for i := range currencies {
+		if currencies[i].IsBase {
+			base = &currencies[i]
+		} else {
+			others = append(others, currencies[i])
+		}
+	}
+	if base == nil || len(others) == 0 {
+		return res, nil
+	}
+
+	rates, date, err := provider.Latest(ctx, base.IsoCode)
+	if err != nil {
+		res.ProviderError = err.Error()
+		return res, nil
+	}
+	res.Date = date
+	if date == "" {
+		date = time.Now().UTC().Format("2006-01-02")
+	}
+
+	for _, c := range others {
+		perBase, ok := rates[c.IsoCode]
+		if !ok || perBase == 0 {
+			res.Unsupported = append(res.Unsupported, c.IsoCode)
+			continue
+		}
+		// Provider gives units-of-c per one base; we store base per one unit of c.
+		rate := 1.0 / perBase
+		if err := s.setRate(ctx, c.ID, rate, date, "frankfurter"); err != nil {
+			return res, err
+		}
+		res.Updated = append(res.Updated, c.IsoCode)
+	}
+	return res, nil
+}
+
+// RefreshAll refreshes every wallet's rates, sharing one provider request per
+// distinct base currency. It is used by the daily background job; per-wallet
+// errors are logged, not fatal.
+func (s *Service) RefreshAll(ctx context.Context, provider RateProvider, log func(walletID int64, res RefreshResult, err error)) error {
+	ids, err := s.q.ListAllWalletIDs(ctx)
+	if err != nil {
+		return err
+	}
+	memo := newMemoProvider(provider)
+	for _, id := range ids {
+		res, err := s.RefreshRates(ctx, id, memo)
+		if log != nil {
+			log(id, res, err)
+		}
+	}
+	return nil
 }
 
 // UpdateFormat changes a currency's display metadata.
