@@ -15,7 +15,7 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
-import { IconAlertTriangle, IconFileSpreadsheet } from "@tabler/icons-react";
+import { IconAlertTriangle, IconFileImport } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,23 +23,25 @@ import { useTranslation } from "react-i18next";
 import {
   ApiError,
   CSV_FIELDS,
-  commitCSV,
+  commitImport,
   listAccounts,
   previewCSV,
+  previewOFX,
+  previewQIF,
   type Account,
   type CSVDateFormat,
-  type CSVDialect,
-  type CSVPreviewRequest,
+  type CSVPreview,
   type CSVPreviewRow,
 } from "../api/client";
 import { formatMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
 
+type Format = "homebank" | "generic" | "qif" | "ofx";
 type Phase = "source" | "map" | "review" | "done";
 
 const REQUIRED_FIELDS = ["date", "amount"];
 
-export function ImportCsvWizard() {
+export function ImportWizard() {
   const { t } = useTranslation();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
@@ -52,9 +54,9 @@ export function ImportCsvWizard() {
   const accounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data]);
 
   const [phase, setPhase] = useState<Phase>("source");
+  const [format, setFormat] = useState<Format>("homebank");
   const [content, setContent] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
-  const [dialect, setDialect] = useState<CSVDialect>("homebank");
   const [accountId, setAccountId] = useState<string | null>(null);
   const [delimiter, setDelimiter] = useState(",");
   const [hasHeader, setHasHeader] = useState(true);
@@ -66,6 +68,8 @@ export function ImportCsvWizard() {
   const [applyRules, setApplyRules] = useState(false);
   const [created, setCreated] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  const showMapping = format === "generic";
 
   const account = useMemo<Account | undefined>(
     () => accounts.find((a) => String(a.id) === accountId),
@@ -83,19 +87,30 @@ export function ImportCsvWizard() {
         })
       : String(minor);
 
-  const baseReq = (overrides: Partial<CSVPreviewRequest>): CSVPreviewRequest => ({
-    accountId: Number(accountId),
-    content,
-    dialect,
-    delimiter: dialect === "generic" ? delimiter : undefined,
-    hasHeader: dialect === "generic" ? hasHeader : undefined,
-    dateFormat,
-    decimalChar: dialect === "generic" ? decimalChar : undefined,
-    ...overrides,
-  });
+  // runPreview dispatches to the format-specific preview endpoint.
+  const runPreview = (opts: { withMapping: boolean; rules: boolean }): Promise<CSVPreview> => {
+    const acc = Number(accountId);
+    if (format === "qif") {
+      return previewQIF(walletId, { accountId: acc, content, dateFormat, applyRules: opts.rules });
+    }
+    if (format === "ofx") {
+      return previewOFX(walletId, { accountId: acc, content, applyRules: opts.rules });
+    }
+    return previewCSV(walletId, {
+      accountId: acc,
+      content,
+      dialect: format === "generic" ? "generic" : "homebank",
+      delimiter: format === "generic" ? delimiter : undefined,
+      hasHeader: format === "generic" ? hasHeader : undefined,
+      dateFormat,
+      decimalChar: format === "generic" ? decimalChar : undefined,
+      mapping: opts.withMapping ? mapping : undefined,
+      applyRules: opts.rules,
+    });
+  };
 
   const preview = useMutation({
-    mutationFn: (req: CSVPreviewRequest) => previewCSV(walletId, req),
+    mutationFn: runPreview,
     onError: (err: unknown) => setError(err instanceof ApiError ? err.message : String(err)),
   });
 
@@ -112,8 +127,9 @@ export function ImportCsvWizard() {
           memo: r.memo,
           category: r.category,
           tags: r.tags,
+          importRef: r.importRef,
         }));
-      return commitCSV(walletId, Number(accountId), keep);
+      return commitImport(walletId, Number(accountId), keep);
     },
     onSuccess: (res) => {
       setCreated(res.created);
@@ -133,35 +149,28 @@ export function ImportCsvWizard() {
 
   const startFromSource = async () => {
     setError(null);
-    if (dialect === "generic") {
+    if (showMapping) {
       // First pass: detect columns to drive the mapping step.
-      const res = await preview.mutateAsync(baseReq({}));
+      const res = await preview.mutateAsync({ withMapping: false, rules: applyRules });
       setColumns(res.columns);
       setPhase("map");
       return;
     }
-    const res = await preview.mutateAsync(baseReq({ applyRules }));
+    const res = await preview.mutateAsync({ withMapping: false, rules: applyRules });
     setRows(res.rows);
     setPhase("review");
   };
 
-  const runPreviewWithMapping = async (rules: boolean) => {
+  const previewToReview = async (rules: boolean) => {
     setError(null);
-    const res = await preview.mutateAsync(baseReq({ mapping, applyRules: rules }));
+    const res = await preview.mutateAsync({ withMapping: showMapping, rules });
     setRows(res.rows);
     setPhase("review");
-  };
-
-  const runPreviewHomebank = async (rules: boolean) => {
-    setError(null);
-    const res = await preview.mutateAsync(baseReq({ applyRules: rules }));
-    setRows(res.rows);
   };
 
   const toggleApplyRules = async (next: boolean) => {
     setApplyRules(next);
-    if (dialect === "generic") await runPreviewWithMapping(next);
-    else await runPreviewHomebank(next);
+    await previewToReview(next);
   };
 
   const toggleRow = (i: number, include: boolean) =>
@@ -180,13 +189,13 @@ export function ImportCsvWizard() {
 
   const mappingValid = REQUIRED_FIELDS.every((f) => mapping[f] !== undefined);
   const includeCount = rows.filter((r) => r.include && !r.error).length;
-  const stepIndex = { source: 0, map: 1, review: dialect === "generic" ? 2 : 1, done: 3 }[phase];
+  const stepIndex = { source: 0, map: 1, review: showMapping ? 2 : 1, done: 3 }[phase];
 
   return (
     <Stack>
       <Stepper active={stepIndex} size="sm">
         <Stepper.Step label={t("importCsv.steps.source")} />
-        {dialect === "generic" && <Stepper.Step label={t("importCsv.steps.map")} />}
+        {showMapping && <Stepper.Step label={t("importCsv.steps.map")} />}
         <Stepper.Step label={t("importCsv.steps.review")} />
         <Stepper.Step label={t("importCsv.steps.done")} />
       </Stepper>
@@ -201,11 +210,13 @@ export function ImportCsvWizard() {
         <Card withBorder>
           <Stack>
             <SegmentedControl
-              value={dialect}
-              onChange={(v) => setDialect(v as CSVDialect)}
+              value={format}
+              onChange={(v) => setFormat(v as Format)}
               data={[
-                { label: t("importCsv.dialect.homebank"), value: "homebank" },
-                { label: t("importCsv.dialect.generic"), value: "generic" },
+                { label: t("importCsv.format.homebank"), value: "homebank" },
+                { label: t("importCsv.format.generic"), value: "generic" },
+                { label: t("importCsv.format.qif"), value: "qif" },
+                { label: t("importCsv.format.ofx"), value: "ofx" },
               ]}
             />
             <Select
@@ -219,12 +230,12 @@ export function ImportCsvWizard() {
             <FileInput
               label={t("importCsv.file")}
               placeholder={fileName ?? t("importCsv.filePlaceholder")}
-              accept=".csv,text/csv,text/plain"
-              leftSection={<IconFileSpreadsheet size={16} />}
+              accept=".csv,.qif,.ofx,.qfx,text/csv,text/plain,application/x-ofx"
+              leftSection={<IconFileImport size={16} />}
               onChange={onPickFile}
               clearable
             />
-            {dialect === "generic" && (
+            {format === "generic" && (
               <Group grow>
                 <TextInput
                   label={t("importCsv.delimiter")}
@@ -232,17 +243,6 @@ export function ImportCsvWizard() {
                   onChange={(e) => setDelimiter(e.currentTarget.value.slice(0, 1))}
                   maxLength={1}
                   w={80}
-                />
-                <Select
-                  label={t("importCsv.dateFormat")}
-                  data={[
-                    { value: "", label: t("importCsv.dates.auto") },
-                    { value: "iso", label: "YYYY-MM-DD" },
-                    { value: "dmy", label: "DD-MM-YYYY" },
-                    { value: "mdy", label: "MM-DD-YYYY" },
-                  ]}
-                  value={dateFormat}
-                  onChange={(v) => setDateFormat((v ?? "") as CSVDateFormat)}
                 />
                 <Select
                   label={t("importCsv.decimal")}
@@ -260,6 +260,20 @@ export function ImportCsvWizard() {
                   mt="lg"
                 />
               </Group>
+            )}
+            {(format === "generic" || format === "qif") && (
+              <Select
+                label={t("importCsv.dateFormat")}
+                data={[
+                  { value: "", label: t("importCsv.dates.auto") },
+                  { value: "iso", label: "YYYY-MM-DD" },
+                  { value: "dmy", label: "DD-MM-YYYY" },
+                  { value: "mdy", label: "MM-DD-YYYY" },
+                ]}
+                value={dateFormat}
+                onChange={(v) => setDateFormat((v ?? "") as CSVDateFormat)}
+                maw={220}
+              />
             )}
             <Group justify="flex-end">
               <Button
@@ -305,7 +319,7 @@ export function ImportCsvWizard() {
               <Button
                 disabled={!mappingValid}
                 loading={preview.isPending}
-                onClick={() => void runPreviewWithMapping(applyRules)}
+                onClick={() => void previewToReview(applyRules)}
               >
                 {t("importCsv.preview")}
               </Button>
@@ -378,10 +392,7 @@ export function ImportCsvWizard() {
               </Table>
             </Table.ScrollContainer>
             <Group justify="space-between">
-              <Button
-                variant="default"
-                onClick={() => setPhase(dialect === "generic" ? "map" : "source")}
-              >
+              <Button variant="default" onClick={() => setPhase(showMapping ? "map" : "source")}>
                 {t("importCsv.back")}
               </Button>
               <Button

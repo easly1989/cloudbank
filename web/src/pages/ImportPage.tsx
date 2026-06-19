@@ -24,8 +24,8 @@ import { useNavigate } from "react-router-dom";
 
 import { ApiError, importXHB, type ImportResult } from "../api/client";
 import { useWallet } from "../wallet/WalletProvider";
-import { ExportCsvPanel } from "./ExportCsvPanel";
-import { ImportCsvWizard } from "./ImportCsvWizard";
+import { ExportPanel } from "./ExportPanel";
+import { ImportWizard } from "./ImportWizard";
 
 function XhbImportPanel() {
   const { t } = useTranslation();
@@ -146,10 +146,10 @@ export function ImportPage() {
           <XhbImportPanel />
         </Tabs.Panel>
         <Tabs.Panel value="csv" pt="md">
-          <ImportCsvWizard />
+          <ImportWizard />
         </Tabs.Panel>
         <Tabs.Panel value="export" pt="md">
-          <ExportCsvPanel />
+          <ExportPanel />
         </Tabs.Panel>
       </Tabs>
     </Stack>

@@ -496,7 +496,7 @@
     },
     "tabs": {
       "xhb": "File HomeBank",
-      "csv": "Importa CSV",
+      "csv": "CSV / QIF / OFX",
       "export": "Esporta CSV"
     }
   },
@@ -507,9 +507,11 @@
       "review": "Verifica",
       "done": "Fatto"
     },
-    "dialect": {
+    "format": {
       "homebank": "CSV HomeBank",
-      "generic": "CSV generico"
+      "generic": "CSV generico",
+      "qif": "QIF",
+      "ofx": "OFX/QFX"
     },
     "account": "Conto di destinazione",
     "accountPlaceholder": "Scegli un conto",
@@ -549,6 +551,10 @@
     "description": "Scarica le operazioni di un conto come CSV in formato HomeBank (re-importabile in HomeBank).",
     "account": "Conto",
     "accountPlaceholder": "Scegli un conto",
-    "download": "Scarica CSV"
+    "download": "Scarica CSV",
+    "formats": {
+      "csv": "CSV HomeBank",
+      "qif": "QIF"
+    }
   }
 }
