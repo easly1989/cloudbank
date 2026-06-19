@@ -459,7 +459,14 @@
     "actions": "Azioni",
     "setBase": "Imposta come base",
     "delete": "Rimuovi",
-    "save": "Salva"
+    "save": "Salva",
+    "refresh": "Aggiorna i tassi",
+    "refreshed": "Tassi aggiornati ({{count}} valute)",
+    "providerDown": "Servizio tassi non disponibile",
+    "providerDownHint": "Il servizio online dei tassi non è raggiungibile o non supporta questa valuta di base. I tassi manuali restano invariati.",
+    "notOnEcb": "manuale",
+    "notOnEcbHint": "Non pubblicato dalla BCE; questo tasso resta manuale.",
+    "updatedAt": "agg. {{date}}"
   },
   "dashboard": {
     "title": "Cruscotto",

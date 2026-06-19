@@ -113,6 +113,7 @@ func run() error {
 	reportSvc := report.NewService(st.Write())
 	importSvc := importer.NewService(st.Write())
 	csvSvc := importio.NewService(st.Write(), transactionSvc, assignmentSvc, accountSvc)
+	rateProvider := &currency.Frankfurter{BaseURL: cfg.RateProviderURL}
 
 	handler := httpapi.New(httpapi.Options{
 		Logger:        logger,
@@ -133,6 +134,7 @@ func run() error {
 		Reports:       reportSvc,
 		Import:        importSvc,
 		CSV:           csvSvc,
+		RateProvider:  rateProvider,
 		SecureCookies: cfg.SecureCookies,
 	})
 
@@ -156,6 +158,9 @@ func run() error {
 	// Post any schedules due now (startup catch-up after downtime), then keep
 	// auto-posting on a ticker until shutdown.
 	go runScheduler(ctx, scheduleSvc, logger)
+
+	// Refresh online exchange rates at startup, then once a day.
+	go runRateRefresh(ctx, currencySvc, rateProvider, logger)
 
 	select {
 	case err := <-errCh:
@@ -185,6 +190,40 @@ func runScheduler(ctx context.Context, svc *schedule.Service, logger *slog.Logge
 			return
 		case <-ticker.C:
 			post()
+		}
+	}
+}
+
+// runRateRefresh refreshes every wallet's online exchange rates at startup and
+// then once every 24 hours. Provider failures degrade gracefully (manual rates
+// are kept) and are logged at warn level, never fatal.
+func runRateRefresh(ctx context.Context, svc *currency.Service, provider currency.RateProvider, logger *slog.Logger) {
+	refresh := func() {
+		err := svc.RefreshAll(ctx, provider, func(walletID int64, res currency.RefreshResult, err error) {
+			switch {
+			case err != nil:
+				logger.Error("rate refresh failed", "wallet", walletID, "error", err)
+			case res.ProviderError != "":
+				logger.Warn("rate provider unavailable, keeping manual rates",
+					"wallet", walletID, "reason", res.ProviderError)
+			case len(res.Updated) > 0:
+				logger.Info("rates refreshed", "wallet", walletID,
+					"updated", len(res.Updated), "unsupported", len(res.Unsupported), "date", res.Date)
+			}
+		})
+		if err != nil {
+			logger.Error("rate refresh job failed", "error", err)
+		}
+	}
+	refresh()
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			refresh()
 		}
 	}
 }

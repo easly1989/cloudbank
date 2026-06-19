@@ -281,6 +281,28 @@ export interface paths {
         patch: operations["updateCurrency"];
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/currencies/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fetch the latest online exchange rates (ECB via frankfurter.app)
+         * @description Updates the wallet's non-base currencies from the online provider and records history. Always returns 200: if the provider is unreachable or does not support the base currency, manual rates are kept and providerError is set. Currencies the provider does not cover are listed in unsupported and remain manual.
+         */
+        post: operations["refreshRates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/currencies/{currencyId}/base": {
         parameters: {
             query?: never;
@@ -1633,6 +1655,16 @@ export interface components {
             groupChar: string;
             fracDigits: number;
         };
+        RateRefreshResult: {
+            /** @description provider quotation date (YYYY-MM-DD), when available */
+            date: string;
+            /** @description ISO codes refreshed from the provider */
+            updated: string[];
+            /** @description wallet currencies the provider does not cover (kept manual) */
+            unsupported: string[];
+            /** @description set when the provider was unreachable or the base is unsupported; manual rates are kept */
+            providerError?: string;
+        };
         AccountSummary: {
             /** Format: int64 */
             id: number;
@@ -2608,6 +2640,29 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    refreshRates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The refresh result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RateRefreshResult"];
+                };
+            };
             404: components["responses"]["NotFound"];
         };
     };

@@ -91,6 +91,77 @@ func TestAddAndRateCurrency(t *testing.T) {
 	resp.Body.Close()
 }
 
+func TestCurrencyRefreshEndpoint(t *testing.T) {
+	c := newTestAPI(t)
+	wid := createWalletWithBase(t, c, "EUR")
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10) + "/currencies"
+	for _, code := range []string{"USD", "GBP", "CAD"} {
+		c.do(http.MethodPost, base, map[string]any{"isoCode": code}, true).Body.Close()
+	}
+
+	resp := c.do(http.MethodPost, base+"/refresh", nil, true)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("refresh = %d, want 200", resp.StatusCode)
+	}
+	var res struct {
+		Date          string   `json:"date"`
+		Updated       []string `json:"updated"`
+		Unsupported   []string `json:"unsupported"`
+		ProviderError string   `json:"providerError"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	resp.Body.Close()
+	if res.ProviderError != "" {
+		t.Fatalf("unexpected provider error: %q", res.ProviderError)
+	}
+	if len(res.Updated) != 2 { // USD, GBP from the stub
+		t.Fatalf("updated = %v, want USD+GBP", res.Updated)
+	}
+	if len(res.Unsupported) != 1 || res.Unsupported[0] != "CAD" {
+		t.Fatalf("unsupported = %v, want [CAD]", res.Unsupported)
+	}
+
+	// USD now carries the inverted provider rate (1/1.10) from the stub.
+	lresp := c.do(http.MethodGet, base, nil, false)
+	var list []currencyResponse
+	if err := json.NewDecoder(lresp.Body).Decode(&list); err != nil {
+		t.Fatalf("decode list: %v", err)
+	}
+	lresp.Body.Close()
+	for _, cur := range list {
+		if cur.IsoCode == "USD" && (cur.Rate < 0.9 || cur.Rate > 0.92) {
+			t.Fatalf("USD rate = %v, want ~0.909", cur.Rate)
+		}
+		if cur.IsoCode == "CAD" && cur.Rate != 1 {
+			t.Fatalf("CAD rate = %v, want 1 (manual, unsupported)", cur.Rate)
+		}
+	}
+}
+
+func TestCurrencyRefreshUnsupportedBase(t *testing.T) {
+	c := newTestAPI(t)
+	// The stub provider only supports an EUR base.
+	wid := createWalletWithBase(t, c, "USD")
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10) + "/currencies"
+	c.do(http.MethodPost, base, map[string]any{"isoCode": "EUR"}, true).Body.Close()
+
+	resp := c.do(http.MethodPost, base+"/refresh", nil, true)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("refresh = %d, want 200", resp.StatusCode)
+	}
+	var res struct {
+		Updated       []string `json:"updated"`
+		ProviderError string   `json:"providerError"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&res)
+	resp.Body.Close()
+	if res.ProviderError == "" || len(res.Updated) != 0 {
+		t.Fatalf("expected graceful degradation for unsupported base, got %+v", res)
+	}
+}
+
 func TestCurrencyCrossUserIsolation(t *testing.T) {
 	admin := newTestAPI(t)
 	wid := createWalletWithBase(t, admin, "USD")

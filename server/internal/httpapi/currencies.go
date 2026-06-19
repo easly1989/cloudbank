@@ -13,7 +13,8 @@ import (
 // currencyHandlers serves the currency catalog and per-wallet currency
 // management. Wallet-scoped routes run inside the walletContext middleware.
 type currencyHandlers struct {
-	svc *currency.Service
+	svc      *currency.Service
+	provider currency.RateProvider
 }
 
 type currencyResponse struct {
@@ -48,6 +49,7 @@ func (h *currencyHandlers) catalog(w http.ResponseWriter, _ *http.Request) {
 func (h *currencyHandlers) walletRoutes(r chi.Router) {
 	r.Get("/currencies", h.list)
 	r.Post("/currencies", h.add)
+	r.Post("/currencies/refresh", h.refresh)
 	r.Route("/currencies/{currencyId}", func(r chi.Router) {
 		r.Patch("/", h.update)
 		r.Post("/base", h.setBase)
@@ -68,6 +70,19 @@ func (h *currencyHandlers) list(w http.ResponseWriter, r *http.Request) {
 		out = append(out, toCurrencyResponse(c))
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// refresh fetches the latest online rates for the wallet's currencies. It always
+// returns 200 with a result; provider failures are reported in the body
+// (manual rates are kept) so the UI can surface staleness.
+func (h *currencyHandlers) refresh(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	res, err := h.svc.RefreshRates(r.Context(), wl.ID, h.provider)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not refresh rates")
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 func (h *currencyHandlers) add(w http.ResponseWriter, r *http.Request) {
