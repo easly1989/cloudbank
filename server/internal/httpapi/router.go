@@ -14,12 +14,14 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
+	"github.com/easly1989/cloudbank/server/internal/backup"
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/importio"
+	"github.com/easly1989/cloudbank/server/internal/integrity"
 	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
@@ -75,6 +77,14 @@ type Options struct {
 	Reports *report.Service
 	// Import, if non-nil, mounts the file-import endpoints (requires Auth).
 	Import *importer.Service
+	// Integrity, if non-nil, mounts the wallet anomaly-check endpoints (requires Wallets).
+	Integrity *integrity.Service
+	// Backup, if non-nil, mounts the wallet JSON backup/restore endpoints (requires Auth).
+	Backup *backup.Service
+	// HotBackup, if non-nil, mounts the admin VACUUM hot-backup endpoint.
+	HotBackup HotBackuper
+	// DataDir is the writable directory used to stage hot backups.
+	DataDir string
 	// CSV, if non-nil, mounts the CSV/QIF/OFX import and CSV/QIF export endpoints
 	// (requires Wallets).
 	CSV *importio.Service
@@ -115,6 +125,13 @@ func New(opts Options) http.Handler {
 				if opts.Import != nil {
 					pr.Post("/import/xhb", (&importHandlers{svc: opts.Import}).xhb)
 				}
+				if opts.Backup != nil {
+					pr.Post("/backup/restore", (&backupHandlers{svc: opts.Backup}).restore)
+				}
+				if opts.HotBackup != nil {
+					pr.With(ah.requireAdmin).Get("/admin/backup",
+						(&backupHandlers{hot: opts.HotBackup, dataDir: opts.DataDir}).hotBackup)
+				}
 				if opts.Wallets != nil {
 					(&walletHandlers{
 						svc: opts.Wallets, currencies: opts.Currencies, accounts: opts.Accounts,
@@ -122,6 +139,7 @@ func New(opts Options) http.Handler {
 						transfers: opts.Transfers, dashboard: opts.Dashboard, templates: opts.Templates,
 						schedules: opts.Schedules, assignments: opts.Assignments, budgets: opts.Budgets,
 						reports: opts.Reports, csv: opts.CSV, rateProvider: opts.RateProvider,
+						integrity: opts.Integrity, backup: opts.Backup,
 					}).routes(pr)
 					if opts.Currencies != nil {
 						pr.Get("/catalog/currencies", (&currencyHandlers{svc: opts.Currencies}).catalog)

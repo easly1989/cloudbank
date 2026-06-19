@@ -18,6 +18,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
+	"github.com/easly1989/cloudbank/server/internal/backup"
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/config"
@@ -26,6 +27,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/httpapi"
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/importio"
+	"github.com/easly1989/cloudbank/server/internal/integrity"
 	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
@@ -114,6 +116,8 @@ func run() error {
 	importSvc := importer.NewService(st.Write())
 	csvSvc := importio.NewService(st.Write(), transactionSvc, assignmentSvc, accountSvc)
 	rateProvider := &currency.Frankfurter{BaseURL: cfg.RateProviderURL}
+	integritySvc := integrity.NewService(st.Write())
+	backupSvc := backup.NewService(st.Write())
 
 	handler := httpapi.New(httpapi.Options{
 		Logger:        logger,
@@ -135,6 +139,10 @@ func run() error {
 		Import:        importSvc,
 		CSV:           csvSvc,
 		RateProvider:  rateProvider,
+		Integrity:     integritySvc,
+		Backup:        backupSvc,
+		HotBackup:     st,
+		DataDir:       cfg.DataDir,
 		SecureCookies: cfg.SecureCookies,
 	})
 

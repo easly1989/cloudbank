@@ -200,6 +200,7 @@ type User struct {
 	Theme        string
 	Disabled     int64
 	CreatedAt    string
+	Preferences  string
 }
 
 type Wallet struct {

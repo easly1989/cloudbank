@@ -29,20 +29,25 @@ type authHandlers struct {
 // userResponse is the JSON shape returned for an account. It never contains the
 // password hash.
 type userResponse struct {
-	ID        int64  `json:"id"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	IsAdmin   bool   `json:"isAdmin"`
-	Locale    string `json:"locale"`
-	Theme     string `json:"theme"`
-	Disabled  bool   `json:"disabled"`
-	CreatedAt string `json:"createdAt"`
+	ID          int64           `json:"id"`
+	Username    string          `json:"username"`
+	Email       string          `json:"email"`
+	IsAdmin     bool            `json:"isAdmin"`
+	Locale      string          `json:"locale"`
+	Theme       string          `json:"theme"`
+	Preferences json.RawMessage `json:"preferences"`
+	Disabled    bool            `json:"disabled"`
+	CreatedAt   string          `json:"createdAt"`
 }
 
 func toUserResponse(u auth.User) userResponse {
+	prefs := json.RawMessage(u.Preferences)
+	if len(prefs) == 0 {
+		prefs = json.RawMessage("{}")
+	}
 	return userResponse{
 		ID: u.ID, Username: u.Username, Email: u.Email, IsAdmin: u.IsAdmin,
-		Locale: u.Locale, Theme: u.Theme, Disabled: u.Disabled, CreatedAt: u.CreatedAt,
+		Locale: u.Locale, Theme: u.Theme, Preferences: prefs, Disabled: u.Disabled, CreatedAt: u.CreatedAt,
 	}
 }
 
@@ -58,6 +63,7 @@ func (h *authHandlers) publicRoutes(r chi.Router) {
 func (h *authHandlers) protectedRoutes(r chi.Router) {
 	r.Post("/auth/logout", h.logout)
 	r.Get("/auth/me", h.me)
+	r.Patch("/auth/me", h.updateMe)
 
 	r.Group(func(r chi.Router) {
 		r.Use(h.requireAdmin)
@@ -136,6 +142,37 @@ func (h *authHandlers) logout(w http.ResponseWriter, r *http.Request) {
 
 func (h *authHandlers) me(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, toUserResponse(userFromContext(r.Context())))
+}
+
+// updateMe persists the current user's language, theme and UI preferences.
+func (h *authHandlers) updateMe(w http.ResponseWriter, r *http.Request) {
+	user := userFromContext(r.Context())
+	var in struct {
+		Locale      string          `json:"locale"`
+		Theme       string          `json:"theme"`
+		Preferences json.RawMessage `json:"preferences"`
+	}
+	if !decodeJSON(w, r, &in) {
+		return
+	}
+	locale := in.Locale
+	if locale == "" {
+		locale = user.Locale
+	}
+	theme := in.Theme
+	if theme == "" {
+		theme = user.Theme
+	}
+	prefs := string(in.Preferences)
+	if prefs == "" {
+		prefs = user.Preferences
+	}
+	updated, err := h.svc.UpdateSettings(r.Context(), user.ID, locale, theme, prefs)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not update preferences")
+		return
+	}
+	writeJSON(w, http.StatusOK, toUserResponse(updated))
 }
 
 func (h *authHandlers) listUsers(w http.ResponseWriter, r *http.Request) {

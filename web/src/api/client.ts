@@ -57,6 +57,12 @@ export const getHealth = () => api.get<Health>("/healthz");
 
 // --- Auth, setup and admin ---
 
+export interface Preferences {
+  dateFormat?: string;
+  startScreen?: string;
+  defaultAccountId?: number;
+}
+
 export interface User {
   id: number;
   username: string;
@@ -64,6 +70,7 @@ export interface User {
   isAdmin: boolean;
   locale: string;
   theme: string;
+  preferences: Preferences;
   disabled: boolean;
   createdAt: string;
 }
@@ -83,6 +90,51 @@ export const login = (body: Credentials) => api.post<User>("/api/v1/auth/login",
 export const logout = () => api.post<void>("/api/v1/auth/logout");
 
 export const getMe = () => api.get<User>("/api/v1/auth/me");
+
+export const updateMe = (body: { locale?: string; theme?: string; preferences?: Preferences }) =>
+  api.patch<User>("/api/v1/auth/me", body);
+
+// --- Integrity & backup ---
+
+export interface IntegrityIssue {
+  type: string;
+  description: string;
+  suggestion: string;
+  count: number;
+  ids: number[];
+  fixable: boolean;
+}
+
+export const checkIntegrity = (walletId: number) =>
+  api.get<{ issues: IntegrityIssue[] }>(`/api/v1/wallets/${walletId}/integrity`);
+
+export const fixIntegrity = (walletId: number, type: string) =>
+  api.post<{ fixed: number }>(`/api/v1/wallets/${walletId}/integrity/fix`, { type });
+
+export const restoreBackup = (doc: unknown) =>
+  api.post<{ walletId: number }>("/api/v1/backup/restore", doc);
+
+async function downloadFile(path: string, filename: string): Promise<void> {
+  const res = await fetch(path, {
+    credentials: "same-origin",
+    headers: { "X-Requested-With": "XMLHttpRequest" },
+  });
+  if (!res.ok) throw new ApiError(res.status, res.statusText);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+export const downloadWalletBackup = (walletId: number) =>
+  downloadFile(`/api/v1/wallets/${walletId}/backup`, `wallet-${walletId}-backup.json`);
+
+export const downloadHotBackup = () => downloadFile("/api/v1/admin/backup", "cloudbank-backup.db");
 
 export const listUsers = () => api.get<User[]>("/api/v1/admin/users");
 

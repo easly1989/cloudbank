@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { Account, RegisterRow } from "../api/client";
+import { useDateFormat } from "../dates";
 import { formatMinor, type MoneyFormat } from "../money";
 
 const ROW_HEIGHT = 40;
@@ -57,6 +58,7 @@ export function RegisterTable({
   onSaveTemplate,
 }: RegisterTableProps) {
   const { t } = useTranslation();
+  const fmtDate = useDateFormat();
   const parentRef = useRef<HTMLDivElement>(null);
   const [cursorId, setCursorId] = useState<number | null>(null);
 
@@ -71,7 +73,10 @@ export function RegisterTable({
   const columns = useMemo(() => {
     const col = createColumnHelper<RegisterRow>();
     return [
-      col.accessor("date", { header: () => t("transactions.date") }),
+      col.accessor("date", {
+        header: () => t("transactions.date"),
+        cell: ({ getValue }) => fmtDate(getValue()),
+      }),
       col.display({
         id: "payee",
         header: () => t("transactions.payee"),
@@ -144,7 +149,7 @@ export function RegisterTable({
         ),
       }),
     ];
-  }, [t, fmt, accountName, onToggleStatus]);
+  }, [t, fmt, fmtDate, accountName, onToggleStatus]);
 
   const table = useReactTable({ data: display, columns, getCoreRowModel: getCoreRowModel() });
   const tableRows = table.getRowModel().rows;

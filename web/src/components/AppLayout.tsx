@@ -8,8 +8,10 @@ import {
   NavLink,
   Text,
   UnstyledButton,
+  useMantineColorScheme,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import { useEffect } from "react";
 import {
   IconArrowsExchange,
   IconCalendarRepeat,
@@ -108,9 +110,22 @@ function WalletSwitcher() {
 
 export function AppLayout() {
   const [opened, { toggle }] = useDisclosure();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { setColorScheme } = useMantineColorScheme();
   const logout = useLogout();
+
+  // Apply the user's server-persisted language and theme on load (and whenever
+  // they change them in Preferences). The header toggles still work locally.
+  useEffect(() => {
+    if (user?.locale && user.locale !== i18n.resolvedLanguage) {
+      void i18n.changeLanguage(user.locale);
+    }
+    if (user?.theme) {
+      setColorScheme(user.theme as "auto" | "light" | "dark");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.locale, user?.theme]);
 
   return (
     <AppShell
