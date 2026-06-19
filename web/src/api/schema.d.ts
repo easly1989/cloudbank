@@ -1175,7 +1175,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/wallets/{walletId}/import/csv/commit": {
+    "/api/v1/wallets/{walletId}/import/qif/preview": {
         parameters: {
             query?: never;
             header?: never;
@@ -1186,8 +1186,46 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create transactions from previewed CSV rows (creating payees/categories/tags by name) */
-        post: operations["commitCSVImport"];
+        /** Parse a QIF file, rescale amounts, flag duplicates and (optionally) apply import rules */
+        post: operations["previewQIFImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/import/ofx/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parse an OFX/QFX file (SGML or XML), flag duplicates by FITID and (optionally) apply import rules */
+        post: operations["previewOFXImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/import/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create transactions from previewed rows (any format; creates payees/categories/tags by name) */
+        post: operations["commitImport"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1205,6 +1243,25 @@ export interface paths {
         };
         /** Export an account's transactions as a HomeBank-dialect CSV */
         get: operations["exportAccountCSV"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/export/qif": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Export an account's transactions as a QIF file */
+        get: operations["exportAccountQIF"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1911,6 +1968,20 @@ export interface components {
             memo: string;
             category: string;
             tags: string[];
+            /** @description OFX FITID, when present (used for duplicate detection) */
+            importRef?: string;
+        };
+        ParsedPreviewRequest: {
+            /** Format: int64 */
+            accountId: number;
+            /** @description the raw QIF or OFX text */
+            content: string;
+            /**
+             * @description QIF date field order; ignored for OFX
+             * @enum {string}
+             */
+            dateFormat?: "" | "iso" | "dmy" | "mdy";
+            applyRules?: boolean;
         };
         CSVPreview: {
             /** @description detected/generated column names for the mapping UI */
@@ -1929,6 +2000,8 @@ export interface components {
             /** @description full name 'Parent:Sub' or empty */
             category?: string;
             tags?: string[];
+            /** @description OFX FITID to persist for future duplicate detection */
+            importRef?: string;
         };
         CSVCommitRequest: {
             /** Format: int64 */
@@ -4339,7 +4412,63 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    commitCSVImport: {
+    previewQIFImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParsedPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description The preview. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CSVPreview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    previewOFXImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParsedPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description The preview. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CSVPreview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    commitImport: {
         parameters: {
             query?: never;
             header?: never;
@@ -4386,6 +4515,31 @@ export interface operations {
                 };
                 content: {
                     "text/csv": string;
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    exportAccountQIF: {
+        parameters: {
+            query: {
+                accountId: number;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The QIF file. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/qif": string;
                 };
             };
             404: components["responses"]["NotFound"];

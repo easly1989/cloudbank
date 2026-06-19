@@ -1,8 +1,9 @@
-// Package csvio implements CSV import and export for transactions: the HomeBank
-// CSV dialect plus generic CSV with a user-supplied column mapping. Parsing and
-// formatting are pure (no database); the Service layer resolves payees,
-// categories and tags and persists the result.
-package csvio
+// Package importio implements transaction import and export across the formats
+// CloudBank understands — CSV (the HomeBank dialect plus generic mapped CSV),
+// QIF and OFX/QFX. Parsing and formatting are pure (no database); the Service
+// layer resolves payees, categories and tags, flags duplicates and persists the
+// result through the shared preview/commit pipeline.
+package importio
 
 import (
 	"encoding/csv"
@@ -68,6 +69,7 @@ type Row struct {
 	Memo        string   // memo
 	Category    string   // full category name ("Parent:Sub") or ""
 	Tags        []string // tag names
+	FITID       string   // OFX financial-institution transaction id (for dedupe)
 	Err         string   // non-empty when this line could not be parsed
 }
 
@@ -213,6 +215,23 @@ func pow10(n int) int64 {
 	return out
 }
 
+// parseAmountFlexible parses an amount whose decimal separator may be '.' or ','
+// (the later-occurring of the two is the decimal point; the other is treated as
+// a thousands separator and ignored). Used by the QIF/OFX parsers.
+func parseAmountFlexible(s string, frac int) (int64, error) {
+	dc := "."
+	if i := strings.LastIndexAny(s, ".,"); i >= 0 {
+		dc = string(s[i])
+	}
+	return money.Parse(s, frac, dc)
+}
+
+// formatPlainAmount formats minor units with a dot decimal, no thousands
+// separator and no symbol — the canonical CSV/QIF amount form.
+func formatPlainAmount(amount int64, frac int) string {
+	return money.Format(amount, frac, ".", "", "", false)
+}
+
 func parsePaymode(s string) int {
 	if s == "" {
 		return 0
@@ -261,7 +280,8 @@ func parseDate(s, format string) (string, error) {
 	if s == "" {
 		return "", fmt.Errorf("missing date")
 	}
-	norm := strings.NewReplacer("/", "-", ".", "-").Replace(s)
+	// Normalise separators (CSV uses / . -, QIF uses / ' and stray spaces).
+	norm := strings.NewReplacer("/", "-", ".", "-", "'", "-", " ", "").Replace(s)
 	var layouts []string
 	switch format {
 	case "iso", "ymd":
@@ -302,7 +322,7 @@ func FormatHomeBankCSV(rows []ExportRow) (string, error) {
 	w := csv.NewWriter(&b)
 	w.Comma = ';'
 	for _, r := range rows {
-		amount := money.Format(r.Amount, r.FracDigits, ".", "", "", false)
+		amount := formatPlainAmount(r.Amount, r.FracDigits)
 		rec := []string{
 			r.Date,
 			strconv.Itoa(r.PaymentMode),

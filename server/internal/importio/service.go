@@ -1,4 +1,4 @@
-package csvio
+package importio
 
 import (
 	"context"
@@ -14,9 +14,9 @@ import (
 )
 
 // ErrNotFound is returned when an account does not belong to the wallet.
-var ErrNotFound = errors.New("csvio: account not found in wallet")
+var ErrNotFound = errors.New("importio: account not found in wallet")
 
-// Service previews and commits CSV imports and exports account CSV.
+// Service previews and commits imports (CSV/QIF/OFX) and exports account data.
 type Service struct {
 	db    *sql.DB
 	q     *db.Queries
@@ -61,6 +61,7 @@ type PreviewRow struct {
 	Memo        string   `json:"memo"`
 	Category    string   `json:"category"`
 	Tags        []string `json:"tags"`
+	ImportRef   string   `json:"importRef,omitempty"`
 }
 
 // Preview is the wizard's preview payload.
@@ -108,26 +109,67 @@ func (s *Service) Preview(ctx context.Context, walletID int64, req PreviewReques
 		return Preview{}, err
 	}
 
-	var idToPayee map[int64]string
-	var idToCat map[int64]string
+	out, err := s.processRows(ctx, walletID, req.AccountID, frac, rows, req.ApplyRules)
+	if err != nil {
+		return Preview{}, err
+	}
+	return Preview{Columns: columns, Rows: out}, nil
+}
+
+// PreviewParsed runs the shared preview pipeline (rescale, duplicate flagging,
+// import-rule application) over rows produced by a non-CSV parser (QIF/OFX).
+func (s *Service) PreviewParsed(ctx context.Context, walletID, accountID int64, rows []Row, applyRules bool) (Preview, error) {
+	if ok, err := s.txn.AccountInWallet(ctx, walletID, accountID); err != nil {
+		return Preview{}, err
+	} else if !ok {
+		return Preview{}, ErrNotFound
+	}
+	acc, err := s.accts.Get(ctx, accountID)
+	if err != nil {
+		return Preview{}, err
+	}
+	out, err := s.processRows(ctx, walletID, accountID, acc.CurrencyFracDigits, rows, applyRules)
+	if err != nil {
+		return Preview{}, err
+	}
+	return Preview{Columns: []string{}, Rows: out}, nil
+}
+
+// processRows is the shared core: it rescales amounts to the account currency,
+// applies on-import rules, and flags duplicates — by OFX FITID (against already
+// imported refs and earlier rows in this batch) when present, otherwise by
+// date+amount. Duplicates and parse errors are excluded by default but never
+// dropped.
+func (s *Service) processRows(ctx context.Context, walletID, accountID int64, frac int, rows []Row, applyRules bool) ([]PreviewRow, error) {
+	var idToPayee, idToCat map[int64]string
 	var importRules []assignment.Rule
-	if req.ApplyRules {
+	if applyRules {
+		var err error
 		if importRules, err = s.rules.ImportRules(ctx, walletID); err != nil {
-			return Preview{}, err
+			return nil, err
 		}
 		if idToPayee, err = s.payeeNames(ctx, walletID); err != nil {
-			return Preview{}, err
+			return nil, err
 		}
 		if idToCat, _, err = s.categoryNames(ctx, walletID); err != nil {
-			return Preview{}, err
+			return nil, err
 		}
+	}
+
+	existingRefs, err := s.q.ListImportRefsForAccount(ctx, accountID)
+	if err != nil {
+		return nil, err
+	}
+	refSeen := make(map[string]bool, len(existingRefs))
+	for _, r := range existingRefs {
+		refSeen[r] = true
 	}
 
 	out := make([]PreviewRow, 0, len(rows))
 	for _, r := range rows {
 		pr := PreviewRow{
 			Line: r.Line, Date: r.Date, PaymentMode: r.PaymentMode, Info: r.Info,
-			Payee: r.Payee, Memo: r.Memo, Category: r.Category, Tags: r.Tags,
+			Payee: r.Payee, Memo: r.Memo, Category: r.Category, Tags: r.Tags, ImportRef: r.FITID,
 		}
 		if r.Err != "" {
 			pr.Error = r.Err
@@ -136,7 +178,7 @@ func (s *Service) Preview(ctx context.Context, walletID int64, req PreviewReques
 		}
 		pr.Amount = rescaleAmount(r.Amount, frac)
 
-		if req.ApplyRules {
+		if applyRules {
 			if res, ok := assignment.MatchRow(importRules, r.Memo, r.Payee); ok {
 				pr.RuleApplied = true
 				if res.PayeeID != nil {
@@ -155,15 +197,23 @@ func (s *Service) Preview(ctx context.Context, walletID int64, req PreviewReques
 			}
 		}
 
-		dups, err := s.txn.FindDuplicates(ctx, req.AccountID, pr.Date, pr.Amount, 0)
-		if err != nil {
-			return Preview{}, err
+		if r.FITID != "" {
+			if refSeen[r.FITID] {
+				pr.Duplicate = true
+			}
+			refSeen[r.FITID] = true
 		}
-		pr.Duplicate = len(dups) > 0
+		if !pr.Duplicate {
+			dups, err := s.txn.FindDuplicates(ctx, accountID, pr.Date, pr.Amount, 0)
+			if err != nil {
+				return nil, err
+			}
+			pr.Duplicate = len(dups) > 0
+		}
 		pr.Include = !pr.Duplicate
 		out = append(out, pr)
 	}
-	return Preview{Columns: columns, Rows: out}, nil
+	return out, nil
 }
 
 // CommitRow is a resolved row to persist (the wizard sends back only the rows
@@ -177,6 +227,7 @@ type CommitRow struct {
 	Memo        string   `json:"memo"`
 	Category    string   `json:"category"`
 	Tags        []string `json:"tags"`
+	ImportRef   string   `json:"importRef"`
 }
 
 // CommitResult reports how many transactions were created.
@@ -302,6 +353,7 @@ func (s *Service) Commit(ctx context.Context, walletID, accountID int64, rows []
 		in := transaction.Input{
 			AccountID: accountID, Date: r.Date, Amount: r.Amount, PaymentMode: mode,
 			Status: 0, Info: r.Info, PayeeID: pid, CategoryID: cid, Memo: r.Memo, Tags: r.Tags,
+			ImportRef: r.ImportRef,
 		}
 		if _, err := s.txn.CreateInTx(ctx, qtx, walletID, in); err != nil {
 			return CommitResult{}, err
@@ -315,25 +367,25 @@ func (s *Service) Commit(ctx context.Context, walletID, accountID int64, rows []
 	return CommitResult{Created: created}, nil
 }
 
-// ExportAccount renders all of an account's transactions as a HomeBank CSV.
-func (s *Service) ExportAccount(ctx context.Context, walletID, accountID int64) (string, error) {
+// exportContext loads an account, its transactions (oldest-first) and the
+// wallet's category id→full-name map, shared by the CSV and QIF exporters.
+func (s *Service) exportContext(ctx context.Context, walletID, accountID int64) (account.Account, []transaction.Transaction, map[int64]string, error) {
 	if ok, err := s.txn.AccountInWallet(ctx, walletID, accountID); err != nil {
-		return "", err
+		return account.Account{}, nil, nil, err
 	} else if !ok {
-		return "", ErrNotFound
+		return account.Account{}, nil, nil, ErrNotFound
 	}
 	acc, err := s.accts.Get(ctx, accountID)
 	if err != nil {
-		return "", err
+		return account.Account{}, nil, nil, err
 	}
 	idToCat, _, err := s.categoryNames(ctx, walletID)
 	if err != nil {
-		return "", err
+		return account.Account{}, nil, nil, err
 	}
-
 	txns, _, err := s.txn.List(ctx, accountID, 1_000_000, 0)
 	if err != nil {
-		return "", err
+		return account.Account{}, nil, nil, err
 	}
 	// List returns newest-first; export oldest-first for readability.
 	sort.SliceStable(txns, func(i, j int) bool {
@@ -342,7 +394,15 @@ func (s *Service) ExportAccount(ctx context.Context, walletID, accountID int64) 
 		}
 		return txns[i].ID < txns[j].ID
 	})
+	return acc, txns, idToCat, nil
+}
 
+// ExportAccount renders all of an account's transactions as a HomeBank CSV.
+func (s *Service) ExportAccount(ctx context.Context, walletID, accountID int64) (string, error) {
+	acc, txns, idToCat, err := s.exportContext(ctx, walletID, accountID)
+	if err != nil {
+		return "", err
+	}
 	rows := make([]ExportRow, 0, len(txns))
 	for _, t := range txns {
 		cat := ""
@@ -359,6 +419,26 @@ func (s *Service) ExportAccount(ctx context.Context, walletID, accountID int64) 
 		})
 	}
 	return FormatHomeBankCSV(rows)
+}
+
+// ExportAccountQIF renders all of an account's transactions as a QIF file.
+func (s *Service) ExportAccountQIF(ctx context.Context, walletID, accountID int64) (string, error) {
+	acc, txns, idToCat, err := s.exportContext(ctx, walletID, accountID)
+	if err != nil {
+		return "", err
+	}
+	rows := make([]QIFExportRow, 0, len(txns))
+	for _, t := range txns {
+		cat := ""
+		if t.CategoryID != nil {
+			cat = idToCat[*t.CategoryID]
+		}
+		rows = append(rows, QIFExportRow{
+			Date: t.Date, Amount: t.Amount, FracDigits: acc.CurrencyFracDigits,
+			Payee: t.PayeeName, Memo: t.Memo, Category: cat, Info: t.Info,
+		})
+	}
+	return FormatQIF(acc.Type, rows), nil
 }
 
 // payeeNames returns an id→name map for the wallet's payees.

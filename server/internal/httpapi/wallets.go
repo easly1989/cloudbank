@@ -13,9 +13,9 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/assignment"
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/category"
-	"github.com/easly1989/cloudbank/server/internal/csvio"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
+	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
@@ -43,7 +43,7 @@ type walletHandlers struct {
 	assignments  *assignment.Service
 	budgets      *budget.Service
 	reports      *report.Service
-	csv          *csvio.Service
+	csv          *importio.Service
 }
 
 type walletResponse struct {
@@ -107,7 +107,7 @@ func (h *walletHandlers) routes(r chi.Router) {
 			(&reportHandlers{svc: h.reports}).walletRoutes(r)
 		}
 		if h.csv != nil {
-			(&csvHandlers{svc: h.csv}).walletRoutes(r)
+			(&importDataHandlers{svc: h.csv}).walletRoutes(r)
 		}
 	})
 }

@@ -16,10 +16,10 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/category"
-	"github.com/easly1989/cloudbank/server/internal/csvio"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
 	"github.com/easly1989/cloudbank/server/internal/importer"
+	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
@@ -72,8 +72,9 @@ type Options struct {
 	Reports *report.Service
 	// Import, if non-nil, mounts the file-import endpoints (requires Auth).
 	Import *importer.Service
-	// CSV, if non-nil, mounts the CSV import/export endpoints (requires Wallets).
-	CSV *csvio.Service
+	// CSV, if non-nil, mounts the CSV/QIF/OFX import and CSV/QIF export endpoints
+	// (requires Wallets).
+	CSV *importio.Service
 	// SecureCookies sets the Secure flag on the session cookie.
 	SecureCookies bool
 }
