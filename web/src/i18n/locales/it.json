@@ -563,5 +563,46 @@
       "csv": "CSV HomeBank",
       "qif": "QIF"
     }
+  },
+  "preferences": {
+    "title": "Preferenze",
+    "language": "Lingua",
+    "theme": "Tema",
+    "themeAuto": "Auto",
+    "themeLight": "Chiaro",
+    "themeDark": "Scuro",
+    "dateFormat": "Formato data",
+    "dateLong": "Locale (es. 31 gen 2026)",
+    "startScreen": "Schermata iniziale",
+    "defaultAccount": "Conto predefinito",
+    "noDefaultAccount": "Nessuno",
+    "save": "Salva",
+    "saved": "Preferenze salvate"
+  },
+  "integrity": {
+    "title": "Controllo integrità",
+    "run": "Esegui controllo",
+    "description": "Cerca anomalie nei dati di questo portafoglio e suggerisce correzioni.",
+    "clean": "Nessun problema rilevato.",
+    "fix": "Correggi",
+    "types": {
+      "split_sum": "Operazioni suddivise non quadrate",
+      "orphan_transfer_leg": "Trasferimenti senza contropartita",
+      "category_sign": "Segno dell'importo non coerente con la categoria",
+      "future_reconciled": "Riconciliate ma con data futura"
+    }
+  },
+  "backup": {
+    "title": "Backup e ripristino",
+    "description": "Scarica un backup JSON autonomo di questo portafoglio, o ripristinane uno in un nuovo portafoglio.",
+    "download": "Scarica backup",
+    "restoreLabel": "Ripristina",
+    "choosePlaceholder": "Scegli un file di backup .json",
+    "restoreHint": "Il ripristino crea un nuovo portafoglio; non sovrascrive questo.",
+    "restore": "Ripristina",
+    "restored": "Portafoglio ripristinato",
+    "adminLabel": "Amministratore",
+    "hotHint": "Snapshot completo del database (tutti i portafogli e utenti).",
+    "hotDownload": "Scarica database completo"
   }
 }

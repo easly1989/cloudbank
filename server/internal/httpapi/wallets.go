@@ -11,11 +11,13 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
+	"github.com/easly1989/cloudbank/server/internal/backup"
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
 	"github.com/easly1989/cloudbank/server/internal/importio"
+	"github.com/easly1989/cloudbank/server/internal/integrity"
 	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
@@ -45,6 +47,8 @@ type walletHandlers struct {
 	reports      *report.Service
 	csv          *importio.Service
 	rateProvider currency.RateProvider
+	integrity    *integrity.Service
+	backup       *backup.Service
 }
 
 type walletResponse struct {
@@ -109,6 +113,12 @@ func (h *walletHandlers) routes(r chi.Router) {
 		}
 		if h.csv != nil {
 			(&importDataHandlers{svc: h.csv}).walletRoutes(r)
+		}
+		if h.integrity != nil {
+			(&integrityHandlers{svc: h.integrity}).walletRoutes(r)
+		}
+		if h.backup != nil {
+			(&backupHandlers{svc: h.backup}).walletRoutes(r)
 		}
 	})
 }

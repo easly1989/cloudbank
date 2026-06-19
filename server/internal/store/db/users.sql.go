@@ -23,7 +23,7 @@ func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (username, email, password_hash, is_admin, locale, theme)
 VALUES (?, ?, ?, ?, ?, ?)
-RETURNING id, username, email, password_hash, is_admin, locale, theme, disabled, created_at
+RETURNING id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences
 `
 
 type CreateUserParams struct {
@@ -55,12 +55,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Theme,
 		&i.Disabled,
 		&i.CreatedAt,
+		&i.Preferences,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at FROM users WHERE id = ? LIMIT 1
+SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences FROM users WHERE id = ? LIMIT 1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
@@ -76,12 +77,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.Theme,
 		&i.Disabled,
 		&i.CreatedAt,
+		&i.Preferences,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at FROM users WHERE username = ? LIMIT 1
+SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences FROM users WHERE username = ? LIMIT 1
 `
 
 func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
@@ -97,12 +99,13 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.Theme,
 		&i.Disabled,
 		&i.CreatedAt,
+		&i.Preferences,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at FROM users ORDER BY username
+SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences FROM users ORDER BY username
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -124,6 +127,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.Theme,
 			&i.Disabled,
 			&i.CreatedAt,
+			&i.Preferences,
 		); err != nil {
 			return nil, err
 		}
@@ -163,5 +167,26 @@ type UpdateUserPasswordParams struct {
 
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
 	_, err := q.db.ExecContext(ctx, updateUserPassword, arg.PasswordHash, arg.ID)
+	return err
+}
+
+const updateUserSettings = `-- name: UpdateUserSettings :exec
+UPDATE users SET locale = ?, theme = ?, preferences = ? WHERE id = ?
+`
+
+type UpdateUserSettingsParams struct {
+	Locale      string
+	Theme       string
+	Preferences string
+	ID          int64
+}
+
+func (q *Queries) UpdateUserSettings(ctx context.Context, arg UpdateUserSettingsParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserSettings,
+		arg.Locale,
+		arg.Theme,
+		arg.Preferences,
+		arg.ID,
+	)
 	return err
 }

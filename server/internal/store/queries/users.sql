@@ -20,3 +20,6 @@ UPDATE users SET disabled = ? WHERE id = ?;
 
 -- name: UpdateUserPassword :exec
 UPDATE users SET password_hash = ? WHERE id = ?;
+
+-- name: UpdateUserSettings :exec
+UPDATE users SET locale = ?, theme = ?, preferences = ? WHERE id = ?;

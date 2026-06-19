@@ -563,5 +563,46 @@
       "csv": "HomeBank CSV",
       "qif": "QIF"
     }
+  },
+  "preferences": {
+    "title": "Preferences",
+    "language": "Language",
+    "theme": "Theme",
+    "themeAuto": "Auto",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "dateFormat": "Date format",
+    "dateLong": "Locale (e.g. Jan 31, 2026)",
+    "startScreen": "Start screen",
+    "defaultAccount": "Default account",
+    "noDefaultAccount": "None",
+    "save": "Save",
+    "saved": "Preferences saved"
+  },
+  "integrity": {
+    "title": "Integrity check",
+    "run": "Run check",
+    "description": "Scan this wallet for data anomalies and suggested fixes.",
+    "clean": "No issues found.",
+    "fix": "Fix",
+    "types": {
+      "split_sum": "Split transactions that don't add up",
+      "orphan_transfer_leg": "Unpaired transfer legs",
+      "category_sign": "Amount sign disagrees with the category",
+      "future_reconciled": "Reconciled but dated in the future"
+    }
+  },
+  "backup": {
+    "title": "Backup & restore",
+    "description": "Download a self-contained JSON backup of this wallet, or restore one into a new wallet.",
+    "download": "Download backup",
+    "restoreLabel": "Restore",
+    "choosePlaceholder": "Choose a backup .json file",
+    "restoreHint": "Restore creates a new wallet; it never overwrites this one.",
+    "restore": "Restore",
+    "restored": "Wallet restored",
+    "adminLabel": "Administrator",
+    "hotHint": "Full database snapshot (all wallets and users).",
+    "hotDownload": "Download full database"
   }
 }
