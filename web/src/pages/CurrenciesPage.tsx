@@ -1,4 +1,5 @@
 import {
+  Alert,
   Badge,
   Button,
   Card,
@@ -7,9 +8,12 @@ import {
   Select,
   Stack,
   Table,
+  Text,
   Title,
+  Tooltip,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import { IconAlertTriangle, IconRefresh } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,6 +24,7 @@ import {
   deleteCurrency,
   getCurrencyCatalog,
   listCurrencies,
+  refreshRates,
   setBaseCurrency,
   updateCurrency,
   type Currency,
@@ -32,6 +37,8 @@ export function CurrenciesPage() {
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
   const [toAdd, setToAdd] = useState<string | null>(null);
+  const [unsupported, setUnsupported] = useState<Set<string>>(new Set());
+  const [providerError, setProviderError] = useState<string | null>(null);
 
   const currenciesQuery = useQuery({
     queryKey: ["currencies", walletId],
@@ -68,6 +75,21 @@ export function CurrenciesPage() {
     onSuccess: invalidate,
     onError,
   });
+  const refresh = useMutation({
+    mutationFn: () => refreshRates(walletId),
+    onSuccess: (res) => {
+      setUnsupported(new Set(res.unsupported));
+      setProviderError(res.providerError ?? null);
+      if (!res.providerError) {
+        notifications.show({
+          color: "teal",
+          message: t("currencies.refreshed", { count: res.updated.length }),
+        });
+      }
+      invalidate();
+    },
+    onError,
+  });
 
   const existing = new Set((currenciesQuery.data ?? []).map((c) => c.isoCode));
   const addOptions = (catalog.data ?? [])
@@ -98,8 +120,26 @@ export function CurrenciesPage() {
           >
             {t("currencies.add")}
           </Button>
+          <Button
+            variant="light"
+            leftSection={<IconRefresh size={16} />}
+            onClick={() => refresh.mutate()}
+            loading={refresh.isPending}
+          >
+            {t("currencies.refresh")}
+          </Button>
         </Group>
       </Card>
+
+      {providerError && (
+        <Alert
+          color="yellow"
+          icon={<IconAlertTriangle size={16} />}
+          title={t("currencies.providerDown")}
+        >
+          {t("currencies.providerDownHint")}
+        </Alert>
+      )}
 
       <Table striped highlightOnHover>
         <Table.Thead>
@@ -126,12 +166,30 @@ export function CurrenciesPage() {
                 {c.isBase ? (
                   "1"
                 ) : (
-                  <RateCell
-                    walletId={walletId}
-                    currency={c}
-                    onError={onError}
-                    onSaved={invalidate}
-                  />
+                  <Stack gap={2}>
+                    <RateCell
+                      walletId={walletId}
+                      currency={c}
+                      onError={onError}
+                      onSaved={invalidate}
+                    />
+                    <Group gap="xs">
+                      {unsupported.has(c.isoCode) && (
+                        <Tooltip label={t("currencies.notOnEcbHint")}>
+                          <Badge color="gray" size="xs" variant="outline">
+                            {t("currencies.notOnEcb")}
+                          </Badge>
+                        </Tooltip>
+                      )}
+                      {c.rateUpdatedAt && (
+                        <Text size="xs" c="dimmed">
+                          {t("currencies.updatedAt", {
+                            date: new Date(c.rateUpdatedAt).toLocaleDateString(),
+                          })}
+                        </Text>
+                      )}
+                    </Group>
+                  </Stack>
                 )}
               </Table.Td>
               <Table.Td>

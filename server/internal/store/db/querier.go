@@ -88,6 +88,7 @@ type Querier interface {
 	ListAccountRegister(ctx context.Context, accountID int64) ([]ListAccountRegisterRow, error)
 	ListAccountsForWallet(ctx context.Context, walletID int64) ([]ListAccountsForWalletRow, error)
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
+	ListAllWalletIDs(ctx context.Context) ([]int64, error)
 	ListAssignmentsForWallet(ctx context.Context, walletID int64) ([]Assignment, error)
 	ListBudgetsForWallet(ctx context.Context, walletID int64) ([]Budget, error)
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)

@@ -177,6 +177,16 @@ export const setBaseCurrency = (walletId: number, currencyId: number) =>
 export const deleteCurrency = (walletId: number, currencyId: number) =>
   api.del<void>(`/api/v1/wallets/${walletId}/currencies/${currencyId}`);
 
+export interface RateRefreshResult {
+  date: string;
+  updated: string[];
+  unsupported: string[];
+  providerError?: string;
+}
+
+export const refreshRates = (walletId: number) =>
+  api.post<RateRefreshResult>(`/api/v1/wallets/${walletId}/currencies/refresh`);
+
 // --- Accounts ---
 
 export type AccountType =
