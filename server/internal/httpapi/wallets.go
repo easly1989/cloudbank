@@ -44,6 +44,7 @@ type walletHandlers struct {
 	budgets      *budget.Service
 	reports      *report.Service
 	csv          *importio.Service
+	rateProvider currency.RateProvider
 }
 
 type walletResponse struct {
@@ -71,7 +72,7 @@ func (h *walletHandlers) routes(r chi.Router) {
 		r.Patch("/", h.update)
 		r.Delete("/", h.delete)
 		if h.currencies != nil {
-			(&currencyHandlers{svc: h.currencies}).walletRoutes(r)
+			(&currencyHandlers{svc: h.currencies, provider: h.rateProvider}).walletRoutes(r)
 		}
 		if h.accounts != nil {
 			(&accountHandlers{svc: h.accounts}).walletRoutes(r)

@@ -6,6 +6,9 @@ RETURNING *;
 -- name: GetWallet :one
 SELECT * FROM wallets WHERE id = ? LIMIT 1;
 
+-- name: ListAllWalletIDs :many
+SELECT id FROM wallets ORDER BY id;
+
 -- name: ListWalletsForUser :many
 SELECT w.*, m.role AS member_role
 FROM wallets w

@@ -48,6 +48,9 @@ type Options struct {
 	Wallets *wallet.Service
 	// Currencies, if non-nil, mounts the currency endpoints (requires Wallets).
 	Currencies *currency.Service
+	// RateProvider, if non-nil, enables the "refresh rates" endpoint and the
+	// daily background refresh (online exchange rates).
+	RateProvider currency.RateProvider
 	// Accounts, if non-nil, mounts the account endpoints (requires Wallets).
 	Accounts *account.Service
 	// Categories, if non-nil, mounts the category endpoints (requires Wallets).
@@ -118,7 +121,7 @@ func New(opts Options) http.Handler {
 						categories: opts.Categories, payees: opts.Payees, transactions: opts.Transactions,
 						transfers: opts.Transfers, dashboard: opts.Dashboard, templates: opts.Templates,
 						schedules: opts.Schedules, assignments: opts.Assignments, budgets: opts.Budgets,
-						reports: opts.Reports, csv: opts.CSV,
+						reports: opts.Reports, csv: opts.CSV, rateProvider: opts.RateProvider,
 					}).routes(pr)
 					if opts.Currencies != nil {
 						pr.Get("/catalog/currencies", (&currencyHandlers{svc: opts.Currencies}).catalog)
