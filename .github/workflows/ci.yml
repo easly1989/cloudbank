@@ -101,3 +101,47 @@ jobs:
           docker logs cb
           docker rm -f cb
           test -n "$ok"
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    # Build the real image, run it via compose, and drive it with Playwright.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - name: Build and start the app via compose
+        run: docker compose -f e2e/docker-compose.ci.yml up -d --build
+      - name: Wait for the app to be healthy
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/healthz; then ok=1; break; fi
+            sleep 2
+          done
+          test -n "$ok"
+      - name: Install e2e dependencies
+        working-directory: e2e
+        run: npm ci
+      - name: Install Playwright browser
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+      - name: Run the e2e suite
+        working-directory: e2e
+        run: npm test
+        env:
+          E2E_BASE_URL: http://localhost:8080
+      - name: Container logs on failure
+        if: failure()
+        run: docker compose -f e2e/docker-compose.ci.yml logs
+      - name: Upload Playwright traces and screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            e2e/test-results/
+            e2e/playwright-report/
+          retention-days: 7
