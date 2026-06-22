@@ -90,6 +90,8 @@ type Options struct {
 	CSV *importio.Service
 	// SecureCookies sets the Secure flag on the session cookie.
 	SecureCookies bool
+	// Version is the running build version, surfaced at GET /api/v1/version.
+	Version string
 }
 
 // New builds the application's http.Handler.
@@ -108,11 +110,23 @@ func New(opts Options) http.Handler {
 
 	r.Get("/healthz", healthHandler(opts.Health))
 
+	// Public API documentation: the embedded OpenAPI spec and Swagger UI.
+	r.Get("/api/openapi.yaml", serveOpenAPISpec)
+	r.Get("/api/docs", serveSwaggerUI)
+
+	version := opts.Version
+	if version == "" {
+		version = "dev"
+	}
+
 	// JSON API. Concrete resources are mounted by later milestones.
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(csrf)
 		r.Get("/ping", func(w http.ResponseWriter, _ *http.Request) {
 			writeJSON(w, http.StatusOK, map[string]string{"message": "pong"})
+		})
+		r.Get("/version", func(w http.ResponseWriter, _ *http.Request) {
+			writeJSON(w, http.StatusOK, map[string]string{"version": version})
 		})
 		if opts.Auth != nil {
 			ah := &authHandlers{svc: opts.Auth, secure: opts.SecureCookies}

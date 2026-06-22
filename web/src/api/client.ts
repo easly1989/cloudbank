@@ -55,6 +55,8 @@ export interface Health {
 
 export const getHealth = () => api.get<Health>("/healthz");
 
+export const getVersion = () => api.get<{ version: string }>("/api/v1/version");
+
 // --- Auth, setup and admin ---
 
 export interface Preferences {
