@@ -1,0 +1,18 @@
+# CI-only compose: builds the image from the repo and runs it for the
+# Playwright e2e job. Not for production use (see ../docker-compose.yml).
+services:
+  cloudbank:
+    build:
+      context: ..
+      args:
+        VERSION: e2e
+    ports:
+      - "8080:8080"
+    environment:
+      CB_SECURE_COOKIES: "false"
+      CB_LOG_LEVEL: "info"
+    volumes:
+      - cb-e2e-data:/data
+
+volumes:
+  cb-e2e-data:
