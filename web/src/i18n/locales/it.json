@@ -1,7 +1,9 @@
 {
   "app": {
     "name": "CloudBank",
-    "tagline": "Gestione delle finanze personali self-hosted"
+    "tagline": "Gestione delle finanze personali self-hosted",
+    "sourceCode": "Codice sorgente",
+    "apiDocs": "Documentazione API"
   },
   "nav": {
     "dashboard": "Cruscotto",

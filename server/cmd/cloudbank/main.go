@@ -143,6 +143,7 @@ func run() error {
 		Backup:        backupSvc,
 		HotBackup:     st,
 		DataDir:       cfg.DataDir,
+		Version:       version,
 		SecureCookies: cfg.SecureCookies,
 	})
 
