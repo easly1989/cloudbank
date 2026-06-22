@@ -1,0 +1,2110 @@
+openapi: 3.1.0
+info:
+  title: CloudBank API
+  version: 0.1.0
+  description: >
+    HTTP API for CloudBank, a self-hosted web port of HomeBank. This document is
+    the single source of truth for the contract: the Go server interfaces and
+    the TypeScript client types are both generated from it. Resources are added
+    milestone by milestone; this initial version covers the health and ping
+    endpoints established by the server skeleton.
+  license:
+    name: AGPL-3.0-or-later
+    url: https://www.gnu.org/licenses/agpl-3.0.html
+servers:
+  - url: /
+paths:
+  /healthz:
+    get:
+      operationId: getHealth
+      summary: Liveness/readiness probe
+      description: Returns 200 when the server (and its database, once wired) is healthy.
+      security: []
+      responses:
+        "200":
+          description: Service is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: A dependency is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /api/v1/ping:
+    get:
+      operationId: getPing
+      summary: Connectivity check
+      responses:
+        "200":
+          description: Pong.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: pong
+                required: [message]
+  /api/v1/setup/status:
+    get:
+      operationId: getSetupStatus
+      summary: First-run setup status
+      description: Reports whether the instance has no users yet and needs the setup wizard.
+      security: []
+      responses:
+        "200":
+          description: Setup status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  needsSetup:
+                    type: boolean
+                required: [needsSetup]
+  /api/v1/setup:
+    post:
+      operationId: postSetup
+      summary: Create the first (admin) user
+      description: Allowed only when no user exists yet; creates an administrator and starts a session.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "201":
+          description: Admin created and logged in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409":
+          description: Setup has already been completed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      summary: Log in
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "200":
+          description: Logged in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429":
+          description: Too many attempts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      summary: Log out (revoke the current session)
+      responses:
+        "204":
+          description: Logged out.
+  /api/v1/auth/me:
+    get:
+      operationId: getMe
+      summary: Current authenticated user
+      responses:
+        "200":
+          description: The current user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      operationId: updateMe
+      summary: Update the current user's language, theme and UI preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateMeRequest" }
+      responses:
+        "200": { description: The updated user., content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/admin/backup:
+    get:
+      operationId: hotBackup
+      summary: Download a consistent copy of the whole database (admin only)
+      responses:
+        "200": { description: A SQLite database file., content: { application/octet-stream: { schema: { type: string, format: binary } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/backup/restore:
+    post:
+      operationId: restoreBackup
+      summary: Restore a wallet backup JSON into a brand-new wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        "201": { description: The wallet was restored., content: { application/json: { schema: { type: object, properties: { walletId: { type: integer, format: int64 } }, required: [walletId] } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/backup:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: exportWalletBackup
+      summary: Download a self-contained JSON backup of the wallet
+      responses:
+        "200": { description: The backup document., content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/integrity:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: checkIntegrity
+      summary: Run the wallet anomaly check
+      responses:
+        "200": { description: The issues found., content: { application/json: { schema: { type: object, properties: { issues: { type: array, items: { $ref: "#/components/schemas/IntegrityIssue" } } }, required: [issues] } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/integrity/fix:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: fixIntegrity
+      summary: Apply the automatic fix for a fixable issue type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { type: { type: string } }, required: [type] }
+      responses:
+        "200": { description: The fix result., content: { application/json: { schema: { type: object, properties: { fixed: { type: integer } }, required: [fixed] } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/admin/users:
+    get:
+      operationId: listUsers
+      summary: List users (admin)
+      responses:
+        "200":
+          description: All users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      operationId: createUser
+      summary: Create a user (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: User created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Username already taken.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/admin/users/{id}/disable:
+    post:
+      operationId: setUserDisabled
+      summary: Enable or disable a user (admin)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                disabled: { type: boolean }
+              required: [disabled]
+      responses:
+        "204": { description: Updated. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/admin/users/{id}/password:
+    post:
+      operationId: resetUserPassword
+      summary: Reset a user's password (admin)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password: { type: string, minLength: 8 }
+              required: [password]
+      responses:
+        "204": { description: Password reset. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/wallets:
+    get:
+      operationId: listWallets
+      summary: List the current user's wallets
+      responses:
+        "200":
+          description: The user's wallets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Wallet"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: createWallet
+      summary: Create a wallet (creator becomes owner)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalletInput"
+      responses:
+        "201":
+          description: Wallet created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/wallets/{walletId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getWallet
+      summary: Get a wallet
+      responses:
+        "200":
+          description: The wallet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateWallet
+      summary: Rename a wallet (owner only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalletInput"
+      responses:
+        "200":
+          description: Updated wallet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteWallet
+      summary: Delete a wallet and all its data (owner only)
+      responses:
+        "204": { description: Deleted. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/catalog/currencies:
+    get:
+      operationId: getCurrencyCatalog
+      summary: The ISO 4217 currency catalog
+      responses:
+        "200":
+          description: Catalog entries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogEntry"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/wallets/{walletId}/currencies:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listCurrencies
+      summary: List a wallet's currencies
+      responses:
+        "200":
+          description: Currencies (base first).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Currency"
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: addCurrency
+      summary: Add a currency to a wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddCurrencyRequest"
+      responses:
+        "201":
+          description: Currency added.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Currency"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Currency already added.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/wallets/{walletId}/currencies/{currencyId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: currencyId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: updateCurrency
+      summary: Update a currency's rate and/or formatting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CurrencyUpdate"
+      responses:
+        "200":
+          description: Updated currency.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Currency"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteCurrency
+      summary: Remove a currency (not the base)
+      responses:
+        "204": { description: Deleted. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/currencies/refresh:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: refreshRates
+      summary: Fetch the latest online exchange rates (ECB via frankfurter.app)
+      description: >
+        Updates the wallet's non-base currencies from the online provider and
+        records history. Always returns 200: if the provider is unreachable or
+        does not support the base currency, manual rates are kept and
+        providerError is set. Currencies the provider does not cover are listed
+        in unsupported and remain manual.
+      responses:
+        "200": { description: The refresh result., content: { application/json: { schema: { $ref: "#/components/schemas/RateRefreshResult" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/currencies/{currencyId}/base:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: currencyId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: setBaseCurrency
+      summary: Make a currency the wallet's base
+      responses:
+        "204": { description: Base currency set. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/currencies/{currencyId}/rates:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: currencyId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getCurrencyRates
+      summary: A currency's exchange-rate history
+      responses:
+        "200":
+          description: Rate history (newest first).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExchangeRate"
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/accounts:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listAccounts
+      summary: List a wallet's accounts
+      responses:
+        "200":
+          description: Accounts (ordered by position/group/name).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Account"
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: createAccount
+      summary: Create an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountInput"
+      responses:
+        "201":
+          description: Account created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Account name already used.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/wallets/{walletId}/accounts/reorder:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: reorderAccounts
+      summary: Reorder accounts (positions and groups)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: integer, format: int64 }
+                  position: { type: integer }
+                  groupName: { type: string }
+                required: [id, position]
+      responses:
+        "204": { description: Reordered. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/accounts/{accountId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: accountId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getAccount
+      summary: Get an account
+      responses:
+        "200":
+          description: The account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateAccount
+      summary: Update an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountInput"
+      responses:
+        "200":
+          description: Updated account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Account name already used.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteAccount
+      summary: Delete an account and its data
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/categories:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listCategories
+      summary: List a wallet's categories (two-level)
+      responses:
+        "200":
+          description: Categories.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Category" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: createCategory
+      summary: Create a category or subcategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Category" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { description: Duplicate name., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/wallets/{walletId}/categories/{categoryId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: categoryId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: updateCategory
+      summary: Rename/retype a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Category" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteCategory
+      summary: Delete a category (optionally reassigning references)
+      parameters:
+        - { name: reassignTo, in: query, required: false, schema: { type: integer, format: int64 } }
+      responses:
+        "204": { description: Deleted. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: Has subcategories., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/wallets/{walletId}/categories/{categoryId}/usage:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: categoryId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getCategoryUsage
+      summary: Reference counts for a category
+      responses:
+        "200": { description: Usage., content: { application/json: { schema: { $ref: "#/components/schemas/CategoryUsage" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/categories/{categoryId}/merge:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: categoryId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: mergeCategory
+      summary: Merge a category into another
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MergeRequest" }
+      responses:
+        "204": { description: Merged. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/payees:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listPayees
+      summary: List a wallet's payees
+      responses:
+        "200": { description: Payees., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Payee" } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: createPayee
+      summary: Create a payee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PayeeInput" }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Payee" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { description: Duplicate name., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/wallets/{walletId}/payees/{payeeId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: payeeId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: updatePayee
+      summary: Update a payee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PayeeInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Payee" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deletePayee
+      summary: Delete a payee
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/payees/{payeeId}/merge:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: payeeId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: mergePayee
+      summary: Merge a payee into another
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MergeRequest" }
+      responses:
+        "204": { description: Merged. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/tags:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listTags
+      summary: List a wallet's tags
+      responses:
+        "200": { description: Tags., content: { application/json: { schema: { type: array, items: { type: string } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listTransactions
+      summary: List an account's transactions (newest first)
+      parameters:
+        - { name: accountId, in: query, required: true, schema: { type: integer, format: int64 } }
+        - { name: limit, in: query, required: false, schema: { type: integer } }
+        - { name: offset, in: query, required: false, schema: { type: integer } }
+      responses:
+        "200":
+          description: A page of transactions.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions: { type: array, items: { $ref: "#/components/schemas/Transaction" } }
+                  total: { type: integer, format: int64 }
+                required: [transactions, total]
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: createTransaction
+      summary: Create a transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TransactionInput" }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Transaction" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/bulk:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: bulkEditTransactions
+      summary: Atomically set one field across many transactions (all-or-nothing)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids: { type: array, items: { type: integer, format: int64 } }
+                field:
+                  type: string
+                  enum: [status, category, payee, paymentMode]
+                value:
+                  type: integer
+                  format: int64
+                  nullable: true
+                  description: "required for status/paymentMode; null clears category/payee"
+              required: [ids, field]
+      responses:
+        "200":
+          description: Applied.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated: { type: integer }
+                required: [updated]
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/register:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getAccountRegister
+      summary: The full account ledger with running balance and headline balances
+      parameters:
+        - { name: accountId, in: query, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        "200":
+          description: The register.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rows: { type: array, items: { $ref: "#/components/schemas/RegisterRow" } }
+                  summary: { $ref: "#/components/schemas/RegisterSummary" }
+                required: [rows, summary]
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/duplicates:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: findDuplicateTransactions
+      summary: Find possible duplicate transactions (same account/amount near a date)
+      parameters:
+        - { name: accountId, in: query, required: true, schema: { type: integer, format: int64 } }
+        - { name: date, in: query, required: true, schema: { type: string } }
+        - { name: amount, in: query, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        "200": { description: Candidates., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Transaction" } } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/{transactionId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: transactionId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getTransaction
+      summary: Get a transaction (with splits and tags)
+      responses:
+        "200": { description: The transaction., content: { application/json: { schema: { $ref: "#/components/schemas/Transaction" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateTransaction
+      summary: Update a transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TransactionInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Transaction" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteTransaction
+      summary: Delete a transaction
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/{transactionId}/status:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: transactionId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: setTransactionStatus
+      summary: Update only a transaction's reconciliation status (register inline edit)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: integer, description: "0 none, 1 cleared, 2 reconciled, 3 remind, 4 void" }
+              required: [status]
+      responses:
+        "204": { description: Updated. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transfers:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: createTransfer
+      summary: Create an internal transfer (two linked transaction legs)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TransferInput" }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Transfer" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transfers/{transferId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: transferId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getTransfer
+      summary: Get an internal transfer
+      responses:
+        "200": { description: The transfer., content: { application/json: { schema: { $ref: "#/components/schemas/Transfer" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateTransfer
+      summary: Update an internal transfer (date and amounts; accounts are fixed)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TransferInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Transfer" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteTransfer
+      summary: Delete an internal transfer (removes both legs)
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/templates:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listTemplates
+      summary: List the wallet's transaction templates
+      responses:
+        "200": { description: Templates., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Template" } } } } }
+    post:
+      operationId: createTemplate
+      summary: Create a transaction template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TemplateInput" }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Template" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/templates/from-transaction/{transactionId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: transactionId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: createTemplateFromTransaction
+      summary: Create a template capturing an existing transaction (incl. transfer)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+              required: [name]
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Template" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/templates/{templateId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: templateId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getTemplate
+      summary: Get a template
+      responses:
+        "200": { description: The template., content: { application/json: { schema: { $ref: "#/components/schemas/Template" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateTemplate
+      summary: Update a template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TemplateInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Template" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteTemplate
+      summary: Delete a template
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/schedules:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listSchedules
+      summary: List the wallet's scheduled transactions
+      responses:
+        "200": { description: Schedules., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Schedule" } } } } }
+    post:
+      operationId: createSchedule
+      summary: Create a schedule on a template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScheduleInput" }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/schedules/upcoming:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listUpcomingSchedules
+      summary: Schedules due on or before a date (defaults to 30 days ahead)
+      parameters:
+        - { name: before, in: query, required: false, schema: { type: string } }
+      responses:
+        "200": { description: Schedules., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Schedule" } } } } }
+  /api/v1/wallets/{walletId}/schedules/{scheduleId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: scheduleId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getSchedule
+      summary: Get a schedule
+      responses:
+        "200": { description: The schedule., content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateSchedule
+      summary: Update a schedule's configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScheduleInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteSchedule
+      summary: Delete a schedule
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/schedules/{scheduleId}/post:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: scheduleId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: postScheduleNow
+      summary: Post the current occurrence now and advance the schedule
+      responses:
+        "204": { description: Posted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/schedules/{scheduleId}/skip:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: scheduleId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: skipSchedule
+      summary: Skip the current occurrence and advance the schedule
+      responses:
+        "204": { description: Skipped. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/assignments:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listAssignments
+      summary: List the wallet's assignment rules (first-match-wins order)
+      responses:
+        "200": { description: Rules., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Assignment" } } } } }
+    post:
+      operationId: createAssignment
+      summary: Create an assignment rule (regex validated here)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssignmentInput" }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Assignment" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/assignments/reorder:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: reorderAssignments
+      summary: Set the rules' match order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { ids: { type: array, items: { type: integer, format: int64 } } }
+              required: [ids]
+      responses:
+        "204": { description: Reordered. }
+  /api/v1/wallets/{walletId}/assignments/test:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: testAssignment
+      summary: Preview which existing transactions a candidate rule would match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssignmentInput" }
+      responses:
+        "200": { description: Matches., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/MatchedTransaction" } } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/assignments/apply:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: applyAssignments
+      summary: Apply all rules to existing transactions (first match per transaction)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountId: { type: integer, format: int64, nullable: true }
+                onlyFillEmpty: { type: boolean }
+      responses:
+        "200": { description: Applied., content: { application/json: { schema: { type: object, properties: { changed: { type: integer } }, required: [changed] } } } }
+  /api/v1/wallets/{walletId}/assignments/suggest:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: suggestAssignment
+      summary: First apply-on-manual rule matching the given memo/payee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { memo: { type: string }, payee: { type: string } }
+      responses:
+        "200":
+          description: Suggestion.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matched: { type: boolean }
+                  payeeId: { type: integer, format: int64, nullable: true }
+                  categoryId: { type: integer, format: int64, nullable: true }
+                  paymentMode: { type: integer, nullable: true }
+                required: [matched]
+  /api/v1/wallets/{walletId}/assignments/{assignmentId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: assignmentId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: updateAssignment
+      summary: Update an assignment rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssignmentInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Assignment" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteAssignment
+      summary: Delete an assignment rule
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/budgets:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listBudgets
+      summary: List the wallet's per-category budgets
+      responses:
+        "200": { description: Budgets., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/CategoryBudget" } } } } }
+  /api/v1/wallets/{walletId}/budgets/report:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getBudgetReport
+      summary: Budget vs actual per category over a period
+      parameters:
+        - { name: from, in: query, required: false, schema: { type: string }, description: "defaults to the current year" }
+        - { name: to, in: query, required: false, schema: { type: string } }
+        - { name: rollup, in: query, required: false, schema: { type: boolean }, description: "roll subcategories into parents (default true)" }
+      responses:
+        "200": { description: The report., content: { application/json: { schema: { $ref: "#/components/schemas/BudgetReport" } } } }
+  /api/v1/wallets/{walletId}/budgets/{categoryId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: categoryId, in: path, required: true, schema: { type: integer, format: int64 } }
+    put:
+      operationId: setCategoryBudget
+      summary: Set a category's budget (same every month or 12 per-month values)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BudgetInput" }
+      responses:
+        "204": { description: Saved. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: clearCategoryBudget
+      summary: Clear a category's budget
+      responses:
+        "204": { description: Cleared. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/reports/statistics:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getStatistics
+      summary: Aggregated totals by a dimension (SQL group-by), filtered
+      parameters:
+        - { name: groupBy, in: query, required: true, schema: { type: string, enum: [category, subcategory, payee, tag, month, year] } }
+        - { name: from, in: query, required: false, schema: { type: string } }
+        - { name: to, in: query, required: false, schema: { type: string } }
+        - { name: status, in: query, required: false, schema: { type: integer } }
+        - { name: payeeId, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: categoryId, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: tags, in: query, required: false, schema: { type: string }, description: "comma-separated" }
+        - { name: amountMin, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: amountMax, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: text, in: query, required: false, schema: { type: string } }
+        - { name: format, in: query, required: false, schema: { type: string, enum: [json, csv] } }
+      responses:
+        "200": { description: The report (JSON, or CSV when format=csv)., content: { application/json: { schema: { $ref: "#/components/schemas/StatisticsResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/reports/statistics/drilldown:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getStatisticsDrilldown
+      summary: Filtered transactions belonging to one group bucket
+      parameters:
+        - { name: groupBy, in: query, required: true, schema: { type: string } }
+        - { name: groupKey, in: query, required: true, schema: { type: string } }
+        - { name: from, in: query, required: false, schema: { type: string } }
+        - { name: to, in: query, required: false, schema: { type: string } }
+        - { name: status, in: query, required: false, schema: { type: integer } }
+        - { name: payeeId, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: categoryId, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: tags, in: query, required: false, schema: { type: string } }
+        - { name: amountMin, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: amountMax, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: text, in: query, required: false, schema: { type: string } }
+      responses:
+        "200": { description: Transactions., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ReportTransaction" } } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/reports/trend:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getTrend
+      summary: Bucketed evolution over time, optionally split into series
+      parameters:
+        - { name: bucket, in: query, required: true, schema: { type: string, enum: [day, week, month, quarter, year] } }
+        - { name: breakdown, in: query, required: false, schema: { type: string, enum: [none, account, payee, category] } }
+        - { name: from, in: query, required: false, schema: { type: string } }
+        - { name: to, in: query, required: false, schema: { type: string } }
+        - { name: status, in: query, required: false, schema: { type: integer } }
+        - { name: payeeId, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: categoryId, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: tags, in: query, required: false, schema: { type: string } }
+        - { name: amountMin, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: amountMax, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: text, in: query, required: false, schema: { type: string } }
+      responses:
+        "200": { description: The trend., content: { application/json: { schema: { $ref: "#/components/schemas/TrendResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/reports/balance:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getBalanceReport
+      summary: Account balance(s) over time (initial balance + transactions)
+      parameters:
+        - { name: bucket, in: query, required: true, schema: { type: string, enum: [day, week, month, quarter, year] } }
+        - { name: accountIds, in: query, required: false, schema: { type: string }, description: "comma-separated; empty = all accounts" }
+        - { name: from, in: query, required: false, schema: { type: string } }
+        - { name: to, in: query, required: false, schema: { type: string } }
+      responses:
+        "200": { description: The balance report., content: { application/json: { schema: { $ref: "#/components/schemas/BalanceResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/reports/vehicle:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getVehicleReport
+      summary: Fuel-consumption report for a vehicle category (memo d=/v=/p=)
+      parameters:
+        - { name: categoryId, in: query, required: true, schema: { type: integer, format: int64 } }
+        - { name: from, in: query, required: false, schema: { type: string } }
+        - { name: to, in: query, required: false, schema: { type: string } }
+      responses:
+        "200": { description: The report., content: { application/json: { schema: { $ref: "#/components/schemas/VehicleReport" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/dashboard:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getDashboard
+      summary: Home-screen overview (accounts, base-currency totals, spending)
+      parameters:
+        - { name: from, in: query, required: false, schema: { type: string }, description: "donut range start (defaults to current month)" }
+        - { name: to, in: query, required: false, schema: { type: string } }
+      responses:
+        "200": { description: The dashboard., content: { application/json: { schema: { $ref: "#/components/schemas/Dashboard" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/import/csv/preview:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: previewCSVImport
+      summary: Parse a CSV, rescale amounts, flag duplicates and (optionally) apply import rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CSVPreviewRequest" }
+      responses:
+        "200": { description: The preview., content: { application/json: { schema: { $ref: "#/components/schemas/CSVPreview" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/import/qif/preview:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: previewQIFImport
+      summary: Parse a QIF file, rescale amounts, flag duplicates and (optionally) apply import rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ParsedPreviewRequest" }
+      responses:
+        "200": { description: The preview., content: { application/json: { schema: { $ref: "#/components/schemas/CSVPreview" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/import/ofx/preview:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: previewOFXImport
+      summary: Parse an OFX/QFX file (SGML or XML), flag duplicates by FITID and (optionally) apply import rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ParsedPreviewRequest" }
+      responses:
+        "200": { description: The preview., content: { application/json: { schema: { $ref: "#/components/schemas/CSVPreview" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/import/commit:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: commitImport
+      summary: Create transactions from previewed rows (any format; creates payees/categories/tags by name)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CSVCommitRequest" }
+      responses:
+        "201": { description: The rows were imported., content: { application/json: { schema: { $ref: "#/components/schemas/CSVCommitResult" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/export/csv:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: exportAccountCSV
+      summary: Export an account's transactions as a HomeBank-dialect CSV
+      parameters:
+        - { name: accountId, in: query, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        "200": { description: The CSV file., content: { text/csv: { schema: { type: string } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/export/qif:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: exportAccountQIF
+      summary: Export an account's transactions as a QIF file
+      parameters:
+        - { name: accountId, in: query, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        "200": { description: The QIF file., content: { application/qif: { schema: { type: string } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/import/xhb:
+    post:
+      operationId: importXHB
+      summary: Import a HomeBank .xhb file into a new wallet owned by the current user
+      description: >
+        The raw .xhb XML is sent as the request body. The import is atomic: a fresh
+        wallet is created and populated with the file's currencies, accounts, payees,
+        categories, tags, transactions (with splits and re-paired transfers),
+        budgets, assignments, templates and schedules.
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema: { type: string, format: binary }
+      responses:
+        "201": { description: The file was imported., content: { application/json: { schema: { $ref: "#/components/schemas/ImportResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+components:
+  responses:
+    BadRequest:
+      description: Invalid request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Authentication required.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Administrator access required.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, unhealthy]
+        error:
+          type: string
+      required: [status]
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+          required: [code, message]
+      required: [error]
+    User:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        username: { type: string }
+        email: { type: string }
+        isAdmin: { type: boolean }
+        locale: { type: string }
+        theme: { type: string }
+        preferences: { type: object, additionalProperties: true, description: "opaque UI preferences blob" }
+        disabled: { type: boolean }
+        createdAt: { type: string }
+      required: [id, username, email, isAdmin, locale, theme, disabled, createdAt]
+    UpdateMeRequest:
+      type: object
+      properties:
+        locale: { type: string }
+        theme: { type: string }
+        preferences: { type: object, additionalProperties: true }
+    IntegrityIssue:
+      type: object
+      properties:
+        type: { type: string }
+        description: { type: string }
+        suggestion: { type: string }
+        count: { type: integer }
+        ids: { type: array, items: { type: integer, format: int64 } }
+        fixable: { type: boolean }
+      required: [type, description, suggestion, count, ids, fixable]
+    Credentials:
+      type: object
+      properties:
+        username: { type: string }
+        email: { type: string }
+        password: { type: string, minLength: 8 }
+      required: [username, password]
+    CreateUserRequest:
+      type: object
+      properties:
+        username: { type: string }
+        email: { type: string }
+        password: { type: string, minLength: 8 }
+        isAdmin: { type: boolean }
+      required: [username, password]
+    Wallet:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        title: { type: string }
+        ownerName: { type: string }
+        baseCurrencyId: { type: integer, format: int64, nullable: true }
+        role: { type: string, enum: [owner, member] }
+        createdAt: { type: string }
+      required: [id, title, ownerName, role, createdAt]
+    WalletInput:
+      type: object
+      properties:
+        title: { type: string }
+        ownerName: { type: string }
+        baseCurrency: { type: string, description: "ISO 4217 code for the base currency (create only)" }
+      required: [title]
+    CatalogEntry:
+      type: object
+      properties:
+        code: { type: string }
+        name: { type: string }
+        symbol: { type: string }
+        fracDigits: { type: integer }
+        symbolPrefix: { type: boolean }
+      required: [code, name, symbol, fracDigits, symbolPrefix]
+    Currency:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        isoCode: { type: string }
+        name: { type: string }
+        symbol: { type: string }
+        symbolPrefix: { type: boolean }
+        decimalChar: { type: string }
+        groupChar: { type: string }
+        fracDigits: { type: integer }
+        isBase: { type: boolean }
+        rate: { type: number }
+        rateUpdatedAt: { type: string }
+      required: [id, isoCode, name, symbol, symbolPrefix, decimalChar, groupChar, fracDigits, isBase, rate]
+    AddCurrencyRequest:
+      type: object
+      properties:
+        isoCode: { type: string }
+        makeBase: { type: boolean }
+      required: [isoCode]
+    CurrencyUpdate:
+      type: object
+      properties:
+        rate: { type: number }
+        symbol: { type: string }
+        symbolPrefix: { type: boolean }
+        decimalChar: { type: string }
+        groupChar: { type: string }
+        fracDigits: { type: integer }
+    ExchangeRate:
+      type: object
+      properties:
+        date: { type: string }
+        rate: { type: number }
+        source: { type: string }
+      required: [date, rate, source]
+    Account:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        type:
+          type: string
+          enum: [bank, cash, checking, savings, creditcard, liability, asset, investment]
+        currencyId: { type: integer, format: int64 }
+        institution: { type: string }
+        number: { type: string }
+        initialBalance: { type: integer, format: int64, description: "minor units" }
+        minimumBalance: { type: integer, format: int64, description: "minor units" }
+        balance: { type: integer, format: int64, description: "minor units" }
+        closed: { type: boolean }
+        noSummary: { type: boolean }
+        noBudget: { type: boolean }
+        noReport: { type: boolean }
+        position: { type: integer }
+        groupName: { type: string }
+        notes: { type: string }
+        website: { type: string }
+        createdAt: { type: string }
+        currencyCode: { type: string }
+        currencySymbol: { type: string }
+        currencySymbolPrefix: { type: boolean }
+        currencyDecimalChar: { type: string }
+        currencyGroupChar: { type: string }
+        currencyFracDigits: { type: integer }
+      required:
+        [id, name, type, currencyId, initialBalance, minimumBalance, balance, closed, position,
+         currencyCode, currencySymbol, currencySymbolPrefix, currencyDecimalChar, currencyGroupChar, currencyFracDigits]
+    AccountInput:
+      type: object
+      properties:
+        name: { type: string }
+        type:
+          type: string
+          enum: [bank, cash, checking, savings, creditcard, liability, asset, investment]
+        currencyId: { type: integer, format: int64, description: "defaults to the wallet base currency" }
+        institution: { type: string }
+        number: { type: string }
+        initialBalance: { type: integer, format: int64 }
+        minimumBalance: { type: integer, format: int64 }
+        closed: { type: boolean }
+        noSummary: { type: boolean }
+        noBudget: { type: boolean }
+        noReport: { type: boolean }
+        groupName: { type: string }
+        notes: { type: string }
+        website: { type: string }
+      required: [name, type]
+    Category:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        parentId: { type: integer, format: int64, nullable: true }
+        name: { type: string }
+        isIncome: { type: boolean }
+        noBudget: { type: boolean }
+      required: [id, name, isIncome, noBudget]
+    CategoryInput:
+      type: object
+      properties:
+        name: { type: string }
+        parentId: { type: integer, format: int64, nullable: true }
+        isIncome: { type: boolean }
+        noBudget: { type: boolean }
+      required: [name]
+    CategoryUsage:
+      type: object
+      properties:
+        subcategories: { type: integer, format: int64 }
+        payees: { type: integer, format: int64 }
+        transactions: { type: integer, format: int64 }
+      required: [subcategories, payees, transactions]
+    Payee:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        defaultCategoryId: { type: integer, format: int64, nullable: true }
+        defaultPaymentMode: { type: integer, format: int64, nullable: true }
+      required: [id, name]
+    PayeeInput:
+      type: object
+      properties:
+        name: { type: string }
+        defaultCategoryId: { type: integer, format: int64, nullable: true }
+        defaultPaymentMode: { type: integer, format: int64, nullable: true }
+      required: [name]
+    MergeRequest:
+      type: object
+      properties:
+        targetId: { type: integer, format: int64 }
+      required: [targetId]
+    Split:
+      type: object
+      properties:
+        categoryId: { type: integer, format: int64, nullable: true }
+        amount: { type: integer, format: int64 }
+        memo: { type: string }
+      required: [amount]
+    Transaction:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        accountId: { type: integer, format: int64 }
+        date: { type: string }
+        amount: { type: integer, format: int64 }
+        paymentMode: { type: integer }
+        status: { type: integer }
+        info: { type: string }
+        payeeId: { type: integer, format: int64, nullable: true }
+        categoryId: { type: integer, format: int64, nullable: true }
+        memo: { type: string }
+        isSplit: { type: boolean }
+        tags: { type: array, items: { type: string } }
+        splits: { type: array, items: { $ref: "#/components/schemas/Split" } }
+        payeeName: { type: string }
+        categoryName: { type: string }
+        transferId: { type: integer, format: int64, description: "set when the transaction is one leg of an internal transfer" }
+        transferAccountId: { type: integer, format: int64, description: "the counterpart leg's account" }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+      required: [id, accountId, date, amount, paymentMode, status, info, memo, isSplit, tags]
+    TransactionInput:
+      type: object
+      properties:
+        accountId: { type: integer, format: int64 }
+        date: { type: string, description: "YYYY-MM-DD" }
+        amount: { type: integer, format: int64, description: "signed minor units" }
+        paymentMode: { type: integer, description: "0..11" }
+        status: { type: integer, description: "0 none, 1 cleared, 2 reconciled, 3 remind, 4 void" }
+        info: { type: string }
+        payeeId: { type: integer, format: int64, nullable: true }
+        categoryId: { type: integer, format: int64, nullable: true }
+        memo: { type: string }
+        tags: { type: array, items: { type: string } }
+        splits: { type: array, items: { $ref: "#/components/schemas/Split" } }
+      required: [accountId, date, amount]
+    RegisterRow:
+      allOf:
+        - $ref: "#/components/schemas/Transaction"
+        - type: object
+          properties:
+            runningBalance: { type: integer, format: int64, description: "initial balance + cumulative amount through this row (chronological)" }
+          required: [runningBalance]
+    RegisterSummary:
+      type: object
+      properties:
+        bank: { type: integer, format: int64, description: "initial + cleared/reconciled amounts" }
+        today: { type: integer, format: int64, description: "initial + amounts dated on or before today" }
+        future: { type: integer, format: int64, description: "initial + all amounts" }
+      required: [bank, today, future]
+    Template:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        accountId: { type: integer, format: int64, nullable: true }
+        amount: { type: integer, format: int64 }
+        paymentMode: { type: integer }
+        status: { type: integer }
+        info: { type: string }
+        payeeId: { type: integer, format: int64, nullable: true }
+        categoryId: { type: integer, format: int64, nullable: true }
+        memo: { type: string }
+        tags: { type: array, items: { type: string } }
+        isSplit: { type: boolean }
+        isTransfer: { type: boolean }
+        toAccountId: { type: integer, format: int64, nullable: true }
+        splits: { type: array, items: { $ref: "#/components/schemas/Split" } }
+        createdAt: { type: string }
+      required: [id, name, amount, paymentMode, status, info, memo, tags, isSplit, isTransfer, createdAt]
+    TemplateInput:
+      type: object
+      properties:
+        name: { type: string }
+        accountId: { type: integer, format: int64, nullable: true }
+        amount: { type: integer, format: int64, description: "signed minor units" }
+        paymentMode: { type: integer }
+        status: { type: integer }
+        info: { type: string }
+        payeeId: { type: integer, format: int64, nullable: true }
+        categoryId: { type: integer, format: int64, nullable: true }
+        memo: { type: string }
+        tags: { type: array, items: { type: string } }
+        isTransfer: { type: boolean }
+        toAccountId: { type: integer, format: int64, nullable: true }
+        splits: { type: array, items: { $ref: "#/components/schemas/Split" } }
+      required: [name]
+    CurrencyInfo:
+      type: object
+      properties:
+        code: { type: string }
+        symbol: { type: string }
+        symbolPrefix: { type: boolean }
+        decimalChar: { type: string }
+        groupChar: { type: string }
+        fracDigits: { type: integer }
+      required: [code, symbol, symbolPrefix, decimalChar, groupChar, fracDigits]
+    RateRefreshResult:
+      type: object
+      properties:
+        date: { type: string, description: "provider quotation date (YYYY-MM-DD), when available" }
+        updated: { type: array, items: { type: string }, description: "ISO codes refreshed from the provider" }
+        unsupported: { type: array, items: { type: string }, description: "wallet currencies the provider does not cover (kept manual)" }
+        providerError: { type: string, description: "set when the provider was unreachable or the base is unsupported; manual rates are kept" }
+      required: [date, updated, unsupported]
+    AccountSummary:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        type: { type: string }
+        groupName: { type: string }
+        closed: { type: boolean }
+        noSummary: { type: boolean }
+        bank: { type: integer, format: int64 }
+        today: { type: integer, format: int64 }
+        future: { type: integer, format: int64 }
+        currency: { $ref: "#/components/schemas/CurrencyInfo" }
+        currencyId: { type: integer, format: int64 }
+      required: [id, name, type, closed, noSummary, bank, today, future, currency, currencyId]
+    CategorySlice:
+      type: object
+      properties:
+        categoryId: { type: integer, format: int64, description: "0 = the rolled-up Other slice" }
+        name: { type: string }
+        amount: { type: integer, format: int64, description: "positive magnitude, base currency" }
+      required: [categoryId, name, amount]
+    Dashboard:
+      type: object
+      properties:
+        accounts: { type: array, items: { $ref: "#/components/schemas/AccountSummary" } }
+        totals: { $ref: "#/components/schemas/RegisterSummary" }
+        baseCurrency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
+        topCategories: { type: array, items: { $ref: "#/components/schemas/CategorySlice" } }
+        from: { type: string }
+        to: { type: string }
+        upcoming: { type: array, items: { $ref: "#/components/schemas/Schedule" } }
+      required: [accounts, totals, topCategories, from, to, upcoming]
+    Schedule:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        templateId: { type: integer, format: int64 }
+        templateName: { type: string }
+        templateAmount: { type: integer, format: int64 }
+        templateIsTransfer: { type: boolean }
+        unit: { type: string, enum: [day, week, month, year] }
+        everyN: { type: integer }
+        nextDue: { type: string }
+        weekendMode: { type: integer, description: "0 none, 1 before, 2 after, 3 skip" }
+        remaining: { type: integer, format: int64, nullable: true }
+        postAdvance: { type: integer }
+        autoPost: { type: boolean }
+        lastPosted: { type: string }
+      required: [id, templateId, templateName, templateAmount, templateIsTransfer, unit, everyN, nextDue, weekendMode, postAdvance, autoPost]
+    ScheduleInput:
+      type: object
+      properties:
+        templateId: { type: integer, format: int64 }
+        unit: { type: string, enum: [day, week, month, year] }
+        everyN: { type: integer, description: "every N units, >= 1" }
+        nextDue: { type: string, description: "YYYY-MM-DD" }
+        weekendMode: { type: integer, description: "0 none, 1 before, 2 after, 3 skip" }
+        remaining: { type: integer, format: int64, nullable: true, description: "occurrence limit; null = unlimited" }
+        postAdvance: { type: integer, description: "post this many days early" }
+        autoPost: { type: boolean }
+      required: [templateId, unit, everyN, nextDue]
+    Assignment:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        position: { type: integer }
+        matchField: { type: string, enum: [memo, payee, both] }
+        matchType: { type: string, enum: [exact, contains, regex] }
+        pattern: { type: string }
+        caseSensitive: { type: boolean }
+        setPayeeId: { type: integer, format: int64, nullable: true }
+        setCategoryId: { type: integer, format: int64, nullable: true }
+        setPaymentMode: { type: integer, nullable: true }
+        applyOnManual: { type: boolean }
+        applyOnImport: { type: boolean }
+      required: [id, position, matchField, matchType, pattern, caseSensitive, applyOnManual, applyOnImport]
+    AssignmentInput:
+      type: object
+      properties:
+        matchField: { type: string, enum: [memo, payee, both] }
+        matchType: { type: string, enum: [exact, contains, regex] }
+        pattern: { type: string }
+        caseSensitive: { type: boolean }
+        setPayeeId: { type: integer, format: int64, nullable: true }
+        setCategoryId: { type: integer, format: int64, nullable: true }
+        setPaymentMode: { type: integer, nullable: true }
+        applyOnManual: { type: boolean }
+        applyOnImport: { type: boolean }
+      required: [matchField, matchType, pattern]
+    MatchedTransaction:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        accountId: { type: integer, format: int64 }
+        date: { type: string }
+        memo: { type: string }
+        payeeName: { type: string }
+      required: [id, accountId, date, memo, payeeName]
+    StatisticsGroup:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        amount: { type: integer, format: int64, description: "base currency, signed" }
+      required: [key, label, amount]
+    StatisticsResult:
+      type: object
+      properties:
+        groups: { type: array, items: { $ref: "#/components/schemas/StatisticsGroup" } }
+        total: { type: integer, format: int64 }
+        groupBy: { type: string }
+        currency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
+      required: [groups, total, groupBy]
+    ReportTransaction:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        accountId: { type: integer, format: int64 }
+        date: { type: string }
+        amount: { type: integer, format: int64 }
+        memo: { type: string }
+        payeeName: { type: string }
+        categoryName: { type: string }
+      required: [id, accountId, date, amount, memo, payeeName, categoryName]
+    VehicleEntry:
+      type: object
+      properties:
+        transactionId: { type: integer, format: int64 }
+        date: { type: string }
+        meter: { type: number }
+        distance: { type: number }
+        volume: { type: number }
+        price: { type: number }
+        cost: { type: integer, format: int64 }
+        partial: { type: boolean }
+        consumption: { type: number }
+      required: [transactionId, date, meter, distance, volume, price, cost, partial, consumption]
+    VehicleReport:
+      type: object
+      properties:
+        entries: { type: array, items: { $ref: "#/components/schemas/VehicleEntry" } }
+        totalDistance: { type: number }
+        totalVolume: { type: number }
+        totalCost: { type: integer, format: int64 }
+        avgConsumption: { type: number }
+        currency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
+      required: [entries, totalDistance, totalVolume, totalCost, avgConsumption]
+    ReportSeries:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        values: { type: array, items: { type: integer, format: int64 } }
+      required: [key, label, values]
+    TrendResult:
+      type: object
+      properties:
+        buckets: { type: array, items: { type: string } }
+        series: { type: array, items: { $ref: "#/components/schemas/ReportSeries" } }
+        currency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
+      required: [buckets, series]
+    BalanceSeries:
+      type: object
+      properties:
+        accountId: { type: integer, format: int64 }
+        label: { type: string }
+        minimumBalance: { type: integer, format: int64 }
+        values: { type: array, items: { type: integer, format: int64 } }
+      required: [accountId, label, minimumBalance, values]
+    BalanceResult:
+      type: object
+      properties:
+        buckets: { type: array, items: { type: string } }
+        series: { type: array, items: { $ref: "#/components/schemas/BalanceSeries" } }
+        currency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
+      required: [buckets, series]
+    CategoryBudget:
+      type: object
+      properties:
+        categoryId: { type: integer, format: int64 }
+        mode: { type: string, enum: [same, monthly] }
+        same: { type: integer, format: int64 }
+        monthly: { type: array, items: { type: integer, format: int64 }, minItems: 12, maxItems: 12 }
+      required: [categoryId, mode, same, monthly]
+    BudgetInput:
+      type: object
+      properties:
+        mode: { type: string, enum: [same, monthly] }
+        same: { type: integer, format: int64, description: "used when mode = same" }
+        monthly: { type: array, items: { type: integer, format: int64 }, description: "12 values, Jan..Dec; used when mode = monthly" }
+      required: [mode]
+    BudgetReportRow:
+      type: object
+      properties:
+        categoryId: { type: integer, format: int64 }
+        name: { type: string }
+        isIncome: { type: boolean }
+        budget: { type: integer, format: int64 }
+        actual: { type: integer, format: int64 }
+      required: [categoryId, name, isIncome, budget, actual]
+    BudgetReport:
+      type: object
+      properties:
+        rows: { type: array, items: { $ref: "#/components/schemas/BudgetReportRow" } }
+        totalBudget: { type: integer, format: int64 }
+        totalActual: { type: integer, format: int64 }
+        from: { type: string }
+        to: { type: string }
+        rollup: { type: boolean }
+        currency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
+      required: [rows, totalBudget, totalActual, from, to, rollup]
+    Transfer:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        fromAccountId: { type: integer, format: int64 }
+        toAccountId: { type: integer, format: int64 }
+        date: { type: string }
+        fromAmount: { type: integer, format: int64, description: "positive magnitude in the source account currency" }
+        toAmount: { type: integer, format: int64, description: "positive magnitude in the destination account currency" }
+        memo: { type: string }
+        status: { type: integer }
+        txnFromId: { type: integer, format: int64 }
+        txnToId: { type: integer, format: int64 }
+      required: [id, fromAccountId, toAccountId, date, fromAmount, toAmount, memo, status, txnFromId, txnToId]
+    TransferInput:
+      type: object
+      properties:
+        fromAccountId: { type: integer, format: int64 }
+        toAccountId: { type: integer, format: int64 }
+        date: { type: string, description: "YYYY-MM-DD" }
+        fromAmount: { type: integer, format: int64, description: "positive minor units in the source currency" }
+        toAmount: { type: integer, format: int64, description: "positive minor units in the destination currency; defaults to fromAmount" }
+        memo: { type: string }
+        status: { type: integer, description: "0 none, 1 cleared, 2 reconciled, 3 remind, 4 void" }
+      required: [fromAccountId, toAccountId, date, fromAmount]
+    ImportResult:
+      type: object
+      properties:
+        walletId: { type: integer, format: int64, description: "the newly created wallet" }
+        counts: { type: object, additionalProperties: { type: integer }, description: "imported entity counts keyed by type (accounts, transactions, ...)" }
+        warnings: { type: array, items: { type: string } }
+      required: [walletId, counts, warnings]
+    CSVPreviewRequest:
+      type: object
+      properties:
+        accountId: { type: integer, format: int64 }
+        content: { type: string, description: "the raw CSV text" }
+        dialect: { type: string, enum: [homebank, generic] }
+        delimiter: { type: string, description: "single character; defaults ';' (homebank) or ',' (generic)" }
+        hasHeader: { type: boolean, description: "generic only: skip the first row" }
+        dateFormat: { type: string, enum: ["", iso, dmy, mdy], description: "field order of the date column" }
+        decimalChar: { type: string, description: "'.' or ','; defaults '.'" }
+        mapping: { type: object, additionalProperties: { type: integer }, description: "generic: field name → column index" }
+        applyRules: { type: boolean, description: "apply on-import assignment rules to the preview" }
+      required: [accountId, content, dialect]
+    CSVPreviewRow:
+      type: object
+      properties:
+        line: { type: integer }
+        include: { type: boolean }
+        duplicate: { type: boolean }
+        ruleApplied: { type: boolean }
+        error: { type: string }
+        date: { type: string }
+        amount: { type: integer, format: int64 }
+        paymentMode: { type: integer }
+        info: { type: string }
+        payee: { type: string }
+        memo: { type: string }
+        category: { type: string }
+        tags: { type: array, items: { type: string } }
+        importRef: { type: string, description: "OFX FITID, when present (used for duplicate detection)" }
+      required: [line, include, duplicate, ruleApplied, date, amount, paymentMode, info, payee, memo, category, tags]
+    ParsedPreviewRequest:
+      type: object
+      properties:
+        accountId: { type: integer, format: int64 }
+        content: { type: string, description: "the raw QIF or OFX text" }
+        dateFormat: { type: string, enum: ["", iso, dmy, mdy], description: "QIF date field order; ignored for OFX" }
+        applyRules: { type: boolean }
+      required: [accountId, content]
+    CSVPreview:
+      type: object
+      properties:
+        columns: { type: array, items: { type: string }, description: "detected/generated column names for the mapping UI" }
+        rows: { type: array, items: { $ref: "#/components/schemas/CSVPreviewRow" } }
+      required: [columns, rows]
+    CSVCommitRow:
+      type: object
+      properties:
+        date: { type: string, description: "YYYY-MM-DD" }
+        amount: { type: integer, format: int64 }
+        paymentMode: { type: integer }
+        info: { type: string }
+        payee: { type: string }
+        memo: { type: string }
+        category: { type: string, description: "full name 'Parent:Sub' or empty" }
+        tags: { type: array, items: { type: string } }
+        importRef: { type: string, description: "OFX FITID to persist for future duplicate detection" }
+      required: [date, amount]
+    CSVCommitRequest:
+      type: object
+      properties:
+        accountId: { type: integer, format: int64 }
+        rows: { type: array, items: { $ref: "#/components/schemas/CSVCommitRow" } }
+      required: [accountId, rows]
+    CSVCommitResult:
+      type: object
+      properties:
+        created: { type: integer }
+      required: [created]

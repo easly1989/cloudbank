@@ -2,7 +2,8 @@
 
 **CloudBank** is a free, self-hosted, web-based personal finance manager — a from-scratch web port of the excellent [HomeBank](https://www.gethomebank.org/) desktop application. It aims for feature parity with HomeBank 5.10 while being built for the browser and the cloud: a single Docker container you run yourself, with your data living in a SQLite database on a volume you control.
 
-> Status: **early development.** The project is being built milestone by milestone (see [the issues](https://github.com/easly1989/cloudbank/issues)). It is not yet ready for production use.
+> Status: **1.0 — first public release.** Feature-complete against the HomeBank
+> 5.10 workflow. See the [CHANGELOG](CHANGELOG.md).
 
 ## Why
 
@@ -23,14 +24,50 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 
 ## Quick start
 
-> The container image is published once the foundation milestone lands. Until then, see [CONTRIBUTING.md](CONTRIBUTING.md) to run from source.
+You need [Docker](https://docs.docker.com/get-docker/) with the Compose plugin.
+Create a `docker-compose.yml` (or copy [the one in this repo](docker-compose.yml)):
+
+```yaml
+services:
+  cloudbank:
+    image: ghcr.io/easly1989/cloudbank:main # latest stable release (see tags below)
+    container_name: cloudbank
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Set to "false" only for a plain-HTTP LAN install without TLS in front.
+      CB_SECURE_COOKIES: "false"
+    volumes:
+      - cloudbank-data:/data
+
+volumes:
+  cloudbank-data:
+```
+
+Then start it and open the app:
 
 ```bash
 docker compose up -d
-# then open http://localhost:8080 and complete the first-run admin setup
+# open http://localhost:8080 and complete the first-run admin setup
 ```
 
-Your data is stored in a SQLite database under the `/data` volume. Back it up by copying that volume (or use the in-app wallet backup).
+That is the whole install — one container, no external database. Your data lives
+in the `cloudbank-data` volume (a SQLite database under `/data`). Back it up by
+copying that volume, or use the in-app **wallet backup** (Settings → wallet
+switcher → Wallet settings) and the admin **full-database backup**.
+
+Running behind HTTPS (recommended for anything beyond a trusted LAN)? See
+[docs/reverse-proxy.md](docs/reverse-proxy.md). Coming from the HomeBank desktop
+app? See [docs/migrate-from-homebank.md](docs/migrate-from-homebank.md).
+
+## Documentation
+
+- **API**: interactive Swagger UI is served by the app at **`/api/docs`** (the
+  OpenAPI spec is at `/api/openapi.yaml`).
+- **Reverse proxy / HTTPS**: [docs/reverse-proxy.md](docs/reverse-proxy.md).
+- **Migrating from HomeBank**: [docs/migrate-from-homebank.md](docs/migrate-from-homebank.md).
+- **Contributing / running from source**: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Configuration
 
@@ -40,6 +77,7 @@ Your data is stored in a SQLite database under the `/data` volume. Back it up by
 | `CB_DATA_DIR`       | `/data`       | Directory holding the SQLite database and backups.      |
 | `CB_LOG_LEVEL`      | `info`        | `debug`, `info`, `warn`, or `error`.                    |
 | `CB_SECURE_COOKIES` | `true`        | Set `false` for plain-HTTP LAN installs (no TLS).       |
+| `CB_RATE_URL`       | _(frankfurter.app)_ | Override the online exchange-rate API root (e.g. a mirror). |
 
 ## Container images and tag convention
 
