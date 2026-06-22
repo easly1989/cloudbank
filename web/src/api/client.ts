@@ -63,6 +63,8 @@ export interface Preferences {
   dateFormat?: string;
   startScreen?: string;
   defaultAccountId?: number;
+  /** Register column visibility, keyed by column id (payee/category/note/status/runningBalance). */
+  registerColumns?: Record<string, boolean>;
 }
 
 export interface User {

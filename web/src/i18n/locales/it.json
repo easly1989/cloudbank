@@ -246,7 +246,8 @@
     "quickAdd": "Aggiungi",
     "cycleStatus": "Clicca per cambiare stato",
     "selectAll": "Seleziona tutto",
-    "selectRow": "Seleziona riga"
+    "selectRow": "Seleziona riga",
+    "columns": "Colonne"
   },
   "filters": {
     "dateRange": "Intervallo date",
