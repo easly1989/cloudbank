@@ -1,5 +1,6 @@
-import { ActionIcon, Badge, Box, Checkbox, Group, Text } from "@mantine/core";
+import { ActionIcon, Badge, Box, Checkbox, Group, Menu, Text } from "@mantine/core";
 import {
+  IconAdjustmentsHorizontal,
   IconArrowsExchange,
   IconDeviceFloppy,
   IconLock,
@@ -11,17 +12,46 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
+  type VisibilityState,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { Account, RegisterRow } from "../api/client";
+import { updateMe, type Account, type RegisterRow, type User } from "../api/client";
+import { useAuth } from "../auth/AuthProvider";
 import { useDateFormat } from "../dates";
 import { formatMinor, type MoneyFormat } from "../money";
 
 const ROW_HEIGHT = 40;
-const GRID = "36px 104px minmax(110px, 1fr) minmax(104px, 1fr) 94px 116px 124px 92px";
+// Per-column grid widths (fixed so virtualized rows stay aligned). Status is
+// wide enough for the longest label ("Non riconciliato") plus the lock glyph.
+const COL_WIDTH: Record<string, string> = {
+  date: "104px",
+  payee: "minmax(110px, 1fr)",
+  category: "minmax(104px, 1fr)",
+  note: "minmax(130px, 1.2fr)",
+  status: "140px",
+  amount: "116px",
+  runningBalance: "124px",
+};
+// Columns the user can show/hide, with their default visibility.
+const TOGGLEABLE: { id: string; def: boolean }[] = [
+  { id: "payee", def: true },
+  { id: "category", def: true },
+  { id: "note", def: false },
+  { id: "status", def: true },
+  { id: "runningBalance", def: true },
+];
+// i18n keys for the toggleable column labels (reuse existing strings).
+const COL_LABEL: Record<string, string> = {
+  payee: "transactions.payee",
+  category: "transactions.category",
+  note: "transactions.memo",
+  status: "transactions.status",
+  runningBalance: "register.balance",
+};
 // Status badge colours indexed by status value (none..void).
 const STATUS_COLORS = ["gray", "blue", "teal", "orange", "red"];
 const STATUS_RECONCILED = 2;
@@ -59,8 +89,29 @@ export function RegisterTable({
 }: RegisterTableProps) {
   const { t } = useTranslation();
   const fmtDate = useDateFormat();
+  const qc = useQueryClient();
+  const { user } = useAuth();
   const parentRef = useRef<HTMLDivElement>(null);
   const [cursorId, setCursorId] = useState<number | null>(null);
+
+  // Column visibility is a per-user preference; resolve defaults for any unset.
+  const savedColumns = user?.preferences?.registerColumns;
+  const columnVisibility = useMemo<VisibilityState>(() => {
+    const v: VisibilityState = {};
+    for (const c of TOGGLEABLE) v[c.id] = savedColumns?.[c.id] ?? c.def;
+    return v;
+  }, [savedColumns]);
+
+  const persistColumns = useMutation({
+    mutationFn: (next: VisibilityState) =>
+      updateMe({
+        preferences: {
+          ...(user?.preferences ?? {}),
+          registerColumns: next as Record<string, boolean>,
+        },
+      }),
+    onSuccess: (updated: User) => qc.setQueryData(["me"], updated),
+  });
 
   // Newest-first display; each row keeps its chronological running balance.
   const display = useMemo(() => [...rows].reverse(), [rows]);
@@ -107,12 +158,23 @@ export function RegisterTable({
           </Text>
         ),
       }),
+      col.accessor("memo", {
+        id: "note",
+        header: () => t("transactions.memo"),
+        cell: ({ getValue }) => (
+          <Text size="sm" truncate>
+            {getValue()}
+          </Text>
+        ),
+      }),
       col.accessor("status", {
+        id: "status",
         header: () => t("transactions.status"),
         cell: ({ row }) => (
           <Group gap={4} wrap="nowrap">
             <Badge
               variant="light"
+              tt="none"
               color={STATUS_COLORS[row.original.status] ?? "gray"}
               style={{ cursor: "pointer" }}
               title={t("register.cycleStatus")}
@@ -151,8 +213,25 @@ export function RegisterTable({
     ];
   }, [t, fmt, fmtDate, accountName, onToggleStatus]);
 
-  const table = useReactTable({ data: display, columns, getCoreRowModel: getCoreRowModel() });
+  const table = useReactTable({
+    data: display,
+    columns,
+    state: { columnVisibility },
+    onColumnVisibilityChange: (updater) => {
+      const next = typeof updater === "function" ? updater(columnVisibility) : updater;
+      persistColumns.mutate(next);
+    },
+    getCoreRowModel: getCoreRowModel(),
+  });
   const tableRows = table.getRowModel().rows;
+
+  // Build the grid template from the currently visible columns (checkbox +
+  // visible data columns + actions), so hidden columns reclaim their space.
+  const gridTemplate = [
+    "36px",
+    ...table.getVisibleLeafColumns().map((c) => COL_WIDTH[c.id] ?? "minmax(100px, 1fr)"),
+    "92px",
+  ].join(" ");
 
   const virtualizer = useVirtualizer({
     count: tableRows.length,
@@ -225,7 +304,7 @@ export function RegisterTable({
       <Box
         style={{
           display: "grid",
-          gridTemplateColumns: GRID,
+          gridTemplateColumns: gridTemplate,
           gap: 8,
           padding: "6px 8px",
           fontWeight: 600,
@@ -245,10 +324,36 @@ export function RegisterTable({
             )
           }
         />
-        {table.getFlatHeaders().map((h) => (
+        {table.getHeaderGroups()[0].headers.map((h) => (
           <Box key={h.id}>{flexRender(h.column.columnDef.header, h.getContext())}</Box>
         ))}
-        <Box />
+        <Group justify="flex-end">
+          <Menu position="bottom-end" withinPortal closeOnItemClick={false}>
+            <Menu.Target>
+              <ActionIcon
+                variant="subtle"
+                size="sm"
+                color="gray"
+                aria-label={t("register.columns")}
+              >
+                <IconAdjustmentsHorizontal size={16} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Label>{t("register.columns")}</Menu.Label>
+              {TOGGLEABLE.map((c) => (
+                <Menu.Item key={c.id} onClick={() => table.getColumn(c.id)?.toggleVisibility()}>
+                  <Checkbox
+                    size="xs"
+                    readOnly
+                    checked={columnVisibility[c.id] ?? c.def}
+                    label={t(COL_LABEL[c.id])}
+                  />
+                </Menu.Item>
+              ))}
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
       </Box>
       <div
         ref={parentRef}
@@ -274,7 +379,7 @@ export function RegisterTable({
                   transform: `translateY(${vi.start}px)`,
                   height: ROW_HEIGHT,
                   display: "grid",
-                  gridTemplateColumns: GRID,
+                  gridTemplateColumns: gridTemplate,
                   gap: 8,
                   alignItems: "center",
                   padding: "0 8px",
