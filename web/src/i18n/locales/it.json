@@ -306,7 +306,7 @@
   },
   "status": {
     "0": "Nessuno",
-    "1": "Compensato",
+    "1": "Non riconciliato",
     "2": "Riconciliato",
     "3": "Promemoria",
     "4": "Annullato"
