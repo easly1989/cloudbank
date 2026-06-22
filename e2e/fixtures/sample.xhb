@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<homebank v="1.4" d="050700">
+  <properties title="My Money" curr="1"/>
+  <cur key="1" flags="0" iso="EUR" name="Euro" symb="€" syprf="0" dchar="," gchar=" " frac="2" rate="0" mdate="0"/>
+  <cur key="2" flags="0" iso="USD" name="US Dollar" symb="$" syprf="1" dchar="." gchar="," frac="2" rate="1.1" mdate="0"/>
+  <account key="1" flags="0" pos="1" type="1" curr="1" name="Checking" initial="100.0" minimum="0"/>
+  <account key="2" flags="0" pos="2" type="2" curr="1" name="Savings" initial="50.0" minimum="0"/>
+  <account key="3" flags="0" pos="3" type="1" curr="2" name="USD Wallet" initial="200.0" minimum="0"/>
+  <pay key="1" name="Shop"/>
+  <cat key="1" flags="8" name="Food" b0="-100.0"/>
+  <cat key="2" flags="1" parent="1" name="Groceries"/>
+  <cat key="3" flags="2" name="Salary"/>
+  <tag key="1" name="vacation"/>
+  <ope date="739617" amount="-50.0" account="1" paymode="3" st="1" flags="0" payee="1" category="2" wording="lunch" tags="vacation"/>
+  <ope date="739618" amount="-30.0" account="1" paymode="3" st="0" flags="0" wording="split shop" scat="2||1" samt="-20.0||-10.0" smem="veg||other"/>
+  <ope date="739619" amount="200.0" account="1" paymode="4" st="0" flags="0" category="3" wording="pay"/>
+  <ope date="739620" amount="-25.0" account="1" paymode="5" st="0" flags="0" dst_account="2" kxfer="7" wording="to savings"/>
+  <ope date="739620" amount="25.0" account="2" paymode="5" st="0" flags="0" kxfer="7" wording="from checking"/>
+  <asg key="1" flags="2" field="0" name="UBER" category="2"/>
+  <fav account="1" amount="-10.0" paymode="4" flags="0" category="2" wording="Coffee"/>
+  <fav account="1" amount="-100.0" paymode="4" flags="1" category="1" wording="Rent" nextdate="739617" every="1" unit="2" limit="0" weekend="0"/>
+</homebank>

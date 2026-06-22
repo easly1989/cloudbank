@@ -1,0 +1,13 @@
+{
+  "name": "cloudbank-e2e",
+  "private": true,
+  "version": "0.0.0",
+  "description": "End-to-end smoke tests for CloudBank (Playwright).",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.49.1"
+  }
+}
