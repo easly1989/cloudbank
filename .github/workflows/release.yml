@@ -1,12 +1,24 @@
 name: Release
 
-# Publishing a GitHub release builds the stable image. Per the project's tag
-# convention, the latest stable release is tagged `:main`, alongside the
-# version tags `:vX.Y.Z` and `:vX.Y`.
+# Builds and pushes the *stable* container image. Per the project's tag
+# convention, the latest stable build is tagged `:main`, alongside the version
+# tags `:vX.Y.Z` and `:vX.Y` when a version is given.
+#
+# Triggers:
+#   - Publishing a GitHub Release    -> version = the release tag (e.g. v1.0.0)
+#   - Manual run (workflow_dispatch) -> optionally pass a version; with no
+#     version it publishes only `:main` from the chosen branch. Use this to
+#     (re)publish `:main` on demand without cutting a Release.
 
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag to also publish (e.g. v1.0.0). Leave blank to publish only :main."
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -31,16 +43,35 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE }}
-          # `:main` = latest stable release (project convention); plus semver tags.
-          tags: |
-            type=raw,value=main
-            type=semver,pattern=v{{version}}
-            type=semver,pattern=v{{major}}.{{minor}}
+      - name: Resolve version and tags
+        id: vars
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+
+          # `:main` is always published (project convention = latest stable).
+          tags="${IMAGE}:main"
+          build_version="main"
+
+          if [ -n "$VERSION" ]; then
+            build_version="$VERSION"
+            tags="${tags},${IMAGE}:${VERSION}"
+            # vX.Y.Z -> also publish the rolling :vX.Y tag.
+            if echo "$VERSION" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+'; then
+              minor="$(echo "$VERSION" | grep -oE '^v[0-9]+\.[0-9]+')"
+              tags="${tags},${IMAGE}:${minor}"
+            fi
+          fi
+
+          {
+            echo "tags=$tags"
+            echo "build_version=$build_version"
+          } >> "$GITHUB_OUTPUT"
+          echo "Publishing: $tags (VERSION=$build_version)"
 
       - name: Build and push (amd64 + arm64)
         uses: docker/build-push-action@v6
@@ -49,8 +80,14 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
-            VERSION=${{ github.event.release.tag_name }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+            VERSION=${{ steps.vars.outputs.build_version }}
+          tags: ${{ steps.vars.outputs.tags }}
+          # `image.source` links the GHCR package to this repository (provenance,
+          # and package-visibility inheritance when the repo is public).
+          labels: |
+            org.opencontainers.image.source=https://github.com/easly1989/cloudbank
+            org.opencontainers.image.version=${{ steps.vars.outputs.build_version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=AGPL-3.0
           cache-from: type=gha
           cache-to: type=gha,mode=max
