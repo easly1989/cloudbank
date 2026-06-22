@@ -588,6 +588,9 @@ export const listTemplates = (walletId: number) =>
 export const createTemplate = (walletId: number, body: TemplateInput) =>
   api.post<Template>(`/api/v1/wallets/${walletId}/templates`, body);
 
+export const updateTemplate = (walletId: number, id: number, body: TemplateInput) =>
+  api.patch<Template>(`/api/v1/wallets/${walletId}/templates/${id}`, body);
+
 export const createTemplateFromTransaction = (
   walletId: number,
   transactionId: number,

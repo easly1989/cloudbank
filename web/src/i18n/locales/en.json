@@ -228,7 +228,12 @@
       "1": "Move to previous Friday",
       "2": "Move to next Monday",
       "3": "Skip weekend occurrences"
-    }
+    },
+    "transactionDetails": "Transaction",
+    "fromTemplate": "Prefill from a saved template",
+    "fromTemplatePlaceholder": "Optional",
+    "transferNote": "This is a transfer; only the amount, memo and schedule can be changed here.",
+    "untitled": "Scheduled"
   },
   "templates": {
     "apply": "Use a template",
