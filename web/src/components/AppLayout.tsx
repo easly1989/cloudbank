@@ -35,6 +35,7 @@ import { NavLink as RouterNavLink, Outlet, useNavigate } from "react-router-dom"
 
 import { useAuth, useLogout } from "../auth/AuthProvider";
 import { useWallet } from "../wallet/WalletProvider";
+import { AppFooter } from "./AppFooter";
 import { ColorSchemeToggle } from "./ColorSchemeToggle";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
@@ -131,6 +132,7 @@ export function AppLayout() {
     <AppShell
       header={{ height: 56 }}
       navbar={{ width: 240, breakpoint: "sm", collapsed: { mobile: !opened } }}
+      footer={{ height: 36 }}
       padding="md"
     >
       <AppShell.Header>
@@ -186,6 +188,10 @@ export function AppLayout() {
       <AppShell.Main>
         <Outlet />
       </AppShell.Main>
+
+      <AppShell.Footer>
+        <AppFooter />
+      </AppShell.Footer>
     </AppShell>
   );
 }

@@ -31,6 +31,8 @@ jobs:
           if [ -n "$unformatted" ]; then
             echo "These files need gofmt:"; echo "$unformatted"; exit 1
           fi
+      - name: Embedded OpenAPI spec is in sync
+        run: diff -u ../api/openapi.yaml internal/httpapi/openapi.yaml
       - name: Vet
         run: go vet ./...
       - name: golangci-lint

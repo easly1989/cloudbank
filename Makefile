@@ -28,6 +28,8 @@ gen:
 	cd $(SERVER_DIR) && sqlc generate
 	@echo ">> regenerating TypeScript API types from api/openapi.yaml"
 	cd $(WEB_DIR) && npm run gen:api
+	@echo ">> syncing the embedded OpenAPI spec (served at /api/docs)"
+	cp api/openapi.yaml $(SERVER_DIR)/internal/httpapi/openapi.yaml
 
 lint: lint-go lint-web
 

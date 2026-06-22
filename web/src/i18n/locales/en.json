@@ -1,7 +1,9 @@
 {
   "app": {
     "name": "CloudBank",
-    "tagline": "Self-hosted personal finance"
+    "tagline": "Self-hosted personal finance",
+    "sourceCode": "Source code",
+    "apiDocs": "API docs"
   },
   "nav": {
     "dashboard": "Dashboard",
