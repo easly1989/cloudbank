@@ -93,6 +93,14 @@ Images are published to **GHCR**: `ghcr.io/easly1989/cloudbank`.
 >
 > In other words, `:latest` is the development nightly, and `:main` is the stable release. This is the opposite of the usual Docker convention, so pin deliberately.
 
+**Availability:** `:latest` is published on every push to `main` (nightly
+workflow). **`:main`** and the version tags are published by the **Release**
+workflow — either by publishing a GitHub Release, or by running that workflow
+manually from the **Actions** tab (it has a `workflow_dispatch` trigger, with an
+optional version input). If a pull fails with `unauthorized`, the GHCR package is
+private: make it public (package → Settings → Change visibility) or
+`docker login ghcr.io` with a token that has `read:packages`.
+
 ## License
 
 CloudBank is licensed under the **GNU Affero General Public License v3.0** — see [LICENSE](LICENSE). If you run a modified version as a network service, the AGPL requires you to offer your modified source to its users.
