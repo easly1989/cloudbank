@@ -228,7 +228,12 @@
       "1": "Sposta al venerdì precedente",
       "2": "Sposta al lunedì successivo",
       "3": "Salta le occorrenze nel weekend"
-    }
+    },
+    "transactionDetails": "Transazione",
+    "fromTemplate": "Precompila da un modello salvato",
+    "fromTemplatePlaceholder": "Facoltativo",
+    "transferNote": "È un trasferimento; qui puoi cambiare solo importo, note e pianificazione.",
+    "untitled": "Pianificata"
   },
   "templates": {
     "apply": "Usa un modello",
