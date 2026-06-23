@@ -484,7 +484,8 @@
     "noSpending": "Nessuna spesa in questo periodo.",
     "other": "Altro",
     "upcoming": "Programmate in arrivo",
-    "noUpcoming": "Nessuna transazione programmata in arrivo."
+    "noUpcoming": "Nessuna transazione programmata in arrivo.",
+    "quickAdd": "Aggiungi veloce"
   },
   "import": {
     "title": "Importa",
