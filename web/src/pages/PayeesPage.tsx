@@ -28,6 +28,7 @@ import {
   mergePayee,
   updatePayee,
 } from "../api/client";
+import { rowEditProps, stopRowEdit } from "../rowEdit";
 import { useWallet } from "../wallet/WalletProvider";
 import { MergeModal } from "./CategoriesPage";
 
@@ -98,10 +99,16 @@ export function PayeesPage() {
           </Table.Thead>
           <Table.Tbody>
             {payees.map((p) => (
-              <Table.Tr key={p.id}>
+              <Table.Tr
+                key={p.id}
+                {...rowEditProps(() => {
+                  setEditing(p);
+                  form.open();
+                })}
+              >
                 <Table.Td>{p.name}</Table.Td>
                 <Table.Td>{categoryName(p.defaultCategoryId)}</Table.Td>
-                <Table.Td ta="right">
+                <Table.Td ta="right" {...stopRowEdit}>
                   <Menu position="bottom-end" withinPortal>
                     <Menu.Target>
                       <ActionIcon variant="subtle" aria-label={t("payees.actions")}>
