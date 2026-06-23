@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"testing"
+	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
@@ -169,5 +170,53 @@ func TestDashboardTopPayees(t *testing.T) {
 	}
 	if data.TopCategories[1].CategoryID != fuel.ID || data.TopCategories[1].Amount != 2000 {
 		t.Fatalf("slice 1 = %+v, want Fuel 2000", data.TopCategories[1])
+	}
+}
+
+// The income/expense series buckets by month over a trailing 12-month window,
+// stores expenses as positive magnitudes, excludes internal transfers and drops
+// anything older than the window.
+func TestDashboardIncomeExpense(t *testing.T) {
+	ds, ts, q, wid := newFixture(t)
+	ctx := context.Background()
+	acc := account(t, q, wid, eur(t, q, wid), 0, 0, "Main")
+
+	now := time.Now().UTC()
+	thisMonth := now.Format("2006-01")
+	// A safe day-15 date this many whole months before now.
+	d := func(monthsAgo int) string {
+		m := time.Date(now.Year(), now.Month(), 15, 0, 0, 0, 0, time.UTC).AddDate(0, -monthsAgo, 0)
+		return m.Format("2006-01-02")
+	}
+
+	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: d(0), Amount: 5000})  // income this month
+	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: d(0), Amount: -2000}) // expense this month
+	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: d(2), Amount: -1000}) // expense 2 months ago
+	// An internal transfer leg (payment mode 5) must not count as income.
+	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: d(0), Amount: 7777, PaymentMode: 5})
+	// Older than the 12-month window: excluded.
+	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: d(13), Amount: -9999})
+
+	data, err := ds.Build(ctx, wid, "2026-01-01", "2026-01-31", GroupByCategory)
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if len(data.IncomeExpense) != 12 {
+		t.Fatalf("incomeExpense length = %d, want 12", len(data.IncomeExpense))
+	}
+	cur := data.IncomeExpense[11] // current month is last
+	if cur.Month != thisMonth || cur.Income != 5000 || cur.Expense != 2000 {
+		t.Fatalf("current month = %+v, want {%s 5000 2000} (transfer excluded)", cur, thisMonth)
+	}
+	twoAgo := data.IncomeExpense[9] // 11 - 2
+	if twoAgo.Income != 0 || twoAgo.Expense != 1000 {
+		t.Fatalf("two months ago = %+v, want income 0 expense 1000", twoAgo)
+	}
+	var total int64
+	for _, p := range data.IncomeExpense {
+		total += p.Income + p.Expense
+	}
+	if total != 8000 { // 5000 + 2000 + 1000 (the -9999 is out of window)
+		t.Fatalf("window total = %d, want 8000 (older row excluded)", total)
 	}
 }
