@@ -29,6 +29,7 @@ import {
   mergeCategory,
   updateCategory,
 } from "../api/client";
+import { rowEditProps, stopRowEdit } from "../rowEdit";
 import { useWallet } from "../wallet/WalletProvider";
 
 export function CategoriesPage() {
@@ -83,21 +84,25 @@ export function CategoriesPage() {
   if (!currentWallet) return null;
 
   const renderActions = (c: Category) => (
-    <Menu position="bottom-end" withinPortal>
-      <Menu.Target>
-        <ActionIcon variant="subtle" aria-label={t("categories.actions")}>
-          <IconDots size={16} />
-        </ActionIcon>
-      </Menu.Target>
-      <Menu.Dropdown>
-        <Menu.Item onClick={() => openEdit(c)}>{t("categories.edit")}</Menu.Item>
-        {!c.parentId && <Menu.Item onClick={() => openAdd(c)}>{t("categories.addSub")}</Menu.Item>}
-        <Menu.Item onClick={() => setMergeFrom(c)}>{t("categories.merge")}</Menu.Item>
-        <Menu.Item color="red" onClick={() => setDeleteTarget(c)}>
-          {t("categories.delete")}
-        </Menu.Item>
-      </Menu.Dropdown>
-    </Menu>
+    <span {...stopRowEdit}>
+      <Menu position="bottom-end" withinPortal>
+        <Menu.Target>
+          <ActionIcon variant="subtle" aria-label={t("categories.actions")}>
+            <IconDots size={16} />
+          </ActionIcon>
+        </Menu.Target>
+        <Menu.Dropdown>
+          <Menu.Item onClick={() => openEdit(c)}>{t("categories.edit")}</Menu.Item>
+          {!c.parentId && (
+            <Menu.Item onClick={() => openAdd(c)}>{t("categories.addSub")}</Menu.Item>
+          )}
+          <Menu.Item onClick={() => setMergeFrom(c)}>{t("categories.merge")}</Menu.Item>
+          <Menu.Item color="red" onClick={() => setDeleteTarget(c)}>
+            {t("categories.delete")}
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
+    </span>
   );
 
   return (
@@ -113,7 +118,7 @@ export function CategoriesPage() {
 
       {tops.map((top) => (
         <Card withBorder key={top.id} p="sm">
-          <Group justify="space-between">
+          <Group justify="space-between" {...rowEditProps(() => openEdit(top))}>
             <Group gap="xs">
               <Text fw={600}>{top.name}</Text>
               <Badge color={top.isIncome ? "teal" : "gray"} size="sm">
@@ -123,7 +128,13 @@ export function CategoriesPage() {
             {renderActions(top)}
           </Group>
           {childrenOf(top.id).map((child) => (
-            <Group key={child.id} justify="space-between" pl="lg" mt={4}>
+            <Group
+              key={child.id}
+              justify="space-between"
+              pl="lg"
+              mt={4}
+              {...rowEditProps(() => openEdit(child))}
+            >
               <Text size="sm">{child.name}</Text>
               {renderActions(child)}
             </Group>

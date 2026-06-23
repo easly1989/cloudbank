@@ -48,6 +48,7 @@ import {
   updateSchedule,
   updateTemplate,
 } from "../api/client";
+import { rowEditProps, stopRowEdit } from "../rowEdit";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
 
@@ -131,7 +132,13 @@ export function SchedulesPage() {
           </Table.Thead>
           <Table.Tbody>
             {schedules.map((s) => (
-              <Table.Tr key={s.id}>
+              <Table.Tr
+                key={s.id}
+                {...rowEditProps(() => {
+                  setEditing(s);
+                  form.open();
+                })}
+              >
                 <Table.Td>{s.templateName}</Table.Td>
                 <Table.Td>
                   {t("schedules.cadence", { n: s.everyN, unit: t(`schedules.units.${s.unit}`) })}
@@ -143,7 +150,7 @@ export function SchedulesPage() {
                     {s.autoPost ? t("schedules.autoLabel") : t("schedules.remindLabel")}
                   </Badge>
                 </Table.Td>
-                <Table.Td ta="right">
+                <Table.Td ta="right" {...stopRowEdit}>
                   <Group gap={4} justify="flex-end" wrap="nowrap">
                     <ActionIcon
                       variant="subtle"
