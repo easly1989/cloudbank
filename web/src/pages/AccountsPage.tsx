@@ -33,6 +33,7 @@ import {
   updateAccount,
 } from "../api/client";
 import { formatMinor } from "../money";
+import { rowEditProps, stopRowEdit } from "../rowEdit";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
 
@@ -110,7 +111,7 @@ export function AccountsPage() {
             <Table verticalSpacing="xs">
               <Table.Tbody>
                 {group.map((a) => (
-                  <Table.Tr key={a.id}>
+                  <Table.Tr key={a.id} {...rowEditProps(() => openEdit(a))}>
                     <Table.Td>
                       <Text fw={500}>{a.name}</Text>
                       {a.institution && (
@@ -137,7 +138,7 @@ export function AccountsPage() {
                         })}
                       </Text>
                     </Table.Td>
-                    <Table.Td ta="right" w={90}>
+                    <Table.Td ta="right" w={90} {...stopRowEdit}>
                       <Group gap={4} justify="flex-end" wrap="nowrap">
                         <ActionIcon
                           variant="subtle"
