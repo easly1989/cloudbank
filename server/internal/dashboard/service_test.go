@@ -65,7 +65,7 @@ func TestDashboardMatchesRegisterHeader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Register: %v", err)
 	}
-	data, err := ds.Build(ctx, wid, "2000-01-01", "2099-12-31")
+	data, err := ds.Build(ctx, wid, "2000-01-01", "2099-12-31", GroupByCategory)
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestDashboardExcludesNoSummaryAndConvertsBase(t *testing.T) {
 	account(t, q, wid, usd.ID, 5000, 0, "USD-B")   // 50.00 USD → 55.00 EUR
 	account(t, q, wid, base, 99999, 1, "Excluded") // excluded (no_summary)
 
-	data, err := ds.Build(ctx, wid, "2026-01-01", "2026-01-31")
+	data, err := ds.Build(ctx, wid, "2026-01-01", "2026-01-31", GroupByCategory)
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestDashboardTopCategories(t *testing.T) {
 	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: "2026-03-15", Amount: 9000, CategoryID: iptr(food.ID)}) // income: excluded
 	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: "2026-09-01", Amount: -8000, CategoryID: iptr(car.ID)}) // out of range
 
-	data, err := ds.Build(ctx, wid, "2026-03-01", "2026-03-31")
+	data, err := ds.Build(ctx, wid, "2026-03-01", "2026-03-31", GroupByCategory)
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
@@ -135,5 +135,39 @@ func TestDashboardTopCategories(t *testing.T) {
 	}
 	if data.TopCategories[1].CategoryID != car.ID || data.TopCategories[1].Amount != 2000 {
 		t.Fatalf("slice 1 = %+v, want Car 2000", data.TopCategories[1])
+	}
+}
+
+// With groupBy=payee the spending breakdown buckets expenses by payee, ignores
+// income, and respects the date range. The slices reuse CategoryID for the
+// payee id.
+func TestDashboardTopPayees(t *testing.T) {
+	ds, ts, q, wid := newFixture(t)
+	ctx := context.Background()
+	acc := account(t, q, wid, eur(t, q, wid), 0, 0, "Main")
+
+	shop, _ := q.InsertPayee(ctx, db.InsertPayeeParams{WalletID: wid, Name: "Shop"})
+	fuel, _ := q.InsertPayee(ctx, db.InsertPayeeParams{WalletID: wid, Name: "Fuel"})
+
+	pid := func(id int64) *int64 { return &id }
+	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: "2026-03-10", Amount: -3000, PayeeID: pid(shop.ID)})
+	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: "2026-03-12", Amount: -1500, PayeeID: pid(shop.ID)})
+	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: "2026-03-12", Amount: -2000, PayeeID: pid(fuel.ID)})
+	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: "2026-03-15", Amount: 9000, PayeeID: pid(shop.ID)})  // income: excluded
+	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: "2026-09-01", Amount: -8000, PayeeID: pid(fuel.ID)}) // out of range
+
+	data, err := ds.Build(ctx, wid, "2026-03-01", "2026-03-31", GroupByPayee)
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if len(data.TopCategories) != 2 {
+		t.Fatalf("top payees = %+v, want 2", data.TopCategories)
+	}
+	// Shop (3000+1500=4500), then Fuel (2000), sorted desc.
+	if data.TopCategories[0].CategoryID != shop.ID || data.TopCategories[0].Amount != 4500 {
+		t.Fatalf("slice 0 = %+v, want Shop 4500", data.TopCategories[0])
+	}
+	if data.TopCategories[1].CategoryID != fuel.ID || data.TopCategories[1].Amount != 2000 {
+		t.Fatalf("slice 1 = %+v, want Fuel 2000", data.TopCategories[1])
 	}
 }

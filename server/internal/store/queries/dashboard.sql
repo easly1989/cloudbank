@@ -31,3 +31,15 @@ WHERE t.wallet_id = sqlc.arg(wallet_id)
   AND s.category_id IS NOT NULL
   AND t.date >= sqlc.arg(from_date)
   AND t.date <= sqlc.arg(to_date);
+
+-- name: PayeeExpenseTotals :many
+-- Payee amounts in a date range. Payee is a per-transaction attribute, so split
+-- transactions contribute via their parent's total amount; each row carries the
+-- account currency so the app can convert to base.
+SELECT t.payee_id AS payee_id, t.amount AS amount, a.currency_id AS currency_id
+FROM transactions t
+JOIN accounts a ON a.id = t.account_id
+WHERE t.wallet_id = sqlc.arg(wallet_id)
+  AND t.payee_id IS NOT NULL
+  AND t.date >= sqlc.arg(from_date)
+  AND t.date <= sqlc.arg(to_date);

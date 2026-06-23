@@ -114,6 +114,10 @@ type Querier interface {
 	ListWalletsForUser(ctx context.Context, userID int64) ([]ListWalletsForUserRow, error)
 	NextAccountPosition(ctx context.Context, walletID int64) (int64, error)
 	NextAssignmentPosition(ctx context.Context, walletID int64) (int64, error)
+	// Payee amounts in a date range. Payee is a per-transaction attribute, so split
+	// transactions contribute via their parent's total amount; each row carries the
+	// account currency so the app can convert to base.
+	PayeeExpenseTotals(ctx context.Context, arg PayeeExpenseTotalsParams) ([]PayeeExpenseTotalsRow, error)
 	ReassignPayeeCategory(ctx context.Context, arg ReassignPayeeCategoryParams) error
 	ReassignSplitCategory(ctx context.Context, arg ReassignSplitCategoryParams) error
 	ReassignTransactionCategory(ctx context.Context, arg ReassignTransactionCategoryParams) error
