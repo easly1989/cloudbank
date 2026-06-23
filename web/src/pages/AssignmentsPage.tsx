@@ -37,6 +37,7 @@ import {
   testAssignment,
   updateAssignment,
 } from "../api/client";
+import { stopRowEdit } from "../rowEdit";
 import { useWallet } from "../wallet/WalletProvider";
 
 const FIELDS: MatchField[] = ["memo", "payee", "both"];
@@ -170,7 +171,11 @@ export function AssignmentsPage() {
                 onDragStart={() => setDragId(r.id)}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => drop(r.id)}
-                style={{ cursor: "grab", opacity: dragId === r.id ? 0.5 : 1 }}
+                onDoubleClick={() => {
+                  setEditing(r);
+                  form.open();
+                }}
+                style={{ cursor: "grab", userSelect: "none", opacity: dragId === r.id ? 0.5 : 1 }}
               >
                 <Table.Td>
                   <IconGripVertical size={16} opacity={0.5} />
@@ -206,7 +211,7 @@ export function AssignmentsPage() {
                       .join(", ") || "—"}
                   </Text>
                 </Table.Td>
-                <Table.Td ta="right">
+                <Table.Td ta="right" {...stopRowEdit}>
                   <Group gap={4} justify="flex-end" wrap="nowrap">
                     <ActionIcon
                       variant="subtle"

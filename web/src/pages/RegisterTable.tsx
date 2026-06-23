@@ -24,6 +24,7 @@ import { updateMe, type Account, type RegisterRow, type User } from "../api/clie
 import { useAuth } from "../auth/AuthProvider";
 import { useDateFormat } from "../dates";
 import { formatMinor, type MoneyFormat } from "../money";
+import { stopRowEdit } from "../rowEdit";
 
 const ROW_HEIGHT = 40;
 // Per-column grid widths (fixed so virtualized rows stay aligned). Status is
@@ -388,11 +389,13 @@ export function RegisterTable({
               <div
                 key={row.id}
                 onClick={() => setCursorId(r.id)}
+                onDoubleClick={() => onEdit(r)}
                 style={{
                   position: "absolute",
                   top: 0,
                   left: 0,
                   width: "100%",
+                  userSelect: "none",
                   transform: `translateY(${vi.start}px)`,
                   height: ROW_HEIGHT,
                   display: "grid",
@@ -426,7 +429,7 @@ export function RegisterTable({
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </Box>
                 ))}
-                <Group gap={2} justify="flex-end" wrap="nowrap">
+                <Group gap={2} justify="flex-end" wrap="nowrap" {...stopRowEdit}>
                   <ActionIcon
                     variant="subtle"
                     size="sm"
