@@ -601,6 +601,7 @@
     "themeAuto": "Auto",
     "themeLight": "Light",
     "themeDark": "Dark",
+    "accent": "Accent colour",
     "dateFormat": "Date format",
     "dateLong": "Locale (e.g. Jan 31, 2026)",
     "startScreen": "Start screen",

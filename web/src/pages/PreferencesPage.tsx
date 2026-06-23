@@ -1,7 +1,9 @@
 import {
   Button,
   Card,
+  ColorSwatch,
   Group,
+  Input,
   SegmentedControl,
   Select,
   Stack,
@@ -10,6 +12,7 @@ import {
   useMantineColorScheme,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import { IconCheck } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -17,6 +20,7 @@ import { useTranslation } from "react-i18next";
 import { ApiError, listAccounts, updateMe, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { supportedLanguages } from "../i18n";
+import { ACCENT_COLORS } from "../theme";
 import { useWallet } from "../wallet/WalletProvider";
 
 const langLabels: Record<string, string> = { en: "English", it: "Italiano" };
@@ -45,6 +49,7 @@ export function PreferencesPage() {
     prefs.defaultAccountId ? String(prefs.defaultAccountId) : null,
   );
   const [smartAmount, setSmartAmount] = useState(prefs.smartAmountInput ?? true);
+  const [accent, setAccent] = useState(prefs.themeAccent ?? "teal");
 
   const save = useMutation({
     mutationFn: () =>
@@ -59,6 +64,7 @@ export function PreferencesPage() {
           startScreen,
           defaultAccountId: defaultAccount ? Number(defaultAccount) : undefined,
           smartAmountInput: smartAmount,
+          themeAccent: accent,
         },
       }),
     onSuccess: (updated: User) => {
@@ -100,6 +106,23 @@ export function PreferencesPage() {
               ]}
             />
           </div>
+          <Input.Wrapper label={t("preferences.accent")}>
+            <Group gap="xs" mt={4}>
+              {ACCENT_COLORS.map((c) => (
+                <ColorSwatch
+                  key={c}
+                  component="button"
+                  type="button"
+                  color={`var(--mantine-color-${c}-6)`}
+                  onClick={() => setAccent(c)}
+                  aria-label={c}
+                  style={{ color: "#fff", cursor: "pointer" }}
+                >
+                  {accent === c && <IconCheck size={14} />}
+                </ColorSwatch>
+              ))}
+            </Group>
+          </Input.Wrapper>
           <Select
             label={t("preferences.dateFormat")}
             data={[
