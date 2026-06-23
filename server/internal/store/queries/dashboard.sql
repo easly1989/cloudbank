@@ -43,3 +43,18 @@ WHERE t.wallet_id = sqlc.arg(wallet_id)
   AND t.payee_id IS NOT NULL
   AND t.date >= sqlc.arg(from_date)
   AND t.date <= sqlc.arg(to_date);
+
+-- name: MonthlyIncomeExpense :many
+-- Per-month income (amount > 0) and expense (amount < 0) totals in a date range,
+-- excluding internal transfers (payment_mode 5), with each row's account
+-- currency for base conversion. Drives the dashboard income/expense chart.
+SELECT CAST(strftime('%Y-%m', t.date) AS TEXT) AS month, a.currency_id AS currency_id,
+       CAST(SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) AS INTEGER) AS income,
+       CAST(SUM(CASE WHEN t.amount < 0 THEN t.amount ELSE 0 END) AS INTEGER) AS expense
+FROM transactions t
+JOIN accounts a ON a.id = t.account_id
+WHERE t.wallet_id = sqlc.arg(wallet_id)
+  AND t.payment_mode <> 5
+  AND t.date >= sqlc.arg(from_date)
+  AND t.date <= sqlc.arg(to_date)
+GROUP BY month, a.currency_id;

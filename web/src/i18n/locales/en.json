@@ -491,8 +491,18 @@
     "groupBy": "Group by",
     "byCategory": "Category",
     "byPayee": "Payee",
+    "incomeExpense": "Income vs expense",
+    "income": "Income",
+    "expense": "Expense",
+    "total": "Total",
+    "subtotal": "Subtotal",
     "upcoming": "Upcoming scheduled",
+    "tabUpcoming": "Upcoming",
+    "tabScheduled": "Scheduled",
+    "tabReminders": "Reminders",
     "noUpcoming": "No upcoming scheduled transactions.",
+    "noScheduled": "No scheduled transactions.",
+    "noReminders": "No reminders.",
     "quickAdd": "Quick add"
   },
   "import": {
