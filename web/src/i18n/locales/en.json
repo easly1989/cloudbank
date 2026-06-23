@@ -12,6 +12,7 @@
     "accounts": "Accounts",
     "transactions": "Transactions",
     "schedules": "Schedules",
+    "templates": "Templates",
     "assignments": "Rules",
     "budget": "Budget",
     "reports": "Reports",
@@ -243,7 +244,16 @@
     "applyPlaceholder": "Pick a template to pre-fill…",
     "saveAs": "Save as template",
     "namePrompt": "Template name:",
-    "saved": "Template saved"
+    "saved": "Template saved",
+    "title": "Templates",
+    "add": "Add template",
+    "empty": "No templates yet.",
+    "name": "Name",
+    "edit": "Edit template",
+    "delete": "Delete template",
+    "create": "New template",
+    "confirmDelete": "Delete template \"{{name}}\"?",
+    "complexNote": "This template has splits or is a transfer; edit its details from a transaction. You can still rename it here."
   },
   "register": {
     "bank": "Bank",

@@ -19,6 +19,7 @@ import { BudgetPage } from "./pages/BudgetPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { SchedulesPage } from "./pages/SchedulesPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { TemplatesPage } from "./pages/TemplatesPage";
 import { SetupPage } from "./pages/SetupPage";
 import { UsersPage } from "./pages/admin/UsersPage";
 import { WalletProvider, useWallet } from "./wallet/WalletProvider";
@@ -87,6 +88,7 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="payees" element={<PayeesPage />} />
         <Route path="schedules" element={<SchedulesPage />} />
+        <Route path="templates" element={<TemplatesPage />} />
         <Route path="assignments" element={<AssignmentsPage />} />
         <Route path="budget" element={<BudgetPage />} />
         <Route path="reports" element={<ReportsPage />} />
