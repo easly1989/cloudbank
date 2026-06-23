@@ -605,6 +605,8 @@
     "startScreen": "Start screen",
     "defaultAccount": "Default account",
     "noDefaultAccount": "None",
+    "smartAmount": "Smart amount entry",
+    "smartAmountHint": "Type 12.40 or 12,40 — both are read as decimals (HomeBank style)",
     "save": "Save",
     "saved": "Preferences saved"
   },

@@ -62,7 +62,8 @@ import {
   updateTransaction,
   updateTransfer,
 } from "../api/client";
-import { formatMinor, type MoneyFormat, parseMinor } from "../money";
+import { formatMinor, type MoneyFormat } from "../money";
+import { useAmountParser } from "../useAmountParser";
 import { QuickAdd } from "../components/QuickAdd";
 import { useWallet } from "../wallet/WalletProvider";
 import { RegisterFilters } from "./RegisterFilters";
@@ -525,8 +526,9 @@ function ReconcilePanel({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
+  const parseAmount = useAmountParser();
   const [statement, setStatement] = useState("");
-  const statementMinor = parseMinor(
+  const statementMinor = parseAmount(
     statement,
     account.currencyFracDigits,
     account.currencyDecimalChar,
@@ -600,6 +602,7 @@ function TransactionForm({
   onTemplateSaved: () => void;
 }) {
   const { t } = useTranslation();
+  const parseAmount = useAmountParser();
   const payeesQuery = useQuery({
     queryKey: ["payees", walletId],
     queryFn: () => listPayees(walletId),
@@ -650,9 +653,9 @@ function TransactionForm({
   }, [opened, editing?.id]);
 
   const sign = direction === "expense" ? -1 : 1;
-  const totalMinor = (parseMinor(amount, fd, dc) ?? 0) * sign;
+  const totalMinor = (parseAmount(amount, fd, dc) ?? 0) * sign;
   const splitSumMinor = splits.reduce(
-    (sum, s) => sum + (parseMinor(s.amount, fd, dc) ?? 0) * sign,
+    (sum, s) => sum + (parseAmount(s.amount, fd, dc) ?? 0) * sign,
     0,
   );
   const splitMismatch = isSplit && splits.length > 0 && splitSumMinor !== totalMinor;
@@ -681,7 +684,7 @@ function TransactionForm({
         splits: isSplit
           ? splits.map<Split>((s) => ({
               categoryId: s.categoryId ? Number(s.categoryId) : null,
-              amount: (parseMinor(s.amount, fd, dc) ?? 0) * sign,
+              amount: (parseAmount(s.amount, fd, dc) ?? 0) * sign,
             }))
           : [],
       };
@@ -738,7 +741,7 @@ function TransactionForm({
         splits: isSplit
           ? splits.map<Split>((s) => ({
               categoryId: s.categoryId ? Number(s.categoryId) : null,
-              amount: (parseMinor(s.amount, fd, dc) ?? 0) * sign,
+              amount: (parseAmount(s.amount, fd, dc) ?? 0) * sign,
             }))
           : [],
       }),
@@ -990,6 +993,7 @@ function TransferForm({
   onTemplateSaved: () => void;
 }) {
   const { t } = useTranslation();
+  const parseAmount = useAmountParser();
 
   const transferQuery = useQuery({
     queryKey: ["transfer", walletId, editingId],
@@ -1042,10 +1046,11 @@ function TransferForm({
   const crossCurrency =
     !!fromAccount && !!toAccount && fromAccount.currencyId !== toAccount.currencyId;
   const fromMinor = fromAccount
-    ? (parseMinor(fromAmount, fromAccount.currencyFracDigits, fromAccount.currencyDecimalChar) ?? 0)
+    ? (parseAmount(fromAmount, fromAccount.currencyFracDigits, fromAccount.currencyDecimalChar) ??
+      0)
     : 0;
   const toMinor = toAccount
-    ? (parseMinor(toAmount, toAccount.currencyFracDigits, toAccount.currencyDecimalChar) ?? 0)
+    ? (parseAmount(toAmount, toAccount.currencyFracDigits, toAccount.currencyDecimalChar) ?? 0)
     : 0;
 
   const save = useMutation({

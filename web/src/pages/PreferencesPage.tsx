@@ -5,6 +5,7 @@ import {
   SegmentedControl,
   Select,
   Stack,
+  Switch,
   Title,
   useMantineColorScheme,
 } from "@mantine/core";
@@ -43,16 +44,21 @@ export function PreferencesPage() {
   const [defaultAccount, setDefaultAccount] = useState<string | null>(
     prefs.defaultAccountId ? String(prefs.defaultAccountId) : null,
   );
+  const [smartAmount, setSmartAmount] = useState(prefs.smartAmountInput ?? true);
 
   const save = useMutation({
     mutationFn: () =>
       updateMe({
         locale,
         theme,
+        // Spread the existing blob so keys this page doesn't manage (e.g.
+        // registerColumns, dashboard layout) are preserved.
         preferences: {
+          ...prefs,
           dateFormat,
           startScreen,
           defaultAccountId: defaultAccount ? Number(defaultAccount) : undefined,
+          smartAmountInput: smartAmount,
         },
       }),
     onSuccess: (updated: User) => {
@@ -127,6 +133,12 @@ export function PreferencesPage() {
             onChange={setDefaultAccount}
             clearable
             searchable
+          />
+          <Switch
+            label={t("preferences.smartAmount")}
+            description={t("preferences.smartAmountHint")}
+            checked={smartAmount}
+            onChange={(e) => setSmartAmount(e.currentTarget.checked)}
           />
           <Group justify="flex-end">
             <Button onClick={() => save.mutate()} loading={save.isPending}>

@@ -32,7 +32,8 @@ import {
   listCurrencies,
   updateAccount,
 } from "../api/client";
-import { formatMinor, parseMinor } from "../money";
+import { formatMinor } from "../money";
+import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
 
 const ACCOUNT_TYPES: AccountType[] = [
@@ -193,6 +194,7 @@ function AccountModal({
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
+  const parseAmount = useAmountParser();
   const currenciesQuery = useQuery({
     queryKey: ["currencies", walletId],
     queryFn: () => listCurrencies(walletId),
@@ -241,8 +243,8 @@ function AccountModal({
         currencyId: currencyId ? Number(currencyId) : undefined,
         institution,
         number,
-        initialBalance: parseMinor(initial, fd, dc) ?? 0,
-        minimumBalance: parseMinor(minimum, fd, dc) ?? 0,
+        initialBalance: parseAmount(initial, fd, dc) ?? 0,
+        minimumBalance: parseAmount(minimum, fd, dc) ?? 0,
         closed,
         groupName,
       };
