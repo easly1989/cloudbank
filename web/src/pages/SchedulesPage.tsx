@@ -48,7 +48,7 @@ import {
   updateSchedule,
   updateTemplate,
 } from "../api/client";
-import { parseMinor } from "../money";
+import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
 
 const UNITS: ScheduleUnit[] = ["day", "week", "month", "year"];
@@ -214,6 +214,7 @@ function ScheduleForm({
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
+  const parseAmount = useAmountParser();
   const templatesQuery = useQuery({
     queryKey: ["templates", walletId],
     queryFn: () => listTemplates(walletId),
@@ -336,7 +337,7 @@ function ScheduleForm({
   };
 
   const buildTemplate = (): TemplateInput => {
-    const minor = (parseMinor(amount, fd, dc) ?? 0) * (direction === "expense" ? -1 : 1);
+    const minor = (parseAmount(amount, fd, dc) ?? 0) * (direction === "expense" ? -1 : 1);
     const payeeName = payees.find((x) => String(x.id) === payeeId)?.name;
     const name = (memo || payeeName || t("schedules.untitled")).slice(0, 64);
     return {
@@ -392,7 +393,7 @@ function ScheduleForm({
       })),
     [categories],
   );
-  const canSave = !!accountId && (parseMinor(amount, fd, dc) ?? 0) > 0 && !!nextDue;
+  const canSave = !!accountId && (parseAmount(amount, fd, dc) ?? 0) > 0 && !!nextDue;
 
   return (
     <Modal

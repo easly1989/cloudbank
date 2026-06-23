@@ -605,6 +605,8 @@
     "startScreen": "Schermata iniziale",
     "defaultAccount": "Conto predefinito",
     "noDefaultAccount": "Nessuno",
+    "smartAmount": "Inserimento importi smart",
+    "smartAmountHint": "Digita 12.40 o 12,40 — entrambi letti come decimali (stile HomeBank)",
     "save": "Salva",
     "saved": "Preferenze salvate"
   },
