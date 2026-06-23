@@ -1797,7 +1797,7 @@ export interface components {
         CategorySlice: {
             /**
              * Format: int64
-             * @description 0 = the rolled-up Other slice
+             * @description category or payee id depending on groupBy; 0 = the rolled-up Other slice
              */
             categoryId: number;
             name: string;
@@ -4683,9 +4683,11 @@ export interface operations {
     getDashboard: {
         parameters: {
             query?: {
-                /** @description donut range start (defaults to current month) */
+                /** @description spending range start (defaults to current month) */
                 from?: string;
                 to?: string;
+                /** @description how the spending breakdown is bucketed */
+                groupBy?: "category" | "payee";
             };
             header?: never;
             path: {
@@ -4704,6 +4706,7 @@ export interface operations {
                     "application/json": components["schemas"]["Dashboard"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
         };
     };

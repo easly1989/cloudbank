@@ -1327,10 +1327,12 @@ paths:
       operationId: getDashboard
       summary: Home-screen overview (accounts, base-currency totals, spending)
       parameters:
-        - { name: from, in: query, required: false, schema: { type: string }, description: "donut range start (defaults to current month)" }
+        - { name: from, in: query, required: false, schema: { type: string }, description: "spending range start (defaults to current month)" }
         - { name: to, in: query, required: false, schema: { type: string } }
+        - { name: groupBy, in: query, required: false, schema: { type: string, enum: [category, payee], default: category }, description: "how the spending breakdown is bucketed" }
       responses:
         "200": { description: The dashboard., content: { application/json: { schema: { $ref: "#/components/schemas/Dashboard" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/import/csv/preview:
     parameters:
@@ -1813,7 +1815,7 @@ components:
     CategorySlice:
       type: object
       properties:
-        categoryId: { type: integer, format: int64, description: "0 = the rolled-up Other slice" }
+        categoryId: { type: integer, format: int64, description: "category or payee id depending on groupBy; 0 = the rolled-up Other slice" }
         name: { type: string }
         amount: { type: integer, format: int64, description: "positive magnitude, base currency" }
       required: [categoryId, name, amount]
