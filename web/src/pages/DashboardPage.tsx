@@ -1,7 +1,25 @@
 import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   ActionIcon,
   Badge,
   Box,
+  Button,
   Card,
   Group,
   Menu,
@@ -17,12 +35,15 @@ import {
 import { notifications } from "@mantine/notifications";
 import {
   IconAdjustmentsHorizontal,
+  IconEye,
+  IconEyeOff,
+  IconGripVertical,
   IconPlayerPlay,
   IconPlayerSkipForward,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { EChartsOption } from "echarts";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -32,11 +53,13 @@ import {
   type DashboardGroupBy,
   type MonthPoint,
   type Schedule,
+  type User,
   getDashboard,
   listAccounts,
   listSchedules,
   postScheduleNow,
   skipSchedule,
+  updateMe,
 } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { Chart } from "../components/Chart";
@@ -45,6 +68,31 @@ import { QuickAdd } from "../components/QuickAdd";
 import { formatMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
 import { type DatePreset, dateBounds, emptyFilters } from "./registerFilters";
+
+const WIDGET_IDS = [
+  "totals",
+  "quickAdd",
+  "incomeExpense",
+  "accounts",
+  "spending",
+  "upcoming",
+] as const;
+type WidgetId = (typeof WIDGET_IDS)[number];
+
+// resolveLayout returns the widget ids in the user's saved order, appending any
+// not listed (e.g. widgets added in a later release) in their default order.
+function resolveLayout(saved?: string[]): WidgetId[] {
+  const valid = new Set<string>(WIDGET_IDS);
+  const out: WidgetId[] = [];
+  const seen = new Set<string>();
+  for (const id of saved ?? [])
+    if (valid.has(id) && !seen.has(id)) {
+      out.push(id as WidgetId);
+      seen.add(id);
+    }
+  for (const id of WIDGET_IDS) if (!seen.has(id)) out.push(id);
+  return out;
+}
 
 // A fixed, color-blind-friendly palette cycled across spending slices.
 const DONUT_PALETTE = [
@@ -97,7 +145,24 @@ function resolveBounds(period: DatePreset): { from: string; to: string } {
 export function DashboardPage() {
   const { t } = useTranslation();
   const { currentWallet } = useWallet();
+  const { user } = useAuth();
+  const qc = useQueryClient();
   const walletId = currentWallet?.id ?? 0;
+
+  // Per-user dashboard layout: widget order + which widgets are hidden.
+  const savedLayout = user?.preferences?.dashboardLayout;
+  const [order, setOrder] = useState<WidgetId[]>(() => resolveLayout(savedLayout?.order));
+  const [hidden, setHidden] = useState<string[]>(() => savedLayout?.hidden ?? []);
+  const [editingLayout, setEditingLayout] = useState(false);
+  const persistLayout = useMutation({
+    mutationFn: (next: { order: string[]; hidden: string[] }) =>
+      updateMe({ preferences: { ...(user?.preferences ?? {}), dashboardLayout: next } }),
+    onSuccess: (u: User) => qc.setQueryData(["me"], u),
+  });
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   // The spending widget's period and chart options, remembered across reloads.
   const [view, setView] = useState<DashView>(loadView);
@@ -133,145 +198,321 @@ export function DashboardPage() {
   if (!currentWallet) return null;
   const base = data?.baseCurrency ?? undefined;
 
-  return (
-    <Stack>
-      <Title order={2}>{t("dashboard.title")}</Title>
+  const hiddenSet = new Set(hidden);
+  const visible = order.filter((id) => !hiddenSet.has(id));
+  const hiddenIds = order.filter((id) => hiddenSet.has(id));
 
-      {base && data && (
+  const onDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldI = order.indexOf(active.id as WidgetId);
+    const newI = order.indexOf(over.id as WidgetId);
+    if (oldI < 0 || newI < 0) return;
+    const next = arrayMove(order, oldI, newI);
+    setOrder(next);
+    persistLayout.mutate({ order: next, hidden });
+  };
+  const setVisibility = (id: WidgetId, hide: boolean) => {
+    const next = hide ? [...hidden, id] : hidden.filter((x) => x !== id);
+    setHidden(next);
+    persistLayout.mutate({ order, hidden: next });
+  };
+
+  const widgets: Record<WidgetId, ReactNode> = {
+    totals:
+      base && data ? (
         <SimpleGrid cols={{ base: 1, sm: 3 }}>
           <TotalCard label={t("register.bank")} value={data.totals.bank} fmt={base} />
           <TotalCard label={t("register.today")} value={data.totals.today} fmt={base} />
           <TotalCard label={t("register.future")} value={data.totals.future} fmt={base} />
         </SimpleGrid>
-      )}
-
-      <QuickAddCard walletId={walletId} />
-
+      ) : null,
+    quickAdd: <QuickAddCard walletId={walletId} />,
+    incomeExpense: (
       <Card withBorder>
         <Title order={4} mb="sm">
           {t("dashboard.incomeExpense")}
         </Title>
         <IncomeExpenseChart points={data?.incomeExpense ?? []} base={base} />
       </Card>
+    ),
+    accounts: <AccountsPanel groups={groups} base={base} totals={data?.totals} />,
+    spending: (
+      <SpendingCard view={view} setView={setView} slices={data?.topCategories ?? []} base={base} />
+    ),
+    upcoming: <UpcomingPanel walletId={walletId} base={base} />,
+  };
+  const labels: Record<WidgetId, string> = {
+    totals: t("dashboard.widgets.totals"),
+    quickAdd: t("dashboard.quickAdd"),
+    incomeExpense: t("dashboard.incomeExpense"),
+    accounts: t("dashboard.yourAccounts"),
+    spending: t("dashboard.whereMoneyGoes"),
+    upcoming: t("dashboard.upcoming"),
+  };
 
-      <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
-        <Card withBorder>
-          <Title order={4} mb="sm">
-            {t("dashboard.yourAccounts")}
-          </Title>
-          {groups.length === 0 && <Text c="dimmed">{t("dashboard.noAccounts")}</Text>}
-          <Stack gap="lg">
-            {groups.map(([type, accounts]) => (
-              <div key={type}>
-                <Text size="sm" fw={600} c="dimmed" tt="uppercase" mb={4}>
-                  {t(`accounts.types.${type}`)}
-                </Text>
-                <Table>
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th>{t("accounts.name")}</Table.Th>
-                      <Table.Th ta="right">{t("register.bank")}</Table.Th>
-                      <Table.Th ta="right">{t("register.today")}</Table.Th>
-                      <Table.Th ta="right">{t("register.future")}</Table.Th>
-                    </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {accounts.map((a) => (
-                      <Table.Tr key={a.id}>
-                        <Table.Td>{a.name}</Table.Td>
-                        <Table.Td ta="right">{formatMinor(a.bank, a.currency)}</Table.Td>
-                        <Table.Td ta="right">{formatMinor(a.today, a.currency)}</Table.Td>
-                        <Table.Td ta="right" c={a.future < 0 ? "red" : undefined}>
-                          {formatMinor(a.future, a.currency)}
-                        </Table.Td>
-                      </Table.Tr>
-                    ))}
-                  </Table.Tbody>
-                  <GroupSubtotal accounts={accounts} />
-                </Table>
-              </div>
-            ))}
-            {base && data && groups.length > 0 && (
-              <Group justify="space-between" pt="xs" wrap="nowrap">
-                <Text fw={700}>{t("dashboard.total")}</Text>
-                <Group gap="lg" wrap="nowrap">
-                  <Text fw={700}>{formatMinor(data.totals.bank, base)}</Text>
-                  <Text fw={700}>{formatMinor(data.totals.today, base)}</Text>
-                  <Text fw={700} c={data.totals.future < 0 ? "red" : undefined}>
-                    {formatMinor(data.totals.future, base)}
-                  </Text>
-                </Group>
+  return (
+    <Stack>
+      <Group justify="space-between">
+        <Title order={2}>{t("dashboard.title")}</Title>
+        <Button
+          variant={editingLayout ? "light" : "subtle"}
+          color="gray"
+          size="xs"
+          leftSection={<IconAdjustmentsHorizontal size={16} />}
+          onClick={() => setEditingLayout((v) => !v)}
+        >
+          {editingLayout ? t("dashboard.layoutDone") : t("dashboard.customize")}
+        </Button>
+      </Group>
+
+      {editingLayout ? (
+        <>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={visible} strategy={verticalListSortingStrategy}>
+              <Stack>
+                {visible.map((id) => (
+                  <SortableWidget
+                    key={id}
+                    id={id}
+                    label={labels[id]}
+                    onHide={() => setVisibility(id, true)}
+                  >
+                    {widgets[id]}
+                  </SortableWidget>
+                ))}
+              </Stack>
+            </SortableContext>
+          </DndContext>
+          {hiddenIds.length > 0 && (
+            <Card withBorder>
+              <Text size="sm" fw={600} c="dimmed" mb="xs">
+                {t("dashboard.hiddenWidgets")}
+              </Text>
+              <Group gap="xs">
+                {hiddenIds.map((id) => (
+                  <Button
+                    key={id}
+                    variant="default"
+                    size="xs"
+                    leftSection={<IconEye size={14} />}
+                    onClick={() => setVisibility(id as WidgetId, false)}
+                  >
+                    {labels[id as WidgetId]}
+                  </Button>
+                ))}
               </Group>
-            )}
-          </Stack>
-        </Card>
-
+            </Card>
+          )}
+        </>
+      ) : (
         <Stack>
-          <Card withBorder>
-            <Group justify="space-between" mb="sm" wrap="nowrap" gap="xs">
-              <Title order={4}>{t("dashboard.whereMoneyGoes")}</Title>
-              <Group gap="xs" wrap="nowrap">
-                <Select
-                  aria-label={t("dashboard.period")}
-                  data={PERIODS.map((p) => ({ value: p, label: t(`filters.presets.${p}`) }))}
-                  value={view.period}
-                  onChange={(v) => v && setView({ ...view, period: v as DatePreset })}
-                  allowDeselect={false}
-                  w={150}
-                />
-                <Menu position="bottom-end" withinPortal closeOnItemClick={false}>
-                  <Menu.Target>
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      size="lg"
-                      aria-label={t("dashboard.chartOptions")}
-                    >
-                      <IconAdjustmentsHorizontal size={18} />
-                    </ActionIcon>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    <Menu.Label>{t("dashboard.chartType")}</Menu.Label>
-                    <Box px="sm" pb="xs">
-                      <SegmentedControl
-                        fullWidth
-                        size="xs"
-                        value={view.chartType}
-                        onChange={(v) => setView({ ...view, chartType: v as ChartType })}
-                        data={[
-                          { value: "donut", label: t("dashboard.chartDonut") },
-                          { value: "bar", label: t("dashboard.chartBar") },
-                        ]}
-                      />
-                    </Box>
-                    <Menu.Label>{t("dashboard.groupBy")}</Menu.Label>
-                    <Box px="sm" pb="xs">
-                      <SegmentedControl
-                        fullWidth
-                        size="xs"
-                        value={view.groupBy}
-                        onChange={(v) => setView({ ...view, groupBy: v as DashboardGroupBy })}
-                        data={[
-                          { value: "category", label: t("dashboard.byCategory") },
-                          { value: "payee", label: t("dashboard.byPayee") },
-                        ]}
-                      />
-                    </Box>
-                  </Menu.Dropdown>
-                </Menu>
-              </Group>
-            </Group>
-            <SpendingChart
-              slices={data?.topCategories ?? []}
-              base={base}
-              chartType={view.chartType}
-            />
-          </Card>
-
-          <UpcomingPanel walletId={walletId} base={base} />
+          {visible.map((id) => (
+            <Box key={id}>{widgets[id]}</Box>
+          ))}
         </Stack>
-      </SimpleGrid>
+      )}
     </Stack>
+  );
+}
+
+// SortableWidget wraps a dashboard widget in edit mode with a drag handle and a
+// hide button; the content is non-interactive while reordering.
+function SortableWidget({
+  id,
+  label,
+  onHide,
+  children,
+}: {
+  id: string;
+  label: string;
+  onHide: () => void;
+  children: ReactNode;
+}) {
+  const { t } = useTranslation();
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+  };
+  return (
+    <Box ref={setNodeRef} style={style}>
+      <Group
+        justify="space-between"
+        wrap="nowrap"
+        mb={4}
+        px="xs"
+        py={4}
+        bg="var(--mantine-color-default-hover)"
+        style={{ borderRadius: "var(--mantine-radius-sm)" }}
+      >
+        <Group gap="xs" wrap="nowrap">
+          <Box
+            {...attributes}
+            {...listeners}
+            style={{ cursor: "grab", display: "flex" }}
+            aria-label={t("nav.drag")}
+          >
+            <IconGripVertical size={16} opacity={0.6} />
+          </Box>
+          <Text size="sm" fw={600}>
+            {label}
+          </Text>
+        </Group>
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          aria-label={t("dashboard.hideWidget")}
+          onClick={onHide}
+        >
+          <IconEyeOff size={16} />
+        </ActionIcon>
+      </Group>
+      <Box style={{ pointerEvents: "none" }}>{children}</Box>
+    </Box>
+  );
+}
+
+// AccountsPanel groups the home-screen accounts by type with per-group subtotals
+// and a base-currency grand total.
+function AccountsPanel({
+  groups,
+  base,
+  totals,
+}: {
+  groups: [string, DashboardAccount[]][];
+  base?: CurrencyInfo;
+  totals?: { bank: number; today: number; future: number };
+}) {
+  const { t } = useTranslation();
+  return (
+    <Card withBorder>
+      <Title order={4} mb="sm">
+        {t("dashboard.yourAccounts")}
+      </Title>
+      {groups.length === 0 && <Text c="dimmed">{t("dashboard.noAccounts")}</Text>}
+      <Stack gap="lg">
+        {groups.map(([type, accounts]) => (
+          <div key={type}>
+            <Text size="sm" fw={600} c="dimmed" tt="uppercase" mb={4}>
+              {t(`accounts.types.${type}`)}
+            </Text>
+            <Table>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>{t("accounts.name")}</Table.Th>
+                  <Table.Th ta="right">{t("register.bank")}</Table.Th>
+                  <Table.Th ta="right">{t("register.today")}</Table.Th>
+                  <Table.Th ta="right">{t("register.future")}</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {accounts.map((a) => (
+                  <Table.Tr key={a.id}>
+                    <Table.Td>{a.name}</Table.Td>
+                    <Table.Td ta="right">{formatMinor(a.bank, a.currency)}</Table.Td>
+                    <Table.Td ta="right">{formatMinor(a.today, a.currency)}</Table.Td>
+                    <Table.Td ta="right" c={a.future < 0 ? "red" : undefined}>
+                      {formatMinor(a.future, a.currency)}
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+              <GroupSubtotal accounts={accounts} />
+            </Table>
+          </div>
+        ))}
+        {base && totals && groups.length > 0 && (
+          <Group justify="space-between" pt="xs" wrap="nowrap">
+            <Text fw={700}>{t("dashboard.total")}</Text>
+            <Group gap="lg" wrap="nowrap">
+              <Text fw={700}>{formatMinor(totals.bank, base)}</Text>
+              <Text fw={700}>{formatMinor(totals.today, base)}</Text>
+              <Text fw={700} c={totals.future < 0 ? "red" : undefined}>
+                {formatMinor(totals.future, base)}
+              </Text>
+            </Group>
+          </Group>
+        )}
+      </Stack>
+    </Card>
+  );
+}
+
+// SpendingCard is the spending breakdown with its period and chart-option
+// controls.
+function SpendingCard({
+  view,
+  setView,
+  slices,
+  base,
+}: {
+  view: DashView;
+  setView: (v: DashView) => void;
+  slices: { categoryId: number; name: string; amount: number }[];
+  base?: CurrencyInfo;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Card withBorder>
+      <Group justify="space-between" mb="sm" wrap="nowrap" gap="xs">
+        <Title order={4}>{t("dashboard.whereMoneyGoes")}</Title>
+        <Group gap="xs" wrap="nowrap">
+          <Select
+            aria-label={t("dashboard.period")}
+            data={PERIODS.map((p) => ({ value: p, label: t(`filters.presets.${p}`) }))}
+            value={view.period}
+            onChange={(v) => v && setView({ ...view, period: v as DatePreset })}
+            allowDeselect={false}
+            w={150}
+          />
+          <Menu position="bottom-end" withinPortal closeOnItemClick={false}>
+            <Menu.Target>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="lg"
+                aria-label={t("dashboard.chartOptions")}
+              >
+                <IconAdjustmentsHorizontal size={18} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Label>{t("dashboard.chartType")}</Menu.Label>
+              <Box px="sm" pb="xs">
+                <SegmentedControl
+                  fullWidth
+                  size="xs"
+                  value={view.chartType}
+                  onChange={(v) => setView({ ...view, chartType: v as ChartType })}
+                  data={[
+                    { value: "donut", label: t("dashboard.chartDonut") },
+                    { value: "bar", label: t("dashboard.chartBar") },
+                  ]}
+                />
+              </Box>
+              <Menu.Label>{t("dashboard.groupBy")}</Menu.Label>
+              <Box px="sm" pb="xs">
+                <SegmentedControl
+                  fullWidth
+                  size="xs"
+                  value={view.groupBy}
+                  onChange={(v) => setView({ ...view, groupBy: v as DashboardGroupBy })}
+                  data={[
+                    { value: "category", label: t("dashboard.byCategory") },
+                    { value: "payee", label: t("dashboard.byPayee") },
+                  ]}
+                />
+              </Box>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      </Group>
+      <SpendingChart slices={slices} base={base} chartType={view.chartType} />
+    </Card>
   );
 }
 

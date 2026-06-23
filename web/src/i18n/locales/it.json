@@ -523,7 +523,14 @@
     "noUpcoming": "Nessuna transazione programmata in arrivo.",
     "noScheduled": "Nessuna transazione programmata.",
     "noReminders": "Nessun promemoria.",
-    "quickAdd": "Aggiungi veloce"
+    "quickAdd": "Aggiungi veloce",
+    "customize": "Personalizza",
+    "layoutDone": "Fatto",
+    "hiddenWidgets": "Widget nascosti",
+    "hideWidget": "Nascondi widget",
+    "widgets": {
+      "totals": "Totali"
+    }
   },
   "import": {
     "title": "Importa",
