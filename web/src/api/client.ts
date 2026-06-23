@@ -540,9 +540,22 @@ export interface Dashboard {
   upcoming: Schedule[];
 }
 
-export const getDashboard = (walletId: number, from?: string, to?: string) => {
-  const q = from && to ? `?from=${from}&to=${to}` : "";
-  return api.get<Dashboard>(`/api/v1/wallets/${walletId}/dashboard${q}`);
+export type DashboardGroupBy = "category" | "payee";
+
+export const getDashboard = (
+  walletId: number,
+  from?: string,
+  to?: string,
+  groupBy?: DashboardGroupBy,
+) => {
+  const params = new URLSearchParams();
+  if (from && to) {
+    params.set("from", from);
+    params.set("to", to);
+  }
+  if (groupBy) params.set("groupBy", groupBy);
+  const q = params.toString();
+  return api.get<Dashboard>(`/api/v1/wallets/${walletId}/dashboard${q ? `?${q}` : ""}`);
 };
 
 // --- Templates ---

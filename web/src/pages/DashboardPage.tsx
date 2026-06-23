@@ -1,6 +1,21 @@
-import { Card, Group, Select, SimpleGrid, Stack, Table, Text, Title } from "@mantine/core";
+import {
+  ActionIcon,
+  Box,
+  Card,
+  Group,
+  Menu,
+  SegmentedControl,
+  Select,
+  SimpleGrid,
+  Stack,
+  Table,
+  Text,
+  Title,
+} from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import { IconAdjustmentsHorizontal } from "@tabler/icons-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { EChartsOption } from "echarts";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -8,16 +23,19 @@ import {
   ApiError,
   type CurrencyInfo,
   type DashboardAccount,
+  type DashboardGroupBy,
   getDashboard,
   listAccounts,
 } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
+import { Chart } from "../components/Chart";
 import { Donut } from "../components/Donut";
 import { QuickAdd } from "../components/QuickAdd";
 import { formatMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
+import { type DatePreset, dateBounds, emptyFilters } from "./registerFilters";
 
-// A fixed, color-blind-friendly palette cycled across donut slices.
+// A fixed, color-blind-friendly palette cycled across spending slices.
 const DONUT_PALETTE = [
   "#4dabf7",
   "#ff8787",
@@ -30,14 +48,60 @@ const DONUT_PALETTE = [
   "#9775fa",
 ];
 
+type ChartType = "donut" | "bar";
+
+// DashView is the on-the-fly spending-widget configuration the user can tweak
+// from the dashboard; it is remembered in localStorage across reloads.
+interface DashView {
+  period: DatePreset;
+  chartType: ChartType;
+  groupBy: DashboardGroupBy;
+}
+
+const VIEW_KEY = "cb.dashboard.view";
+const DEFAULT_VIEW: DashView = { period: "thisMonth", chartType: "donut", groupBy: "category" };
+// Periods offered for the spending widget (the register's "custom" range is
+// omitted here to keep the dashboard control a single dropdown).
+const PERIODS: DatePreset[] = ["thisMonth", "thisQuarter", "thisYear", "last30", "last90", "all"];
+
+function loadView(): DashView {
+  try {
+    const raw = localStorage.getItem(VIEW_KEY);
+    if (raw) return { ...DEFAULT_VIEW, ...(JSON.parse(raw) as Partial<DashView>) };
+  } catch {
+    /* ignore malformed storage */
+  }
+  return DEFAULT_VIEW;
+}
+
+// resolveBounds turns a preset into explicit inclusive YYYY-MM-DD bounds. "all"
+// (and any open-ended preset) becomes wide sentinels so the request always
+// carries a range and the server does not fall back to the current month.
+function resolveBounds(period: DatePreset): { from: string; to: string } {
+  if (period === "all") return { from: "0001-01-01", to: "9999-12-31" };
+  const b = dateBounds({ ...emptyFilters, preset: period });
+  return { from: b.from ?? "0001-01-01", to: b.to ?? "9999-12-31" };
+}
+
 export function DashboardPage() {
   const { t } = useTranslation();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
 
+  // The spending widget's period and chart options, remembered across reloads.
+  const [view, setView] = useState<DashView>(loadView);
+  useEffect(() => {
+    try {
+      localStorage.setItem(VIEW_KEY, JSON.stringify(view));
+    } catch {
+      /* ignore storage failures */
+    }
+  }, [view]);
+  const { from, to } = resolveBounds(view.period);
+
   const query = useQuery({
-    queryKey: ["dashboard", walletId],
-    queryFn: () => getDashboard(walletId),
+    queryKey: ["dashboard", walletId, from, to, view.groupBy],
+    queryFn: () => getDashboard(walletId, from, to, view.groupBy),
     enabled: walletId > 0,
   });
   const data = query.data;
@@ -113,10 +177,64 @@ export function DashboardPage() {
 
         <Stack>
           <Card withBorder>
-            <Title order={4} mb="sm">
-              {t("dashboard.whereMoneyGoes")}
-            </Title>
-            <SpendingDonut slices={data?.topCategories ?? []} base={base} />
+            <Group justify="space-between" mb="sm" wrap="nowrap" gap="xs">
+              <Title order={4}>{t("dashboard.whereMoneyGoes")}</Title>
+              <Group gap="xs" wrap="nowrap">
+                <Select
+                  aria-label={t("dashboard.period")}
+                  data={PERIODS.map((p) => ({ value: p, label: t(`filters.presets.${p}`) }))}
+                  value={view.period}
+                  onChange={(v) => v && setView({ ...view, period: v as DatePreset })}
+                  allowDeselect={false}
+                  w={150}
+                />
+                <Menu position="bottom-end" withinPortal closeOnItemClick={false}>
+                  <Menu.Target>
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      size="lg"
+                      aria-label={t("dashboard.chartOptions")}
+                    >
+                      <IconAdjustmentsHorizontal size={18} />
+                    </ActionIcon>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Label>{t("dashboard.chartType")}</Menu.Label>
+                    <Box px="sm" pb="xs">
+                      <SegmentedControl
+                        fullWidth
+                        size="xs"
+                        value={view.chartType}
+                        onChange={(v) => setView({ ...view, chartType: v as ChartType })}
+                        data={[
+                          { value: "donut", label: t("dashboard.chartDonut") },
+                          { value: "bar", label: t("dashboard.chartBar") },
+                        ]}
+                      />
+                    </Box>
+                    <Menu.Label>{t("dashboard.groupBy")}</Menu.Label>
+                    <Box px="sm" pb="xs">
+                      <SegmentedControl
+                        fullWidth
+                        size="xs"
+                        value={view.groupBy}
+                        onChange={(v) => setView({ ...view, groupBy: v as DashboardGroupBy })}
+                        data={[
+                          { value: "category", label: t("dashboard.byCategory") },
+                          { value: "payee", label: t("dashboard.byPayee") },
+                        ]}
+                      />
+                    </Box>
+                  </Menu.Dropdown>
+                </Menu>
+              </Group>
+            </Group>
+            <SpendingChart
+              slices={data?.topCategories ?? []}
+              base={base}
+              chartType={view.chartType}
+            />
           </Card>
 
           <Card withBorder>
@@ -218,22 +336,59 @@ function TotalCard({ label, value, fmt }: { label: string; value: number; fmt: C
   );
 }
 
-function SpendingDonut({
+// SpendingChart renders the spending breakdown either as the SVG donut with a
+// legend or as a horizontal ECharts bar; both share the same colours and the
+// rolled-up "Other" slice (categoryId/payeeId 0).
+function SpendingChart({
   slices,
   base,
+  chartType,
 }: {
   slices: { categoryId: number; name: string; amount: number }[];
   base?: CurrencyInfo;
+  chartType: ChartType;
 }) {
   const { t } = useTranslation();
+
+  const data = useMemo(
+    () =>
+      slices.map((s, i) => ({
+        label: s.categoryId === 0 ? t("dashboard.other") : s.name,
+        value: s.amount,
+        color: DONUT_PALETTE[i % DONUT_PALETTE.length],
+      })),
+    [slices, t],
+  );
+
+  const barOption: EChartsOption = useMemo(() => {
+    // Reverse so the largest slice sits at the top of the (bottom-up) y-axis.
+    const ordered = [...data].reverse();
+    return {
+      tooltip: {
+        trigger: "axis",
+        valueFormatter: (v) =>
+          base ? formatMinor(typeof v === "number" ? v : Number(v) || 0, base) : String(v),
+      },
+      grid: { left: 8, right: 16, top: 8, bottom: 8, containLabel: true },
+      xAxis: { type: "value" },
+      yAxis: { type: "category", data: ordered.map((d) => d.label) },
+      series: [
+        {
+          type: "bar",
+          data: ordered.map((d) => ({ value: d.value, itemStyle: { color: d.color } })),
+        },
+      ],
+    };
+  }, [data, base]);
+
   if (slices.length === 0 || !base) {
     return <Text c="dimmed">{t("dashboard.noSpending")}</Text>;
   }
-  const data = slices.map((s, i) => ({
-    label: s.categoryId === 0 ? t("dashboard.other") : s.name,
-    value: s.amount,
-    color: DONUT_PALETTE[i % DONUT_PALETTE.length],
-  }));
+
+  if (chartType === "bar") {
+    return <Chart option={barOption} height={Math.max(180, data.length * 34)} />;
+  }
+
   return (
     <Group align="center" wrap="wrap" gap="xl">
       <Donut data={data} />
