@@ -12,6 +12,7 @@
     "accounts": "Conti",
     "transactions": "Transazioni",
     "schedules": "Pianificazioni",
+    "templates": "Modelli",
     "assignments": "Regole",
     "budget": "Budget",
     "reports": "Report",
@@ -243,7 +244,16 @@
     "applyPlaceholder": "Scegli un modello per precompilare…",
     "saveAs": "Salva come modello",
     "namePrompt": "Nome del modello:",
-    "saved": "Modello salvato"
+    "saved": "Modello salvato",
+    "title": "Modelli",
+    "add": "Aggiungi modello",
+    "empty": "Nessun modello.",
+    "name": "Nome",
+    "edit": "Modifica modello",
+    "delete": "Elimina modello",
+    "create": "Nuovo modello",
+    "confirmDelete": "Eliminare il modello \"{{name}}\"?",
+    "complexNote": "Questo modello ha suddivisioni o è un trasferimento; modifica i dettagli da una transazione. Puoi comunque rinominarlo qui."
   },
   "register": {
     "bank": "Banca",
