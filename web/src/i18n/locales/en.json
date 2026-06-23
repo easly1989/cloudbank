@@ -594,6 +594,12 @@
       "qif": "QIF"
     }
   },
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "wallet": "Wallet",
+    "manage": "Manage data"
+  },
   "preferences": {
     "title": "Preferences",
     "language": "Language",
