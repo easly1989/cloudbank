@@ -69,6 +69,8 @@ export interface Preferences {
   smartAmountInput?: boolean;
   /** Collapse the desktop sidebar to an icon-only rail. */
   sidebarCollapsed?: boolean;
+  /** Accent (Mantine primary) colour name, e.g. "teal", "blue". */
+  themeAccent?: string;
 }
 
 export interface User {
