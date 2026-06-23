@@ -67,6 +67,8 @@ export interface Preferences {
   registerColumns?: Record<string, boolean>;
   /** HomeBank-style lenient amount entry (accept "." or "," as decimal). Default on. */
   smartAmountInput?: boolean;
+  /** Collapse the desktop sidebar to an icon-only rail. */
+  sidebarCollapsed?: boolean;
 }
 
 export interface User {
