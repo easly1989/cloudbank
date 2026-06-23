@@ -38,6 +38,7 @@ import { useWallet } from "../wallet/WalletProvider";
 import { AppFooter } from "./AppFooter";
 import { ColorSchemeToggle } from "./ColorSchemeToggle";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { Logo } from "./Logo";
 
 const navItems = [
   { to: "/", labelKey: "nav.dashboard", icon: IconLayoutDashboard, end: true, adminOnly: false },
@@ -139,9 +140,12 @@ export function AppLayout() {
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Text fw={700} size="lg">
-              {t("app.name")}
-            </Text>
+            <Group gap={8} wrap="nowrap">
+              <Logo size={26} />
+              <Text fw={700} size="lg">
+                {t("app.name")}
+              </Text>
+            </Group>
             <WalletSwitcher />
           </Group>
           <Group>
