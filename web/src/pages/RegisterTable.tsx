@@ -2,6 +2,7 @@ import { ActionIcon, Badge, Box, Checkbox, Group, Menu, Text } from "@mantine/co
 import {
   IconAdjustmentsHorizontal,
   IconArrowsExchange,
+  IconClock,
   IconDeviceFloppy,
   IconLock,
   IconPencil,
@@ -115,6 +116,8 @@ export function RegisterTable({
 
   // Newest-first display; each row keeps its chronological running balance.
   const display = useMemo(() => [...rows].reverse(), [rows]);
+  // Today's civil date (YYYY-MM-DD) for distinguishing future (scheduled) rows.
+  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const accountName = useCallback(
     (id?: number | null) => accounts.find((a) => a.id === id)?.name,
     [accounts],
@@ -126,7 +129,19 @@ export function RegisterTable({
     return [
       col.accessor("date", {
         header: () => t("transactions.date"),
-        cell: ({ getValue }) => fmtDate(getValue()),
+        cell: ({ getValue }) => {
+          const date = getValue();
+          if (date <= todayStr) return fmtDate(date);
+          // Future-dated (scheduled) rows: a clock glyph and italic, dimmed date.
+          return (
+            <Group gap={4} wrap="nowrap" c="dimmed">
+              <IconClock size={13} title={t("register.future")} />
+              <Text size="sm" fs="italic">
+                {fmtDate(date)}
+              </Text>
+            </Group>
+          );
+        },
       }),
       col.display({
         id: "payee",
@@ -211,7 +226,7 @@ export function RegisterTable({
         ),
       }),
     ];
-  }, [t, fmt, fmtDate, accountName, onToggleStatus]);
+  }, [t, fmt, fmtDate, accountName, onToggleStatus, todayStr]);
 
   const table = useReactTable({
     data: display,
@@ -307,6 +322,8 @@ export function RegisterTable({
           gridTemplateColumns: gridTemplate,
           gap: 8,
           padding: "6px 8px",
+          // Matches the 3px accent reserved on each row so columns stay aligned.
+          borderLeft: "3px solid transparent",
           fontWeight: 600,
           fontSize: 13,
           borderBottom: "1px solid var(--mantine-color-default-border)",
@@ -383,6 +400,12 @@ export function RegisterTable({
                   gap: 8,
                   alignItems: "center",
                   padding: "0 8px",
+                  // A left accent marks future (scheduled) rows; transparent on
+                  // past/today rows keeps the content aligned.
+                  borderLeft:
+                    r.date > todayStr
+                      ? "3px solid var(--mantine-color-blue-5)"
+                      : "3px solid transparent",
                   background: selected.has(r.id)
                     ? "var(--mantine-color-blue-light)"
                     : onCursor
