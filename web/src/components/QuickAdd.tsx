@@ -9,8 +9,10 @@ import {
   listCategories,
   listPayees,
   listTags,
+  listTemplates,
   type Account,
 } from "../api/client";
+import { formatMinor } from "../money";
 import { useAmountParser } from "../useAmountParser";
 
 const STATUSES = [0, 1, 2, 3, 4];
@@ -40,6 +42,14 @@ export function QuickAdd({
     queryFn: () => listCategories(walletId),
   });
   const tagsQuery = useQuery({ queryKey: ["tags", walletId], queryFn: () => listTags(walletId) });
+  const templatesQuery = useQuery({
+    queryKey: ["templates", walletId],
+    queryFn: () => listTemplates(walletId),
+  });
+  const templates = useMemo(
+    () => (templatesQuery.data ?? []).filter((x) => !x.isTransfer),
+    [templatesQuery.data],
+  );
   const fd = account.currencyFracDigits;
   const dc = account.currencyDecimalChar;
 
@@ -51,6 +61,32 @@ export function QuickAdd({
   const [memo, setMemo] = useState("");
   const [status, setStatus] = useState("0");
   const [tags, setTags] = useState<string[]>([]);
+  const [templatePick, setTemplatePick] = useState<string | null>(null);
+
+  // Pre-fill the row from a saved template (the bound account is kept; the
+  // template's transaction details are applied).
+  const applyTemplate = (v: string | null) => {
+    setTemplatePick(v);
+    const m = templates.find((x) => String(x.id) === v);
+    if (!m) return;
+    setDirection(m.amount < 0 ? "expense" : "income");
+    setAmount(
+      m.amount === 0
+        ? ""
+        : formatMinor(Math.abs(m.amount), {
+            fracDigits: fd,
+            decimalChar: dc,
+            groupChar: "",
+            symbol: "",
+            symbolPrefix: false,
+          }),
+    );
+    setPayeeId(m.payeeId != null ? String(m.payeeId) : null);
+    setCategoryId(m.categoryId != null ? String(m.categoryId) : null);
+    setMemo(m.memo);
+    setStatus(String(m.status));
+    setTags(m.tags ?? []);
+  };
 
   const onPayee = (v: string | null) => {
     setPayeeId(v);
@@ -80,6 +116,7 @@ export function QuickAdd({
       setMemo("");
       setStatus("0");
       setTags([]);
+      setTemplatePick(null);
       onAdded();
     },
     onError,
@@ -100,6 +137,18 @@ export function QuickAdd({
   return (
     <Card withBorder padding="xs">
       <Group gap="xs" align="flex-end" wrap="wrap">
+        {templates.length > 0 && (
+          <Select
+            placeholder={t("templates.apply")}
+            aria-label={t("templates.apply")}
+            data={templates.map((x) => ({ value: String(x.id), label: x.name }))}
+            value={templatePick}
+            onChange={applyTemplate}
+            clearable
+            searchable
+            w={160}
+          />
+        )}
         <TextInput
           type="date"
           aria-label={t("transactions.date")}
