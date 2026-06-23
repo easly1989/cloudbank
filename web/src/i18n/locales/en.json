@@ -17,7 +17,8 @@
     "reports": "Reports",
     "settings": "Settings",
     "admin": "Users",
-    "import": "Import"
+    "import": "Import",
+    "toggleSidebar": "Toggle sidebar"
   },
   "transactions": {
     "title": "Transactions",

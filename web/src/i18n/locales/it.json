@@ -17,7 +17,8 @@
     "reports": "Report",
     "settings": "Impostazioni",
     "admin": "Utenti",
-    "import": "Importa"
+    "import": "Importa",
+    "toggleSidebar": "Comprimi/espandi menu"
   },
   "transactions": {
     "title": "Transazioni",
