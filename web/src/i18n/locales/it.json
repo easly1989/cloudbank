@@ -3,7 +3,9 @@
     "name": "CloudBank",
     "tagline": "Gestione delle finanze personali self-hosted",
     "sourceCode": "Codice sorgente",
-    "apiDocs": "Documentazione API"
+    "apiDocs": "Documentazione API",
+    "donate": "Dona",
+    "basedOn": "un port web di HomeBank"
   },
   "nav": {
     "dashboard": "Cruscotto",
