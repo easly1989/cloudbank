@@ -65,6 +65,8 @@ export interface Preferences {
   defaultAccountId?: number;
   /** Register column visibility, keyed by column id (payee/category/note/status/runningBalance). */
   registerColumns?: Record<string, boolean>;
+  /** HomeBank-style lenient amount entry (accept "." or "," as decimal). Default on. */
+  smartAmountInput?: boolean;
 }
 
 export interface User {

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { Category, Payee } from "../api/client";
-import { type MoneyFormat, parseMinor } from "../money";
+import { type MoneyFormat } from "../money";
+import { useAmountParser } from "../useAmountParser";
 import { type DatePreset, type Filters, emptyFilters, isActive } from "./registerFilters";
 
 const PRESETS: DatePreset[] = [
@@ -43,6 +44,7 @@ export function RegisterFilters({
   fmt: MoneyFormat;
 }) {
   const { t } = useTranslation();
+  const parseAmount = useAmountParser();
   const fd = fmt.fracDigits;
   const dc = fmt.decimalChar;
 
@@ -66,7 +68,7 @@ export function RegisterFilters({
     [categories],
   );
 
-  const amountToMinor = (v: string) => (v.trim() === "" ? null : parseMinor(v, fd, dc));
+  const amountToMinor = (v: string) => (v.trim() === "" ? null : parseAmount(v, fd, dc));
 
   return (
     <Card withBorder padding="xs">
