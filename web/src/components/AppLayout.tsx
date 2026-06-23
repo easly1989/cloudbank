@@ -20,7 +20,6 @@ import {
   IconCalendarRepeat,
   IconChartBar,
   IconChevronDown,
-  IconCoin,
   IconFileImport,
   IconLayoutDashboard,
   IconLayoutSidebarLeftCollapse,
@@ -29,8 +28,6 @@ import {
   IconReportMoney,
   IconPlus,
   IconSettings,
-  IconTags,
-  IconUserDollar,
   IconUsers,
   IconWallet,
   IconWand,
@@ -96,18 +93,6 @@ function WalletSwitcher() {
           </Menu.Item>
         ))}
         <Menu.Divider />
-        <Menu.Item leftSection={<IconTags size={16} />} onClick={() => navigate("/categories")}>
-          {t("categories.title")}
-        </Menu.Item>
-        <Menu.Item leftSection={<IconUserDollar size={16} />} onClick={() => navigate("/payees")}>
-          {t("payees.title")}
-        </Menu.Item>
-        <Menu.Item leftSection={<IconCoin size={16} />} onClick={() => navigate("/currencies")}>
-          {t("currencies.title")}
-        </Menu.Item>
-        <Menu.Item leftSection={<IconSettings size={16} />} onClick={() => navigate("/wallet")}>
-          {t("wallet.settings")}
-        </Menu.Item>
         <Menu.Item leftSection={<IconPlus size={16} />} onClick={() => navigate("/wallet/new")}>
           {t("wallet.create")}
         </Menu.Item>

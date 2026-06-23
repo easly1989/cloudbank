@@ -82,9 +82,9 @@ test("full journey: setup → wallet → account → transaction → import → 
   });
 
   await test.step("download a wallet backup", async () => {
-    // Wallet settings live behind the wallet switcher menu.
-    await page.getByRole("button", { name: "My Money" }).click();
-    await page.getByRole("menuitem", { name: "Wallet settings" }).click();
+    // Wallet settings live under Settings → Wallet tab.
+    await nav(page, "Settings");
+    await page.getByRole("tab", { name: "Wallet" }).click();
     const downloadPromise = page.waitForEvent("download");
     await page.getByRole("button", { name: "Download backup" }).click();
     const download = await downloadPromise;

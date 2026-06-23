@@ -594,6 +594,12 @@
       "qif": "QIF"
     }
   },
+  "settings": {
+    "title": "Impostazioni",
+    "general": "Generali",
+    "wallet": "Portafoglio",
+    "manage": "Gestisci dati"
+  },
   "preferences": {
     "title": "Preferenze",
     "language": "Lingua",

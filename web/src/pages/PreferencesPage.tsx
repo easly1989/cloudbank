@@ -8,7 +8,6 @@ import {
   Select,
   Stack,
   Switch,
-  Title,
   useMantineColorScheme,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
@@ -82,7 +81,6 @@ export function PreferencesPage() {
 
   return (
     <Stack maw={560}>
-      <Title order={2}>{t("preferences.title")}</Title>
       <Card withBorder>
         <Stack>
           <Select

@@ -16,11 +16,10 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { BudgetPage } from "./pages/BudgetPage";
-import { PreferencesPage } from "./pages/PreferencesPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { SchedulesPage } from "./pages/SchedulesPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { SetupPage } from "./pages/SetupPage";
-import { WalletSettingsPage } from "./pages/WalletSettingsPage";
 import { UsersPage } from "./pages/admin/UsersPage";
 import { WalletProvider, useWallet } from "./wallet/WalletProvider";
 
@@ -91,8 +90,8 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
         <Route path="assignments" element={<AssignmentsPage />} />
         <Route path="budget" element={<BudgetPage />} />
         <Route path="reports" element={<ReportsPage />} />
-        <Route path="settings" element={<PreferencesPage />} />
-        <Route path="wallet" element={<WalletSettingsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="wallet" element={<Navigate to="/settings?tab=wallet" replace />} />
         <Route path="wallet/new" element={<CreateWalletPage />} />
         <Route path="import" element={<ImportPage />} />
         <Route path="currencies" element={<CurrenciesPage />} />
