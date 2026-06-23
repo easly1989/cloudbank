@@ -1,10 +1,19 @@
-import { Card, Group, SimpleGrid, Stack, Table, Text, Title } from "@mantine/core";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { Card, Group, Select, SimpleGrid, Stack, Table, Text, Title } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { type CurrencyInfo, type DashboardAccount, getDashboard } from "../api/client";
+import {
+  ApiError,
+  type CurrencyInfo,
+  type DashboardAccount,
+  getDashboard,
+  listAccounts,
+} from "../api/client";
+import { useAuth } from "../auth/AuthProvider";
 import { Donut } from "../components/Donut";
+import { QuickAdd } from "../components/QuickAdd";
 import { formatMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
 
@@ -60,6 +69,8 @@ export function DashboardPage() {
           <TotalCard label={t("register.future")} value={data.totals.future} fmt={base} />
         </SimpleGrid>
       )}
+
+      <QuickAddCard walletId={walletId} />
 
       <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
         <Card withBorder>
@@ -131,6 +142,65 @@ export function DashboardPage() {
           </Card>
         </Stack>
       </SimpleGrid>
+    </Stack>
+  );
+}
+
+// QuickAddCard lets the user add a transaction to a chosen account without
+// leaving the dashboard; the totals and balances refresh on add.
+function QuickAddCard({ walletId }: { walletId: number }) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  const accountsQuery = useQuery({
+    queryKey: ["accounts", walletId],
+    queryFn: () => listAccounts(walletId),
+    enabled: walletId > 0,
+  });
+  const accounts = useMemo(
+    () => (accountsQuery.data ?? []).filter((a) => !a.closed),
+    [accountsQuery.data],
+  );
+  const [accountId, setAccountId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (accountId || accounts.length === 0) return;
+    const pref = user?.preferences?.defaultAccountId;
+    const initial = pref && accounts.some((a) => a.id === pref) ? pref : accounts[0].id;
+    setAccountId(String(initial));
+  }, [accounts, accountId, user]);
+
+  const account = accounts.find((a) => String(a.id) === accountId);
+  if (accounts.length === 0) return null;
+
+  const onAdded = () => {
+    void qc.invalidateQueries({ queryKey: ["dashboard", walletId] });
+    void qc.invalidateQueries({ queryKey: ["accounts", walletId] });
+    void qc.invalidateQueries({ queryKey: ["register", walletId] });
+  };
+  const onError = (err: unknown) =>
+    notifications.show({
+      color: "red",
+      message: err instanceof ApiError ? err.message : String(err),
+    });
+
+  return (
+    <Stack gap="xs">
+      <Group justify="space-between">
+        <Title order={4}>{t("dashboard.quickAdd")}</Title>
+        <Select
+          aria-label={t("transactions.account")}
+          data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
+          value={accountId}
+          onChange={setAccountId}
+          allowDeselect={false}
+          searchable
+          w={220}
+        />
+      </Group>
+      {account && (
+        <QuickAdd walletId={walletId} account={account} onAdded={onAdded} onError={onError} />
+      )}
     </Stack>
   );
 }
