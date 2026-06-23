@@ -484,7 +484,8 @@
     "noSpending": "No spending in this period.",
     "other": "Other",
     "upcoming": "Upcoming scheduled",
-    "noUpcoming": "No upcoming scheduled transactions."
+    "noUpcoming": "No upcoming scheduled transactions.",
+    "quickAdd": "Quick add"
   },
   "import": {
     "title": "Import",
