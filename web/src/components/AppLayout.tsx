@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   AppShell,
   Avatar,
   Burger,
@@ -7,11 +8,13 @@ import {
   Menu,
   NavLink,
   Text,
+  Tooltip,
   UnstyledButton,
   useMantineColorScheme,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
-import { useEffect } from "react";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import {
   IconArrowsExchange,
   IconCalendarRepeat,
@@ -20,6 +23,8 @@ import {
   IconCoin,
   IconFileImport,
   IconLayoutDashboard,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
   IconLogout,
   IconReportMoney,
   IconPlus,
@@ -33,6 +38,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { NavLink as RouterNavLink, Outlet, useNavigate } from "react-router-dom";
 
+import { updateMe, type User } from "../api/client";
 import { useAuth, useLogout } from "../auth/AuthProvider";
 import { useWallet } from "../wallet/WalletProvider";
 import { AppFooter } from "./AppFooter";
@@ -114,8 +120,25 @@ export function AppLayout() {
   const [opened, { toggle }] = useDisclosure();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const qc = useQueryClient();
   const { setColorScheme } = useMantineColorScheme();
   const logout = useLogout();
+
+  // Desktop sidebar collapse to an icon-only rail, remembered per user. The rail
+  // only applies on desktop; the mobile drawer always shows full labels.
+  const [collapsed, setCollapsed] = useState(() => user?.preferences?.sidebarCollapsed ?? false);
+  const isDesktop = useMediaQuery("(min-width: 48em)");
+  const railMode = collapsed && !!isDesktop;
+  const persistCollapsed = useMutation({
+    mutationFn: (next: boolean) =>
+      updateMe({ preferences: { ...(user?.preferences ?? {}), sidebarCollapsed: next } }),
+    onSuccess: (updated: User) => qc.setQueryData(["me"], updated),
+  });
+  const toggleCollapsed = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    persistCollapsed.mutate(next);
+  };
 
   // Apply the user's server-persisted language and theme on load (and whenever
   // they change them in Preferences). The header toggles still work locally.
@@ -132,7 +155,7 @@ export function AppLayout() {
   return (
     <AppShell
       header={{ height: 56 }}
-      navbar={{ width: 240, breakpoint: "sm", collapsed: { mobile: !opened } }}
+      navbar={{ width: railMode ? 64 : 240, breakpoint: "sm", collapsed: { mobile: !opened } }}
       footer={{ height: 36 }}
       padding="md"
     >
@@ -140,6 +163,19 @@ export function AppLayout() {
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              onClick={toggleCollapsed}
+              visibleFrom="sm"
+              aria-label={t("nav.toggleSidebar")}
+            >
+              {collapsed ? (
+                <IconLayoutSidebarLeftExpand size={20} />
+              ) : (
+                <IconLayoutSidebarLeftCollapse size={20} />
+              )}
+            </ActionIcon>
             <Group gap={8} wrap="nowrap">
               <Logo size={26} />
               <Text fw={700} size="lg">
@@ -177,16 +213,26 @@ export function AppLayout() {
       <AppShell.Navbar p="sm">
         {navItems
           .filter((item) => !item.adminOnly || user?.isAdmin)
-          .map((item) => (
-            <NavLink
-              key={item.to}
-              component={RouterNavLink}
-              to={item.to}
-              end={item.end}
-              label={t(item.labelKey)}
-              leftSection={<item.icon size={18} />}
-            />
-          ))}
+          .map((item) => {
+            const link = (
+              <NavLink
+                key={item.to}
+                component={RouterNavLink}
+                to={item.to}
+                end={item.end}
+                label={railMode ? undefined : t(item.labelKey)}
+                leftSection={<item.icon size={18} />}
+                styles={railMode ? { body: { display: "none" } } : undefined}
+              />
+            );
+            return railMode ? (
+              <Tooltip key={item.to} label={t(item.labelKey)} position="right" withinPortal>
+                {link}
+              </Tooltip>
+            ) : (
+              link
+            );
+          })}
       </AppShell.Navbar>
 
       <AppShell.Main>
