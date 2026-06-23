@@ -81,3 +81,50 @@ export function parseMinor(input: string, fracDigits: number, decimalChar: strin
   if (roundUp) total += 1;
   return neg ? -total : total;
 }
+
+/**
+ * Parse a user-entered amount leniently, HomeBank-style: accept either "." or
+ * "," as the decimal separator regardless of the currency's configured
+ * separator. The **rightmost** "." or "," is treated as the decimal point and
+ * any earlier separators are grouping (so "12.40", "12,40", "1.234,56" and
+ * "1,234.56" all parse to the same value). Extra fractional digits are rounded
+ * half away from zero. Returns null when there are no digits.
+ */
+export function parseAmountSmart(input: string, fracDigits: number): number | null {
+  const s = input.trim();
+  if (s === "") return null;
+  const frac = Math.max(0, fracDigits);
+  const neg = s.includes("-") || (s.startsWith("(") && s.endsWith(")"));
+
+  // Keep only digits and the two candidate separators.
+  let cleaned = "";
+  for (const ch of s) {
+    if ((ch >= "0" && ch <= "9") || ch === "." || ch === ",") cleaned += ch;
+  }
+  // With no fractional digits (e.g. JPY) there is no decimal part, so every
+  // separator is grouping.
+  let lastSep = -1;
+  if (frac > 0) {
+    for (let i = cleaned.length - 1; i >= 0; i--) {
+      if (cleaned[i] === "." || cleaned[i] === ",") {
+        lastSep = i;
+        break;
+      }
+    }
+  }
+  const stripSeps = (x: string) => x.replace(/[.,]/g, "");
+  const intDigits = stripSeps(lastSep < 0 ? cleaned : cleaned.slice(0, lastSep));
+  let fracDigitsStr = lastSep < 0 ? "" : stripSeps(cleaned.slice(lastSep + 1));
+  if (intDigits === "" && fracDigitsStr === "") return null;
+
+  let roundUp = false;
+  if (fracDigitsStr.length > frac) {
+    if (fracDigitsStr[frac] >= "5") roundUp = true;
+    fracDigitsStr = fracDigitsStr.slice(0, frac);
+  }
+  fracDigitsStr = fracDigitsStr.padEnd(frac, "0");
+
+  let total = Number(intDigits || "0") * pow10(frac) + Number(fracDigitsStr || "0");
+  if (roundUp) total += 1;
+  return neg ? -total : total;
+}

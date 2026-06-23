@@ -27,7 +27,8 @@ import {
   listCurrencies,
   setCategoryBudget,
 } from "../api/client";
-import { type MoneyFormat, formatMinor, parseMinor } from "../money";
+import { type MoneyFormat, formatMinor } from "../money";
+import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
 
 export function BudgetPage() {
@@ -131,6 +132,7 @@ function BudgetRow({
   fmt: MoneyFormat;
 }) {
   const { t } = useTranslation();
+  const parseAmount = useAmountParser();
   const qc = useQueryClient();
   const sign = category.isIncome ? 1 : -1;
   const toInput = (v: number) => (v === 0 ? "" : magnitude(v, fmt));
@@ -150,7 +152,7 @@ function BudgetRow({
 
   const save = useMutation({
     mutationFn: () => {
-      const parse = (s: string) => (parseMinor(s, fmt.fracDigits, fmt.decimalChar) ?? 0) * sign;
+      const parse = (s: string) => (parseAmount(s, fmt.fracDigits, fmt.decimalChar) ?? 0) * sign;
       const sameVal = parse(same);
       const monthlyVals = monthly.map(parse);
       const empty = mode === "same" ? sameVal === 0 : monthlyVals.every((v) => v === 0);

@@ -11,7 +11,7 @@ import {
   listTags,
   type Account,
 } from "../api/client";
-import { parseMinor } from "../money";
+import { useAmountParser } from "../useAmountParser";
 
 const STATUSES = [0, 1, 2, 3, 4];
 
@@ -30,6 +30,7 @@ export function QuickAdd({
   onError: (err: unknown) => void;
 }) {
   const { t } = useTranslation();
+  const parseAmount = useAmountParser();
   const payeesQuery = useQuery({
     queryKey: ["payees", walletId],
     queryFn: () => listPayees(walletId),
@@ -63,7 +64,7 @@ export function QuickAdd({
       return createTransaction(walletId, {
         accountId: account.id,
         date,
-        amount: (parseMinor(amount, fd, dc) ?? 0) * (direction === "expense" ? -1 : 1),
+        amount: (parseAmount(amount, fd, dc) ?? 0) * (direction === "expense" ? -1 : 1),
         paymentMode: p?.defaultPaymentMode ?? 0,
         status: Number(status),
         payeeId: payeeId ? Number(payeeId) : null,
@@ -94,7 +95,7 @@ export function QuickAdd({
       })),
     [categoriesQuery.data],
   );
-  const canAdd = !!date && (parseMinor(amount, fd, dc) ?? 0) > 0;
+  const canAdd = !!date && (parseAmount(amount, fd, dc) ?? 0) > 0;
 
   return (
     <Card withBorder padding="xs">
