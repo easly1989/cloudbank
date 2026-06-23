@@ -530,11 +530,18 @@ export interface CategorySlice {
   amount: number;
 }
 
+export interface MonthPoint {
+  month: string; // YYYY-MM
+  income: number; // positive magnitude, base currency
+  expense: number; // positive magnitude, base currency
+}
+
 export interface Dashboard {
   accounts: DashboardAccount[];
   totals: { bank: number; today: number; future: number };
   baseCurrency: CurrencyInfo | null;
   topCategories: CategorySlice[];
+  incomeExpense: MonthPoint[];
   from: string;
   to: string;
   upcoming: Schedule[];

@@ -1819,6 +1819,13 @@ components:
         name: { type: string }
         amount: { type: integer, format: int64, description: "positive magnitude, base currency" }
       required: [categoryId, name, amount]
+    MonthPoint:
+      type: object
+      properties:
+        month: { type: string, description: "YYYY-MM" }
+        income: { type: integer, format: int64, description: "positive magnitude, base currency" }
+        expense: { type: integer, format: int64, description: "positive magnitude, base currency" }
+      required: [month, income, expense]
     Dashboard:
       type: object
       properties:
@@ -1826,10 +1833,11 @@ components:
         totals: { $ref: "#/components/schemas/RegisterSummary" }
         baseCurrency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
         topCategories: { type: array, items: { $ref: "#/components/schemas/CategorySlice" } }
+        incomeExpense: { type: array, items: { $ref: "#/components/schemas/MonthPoint" }, description: "trailing 12-month income/expense series" }
         from: { type: string }
         to: { type: string }
         upcoming: { type: array, items: { $ref: "#/components/schemas/Schedule" } }
-      required: [accounts, totals, topCategories, from, to, upcoming]
+      required: [accounts, totals, topCategories, incomeExpense, from, to, upcoming]
     Schedule:
       type: object
       properties:

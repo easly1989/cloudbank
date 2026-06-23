@@ -1807,11 +1807,27 @@ export interface components {
              */
             amount: number;
         };
+        MonthPoint: {
+            /** @description YYYY-MM */
+            month: string;
+            /**
+             * Format: int64
+             * @description positive magnitude, base currency
+             */
+            income: number;
+            /**
+             * Format: int64
+             * @description positive magnitude, base currency
+             */
+            expense: number;
+        };
         Dashboard: {
             accounts: components["schemas"]["AccountSummary"][];
             totals: components["schemas"]["RegisterSummary"];
             baseCurrency?: components["schemas"]["CurrencyInfo"];
             topCategories: components["schemas"]["CategorySlice"][];
+            /** @description trailing 12-month income/expense series */
+            incomeExpense: components["schemas"]["MonthPoint"][];
             from: string;
             to: string;
             upcoming: components["schemas"]["Schedule"][];

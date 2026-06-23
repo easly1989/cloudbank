@@ -121,6 +121,63 @@ func (q *Queries) CategoryExpenseTotals(ctx context.Context, arg CategoryExpense
 	return items, nil
 }
 
+const monthlyIncomeExpense = `-- name: MonthlyIncomeExpense :many
+SELECT CAST(strftime('%Y-%m', t.date) AS TEXT) AS month, a.currency_id AS currency_id,
+       CAST(SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) AS INTEGER) AS income,
+       CAST(SUM(CASE WHEN t.amount < 0 THEN t.amount ELSE 0 END) AS INTEGER) AS expense
+FROM transactions t
+JOIN accounts a ON a.id = t.account_id
+WHERE t.wallet_id = ?1
+  AND t.payment_mode <> 5
+  AND t.date >= ?2
+  AND t.date <= ?3
+GROUP BY month, a.currency_id
+`
+
+type MonthlyIncomeExpenseParams struct {
+	WalletID int64
+	FromDate string
+	ToDate   string
+}
+
+type MonthlyIncomeExpenseRow struct {
+	Month      string
+	CurrencyID int64
+	Income     int64
+	Expense    int64
+}
+
+// Per-month income (amount > 0) and expense (amount < 0) totals in a date range,
+// excluding internal transfers (payment_mode 5), with each row's account
+// currency for base conversion. Drives the dashboard income/expense chart.
+func (q *Queries) MonthlyIncomeExpense(ctx context.Context, arg MonthlyIncomeExpenseParams) ([]MonthlyIncomeExpenseRow, error) {
+	rows, err := q.db.QueryContext(ctx, monthlyIncomeExpense, arg.WalletID, arg.FromDate, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []MonthlyIncomeExpenseRow{}
+	for rows.Next() {
+		var i MonthlyIncomeExpenseRow
+		if err := rows.Scan(
+			&i.Month,
+			&i.CurrencyID,
+			&i.Income,
+			&i.Expense,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const payeeExpenseTotals = `-- name: PayeeExpenseTotals :many
 SELECT t.payee_id AS payee_id, t.amount AS amount, a.currency_id AS currency_id
 FROM transactions t

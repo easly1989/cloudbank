@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Badge,
   Box,
   Card,
   Group,
@@ -9,12 +10,17 @@ import {
   SimpleGrid,
   Stack,
   Table,
+  Tabs,
   Text,
   Title,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconAdjustmentsHorizontal } from "@tabler/icons-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  IconAdjustmentsHorizontal,
+  IconPlayerPlay,
+  IconPlayerSkipForward,
+} from "@tabler/icons-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { EChartsOption } from "echarts";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -24,8 +30,13 @@ import {
   type CurrencyInfo,
   type DashboardAccount,
   type DashboardGroupBy,
+  type MonthPoint,
+  type Schedule,
   getDashboard,
   listAccounts,
+  listSchedules,
+  postScheduleNow,
+  skipSchedule,
 } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { Chart } from "../components/Chart";
@@ -136,6 +147,13 @@ export function DashboardPage() {
 
       <QuickAddCard walletId={walletId} />
 
+      <Card withBorder>
+        <Title order={4} mb="sm">
+          {t("dashboard.incomeExpense")}
+        </Title>
+        <IncomeExpenseChart points={data?.incomeExpense ?? []} base={base} />
+      </Card>
+
       <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
         <Card withBorder>
           <Title order={4} mb="sm">
@@ -169,9 +187,22 @@ export function DashboardPage() {
                       </Table.Tr>
                     ))}
                   </Table.Tbody>
+                  <GroupSubtotal accounts={accounts} />
                 </Table>
               </div>
             ))}
+            {base && data && groups.length > 0 && (
+              <Group justify="space-between" pt="xs" wrap="nowrap">
+                <Text fw={700}>{t("dashboard.total")}</Text>
+                <Group gap="lg" wrap="nowrap">
+                  <Text fw={700}>{formatMinor(data.totals.bank, base)}</Text>
+                  <Text fw={700}>{formatMinor(data.totals.today, base)}</Text>
+                  <Text fw={700} c={data.totals.future < 0 ? "red" : undefined}>
+                    {formatMinor(data.totals.future, base)}
+                  </Text>
+                </Group>
+              </Group>
+            )}
           </Stack>
         </Card>
 
@@ -237,30 +268,215 @@ export function DashboardPage() {
             />
           </Card>
 
-          <Card withBorder>
-            <Title order={4} mb="sm">
-              {t("dashboard.upcoming")}
-            </Title>
-            {(data?.upcoming ?? []).length === 0 ? (
-              <Text c="dimmed">{t("dashboard.noUpcoming")}</Text>
-            ) : (
-              <Stack gap={6}>
-                {(data?.upcoming ?? []).map((u) => (
-                  <Group key={u.id} justify="space-between" wrap="nowrap">
-                    <Text size="sm" truncate>
-                      {u.templateName}
-                    </Text>
-                    <Text size="sm" c="dimmed">
-                      {u.nextDue}
-                    </Text>
-                  </Group>
-                ))}
-              </Stack>
-            )}
-          </Card>
+          <UpcomingPanel walletId={walletId} base={base} />
         </Stack>
       </SimpleGrid>
     </Stack>
+  );
+}
+
+// IncomeExpenseChart renders the trailing 12-month income vs expense as grouped
+// bars (income teal, expense red) in base currency.
+function IncomeExpenseChart({ points, base }: { points: MonthPoint[]; base?: CurrencyInfo }) {
+  const { t } = useTranslation();
+  const incomeLabel = t("dashboard.income");
+  const expenseLabel = t("dashboard.expense");
+
+  const option: EChartsOption = useMemo(
+    () => ({
+      tooltip: {
+        trigger: "axis",
+        valueFormatter: (v) =>
+          base ? formatMinor(typeof v === "number" ? v : Number(v) || 0, base) : String(v),
+      },
+      legend: { data: [incomeLabel, expenseLabel], bottom: 0 },
+      grid: { left: 8, right: 16, top: 16, bottom: 36, containLabel: true },
+      xAxis: { type: "category", data: points.map((p) => p.month) },
+      yAxis: { type: "value" },
+      series: [
+        { name: incomeLabel, type: "bar", color: "#37b24d", data: points.map((p) => p.income) },
+        { name: expenseLabel, type: "bar", color: "#f03e3e", data: points.map((p) => p.expense) },
+      ],
+    }),
+    [points, base, incomeLabel, expenseLabel],
+  );
+
+  const empty = points.every((p) => p.income === 0 && p.expense === 0);
+  if (!base || empty) {
+    return <Text c="dimmed">{t("dashboard.noSpending")}</Text>;
+  }
+  return <Chart option={option} height={260} />;
+}
+
+// GroupSubtotal renders a table footer summing a same-type group's balances. It
+// is skipped for single-account groups (the row already shows the total) and
+// when the group mixes currencies (a raw sum would be meaningless).
+function GroupSubtotal({ accounts }: { accounts: DashboardAccount[] }) {
+  const { t } = useTranslation();
+  const cur = accounts[0]?.currency;
+  const mixed = accounts.some((a) => a.currencyId !== accounts[0]?.currencyId);
+  if (!cur || mixed || accounts.length < 2) return null;
+  const bank = accounts.reduce((s, a) => s + a.bank, 0);
+  const today = accounts.reduce((s, a) => s + a.today, 0);
+  const future = accounts.reduce((s, a) => s + a.future, 0);
+  return (
+    <Table.Tfoot>
+      <Table.Tr>
+        <Table.Td fw={600}>{t("dashboard.subtotal")}</Table.Td>
+        <Table.Td ta="right" fw={600}>
+          {formatMinor(bank, cur)}
+        </Table.Td>
+        <Table.Td ta="right" fw={600}>
+          {formatMinor(today, cur)}
+        </Table.Td>
+        <Table.Td ta="right" fw={600} c={future < 0 ? "red" : undefined}>
+          {formatMinor(future, cur)}
+        </Table.Td>
+      </Table.Tr>
+    </Table.Tfoot>
+  );
+}
+
+// UpcomingPanel lists scheduled transactions in three tabs — the next due
+// occurrences (with Post now / Skip), every active schedule, and the manual
+// reminders — fed by the schedules list so actions can refresh it directly.
+function UpcomingPanel({ walletId, base }: { walletId: number; base?: CurrencyInfo }) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const schedulesQuery = useQuery({
+    queryKey: ["schedules", walletId],
+    queryFn: () => listSchedules(walletId),
+    enabled: walletId > 0,
+  });
+  const schedules = useMemo(() => schedulesQuery.data ?? [], [schedulesQuery.data]);
+
+  const within30 = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().slice(0, 10);
+  }, []);
+  const upcoming = useMemo(
+    () =>
+      schedules
+        .filter((s) => s.nextDue <= within30)
+        .sort((a, b) => a.nextDue.localeCompare(b.nextDue)),
+    [schedules, within30],
+  );
+  const reminders = useMemo(() => schedules.filter((s) => !s.autoPost), [schedules]);
+
+  const onError = (err: unknown) =>
+    notifications.show({
+      color: "red",
+      message: err instanceof ApiError ? err.message : String(err),
+    });
+  const refresh = () => {
+    void qc.invalidateQueries({ queryKey: ["schedules", walletId] });
+    void qc.invalidateQueries({ queryKey: ["dashboard", walletId] });
+    void qc.invalidateQueries({ queryKey: ["register", walletId] });
+    void qc.invalidateQueries({ queryKey: ["accounts", walletId] });
+  };
+  const post = useMutation({
+    mutationFn: (id: number) => postScheduleNow(walletId, id),
+    onSuccess: refresh,
+    onError,
+  });
+  const skip = useMutation({
+    mutationFn: (id: number) => skipSchedule(walletId, id),
+    onSuccess: refresh,
+    onError,
+  });
+
+  const row = (s: Schedule, withActions: boolean, withCadence: boolean) => (
+    <Group key={s.id} justify="space-between" wrap="nowrap" gap="xs">
+      <Box style={{ minWidth: 0 }}>
+        <Text size="sm" truncate>
+          {s.templateName || t("schedules.untitled")}
+        </Text>
+        <Text size="xs" c="dimmed">
+          {s.nextDue}
+          {withCadence &&
+            ` · ${t("schedules.cadence", { n: s.everyN, unit: t(`schedules.units.${s.unit}`) })}`}
+        </Text>
+      </Box>
+      <Group gap={6} wrap="nowrap">
+        {base && (
+          <Text size="sm" fw={500} c={s.templateAmount < 0 ? "red" : "teal"}>
+            {formatMinor(s.templateAmount, base)}
+          </Text>
+        )}
+        {withActions && (
+          <>
+            <ActionIcon
+              variant="subtle"
+              size="sm"
+              color="teal"
+              aria-label={t("schedules.postNow")}
+              loading={post.isPending && post.variables === s.id}
+              onClick={() => post.mutate(s.id)}
+            >
+              <IconPlayerPlay size={15} />
+            </ActionIcon>
+            <ActionIcon
+              variant="subtle"
+              size="sm"
+              color="gray"
+              aria-label={t("schedules.skip")}
+              loading={skip.isPending && skip.variables === s.id}
+              onClick={() => skip.mutate(s.id)}
+            >
+              <IconPlayerSkipForward size={15} />
+            </ActionIcon>
+          </>
+        )}
+      </Group>
+    </Group>
+  );
+
+  const empty = (msg: string) => <Text c="dimmed">{msg}</Text>;
+
+  return (
+    <Card withBorder>
+      <Title order={4} mb="sm">
+        {t("dashboard.upcoming")}
+      </Title>
+      <Tabs defaultValue="upcoming">
+        <Tabs.List mb="sm">
+          <Tabs.Tab value="upcoming">{t("dashboard.tabUpcoming")}</Tabs.Tab>
+          <Tabs.Tab value="scheduled">{t("dashboard.tabScheduled")}</Tabs.Tab>
+          <Tabs.Tab value="reminders">
+            <Group gap={6} wrap="nowrap">
+              {t("dashboard.tabReminders")}
+              {reminders.length > 0 && (
+                <Badge size="xs" variant="light" color="gray">
+                  {reminders.length}
+                </Badge>
+              )}
+            </Group>
+          </Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="upcoming">
+          {upcoming.length === 0 ? (
+            empty(t("dashboard.noUpcoming"))
+          ) : (
+            <Stack gap={8}>{upcoming.map((s) => row(s, true, false))}</Stack>
+          )}
+        </Tabs.Panel>
+        <Tabs.Panel value="scheduled">
+          {schedules.length === 0 ? (
+            empty(t("dashboard.noScheduled"))
+          ) : (
+            <Stack gap={8}>{schedules.map((s) => row(s, false, true))}</Stack>
+          )}
+        </Tabs.Panel>
+        <Tabs.Panel value="reminders">
+          {reminders.length === 0 ? (
+            empty(t("dashboard.noReminders"))
+          ) : (
+            <Stack gap={8}>{reminders.map((s) => row(s, true, true))}</Stack>
+          )}
+        </Tabs.Panel>
+      </Tabs>
+    </Card>
   );
 }
 

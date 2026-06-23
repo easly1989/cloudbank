@@ -61,17 +61,29 @@ type CategorySlice struct {
 	Amount     int64  `json:"amount"`
 }
 
+// MonthPoint is one month's income and expense (both positive magnitudes, base
+// currency) for the income/expense-over-time chart.
+type MonthPoint struct {
+	Month   string `json:"month"` // YYYY-MM
+	Income  int64  `json:"income"`
+	Expense int64  `json:"expense"`
+}
+
 // Data is the full dashboard payload.
 type Data struct {
 	Accounts      []AccountSummary `json:"accounts"`
 	Totals        Totals           `json:"totals"`
 	BaseCurrency  *CurrencyInfo    `json:"baseCurrency"`
 	TopCategories []CategorySlice  `json:"topCategories"`
+	IncomeExpense []MonthPoint     `json:"incomeExpense"`
 	From          string           `json:"from"`
 	To            string           `json:"to"`
-	// Upcoming is a placeholder until the scheduler lands (always empty for now).
+	// Upcoming is filled with the next scheduled occurrences by the HTTP layer.
 	Upcoming []any `json:"upcoming"`
 }
+
+// incomeExpenseMonths is how many trailing months the income/expense chart spans.
+const incomeExpenseMonths = 12
 
 // Service builds dashboards.
 type Service struct {
@@ -122,7 +134,7 @@ func (s *Service) Build(ctx context.Context, walletID int64, from, to, groupBy s
 		}
 	}
 
-	out := Data{From: from, To: to, Upcoming: []any{}, TopCategories: []CategorySlice{}}
+	out := Data{From: from, To: to, Upcoming: []any{}, TopCategories: []CategorySlice{}, IncomeExpense: []MonthPoint{}}
 	var totals Totals
 	for _, a := range accounts {
 		d := deltaByAccount[a.ID]
@@ -160,8 +172,61 @@ func (s *Service) Build(ctx context.Context, walletID int64, from, to, groupBy s
 			return Data{}, err
 		}
 		out.TopCategories = slices
+
+		ie, err := s.incomeExpense(ctx, walletID, today, curByID, *base)
+		if err != nil {
+			return Data{}, err
+		}
+		out.IncomeExpense = ie
 	}
 	return out, nil
+}
+
+// incomeExpense buckets income (amount > 0) and expense (amount < 0) by month
+// over the trailing incomeExpenseMonths window ending today, in base currency.
+// Internal transfers are excluded so the totals reflect real money in and out.
+func (s *Service) incomeExpense(ctx context.Context, walletID int64, today string, curByID map[int64]db.Currency, base db.Currency) ([]MonthPoint, error) {
+	from, months := monthsWindow(today, incomeExpenseMonths)
+	rows, err := s.q.MonthlyIncomeExpense(ctx, db.MonthlyIncomeExpenseParams{WalletID: walletID, FromDate: from, ToDate: today})
+	if err != nil {
+		return nil, err
+	}
+	type ie struct{ income, expense int64 }
+	byMonth := make(map[string]*ie, len(rows))
+	for _, r := range rows {
+		m := byMonth[r.Month]
+		if m == nil {
+			m = &ie{}
+			byMonth[r.Month] = m
+		}
+		m.income += convertToBase(r.Income, curByID[r.CurrencyID], base)
+		m.expense += convertToBase(r.Expense, curByID[r.CurrencyID], base)
+	}
+	out := make([]MonthPoint, 0, len(months))
+	for _, mk := range months {
+		p := MonthPoint{Month: mk}
+		if v := byMonth[mk]; v != nil {
+			p.Income = v.income
+			p.Expense = -v.expense // negative sum → positive magnitude
+		}
+		out = append(out, p)
+	}
+	return out, nil
+}
+
+// monthsWindow returns the first-of-month start date (YYYY-MM-DD) and the n
+// consecutive month keys (YYYY-MM) ending with today's month.
+func monthsWindow(today string, n int) (from string, months []string) {
+	t, err := time.Parse(dateLayout, today)
+	if err != nil {
+		t = time.Now().UTC()
+	}
+	start := time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC).AddDate(0, -(n - 1), 0)
+	months = make([]string, 0, n)
+	for i := 0; i < n; i++ {
+		months = append(months, start.AddDate(0, i, 0).Format("2006-01"))
+	}
+	return start.Format(dateLayout), months
 }
 
 func (s *Service) topCategories(ctx context.Context, walletID int64, from, to string, curByID map[int64]db.Currency, base db.Currency) ([]CategorySlice, error) {

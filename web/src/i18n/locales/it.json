@@ -491,8 +491,18 @@
     "groupBy": "Raggruppa per",
     "byCategory": "Categoria",
     "byPayee": "Beneficiario",
+    "incomeExpense": "Entrate e uscite",
+    "income": "Entrate",
+    "expense": "Uscite",
+    "total": "Totale",
+    "subtotal": "Subtotale",
     "upcoming": "Programmate in arrivo",
+    "tabUpcoming": "In arrivo",
+    "tabScheduled": "Programmate",
+    "tabReminders": "Promemoria",
     "noUpcoming": "Nessuna transazione programmata in arrivo.",
+    "noScheduled": "Nessuna transazione programmata.",
+    "noReminders": "Nessun promemoria.",
     "quickAdd": "Aggiungi veloce"
   },
   "import": {

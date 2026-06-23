@@ -112,6 +112,10 @@ type Querier interface {
 	ListVehicleTransactions(ctx context.Context, arg ListVehicleTransactionsParams) ([]ListVehicleTransactionsRow, error)
 	ListWalletTransactionsForRules(ctx context.Context, walletID int64) ([]ListWalletTransactionsForRulesRow, error)
 	ListWalletsForUser(ctx context.Context, userID int64) ([]ListWalletsForUserRow, error)
+	// Per-month income (amount > 0) and expense (amount < 0) totals in a date range,
+	// excluding internal transfers (payment_mode 5), with each row's account
+	// currency for base conversion. Drives the dashboard income/expense chart.
+	MonthlyIncomeExpense(ctx context.Context, arg MonthlyIncomeExpenseParams) ([]MonthlyIncomeExpenseRow, error)
 	NextAccountPosition(ctx context.Context, walletID int64) (int64, error)
 	NextAssignmentPosition(ctx context.Context, walletID int64) (int64, error)
 	// Payee amounts in a date range. Payee is a per-transaction attribute, so split
