@@ -71,6 +71,10 @@ export interface Preferences {
   sidebarCollapsed?: boolean;
   /** Accent (Mantine primary) colour name, e.g. "teal", "blue". */
   themeAccent?: string;
+  /** Sidebar nav order, by route id (e.g. "/accounts"). */
+  navOrder?: string[];
+  /** Pinned sidebar nav route ids; unpinned items fall into the "More" group. */
+  navPinned?: string[];
 }
 
 export interface User {
