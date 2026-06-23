@@ -1,8 +1,10 @@
 import { Alert, Button, Card, Divider, Group, Stack, Text, TextInput, Title } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import { IconCoin, IconTags, IconUserDollar } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { ApiError, deleteWallet, updateWallet } from "../api/client";
 import { useWallet } from "../wallet/WalletProvider";
@@ -12,6 +14,7 @@ import { IntegrityCard } from "./IntegrityCard";
 export function WalletSettingsPage() {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { currentWallet } = useWallet();
   const [title, setTitle] = useState(currentWallet?.title ?? "");
   const [ownerName, setOwnerName] = useState(currentWallet?.ownerName ?? "");
@@ -47,8 +50,6 @@ export function WalletSettingsPage() {
 
   return (
     <Stack maw={520}>
-      <Title order={2}>{t("wallet.settings")}</Title>
-
       <Card withBorder>
         <Stack>
           <TextInput
@@ -73,6 +74,35 @@ export function WalletSettingsPage() {
             </Button>
           </Group>
         </Stack>
+      </Card>
+
+      <Card withBorder>
+        <Title order={4} mb="sm">
+          {t("settings.manage")}
+        </Title>
+        <Group>
+          <Button
+            variant="light"
+            leftSection={<IconTags size={16} />}
+            onClick={() => navigate("/categories")}
+          >
+            {t("categories.title")}
+          </Button>
+          <Button
+            variant="light"
+            leftSection={<IconUserDollar size={16} />}
+            onClick={() => navigate("/payees")}
+          >
+            {t("payees.title")}
+          </Button>
+          <Button
+            variant="light"
+            leftSection={<IconCoin size={16} />}
+            onClick={() => navigate("/currencies")}
+          >
+            {t("currencies.title")}
+          </Button>
+        </Group>
       </Card>
 
       <IntegrityCard />
