@@ -31,7 +31,15 @@ func (h *dashboardHandlers) get(w http.ResponseWriter, r *http.Request) {
 	if from == "" || to == "" {
 		from, to = currentMonth(now)
 	}
-	data, err := h.svc.Build(r.Context(), wl.ID, from, to)
+	groupBy := r.URL.Query().Get("groupBy")
+	if groupBy == "" {
+		groupBy = dashboard.GroupByCategory
+	}
+	if groupBy != dashboard.GroupByCategory && groupBy != dashboard.GroupByPayee {
+		writeError(w, http.StatusBadRequest, "invalid_group_by", "groupBy must be category or payee")
+		return
+	}
+	data, err := h.svc.Build(r.Context(), wl.ID, from, to, groupBy)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not build dashboard")
 		return

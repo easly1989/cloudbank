@@ -84,9 +84,16 @@ func NewService(write *sql.DB) *Service {
 	return &Service{db: write, q: db.New(write)}
 }
 
+// Grouping selects how the spending breakdown is bucketed.
+const (
+	GroupByCategory = "category"
+	GroupByPayee    = "payee"
+)
+
 // Build assembles the dashboard for a wallet over [from, to] (used by the
-// spending donut; the balances are point-in-time, not range-bound).
-func (s *Service) Build(ctx context.Context, walletID int64, from, to string) (Data, error) {
+// spending breakdown; the balances are point-in-time, not range-bound).
+// groupBy buckets the breakdown by category (default) or payee.
+func (s *Service) Build(ctx context.Context, walletID int64, from, to, groupBy string) (Data, error) {
 	today := time.Now().UTC().Format(dateLayout)
 
 	accounts, err := s.q.ListAccountsForWallet(ctx, walletID)
@@ -143,11 +150,16 @@ func (s *Service) Build(ctx context.Context, walletID int64, from, to string) (D
 			Code: base.IsoCode, Symbol: base.Symbol, SymbolPrefix: base.SymbolPrefix != 0,
 			DecimalChar: base.DecimalChar, GroupChar: base.GroupChar, FracDigits: int(base.FracDigits),
 		}
-		cats, err := s.topCategories(ctx, walletID, from, to, curByID, *base)
+		var slices []CategorySlice
+		if groupBy == GroupByPayee {
+			slices, err = s.topPayees(ctx, walletID, from, to, curByID, *base)
+		} else {
+			slices, err = s.topCategories(ctx, walletID, from, to, curByID, *base)
+		}
 		if err != nil {
 			return Data{}, err
 		}
-		out.TopCategories = cats
+		out.TopCategories = slices
 	}
 	return out, nil
 }
@@ -185,8 +197,47 @@ func (s *Service) topCategories(ctx context.Context, walletID int64, from, to st
 		byParent[top] += -baseAmount
 	}
 
-	slices := make([]CategorySlice, 0, len(byParent))
-	for id, amount := range byParent {
+	return topSlices(byParent, nameOf), nil
+}
+
+// topPayees buckets expenses by payee in a date range (split lines contribute
+// via their parent transaction's payee and total amount). The returned slices
+// reuse CategorySlice with CategoryID holding the payee id (0 = the rolled-up
+// Other slice), so the spending widget renders payee and category breakdowns
+// identically.
+func (s *Service) topPayees(ctx context.Context, walletID int64, from, to string, curByID map[int64]db.Currency, base db.Currency) ([]CategorySlice, error) {
+	rows, err := s.q.PayeeExpenseTotals(ctx, db.PayeeExpenseTotalsParams{WalletID: walletID, FromDate: from, ToDate: to})
+	if err != nil {
+		return nil, err
+	}
+	payees, err := s.q.ListPayeesForWallet(ctx, walletID)
+	if err != nil {
+		return nil, err
+	}
+	nameOf := make(map[int64]string, len(payees))
+	for _, p := range payees {
+		nameOf[p.ID] = p.Name
+	}
+
+	byPayee := make(map[int64]int64)
+	for _, r := range rows {
+		if !r.PayeeID.Valid {
+			continue
+		}
+		baseAmount := convertToBase(r.Amount, curByID[r.CurrencyID], base)
+		if baseAmount >= 0 {
+			continue // income / zero: not "where money goes"
+		}
+		byPayee[r.PayeeID.Int64] += -baseAmount
+	}
+	return topSlices(byPayee, nameOf), nil
+}
+
+// topSlices turns a key→amount map into the sorted top-N slices plus a rolled-up
+// Other slice (CategoryID 0), shared by the category and payee breakdowns.
+func topSlices(byKey map[int64]int64, nameOf map[int64]string) []CategorySlice {
+	slices := make([]CategorySlice, 0, len(byKey))
+	for id, amount := range byKey {
 		slices = append(slices, CategorySlice{CategoryID: id, Name: nameOf[id], Amount: amount})
 	}
 	sort.Slice(slices, func(i, j int) bool {
@@ -203,7 +254,7 @@ func (s *Service) topCategories(ctx context.Context, walletID int64, from, to st
 		slices = slices[:topCategoryLimit]
 		slices = append(slices, CategorySlice{CategoryID: 0, Name: "", Amount: other})
 	}
-	return slices, nil
+	return slices
 }
 
 // convertToBase converts a minor-unit amount in cur to base-currency minor

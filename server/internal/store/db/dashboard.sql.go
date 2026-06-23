@@ -120,3 +120,51 @@ func (q *Queries) CategoryExpenseTotals(ctx context.Context, arg CategoryExpense
 	}
 	return items, nil
 }
+
+const payeeExpenseTotals = `-- name: PayeeExpenseTotals :many
+SELECT t.payee_id AS payee_id, t.amount AS amount, a.currency_id AS currency_id
+FROM transactions t
+JOIN accounts a ON a.id = t.account_id
+WHERE t.wallet_id = ?1
+  AND t.payee_id IS NOT NULL
+  AND t.date >= ?2
+  AND t.date <= ?3
+`
+
+type PayeeExpenseTotalsParams struct {
+	WalletID int64
+	FromDate string
+	ToDate   string
+}
+
+type PayeeExpenseTotalsRow struct {
+	PayeeID    sql.NullInt64
+	Amount     int64
+	CurrencyID int64
+}
+
+// Payee amounts in a date range. Payee is a per-transaction attribute, so split
+// transactions contribute via their parent's total amount; each row carries the
+// account currency so the app can convert to base.
+func (q *Queries) PayeeExpenseTotals(ctx context.Context, arg PayeeExpenseTotalsParams) ([]PayeeExpenseTotalsRow, error) {
+	rows, err := q.db.QueryContext(ctx, payeeExpenseTotals, arg.WalletID, arg.FromDate, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PayeeExpenseTotalsRow{}
+	for rows.Next() {
+		var i PayeeExpenseTotalsRow
+		if err := rows.Scan(&i.PayeeID, &i.Amount, &i.CurrencyID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
