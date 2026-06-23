@@ -6,9 +6,7 @@ import {
   Button,
   Group,
   Menu,
-  NavLink,
   Text,
-  Tooltip,
   UnstyledButton,
   useMantineColorScheme,
 } from "@mantine/core";
@@ -16,25 +14,15 @@ import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
-  IconArrowsExchange,
-  IconCalendarRepeat,
-  IconChartBar,
   IconChevronDown,
-  IconFileImport,
-  IconLayoutDashboard,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
   IconLogout,
-  IconReportMoney,
   IconPlus,
-  IconSettings,
-  IconTemplate,
-  IconUsers,
   IconWallet,
-  IconWand,
 } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
-import { NavLink as RouterNavLink, Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 
 import { updateMe, type User } from "../api/client";
 import { useAuth, useLogout } from "../auth/AuthProvider";
@@ -43,32 +31,7 @@ import { AppFooter } from "./AppFooter";
 import { ColorSchemeToggle } from "./ColorSchemeToggle";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Logo } from "./Logo";
-
-const navItems = [
-  { to: "/", labelKey: "nav.dashboard", icon: IconLayoutDashboard, end: true, adminOnly: false },
-  { to: "/accounts", labelKey: "nav.accounts", icon: IconWallet, end: false, adminOnly: false },
-  {
-    to: "/transactions",
-    labelKey: "nav.transactions",
-    icon: IconArrowsExchange,
-    end: false,
-    adminOnly: false,
-  },
-  {
-    to: "/schedules",
-    labelKey: "nav.schedules",
-    icon: IconCalendarRepeat,
-    end: false,
-    adminOnly: false,
-  },
-  { to: "/templates", labelKey: "nav.templates", icon: IconTemplate, end: false, adminOnly: false },
-  { to: "/assignments", labelKey: "nav.assignments", icon: IconWand, end: false, adminOnly: false },
-  { to: "/budget", labelKey: "nav.budget", icon: IconReportMoney, end: false, adminOnly: false },
-  { to: "/reports", labelKey: "nav.reports", icon: IconChartBar, end: false, adminOnly: false },
-  { to: "/import", labelKey: "nav.import", icon: IconFileImport, end: false, adminOnly: false },
-  { to: "/settings", labelKey: "nav.settings", icon: IconSettings, end: false, adminOnly: false },
-  { to: "/admin/users", labelKey: "nav.admin", icon: IconUsers, end: false, adminOnly: true },
-];
+import { SidebarNav } from "./SidebarNav";
 
 function WalletSwitcher() {
   const { t } = useTranslation();
@@ -198,28 +161,7 @@ export function AppLayout() {
       </AppShell.Header>
 
       <AppShell.Navbar p="sm">
-        {navItems
-          .filter((item) => !item.adminOnly || user?.isAdmin)
-          .map((item) => {
-            const link = (
-              <NavLink
-                key={item.to}
-                component={RouterNavLink}
-                to={item.to}
-                end={item.end}
-                label={railMode ? undefined : t(item.labelKey)}
-                leftSection={<item.icon size={18} />}
-                styles={railMode ? { body: { display: "none" } } : undefined}
-              />
-            );
-            return railMode ? (
-              <Tooltip key={item.to} label={t(item.labelKey)} position="right" withinPortal>
-                {link}
-              </Tooltip>
-            ) : (
-              link
-            );
-          })}
+        <SidebarNav railMode={railMode} />
       </AppShell.Navbar>
 
       <AppShell.Main>

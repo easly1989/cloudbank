@@ -19,7 +19,14 @@
     "settings": "Impostazioni",
     "admin": "Utenti",
     "import": "Importa",
-    "toggleSidebar": "Comprimi/espandi menu"
+    "toggleSidebar": "Comprimi/espandi menu",
+    "more": "Altro",
+    "customize": "Personalizza menu",
+    "done": "Fatto",
+    "hidden": "Nascoste",
+    "pin": "Fissa",
+    "unpin": "Rimuovi",
+    "drag": "Trascina per riordinare"
   },
   "transactions": {
     "title": "Transazioni",
