@@ -19,7 +19,14 @@
     "settings": "Settings",
     "admin": "Users",
     "import": "Import",
-    "toggleSidebar": "Toggle sidebar"
+    "toggleSidebar": "Toggle sidebar",
+    "more": "More",
+    "customize": "Customize menu",
+    "done": "Done",
+    "hidden": "Hidden",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "drag": "Drag to reorder"
   },
   "transactions": {
     "title": "Transactions",
