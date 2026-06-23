@@ -350,19 +350,30 @@ function UpcomingPanel({ walletId, base }: { walletId: number; base?: CurrencyIn
   });
   const schedules = useMemo(() => schedulesQuery.data ?? [], [schedulesQuery.data]);
 
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const within30 = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + 30);
     return d.toISOString().slice(0, 10);
   }, []);
+  // A schedule still has occurrences left while remaining is null (unlimited) or
+  // > 0; remaining === 0 is exhausted and should not surface anywhere.
+  // Upcoming = the next occurrences due from today through the next 30 days. A
+  // past next_due means the schedule is stale/stopped (commonly leftover from an
+  // import) and is intentionally excluded.
   const upcoming = useMemo(
     () =>
       schedules
-        .filter((s) => s.nextDue <= within30)
+        .filter((s) => s.remaining !== 0 && s.nextDue >= today && s.nextDue <= within30)
         .sort((a, b) => a.nextDue.localeCompare(b.nextDue)),
-    [schedules, within30],
+    [schedules, today, within30],
   );
-  const reminders = useMemo(() => schedules.filter((s) => !s.autoPost), [schedules]);
+  // Reminders are manual (non-auto-post) schedules still awaiting action; they
+  // may legitimately be overdue, so no lower date bound here.
+  const reminders = useMemo(
+    () => schedules.filter((s) => !s.autoPost && s.remaining !== 0),
+    [schedules],
+  );
 
   const onError = (err: unknown) =>
     notifications.show({
