@@ -523,7 +523,14 @@
     "noUpcoming": "No upcoming scheduled transactions.",
     "noScheduled": "No scheduled transactions.",
     "noReminders": "No reminders.",
-    "quickAdd": "Quick add"
+    "quickAdd": "Quick add",
+    "customize": "Customize",
+    "layoutDone": "Done",
+    "hiddenWidgets": "Hidden widgets",
+    "hideWidget": "Hide widget",
+    "widgets": {
+      "totals": "Totals"
+    }
   },
   "import": {
     "title": "Import",
