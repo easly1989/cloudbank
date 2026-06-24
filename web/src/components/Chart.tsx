@@ -29,8 +29,18 @@ export const Chart = forwardRef<
     chart.current = instance;
     const onResize = () => instance.resize();
     window.addEventListener("resize", onResize);
+    // ECharts measures its container at init; if the container isn't laid out
+    // yet (e.g. a chart inside a freshly-opened tab) it renders 0×0 and stays
+    // blank until a window resize. A ResizeObserver re-fits the chart whenever
+    // the container's own size changes, so it appears as soon as it's visible.
+    let ro: ResizeObserver | undefined;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => instance.resize());
+      ro.observe(el.current);
+    }
     return () => {
       window.removeEventListener("resize", onResize);
+      ro?.disconnect();
       instance.dispose();
       chart.current = null;
     };
@@ -40,6 +50,7 @@ export const Chart = forwardRef<
     const instance = chart.current;
     if (!instance) return;
     instance.setOption(option, true);
+    instance.resize();
     instance.off("click");
     if (onSelect) {
       instance.on("click", (params: { data?: unknown }) => {
