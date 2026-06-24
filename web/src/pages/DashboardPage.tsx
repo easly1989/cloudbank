@@ -65,6 +65,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { Chart } from "../components/Chart";
 import { Donut } from "../components/Donut";
 import { QuickAdd } from "../components/QuickAdd";
+import { useDateFormat } from "../dates";
 import { formatMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
 import { type DatePreset, dateBounds, emptyFilters } from "./registerFilters";
@@ -687,6 +688,7 @@ function GroupSubtotal({ accounts }: { accounts: DashboardAccount[] }) {
 // reminders — fed by the schedules list so actions can refresh it directly.
 function UpcomingPanel({ walletId, base }: { walletId: number; base?: CurrencyInfo }) {
   const { t } = useTranslation();
+  const fmtDate = useDateFormat();
   const qc = useQueryClient();
   const schedulesQuery = useQuery({
     queryKey: ["schedules", walletId],
@@ -749,7 +751,7 @@ function UpcomingPanel({ walletId, base }: { walletId: number; base?: CurrencyIn
           {s.templateName || t("schedules.untitled")}
         </Text>
         <Text size="xs" c="dimmed">
-          {s.nextDue}
+          {fmtDate(s.nextDue)}
           {withCadence &&
             ` · ${t("schedules.cadence", { n: s.everyN, unit: t(`schedules.units.${s.unit}`) })}`}
         </Text>

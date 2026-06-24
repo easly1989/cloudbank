@@ -48,6 +48,7 @@ import {
   updateSchedule,
   updateTemplate,
 } from "../api/client";
+import { useDateFormat } from "../dates";
 import { rowEditProps, stopRowEdit } from "../rowEdit";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
@@ -58,6 +59,7 @@ const PAYMENT_MODES = Array.from({ length: 12 }, (_, i) => i);
 
 export function SchedulesPage() {
   const { t } = useTranslation();
+  const fmtDate = useDateFormat();
   const qc = useQueryClient();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
@@ -143,7 +145,7 @@ export function SchedulesPage() {
                 <Table.Td>
                   {t("schedules.cadence", { n: s.everyN, unit: t(`schedules.units.${s.unit}`) })}
                 </Table.Td>
-                <Table.Td>{s.nextDue}</Table.Td>
+                <Table.Td>{fmtDate(s.nextDue)}</Table.Td>
                 <Table.Td>{s.remaining ?? "∞"}</Table.Td>
                 <Table.Td>
                   <Badge variant="light" color={s.autoPost ? "teal" : "gray"}>
