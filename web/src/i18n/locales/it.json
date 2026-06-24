@@ -642,7 +642,38 @@
     "smartAmount": "Inserimento importi smart",
     "smartAmountHint": "Digita 12.40 o 12,40 — entrambi letti come decimali (stile HomeBank)",
     "save": "Salva",
-    "saved": "Preferenze salvate"
+    "saved": "Preferenze salvate",
+    "restartTour": "Riavvia il tutorial"
+  },
+  "tour": {
+    "skip": "Salta",
+    "back": "Indietro",
+    "next": "Avanti",
+    "finish": "Fine",
+    "welcome": {
+      "title": "Benvenuto in CloudBank",
+      "body": "Un breve giro tra le funzioni essenziali — meno di un minuto. Puoi saltarlo quando vuoi."
+    },
+    "nav": {
+      "title": "Navigazione",
+      "body": "Passa tra dashboard, conti, transazioni, pianificazioni, budget e report. Aggiungi ai preferiti, riordina o nascondi le voci come preferisci."
+    },
+    "wallet": {
+      "title": "I tuoi portafogli",
+      "body": "Ogni portafoglio è un insieme di conti separato. Cambia portafoglio o creane uno nuovo da qui."
+    },
+    "quickAdd": {
+      "title": "Aggiungi transazioni al volo",
+      "body": "Registra una spesa o un'entrata direttamente dalla dashboard, senza aprire il registro."
+    },
+    "customize": {
+      "title": "Personalizzala",
+      "body": "Riordina, ridimensiona, nascondi o mostra i widget della dashboard così le cose importanti vengono prima."
+    },
+    "settings": {
+      "title": "Impostazioni e preferenze",
+      "body": "Lingua, tema, formato data e altro sono qui. Puoi riavviare questo tutorial in qualsiasi momento dalle Impostazioni."
+    }
   },
   "integrity": {
     "title": "Controllo integrità",

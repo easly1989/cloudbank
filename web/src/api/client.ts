@@ -77,6 +77,8 @@ export interface Preferences {
   navPinned?: string[];
   /** Dashboard widget layout: order, hidden ids, and per-widget width (full/half/third). */
   dashboardLayout?: { order: string[]; hidden: string[]; spans?: Record<string, string> };
+  /** Whether the first-login onboarding tour has been seen (so it runs only once). */
+  tutorialSeen?: boolean;
 }
 
 export interface User {
