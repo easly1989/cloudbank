@@ -150,6 +150,9 @@ async function downloadFile(path: string, filename: string): Promise<void> {
 export const downloadWalletBackup = (walletId: number) =>
   downloadFile(`/api/v1/wallets/${walletId}/backup`, `wallet-${walletId}-backup.json`);
 
+export const downloadWalletXHB = (walletId: number) =>
+  downloadFile(`/api/v1/wallets/${walletId}/export/xhb`, `wallet-${walletId}.xhb`);
+
 export const downloadHotBackup = () => downloadFile("/api/v1/admin/backup", "cloudbank-backup.db");
 
 export const listUsers = () => api.get<User[]>("/api/v1/admin/users");

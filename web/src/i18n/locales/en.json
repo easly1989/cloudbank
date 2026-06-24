@@ -661,6 +661,7 @@
     "title": "Backup & restore",
     "description": "Download a self-contained JSON backup of this wallet, or restore one into a new wallet.",
     "download": "Download backup",
+    "downloadXhb": "Export .xhb",
     "restoreLabel": "Restore",
     "choosePlaceholder": "Choose a backup .json file",
     "restoreHint": "Restore creates a new wallet; it never overwrites this one.",
