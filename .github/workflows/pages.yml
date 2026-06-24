@@ -1,0 +1,57 @@
+name: Deploy landing site
+
+# Builds the Astro marketing site under site/ and publishes it to GitHub Pages.
+# Set the Pages source to "GitHub Actions" once (Settings → Pages) for this to
+# take effect. Runs only when the site (or this workflow) changes, plus on demand.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; don't cancel an in-progress one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+      - name: Build with Astro
+        run: npm run build
+        env:
+          # Project Pages live under https://<owner>.github.io/<repo>.
+          CB_SITE: ${{ format('https://{0}.github.io', github.repository_owner) }}
+          CB_BASE: /${{ github.event.repository.name }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
