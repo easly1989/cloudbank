@@ -4704,6 +4704,8 @@ export interface operations {
                 to?: string;
                 /** @description how the spending breakdown is bucketed */
                 groupBy?: "category" | "payee";
+                /** @description income/expense trailing window in months (0 = all dates) */
+                ieMonths?: number;
             };
             header?: never;
             path: {

@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -39,7 +40,14 @@ func (h *dashboardHandlers) get(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_group_by", "groupBy must be category or payee")
 		return
 	}
-	data, err := h.svc.Build(r.Context(), wl.ID, from, to, groupBy)
+	// Income/expense trailing window in months (0 = all dates); default 12.
+	ieMonths := 12
+	if v := r.URL.Query().Get("ieMonths"); v != "" {
+		if n, perr := strconv.Atoi(v); perr == nil && n >= 0 {
+			ieMonths = n
+		}
+	}
+	data, err := h.svc.Build(r.Context(), wl.ID, from, to, groupBy, ieMonths)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not build dashboard")
 		return

@@ -1330,6 +1330,7 @@ paths:
         - { name: from, in: query, required: false, schema: { type: string }, description: "spending range start (defaults to current month)" }
         - { name: to, in: query, required: false, schema: { type: string } }
         - { name: groupBy, in: query, required: false, schema: { type: string, enum: [category, payee], default: category }, description: "how the spending breakdown is bucketed" }
+        - { name: ieMonths, in: query, required: false, schema: { type: integer, default: 12 }, description: "income/expense trailing window in months (0 = all dates)" }
       responses:
         "200": { description: The dashboard., content: { application/json: { schema: { $ref: "#/components/schemas/Dashboard" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
