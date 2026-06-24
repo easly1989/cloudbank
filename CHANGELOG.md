@@ -6,10 +6,55 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
+Post-1.0 work focused on **personalization**, deeper **HomeBank parity & interop**,
+and **onboarding/polish**.
+
+### Added
+
+- **Customizable dashboard** — drag to reorder widgets, resize them (full / half /
+  third width) and show or hide them; the layout persists per user.
+- **Themes** — an **accent-colour picker** alongside light / dark / auto; the
+  light/dark toggle now persists as a user setting (survives a refresh).
+- **Collapsible sidebar** (icon rail) and **pinnable, reorderable navigation**
+  with a "More" group for unpinned items.
+- **Templates** — a dedicated management page (create/edit/delete), and templates
+  are offered when entering a transaction instead of appearing as "upcoming".
+- **HomeBank `.xhb` export** — download a wallet back to a HomeBank file
+  (round-trips with the importer); available from the wallet's backup section.
+- **Desktop-style income/expense chart** on the dashboard (diverging bars around
+  a zero line) with a selectable period.
+- **Smart amount entry** (HomeBank style) — `12.40` and `12,40` are both read as
+  decimals; a per-user preference, on by default.
+- **Double-click a register row** to open it for editing.
+- A **first-login tutorial** (coachmark tour) — dismissable, shown once per user,
+  and restartable from Settings.
+- **Brand logo/icon** beside the app name and as the favicon.
+- A footer **donation** link (PayPal) and a **HomeBank** credit link.
+- **Quick-add** a transaction from the dashboard, with a richer Upcoming panel.
+- An **animated landing site** (Astro) published to GitHub Pages.
+- CI: a weekly **HomeBank version watch** that opens a compatibility-review issue
+  when a newer HomeBank release appears.
+
+### Changed
+
+- The **wallet switcher** now lists only wallets + "Create wallet"; categories,
+  payees, currencies, integrity, backup/restore and `.xhb` export moved under
+  **Settings → Wallet**.
+- **Dates** are rendered everywhere in the user's configured format.
+- Documentation now states parity with **HomeBank** (no fixed version), so it
+  tracks current and future HomeBank releases.
+
+### Fixed
+
+- Reports: the **Statistics** pie is larger with a side legend, and the **Trend**
+  and **Balance** charts render immediately instead of appearing blank until a
+  control is changed.
+- Italian status labels aligned with the HomeBank desktop wording.
+
 ## [1.0.0] - 2026-06-22
 
 The first public release: a self-hosted, web-based personal finance manager with
-HomeBank 5.10 feature parity, shipped as a single Docker container.
+HomeBank feature parity, shipped as a single Docker container.
 
 ### Added
 
