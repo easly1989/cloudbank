@@ -75,8 +75,8 @@ export interface Preferences {
   navOrder?: string[];
   /** Pinned sidebar nav route ids; unpinned items fall into the "More" group. */
   navPinned?: string[];
-  /** Dashboard widget layout: order of widget ids and the hidden ones. */
-  dashboardLayout?: { order: string[]; hidden: string[] };
+  /** Dashboard widget layout: order, hidden ids, and per-widget width (full/half/third). */
+  dashboardLayout?: { order: string[]; hidden: string[]; spans?: Record<string, string> };
 }
 
 export interface User {

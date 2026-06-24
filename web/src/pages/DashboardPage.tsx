@@ -10,9 +10,9 @@ import {
 import {
   SortableContext,
   arrayMove,
+  rectSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
-  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -21,6 +21,7 @@ import {
   Box,
   Button,
   Card,
+  Grid,
   Group,
   Menu,
   SegmentedControl,
@@ -79,6 +80,7 @@ const WIDGET_IDS = [
   "upcoming",
 ] as const;
 type WidgetId = (typeof WIDGET_IDS)[number];
+type WidgetSize = "full" | "half" | "third";
 
 // resolveLayout returns the widget ids in the user's saved order, appending any
 // not listed (e.g. widgets added in a later release) in their default order.
@@ -164,13 +166,14 @@ export function DashboardPage() {
   const qc = useQueryClient();
   const walletId = currentWallet?.id ?? 0;
 
-  // Per-user dashboard layout: widget order + which widgets are hidden.
+  // Per-user dashboard layout: widget order, hidden ids, and per-widget width.
   const savedLayout = user?.preferences?.dashboardLayout;
   const [order, setOrder] = useState<WidgetId[]>(() => resolveLayout(savedLayout?.order));
   const [hidden, setHidden] = useState<string[]>(() => savedLayout?.hidden ?? []);
+  const [spans, setSpans] = useState<Record<string, string>>(() => savedLayout?.spans ?? {});
   const [editingLayout, setEditingLayout] = useState(false);
   const persistLayout = useMutation({
-    mutationFn: (next: { order: string[]; hidden: string[] }) =>
+    mutationFn: (next: { order: string[]; hidden: string[]; spans: Record<string, string> }) =>
       updateMe({ preferences: { ...(user?.preferences ?? {}), dashboardLayout: next } }),
     onSuccess: (u: User) => qc.setQueryData(["me"], u),
   });
@@ -225,12 +228,23 @@ export function DashboardPage() {
     if (oldI < 0 || newI < 0) return;
     const next = arrayMove(order, oldI, newI);
     setOrder(next);
-    persistLayout.mutate({ order: next, hidden });
+    persistLayout.mutate({ order: next, hidden, spans });
   };
   const setVisibility = (id: WidgetId, hide: boolean) => {
     const next = hide ? [...hidden, id] : hidden.filter((x) => x !== id);
     setHidden(next);
-    persistLayout.mutate({ order, hidden: next });
+    persistLayout.mutate({ order, hidden: next, spans });
+  };
+  const setSpan = (id: WidgetId, size: WidgetSize) => {
+    const next = { ...spans, [id]: size };
+    setSpans(next);
+    persistLayout.mutate({ order, hidden, spans: next });
+  };
+  // Per-widget width → Mantine 12-column span (full screen-wide on small screens).
+  const sizeOf = (id: WidgetId): WidgetSize => (spans[id] as WidgetSize) ?? "full";
+  const spanCols = (id: WidgetId): number => {
+    const s = sizeOf(id);
+    return s === "half" ? 6 : s === "third" ? 4 : 12;
   };
 
   const widgets: Record<WidgetId, ReactNode> = {
@@ -284,19 +298,22 @@ export function DashboardPage() {
       {editingLayout ? (
         <>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-            <SortableContext items={visible} strategy={verticalListSortingStrategy}>
-              <Stack>
+            <SortableContext items={visible} strategy={rectSortingStrategy}>
+              <Grid gutter="md">
                 {visible.map((id) => (
                   <SortableWidget
                     key={id}
                     id={id}
                     label={labels[id]}
+                    cols={spanCols(id)}
+                    size={sizeOf(id)}
                     onHide={() => setVisibility(id, true)}
+                    onSize={(s) => setSpan(id, s)}
                   >
                     {widgets[id]}
                   </SortableWidget>
                 ))}
-              </Stack>
+              </Grid>
             </SortableContext>
           </DndContext>
           {hiddenIds.length > 0 && (
@@ -321,27 +338,36 @@ export function DashboardPage() {
           )}
         </>
       ) : (
-        <Stack>
+        <Grid gutter="md">
           {visible.map((id) => (
-            <Box key={id}>{widgets[id]}</Box>
+            <Grid.Col key={id} span={{ base: 12, sm: spanCols(id) }}>
+              {widgets[id]}
+            </Grid.Col>
           ))}
-        </Stack>
+        </Grid>
       )}
     </Stack>
   );
 }
 
-// SortableWidget wraps a dashboard widget in edit mode with a drag handle and a
-// hide button; the content is non-interactive while reordering.
+// SortableWidget wraps a dashboard widget in edit mode within a grid column: a
+// drag handle reorders it, a size control sets its width, and a hide button
+// removes it. The content is non-interactive while editing.
 function SortableWidget({
   id,
   label,
+  cols,
+  size,
   onHide,
+  onSize,
   children,
 }: {
   id: string;
   label: string;
+  cols: number;
+  size: WidgetSize;
   onHide: () => void;
+  onSize: (s: WidgetSize) => void;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -352,9 +378,10 @@ function SortableWidget({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
+    zIndex: isDragging ? 2 : undefined,
   };
   return (
-    <Box ref={setNodeRef} style={style}>
+    <Grid.Col span={{ base: 12, sm: cols }} ref={setNodeRef} style={style}>
       <Group
         justify="space-between"
         wrap="nowrap"
@@ -377,17 +404,29 @@ function SortableWidget({
             {label}
           </Text>
         </Group>
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          aria-label={t("dashboard.hideWidget")}
-          onClick={onHide}
-        >
-          <IconEyeOff size={16} />
-        </ActionIcon>
+        <Group gap="xs" wrap="nowrap">
+          <SegmentedControl
+            size="xs"
+            value={size}
+            onChange={(v) => onSize(v as WidgetSize)}
+            data={[
+              { value: "full", label: "1/1" },
+              { value: "half", label: "1/2" },
+              { value: "third", label: "1/3" },
+            ]}
+          />
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            aria-label={t("dashboard.hideWidget")}
+            onClick={onHide}
+          >
+            <IconEyeOff size={16} />
+          </ActionIcon>
+        </Group>
       </Group>
       <Box style={{ pointerEvents: "none" }}>{children}</Box>
-    </Box>
+    </Grid.Col>
   );
 }
 
