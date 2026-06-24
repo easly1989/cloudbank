@@ -1,8 +1,12 @@
-import { MantineProvider } from "@mantine/core";
+import { MantineProvider, localStorageColorSchemeManager } from "@mantine/core";
 import type { ReactNode } from "react";
 
 import { useAuth } from "./auth/AuthProvider";
 import { buildTheme } from "./theme";
+
+// Persist the light/dark choice in localStorage so it survives a refresh even
+// for signed-out users (logged-in users also persist it server-side).
+const colorSchemeManager = localStorageColorSchemeManager({ key: "cb-color-scheme" });
 
 // ThemedMantineProvider builds the Mantine theme from the signed-in user's
 // accent-colour preference, so changing the accent in Settings restyles the
@@ -11,7 +15,11 @@ import { buildTheme } from "./theme";
 export function ThemedMantineProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   return (
-    <MantineProvider theme={buildTheme(user?.preferences?.themeAccent)} defaultColorScheme="auto">
+    <MantineProvider
+      theme={buildTheme(user?.preferences?.themeAccent)}
+      defaultColorScheme="auto"
+      colorSchemeManager={colorSchemeManager}
+    >
       {children}
     </MantineProvider>
   );
