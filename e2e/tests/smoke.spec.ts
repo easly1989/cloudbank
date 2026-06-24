@@ -30,6 +30,12 @@ test("full journey: setup → wallet → account → transaction → import → 
     await expect(page.getByRole("button", { name: "Test Wallet" })).toBeVisible();
   });
 
+  await test.step("dismiss the first-login tour", async () => {
+    // Entering the app for the first time auto-runs the onboarding tour; its
+    // backdrop blocks the page, so skip it before driving the rest of the journey.
+    await page.getByRole("button", { name: "Skip" }).click();
+  });
+
   await test.step("create an account", async () => {
     await nav(page, "Accounts");
     await page.getByRole("button", { name: "Add account" }).click();

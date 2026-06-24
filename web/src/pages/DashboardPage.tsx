@@ -290,6 +290,7 @@ export function DashboardPage() {
           size="xs"
           leftSection={<IconAdjustmentsHorizontal size={16} />}
           onClick={() => setEditingLayout((v) => !v)}
+          data-tour="customize"
         >
           {editingLayout ? t("dashboard.layoutDone") : t("dashboard.customize")}
         </Button>
@@ -916,7 +917,7 @@ function QuickAddCard({ walletId }: { walletId: number }) {
     });
 
   return (
-    <Stack gap="xs">
+    <Stack gap="xs" data-tour="quick-add">
       <Group justify="space-between">
         <Title order={4}>{t("dashboard.quickAdd")}</Title>
         <Select

@@ -642,7 +642,38 @@
     "smartAmount": "Smart amount entry",
     "smartAmountHint": "Type 12.40 or 12,40 — both are read as decimals (HomeBank style)",
     "save": "Save",
-    "saved": "Preferences saved"
+    "saved": "Preferences saved",
+    "restartTour": "Restart tutorial"
+  },
+  "tour": {
+    "skip": "Skip",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Done",
+    "welcome": {
+      "title": "Welcome to CloudBank",
+      "body": "A quick tour of the essentials — it takes less than a minute. You can skip it anytime."
+    },
+    "nav": {
+      "title": "Navigation",
+      "body": "Jump between your dashboard, accounts, transactions, schedules, budgets and reports. Pin, reorder or hide items to suit you."
+    },
+    "wallet": {
+      "title": "Your wallets",
+      "body": "Each wallet is a separate set of books. Switch between them or create a new one here."
+    },
+    "quickAdd": {
+      "title": "Add transactions fast",
+      "body": "Record an expense or income straight from the dashboard, without opening the register."
+    },
+    "customize": {
+      "title": "Make it yours",
+      "body": "Rearrange, resize, hide or show the dashboard widgets so the things you care about come first."
+    },
+    "settings": {
+      "title": "Settings & preferences",
+      "body": "Language, theme, date format and more live here. You can restart this tour anytime from Settings."
+    }
   },
   "integrity": {
     "title": "Integrity check",

@@ -19,6 +19,7 @@ import { useTranslation } from "react-i18next";
 import { ApiError, listAccounts, updateMe, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { supportedLanguages } from "../i18n";
+import { useTour } from "../onboarding/tourContext";
 import { ACCENT_COLORS } from "../theme";
 import { useWallet } from "../wallet/WalletProvider";
 
@@ -30,6 +31,7 @@ export function PreferencesPage() {
   const { user } = useAuth();
   const { setColorScheme } = useMantineColorScheme();
   const { currentWallet } = useWallet();
+  const tour = useTour();
   const walletId = currentWallet?.id ?? 0;
 
   const accountsQuery = useQuery({
@@ -161,7 +163,10 @@ export function PreferencesPage() {
             checked={smartAmount}
             onChange={(e) => setSmartAmount(e.currentTarget.checked)}
           />
-          <Group justify="flex-end">
+          <Group justify="space-between">
+            <Button variant="default" onClick={() => tour.start()}>
+              {t("preferences.restartTour")}
+            </Button>
             <Button onClick={() => save.mutate()} loading={save.isPending}>
               {t("preferences.save")}
             </Button>
