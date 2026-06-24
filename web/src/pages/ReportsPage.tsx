@@ -193,10 +193,20 @@ function StatisticsTab() {
       return {
         tooltip: { trigger: "item", valueFormatter },
         color: PALETTE,
+        legend: {
+          type: "scroll",
+          orient: "vertical",
+          right: 8,
+          top: "middle",
+          data: groups.map((g) => g.label),
+        },
         series: [
           {
             type: "pie",
-            radius: ["40%", "70%"],
+            radius: ["45%", "78%"],
+            center: ["34%", "50%"],
+            label: { show: false },
+            labelLine: { show: false },
             data: groups.map((g) => ({ name: g.label, value: Math.abs(g.amount), key: g.key })),
           },
         ],
@@ -292,7 +302,12 @@ function StatisticsTab() {
       {result && result.groups.length === 0 && <Text c="dimmed">{t("reports.empty")}</Text>}
 
       {result && result.groups.length > 0 && view === "chart" && (
-        <Chart ref={chartRef} option={option} onSelect={(key) => drilldown.mutate(key)} />
+        <Chart
+          ref={chartRef}
+          option={option}
+          height={chartType === "pie" ? 440 : 360}
+          onSelect={(key) => drilldown.mutate(key)}
+        />
       )}
 
       {result && result.groups.length > 0 && view === "table" && (
