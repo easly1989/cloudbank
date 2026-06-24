@@ -508,6 +508,8 @@
     "chartType": "Tipo di grafico",
     "chartDonut": "Anello",
     "chartBar": "Barre",
+    "chartLines": "Linee",
+    "lastMonths": "Ultimi {{count}} mesi",
     "groupBy": "Raggruppa per",
     "byCategory": "Categoria",
     "byPayee": "Beneficiario",
