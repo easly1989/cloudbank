@@ -82,9 +82,6 @@ type Data struct {
 	Upcoming []any `json:"upcoming"`
 }
 
-// incomeExpenseMonths is how many trailing months the income/expense chart spans.
-const incomeExpenseMonths = 12
-
 // Service builds dashboards.
 type Service struct {
 	db *sql.DB
@@ -104,8 +101,9 @@ const (
 
 // Build assembles the dashboard for a wallet over [from, to] (used by the
 // spending breakdown; the balances are point-in-time, not range-bound).
-// groupBy buckets the breakdown by category (default) or payee.
-func (s *Service) Build(ctx context.Context, walletID int64, from, to, groupBy string) (Data, error) {
+// groupBy buckets the breakdown by category (default) or payee. ieMonths is the
+// trailing window of the income/expense series (0 = all dates).
+func (s *Service) Build(ctx context.Context, walletID int64, from, to, groupBy string, ieMonths int) (Data, error) {
 	today := time.Now().UTC().Format(dateLayout)
 
 	accounts, err := s.q.ListAccountsForWallet(ctx, walletID)
@@ -173,7 +171,7 @@ func (s *Service) Build(ctx context.Context, walletID int64, from, to, groupBy s
 		}
 		out.TopCategories = slices
 
-		ie, err := s.incomeExpense(ctx, walletID, today, curByID, *base)
+		ie, err := s.incomeExpense(ctx, walletID, today, ieMonths, curByID, *base)
 		if err != nil {
 			return Data{}, err
 		}
@@ -183,10 +181,15 @@ func (s *Service) Build(ctx context.Context, walletID int64, from, to, groupBy s
 }
 
 // incomeExpense buckets income (amount > 0) and expense (amount < 0) by month
-// over the trailing incomeExpenseMonths window ending today, in base currency.
-// Internal transfers are excluded so the totals reflect real money in and out.
-func (s *Service) incomeExpense(ctx context.Context, walletID int64, today string, curByID map[int64]db.Currency, base db.Currency) ([]MonthPoint, error) {
-	from, months := monthsWindow(today, incomeExpenseMonths)
+// over the trailing ieMonths window ending today (0 = all dates, from the
+// earliest transaction), in base currency. Internal transfers are excluded so
+// the totals reflect real money in and out.
+func (s *Service) incomeExpense(ctx context.Context, walletID int64, today string, ieMonths int, curByID map[int64]db.Currency, base db.Currency) ([]MonthPoint, error) {
+	n := ieMonths
+	if n <= 0 {
+		n = s.allIncomeExpenseMonths(ctx, walletID, today)
+	}
+	from, months := monthsWindow(today, n)
 	rows, err := s.q.MonthlyIncomeExpense(ctx, db.MonthlyIncomeExpenseParams{WalletID: walletID, FromDate: from, ToDate: today})
 	if err != nil {
 		return nil, err
@@ -227,6 +230,36 @@ func monthsWindow(today string, n int) (from string, months []string) {
 		months = append(months, start.AddDate(0, i, 0).Format("2006-01"))
 	}
 	return start.Format(dateLayout), months
+}
+
+// maxIncomeExpenseMonths caps the all-dates income/expense window so a very old
+// wallet doesn't produce an unbounded axis.
+const maxIncomeExpenseMonths = 120
+
+// allIncomeExpenseMonths is the number of months from the wallet's earliest
+// transaction through today (inclusive), capped at maxIncomeExpenseMonths.
+func (s *Service) allIncomeExpenseMonths(ctx context.Context, walletID int64, today string) int {
+	var minDate sql.NullString
+	err := s.db.QueryRowContext(ctx, "SELECT MIN(date) FROM transactions WHERE wallet_id = ?", walletID).Scan(&minDate)
+	if err != nil || !minDate.Valid || minDate.String == "" {
+		return 1
+	}
+	first := func(d string) time.Time {
+		t, perr := time.Parse(dateLayout, d)
+		if perr != nil {
+			t = time.Now().UTC()
+		}
+		return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
+	}
+	start, end := first(minDate.String), first(today)
+	n := (end.Year()-start.Year())*12 + int(end.Month()) - int(start.Month()) + 1
+	if n < 1 {
+		n = 1
+	}
+	if n > maxIncomeExpenseMonths {
+		n = maxIncomeExpenseMonths
+	}
+	return n
 }
 
 func (s *Service) topCategories(ctx context.Context, walletID int64, from, to string, curByID map[int64]db.Currency, base db.Currency) ([]CategorySlice, error) {

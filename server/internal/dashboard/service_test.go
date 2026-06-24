@@ -66,7 +66,7 @@ func TestDashboardMatchesRegisterHeader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Register: %v", err)
 	}
-	data, err := ds.Build(ctx, wid, "2000-01-01", "2099-12-31", GroupByCategory)
+	data, err := ds.Build(ctx, wid, "2000-01-01", "2099-12-31", GroupByCategory, 12)
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestDashboardExcludesNoSummaryAndConvertsBase(t *testing.T) {
 	account(t, q, wid, usd.ID, 5000, 0, "USD-B")   // 50.00 USD → 55.00 EUR
 	account(t, q, wid, base, 99999, 1, "Excluded") // excluded (no_summary)
 
-	data, err := ds.Build(ctx, wid, "2026-01-01", "2026-01-31", GroupByCategory)
+	data, err := ds.Build(ctx, wid, "2026-01-01", "2026-01-31", GroupByCategory, 12)
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestDashboardTopCategories(t *testing.T) {
 	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: "2026-03-15", Amount: 9000, CategoryID: iptr(food.ID)}) // income: excluded
 	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: "2026-09-01", Amount: -8000, CategoryID: iptr(car.ID)}) // out of range
 
-	data, err := ds.Build(ctx, wid, "2026-03-01", "2026-03-31", GroupByCategory)
+	data, err := ds.Build(ctx, wid, "2026-03-01", "2026-03-31", GroupByCategory, 12)
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
@@ -157,7 +157,7 @@ func TestDashboardTopPayees(t *testing.T) {
 	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: "2026-03-15", Amount: 9000, PayeeID: pid(shop.ID)})  // income: excluded
 	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: "2026-09-01", Amount: -8000, PayeeID: pid(fuel.ID)}) // out of range
 
-	data, err := ds.Build(ctx, wid, "2026-03-01", "2026-03-31", GroupByPayee)
+	data, err := ds.Build(ctx, wid, "2026-03-01", "2026-03-31", GroupByPayee, 12)
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
@@ -197,7 +197,7 @@ func TestDashboardIncomeExpense(t *testing.T) {
 	// Older than the 12-month window: excluded.
 	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: d(13), Amount: -9999})
 
-	data, err := ds.Build(ctx, wid, "2026-01-01", "2026-01-31", GroupByCategory)
+	data, err := ds.Build(ctx, wid, "2026-01-01", "2026-01-31", GroupByCategory, 12)
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
@@ -218,5 +218,52 @@ func TestDashboardIncomeExpense(t *testing.T) {
 	}
 	if total != 8000 { // 5000 + 2000 + 1000 (the -9999 is out of window)
 		t.Fatalf("window total = %d, want 8000 (older row excluded)", total)
+	}
+}
+
+// The income/expense window honours ieMonths: a fixed window drops older rows,
+// while 0 (all dates) spans from the earliest transaction.
+func TestDashboardIncomeExpenseWindow(t *testing.T) {
+	ds, ts, q, wid := newFixture(t)
+	ctx := context.Background()
+	acc := account(t, q, wid, eur(t, q, wid), 0, 0, "Main")
+	now := time.Now().UTC()
+	d := func(monthsAgo int) string {
+		m := time.Date(now.Year(), now.Month(), 15, 0, 0, 0, 0, time.UTC).AddDate(0, -monthsAgo, 0)
+		return m.Format("2006-01-02")
+	}
+	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: d(0), Amount: -1000})
+	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: d(13), Amount: -2000})
+
+	// A 6-month window excludes the 13-months-ago expense.
+	d6, err := ds.Build(ctx, wid, "2026-01-01", "2026-01-31", GroupByCategory, 6)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d6.IncomeExpense) != 6 {
+		t.Fatalf("ieMonths=6 → %d points, want 6", len(d6.IncomeExpense))
+	}
+	var total6 int64
+	for _, p := range d6.IncomeExpense {
+		total6 += p.Expense
+	}
+	if total6 != 1000 {
+		t.Fatalf("6-month expense total = %d, want 1000", total6)
+	}
+
+	// All dates spans 13 months ago → today (14 inclusive months) and includes both.
+	dAll, err := ds.Build(ctx, wid, "2026-01-01", "2026-01-31", GroupByCategory, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(dAll.IncomeExpense) != 14 {
+		t.Fatalf("all-dates → %d points, want 14", len(dAll.IncomeExpense))
+	}
+	var totalAll int64
+	for _, p := range dAll.IncomeExpense {
+		totalAll += p.Expense
+	}
+	if totalAll != 3000 {
+		t.Fatalf("all-dates expense total = %d, want 3000", totalAll)
 	}
 }

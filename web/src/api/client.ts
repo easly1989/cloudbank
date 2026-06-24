@@ -566,6 +566,7 @@ export const getDashboard = (
   from?: string,
   to?: string,
   groupBy?: DashboardGroupBy,
+  ieMonths?: number,
 ) => {
   const params = new URLSearchParams();
   if (from && to) {
@@ -573,6 +574,7 @@ export const getDashboard = (
     params.set("to", to);
   }
   if (groupBy) params.set("groupBy", groupBy);
+  if (ieMonths != null) params.set("ieMonths", String(ieMonths));
   const q = params.toString();
   return api.get<Dashboard>(`/api/v1/wallets/${walletId}/dashboard${q ? `?${q}` : ""}`);
 };

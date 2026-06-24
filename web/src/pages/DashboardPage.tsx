@@ -108,17 +108,31 @@ const DONUT_PALETTE = [
 ];
 
 type ChartType = "donut" | "bar";
+type IEStyle = "bars" | "lines";
 
-// DashView is the on-the-fly spending-widget configuration the user can tweak
-// from the dashboard; it is remembered in localStorage across reloads.
+// DashView is the on-the-fly dashboard chart configuration the user can tweak;
+// it is remembered in localStorage across reloads. period/chartType/groupBy
+// drive the spending widget; ieMonths/ieStyle drive the income/expense chart.
 interface DashView {
   period: DatePreset;
   chartType: ChartType;
   groupBy: DashboardGroupBy;
+  ieMonths: number;
+  ieStyle: IEStyle;
 }
 
+// Income/expense trailing windows offered in the chart's period dropdown
+// (0 = all dates).
+const IE_MONTHS: number[] = [6, 12, 24, 36, 0];
+
 const VIEW_KEY = "cb.dashboard.view";
-const DEFAULT_VIEW: DashView = { period: "thisMonth", chartType: "donut", groupBy: "category" };
+const DEFAULT_VIEW: DashView = {
+  period: "thisMonth",
+  chartType: "donut",
+  groupBy: "category",
+  ieMonths: 12,
+  ieStyle: "bars",
+};
 // Periods offered for the spending widget (the register's "custom" range is
 // omitted here to keep the dashboard control a single dropdown).
 const PERIODS: DatePreset[] = ["thisMonth", "thisQuarter", "thisYear", "last30", "last90", "all"];
@@ -176,8 +190,8 @@ export function DashboardPage() {
   const { from, to } = resolveBounds(view.period);
 
   const query = useQuery({
-    queryKey: ["dashboard", walletId, from, to, view.groupBy],
-    queryFn: () => getDashboard(walletId, from, to, view.groupBy),
+    queryKey: ["dashboard", walletId, from, to, view.groupBy, view.ieMonths],
+    queryFn: () => getDashboard(walletId, from, to, view.groupBy, view.ieMonths),
     enabled: walletId > 0,
   });
   const data = query.data;
@@ -229,12 +243,12 @@ export function DashboardPage() {
       ) : null,
     quickAdd: <QuickAddCard walletId={walletId} />,
     incomeExpense: (
-      <Card withBorder>
-        <Title order={4} mb="sm">
-          {t("dashboard.incomeExpense")}
-        </Title>
-        <IncomeExpenseChart points={data?.incomeExpense ?? []} base={base} />
-      </Card>
+      <IncomeExpenseCard
+        view={view}
+        setView={setView}
+        points={data?.incomeExpense ?? []}
+        base={base}
+      />
     ),
     accounts: <AccountsPanel groups={groups} base={base} totals={data?.totals} />,
     spending: (
@@ -516,37 +530,127 @@ function SpendingCard({
   );
 }
 
-// IncomeExpenseChart renders the trailing 12-month income vs expense as grouped
-// bars (income teal, expense red) in base currency.
-function IncomeExpenseChart({ points, base }: { points: MonthPoint[]; base?: CurrencyInfo }) {
+// IncomeExpenseCard is the income/expense-over-time widget: a HomeBank-style
+// diverging chart (income up, expense down) with a period dropdown and a gear to
+// switch between bars and lines.
+function IncomeExpenseCard({
+  view,
+  setView,
+  points,
+  base,
+}: {
+  view: DashView;
+  setView: (v: DashView) => void;
+  points: MonthPoint[];
+  base?: CurrencyInfo;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Card withBorder>
+      <Group justify="space-between" mb="sm" wrap="nowrap" gap="xs">
+        <Title order={4}>{t("dashboard.incomeExpense")}</Title>
+        <Group gap="xs" wrap="nowrap">
+          <Select
+            aria-label={t("dashboard.period")}
+            data={IE_MONTHS.map((m) => ({
+              value: String(m),
+              label: m === 0 ? t("filters.presets.all") : t("dashboard.lastMonths", { count: m }),
+            }))}
+            value={String(view.ieMonths)}
+            onChange={(v) => v != null && setView({ ...view, ieMonths: Number(v) })}
+            allowDeselect={false}
+            w={160}
+          />
+          <Menu position="bottom-end" withinPortal closeOnItemClick={false}>
+            <Menu.Target>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="lg"
+                aria-label={t("dashboard.chartOptions")}
+              >
+                <IconAdjustmentsHorizontal size={18} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Label>{t("dashboard.chartType")}</Menu.Label>
+              <Box px="sm" pb="xs">
+                <SegmentedControl
+                  fullWidth
+                  size="xs"
+                  value={view.ieStyle}
+                  onChange={(v) => setView({ ...view, ieStyle: v as IEStyle })}
+                  data={[
+                    { value: "bars", label: t("dashboard.chartBar") },
+                    { value: "lines", label: t("dashboard.chartLines") },
+                  ]}
+                />
+              </Box>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      </Group>
+      <IncomeExpenseChart points={points} base={base} style={view.ieStyle} />
+    </Card>
+  );
+}
+
+// IncomeExpenseChart plots income above the zero line (green) and expense below
+// it (red), as bars or lines, over the month axis — mirroring the HomeBank
+// desktop "income vs expense" chart.
+function IncomeExpenseChart({
+  points,
+  base,
+  style,
+}: {
+  points: MonthPoint[];
+  base?: CurrencyInfo;
+  style: IEStyle;
+}) {
   const { t } = useTranslation();
   const incomeLabel = t("dashboard.income");
   const expenseLabel = t("dashboard.expense");
 
-  const option: EChartsOption = useMemo(
-    () => ({
+  const option: EChartsOption = useMemo(() => {
+    const seriesType = style === "lines" ? "line" : "bar";
+    return {
       tooltip: {
         trigger: "axis",
-        valueFormatter: (v) =>
-          base ? formatMinor(typeof v === "number" ? v : Number(v) || 0, base) : String(v),
+        valueFormatter: (v) => {
+          const n = typeof v === "number" ? v : Number(v) || 0;
+          return base ? formatMinor(Math.abs(n), base) : String(Math.abs(n));
+        },
       },
       legend: { data: [incomeLabel, expenseLabel], bottom: 0 },
-      grid: { left: 8, right: 16, top: 16, bottom: 36, containLabel: true },
-      xAxis: { type: "category", data: points.map((p) => p.month) },
+      grid: { left: 8, right: 16, top: 16, bottom: 48, containLabel: true },
+      xAxis: {
+        type: "category",
+        data: points.map((p) => p.month),
+        axisLabel: { rotate: points.length > 14 ? 60 : 30 },
+      },
       yAxis: { type: "value" },
       series: [
-        { name: incomeLabel, type: "bar", color: "#37b24d", data: points.map((p) => p.income) },
-        { name: expenseLabel, type: "bar", color: "#f03e3e", data: points.map((p) => p.expense) },
+        {
+          name: incomeLabel,
+          type: seriesType,
+          color: "#37b24d",
+          data: points.map((p) => p.income),
+        },
+        {
+          name: expenseLabel,
+          type: seriesType,
+          color: "#f03e3e",
+          data: points.map((p) => -p.expense),
+        },
       ],
-    }),
-    [points, base, incomeLabel, expenseLabel],
-  );
+    };
+  }, [points, base, style, incomeLabel, expenseLabel]);
 
   const empty = points.every((p) => p.income === 0 && p.expense === 0);
   if (!base || empty) {
     return <Text c="dimmed">{t("dashboard.noSpending")}</Text>;
   }
-  return <Chart option={option} height={260} />;
+  return <Chart option={option} height={280} />;
 }
 
 // GroupSubtotal renders a table footer summing a same-type group's balances. It

@@ -508,6 +508,8 @@
     "chartType": "Chart type",
     "chartDonut": "Donut",
     "chartBar": "Bars",
+    "chartLines": "Lines",
+    "lastMonths": "Last {{count}} months",
     "groupBy": "Group by",
     "byCategory": "Category",
     "byPayee": "Payee",
