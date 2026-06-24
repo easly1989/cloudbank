@@ -37,6 +37,7 @@ import {
   statisticsCsvUrl,
 } from "../api/client";
 import { Chart, type ChartHandle } from "../components/Chart";
+import { useDateFormat } from "../dates";
 import { type MoneyFormat, formatMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
 import { RegisterFilters } from "./RegisterFilters";
@@ -138,6 +139,7 @@ function filterToParams(f: Filters): Record<string, string> {
 
 function StatisticsTab() {
   const { t } = useTranslation();
+  const fmtDate = useDateFormat();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
 
@@ -352,7 +354,7 @@ function StatisticsTab() {
           <Table.Tbody>
             {ddRows.map((r) => (
               <Table.Tr key={r.id}>
-                <Table.Td>{r.date}</Table.Td>
+                <Table.Td>{fmtDate(r.date)}</Table.Td>
                 <Table.Td>{r.payeeName}</Table.Td>
                 <Table.Td>{r.memo}</Table.Td>
                 <Table.Td ta="right" c={r.amount < 0 ? "red" : "teal"}>
@@ -602,6 +604,7 @@ function BalanceTab() {
 
 function VehicleTab() {
   const { t } = useTranslation();
+  const fmtDate = useDateFormat();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
 
@@ -694,7 +697,7 @@ function VehicleTab() {
           <Table.Tbody>
             {report.entries.map((e) => (
               <Table.Tr key={e.transactionId}>
-                <Table.Td>{e.date}</Table.Td>
+                <Table.Td>{fmtDate(e.date)}</Table.Td>
                 <Table.Td ta="right">{num(e.meter, 0)}</Table.Td>
                 <Table.Td ta="right">{e.distance > 0 ? num(e.distance, 0) : "—"}</Table.Td>
                 <Table.Td ta="right">

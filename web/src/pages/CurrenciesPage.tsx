@@ -29,10 +29,12 @@ import {
   updateCurrency,
   type Currency,
 } from "../api/client";
+import { useDateFormat } from "../dates";
 import { useWallet } from "../wallet/WalletProvider";
 
 export function CurrenciesPage() {
   const { t } = useTranslation();
+  const fmtDate = useDateFormat();
   const qc = useQueryClient();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
@@ -184,7 +186,7 @@ export function CurrenciesPage() {
                       {c.rateUpdatedAt && (
                         <Text size="xs" c="dimmed">
                           {t("currencies.updatedAt", {
-                            date: new Date(c.rateUpdatedAt).toLocaleDateString(),
+                            date: fmtDate(c.rateUpdatedAt),
                           })}
                         </Text>
                       )}
