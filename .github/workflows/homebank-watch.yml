@@ -1,0 +1,91 @@
+name: HomeBank version watch
+
+# Best-effort weekly check: detect the latest HomeBank release and open a
+# compatibility-review issue when it is newer than the version CloudBank
+# currently targets (.github/homebank-version). HomeBank has no machine-readable
+# release API, so this scrapes the official site — if the page layout changes,
+# adjust the grep in the "detect" step.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays, 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect the latest HomeBank version
+        id: detect
+        run: |
+          set -uo pipefail
+          marker="$(tr -d '[:space:]' < .github/homebank-version 2>/dev/null || true)"
+          echo "marker=$marker" >> "$GITHUB_OUTPUT"
+
+          html=""
+          for url in \
+            "https://www.gethomebank.org/en/downloads.php" \
+            "https://www.gethomebank.org/en/index.php" \
+            "http://homebank.free.fr/en/index.php"; do
+            page="$(curl -fsSL --max-time 30 "$url" 2>/dev/null || true)"
+            html="$html
+          $page"
+          done
+
+          # HomeBank is at major version 5; take the highest X.Y(.Z) that appears
+          # near a "HomeBank"/"version" mention, to avoid matching unrelated numbers.
+          latest="$(printf '%s' "$html" \
+            | grep -oiE '(homebank|version)[^0-9]{0,15}5\.[0-9]+(\.[0-9]+)?' \
+            | grep -oE '5\.[0-9]+(\.[0-9]+)?' \
+            | sort -V | tail -1 || true)"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          echo "Detected latest='$latest' (currently targeting '$marker')"
+
+      - name: Open a compatibility issue when a newer version appears
+        if: steps.detect.outputs.latest != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MARKER: ${{ steps.detect.outputs.marker }}
+          LATEST: ${{ steps.detect.outputs.latest }}
+        run: |
+          set -euo pipefail
+          # Only act when the detected version is strictly newer than our target.
+          highest="$(printf '%s\n%s' "$MARKER" "$LATEST" | sort -V | tail -1)"
+          if [ "$MARKER" = "$LATEST" ] || [ "$highest" != "$LATEST" ]; then
+            echo "No newer version ($LATEST is not newer than $MARKER)."
+            exit 0
+          fi
+
+          search="HomeBank $LATEST released"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --search "$search in:title" --json number --jq 'length')"
+          if [ "$existing" != "0" ]; then
+            echo "A compatibility issue for $LATEST already exists."
+            exit 0
+          fi
+
+          body="$(printf '%s\n' \
+            "HomeBank **$LATEST** appears to be released (CloudBank currently targets **$MARKER**)." \
+            "" \
+            "Review what changed and whether CloudBank should follow:" \
+            "- New features in the release notes worth porting." \
+            "- Any .xhb file-format changes (new attributes/entities, version bump) affecting import/export — see server/internal/importer and server/internal/exporter." \
+            "- New account types, payment modes, or category/budget/schedule options." \
+            "- Fixes that imply parity bugs in our import or reports math." \
+            "" \
+            "When aligned (or after deciding what to skip), bump .github/homebank-version to $LATEST so this watch stops re-flagging it." \
+            "" \
+            "_Opened automatically by the HomeBank version-watch workflow; detection scrapes the HomeBank site and may need adjusting if the page layout changes._")"
+
+          gh label create compatibility --color FBCA04 --description "HomeBank compatibility" 2>/dev/null || true
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "HomeBank $LATEST released — review CloudBank for compatibility" \
+            --label compatibility \
+            --body "$body"
+
+          echo "Opened a compatibility issue for $LATEST."
