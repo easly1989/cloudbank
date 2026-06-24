@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/backup"
+	"github.com/easly1989/cloudbank/server/internal/exporter"
 )
 
 const maxRestoreBytes = 256 << 20 // 256 MiB
@@ -28,9 +29,30 @@ type backupHandlers struct {
 	dataDir string
 }
 
-// walletRoutes mounts the per-wallet JSON backup download (inside walletContext).
+// walletRoutes mounts the per-wallet backup downloads (inside walletContext).
 func (h *backupHandlers) walletRoutes(r chi.Router) {
 	r.Get("/backup", h.export)
+	r.Get("/export/xhb", h.exportXHB)
+}
+
+// exportXHB streams the wallet as a HomeBank .xhb file, so it can be opened in
+// the HomeBank desktop app.
+func (h *backupHandlers) exportXHB(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	doc, err := h.svc.Export(r.Context(), wl.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not export the wallet")
+		return
+	}
+	data, err := exporter.Build(doc)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not build the .xhb file")
+		return
+	}
+	w.Header().Set("Content-Type", "application/x-homebank")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"wallet-%d.xhb\"", wl.ID))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
 }
 
 func (h *backupHandlers) export(w http.ResponseWriter, r *http.Request) {

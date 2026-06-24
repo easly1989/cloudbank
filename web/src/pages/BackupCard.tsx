@@ -1,11 +1,17 @@
 import { Button, Card, Divider, FileInput, Group, Stack, Text, Title } from "@mantine/core";
-import { IconDatabaseExport, IconDownload, IconUpload } from "@tabler/icons-react";
+import { IconDatabaseExport, IconDownload, IconFileExport, IconUpload } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ApiError, downloadHotBackup, downloadWalletBackup, restoreBackup } from "../api/client";
+import {
+  ApiError,
+  downloadHotBackup,
+  downloadWalletBackup,
+  downloadWalletXHB,
+  restoreBackup,
+} from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { useWallet } from "../wallet/WalletProvider";
 
@@ -24,6 +30,7 @@ export function BackupCard() {
     });
 
   const download = useMutation({ mutationFn: () => downloadWalletBackup(walletId), onError });
+  const downloadXhb = useMutation({ mutationFn: () => downloadWalletXHB(walletId), onError });
   const downloadDb = useMutation({ mutationFn: () => downloadHotBackup(), onError });
 
   const restore = useMutation({
@@ -56,6 +63,14 @@ export function BackupCard() {
             loading={download.isPending}
           >
             {t("backup.download")}
+          </Button>
+          <Button
+            variant="light"
+            leftSection={<IconFileExport size={16} />}
+            onClick={() => downloadXhb.mutate()}
+            loading={downloadXhb.isPending}
+          >
+            {t("backup.downloadXhb")}
           </Button>
         </Group>
 

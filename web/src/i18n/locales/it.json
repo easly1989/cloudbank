@@ -661,6 +661,7 @@
     "title": "Backup e ripristino",
     "description": "Scarica un backup JSON autonomo di questo portafoglio, o ripristinane uno in un nuovo portafoglio.",
     "download": "Scarica backup",
+    "downloadXhb": "Esporta .xhb",
     "restoreLabel": "Ripristina",
     "choosePlaceholder": "Scegli un file di backup .json",
     "restoreHint": "Il ripristino crea un nuovo portafoglio; non sovrascrive questo.",
