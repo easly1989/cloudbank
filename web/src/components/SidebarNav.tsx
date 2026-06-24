@@ -206,6 +206,7 @@ export function SidebarNav({ railMode }: { railMode: boolean }) {
           end={item.end}
           label={t(item.labelKey)}
           leftSection={<item.icon size={18} />}
+          data-tour={item.to === "/settings" ? "settings" : undefined}
         />
       ))}
       {unpinnedItems.length > 0 && (

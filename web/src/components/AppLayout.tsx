@@ -26,6 +26,7 @@ import { Outlet, useNavigate } from "react-router-dom";
 
 import { updateMe, type User } from "../api/client";
 import { useAuth, useLogout } from "../auth/AuthProvider";
+import { OnboardingTourProvider } from "../onboarding/TourProvider";
 import { useWallet } from "../wallet/WalletProvider";
 import { AppFooter } from "./AppFooter";
 import { ColorSchemeToggle } from "./ColorSchemeToggle";
@@ -41,7 +42,12 @@ function WalletSwitcher() {
   return (
     <Menu position="bottom-start" withinPortal>
       <Menu.Target>
-        <Button variant="default" size="xs" rightSection={<IconChevronDown size={14} />}>
+        <Button
+          variant="default"
+          size="xs"
+          rightSection={<IconChevronDown size={14} />}
+          data-tour="wallet"
+        >
           {currentWallet?.title ?? "—"}
         </Button>
       </Menu.Target>
@@ -103,74 +109,76 @@ export function AppLayout() {
   }, [user?.locale, user?.theme]);
 
   return (
-    <AppShell
-      header={{ height: 56 }}
-      navbar={{ width: railMode ? 64 : 240, breakpoint: "sm", collapsed: { mobile: !opened } }}
-      footer={{ height: 36 }}
-      padding="md"
-    >
-      <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between">
-          <Group>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              onClick={toggleCollapsed}
-              visibleFrom="sm"
-              aria-label={t("nav.toggleSidebar")}
-            >
-              {collapsed ? (
-                <IconLayoutSidebarLeftExpand size={20} />
-              ) : (
-                <IconLayoutSidebarLeftCollapse size={20} />
-              )}
-            </ActionIcon>
-            <Group gap={8} wrap="nowrap">
-              <Logo size={26} />
-              <Text fw={700} size="lg">
-                {t("app.name")}
-              </Text>
+    <OnboardingTourProvider>
+      <AppShell
+        header={{ height: 56 }}
+        navbar={{ width: railMode ? 64 : 240, breakpoint: "sm", collapsed: { mobile: !opened } }}
+        footer={{ height: 36 }}
+        padding="md"
+      >
+        <AppShell.Header>
+          <Group h="100%" px="md" justify="space-between">
+            <Group>
+              <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                onClick={toggleCollapsed}
+                visibleFrom="sm"
+                aria-label={t("nav.toggleSidebar")}
+              >
+                {collapsed ? (
+                  <IconLayoutSidebarLeftExpand size={20} />
+                ) : (
+                  <IconLayoutSidebarLeftCollapse size={20} />
+                )}
+              </ActionIcon>
+              <Group gap={8} wrap="nowrap">
+                <Logo size={26} />
+                <Text fw={700} size="lg">
+                  {t("app.name")}
+                </Text>
+              </Group>
+              <WalletSwitcher />
             </Group>
-            <WalletSwitcher />
+            <Group>
+              <LanguageSwitcher />
+              <ColorSchemeToggle />
+              <Menu position="bottom-end" withinPortal>
+                <Menu.Target>
+                  <UnstyledButton aria-label={user?.username}>
+                    <Group gap="xs">
+                      <Avatar radius="xl" size={32} color="teal">
+                        {user?.username.slice(0, 2).toUpperCase()}
+                      </Avatar>
+                      <Text size="sm" visibleFrom="sm">
+                        {user?.username}
+                      </Text>
+                    </Group>
+                  </UnstyledButton>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item leftSection={<IconLogout size={16} />} onClick={() => logout.mutate()}>
+                    {t("actions.signOut")}
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </Group>
           </Group>
-          <Group>
-            <LanguageSwitcher />
-            <ColorSchemeToggle />
-            <Menu position="bottom-end" withinPortal>
-              <Menu.Target>
-                <UnstyledButton aria-label={user?.username}>
-                  <Group gap="xs">
-                    <Avatar radius="xl" size={32} color="teal">
-                      {user?.username.slice(0, 2).toUpperCase()}
-                    </Avatar>
-                    <Text size="sm" visibleFrom="sm">
-                      {user?.username}
-                    </Text>
-                  </Group>
-                </UnstyledButton>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item leftSection={<IconLogout size={16} />} onClick={() => logout.mutate()}>
-                  {t("actions.signOut")}
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </Group>
-        </Group>
-      </AppShell.Header>
+        </AppShell.Header>
 
-      <AppShell.Navbar p="sm">
-        <SidebarNav railMode={railMode} />
-      </AppShell.Navbar>
+        <AppShell.Navbar p="sm" data-tour="nav">
+          <SidebarNav railMode={railMode} />
+        </AppShell.Navbar>
 
-      <AppShell.Main>
-        <Outlet />
-      </AppShell.Main>
+        <AppShell.Main>
+          <Outlet />
+        </AppShell.Main>
 
-      <AppShell.Footer>
-        <AppFooter />
-      </AppShell.Footer>
-    </AppShell>
+        <AppShell.Footer>
+          <AppFooter />
+        </AppShell.Footer>
+      </AppShell>
+    </OnboardingTourProvider>
   );
 }
