@@ -60,8 +60,21 @@ If you're coming from another tool, CloudBank also imports **CSV** (the HomeBank
 CSV dialect and generic mapped CSV), **QIF**, and **OFX/QFX** from the same
 **Import** screen, with duplicate detection and optional rule application.
 
+## Exporting back to HomeBank (`.xhb`)
+
+CloudBank can export a wallet **back to a HomeBank `.xhb` file**, so you're never
+locked in. Go to **Settings → Wallet → Backup & restore** and click
+**Export .xhb**; the downloaded file opens directly in the HomeBank desktop app.
+
+The export reverses the import exactly — accounts, payees, categories, tags,
+transactions (with splits and re-paired transfers), schedules, templates,
+assignment rules and budgets — so a round-trip (export from CloudBank → open in
+HomeBank, or export → re-import into a fresh CloudBank wallet) preserves entity
+counts and per-account balances to the cent.
+
 ## Re-importing later / round-tripping
 
 Re-running the `.xhb` import always creates a **new** wallet, so it never clobbers
-existing data. To move data back out, use **CSV/QIF export** per account, or take
-a full **wallet backup** (portable JSON) from the wallet settings.
+existing data. To move data back out, use the **`.xhb` export** above, **CSV/QIF
+export** per account, or take a full **wallet backup** (portable JSON) from the
+wallet settings.
