@@ -175,6 +175,15 @@ paths:
       responses:
         "200": { description: The backup document., content: { application/json: { schema: { type: object, additionalProperties: true } } } }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/export/xhb:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: exportWalletXHB
+      summary: Download the wallet as a HomeBank .xhb file
+      responses:
+        "200": { description: The HomeBank file., content: { application/x-homebank: { schema: { type: string, format: binary } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/integrity:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
