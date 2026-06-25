@@ -30,6 +30,7 @@ import {
   type Currency,
 } from "../api/client";
 import { useDateFormat } from "../dates";
+import { rowFocusProps } from "../rowEdit";
 import { useWallet } from "../wallet/WalletProvider";
 
 export function CurrenciesPage() {
@@ -154,7 +155,7 @@ export function CurrenciesPage() {
         </Table.Thead>
         <Table.Tbody>
           {currenciesQuery.data?.map((c) => (
-            <Table.Tr key={c.id}>
+            <Table.Tr key={c.id} {...rowFocusProps()}>
               <Table.Td>
                 {c.symbol} {c.isoCode}
                 {c.isBase && (

@@ -28,6 +28,7 @@ import {
   setCategoryBudget,
 } from "../api/client";
 import { type MoneyFormat, formatMinor } from "../money";
+import { rowFocusProps } from "../rowEdit";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
 
@@ -183,7 +184,7 @@ function BudgetRow({
   };
 
   return (
-    <Table.Tr>
+    <Table.Tr {...rowFocusProps()}>
       <Table.Td>{category.parentId ? `› ${category.name}` : category.name}</Table.Td>
       <Table.Td>
         <SegmentedControl
