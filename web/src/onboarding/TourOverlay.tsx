@@ -1,5 +1,5 @@
 import { Box, Button, Group, Paper, Text } from "@mantine/core";
-import { useEffect, useLayoutEffect, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
@@ -14,6 +14,8 @@ interface Rect {
 
 const CARD_WIDTH = 320;
 const SPOTLIGHT_PAD = 6;
+const GAP = 12; // distance between the target and the card
+const MARGIN = 12; // minimum distance from the viewport edge
 
 // Locate the on-screen rectangle of a step's target, or null when it isn't
 // rendered or is hidden (e.g. the sidebar inside a closed mobile drawer).
@@ -26,21 +28,58 @@ function findRect(target?: string): Rect | null {
   return { top: r.top, left: r.left, width: r.width, height: r.height };
 }
 
-// Position the step card next to its target (below if there's room, else above),
-// clamped to the viewport; centred when there's no target.
-function cardPosition(rect: Rect | null): CSSProperties {
-  if (!rect) return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
-  const margin = 8;
-  const left = Math.min(Math.max(rect.left, margin), window.innerWidth - CARD_WIDTH - margin);
-  const spaceBelow = window.innerHeight - (rect.top + rect.height);
-  if (spaceBelow > 220) return { top: rect.top + rect.height + 12, left };
-  return { bottom: window.innerHeight - rect.top + 12, left };
+const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
+
+// Place the step card next to its target, choosing whichever side has room
+// (below → above → right → left), then clamp it so the WHOLE card — and its
+// buttons — always stay within the viewport and remain clickable. Centred when
+// there's no target.
+function cardPosition(rect: Rect | null, cardW: number, cardH: number): CSSProperties {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const maxLeft = Math.max(MARGIN, vw - cardW - MARGIN);
+  const maxTop = Math.max(MARGIN, vh - cardH - MARGIN);
+
+  if (!rect) {
+    return {
+      top: clamp((vh - cardH) / 2, MARGIN, maxTop),
+      left: clamp((vw - cardW) / 2, MARGIN, maxLeft),
+    };
+  }
+
+  let top: number;
+  let left: number;
+  if (vh - (rect.top + rect.height) >= cardH + GAP + MARGIN) {
+    // below
+    top = rect.top + rect.height + GAP;
+    left = rect.left;
+  } else if (rect.top >= cardH + GAP + MARGIN) {
+    // above
+    top = rect.top - GAP - cardH;
+    left = rect.left;
+  } else if (vw - (rect.left + rect.width) >= cardW + GAP + MARGIN) {
+    // right (e.g. a full-height sidebar target)
+    left = rect.left + rect.width + GAP;
+    top = rect.top;
+  } else if (rect.left >= cardW + GAP + MARGIN) {
+    // left
+    left = rect.left - GAP - cardW;
+    top = rect.top;
+  } else {
+    // no room on any side — overlay it but keep it fully on-screen below
+    top = rect.top + rect.height + GAP;
+    left = rect.left;
+  }
+
+  return { top: clamp(top, MARGIN, maxTop), left: clamp(left, MARGIN, maxLeft) };
 }
 
 export default function TourOverlay({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
+  const [pos, setPos] = useState<CSSProperties | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const current = TOUR_STEPS[step];
   const isFirst = step === 0;
@@ -49,10 +88,26 @@ export default function TourOverlay({ onClose }: { onClose: () => void }) {
   const next = () => (isLast ? onClose() : setStep((s) => s + 1));
   const back = () => setStep((s) => Math.max(0, s - 1));
 
-  // Measure the current target on step change, resize and scroll; the timeout
-  // catches layout that settles a tick after the step changes.
+  // Measure the target and the card on every step change, resize and scroll,
+  // then compute a position that keeps the whole card on-screen. The card is
+  // measured from its own ref, so its real height drives the clamping. The
+  // timeout catches layout that settles a tick after the step changes.
   useLayoutEffect(() => {
-    const measure = () => setRect(findRect(current.target));
+    // Bring the target into view so both the spotlight and the card land in the
+    // viewport (no-op for fixed header/sidebar targets already on screen).
+    const el = current.target
+      ? document.querySelector<HTMLElement>(`[data-tour="${current.target}"]`)
+      : null;
+    el?.scrollIntoView({ block: "nearest", inline: "nearest" });
+
+    const measure = () => {
+      const r = findRect(current.target);
+      const card = cardRef.current;
+      const cardW = card?.offsetWidth ?? CARD_WIDTH;
+      const cardH = card?.offsetHeight ?? 220;
+      setRect(r);
+      setPos(cardPosition(r, cardW, cardH));
+    };
     measure();
     const id = window.setTimeout(measure, 60);
     window.addEventListener("resize", measure);
@@ -62,7 +117,7 @@ export default function TourOverlay({ onClose }: { onClose: () => void }) {
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
     };
-  }, [current.target]);
+  }, [step, current.target]);
 
   // Keyboard navigation (no dep array so the handlers always see fresh state).
   useEffect(() => {
@@ -101,6 +156,7 @@ export default function TourOverlay({ onClose }: { onClose: () => void }) {
         />
       )}
       <Paper
+        ref={cardRef}
         shadow="md"
         p="md"
         radius="md"
@@ -108,9 +164,13 @@ export default function TourOverlay({ onClose }: { onClose: () => void }) {
         style={{
           position: "fixed",
           width: CARD_WIDTH,
-          maxWidth: "calc(100vw - 16px)",
+          maxWidth: "calc(100vw - 24px)",
+          maxHeight: "calc(100vh - 24px)",
+          overflowY: "auto",
           zIndex: 2001,
-          ...cardPosition(rect),
+          // Hide until the first measurement so it never flashes off-screen.
+          visibility: pos ? "visible" : "hidden",
+          ...(pos ?? { top: 0, left: 0 }),
         }}
       >
         <Text fw={700} mb={4}>
