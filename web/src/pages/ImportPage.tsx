@@ -51,7 +51,7 @@ function XhbImportPanel() {
   });
 
   return (
-    <Stack maw={640}>
+    <Stack>
       <Text c="dimmed">{t("import.description")}</Text>
 
       <Card withBorder>
