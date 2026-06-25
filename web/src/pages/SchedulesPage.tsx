@@ -30,6 +30,7 @@ import { useTranslation } from "react-i18next";
 
 import {
   ApiError,
+  type Account,
   type Schedule,
   type ScheduleInput,
   type ScheduleUnit,
@@ -49,6 +50,7 @@ import {
   updateTemplate,
 } from "../api/client";
 import { useDateFormat } from "../dates";
+import { formatMinor, type MoneyFormat } from "../money";
 import { rowEditProps, stopRowEdit } from "../rowEdit";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
@@ -56,6 +58,16 @@ import { useWallet } from "../wallet/WalletProvider";
 const UNITS: ScheduleUnit[] = ["day", "week", "month", "year"];
 const WEEKEND_MODES = [0, 1, 2, 3];
 const PAYMENT_MODES = Array.from({ length: 12 }, (_, i) => i);
+
+// Currency formatting for an account (falls back to plain 2-decimal numbers when
+// the account/currency isn't known).
+const accountFormat = (a?: Account): MoneyFormat => ({
+  fracDigits: a?.currencyFracDigits ?? 2,
+  decimalChar: a?.currencyDecimalChar ?? ".",
+  groupChar: a?.currencyGroupChar ?? ",",
+  symbol: a?.currencySymbol ?? "",
+  symbolPrefix: a?.currencySymbolPrefix ?? false,
+});
 
 export function SchedulesPage() {
   const { t } = useTranslation();
@@ -70,6 +82,31 @@ export function SchedulesPage() {
     enabled: walletId > 0,
   });
   const schedules = query.data ?? [];
+
+  // Templates and accounts let us format each schedule's amount in its account's
+  // currency (schedule → template.accountId → account).
+  const templatesQuery = useQuery({
+    queryKey: ["templates", walletId],
+    queryFn: () => listTemplates(walletId),
+    enabled: walletId > 0,
+  });
+  const accountsQuery = useQuery({
+    queryKey: ["accounts", walletId],
+    queryFn: () => listAccounts(walletId),
+    enabled: walletId > 0,
+  });
+  const templateById = useMemo(
+    () => new Map((templatesQuery.data ?? []).map((tpl) => [tpl.id, tpl])),
+    [templatesQuery.data],
+  );
+  const accountById = useMemo(
+    () => new Map((accountsQuery.data ?? []).map((a) => [a.id, a])),
+    [accountsQuery.data],
+  );
+  const accountFor = (s: Schedule): Account | undefined => {
+    const accId = templateById.get(s.templateId)?.accountId;
+    return accId != null ? accountById.get(accId) : undefined;
+  };
 
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: ["schedules", walletId] });
@@ -125,6 +162,7 @@ export function SchedulesPage() {
           <Table.Thead>
             <Table.Tr>
               <Table.Th>{t("schedules.template")}</Table.Th>
+              <Table.Th ta="right">{t("transactions.amount")}</Table.Th>
               <Table.Th>{t("schedules.cadenceLabel")}</Table.Th>
               <Table.Th>{t("schedules.nextDue")}</Table.Th>
               <Table.Th>{t("schedules.remaining")}</Table.Th>
@@ -142,6 +180,9 @@ export function SchedulesPage() {
                 })}
               >
                 <Table.Td>{s.templateName}</Table.Td>
+                <Table.Td ta="right" c={s.templateAmount < 0 ? "red" : "teal"}>
+                  {formatMinor(s.templateAmount, accountFormat(accountFor(s)))}
+                </Table.Td>
                 <Table.Td>
                   {t("schedules.cadence", { n: s.everyN, unit: t(`schedules.units.${s.unit}`) })}
                 </Table.Td>
