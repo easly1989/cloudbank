@@ -1,9 +1,50 @@
+import { useComputedColorScheme } from "@mantine/core";
 import * as echarts from "echarts";
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 
 export interface ChartHandle {
   /** Returns the chart as a PNG data URL (for export). */
   getPng: () => string | undefined;
+}
+
+type Dict = Record<string, unknown>;
+const asDict = (v: unknown): Dict => (v && typeof v === "object" ? (v as Dict) : {});
+
+// Inject theme-aware text/line colours so legends, axis labels and the default
+// text are readable in both light and dark mode. Only components actually
+// present in the option are touched (so a pie chart never grows phantom axes),
+// and any explicit per-option colour wins over the default.
+function applyChartTheme(option: echarts.EChartsOption, dark: boolean): echarts.EChartsOption {
+  const text = dark ? "#c1c2c5" : "#373a40";
+  const line = dark ? "#373a40" : "#ced4da";
+  const split = dark ? "#2c2e33" : "#e9ecef";
+
+  const themeLegend = (legend: unknown): unknown => {
+    const one = (l: Dict): Dict => ({ ...l, textStyle: { color: text, ...asDict(l.textStyle) } });
+    return Array.isArray(legend) ? legend.map((l) => one(asDict(l))) : one(asDict(legend));
+  };
+  const themeAxis = (axis: unknown): unknown => {
+    const one = (a: Dict): Dict => ({
+      ...a,
+      axisLabel: { color: text, ...asDict(a.axisLabel) },
+      axisLine: {
+        ...asDict(a.axisLine),
+        lineStyle: { color: line, ...asDict(asDict(a.axisLine).lineStyle) },
+      },
+      splitLine: {
+        ...asDict(a.splitLine),
+        lineStyle: { color: split, ...asDict(asDict(a.splitLine).lineStyle) },
+      },
+    });
+    return Array.isArray(axis) ? axis.map((a) => one(asDict(a))) : one(asDict(axis));
+  };
+
+  const o = option as unknown as Dict;
+  const themed: Dict = { ...o, textStyle: { color: text, ...asDict(o.textStyle) } };
+  if (o.legend) themed.legend = themeLegend(o.legend);
+  if (o.xAxis) themed.xAxis = themeAxis(o.xAxis);
+  if (o.yAxis) themed.yAxis = themeAxis(o.yAxis);
+  return themed as unknown as echarts.EChartsOption;
 }
 
 // Chart is a thin React wrapper over ECharts: it renders an option, resizes with
@@ -18,6 +59,10 @@ export const Chart = forwardRef<
 >(function Chart({ option, height = 360, onSelect }, ref) {
   const el = useRef<HTMLDivElement>(null);
   const chart = useRef<echarts.ECharts | null>(null);
+  // Re-theme (and re-render) the option whenever the colour scheme changes so
+  // chart text stays readable after a light/dark toggle.
+  const scheme = useComputedColorScheme("light");
+  const themed = useMemo(() => applyChartTheme(option, scheme === "dark"), [option, scheme]);
 
   useImperativeHandle(ref, () => ({
     getPng: () => chart.current?.getDataURL({ pixelRatio: 2, backgroundColor: "#fff" }),
@@ -49,7 +94,7 @@ export const Chart = forwardRef<
   useEffect(() => {
     const instance = chart.current;
     if (!instance) return;
-    instance.setOption(option, true);
+    instance.setOption(themed, true);
     instance.resize();
     instance.off("click");
     if (onSelect) {
@@ -58,7 +103,7 @@ export const Chart = forwardRef<
         if (d?.key != null) onSelect(d.key);
       });
     }
-  }, [option, onSelect]);
+  }, [themed, onSelect]);
 
   return <div ref={el} style={{ width: "100%", height }} />;
 });
