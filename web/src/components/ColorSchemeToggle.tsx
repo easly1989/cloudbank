@@ -1,4 +1,4 @@
-import { ActionIcon, useMantineColorScheme } from "@mantine/core";
+import { ActionIcon, useComputedColorScheme, useMantineColorScheme } from "@mantine/core";
 import { IconMoon, IconSun } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -7,7 +7,12 @@ import { updateMe, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 
 export function ColorSchemeToggle() {
-  const { colorScheme, setColorScheme } = useMantineColorScheme();
+  const { setColorScheme } = useMantineColorScheme();
+  // Resolve the *effective* scheme: useMantineColorScheme().colorScheme can be
+  // "auto", which made the first click compute the value already on screen (a
+  // no-op). useComputedColorScheme resolves "auto" to "light"/"dark" so the
+  // toggle always flips.
+  const computed = useComputedColorScheme("light", { getInitialValueInEffect: true });
   const { user } = useAuth();
   const qc = useQueryClient();
   const { t } = useTranslation();
@@ -20,7 +25,7 @@ export function ColorSchemeToggle() {
     onSuccess: (u: User) => qc.setQueryData(["me"], u),
   });
 
-  const dark = colorScheme === "dark";
+  const dark = computed === "dark";
   const toggle = () => {
     const next = dark ? "light" : "dark";
     setColorScheme(next);
