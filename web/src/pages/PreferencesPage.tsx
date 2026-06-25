@@ -6,6 +6,7 @@ import {
   Input,
   SegmentedControl,
   Select,
+  SimpleGrid,
   Stack,
   Switch,
   useMantineColorScheme,
@@ -82,87 +83,89 @@ export function PreferencesPage() {
   });
 
   return (
-    <Stack maw={560}>
+    <Stack>
       <Card withBorder>
         <Stack>
-          <Select
-            label={t("preferences.language")}
-            data={supportedLanguages.map((l) => ({ value: l, label: langLabels[l] ?? l }))}
-            value={locale}
-            onChange={(v) => v && setLocale(v)}
-            allowDeselect={false}
-          />
-          <div>
-            <Group gap="xs" mb={4}>
-              {t("preferences.theme")}
-            </Group>
-            <SegmentedControl
-              value={theme}
-              onChange={setTheme}
-              data={[
-                { label: t("preferences.themeAuto"), value: "auto" },
-                { label: t("preferences.themeLight"), value: "light" },
-                { label: t("preferences.themeDark"), value: "dark" },
-              ]}
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
+            <Select
+              label={t("preferences.language")}
+              data={supportedLanguages.map((l) => ({ value: l, label: langLabels[l] ?? l }))}
+              value={locale}
+              onChange={(v) => v && setLocale(v)}
+              allowDeselect={false}
             />
-          </div>
-          <Input.Wrapper label={t("preferences.accent")}>
-            <Group gap="xs" mt={4}>
-              {ACCENT_COLORS.map((c) => (
-                <ColorSwatch
-                  key={c}
-                  component="button"
-                  type="button"
-                  color={`var(--mantine-color-${c}-6)`}
-                  onClick={() => setAccent(c)}
-                  aria-label={c}
-                  style={{ color: "#fff", cursor: "pointer" }}
-                >
-                  {accent === c && <IconCheck size={14} />}
-                </ColorSwatch>
-              ))}
-            </Group>
-          </Input.Wrapper>
-          <Select
-            label={t("preferences.dateFormat")}
-            data={[
-              { value: "iso", label: "2026-01-31" },
-              { value: "dmy", label: "31/01/2026" },
-              { value: "mdy", label: "01/31/2026" },
-              { value: "long", label: t("preferences.dateLong") },
-            ]}
-            value={dateFormat}
-            onChange={(v) => v && setDateFormat(v)}
-            allowDeselect={false}
-          />
-          <Select
-            label={t("preferences.startScreen")}
-            data={[
-              { value: "dashboard", label: t("nav.dashboard") },
-              { value: "accounts", label: t("nav.accounts") },
-              { value: "transactions", label: t("nav.transactions") },
-              { value: "budget", label: t("nav.budget") },
-              { value: "reports", label: t("nav.reports") },
-            ]}
-            value={startScreen}
-            onChange={(v) => v && setStartScreen(v)}
-            allowDeselect={false}
-          />
-          <Select
-            label={t("preferences.defaultAccount")}
-            placeholder={t("preferences.noDefaultAccount")}
-            data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
-            value={defaultAccount}
-            onChange={setDefaultAccount}
-            clearable
-            searchable
-          />
-          <Switch
-            label={t("preferences.smartAmount")}
-            description={t("preferences.smartAmountHint")}
-            checked={smartAmount}
-            onChange={(e) => setSmartAmount(e.currentTarget.checked)}
-          />
+            <div>
+              <Group gap="xs" mb={4}>
+                {t("preferences.theme")}
+              </Group>
+              <SegmentedControl
+                value={theme}
+                onChange={setTheme}
+                data={[
+                  { label: t("preferences.themeAuto"), value: "auto" },
+                  { label: t("preferences.themeLight"), value: "light" },
+                  { label: t("preferences.themeDark"), value: "dark" },
+                ]}
+              />
+            </div>
+            <Input.Wrapper label={t("preferences.accent")}>
+              <Group gap="xs" mt={4}>
+                {ACCENT_COLORS.map((c) => (
+                  <ColorSwatch
+                    key={c}
+                    component="button"
+                    type="button"
+                    color={`var(--mantine-color-${c}-6)`}
+                    onClick={() => setAccent(c)}
+                    aria-label={c}
+                    style={{ color: "#fff", cursor: "pointer" }}
+                  >
+                    {accent === c && <IconCheck size={14} />}
+                  </ColorSwatch>
+                ))}
+              </Group>
+            </Input.Wrapper>
+            <Select
+              label={t("preferences.dateFormat")}
+              data={[
+                { value: "iso", label: "2026-01-31" },
+                { value: "dmy", label: "31/01/2026" },
+                { value: "mdy", label: "01/31/2026" },
+                { value: "long", label: t("preferences.dateLong") },
+              ]}
+              value={dateFormat}
+              onChange={(v) => v && setDateFormat(v)}
+              allowDeselect={false}
+            />
+            <Select
+              label={t("preferences.startScreen")}
+              data={[
+                { value: "dashboard", label: t("nav.dashboard") },
+                { value: "accounts", label: t("nav.accounts") },
+                { value: "transactions", label: t("nav.transactions") },
+                { value: "budget", label: t("nav.budget") },
+                { value: "reports", label: t("nav.reports") },
+              ]}
+              value={startScreen}
+              onChange={(v) => v && setStartScreen(v)}
+              allowDeselect={false}
+            />
+            <Select
+              label={t("preferences.defaultAccount")}
+              placeholder={t("preferences.noDefaultAccount")}
+              data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
+              value={defaultAccount}
+              onChange={setDefaultAccount}
+              clearable
+              searchable
+            />
+            <Switch
+              label={t("preferences.smartAmount")}
+              description={t("preferences.smartAmountHint")}
+              checked={smartAmount}
+              onChange={(e) => setSmartAmount(e.currentTarget.checked)}
+            />
+          </SimpleGrid>
           <Group justify="space-between">
             <Button variant="default" onClick={() => tour.start()}>
               {t("preferences.restartTour")}

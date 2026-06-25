@@ -1,4 +1,14 @@
-import { Alert, Button, Card, Divider, Group, Stack, Text, TextInput, Title } from "@mantine/core";
+import {
+  Alert,
+  Button,
+  Card,
+  Group,
+  SimpleGrid,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+} from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconCoin, IconTags, IconUserDollar } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -49,7 +59,7 @@ export function WalletSettingsPage() {
   const canDelete = confirm === currentWallet.title;
 
   return (
-    <Stack maw={520}>
+    <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
       <Card withBorder>
         <Stack>
           <TextInput
@@ -136,8 +146,6 @@ export function WalletSettingsPage() {
           </Stack>
         </Card>
       )}
-
-      <Divider />
-    </Stack>
+    </SimpleGrid>
   );
 }
