@@ -189,6 +189,10 @@ export function QuickAdd({
           onChange={setTags}
           clearable
           style={{ flex: "1 1 150px", minWidth: 120 }}
+          // Keep the tag pills on a single scrollable line so adding a tag
+          // doesn't wrap them and grow the field (and the whole quick-add row)
+          // taller. pillsList is the flex container that otherwise wraps.
+          styles={{ pillsList: { flexWrap: "nowrap", overflowX: "auto" } }}
         />
         <Select
           aria-label={t("transactions.status")}
