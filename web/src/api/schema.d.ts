@@ -1556,9 +1556,14 @@ export interface components {
             minimumBalance: number;
             /**
              * Format: int64
-             * @description minor units
+             * @description today's balance (initial + transactions dated on/before today), minor units
              */
             balance: number;
+            /**
+             * Format: int64
+             * @description initial + all transactions incl. future-dated, minor units
+             */
+            futureBalance: number;
             closed: boolean;
             noSummary?: boolean;
             noBudget?: boolean;

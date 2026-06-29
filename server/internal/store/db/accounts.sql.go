@@ -9,6 +9,33 @@ import (
 	"context"
 )
 
+const accountBalanceDelta = `-- name: AccountBalanceDelta :one
+SELECT
+    CAST(COALESCE(SUM(amount), 0) AS INTEGER) AS future_delta,
+    CAST(COALESCE(SUM(CASE WHEN date <= ?1 THEN amount ELSE 0 END), 0) AS INTEGER) AS today_delta
+FROM transactions
+WHERE account_id = ?2
+`
+
+type AccountBalanceDeltaParams struct {
+	Today     string
+	AccountID int64
+}
+
+type AccountBalanceDeltaRow struct {
+	FutureDelta int64
+	TodayDelta  int64
+}
+
+// Today/future transaction sums for a single account; the caller adds the
+// account's initial balance. Mirrors AccountBalanceDeltas (the per-wallet form).
+func (q *Queries) AccountBalanceDelta(ctx context.Context, arg AccountBalanceDeltaParams) (AccountBalanceDeltaRow, error) {
+	row := q.db.QueryRowContext(ctx, accountBalanceDelta, arg.Today, arg.AccountID)
+	var i AccountBalanceDeltaRow
+	err := row.Scan(&i.FutureDelta, &i.TodayDelta)
+	return i, err
+}
+
 const deleteAccount = `-- name: DeleteAccount :exec
 DELETE FROM accounts WHERE id = ?
 `
