@@ -5,6 +5,7 @@ package wallet
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 
 	"github.com/easly1989/cloudbank/server/internal/store/db"
@@ -16,26 +17,53 @@ const (
 	RoleMember = "member"
 )
 
+// MaxScheduleMonths caps how far ahead scheduled transactions auto-post
+// (HomeBank parity: at most three months in advance).
+const MaxScheduleMonths = 3
+
+func clampMonths(n int) int {
+	if n < 0 {
+		return 0
+	}
+	if n > MaxScheduleMonths {
+		return MaxScheduleMonths
+	}
+	return n
+}
+
+// scheduleMonths reads the auto-post horizon from a wallet's settings JSON.
+func scheduleMonths(settingsJSON string) int {
+	var s struct {
+		SchedulePostMonths int `json:"schedulePostMonths"`
+	}
+	if settingsJSON != "" {
+		_ = json.Unmarshal([]byte(settingsJSON), &s)
+	}
+	return clampMonths(s.SchedulePostMonths)
+}
+
 // ErrNotFound is returned when a wallet does not exist.
 var ErrNotFound = errors.New("wallet: not found")
 
 // Wallet is the public representation of a wallet. Role, when set, is the
 // requesting user's role for this wallet.
 type Wallet struct {
-	ID             int64
-	Title          string
-	OwnerName      string
-	BaseCurrencyID *int64
-	Role           string
-	CreatedAt      string
+	ID                 int64
+	Title              string
+	OwnerName          string
+	BaseCurrencyID     *int64
+	Role               string
+	CreatedAt          string
+	SchedulePostMonths int // auto-post scheduled transactions up to N months ahead (0..3)
 }
 
 func toWallet(w db.Wallet) Wallet {
 	out := Wallet{
-		ID:        w.ID,
-		Title:     w.Title,
-		OwnerName: w.OwnerName,
-		CreatedAt: w.CreatedAt,
+		ID:                 w.ID,
+		Title:              w.Title,
+		OwnerName:          w.OwnerName,
+		CreatedAt:          w.CreatedAt,
+		SchedulePostMonths: scheduleMonths(w.SettingsJson),
 	}
 	if w.BaseCurrencyID.Valid {
 		id := w.BaseCurrencyID.Int64
@@ -116,9 +144,28 @@ func (s *Service) Get(ctx context.Context, walletID int64) (Wallet, error) {
 	return toWallet(w), nil
 }
 
-// Update changes a wallet's title and owner name.
-func (s *Service) Update(ctx context.Context, walletID int64, title, ownerName string) error {
-	return s.q.UpdateWallet(ctx, db.UpdateWalletParams{Title: title, OwnerName: ownerName, ID: walletID})
+// Update changes a wallet's title, owner name and scheduling horizon. Other keys
+// already in the settings JSON are preserved.
+func (s *Service) Update(ctx context.Context, walletID int64, title, ownerName string, schedulePostMonths int) error {
+	w, err := s.q.GetWallet(ctx, walletID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+	settings := map[string]any{}
+	if w.SettingsJson != "" {
+		_ = json.Unmarshal([]byte(w.SettingsJson), &settings)
+	}
+	settings["schedulePostMonths"] = clampMonths(schedulePostMonths)
+	blob, err := json.Marshal(settings)
+	if err != nil {
+		return err
+	}
+	return s.q.UpdateWallet(ctx, db.UpdateWalletParams{
+		Title: title, OwnerName: ownerName, SettingsJson: string(blob), ID: walletID,
+	})
 }
 
 // Delete removes a wallet; FK cascades drop its members and all scoped data.

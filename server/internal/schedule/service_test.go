@@ -240,3 +240,31 @@ func TestScheduledTransfer(t *testing.T) {
 		t.Fatalf("single-occurrence schedule should be gone, got %v", err)
 	}
 }
+
+func TestRunDuePostsAheadByWalletMonths(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	tpl := f.expenseTemplate(t, -1000)
+	// Next occurrence is ~2 months after "today".
+	if _, err := f.s.Create(ctx, f.wid, Input{
+		TemplateID: tpl, Unit: UnitMonth, EveryN: 1, NextDue: "2026-03-15", AutoPost: true,
+	}); err != nil {
+		t.Fatalf("create schedule: %v", err)
+	}
+	today := at(t, "2026-01-10")
+
+	// Default horizon (0 months, postAdvance 0): the future occurrence isn't due.
+	if n, err := f.s.RunDue(ctx, today); err != nil || n != 0 {
+		t.Fatalf("RunDue without horizon = %d, %v; want 0, nil", n, err)
+	}
+
+	// Set the wallet to pre-register up to 3 months ahead → the occurrence posts.
+	if err := f.q.UpdateWallet(ctx, db.UpdateWalletParams{
+		Title: "W", SettingsJson: `{"schedulePostMonths":3}`, ID: f.wid,
+	}); err != nil {
+		t.Fatalf("update wallet settings: %v", err)
+	}
+	if n, err := f.s.RunDue(ctx, today); err != nil || n != 1 {
+		t.Fatalf("RunDue with 3-month horizon = %d, %v; want 1, nil", n, err)
+	}
+}
