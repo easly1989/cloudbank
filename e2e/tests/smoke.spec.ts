@@ -90,9 +90,9 @@ test("full journey: setup → wallet → account → transaction → import → 
   });
 
   await test.step("download a wallet backup", async () => {
-    // Wallet settings live under Settings → Wallet tab.
-    await nav(page, "Settings");
-    await page.getByRole("tab", { name: "Wallet" }).click();
+    // Backup lives under Settings → the wallet tab → "Backup & integrity"
+    // section; deep-link straight to it.
+    await page.goto("/settings?tab=wallet&section=backup");
     const downloadPromise = page.waitForEvent("download");
     await page.getByRole("button", { name: "Download backup" }).click();
     const download = await downloadPromise;
