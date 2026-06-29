@@ -62,7 +62,9 @@ test("full journey: setup → wallet → account → transaction → import → 
   });
 
   await test.step("import a HomeBank .xhb file", async () => {
-    await nav(page, "Import");
+    // Import lives under Settings → the wallet tab → "Import & export" section
+    // (it's wallet-scoped, so it's out of the main nav); deep-link straight to it.
+    await page.goto("/settings?tab=wallet&section=import");
     await page.setInputFiles('input[type="file"]', "fixtures/sample.xhb");
     await page.getByRole("button", { name: "Import", exact: true }).click();
     await expect(page.getByText("Import complete")).toBeVisible();

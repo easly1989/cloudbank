@@ -624,7 +624,11 @@
     "title": "Impostazioni",
     "general": "Generali",
     "wallet": "Portafoglio",
-    "manage": "Gestisci dati"
+    "manage": "Gestisci dati",
+    "section": "Sezione",
+    "sectionGeneral": "Generali",
+    "sectionImport": "Importa ed esporta",
+    "sectionBackup": "Backup e integrità"
   },
   "preferences": {
     "title": "Preferenze",
