@@ -2,7 +2,6 @@ import {
   IconArrowsExchange,
   IconCalendarRepeat,
   IconChartBar,
-  IconFileImport,
   IconLayoutDashboard,
   IconReportMoney,
   IconSettings,
@@ -43,7 +42,6 @@ export const NAV_ITEMS: NavItemDef[] = [
   { to: "/assignments", labelKey: "nav.assignments", icon: IconWand, end: false, adminOnly: false },
   { to: "/budget", labelKey: "nav.budget", icon: IconReportMoney, end: false, adminOnly: false },
   { to: "/reports", labelKey: "nav.reports", icon: IconChartBar, end: false, adminOnly: false },
-  { to: "/import", labelKey: "nav.import", icon: IconFileImport, end: false, adminOnly: false },
   { to: "/settings", labelKey: "nav.settings", icon: IconSettings, end: false, adminOnly: false },
   { to: "/admin/users", labelKey: "nav.admin", icon: IconUsers, end: false, adminOnly: true },
 ];

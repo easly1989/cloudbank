@@ -3,6 +3,7 @@ import { IconSettings, IconWallet } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
+import { useWallet } from "../wallet/WalletProvider";
 import { PreferencesPage } from "./PreferencesPage";
 import { WalletSettingsPage } from "./WalletSettingsPage";
 
@@ -11,6 +12,7 @@ import { WalletSettingsPage } from "./WalletSettingsPage";
 // active tab round-trips through the ?tab= query so it is deep-linkable.
 export function SettingsPage() {
   const { t } = useTranslation();
+  const { currentWallet } = useWallet();
   const [params, setParams] = useSearchParams();
   const tab = params.get("tab") === "wallet" ? "wallet" : "general";
 
@@ -26,7 +28,7 @@ export function SettingsPage() {
             {t("settings.general")}
           </Tabs.Tab>
           <Tabs.Tab value="wallet" leftSection={<IconWallet size={16} />}>
-            {t("settings.wallet")}
+            {currentWallet?.title ?? t("settings.wallet")}
           </Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="general">
