@@ -31,6 +31,7 @@ export function WalletSettingsPage() {
   const { currentWallet } = useWallet();
   const [title, setTitle] = useState(currentWallet?.title ?? "");
   const [ownerName, setOwnerName] = useState(currentWallet?.ownerName ?? "");
+  const [postMonths, setPostMonths] = useState(String(currentWallet?.schedulePostMonths ?? 0));
   const [confirm, setConfirm] = useState("");
 
   const notifyError = (err: unknown) =>
@@ -40,7 +41,8 @@ export function WalletSettingsPage() {
     });
 
   const rename = useMutation({
-    mutationFn: () => updateWallet(currentWallet!.id, { title, ownerName }),
+    mutationFn: () =>
+      updateWallet(currentWallet!.id, { title, ownerName, schedulePostMonths: Number(postMonths) }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["wallets"] });
       notifications.show({ color: "green", message: t("wallet.saved") });
@@ -100,6 +102,20 @@ export function WalletSettingsPage() {
                 value={ownerName}
                 disabled={!isOwner}
                 onChange={(e) => setOwnerName(e.currentTarget.value)}
+              />
+              <Select
+                label={t("wallet.scheduleAhead")}
+                description={t("wallet.scheduleAheadHint")}
+                data={[
+                  { value: "0", label: t("wallet.scheduleAheadOff") },
+                  { value: "1", label: t("wallet.scheduleAhead1") },
+                  { value: "2", label: t("wallet.scheduleAhead2") },
+                  { value: "3", label: t("wallet.scheduleAhead3") },
+                ]}
+                value={postMonths}
+                onChange={(v) => v && setPostMonths(v)}
+                disabled={!isOwner}
+                allowDeselect={false}
               />
               <Group justify="flex-end">
                 <Button

@@ -1489,12 +1489,16 @@ export interface components {
             /** @enum {string} */
             role: "owner" | "member";
             createdAt: string;
+            /** @description auto-post scheduled transactions up to N months ahead (0..3) */
+            schedulePostMonths: number;
         };
         WalletInput: {
             title: string;
             ownerName?: string;
             /** @description ISO 4217 code for the base currency (create only) */
             baseCurrency?: string;
+            /** @description auto-post scheduled transactions up to N months ahead (0..3) */
+            schedulePostMonths?: number;
         };
         CatalogEntry: {
             code: string;

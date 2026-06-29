@@ -1543,13 +1543,15 @@ components:
         baseCurrencyId: { type: integer, format: int64, nullable: true }
         role: { type: string, enum: [owner, member] }
         createdAt: { type: string }
-      required: [id, title, ownerName, role, createdAt]
+        schedulePostMonths: { type: integer, description: "auto-post scheduled transactions up to N months ahead (0..3)" }
+      required: [id, title, ownerName, role, createdAt, schedulePostMonths]
     WalletInput:
       type: object
       properties:
         title: { type: string }
         ownerName: { type: string }
         baseCurrency: { type: string, description: "ISO 4217 code for the base currency (create only)" }
+        schedulePostMonths: { type: integer, description: "auto-post scheduled transactions up to N months ahead (0..3)" }
       required: [title]
     CatalogEntry:
       type: object

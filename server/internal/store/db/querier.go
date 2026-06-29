@@ -113,6 +113,7 @@ type Querier interface {
 	// currency so costs can be converted to base. Ordered for sequential odometer
 	// processing.
 	ListVehicleTransactions(ctx context.Context, arg ListVehicleTransactionsParams) ([]ListVehicleTransactionsRow, error)
+	ListWalletSettings(ctx context.Context) ([]ListWalletSettingsRow, error)
 	ListWalletTransactionsForRules(ctx context.Context, walletID int64) ([]ListWalletTransactionsForRulesRow, error)
 	ListWalletsForUser(ctx context.Context, userID int64) ([]ListWalletsForUserRow, error)
 	// Per-month income (amount > 0) and expense (amount < 0) totals in a date range,
