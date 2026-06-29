@@ -281,7 +281,10 @@ export interface Account {
   number: string;
   initialBalance: number;
   minimumBalance: number;
+  /** Today's balance: initial + transactions dated on/before today. */
   balance: number;
+  /** Initial + all transactions, including future-dated. */
+  futureBalance: number;
   closed: boolean;
   noSummary: boolean;
   noBudget: boolean;

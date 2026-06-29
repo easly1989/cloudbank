@@ -32,10 +32,18 @@ import {
   listCurrencies,
   updateAccount,
 } from "../api/client";
-import { formatMinor } from "../money";
+import { type MoneyFormat, formatMinor } from "../money";
 import { rowEditProps, stopRowEdit } from "../rowEdit";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
+
+const acctFmt = (a: Account): MoneyFormat => ({
+  fracDigits: a.currencyFracDigits,
+  decimalChar: a.currencyDecimalChar,
+  groupChar: a.currencyGroupChar,
+  symbol: a.currencySymbol,
+  symbolPrefix: a.currencySymbolPrefix,
+});
 
 const ACCOUNT_TYPES: AccountType[] = [
   "bank",
@@ -129,14 +137,13 @@ export function AccountsPage() {
                     </Table.Td>
                     <Table.Td ta="right">
                       <Text fw={600} c={a.balance < a.minimumBalance ? "red" : undefined}>
-                        {formatMinor(a.balance, {
-                          fracDigits: a.currencyFracDigits,
-                          decimalChar: a.currencyDecimalChar,
-                          groupChar: a.currencyGroupChar,
-                          symbol: a.currencySymbol,
-                          symbolPrefix: a.currencySymbolPrefix,
-                        })}
+                        {formatMinor(a.balance, acctFmt(a))}
                       </Text>
+                      {a.futureBalance !== a.balance && (
+                        <Text size="xs" c="dimmed">
+                          {t("register.future")}: {formatMinor(a.futureBalance, acctFmt(a))}
+                        </Text>
+                      )}
                     </Table.Td>
                     <Table.Td ta="right" w={90} {...stopRowEdit}>
                       <Group gap={4} justify="flex-end" wrap="nowrap">
