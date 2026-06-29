@@ -52,18 +52,20 @@ type walletHandlers struct {
 }
 
 type walletResponse struct {
-	ID             int64  `json:"id"`
-	Title          string `json:"title"`
-	OwnerName      string `json:"ownerName"`
-	BaseCurrencyID *int64 `json:"baseCurrencyId,omitempty"`
-	Role           string `json:"role"`
-	CreatedAt      string `json:"createdAt"`
+	ID                 int64  `json:"id"`
+	Title              string `json:"title"`
+	OwnerName          string `json:"ownerName"`
+	BaseCurrencyID     *int64 `json:"baseCurrencyId,omitempty"`
+	Role               string `json:"role"`
+	CreatedAt          string `json:"createdAt"`
+	SchedulePostMonths int    `json:"schedulePostMonths"`
 }
 
 func toWalletResponse(w wallet.Wallet) walletResponse {
 	return walletResponse{
 		ID: w.ID, Title: w.Title, OwnerName: w.OwnerName,
 		BaseCurrencyID: w.BaseCurrencyID, Role: w.Role, CreatedAt: w.CreatedAt,
+		SchedulePostMonths: w.SchedulePostMonths,
 	}
 }
 
@@ -138,9 +140,10 @@ func (h *walletHandlers) list(w http.ResponseWriter, r *http.Request) {
 }
 
 type walletInput struct {
-	Title        string `json:"title"`
-	OwnerName    string `json:"ownerName"`
-	BaseCurrency string `json:"baseCurrency"`
+	Title              string `json:"title"`
+	OwnerName          string `json:"ownerName"`
+	BaseCurrency       string `json:"baseCurrency"`
+	SchedulePostMonths int    `json:"schedulePostMonths"`
 }
 
 func (h *walletHandlers) create(w http.ResponseWriter, r *http.Request) {
@@ -202,7 +205,14 @@ func (h *walletHandlers) update(w http.ResponseWriter, r *http.Request) {
 	}
 	wl.Title = strings.TrimSpace(in.Title)
 	wl.OwnerName = strings.TrimSpace(in.OwnerName)
-	if err := h.svc.Update(r.Context(), wl.ID, wl.Title, wl.OwnerName); err != nil {
+	months := in.SchedulePostMonths
+	if months < 0 {
+		months = 0
+	} else if months > wallet.MaxScheduleMonths {
+		months = wallet.MaxScheduleMonths
+	}
+	wl.SchedulePostMonths = months
+	if err := h.svc.Update(r.Context(), wl.ID, wl.Title, wl.OwnerName, months); err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not update wallet")
 		return
 	}

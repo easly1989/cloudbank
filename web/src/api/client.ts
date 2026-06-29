@@ -183,12 +183,15 @@ export interface Wallet {
   baseCurrencyId?: number | null;
   role: "owner" | "member";
   createdAt: string;
+  /** Auto-post scheduled transactions up to N months ahead (0..3). */
+  schedulePostMonths: number;
 }
 
 export interface WalletInput {
   title: string;
   ownerName?: string;
   baseCurrency?: string;
+  schedulePostMonths?: number;
 }
 
 export const listWallets = () => api.get<Wallet[]>("/api/v1/wallets");

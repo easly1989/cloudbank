@@ -9,6 +9,9 @@ SELECT * FROM wallets WHERE id = ? LIMIT 1;
 -- name: ListAllWalletIDs :many
 SELECT id FROM wallets ORDER BY id;
 
+-- name: ListWalletSettings :many
+SELECT id, settings_json FROM wallets;
+
 -- name: ListWalletsForUser :many
 SELECT w.*, m.role AS member_role
 FROM wallets w
@@ -17,7 +20,7 @@ WHERE m.user_id = ?
 ORDER BY w.title;
 
 -- name: UpdateWallet :exec
-UPDATE wallets SET title = ?, owner_name = ? WHERE id = ?;
+UPDATE wallets SET title = ?, owner_name = ?, settings_json = ? WHERE id = ?;
 
 -- name: DeleteWallet :exec
 DELETE FROM wallets WHERE id = ?;
