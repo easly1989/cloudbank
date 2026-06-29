@@ -123,35 +123,35 @@ function XhbImportPanel() {
   );
 }
 
-export function ImportPage() {
+// ImportExport is the wallet's import/export UI (HomeBank .xhb, CSV/QIF/OFX, CSV
+// export). It's embedded in the wallet's Settings tab (Import is wallet-scoped,
+// so it lives there rather than in the main nav).
+export function ImportExport() {
   const { t } = useTranslation();
 
   return (
-    <Stack>
-      <Title order={2}>{t("import.title")}</Title>
-      <Tabs defaultValue="xhb">
-        <Tabs.List>
-          <Tabs.Tab value="xhb" leftSection={<IconFileImport size={16} />}>
-            {t("import.tabs.xhb")}
-          </Tabs.Tab>
-          <Tabs.Tab value="csv" leftSection={<IconFileSpreadsheet size={16} />}>
-            {t("import.tabs.csv")}
-          </Tabs.Tab>
-          <Tabs.Tab value="export" leftSection={<IconTableExport size={16} />}>
-            {t("import.tabs.export")}
-          </Tabs.Tab>
-        </Tabs.List>
+    <Tabs defaultValue="xhb">
+      <Tabs.List>
+        <Tabs.Tab value="xhb" leftSection={<IconFileImport size={16} />}>
+          {t("import.tabs.xhb")}
+        </Tabs.Tab>
+        <Tabs.Tab value="csv" leftSection={<IconFileSpreadsheet size={16} />}>
+          {t("import.tabs.csv")}
+        </Tabs.Tab>
+        <Tabs.Tab value="export" leftSection={<IconTableExport size={16} />}>
+          {t("import.tabs.export")}
+        </Tabs.Tab>
+      </Tabs.List>
 
-        <Tabs.Panel value="xhb" pt="md">
-          <XhbImportPanel />
-        </Tabs.Panel>
-        <Tabs.Panel value="csv" pt="md">
-          <ImportWizard />
-        </Tabs.Panel>
-        <Tabs.Panel value="export" pt="md">
-          <ExportPanel />
-        </Tabs.Panel>
-      </Tabs>
-    </Stack>
+      <Tabs.Panel value="xhb" pt="md">
+        <XhbImportPanel />
+      </Tabs.Panel>
+      <Tabs.Panel value="csv" pt="md">
+        <ImportWizard />
+      </Tabs.Panel>
+      <Tabs.Panel value="export" pt="md">
+        <ExportPanel />
+      </Tabs.Panel>
+    </Tabs>
   );
 }

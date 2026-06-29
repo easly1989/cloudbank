@@ -624,7 +624,11 @@
     "title": "Settings",
     "general": "General",
     "wallet": "Wallet",
-    "manage": "Manage data"
+    "manage": "Manage data",
+    "section": "Section",
+    "sectionGeneral": "General",
+    "sectionImport": "Import & export",
+    "sectionBackup": "Backup & integrity"
   },
   "preferences": {
     "title": "Preferences",

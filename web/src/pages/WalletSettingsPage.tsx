@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   Group,
+  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -14,17 +15,19 @@ import { IconCoin, IconTags, IconUserDollar } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { ApiError, deleteWallet, updateWallet } from "../api/client";
 import { useWallet } from "../wallet/WalletProvider";
 import { BackupCard } from "./BackupCard";
+import { ImportExport } from "./ImportPage";
 import { IntegrityCard } from "./IntegrityCard";
 
 export function WalletSettingsPage() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const { currentWallet } = useWallet();
   const [title, setTitle] = useState(currentWallet?.title ?? "");
   const [ownerName, setOwnerName] = useState(currentWallet?.ownerName ?? "");
@@ -58,68 +61,100 @@ export function WalletSettingsPage() {
   const isOwner = currentWallet.role === "owner";
   const canDelete = confirm === currentWallet.title;
 
+  // Group the wallet's settings behind a section dropdown (deep-linkable via
+  // ?section=) so the page doesn't fill up. Import is wallet-scoped, so it lives
+  // here rather than in the main nav.
+  const sections = [
+    { value: "general", label: t("settings.sectionGeneral") },
+    { value: "import", label: t("settings.sectionImport") },
+    { value: "backup", label: t("settings.sectionBackup") },
+    ...(isOwner ? [{ value: "danger", label: t("wallet.dangerZone") }] : []),
+  ];
+  const requested = params.get("section") ?? "general";
+  const section = sections.some((s) => s.value === requested) ? requested : "general";
+  const setSection = (s: string) => setParams({ tab: "wallet", section: s }, { replace: true });
+
   return (
-    <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
-      <Card withBorder>
-        <Stack>
-          <TextInput
-            label={t("wallet.title")}
-            value={title}
-            disabled={!isOwner}
-            onChange={(e) => setTitle(e.currentTarget.value)}
-          />
-          <TextInput
-            label={t("wallet.ownerName")}
-            value={ownerName}
-            disabled={!isOwner}
-            onChange={(e) => setOwnerName(e.currentTarget.value)}
-          />
-          <Group justify="flex-end">
-            <Button
-              onClick={() => rename.mutate()}
-              loading={rename.isPending}
-              disabled={!isOwner || !title}
-            >
-              {t("wallet.save")}
-            </Button>
-          </Group>
-        </Stack>
-      </Card>
+    <Stack>
+      <Select
+        label={t("settings.section")}
+        data={sections}
+        value={section}
+        onChange={(v) => v && setSection(v)}
+        allowDeselect={false}
+        maw={260}
+      />
 
-      <Card withBorder>
-        <Title order={4} mb="sm">
-          {t("settings.manage")}
-        </Title>
-        <Group>
-          <Button
-            variant="light"
-            leftSection={<IconTags size={16} />}
-            onClick={() => navigate("/categories")}
-          >
-            {t("categories.title")}
-          </Button>
-          <Button
-            variant="light"
-            leftSection={<IconUserDollar size={16} />}
-            onClick={() => navigate("/payees")}
-          >
-            {t("payees.title")}
-          </Button>
-          <Button
-            variant="light"
-            leftSection={<IconCoin size={16} />}
-            onClick={() => navigate("/currencies")}
-          >
-            {t("currencies.title")}
-          </Button>
-        </Group>
-      </Card>
+      {section === "general" && (
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+          <Card withBorder>
+            <Stack>
+              <TextInput
+                label={t("wallet.title")}
+                value={title}
+                disabled={!isOwner}
+                onChange={(e) => setTitle(e.currentTarget.value)}
+              />
+              <TextInput
+                label={t("wallet.ownerName")}
+                value={ownerName}
+                disabled={!isOwner}
+                onChange={(e) => setOwnerName(e.currentTarget.value)}
+              />
+              <Group justify="flex-end">
+                <Button
+                  onClick={() => rename.mutate()}
+                  loading={rename.isPending}
+                  disabled={!isOwner || !title}
+                >
+                  {t("wallet.save")}
+                </Button>
+              </Group>
+            </Stack>
+          </Card>
 
-      <IntegrityCard />
-      <BackupCard />
+          <Card withBorder>
+            <Title order={4} mb="sm">
+              {t("settings.manage")}
+            </Title>
+            <Group>
+              <Button
+                variant="light"
+                leftSection={<IconTags size={16} />}
+                onClick={() => navigate("/categories")}
+              >
+                {t("categories.title")}
+              </Button>
+              <Button
+                variant="light"
+                leftSection={<IconUserDollar size={16} />}
+                onClick={() => navigate("/payees")}
+              >
+                {t("payees.title")}
+              </Button>
+              <Button
+                variant="light"
+                leftSection={<IconCoin size={16} />}
+                onClick={() => navigate("/currencies")}
+              >
+                {t("currencies.title")}
+              </Button>
+            </Group>
+          </Card>
+        </SimpleGrid>
+      )}
 
-      {isOwner && (
-        <Card withBorder>
+      {section === "import" && <ImportExport />}
+
+      {section === "backup" && (
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+          <IntegrityCard />
+          <BackupCard />
+        </SimpleGrid>
+      )}
+
+      {section === "danger" && isOwner && (
+        <Card withBorder maw={560}>
           <Stack>
             <div>
               <Title order={4} c="red">
@@ -146,6 +181,6 @@ export function WalletSettingsPage() {
           </Stack>
         </Card>
       )}
-    </SimpleGrid>
+    </Stack>
   );
 }
