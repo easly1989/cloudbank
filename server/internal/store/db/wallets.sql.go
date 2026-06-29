@@ -121,6 +121,38 @@ func (q *Queries) ListAllWalletIDs(ctx context.Context) ([]int64, error) {
 	return items, nil
 }
 
+const listWalletSettings = `-- name: ListWalletSettings :many
+SELECT id, settings_json FROM wallets
+`
+
+type ListWalletSettingsRow struct {
+	ID           int64
+	SettingsJson string
+}
+
+func (q *Queries) ListWalletSettings(ctx context.Context) ([]ListWalletSettingsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listWalletSettings)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListWalletSettingsRow{}
+	for rows.Next() {
+		var i ListWalletSettingsRow
+		if err := rows.Scan(&i.ID, &i.SettingsJson); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listWalletsForUser = `-- name: ListWalletsForUser :many
 SELECT w.id, w.title, w.owner_name, w.base_currency_id, w.settings_json, w.created_at, m.role AS member_role
 FROM wallets w
@@ -171,16 +203,22 @@ func (q *Queries) ListWalletsForUser(ctx context.Context, userID int64) ([]ListW
 }
 
 const updateWallet = `-- name: UpdateWallet :exec
-UPDATE wallets SET title = ?, owner_name = ? WHERE id = ?
+UPDATE wallets SET title = ?, owner_name = ?, settings_json = ? WHERE id = ?
 `
 
 type UpdateWalletParams struct {
-	Title     string
-	OwnerName string
-	ID        int64
+	Title        string
+	OwnerName    string
+	SettingsJson string
+	ID           int64
 }
 
 func (q *Queries) UpdateWallet(ctx context.Context, arg UpdateWalletParams) error {
-	_, err := q.db.ExecContext(ctx, updateWallet, arg.Title, arg.OwnerName, arg.ID)
+	_, err := q.db.ExecContext(ctx, updateWallet,
+		arg.Title,
+		arg.OwnerName,
+		arg.SettingsJson,
+		arg.ID,
+	)
 	return err
 }

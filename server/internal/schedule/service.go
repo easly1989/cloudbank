@@ -8,6 +8,7 @@ package schedule
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"strings"
@@ -282,13 +283,21 @@ func (s *Service) RunDue(ctx context.Context, now time.Time) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	// Per-wallet "post up to N months ahead" horizon (HomeBank parity).
+	monthsByWallet := map[int64]int{}
+	if rows, err := s.q.ListWalletSettings(ctx); err == nil {
+		for _, r := range rows {
+			monthsByWallet[r.ID] = walletScheduleMonths(r.SettingsJson)
+		}
+	}
 	posted := 0
 	for _, sc := range schedules {
 		if sc.AutoPost == 0 {
 			continue
 		}
+		months := monthsByWallet[sc.WalletID]
 		for i := 0; i < catchUpCap; i++ {
-			due, err := isDue(sc, today)
+			due, err := isDue(sc, today, months)
 			if err != nil {
 				s.logger.Warn("schedule: bad next_due", "schedule", sc.ID, "error", err)
 				break
@@ -317,13 +326,39 @@ func (s *Service) RunDue(ctx context.Context, now time.Time) (int, error) {
 	return posted, nil
 }
 
-func isDue(sc db.Schedule, today time.Time) (bool, error) {
+// isDue reports whether the schedule's next occurrence falls on/before the
+// posting horizon: the later of (today + per-schedule postAdvance days) and
+// (today + the wallet's post-ahead months).
+func isDue(sc db.Schedule, today time.Time, months int) (bool, error) {
 	next, err := ParseDate(sc.NextDue)
 	if err != nil {
 		return false, err
 	}
 	cutoff := today.AddDate(0, 0, int(sc.PostAdvance))
+	if months > 0 {
+		if ahead := today.AddDate(0, months, 0); ahead.After(cutoff) {
+			cutoff = ahead
+		}
+	}
 	return !next.After(cutoff), nil
+}
+
+// walletScheduleMonths reads the auto-post horizon from a wallet's settings JSON
+// (kept in sync with the wallet package's schedulePostMonths key).
+func walletScheduleMonths(settingsJSON string) int {
+	var s struct {
+		SchedulePostMonths int `json:"schedulePostMonths"`
+	}
+	if settingsJSON != "" {
+		_ = json.Unmarshal([]byte(settingsJSON), &s)
+	}
+	if s.SchedulePostMonths < 0 {
+		return 0
+	}
+	if s.SchedulePostMonths > 3 {
+		return 3
+	}
+	return s.SchedulePostMonths
 }
 
 // postOnce posts (when post is true) the schedule's current occurrence and

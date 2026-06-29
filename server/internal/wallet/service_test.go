@@ -93,3 +93,34 @@ func TestDeleteRemovesWallet(t *testing.T) {
 		t.Fatal("membership not cascaded on wallet delete")
 	}
 }
+
+func TestUpdatePersistsSchedulePostMonths(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	uid := seedUser(t, s, "alice")
+	w, err := s.Create(ctx, uid, "Home", "Alice")
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if w.SchedulePostMonths != 0 {
+		t.Fatalf("new wallet months = %d, want 0", w.SchedulePostMonths)
+	}
+	if err := s.Update(ctx, w.ID, "Home", "Alice", 2); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+	got, err := s.Get(ctx, w.ID)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if got.SchedulePostMonths != 2 {
+		t.Fatalf("after update months = %d, want 2", got.SchedulePostMonths)
+	}
+	// Out-of-range values are clamped to the HomeBank-parity max of 3.
+	if err := s.Update(ctx, w.ID, "Home", "Alice", 9); err != nil {
+		t.Fatalf("Update clamp: %v", err)
+	}
+	got, _ = s.Get(ctx, w.ID)
+	if got.SchedulePostMonths != 3 {
+		t.Fatalf("clamped months = %d, want 3", got.SchedulePostMonths)
+	}
+}
