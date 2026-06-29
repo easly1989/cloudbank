@@ -49,7 +49,8 @@ try {
   // The first-login tour auto-runs; skip it before capturing.
   await page.getByRole("button", { name: "Skip" }).click();
 
-  await page.getByRole("link", { name: "Import", exact: true }).click();
+  // Import now lives under Settings → wallet tab → "Import & export" section.
+  await page.goto(BASE + "/settings?tab=wallet&section=import");
   await page.setInputFiles('input[type="file"]', FIXTURE);
   await page.getByRole("button", { name: "Import", exact: true }).click();
   await page.getByText("Import complete").waitFor();
