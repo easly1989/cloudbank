@@ -1610,7 +1610,8 @@ components:
         number: { type: string }
         initialBalance: { type: integer, format: int64, description: "minor units" }
         minimumBalance: { type: integer, format: int64, description: "minor units" }
-        balance: { type: integer, format: int64, description: "minor units" }
+        balance: { type: integer, format: int64, description: "today's balance (initial + transactions dated on/before today), minor units" }
+        futureBalance: { type: integer, format: int64, description: "initial + all transactions incl. future-dated, minor units" }
         closed: { type: boolean }
         noSummary: { type: boolean }
         noBudget: { type: boolean }
@@ -1627,7 +1628,7 @@ components:
         currencyGroupChar: { type: string }
         currencyFracDigits: { type: integer }
       required:
-        [id, name, type, currencyId, initialBalance, minimumBalance, balance, closed, position,
+        [id, name, type, currencyId, initialBalance, minimumBalance, balance, futureBalance, closed, position,
          currencyCode, currencySymbol, currencySymbolPrefix, currencyDecimalChar, currencyGroupChar, currencyFracDigits]
     AccountInput:
       type: object

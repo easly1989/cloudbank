@@ -7,9 +7,12 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
+
+const dateLayout = "2006-01-02"
 
 // Sentinel errors.
 var (
@@ -45,7 +48,8 @@ type Account struct {
 	Number         string
 	InitialBalance int64
 	MinimumBalance int64
-	Balance        int64 // initial_balance + sum(transactions); no transactions yet → initial
+	Balance        int64 // today's balance: initial_balance + sum(transactions dated on/before today)
+	FutureBalance  int64 // initial_balance + sum(all transactions, including future-dated)
 	Closed         bool
 	NoSummary      bool
 	NoBudget       bool
@@ -113,12 +117,26 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]Account, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Compute each account's today/future balance from its transactions (same
+	// definitions as the dashboard and register header). No transactions → the
+	// zero-value delta leaves the balance at the initial balance.
+	today := time.Now().UTC().Format(dateLayout)
+	deltas, err := s.q.AccountBalanceDeltas(ctx, db.AccountBalanceDeltasParams{Today: today, WalletID: walletID})
+	if err != nil {
+		return nil, err
+	}
+	deltaByAccount := make(map[int64]db.AccountBalanceDeltasRow, len(deltas))
+	for _, d := range deltas {
+		deltaByAccount[d.AccountID] = d
+	}
 	out := make([]Account, 0, len(rows))
 	for _, r := range rows {
+		d := deltaByAccount[r.ID]
 		out = append(out, Account{
 			ID: r.ID, WalletID: r.WalletID, Name: r.Name, Type: r.Type, CurrencyID: r.CurrencyID,
 			Institution: r.Institution, Number: r.Number,
-			InitialBalance: r.InitialBalance, MinimumBalance: r.MinimumBalance, Balance: r.InitialBalance,
+			InitialBalance: r.InitialBalance, MinimumBalance: r.MinimumBalance,
+			Balance: r.InitialBalance + d.TodayDelta, FutureBalance: r.InitialBalance + d.FutureDelta,
 			Closed: r.Closed != 0, NoSummary: r.NoSummary != 0, NoBudget: r.NoBudget != 0, NoReport: r.NoReport != 0,
 			Position: r.Position, GroupName: r.GroupName, Notes: r.Notes, Website: r.Website, CreatedAt: r.CreatedAt,
 			CurrencyCode: r.CurrencyCode, CurrencySymbol: r.CurrencySymbol,
@@ -143,10 +161,16 @@ func (s *Service) Get(ctx context.Context, accountID int64) (Account, error) {
 	if err != nil {
 		return Account{}, err
 	}
+	today := time.Now().UTC().Format(dateLayout)
+	d, err := s.q.AccountBalanceDelta(ctx, db.AccountBalanceDeltaParams{Today: today, AccountID: accountID})
+	if err != nil {
+		return Account{}, err
+	}
 	return Account{
 		ID: a.ID, WalletID: a.WalletID, Name: a.Name, Type: a.Type, CurrencyID: a.CurrencyID,
 		Institution: a.Institution, Number: a.Number,
-		InitialBalance: a.InitialBalance, MinimumBalance: a.MinimumBalance, Balance: a.InitialBalance,
+		InitialBalance: a.InitialBalance, MinimumBalance: a.MinimumBalance,
+		Balance: a.InitialBalance + d.TodayDelta, FutureBalance: a.InitialBalance + d.FutureDelta,
 		Closed: a.Closed != 0, NoSummary: a.NoSummary != 0, NoBudget: a.NoBudget != 0, NoReport: a.NoReport != 0,
 		Position: a.Position, GroupName: a.GroupName, Notes: a.Notes, Website: a.Website, CreatedAt: a.CreatedAt,
 		CurrencyCode: cur.IsoCode, CurrencySymbol: cur.Symbol, CurrencySymbolPrefix: cur.SymbolPrefix != 0,
