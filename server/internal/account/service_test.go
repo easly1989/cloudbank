@@ -3,6 +3,7 @@ package account
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
@@ -74,6 +75,61 @@ func TestReorder(t *testing.T) {
 	list, _ := s.List(ctx, wid)
 	if len(list) != 2 || list[0].ID != a2.ID || list[0].GroupName != "Savings" {
 		t.Fatalf("after reorder = %+v", list)
+	}
+}
+
+func TestBalancesReflectTransactions(t *testing.T) {
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("store.Open: %v", err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	q := db.New(st.Write())
+	ctx := context.Background()
+	w, err := q.CreateWallet(ctx, db.CreateWalletParams{Title: "W"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cur, err := q.InsertCurrency(ctx, db.InsertCurrencyParams{
+		WalletID: w.ID, IsoCode: "EUR", Name: "Euro", Symbol: "€",
+		DecimalChar: ",", GroupChar: ".", FracDigits: 2, IsBase: 1, Rate: 1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := NewService(st.Write())
+	a, err := s.Create(ctx, w.ID, Input{Name: "A", Type: "bank", CurrencyID: cur.ID, InitialBalance: 1000})
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+
+	now := time.Now().UTC()
+	ins := func(date string, amount int64) {
+		if _, err := q.InsertTransaction(ctx, db.InsertTransactionParams{
+			WalletID: w.ID, AccountID: a.ID, Date: date, Amount: amount,
+		}); err != nil {
+			t.Fatalf("insert txn: %v", err)
+		}
+	}
+	ins(now.AddDate(0, 0, -1).Format(dateLayout), 5000) // past
+	ins(now.Format(dateLayout), -2000)                  // today
+	ins(now.AddDate(0, 0, 1).Format(dateLayout), -1000) // future
+
+	// today = initial + past + today = 1000 + 5000 - 2000 = 4000
+	// future = today + future-dated = 4000 - 1000 = 3000
+	got, err := s.Get(ctx, a.ID)
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	if got.Balance != 4000 || got.FutureBalance != 3000 {
+		t.Fatalf("Get balances: today=%d future=%d (want 4000/3000)", got.Balance, got.FutureBalance)
+	}
+	list, err := s.List(ctx, w.ID)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(list) != 1 || list[0].Balance != 4000 || list[0].FutureBalance != 3000 {
+		t.Fatalf("List balances = %+v", list)
 	}
 }
 

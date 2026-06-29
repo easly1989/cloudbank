@@ -24,6 +24,15 @@ JOIN currencies c ON c.id = a.currency_id
 WHERE a.wallet_id = ?
 ORDER BY a.position, a.group_name, a.name;
 
+-- name: AccountBalanceDelta :one
+-- Today/future transaction sums for a single account; the caller adds the
+-- account's initial balance. Mirrors AccountBalanceDeltas (the per-wallet form).
+SELECT
+    CAST(COALESCE(SUM(amount), 0) AS INTEGER) AS future_delta,
+    CAST(COALESCE(SUM(CASE WHEN date <= sqlc.arg(today) THEN amount ELSE 0 END), 0) AS INTEGER) AS today_delta
+FROM transactions
+WHERE account_id = sqlc.arg(account_id);
+
 -- name: NextAccountPosition :one
 SELECT COALESCE(MAX(position), 0) + 1 FROM accounts WHERE wallet_id = ?;
 
