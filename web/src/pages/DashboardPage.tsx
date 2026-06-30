@@ -33,19 +33,23 @@ import {
   Text,
   Title,
 } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
   IconAdjustmentsHorizontal,
   IconEye,
   IconEyeOff,
   IconGripVertical,
+  IconPencil,
   IconPlayerPlay,
   IconPlayerSkipForward,
+  IconPlus,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { EChartsOption } from "echarts";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import {
   ApiError,
@@ -58,6 +62,7 @@ import {
   getDashboard,
   listAccounts,
   listSchedules,
+  listTemplates,
   postScheduleNow,
   skipSchedule,
   updateMe,
@@ -65,10 +70,10 @@ import {
 import { useAuth } from "../auth/AuthProvider";
 import { Chart } from "../components/Chart";
 import { Donut } from "../components/Donut";
-import { QuickAdd } from "../components/QuickAdd";
 import { useDateFormat } from "../dates";
 import { formatMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
+import { TransactionForm } from "./TransactionsPage";
 import { type DatePreset, dateBounds, emptyFilters } from "./registerFilters";
 
 const WIDGET_IDS = [
@@ -691,7 +696,7 @@ function IncomeExpenseChart({
   if (!base || empty) {
     return <Text c="dimmed">{t("dashboard.noSpending")}</Text>;
   }
-  return <Chart option={option} height={280} />;
+  return <Chart option={option} height={340} />;
 }
 
 // GroupSubtotal renders a table footer summing a same-type group's balances. It
@@ -730,6 +735,7 @@ function UpcomingPanel({ walletId, base }: { walletId: number; base?: CurrencyIn
   const { t } = useTranslation();
   const fmtDate = useDateFormat();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const schedulesQuery = useQuery({
     queryKey: ["schedules", walletId],
     queryFn: () => listSchedules(walletId),
@@ -738,27 +744,25 @@ function UpcomingPanel({ walletId, base }: { walletId: number; base?: CurrencyIn
   const schedules = useMemo(() => schedulesQuery.data ?? [], [schedulesQuery.data]);
 
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const within30 = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 30);
-    return d.toISOString().slice(0, 10);
-  }, []);
-  // A schedule still has occurrences left while remaining is null (unlimited) or
-  // > 0; remaining === 0 is exhausted and should not surface anywhere.
-  // Upcoming = the next occurrences due from today through the next 30 days. A
-  // past next_due means the schedule is stale/stopped (commonly leftover from an
-  // import) and is intentionally excluded.
-  const upcoming = useMemo(
+
+  const sortByDue = (a: Schedule, b: Schedule) => a.nextDue.localeCompare(b.nextDue);
+  // Mirror HomeBank's bottom panel. remaining === 0 is exhausted and hidden
+  // everywhere. Auto-post schedules split into those due now/overdue (Recurring —
+  // ready to post) and those still ahead (Future); manual schedules are Reminders.
+  const recurring = useMemo(
     () =>
       schedules
-        .filter((s) => s.remaining !== 0 && s.nextDue >= today && s.nextDue <= within30)
-        .sort((a, b) => a.nextDue.localeCompare(b.nextDue)),
-    [schedules, today, within30],
+        .filter((s) => s.autoPost && s.remaining !== 0 && s.nextDue <= today)
+        .sort(sortByDue),
+    [schedules, today],
   );
-  // Reminders are manual (non-auto-post) schedules still awaiting action; they
-  // may legitimately be overdue, so no lower date bound here.
+  const future = useMemo(
+    () =>
+      schedules.filter((s) => s.autoPost && s.remaining !== 0 && s.nextDue > today).sort(sortByDue),
+    [schedules, today],
+  );
   const reminders = useMemo(
-    () => schedules.filter((s) => !s.autoPost && s.remaining !== 0),
+    () => schedules.filter((s) => !s.autoPost && s.remaining !== 0).sort(sortByDue),
     [schedules],
   );
 
@@ -784,7 +788,8 @@ function UpcomingPanel({ walletId, base }: { walletId: number; base?: CurrencyIn
     onError,
   });
 
-  const row = (s: Schedule, withActions: boolean, withCadence: boolean) => (
+  // Each row offers post / skip / edit-before-post (edit opens the Schedules page).
+  const row = (s: Schedule) => (
     <Group key={s.id} justify="space-between" wrap="nowrap" gap="xs">
       <Box style={{ minWidth: 0 }}>
         <Text size="sm" truncate>
@@ -792,101 +797,103 @@ function UpcomingPanel({ walletId, base }: { walletId: number; base?: CurrencyIn
         </Text>
         <Text size="xs" c="dimmed">
           {fmtDate(s.nextDue)}
-          {withCadence &&
-            ` · ${t("schedules.cadence", { n: s.everyN, unit: t(`schedules.units.${s.unit}`) })}`}
+          {` · ${t("schedules.cadence", { n: s.everyN, unit: t(`schedules.units.${s.unit}`) })}`}
         </Text>
       </Box>
-      <Group gap={6} wrap="nowrap">
+      <Group gap={4} wrap="nowrap">
         {base && (
           <Text size="sm" fw={500} c={s.templateAmount < 0 ? "red" : "teal"}>
             {formatMinor(s.templateAmount, base)}
           </Text>
         )}
-        {withActions && (
-          <>
-            <ActionIcon
-              variant="subtle"
-              size="sm"
-              color="teal"
-              aria-label={t("schedules.postNow")}
-              loading={post.isPending && post.variables === s.id}
-              onClick={() => post.mutate(s.id)}
-            >
-              <IconPlayerPlay size={15} />
-            </ActionIcon>
-            <ActionIcon
-              variant="subtle"
-              size="sm"
-              color="gray"
-              aria-label={t("schedules.skip")}
-              loading={skip.isPending && skip.variables === s.id}
-              onClick={() => skip.mutate(s.id)}
-            >
-              <IconPlayerSkipForward size={15} />
-            </ActionIcon>
-          </>
-        )}
+        <ActionIcon
+          variant="subtle"
+          size="sm"
+          color="teal"
+          aria-label={t("schedules.postNow")}
+          loading={post.isPending && post.variables === s.id}
+          onClick={() => post.mutate(s.id)}
+        >
+          <IconPlayerPlay size={15} />
+        </ActionIcon>
+        <ActionIcon
+          variant="subtle"
+          size="sm"
+          color="gray"
+          aria-label={t("schedules.skip")}
+          loading={skip.isPending && skip.variables === s.id}
+          onClick={() => skip.mutate(s.id)}
+        >
+          <IconPlayerSkipForward size={15} />
+        </ActionIcon>
+        <ActionIcon
+          variant="subtle"
+          size="sm"
+          aria-label={t("schedules.edit")}
+          onClick={() => navigate("/schedules")}
+        >
+          <IconPencil size={14} />
+        </ActionIcon>
       </Group>
     </Group>
   );
 
-  const empty = (msg: string) => <Text c="dimmed">{msg}</Text>;
+  const tabLabel = (label: string, count: number) => (
+    <Group gap={6} wrap="nowrap">
+      {label}
+      {count > 0 && (
+        <Badge size="xs" variant="light" color="gray">
+          {count}
+        </Badge>
+      )}
+    </Group>
+  );
+  const list = (items: Schedule[], emptyMsg: string) =>
+    items.length === 0 ? (
+      <Text c="dimmed">{emptyMsg}</Text>
+    ) : (
+      <Stack gap={8}>{items.map((s) => row(s))}</Stack>
+    );
 
   return (
     <Card withBorder>
       <Title order={4} mb="sm">
         {t("dashboard.upcoming")}
       </Title>
-      <Tabs defaultValue="upcoming">
+      <Tabs defaultValue="recurring">
         <Tabs.List mb="sm">
-          <Tabs.Tab value="upcoming">{t("dashboard.tabUpcoming")}</Tabs.Tab>
-          <Tabs.Tab value="scheduled">{t("dashboard.tabScheduled")}</Tabs.Tab>
+          <Tabs.Tab value="recurring">
+            {tabLabel(t("dashboard.tabRecurring"), recurring.length)}
+          </Tabs.Tab>
+          <Tabs.Tab value="future">{tabLabel(t("dashboard.tabFuture"), future.length)}</Tabs.Tab>
           <Tabs.Tab value="reminders">
-            <Group gap={6} wrap="nowrap">
-              {t("dashboard.tabReminders")}
-              {reminders.length > 0 && (
-                <Badge size="xs" variant="light" color="gray">
-                  {reminders.length}
-                </Badge>
-              )}
-            </Group>
+            {tabLabel(t("dashboard.tabReminders"), reminders.length)}
           </Tabs.Tab>
         </Tabs.List>
-        <Tabs.Panel value="upcoming">
-          {upcoming.length === 0 ? (
-            empty(t("dashboard.noUpcoming"))
-          ) : (
-            <Stack gap={8}>{upcoming.map((s) => row(s, true, false))}</Stack>
-          )}
-        </Tabs.Panel>
-        <Tabs.Panel value="scheduled">
-          {schedules.length === 0 ? (
-            empty(t("dashboard.noScheduled"))
-          ) : (
-            <Stack gap={8}>{schedules.map((s) => row(s, false, true))}</Stack>
-          )}
-        </Tabs.Panel>
-        <Tabs.Panel value="reminders">
-          {reminders.length === 0 ? (
-            empty(t("dashboard.noReminders"))
-          ) : (
-            <Stack gap={8}>{reminders.map((s) => row(s, true, true))}</Stack>
-          )}
-        </Tabs.Panel>
+        <Tabs.Panel value="recurring">{list(recurring, t("dashboard.noRecurring"))}</Tabs.Panel>
+        <Tabs.Panel value="future">{list(future, t("dashboard.noFuture"))}</Tabs.Panel>
+        <Tabs.Panel value="reminders">{list(reminders, t("dashboard.noReminders"))}</Tabs.Panel>
       </Tabs>
     </Card>
   );
 }
 
-// QuickAddCard lets the user add a transaction to a chosen account without
-// leaving the dashboard; the totals and balances refresh on add.
+// QuickAddCard mirrors HomeBank: pick an account and "Add" opens the full
+// transaction modal (the same one the register uses); totals/balances refresh
+// on save.
 function QuickAddCard({ walletId }: { walletId: number }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { user } = useAuth();
+  const [opened, modal] = useDisclosure(false);
   const accountsQuery = useQuery({
     queryKey: ["accounts", walletId],
     queryFn: () => listAccounts(walletId),
+    enabled: walletId > 0,
+  });
+  const templatesQuery = useQuery({
+    queryKey: ["templates", walletId],
+    queryFn: () => listTemplates(walletId),
     enabled: walletId > 0,
   });
   const accounts = useMemo(
@@ -905,35 +912,45 @@ function QuickAddCard({ walletId }: { walletId: number }) {
   const account = accounts.find((a) => String(a.id) === accountId);
   if (accounts.length === 0) return null;
 
-  const onAdded = () => {
+  const onSaved = () => {
     void qc.invalidateQueries({ queryKey: ["dashboard", walletId] });
     void qc.invalidateQueries({ queryKey: ["accounts", walletId] });
     void qc.invalidateQueries({ queryKey: ["register", walletId] });
+    modal.close();
   };
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
 
   return (
-    <Stack gap="xs" data-tour="quick-add">
-      <Group justify="space-between">
-        <Title order={4}>{t("dashboard.quickAdd")}</Title>
-        <Select
-          aria-label={t("transactions.account")}
-          data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
-          value={accountId}
-          onChange={setAccountId}
-          allowDeselect={false}
-          searchable
-          w={220}
-        />
+    <Card withBorder data-tour="quick-add">
+      <Group justify="space-between" wrap="wrap" gap="sm">
+        <Title order={4}>{t("dashboard.addTransaction")}</Title>
+        <Group gap="xs" wrap="nowrap">
+          <Select
+            aria-label={t("transactions.account")}
+            data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
+            value={accountId}
+            onChange={setAccountId}
+            allowDeselect={false}
+            searchable
+            w={220}
+          />
+          <Button leftSection={<IconPlus size={16} />} onClick={modal.open} disabled={!account}>
+            {t("dashboard.addTransaction")}
+          </Button>
+        </Group>
       </Group>
       {account && (
-        <QuickAdd walletId={walletId} account={account} onAdded={onAdded} onError={onError} />
+        <TransactionForm
+          opened={opened}
+          onClose={modal.close}
+          walletId={walletId}
+          account={account}
+          editing={null}
+          onSaved={onSaved}
+          templates={templatesQuery.data ?? []}
+          onTemplateSaved={() => void qc.invalidateQueries({ queryKey: ["templates", walletId] })}
+        />
       )}
-    </Stack>
+    </Card>
   );
 }
 
@@ -1003,13 +1020,14 @@ function SpendingChart({
     return <Chart option={barOption} height={Math.max(180, data.length * 34)} />;
   }
 
+  const total = data.reduce((s, d) => s + d.value, 0);
   return (
     <Group align="center" wrap="wrap" gap="xl">
       <Donut data={data} />
-      <Stack gap={4} style={{ flex: 1, minWidth: 160 }}>
+      <Stack gap={4} style={{ flex: 1, minWidth: 200 }}>
         {data.map((d) => (
           <Group key={d.label} justify="space-between" wrap="nowrap" gap="sm">
-            <Group gap={6} wrap="nowrap">
+            <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
               <span
                 style={{
                   width: 10,
@@ -1017,15 +1035,21 @@ function SpendingChart({
                   borderRadius: 2,
                   background: d.color,
                   display: "inline-block",
+                  flexShrink: 0,
                 }}
               />
               <Text size="sm" truncate>
                 {d.label}
               </Text>
             </Group>
-            <Text size="sm" fw={500}>
-              {formatMinor(d.value, base)}
-            </Text>
+            <Group gap={10} wrap="nowrap">
+              <Text size="sm" fw={500}>
+                {formatMinor(d.value, base)}
+              </Text>
+              <Text size="xs" c="dimmed" w={36} ta="right">
+                {total > 0 ? Math.round((d.value / total) * 100) : 0}%
+              </Text>
+            </Group>
           </Group>
         ))}
       </Stack>
