@@ -139,6 +139,38 @@ func TestDashboardTopCategories(t *testing.T) {
 	}
 }
 
+// A category flagged "exclude from reports" is left out of both the spending
+// breakdown (top categories) and the income/expense time graph.
+func TestDashboardExcludesNoReportCategory(t *testing.T) {
+	ds, ts, q, wid := newFixture(t)
+	ctx := context.Background()
+	acc := account(t, q, wid, eur(t, q, wid), 0, 0, "Main")
+	now := time.Now().UTC()
+	thisMonth := time.Date(now.Year(), now.Month(), 15, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
+
+	car, _ := q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: wid, Name: "Car"})
+	hidden, _ := q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: wid, Name: "Hidden", NoReport: 1})
+	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: thisMonth, Amount: -2000, CategoryID: iptr(car.ID)})
+	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: thisMonth, Amount: -5000, CategoryID: iptr(hidden.ID)})
+
+	from := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
+	to := time.Date(now.Year(), now.Month(), 28, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
+	data, err := ds.Build(ctx, wid, from, to, GroupByCategory, 12)
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if len(data.TopCategories) != 1 || data.TopCategories[0].CategoryID != car.ID {
+		t.Fatalf("top categories = %+v, want only Car (hidden excluded)", data.TopCategories)
+	}
+	var expense int64
+	for _, p := range data.IncomeExpense {
+		expense += p.Expense
+	}
+	if expense != 2000 {
+		t.Fatalf("incomeExpense total expense = %d, want 2000 (hidden excluded)", expense)
+	}
+}
+
 // With groupBy=payee the spending breakdown buckets expenses by payee, ignores
 // income, and respects the date range. The slices reuse CategoryID for the
 // payee id.

@@ -53,7 +53,7 @@ func (q *Queries) DeleteCategory(ctx context.Context, id int64) error {
 }
 
 const getCategory = `-- name: GetCategory :one
-SELECT id, wallet_id, parent_id, name, is_income, no_budget FROM categories WHERE id = ? LIMIT 1
+SELECT id, wallet_id, parent_id, name, is_income, no_budget, no_report FROM categories WHERE id = ? LIMIT 1
 `
 
 func (q *Queries) GetCategory(ctx context.Context, id int64) (Category, error) {
@@ -66,14 +66,15 @@ func (q *Queries) GetCategory(ctx context.Context, id int64) (Category, error) {
 		&i.Name,
 		&i.IsIncome,
 		&i.NoBudget,
+		&i.NoReport,
 	)
 	return i, err
 }
 
 const insertCategory = `-- name: InsertCategory :one
-INSERT INTO categories (wallet_id, parent_id, name, is_income, no_budget)
-VALUES (?, ?, ?, ?, ?)
-RETURNING id, wallet_id, parent_id, name, is_income, no_budget
+INSERT INTO categories (wallet_id, parent_id, name, is_income, no_budget, no_report)
+VALUES (?, ?, ?, ?, ?, ?)
+RETURNING id, wallet_id, parent_id, name, is_income, no_budget, no_report
 `
 
 type InsertCategoryParams struct {
@@ -82,6 +83,7 @@ type InsertCategoryParams struct {
 	Name     string
 	IsIncome int64
 	NoBudget int64
+	NoReport int64
 }
 
 func (q *Queries) InsertCategory(ctx context.Context, arg InsertCategoryParams) (Category, error) {
@@ -91,6 +93,7 @@ func (q *Queries) InsertCategory(ctx context.Context, arg InsertCategoryParams) 
 		arg.Name,
 		arg.IsIncome,
 		arg.NoBudget,
+		arg.NoReport,
 	)
 	var i Category
 	err := row.Scan(
@@ -100,12 +103,13 @@ func (q *Queries) InsertCategory(ctx context.Context, arg InsertCategoryParams) 
 		&i.Name,
 		&i.IsIncome,
 		&i.NoBudget,
+		&i.NoReport,
 	)
 	return i, err
 }
 
 const listCategoriesForWallet = `-- name: ListCategoriesForWallet :many
-SELECT id, wallet_id, parent_id, name, is_income, no_budget FROM categories WHERE wallet_id = ? ORDER BY name
+SELECT id, wallet_id, parent_id, name, is_income, no_budget, no_report FROM categories WHERE wallet_id = ? ORDER BY name
 `
 
 func (q *Queries) ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error) {
@@ -124,6 +128,7 @@ func (q *Queries) ListCategoriesForWallet(ctx context.Context, walletID int64) (
 			&i.Name,
 			&i.IsIncome,
 			&i.NoBudget,
+			&i.NoReport,
 		); err != nil {
 			return nil, err
 		}
@@ -209,13 +214,14 @@ func (q *Queries) SetChildrenIncome(ctx context.Context, arg SetChildrenIncomePa
 }
 
 const updateCategory = `-- name: UpdateCategory :exec
-UPDATE categories SET name = ?, is_income = ?, no_budget = ? WHERE id = ?
+UPDATE categories SET name = ?, is_income = ?, no_budget = ?, no_report = ? WHERE id = ?
 `
 
 type UpdateCategoryParams struct {
 	Name     string
 	IsIncome int64
 	NoBudget int64
+	NoReport int64
 	ID       int64
 }
 
@@ -224,6 +230,7 @@ func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) 
 		arg.Name,
 		arg.IsIncome,
 		arg.NoBudget,
+		arg.NoReport,
 		arg.ID,
 	)
 	return err

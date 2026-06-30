@@ -465,6 +465,7 @@
     "topLevel": "Primo livello",
     "isIncome": "Categoria di entrata",
     "excludeBudget": "Escludi dal budget",
+    "excludeReport": "Escludi dai report",
     "income": "Entrata",
     "expense": "Uscita",
     "empty": "Nessuna categoria.",

@@ -60,6 +60,7 @@ type Category struct {
 	Name     string
 	IsIncome int64
 	NoBudget int64
+	NoReport int64
 }
 
 type Currency struct {
