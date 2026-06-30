@@ -12,6 +12,9 @@ export type DatePreset =
   | "last90"
   | "custom";
 
+// Quick filter for transfer legs: show everything, only transfers, or hide them.
+export type TransferFilter = "all" | "only" | "none";
+
 export interface Filters {
   preset: DatePreset;
   from: string; // custom range (YYYY-MM-DD)
@@ -24,6 +27,8 @@ export interface Filters {
   amountMax: number | null;
   text: string; // matches memo/info/payee/category
   hideFuture: boolean; // hide rows dated after today
+  transfers: TransferFilter; // all | only transfers | exclude transfers
+  noFlags: boolean; // keep only unflagged rows (status === 0)
 }
 
 export const emptyFilters: Filters = {
@@ -38,6 +43,8 @@ export const emptyFilters: Filters = {
   amountMax: null,
   text: "",
   hideFuture: false,
+  transfers: "all",
+  noFlags: false,
 };
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -84,7 +91,9 @@ export function isActive(f: Filters): boolean {
     f.amountMin !== null ||
     f.amountMax !== null ||
     f.text.trim() !== "" ||
-    f.hideFuture
+    f.hideFuture ||
+    f.transfers !== "all" ||
+    f.noFlags
   );
 }
 
@@ -100,6 +109,9 @@ export function applyFilters(
   const text = f.text.trim().toLowerCase();
   return rows.filter((r) => {
     if (f.hideFuture && r.date > today) return false;
+    if (f.transfers === "only" && r.transferId == null) return false;
+    if (f.transfers === "none" && r.transferId != null) return false;
+    if (f.noFlags && r.status !== 0) return false;
     if (from && r.date < from) return false;
     if (to && r.date > to) return false;
     if (f.status !== null && r.status !== f.status) return false;
@@ -135,6 +147,8 @@ export function parseFilters(p: URLSearchParams): Filters {
     amountMax: num("amax"),
     text: p.get("q") ?? "",
     hideFuture: p.get("hf") === "1",
+    transfers: (p.get("xf") as TransferFilter) || "all",
+    noFlags: p.get("nf") === "1",
   };
 }
 
@@ -153,5 +167,7 @@ export function filtersToParams(f: Filters): Record<string, string> {
   if (f.amountMax !== null) out.amax = String(f.amountMax);
   if (f.text.trim()) out.q = f.text.trim();
   if (f.hideFuture) out.hf = "1";
+  if (f.transfers !== "all") out.xf = f.transfers;
+  if (f.noFlags) out.nf = "1";
   return out;
 }
