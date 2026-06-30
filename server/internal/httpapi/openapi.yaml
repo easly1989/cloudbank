@@ -1202,7 +1202,9 @@ paths:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
     get:
       operationId: listBudgets
-      summary: List the wallet's per-category budgets
+      summary: List the wallet's per-category budgets for a year (0 = every-year default)
+      parameters:
+        - { name: year, in: query, required: false, schema: { type: integer }, description: "calendar year, or 0 for the every-year default (default 0)" }
       responses:
         "200": { description: Budgets., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/CategoryBudget" } } } } }
   /api/v1/wallets/{walletId}/budgets/report:
@@ -1235,7 +1237,9 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
     delete:
       operationId: clearCategoryBudget
-      summary: Clear a category's budget
+      summary: Clear a category's budget for a year (0 = every-year default)
+      parameters:
+        - { name: year, in: query, required: false, schema: { type: integer }, description: "calendar year, or 0 for the every-year default (default 0)" }
       responses:
         "204": { description: Cleared. }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -2001,13 +2005,15 @@ components:
       type: object
       properties:
         categoryId: { type: integer, format: int64 }
+        year: { type: integer, description: "calendar year, or 0 for the every-year default" }
         mode: { type: string, enum: [same, monthly] }
         same: { type: integer, format: int64 }
         monthly: { type: array, items: { type: integer, format: int64 }, minItems: 12, maxItems: 12 }
-      required: [categoryId, mode, same, monthly]
+      required: [categoryId, year, mode, same, monthly]
     BudgetInput:
       type: object
       properties:
+        year: { type: integer, description: "calendar year, or 0 for the every-year default" }
         mode: { type: string, enum: [same, monthly] }
         same: { type: integer, format: int64, description: "used when mode = same" }
         monthly: { type: array, items: { type: integer, format: int64 }, description: "12 values, Jan..Dec; used when mode = monthly" }
