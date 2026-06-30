@@ -28,6 +28,7 @@ import {
   listCurrencies,
   setCategoryBudget,
 } from "../api/client";
+import { BudgetGauge } from "../components/BudgetGauge";
 import { type MoneyFormat, formatMinor } from "../money";
 import { rowFocusProps } from "../rowEdit";
 import { useAmountParser } from "../useAmountParser";
@@ -277,6 +278,18 @@ function BudgetReportView({ walletId, fmt }: { walletId: number; fmt: MoneyForma
   });
   const report = query.data;
 
+  // Combined expense budget vs actual (magnitudes) for the over/under gauge.
+  const expense = useMemo(() => {
+    let budget = 0;
+    let actual = 0;
+    for (const r of report?.rows ?? []) {
+      if (r.isIncome) continue;
+      budget += Math.abs(r.budget);
+      actual += Math.abs(r.actual);
+    }
+    return { budget, actual };
+  }, [report]);
+
   const exportCsv = () => {
     if (!report) return;
     const head = ["Category", "Budget", "Actual", "Difference"];
@@ -326,6 +339,10 @@ function BudgetReportView({ walletId, fmt }: { walletId: number; fmt: MoneyForma
           {t("budget.exportCsv")}
         </Button>
       </Group>
+
+      {expense.budget > 0 && (
+        <BudgetGauge budget={expense.budget} actual={expense.actual} base={fmt} />
+      )}
 
       {report && report.rows.length === 0 && <Text c="dimmed">{t("budget.empty")}</Text>}
 
