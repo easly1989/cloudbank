@@ -1,4 +1,4 @@
-import { Button, Card, Group, MultiSelect, Select, TextInput } from "@mantine/core";
+import { Button, Card, Group, MultiSelect, Select, Switch, TextInput } from "@mantine/core";
 import { IconFilterOff } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -157,6 +157,12 @@ export function RegisterFilters({
             if (e.key === "Enter") onChange({ ...filters, text });
           }}
           w={180}
+        />
+        <Switch
+          label={t("filters.hideFuture")}
+          checked={filters.hideFuture}
+          onChange={(e) => onChange({ ...filters, hideFuture: e.currentTarget.checked })}
+          mb={8}
         />
         {isActive(filters) && (
           <Button
