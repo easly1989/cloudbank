@@ -86,9 +86,10 @@ try {
   await page.waitForTimeout(300);
   await shoot(page, "settings");
 
-  // Wallet settings — backup / .xhb export.
-  await page.getByRole("tab", { name: "Wallet" }).click();
-  await page.waitForTimeout(300);
+  // Wallet settings — backup / .xhb export. The wallet tab is titled after the
+  // active wallet, so deep-link to its backup section instead of clicking a tab.
+  await page.goto(BASE + "/settings?tab=wallet&section=backup");
+  await page.waitForTimeout(400);
   await shoot(page, "export");
 
   console.log("\nAll screenshots written to", OUT);
