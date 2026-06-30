@@ -18,6 +18,10 @@ type transactionHandlers struct {
 
 func (h *transactionHandlers) walletRoutes(r chi.Router) {
 	r.Get("/tags", h.listTags)
+	r.Get("/tags/manage", h.listTagsUsage)
+	r.Patch("/tags/{tagId}", h.renameTag)
+	r.Post("/tags/{tagId}/merge", h.mergeTag)
+	r.Delete("/tags/{tagId}", h.deleteTag)
 	r.Get("/transactions", h.list)
 	r.Post("/transactions", h.create)
 	r.Post("/transactions/bulk", h.bulk)
@@ -105,6 +109,89 @@ func (h *transactionHandlers) listTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, tags)
+}
+
+func (h *transactionHandlers) listTagsUsage(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	tags, err := h.svc.ListTagsWithCounts(r.Context(), wl.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not list tags")
+		return
+	}
+	writeJSON(w, http.StatusOK, tags)
+}
+
+func tagIDParam(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	id, err := strconv.ParseInt(chi.URLParam(r, "tagId"), 10, 64)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusNotFound, "not_found", "tag not found")
+		return 0, false
+	}
+	return id, true
+}
+
+func writeTagError(w http.ResponseWriter, err error) bool {
+	switch {
+	case err == nil:
+		return true
+	case errors.Is(err, transaction.ErrTagNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "tag not found")
+	case errors.Is(err, transaction.ErrTagDuplicate):
+		writeError(w, http.StatusConflict, "conflict", "a tag with that name already exists")
+	case errors.Is(err, transaction.ErrTagInvalid):
+		writeError(w, http.StatusBadRequest, "invalid", "invalid tag name or merge target")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", "could not update tag")
+	}
+	return false
+}
+
+func (h *transactionHandlers) renameTag(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := tagIDParam(w, r)
+	if !ok {
+		return
+	}
+	var in struct {
+		Name string `json:"name"`
+	}
+	if !decodeJSON(w, r, &in) {
+		return
+	}
+	if !writeTagError(w, h.svc.RenameTag(r.Context(), wl.ID, id, in.Name)) {
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *transactionHandlers) mergeTag(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := tagIDParam(w, r)
+	if !ok {
+		return
+	}
+	var in struct {
+		TargetID int64 `json:"targetId"`
+	}
+	if !decodeJSON(w, r, &in) {
+		return
+	}
+	if !writeTagError(w, h.svc.MergeTags(r.Context(), wl.ID, id, in.TargetID)) {
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *transactionHandlers) deleteTag(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := tagIDParam(w, r)
+	if !ok {
+		return
+	}
+	if !writeTagError(w, h.svc.DeleteTag(r.Context(), wl.ID, id)) {
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // requireAccountInWallet validates the accountId query param against the wallet.

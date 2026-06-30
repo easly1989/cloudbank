@@ -13,6 +13,7 @@
     "transactions": "Transazioni",
     "schedules": "Pianificazioni",
     "templates": "Modelli",
+    "tags": "Tag",
     "assignments": "Regole",
     "budget": "Budget",
     "reports": "Report",
@@ -261,6 +262,15 @@
     "fromTemplatePlaceholder": "Facoltativo",
     "transferNote": "È un trasferimento; qui puoi cambiare solo importo, note e pianificazione.",
     "untitled": "Pianificata"
+  },
+  "tags": {
+    "title": "Tag",
+    "empty": "Nessun tag. Vengono creati taggando le transazioni.",
+    "name": "Tag",
+    "count": "Usato",
+    "mergeInto": "Unisci a…",
+    "delete": "Elimina tag",
+    "confirmDelete": "Eliminare il tag \"{{name}}\"? Verrà rimosso da tutte le transazioni."
   },
   "templates": {
     "apply": "Usa un modello",
