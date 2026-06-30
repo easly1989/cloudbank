@@ -281,6 +281,7 @@
     "amountMin": "Min amount",
     "amountMax": "Max amount",
     "search": "Search",
+    "hideFuture": "Hide future",
     "clear": "Clear filters",
     "presets": {
       "all": "All dates",

@@ -281,6 +281,7 @@
     "amountMin": "Importo min",
     "amountMax": "Importo max",
     "search": "Cerca",
+    "hideFuture": "Nascondi future",
     "clear": "Azzera filtri",
     "presets": {
       "all": "Tutte le date",
