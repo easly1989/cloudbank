@@ -37,9 +37,11 @@ type CurrencyInfo struct {
 	FracDigits   int    `json:"fracDigits"`
 }
 
-// CategoryBudget is a category's budget configuration.
+// CategoryBudget is a category's budget configuration for a given year (0 = the
+// "every year" default).
 type CategoryBudget struct {
 	CategoryID int64     `json:"categoryId"`
+	Year       int64     `json:"year"`
 	Mode       string    `json:"mode"`
 	Same       int64     `json:"same"`
 	Monthly    [12]int64 `json:"monthly"`
@@ -83,8 +85,9 @@ func NewService(write *sql.DB) *Service {
 	return &Service{db: write, q: db.New(write)}
 }
 
-// List returns every category that has a budget configured.
-func (s *Service) List(ctx context.Context, walletID int64) ([]CategoryBudget, error) {
+// List returns every category that has a budget configured for the given year
+// (year 0 = the "every year" default set).
+func (s *Service) List(ctx context.Context, walletID, year int64) ([]CategoryBudget, error) {
 	rows, err := s.q.ListBudgetsForWallet(ctx, walletID)
 	if err != nil {
 		return nil, err
@@ -92,9 +95,12 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]CategoryBudget, e
 	byCat := map[int64]*CategoryBudget{}
 	order := []int64{}
 	for _, b := range rows {
+		if b.Year != year {
+			continue
+		}
 		cb, ok := byCat[b.CategoryID]
 		if !ok {
-			cb = &CategoryBudget{CategoryID: b.CategoryID, Mode: ModeMonthly}
+			cb = &CategoryBudget{CategoryID: b.CategoryID, Year: year, Mode: ModeMonthly}
 			byCat[b.CategoryID] = cb
 			order = append(order, b.CategoryID)
 		}
@@ -112,10 +118,14 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]CategoryBudget, e
 	return out, nil
 }
 
-// SetCategoryBudget replaces a category's budget rows.
-func (s *Service) SetCategoryBudget(ctx context.Context, walletID, categoryID int64, in Input) error {
+// SetCategoryBudget replaces a category's budget rows for the given year (year 0
+// = the "every year" default).
+func (s *Service) SetCategoryBudget(ctx context.Context, walletID, categoryID, year int64, in Input) error {
 	if in.Mode != ModeSame && in.Mode != ModeMonthly {
 		return ErrInvalidMode
+	}
+	if year < 0 {
+		year = 0
 	}
 	cat, err := s.q.GetCategory(ctx, categoryID)
 	if errors.Is(err, sql.ErrNoRows) || (err == nil && cat.WalletID != walletID) {
@@ -132,19 +142,19 @@ func (s *Service) SetCategoryBudget(ctx context.Context, walletID, categoryID in
 	defer func() { _ = tx.Rollback() }()
 	qtx := s.q.WithTx(tx)
 
-	if err := qtx.DeleteCategoryBudget(ctx, db.DeleteCategoryBudgetParams{WalletID: walletID, CategoryID: categoryID}); err != nil {
+	if err := qtx.DeleteCategoryBudget(ctx, db.DeleteCategoryBudgetParams{WalletID: walletID, CategoryID: categoryID, Year: year}); err != nil {
 		return err
 	}
 	if in.Mode == ModeSame {
 		if in.Same != 0 {
-			if err := qtx.InsertBudget(ctx, db.InsertBudgetParams{WalletID: walletID, CategoryID: categoryID, Month: 0, Amount: in.Same}); err != nil {
+			if err := qtx.InsertBudget(ctx, db.InsertBudgetParams{WalletID: walletID, CategoryID: categoryID, Year: year, Month: 0, Amount: in.Same}); err != nil {
 				return err
 			}
 		}
 	} else {
 		for m := 1; m <= 12; m++ {
 			if v := in.Monthly[m-1]; v != 0 {
-				if err := qtx.InsertBudget(ctx, db.InsertBudgetParams{WalletID: walletID, CategoryID: categoryID, Month: int64(m), Amount: v}); err != nil {
+				if err := qtx.InsertBudget(ctx, db.InsertBudgetParams{WalletID: walletID, CategoryID: categoryID, Year: year, Month: int64(m), Amount: v}); err != nil {
 					return err
 				}
 			}
@@ -195,12 +205,12 @@ func (s *Service) Report(ctx context.Context, walletID int64, from, to string, r
 	if err != nil {
 		return Report{}, err
 	}
-	budgetByCat := map[int64]map[int64]int64{}
+	budgetByCat := map[int64]map[[2]int64]int64{}
 	for _, b := range budgetRows {
 		if budgetByCat[b.CategoryID] == nil {
-			budgetByCat[b.CategoryID] = map[int64]int64{}
+			budgetByCat[b.CategoryID] = map[[2]int64]int64{}
 		}
-		budgetByCat[b.CategoryID][b.Month] = b.Amount
+		budgetByCat[b.CategoryID][[2]int64{b.Year, b.Month}] = b.Amount
 	}
 
 	// Actuals in the period, converted to base.
@@ -220,7 +230,7 @@ func (s *Service) Report(ctx context.Context, walletID int64, from, to string, r
 		actualByCat[r.CategoryID.Int64] += amt
 	}
 
-	monthCounts, err := coveredMonths(from, to)
+	cells, err := coveredCells(from, to)
 	if err != nil {
 		return Report{}, err
 	}
@@ -255,7 +265,7 @@ func (s *Service) Report(ctx context.Context, walletID int64, from, to string, r
 		if m.noBudget {
 			continue
 		}
-		b := budgetForPeriod(budgetByCat[id], monthCounts)
+		b := budgetForPeriodYear(budgetByCat[id], cells)
 		act := actualByCat[id]
 		if b == 0 && act == 0 {
 			continue
@@ -285,45 +295,47 @@ func (s *Service) Report(ctx context.Context, walletID int64, from, to string, r
 	return rep, nil
 }
 
-// budgetForPeriod sums a category's monthly budget across the covered months.
-// month 0 (same) applies to every covered month.
-func budgetForPeriod(byMonth map[int64]int64, monthCounts [13]int) int64 {
-	if byMonth == nil {
+// cell is one (year, month) bucket covered by a report range.
+type cell struct{ year, month int64 }
+
+// budgetForPeriodYear sums a category's budget across the covered cells. For each
+// cell the most specific entry wins, falling back in order:
+// (year, month) → (year, 0 same) → (0 every-year, month) → (0, 0 default).
+func budgetForPeriodYear(byKey map[[2]int64]int64, cells []cell) int64 {
+	if byKey == nil {
 		return 0
 	}
-	if same, ok := byMonth[0]; ok {
-		total := 0
-		for m := 1; m <= 12; m++ {
-			total += monthCounts[m]
-		}
-		return same * int64(total)
-	}
 	var sum int64
-	for m := 1; m <= 12; m++ {
-		sum += byMonth[int64(m)] * int64(monthCounts[m])
+	for _, c := range cells {
+		for _, k := range [4][2]int64{{c.year, c.month}, {c.year, 0}, {0, c.month}, {0, 0}} {
+			if v, ok := byKey[k]; ok {
+				sum += v
+				break
+			}
+		}
 	}
 	return sum
 }
 
-// coveredMonths returns, for each month number 1..12, how many times it appears
-// in the inclusive [from, to] calendar range.
-func coveredMonths(from, to string) ([13]int, error) {
-	var counts [13]int
+// coveredCells returns each (year, month) bucket in the inclusive [from, to]
+// calendar range.
+func coveredCells(from, to string) ([]cell, error) {
 	f, err := time.Parse(dateLayout, from)
 	if err != nil {
-		return counts, err
+		return nil, err
 	}
 	t, err := time.Parse(dateLayout, to)
 	if err != nil {
-		return counts, err
+		return nil, err
 	}
 	cur := time.Date(f.Year(), f.Month(), 1, 0, 0, 0, 0, time.UTC)
 	end := time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
+	var out []cell
 	for !cur.After(end) {
-		counts[int(cur.Month())]++
+		out = append(out, cell{int64(cur.Year()), int64(cur.Month())})
 		cur = cur.AddDate(0, 1, 0)
 	}
-	return counts, nil
+	return out, nil
 }
 
 func convertToBase(amount int64, cur, base db.Currency) int64 {

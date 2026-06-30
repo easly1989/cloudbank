@@ -49,6 +49,7 @@ type Budget struct {
 	ID         int64
 	WalletID   int64
 	CategoryID int64
+	Year       int64
 	Month      int64
 	Amount     int64
 }

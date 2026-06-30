@@ -70,26 +70,28 @@ func (q *Queries) CategoryActualsForBudget(ctx context.Context, arg CategoryActu
 }
 
 const deleteCategoryBudget = `-- name: DeleteCategoryBudget :exec
-DELETE FROM budgets WHERE wallet_id = ? AND category_id = ?
+DELETE FROM budgets WHERE wallet_id = ? AND category_id = ? AND year = ?
 `
 
 type DeleteCategoryBudgetParams struct {
 	WalletID   int64
 	CategoryID int64
+	Year       int64
 }
 
 func (q *Queries) DeleteCategoryBudget(ctx context.Context, arg DeleteCategoryBudgetParams) error {
-	_, err := q.db.ExecContext(ctx, deleteCategoryBudget, arg.WalletID, arg.CategoryID)
+	_, err := q.db.ExecContext(ctx, deleteCategoryBudget, arg.WalletID, arg.CategoryID, arg.Year)
 	return err
 }
 
 const insertBudget = `-- name: InsertBudget :exec
-INSERT INTO budgets (wallet_id, category_id, month, amount) VALUES (?, ?, ?, ?)
+INSERT INTO budgets (wallet_id, category_id, year, month, amount) VALUES (?, ?, ?, ?, ?)
 `
 
 type InsertBudgetParams struct {
 	WalletID   int64
 	CategoryID int64
+	Year       int64
 	Month      int64
 	Amount     int64
 }
@@ -98,6 +100,7 @@ func (q *Queries) InsertBudget(ctx context.Context, arg InsertBudgetParams) erro
 	_, err := q.db.ExecContext(ctx, insertBudget,
 		arg.WalletID,
 		arg.CategoryID,
+		arg.Year,
 		arg.Month,
 		arg.Amount,
 	)
@@ -105,7 +108,7 @@ func (q *Queries) InsertBudget(ctx context.Context, arg InsertBudgetParams) erro
 }
 
 const listBudgetsForWallet = `-- name: ListBudgetsForWallet :many
-SELECT id, wallet_id, category_id, month, amount FROM budgets WHERE wallet_id = ? ORDER BY category_id, month
+SELECT id, wallet_id, category_id, year, month, amount FROM budgets WHERE wallet_id = ? ORDER BY category_id, year, month
 `
 
 func (q *Queries) ListBudgetsForWallet(ctx context.Context, walletID int64) ([]Budget, error) {
@@ -121,6 +124,7 @@ func (q *Queries) ListBudgetsForWallet(ctx context.Context, walletID int64) ([]B
 			&i.ID,
 			&i.WalletID,
 			&i.CategoryID,
+			&i.Year,
 			&i.Month,
 			&i.Amount,
 		); err != nil {
