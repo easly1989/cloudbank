@@ -46,10 +46,10 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 
 ## Features
 
-- **Accounts** of every HomeBank type (bank, cash, checking, savings, credit card, liability, asset, investment) with per-account currency and the full set of flags.
+- **Accounts** of every HomeBank type (bank, cash, checking, savings, credit card, liability, asset, investment) with per-account currency and the full set of flags, showing both today's balance and a projected future balance.
 - **Transactions** with 12 payment types, the cleared/reconciled status lifecycle, category splits, free tags, internal transfers (including cross-currency), bulk edit and duplicate detection.
-- **Register** view with running balance, rich filtering, per-user column customization, a reconciliation workflow, and double-click-to-edit.
-- **Scheduled transactions** with automatic posting, **templates** (a dedicated management area, and offered when entering a transaction), and **assignment rules** for auto-categorization.
+- **Register** view with running balance, rich filtering (including a show/hide **future transactions** toggle), per-user column customization, a reconciliation workflow, and double-click-to-edit.
+- **Scheduled transactions** with automatic posting (optionally **pre-registering up to 3 months ahead**, HomeBank style), the recurring **amount** shown in the schedules grid, **templates** (a dedicated management area, and offered when entering a transaction), and **assignment rules** for auto-categorization.
 - **Budgets** and a full suite of **reports** (Statistics, Trend Time, Balance, Budget, Vehicle cost) with interactive charts and CSV/PNG export.
 - **Import**: HomeBank `.xhb`, QIF, OFX/QFX, CSV — with an import assistant. **Export**: HomeBank `.xhb`, QIF, CSV.
 - **Multi-currency** with manual and online (ECB / frankfurter.app) exchange rates.
@@ -57,7 +57,7 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 
 ### Make it yours
 
-- **Customizable dashboard** — drag to reorder widgets, resize them (full / half / third width) and show or hide them.
+- **Customizable, HomeBank-style dashboard** — drag to reorder widgets, resize them (full / half / third width) and show or hide them; pick an account and **Add** to open the full entry modal, a percentage spending donut, and an Upcoming panel split into **Recurring / Future / Reminders** with post / skip / edit.
 - **Themes** — light / dark / auto plus an **accent-colour picker**; your choice persists per user across devices.
 - **Collapsible sidebar** and a **pinnable, reorderable navigation** ("More" group for the rest).
 - **Smart amount entry** (HomeBank style) — type `12.40` or `12,40` and both are read as decimals (toggleable per user).

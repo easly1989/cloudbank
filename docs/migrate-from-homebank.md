@@ -21,7 +21,8 @@ use **File → Save as…** in HomeBank to write a fresh copy somewhere obvious.
 ## 2. Import it into CloudBank
 
 1. Log in to CloudBank.
-2. Go to **Import** in the sidebar (the **HomeBank file** tab).
+2. Go to **Settings → Wallet → Import** (the **HomeBank file** tab). Import is
+   wallet-scoped, so it lives in the active wallet's settings.
 3. Choose your `.xhb` file and click **Import**.
 4. CloudBank creates a **new wallet** from the file and shows a summary of how
    many of each entity were imported, plus any warnings. The import is
@@ -58,7 +59,8 @@ latest save — re-export from HomeBank and import again into a fresh wallet.
 
 If you're coming from another tool, CloudBank also imports **CSV** (the HomeBank
 CSV dialect and generic mapped CSV), **QIF**, and **OFX/QFX** from the same
-**Import** screen, with duplicate detection and optional rule application.
+**Settings → Wallet → Import** screen, with duplicate detection and optional rule
+application.
 
 ## Exporting back to HomeBank (`.xhb`)
 
