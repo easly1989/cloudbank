@@ -28,6 +28,7 @@ import {
   Select,
   SimpleGrid,
   Stack,
+  Switch,
   Table,
   Tabs,
   Text,
@@ -127,6 +128,8 @@ interface DashView {
   groupBy: DashboardGroupBy;
   ieMonths: number;
   ieStyle: IEStyle;
+  ieNet: boolean; // overlay a net (income − expense) line
+  ieCumulative: boolean; // accumulate the net line over the window
 }
 
 // Income/expense trailing windows offered in the chart's period dropdown
@@ -140,6 +143,8 @@ const DEFAULT_VIEW: DashView = {
   groupBy: "category",
   ieMonths: 12,
   ieStyle: "bars",
+  ieNet: false,
+  ieCumulative: false,
 };
 // Periods offered for the spending widget (the register's "custom" range is
 // omitted here to keep the dashboard control a single dropdown).
@@ -632,11 +637,33 @@ function IncomeExpenseCard({
                   ]}
                 />
               </Box>
+              <Box px="sm" pb="xs">
+                <Switch
+                  size="xs"
+                  label={t("dashboard.showNet")}
+                  checked={view.ieNet}
+                  onChange={(e) => setView({ ...view, ieNet: e.currentTarget.checked })}
+                />
+                <Switch
+                  size="xs"
+                  mt={6}
+                  label={t("dashboard.cumulative")}
+                  checked={view.ieCumulative}
+                  disabled={!view.ieNet}
+                  onChange={(e) => setView({ ...view, ieCumulative: e.currentTarget.checked })}
+                />
+              </Box>
             </Menu.Dropdown>
           </Menu>
         </Group>
       </Group>
-      <IncomeExpenseChart points={points} base={base} style={view.ieStyle} />
+      <IncomeExpenseChart
+        points={points}
+        base={base}
+        style={view.ieStyle}
+        showNet={view.ieNet}
+        cumulative={view.ieCumulative}
+      />
     </Card>
   );
 }
@@ -648,26 +675,52 @@ function IncomeExpenseChart({
   points,
   base,
   style,
+  showNet,
+  cumulative,
 }: {
   points: MonthPoint[];
   base?: CurrencyInfo;
   style: IEStyle;
+  showNet: boolean;
+  cumulative: boolean;
 }) {
   const { t } = useTranslation();
   const incomeLabel = t("dashboard.income");
   const expenseLabel = t("dashboard.expense");
+  const netLabel = cumulative ? t("dashboard.netCumulative") : t("dashboard.net");
 
   const option: EChartsOption = useMemo(() => {
     const seriesType = style === "lines" ? "line" : "bar";
+    // Net per month = income − expense (both stored as positive magnitudes);
+    // optionally accumulated into a running total across the window.
+    let acc = 0;
+    const net = points.map((p) => {
+      const m = p.income - p.expense;
+      acc += m;
+      return cumulative ? acc : m;
+    });
+    const legend = showNet ? [incomeLabel, expenseLabel, netLabel] : [incomeLabel, expenseLabel];
     return {
       tooltip: {
         trigger: "axis",
-        valueFormatter: (v) => {
-          const n = typeof v === "number" ? v : Number(v) || 0;
-          return base ? formatMinor(Math.abs(n), base) : String(Math.abs(n));
+        // Income/expense bars show their magnitude; the net line keeps its sign.
+        formatter: (params) => {
+          const arr = Array.isArray(params) ? params : [params];
+          // axisValue is present at runtime for axis-trigger tooltips but not on
+          // the base param type; read it through a narrow cast.
+          const head = arr.length
+            ? String((arr[0] as { axisValue?: string | number }).axisValue ?? "")
+            : "";
+          const lines = arr.map((p) => {
+            const raw = typeof p.value === "number" ? p.value : Number(p.value) || 0;
+            const v = p.seriesName === netLabel ? raw : Math.abs(raw);
+            const text = base ? formatMinor(v, base) : String(v);
+            return `${p.marker ?? ""}${p.seriesName}: ${text}`;
+          });
+          return [head, ...lines].join("<br/>");
         },
       },
-      legend: { data: [incomeLabel, expenseLabel], bottom: 0 },
+      legend: { data: legend, bottom: 0 },
       grid: { left: 8, right: 16, top: 16, bottom: 48, containLabel: true },
       xAxis: {
         type: "category",
@@ -688,9 +741,22 @@ function IncomeExpenseChart({
           color: "#f03e3e",
           data: points.map((p) => -p.expense),
         },
+        ...(showNet
+          ? [
+              {
+                name: netLabel,
+                type: "line" as const,
+                color: "#1c7ed6",
+                smooth: true,
+                symbolSize: 6,
+                z: 3,
+                data: net,
+              },
+            ]
+          : []),
       ],
     };
-  }, [points, base, style, incomeLabel, expenseLabel]);
+  }, [points, base, style, showNet, cumulative, incomeLabel, expenseLabel, netLabel]);
 
   const empty = points.every((p) => p.income === 0 && p.expense === 0);
   if (!base || empty) {
