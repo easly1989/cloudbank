@@ -23,6 +23,7 @@ export interface Filters {
   amountMin: number | null; // minor units, signed
   amountMax: number | null;
   text: string; // matches memo/info/payee/category
+  hideFuture: boolean; // hide rows dated after today
 }
 
 export const emptyFilters: Filters = {
@@ -36,6 +37,7 @@ export const emptyFilters: Filters = {
   amountMin: null,
   amountMax: null,
   text: "",
+  hideFuture: false,
 };
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -81,7 +83,8 @@ export function isActive(f: Filters): boolean {
     f.tags.length > 0 ||
     f.amountMin !== null ||
     f.amountMax !== null ||
-    f.text.trim() !== ""
+    f.text.trim() !== "" ||
+    f.hideFuture
   );
 }
 
@@ -92,9 +95,11 @@ export function applyFilters(
   now = new Date(),
 ): RegisterRow[] {
   const { from, to } = dateBounds(f, now);
+  const today = iso(now);
   const catIds = f.categoryId != null ? categoryWithChildren(f.categoryId, categories) : null;
   const text = f.text.trim().toLowerCase();
   return rows.filter((r) => {
+    if (f.hideFuture && r.date > today) return false;
     if (from && r.date < from) return false;
     if (to && r.date > to) return false;
     if (f.status !== null && r.status !== f.status) return false;
@@ -129,6 +134,7 @@ export function parseFilters(p: URLSearchParams): Filters {
     amountMin: num("amin"),
     amountMax: num("amax"),
     text: p.get("q") ?? "",
+    hideFuture: p.get("hf") === "1",
   };
 }
 
@@ -146,5 +152,6 @@ export function filtersToParams(f: Filters): Record<string, string> {
   if (f.amountMin !== null) out.amin = String(f.amountMin);
   if (f.amountMax !== null) out.amax = String(f.amountMax);
   if (f.text.trim()) out.q = f.text.trim();
+  if (f.hideFuture) out.hf = "1";
   return out;
 }
