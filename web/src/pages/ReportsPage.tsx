@@ -499,6 +499,32 @@ function TrendTab() {
   );
 }
 
+// todayBucketKey renders today's date as the bucket key for the given interval,
+// matching the server's bucket formats (see report/buckets.go) so the "today"
+// marker lands on the right category.
+function todayBucketKey(bucket: ReportBucket, now = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const y = now.getFullYear();
+  const m = now.getMonth(); // 0-based
+  switch (bucket) {
+    case "year":
+      return String(y);
+    case "quarter":
+      return `${y}-Q${Math.floor(m / 3) + 1}`;
+    case "month":
+      return `${y}-${pad(m + 1)}`;
+    case "week": {
+      // Monday of this week (ISO-style), matching the server.
+      const d = new Date(y, m, now.getDate());
+      d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+      return iso(d);
+    }
+    default:
+      return iso(now); // day
+  }
+}
+
 function BalanceTab() {
   const { t } = useTranslation();
   const { currentWallet } = useWallet();
@@ -528,21 +554,34 @@ function BalanceTab() {
 
   const option: EChartsOption = useMemo(() => {
     const buckets = result?.buckets ?? [];
-    const series = (result?.series ?? []).map((s, i) => ({
-      name: s.label,
-      type: "line" as const,
-      smooth: true,
-      data: s.values,
-      itemStyle: { color: SERIES_PALETTE[i % SERIES_PALETTE.length] },
-      markLine:
-        s.minimumBalance !== 0
-          ? {
-              symbol: "none",
-              lineStyle: { type: "dashed" as const, color: "#fa5252" },
-              data: [{ yAxis: s.minimumBalance, name: t("reports.overdraft") }],
-            }
-          : undefined,
-    }));
+    const todayKey = todayBucketKey(bucket);
+    const showToday = buckets.includes(todayKey);
+    const series = (result?.series ?? []).map((s, i) => {
+      // Per-line markLine entries: each account's overdraft level (red), plus a
+      // single "today" vertical line attached to the first series (grey).
+      const lines: Record<string, unknown>[] = [];
+      if (s.minimumBalance !== 0)
+        lines.push({
+          yAxis: s.minimumBalance,
+          name: t("reports.overdraft"),
+          lineStyle: { type: "dashed", color: "#fa5252" },
+        });
+      if (i === 0 && showToday)
+        lines.push({
+          xAxis: todayKey,
+          name: t("reports.today"),
+          lineStyle: { type: "solid", color: "#868e96" },
+          label: { formatter: t("reports.today"), color: "#868e96", position: "insideEndTop" },
+        });
+      return {
+        name: s.label,
+        type: "line" as const,
+        smooth: true,
+        data: s.values,
+        itemStyle: { color: SERIES_PALETTE[i % SERIES_PALETTE.length] },
+        markLine: lines.length ? { symbol: "none", data: lines } : undefined,
+      };
+    });
     return {
       tooltip: {
         trigger: "axis",
@@ -555,7 +594,7 @@ function BalanceTab() {
       yAxis: { type: "value" },
       series,
     };
-  }, [result, fmt, t]);
+  }, [result, fmt, t, bucket]);
 
   const exportPng = () => {
     const url = chartRef.current?.getPng();
