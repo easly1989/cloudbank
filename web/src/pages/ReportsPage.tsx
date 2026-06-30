@@ -79,6 +79,19 @@ function baseFmt(
     : { fracDigits: 2, decimalChar: ".", groupChar: ",", symbol: "", symbolPrefix: false };
 }
 
+// previousPeriod returns the equal-length window ending the day before `from`,
+// used for period-over-period comparison.
+function previousPeriod(from: string, to: string): { from: string; to: string } {
+  const day = 86400000;
+  const f = Date.parse(from + "T00:00:00Z");
+  const t = Date.parse(to + "T00:00:00Z");
+  const len = Math.round((t - f) / day) + 1; // inclusive day count
+  const prevTo = f - day;
+  const prevFrom = prevTo - (len - 1) * day;
+  const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+  return { from: iso(prevFrom), to: iso(prevTo) };
+}
+
 export function ReportsPage() {
   const { t } = useTranslation();
   return (
@@ -172,6 +185,28 @@ function StatisticsTab() {
   });
   const result = query.data;
 
+  // Period-over-period comparison: a second query over the equal-length window
+  // ending the day before the current range. Needs a bounded period.
+  const [compare, setCompare] = useState(false);
+  const bounds = dateBounds(filters);
+  const prevParams = useMemo(() => {
+    if (!compare || !bounds.from || !bounds.to) return null;
+    const pp = previousPeriod(bounds.from, bounds.to);
+    return { ...params, from: pp.from, to: pp.to };
+  }, [compare, params, bounds.from, bounds.to]);
+  const prevQuery = useQuery({
+    queryKey: ["statistics", walletId, groupBy, prevParams],
+    queryFn: () => getStatistics(walletId, groupBy, prevParams!),
+    enabled: walletId > 0 && !!prevParams,
+  });
+  const prevResult = prevQuery.data;
+  const prevByKey = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const g of prevResult?.groups ?? []) m.set(g.key, g.amount);
+    return m;
+  }, [prevResult]);
+  const showCompare = !!prevParams && !!prevResult;
+
   const fmt: MoneyFormat = useMemo(() => {
     const src = result?.currency ?? baseCur;
     return src
@@ -217,17 +252,29 @@ function StatisticsTab() {
     return {
       tooltip: { trigger: "axis", valueFormatter },
       grid: { left: 80, right: 20, bottom: 60, top: 20 },
+      legend: showCompare ? { bottom: 0 } : undefined,
       xAxis: { type: "category", data: groups.map((g) => g.label), axisLabel: { rotate: 30 } },
       yAxis: { type: "value" },
       color: PALETTE,
       series: [
         {
+          name: t("reports.amount"),
           type: "bar",
           data: groups.map((g) => ({ value: g.amount, key: g.key })),
         },
+        ...(showCompare
+          ? [
+              {
+                name: t("reports.previous"),
+                type: "bar" as const,
+                itemStyle: { color: "#adb5bd" },
+                data: groups.map((g) => prevByKey.get(g.key) ?? 0),
+              },
+            ]
+          : []),
       ],
     };
-  }, [result, chartType, fmt]);
+  }, [result, chartType, fmt, showCompare, prevByKey, t]);
 
   // Drill-down.
   const [ddOpened, dd] = useDisclosure(false);
@@ -299,6 +346,11 @@ function StatisticsTab() {
             ]}
           />
         )}
+        <Switch
+          label={t("reports.compare")}
+          checked={compare}
+          onChange={(e) => setCompare(e.currentTarget.checked)}
+        />
       </Group>
 
       {result && result.groups.length === 0 && <Text c="dimmed">{t("reports.empty")}</Text>}
@@ -318,24 +370,48 @@ function StatisticsTab() {
             <Table.Tr>
               <Table.Th>{t("reports.group")}</Table.Th>
               <Table.Th ta="right">{t("reports.amount")}</Table.Th>
+              {showCompare && <Table.Th ta="right">{t("reports.previous")}</Table.Th>}
+              {showCompare && <Table.Th ta="right">{t("reports.change")}</Table.Th>}
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {result.groups.map((g) => (
-              <Table.Tr
-                key={g.key}
-                style={{ cursor: "pointer" }}
-                onClick={() => drilldown.mutate(g.key)}
-              >
-                <Table.Td>{g.label}</Table.Td>
-                <Table.Td ta="right" c={g.amount < 0 ? "red" : "teal"}>
-                  {formatMinor(g.amount, fmt)}
-                </Table.Td>
-              </Table.Tr>
-            ))}
+            {result.groups.map((g) => {
+              const prev = prevByKey.get(g.key) ?? 0;
+              const delta = g.amount - prev;
+              return (
+                <Table.Tr
+                  key={g.key}
+                  style={{ cursor: "pointer" }}
+                  onClick={() => drilldown.mutate(g.key)}
+                >
+                  <Table.Td>{g.label}</Table.Td>
+                  <Table.Td ta="right" c={g.amount < 0 ? "red" : "teal"}>
+                    {formatMinor(g.amount, fmt)}
+                  </Table.Td>
+                  {showCompare && (
+                    <Table.Td ta="right" c="dimmed">
+                      {formatMinor(prev, fmt)}
+                    </Table.Td>
+                  )}
+                  {showCompare && (
+                    <Table.Td ta="right" c={delta < 0 ? "red" : "teal"}>
+                      {formatMinor(delta, fmt)}
+                    </Table.Td>
+                  )}
+                </Table.Tr>
+              );
+            })}
             <Table.Tr fw={700}>
               <Table.Td>{t("reports.total")}</Table.Td>
               <Table.Td ta="right">{formatMinor(result.total, fmt)}</Table.Td>
+              {showCompare && prevResult && (
+                <Table.Td ta="right" c="dimmed">
+                  {formatMinor(prevResult.total, fmt)}
+                </Table.Td>
+              )}
+              {showCompare && prevResult && (
+                <Table.Td ta="right">{formatMinor(result.total - prevResult.total, fmt)}</Table.Td>
+              )}
             </Table.Tr>
           </Table.Tbody>
         </Table>
@@ -419,28 +495,58 @@ function TrendTab() {
   const result = query.data;
   const fmt = useMemo(() => baseFmt(result?.currency), [result?.currency]);
 
+  // Overlay the previous equal-length period as a dashed line. Only meaningful
+  // for the single total series (breakdown "none") over a bounded range.
+  const [compare, setCompare] = useState(false);
+  const bounds = dateBounds(filters);
+  const prevParams = useMemo(() => {
+    if (!compare || breakdown !== "none" || !bounds.from || !bounds.to) return null;
+    const pp = previousPeriod(bounds.from, bounds.to);
+    return { ...params, from: pp.from, to: pp.to };
+  }, [compare, breakdown, params, bounds.from, bounds.to]);
+  const prevQuery = useQuery({
+    queryKey: ["trend", walletId, bucket, "none", prevParams],
+    queryFn: () => getTrend(walletId, bucket, "none", prevParams!),
+    enabled: walletId > 0 && !!prevParams,
+  });
+  const prevResult = prevQuery.data;
+  const showCompare = !!prevParams && !!prevResult;
+
   const option: EChartsOption = useMemo(() => {
     const buckets = result?.buckets ?? [];
-    const series = (result?.series ?? []).map((s, i) => ({
+    const series: EChartsOption["series"] = (result?.series ?? []).map((s, i) => ({
       name: s.label,
       type: chartType,
       smooth: chartType === "line",
       data: cumulative ? cumulate(s.values) : s.values,
       itemStyle: { color: SERIES_PALETTE[i % SERIES_PALETTE.length] },
     }));
+    if (showCompare && prevResult) {
+      // Align the previous series to the current axis by index (period-over-period).
+      const prevVals = prevResult.series[0]?.values ?? [];
+      const aligned = Array.from({ length: buckets.length }, (_, i) => prevVals[i] ?? 0);
+      series.push({
+        name: t("reports.previous"),
+        type: chartType,
+        smooth: chartType === "line",
+        data: cumulative ? cumulate(aligned) : aligned,
+        lineStyle: { type: "dashed" },
+        itemStyle: { color: "#adb5bd" },
+      });
+    }
     return {
       tooltip: {
         trigger: "axis",
         valueFormatter: (v: unknown) =>
           formatMinor(typeof v === "number" ? v : typeof v === "string" ? Number(v) : 0, fmt),
       },
-      legend: { type: "scroll", show: breakdown !== "none" },
+      legend: { type: "scroll", show: breakdown !== "none" || showCompare },
       grid: { left: 80, right: 20, bottom: 60, top: 40 },
       xAxis: { type: "category", data: buckets, axisLabel: { rotate: 30 } },
       yAxis: { type: "value" },
       series,
     };
-  }, [result, chartType, cumulative, breakdown, fmt]);
+  }, [result, chartType, cumulative, breakdown, fmt, showCompare, prevResult, t]);
 
   const exportPng = () => {
     const url = chartRef.current?.getPng();
@@ -491,6 +597,12 @@ function TrendTab() {
           label={t("reports.cumulative")}
           checked={cumulative}
           onChange={(e) => setCumulative(e.currentTarget.checked)}
+        />
+        <Switch
+          label={t("reports.compare")}
+          checked={compare}
+          onChange={(e) => setCompare(e.currentTarget.checked)}
+          disabled={breakdown !== "none"}
         />
       </Group>
       {result && result.buckets.length === 0 && <Text c="dimmed">{t("reports.empty")}</Text>}
