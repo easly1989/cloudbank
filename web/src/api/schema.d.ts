@@ -1125,7 +1125,7 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** List the wallet's per-category budgets */
+        /** List the wallet's per-category budgets for a year (0 = every-year default) */
         get: operations["listBudgets"];
         put?: never;
         post?: never;
@@ -1168,7 +1168,7 @@ export interface paths {
         /** Set a category's budget (same every month or 12 per-month values) */
         put: operations["setCategoryBudget"];
         post?: never;
-        /** Clear a category's budget */
+        /** Clear a category's budget for a year (0 = every-year default) */
         delete: operations["clearCategoryBudget"];
         options?: never;
         head?: never;
@@ -2021,6 +2021,8 @@ export interface components {
         CategoryBudget: {
             /** Format: int64 */
             categoryId: number;
+            /** @description calendar year, or 0 for the every-year default */
+            year: number;
             /** @enum {string} */
             mode: "same" | "monthly";
             /** Format: int64 */
@@ -2028,6 +2030,8 @@ export interface components {
             monthly: number[];
         };
         BudgetInput: {
+            /** @description calendar year, or 0 for the every-year default */
+            year?: number;
             /** @enum {string} */
             mode: "same" | "monthly";
             /**
@@ -4490,7 +4494,10 @@ export interface operations {
     };
     listBudgets: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description calendar year, or 0 for the every-year default (default 0) */
+                year?: number;
+            };
             header?: never;
             path: {
                 walletId: number;
@@ -4567,7 +4574,10 @@ export interface operations {
     };
     clearCategoryBudget: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description calendar year, or 0 for the every-year default (default 0) */
+                year?: number;
+            };
             header?: never;
             path: {
                 walletId: number;

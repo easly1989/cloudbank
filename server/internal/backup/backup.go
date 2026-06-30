@@ -190,6 +190,7 @@ type Assignment struct {
 type Budget struct {
 	ID         int64 `json:"id"`
 	CategoryID int64 `json:"categoryId"`
+	Year       int64 `json:"year"`
 	Month      int64 `json:"month"`
 	Amount     int64 `json:"amount"`
 }
@@ -400,7 +401,7 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 	}
 	for _, bd := range budgets {
 		doc.Budgets = append(doc.Budgets, Budget{
-			ID: bd.ID, CategoryID: bd.CategoryID, Month: bd.Month, Amount: bd.Amount,
+			ID: bd.ID, CategoryID: bd.CategoryID, Year: bd.Year, Month: bd.Month, Amount: bd.Amount,
 		})
 	}
 
@@ -650,7 +651,7 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 	for _, bd := range doc.Budgets {
 		if cid, ok := catMap[bd.CategoryID]; ok {
 			if err := q.InsertBudget(ctx, db.InsertBudgetParams{
-				WalletID: w.ID, CategoryID: cid, Month: bd.Month, Amount: bd.Amount,
+				WalletID: w.ID, CategoryID: cid, Year: bd.Year, Month: bd.Month, Amount: bd.Amount,
 			}); err != nil {
 				return 0, err
 			}

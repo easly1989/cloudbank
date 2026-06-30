@@ -2,6 +2,7 @@ import {
   Button,
   Group,
   SegmentedControl,
+  Select,
   Stack,
   Switch,
   Table,
@@ -76,13 +77,14 @@ export function BudgetPage() {
 
 function BudgetEditor({ walletId, fmt }: { walletId: number; fmt: MoneyFormat }) {
   const { t } = useTranslation();
+  const [year, setYear] = useState(0);
   const categoriesQuery = useQuery({
     queryKey: ["categories", walletId],
     queryFn: () => listCategories(walletId),
   });
   const budgetsQuery = useQuery({
-    queryKey: ["budgets", walletId],
-    queryFn: () => listBudgets(walletId),
+    queryKey: ["budgets", walletId, year],
+    queryFn: () => listBudgets(walletId, year),
   });
 
   const budgetByCat = useMemo(() => {
@@ -93,42 +95,72 @@ function BudgetEditor({ walletId, fmt }: { walletId: number; fmt: MoneyFormat })
 
   const categories = (categoriesQuery.data ?? []).filter((c) => !c.noBudget);
 
+  // "Every year" (0) plus a small window of calendar years around now.
+  const thisYear = new Date().getFullYear();
+  const yearOptions = [
+    { value: "0", label: t("budget.everyYear") },
+    ...Array.from({ length: 5 }, (_, i) => thisYear - 1 + i).map((y) => ({
+      value: String(y),
+      label: String(y),
+    })),
+  ];
+
   if (categories.length === 0) {
     return <Text c="dimmed">{t("budget.noCategories")}</Text>;
   }
 
   return (
-    <Table>
-      <Table.Thead>
-        <Table.Tr>
-          <Table.Th>{t("budget.category")}</Table.Th>
-          <Table.Th>{t("budget.mode")}</Table.Th>
-          <Table.Th>{t("budget.amounts")}</Table.Th>
-        </Table.Tr>
-      </Table.Thead>
-      <Table.Tbody>
-        {categories.map((cat) => (
-          <BudgetRow
-            key={cat.id}
-            walletId={walletId}
-            category={cat}
-            existing={budgetByCat.get(cat.id)}
-            fmt={fmt}
-          />
-        ))}
-      </Table.Tbody>
-    </Table>
+    <Stack>
+      <Group>
+        <Select
+          label={t("budget.year")}
+          data={yearOptions}
+          value={String(year)}
+          onChange={(v) => setYear(Number(v ?? 0))}
+          allowDeselect={false}
+          w={160}
+        />
+        {year !== 0 && (
+          <Text size="sm" c="dimmed" mt={24}>
+            {t("budget.yearHint")}
+          </Text>
+        )}
+      </Group>
+      <Table>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>{t("budget.category")}</Table.Th>
+            <Table.Th>{t("budget.mode")}</Table.Th>
+            <Table.Th>{t("budget.amounts")}</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {categories.map((cat) => (
+            <BudgetRow
+              key={`${cat.id}-${year}`}
+              walletId={walletId}
+              category={cat}
+              year={year}
+              existing={budgetByCat.get(cat.id)}
+              fmt={fmt}
+            />
+          ))}
+        </Table.Tbody>
+      </Table>
+    </Stack>
   );
 }
 
 function BudgetRow({
   walletId,
   category,
+  year,
   existing,
   fmt,
 }: {
   walletId: number;
   category: Category;
+  year: number;
   existing?: CategoryBudget;
   fmt: MoneyFormat;
 }) {
@@ -157,8 +189,9 @@ function BudgetRow({
       const sameVal = parse(same);
       const monthlyVals = monthly.map(parse);
       const empty = mode === "same" ? sameVal === 0 : monthlyVals.every((v) => v === 0);
-      if (empty) return clearCategoryBudget(walletId, category.id);
+      if (empty) return clearCategoryBudget(walletId, category.id, year);
       return setCategoryBudget(walletId, category.id, {
+        year,
         mode,
         same: sameVal,
         monthly: monthlyVals,

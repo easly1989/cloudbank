@@ -59,10 +59,10 @@ func TestSetAndListSameMode(t *testing.T) {
 	f := newFixture(t)
 	ctx := context.Background()
 	food := f.category(t, "Food", nil, false)
-	if err := f.s.SetCategoryBudget(ctx, f.wid, food, Input{Mode: ModeSame, Same: -10000}); err != nil {
+	if err := f.s.SetCategoryBudget(ctx, f.wid, food, 0, Input{Mode: ModeSame, Same: -10000}); err != nil {
 		t.Fatalf("Set: %v", err)
 	}
-	list, _ := f.s.List(ctx, f.wid)
+	list, _ := f.s.List(ctx, f.wid, 0)
 	if len(list) != 1 || list[0].Mode != ModeSame || list[0].Same != -10000 {
 		t.Fatalf("list = %+v", list)
 	}
@@ -71,10 +71,10 @@ func TestSetAndListSameMode(t *testing.T) {
 	var monthly [12]int64
 	monthly[0] = -5000 // January
 	monthly[1] = -6000 // February
-	if err := f.s.SetCategoryBudget(ctx, f.wid, food, Input{Mode: ModeMonthly, Monthly: monthly}); err != nil {
+	if err := f.s.SetCategoryBudget(ctx, f.wid, food, 0, Input{Mode: ModeMonthly, Monthly: monthly}); err != nil {
 		t.Fatalf("Set monthly: %v", err)
 	}
-	list, _ = f.s.List(ctx, f.wid)
+	list, _ = f.s.List(ctx, f.wid, 0)
 	if list[0].Mode != ModeMonthly || list[0].Monthly[0] != -5000 || list[0].Monthly[1] != -6000 || list[0].Same != 0 {
 		t.Fatalf("monthly list = %+v", list)
 	}
@@ -88,8 +88,8 @@ func TestReportSameOverPeriodWithSplitsAndRollup(t *testing.T) {
 	excluded := f.category(t, "Hidden", nil, true) // no_budget
 
 	// Same budget -100/month on Food.
-	_ = f.s.SetCategoryBudget(ctx, f.wid, food, Input{Mode: ModeSame, Same: -10000})
-	_ = f.s.SetCategoryBudget(ctx, f.wid, excluded, Input{Mode: ModeSame, Same: -9999})
+	_ = f.s.SetCategoryBudget(ctx, f.wid, food, 0, Input{Mode: ModeSame, Same: -10000})
+	_ = f.s.SetCategoryBudget(ctx, f.wid, excluded, 0, Input{Mode: ModeSame, Same: -9999})
 
 	// Actuals in Jan-Feb: a plain Groceries txn and a split line in Food.
 	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-01-10", Amount: -3000, CategoryID: iptr(groceries)})
@@ -120,6 +120,37 @@ func TestReportSameOverPeriodWithSplitsAndRollup(t *testing.T) {
 	}
 }
 
+func TestReportPerYearBudget(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	food := f.category(t, "Food", nil, false)
+
+	// Default for every year: -100/month. Override 2026 with -300/month.
+	_ = f.s.SetCategoryBudget(ctx, f.wid, food, 0, Input{Mode: ModeSame, Same: -10000})
+	_ = f.s.SetCategoryBudget(ctx, f.wid, food, 2026, Input{Mode: ModeSame, Same: -30000})
+
+	// 2026 uses the year-specific budget: -300 × 2 months.
+	rep, _ := f.s.Report(ctx, f.wid, "2026-01-01", "2026-02-28", false)
+	if rep.Rows[0].Budget != -60000 {
+		t.Fatalf("2026 budget = %d, want -60000 (year override)", rep.Rows[0].Budget)
+	}
+	// 2025 falls back to the every-year default: -100 × 2 months.
+	rep25, _ := f.s.Report(ctx, f.wid, "2025-01-01", "2025-02-28", false)
+	if rep25.Rows[0].Budget != -20000 {
+		t.Fatalf("2025 budget = %d, want -20000 (every-year default)", rep25.Rows[0].Budget)
+	}
+
+	// List is year-scoped: 2026 shows -300, the default set shows -100.
+	l26, _ := f.s.List(ctx, f.wid, 2026)
+	if len(l26) != 1 || l26[0].Same != -30000 {
+		t.Fatalf("List(2026) = %+v", l26)
+	}
+	l0, _ := f.s.List(ctx, f.wid, 0)
+	if len(l0) != 1 || l0[0].Same != -10000 {
+		t.Fatalf("List(0) = %+v", l0)
+	}
+}
+
 func TestReportMonthlyBudget(t *testing.T) {
 	f := newFixture(t)
 	ctx := context.Background()
@@ -128,7 +159,7 @@ func TestReportMonthlyBudget(t *testing.T) {
 	monthly[0] = -10000 // Jan
 	monthly[1] = -20000 // Feb
 	monthly[2] = -30000 // Mar
-	_ = f.s.SetCategoryBudget(ctx, f.wid, food, Input{Mode: ModeMonthly, Monthly: monthly})
+	_ = f.s.SetCategoryBudget(ctx, f.wid, food, 0, Input{Mode: ModeMonthly, Monthly: monthly})
 
 	rep, _ := f.s.Report(ctx, f.wid, "2026-01-01", "2026-02-28", false)
 	if rep.Rows[0].Budget != -30000 { // Jan -100 + Feb -200
