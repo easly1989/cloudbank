@@ -29,6 +29,7 @@ type Category struct {
 	Name     string
 	IsIncome bool
 	NoBudget bool
+	NoReport bool
 }
 
 // Usage counts references to a category (shown before destructive operations).
@@ -41,7 +42,7 @@ type Usage struct {
 func toCategory(c db.Category) Category {
 	out := Category{
 		ID: c.ID, WalletID: c.WalletID, Name: c.Name,
-		IsIncome: c.IsIncome != 0, NoBudget: c.NoBudget != 0,
+		IsIncome: c.IsIncome != 0, NoBudget: c.NoBudget != 0, NoReport: c.NoReport != 0,
 	}
 	if c.ParentID.Valid {
 		p := c.ParentID.Int64
@@ -102,7 +103,7 @@ func (s *Service) Get(ctx context.Context, id int64) (Category, error) {
 
 // Create adds a category. A subcategory's parent must be a top-level category;
 // the subcategory inherits its parent's income/expense type.
-func (s *Service) Create(ctx context.Context, walletID int64, name string, parentID *int64, isIncome, noBudget bool) (Category, error) {
+func (s *Service) Create(ctx context.Context, walletID int64, name string, parentID *int64, isIncome, noBudget, noReport bool) (Category, error) {
 	if parentID != nil {
 		parent, err := s.Get(ctx, *parentID)
 		if err != nil {
@@ -118,7 +119,7 @@ func (s *Service) Create(ctx context.Context, walletID int64, name string, paren
 	}
 	c, err := s.q.InsertCategory(ctx, db.InsertCategoryParams{
 		WalletID: walletID, ParentID: nullID(parentID), Name: name,
-		IsIncome: b2i(isIncome), NoBudget: b2i(noBudget),
+		IsIncome: b2i(isIncome), NoBudget: b2i(noBudget), NoReport: b2i(noReport),
 	})
 	if err != nil {
 		if isUnique(err) {
@@ -132,7 +133,7 @@ func (s *Service) Create(ctx context.Context, walletID int64, name string, paren
 // Update renames a category and toggles its budget flag. For a top-level
 // category the income/expense type can change and cascades to its children; a
 // subcategory keeps its parent's type.
-func (s *Service) Update(ctx context.Context, id int64, name string, isIncome, noBudget bool) (Category, error) {
+func (s *Service) Update(ctx context.Context, id int64, name string, isIncome, noBudget, noReport bool) (Category, error) {
 	cur, err := s.Get(ctx, id)
 	if err != nil {
 		return Category{}, err
@@ -141,7 +142,7 @@ func (s *Service) Update(ctx context.Context, id int64, name string, isIncome, n
 		isIncome = cur.IsIncome // subcategory type is fixed by its parent
 	}
 	if err := s.q.UpdateCategory(ctx, db.UpdateCategoryParams{
-		Name: name, IsIncome: b2i(isIncome), NoBudget: b2i(noBudget), ID: id,
+		Name: name, IsIncome: b2i(isIncome), NoBudget: b2i(noBudget), NoReport: b2i(noReport), ID: id,
 	}); err != nil {
 		if isUnique(err) {
 			return Category{}, ErrDuplicate

@@ -1615,6 +1615,7 @@ export interface components {
             name: string;
             isIncome: boolean;
             noBudget: boolean;
+            noReport: boolean;
         };
         CategoryInput: {
             name: string;
@@ -1622,6 +1623,7 @@ export interface components {
             parentId?: number | null;
             isIncome?: boolean;
             noBudget?: boolean;
+            noReport?: boolean;
         };
         CategoryUsage: {
             /** Format: int64 */

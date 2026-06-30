@@ -97,6 +97,7 @@ type Category struct {
 	Name     string `json:"name"`
 	IsIncome bool   `json:"isIncome"`
 	NoBudget bool   `json:"noBudget"`
+	NoReport bool   `json:"noReport"`
 }
 
 // Tag is a backed-up tag.
@@ -291,7 +292,7 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 	for _, c := range cats {
 		doc.Categories = append(doc.Categories, Category{
 			ID: c.ID, ParentID: np(c.ParentID), Name: c.Name,
-			IsIncome: c.IsIncome != 0, NoBudget: c.NoBudget != 0,
+			IsIncome: c.IsIncome != 0, NoBudget: c.NoBudget != 0, NoReport: c.NoReport != 0,
 		})
 	}
 
@@ -488,7 +489,7 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 		}
 		row, err := q.InsertCategory(ctx, db.InsertCategoryParams{
 			WalletID: w.ID, ParentID: parent, Name: c.Name,
-			IsIncome: b2i(c.IsIncome), NoBudget: b2i(c.NoBudget),
+			IsIncome: b2i(c.IsIncome), NoBudget: b2i(c.NoBudget), NoReport: b2i(c.NoReport),
 		})
 		if err != nil {
 			return err

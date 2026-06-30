@@ -28,12 +28,12 @@ func TestCreateInheritsTypeAndEnforcesDepth(t *testing.T) {
 	s, _, wid := newTestService(t)
 	ctx := context.Background()
 
-	food, err := s.Create(ctx, wid, "Food", nil, false, false)
+	food, err := s.Create(ctx, wid, "Food", nil, false, false, false)
 	if err != nil {
 		t.Fatalf("create top: %v", err)
 	}
 	// Subcategory inherits the parent's (expense) type even if told otherwise.
-	groc, err := s.Create(ctx, wid, "Groceries", &food.ID, true, false)
+	groc, err := s.Create(ctx, wid, "Groceries", &food.ID, true, false, false)
 	if err != nil {
 		t.Fatalf("create sub: %v", err)
 	}
@@ -41,7 +41,7 @@ func TestCreateInheritsTypeAndEnforcesDepth(t *testing.T) {
 		t.Fatal("subcategory did not inherit expense type")
 	}
 	// A subcategory cannot have children.
-	if _, err := s.Create(ctx, wid, "Deeper", &groc.ID, false, false); err != ErrTooDeep {
+	if _, err := s.Create(ctx, wid, "Deeper", &groc.ID, false, false, false); err != ErrTooDeep {
 		t.Fatalf("depth-3 create = %v, want ErrTooDeep", err)
 	}
 }
@@ -49,8 +49,8 @@ func TestCreateInheritsTypeAndEnforcesDepth(t *testing.T) {
 func TestMergeReassignsPayeeDefaultAndDeletes(t *testing.T) {
 	s, q, wid := newTestService(t)
 	ctx := context.Background()
-	food, _ := s.Create(ctx, wid, "Food", nil, false, false)
-	dining, _ := s.Create(ctx, wid, "Dining", nil, false, false)
+	food, _ := s.Create(ctx, wid, "Food", nil, false, false, false)
+	dining, _ := s.Create(ctx, wid, "Dining", nil, false, false, false)
 
 	// A payee defaults to Food.
 	p, err := q.InsertPayee(ctx, db.InsertPayeeParams{
@@ -75,9 +75,9 @@ func TestMergeReassignsPayeeDefaultAndDeletes(t *testing.T) {
 func TestDeleteWithChildren(t *testing.T) {
 	s, _, wid := newTestService(t)
 	ctx := context.Background()
-	food, _ := s.Create(ctx, wid, "Food", nil, false, false)
-	_, _ = s.Create(ctx, wid, "Groceries", &food.ID, false, false)
-	other, _ := s.Create(ctx, wid, "Expenses", nil, false, false)
+	food, _ := s.Create(ctx, wid, "Food", nil, false, false, false)
+	_, _ = s.Create(ctx, wid, "Groceries", &food.ID, false, false, false)
+	other, _ := s.Create(ctx, wid, "Expenses", nil, false, false, false)
 
 	// Deleting a parent without a reassign target is refused.
 	if err := s.Delete(ctx, wid, food.ID, nil); err != ErrHasChildren {
@@ -101,8 +101,8 @@ func TestDeleteWithChildren(t *testing.T) {
 func TestMergeReassignsTransactions(t *testing.T) {
 	s, q, wid := newTestService(t)
 	ctx := context.Background()
-	food, _ := s.Create(ctx, wid, "Food", nil, false, false)
-	dining, _ := s.Create(ctx, wid, "Dining", nil, false, false)
+	food, _ := s.Create(ctx, wid, "Food", nil, false, false, false)
+	dining, _ := s.Create(ctx, wid, "Dining", nil, false, false, false)
 
 	cur, err := q.InsertCurrency(ctx, db.InsertCurrencyParams{WalletID: wid, IsoCode: "EUR", Name: "Euro", DecimalChar: ".", GroupChar: ",", FracDigits: 2, IsBase: 1, Rate: 1})
 	if err != nil {
@@ -132,8 +132,8 @@ func TestMergeReassignsTransactions(t *testing.T) {
 func TestUsage(t *testing.T) {
 	s, q, wid := newTestService(t)
 	ctx := context.Background()
-	food, _ := s.Create(ctx, wid, "Food", nil, false, false)
-	_, _ = s.Create(ctx, wid, "Groceries", &food.ID, false, false)
+	food, _ := s.Create(ctx, wid, "Food", nil, false, false, false)
+	_, _ = s.Create(ctx, wid, "Groceries", &food.ID, false, false, false)
 	_, _ = q.InsertPayee(ctx, db.InsertPayeeParams{
 		WalletID: wid, Name: "Shop", DefaultCategoryID: sql.NullInt64{Int64: food.ID, Valid: true},
 	})
