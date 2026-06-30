@@ -75,6 +75,13 @@ describe("applyFilters", () => {
       [3],
     );
   });
+
+  it("hides future-dated rows when hideFuture is on", () => {
+    const now = new Date("2026-03-16T00:00:00Z");
+    const f: Filters = { ...emptyFilters, hideFuture: true };
+    // id 2 (2026-03-20) is in the future relative to now and is dropped.
+    expect(applyFilters(rows, f, categories, now).map((r) => r.id)).toEqual([1, 3]);
+  });
 });
 
 describe("dateBounds", () => {
@@ -107,6 +114,7 @@ describe("URL round-trip", () => {
       amountMin: -5000,
       amountMax: 5000,
       text: "rent",
+      hideFuture: true,
     };
     const round = parseFilters(new URLSearchParams(filtersToParams(f)));
     expect(round).toEqual(f);
