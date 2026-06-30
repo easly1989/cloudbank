@@ -13,7 +13,7 @@ import {
   Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { EChartsOption } from "echarts";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,7 +22,9 @@ import {
   type ReportBucket,
   type ReportGroupBy,
   type ReportTransaction,
+  type SavedReportView,
   type TrendBreakdown,
+  type User,
   type VehicleReport,
   getBalanceReport,
   getStatistics,
@@ -35,7 +37,9 @@ import {
   listPayees,
   listTags,
   statisticsCsvUrl,
+  updateMe,
 } from "../api/client";
+import { useAuth } from "../auth/AuthProvider";
 import { Chart, type ChartHandle } from "../components/Chart";
 import { useDateFormat } from "../dates";
 import { type MoneyFormat, formatMinor } from "../money";
@@ -90,6 +94,81 @@ function previousPeriod(from: string, to: string): { from: string; to: string } 
   const prevFrom = prevTo - (len - 1) * day;
   const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
   return { from: iso(prevFrom), to: iso(prevTo) };
+}
+
+const genViewId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+// SavedViews lets the user name and re-open a report configuration. Views live
+// in the per-user preferences blob, scoped by report tab + active wallet, so
+// each report only sees its own. `current` is the tab's config to save;
+// `onApply` restores a saved config into the tab's state.
+function SavedViews({
+  tab,
+  walletId,
+  current,
+  onApply,
+}: {
+  tab: string;
+  walletId: number;
+  current: Record<string, unknown>;
+  onApply: (config: Record<string, unknown>) => void;
+}) {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [selected, setSelected] = useState<string | null>(null);
+  const all = useMemo(() => user?.preferences?.reportViews ?? [], [user]);
+  const views = all.filter((v) => v.tab === tab && v.walletId === walletId);
+
+  const persist = useMutation({
+    mutationFn: (next: SavedReportView[]) =>
+      updateMe({ preferences: { ...(user?.preferences ?? {}), reportViews: next } }),
+    onSuccess: (u: User) => qc.setQueryData(["me"], u),
+  });
+
+  const save = () => {
+    const name = window.prompt(t("reports.saveViewPrompt"))?.trim();
+    if (!name) return;
+    const id = genViewId();
+    // Overwrite a same-named view in this tab/wallet, otherwise append.
+    const rest = all.filter((v) => !(v.tab === tab && v.walletId === walletId && v.name === name));
+    persist.mutate([...rest, { id, walletId, tab, name, config: current }]);
+    setSelected(id);
+  };
+
+  const apply = (id: string | null) => {
+    setSelected(id);
+    const v = views.find((x) => x.id === id);
+    if (v) onApply(v.config);
+  };
+
+  const del = () => {
+    if (!selected) return;
+    persist.mutate(all.filter((v) => v.id !== selected));
+    setSelected(null);
+  };
+
+  return (
+    <Group gap="xs" align="flex-end">
+      <Select
+        label={t("reports.savedViews")}
+        placeholder={t("reports.savedViewsPlaceholder")}
+        data={views.map((v) => ({ value: v.id, label: v.name }))}
+        value={selected}
+        onChange={apply}
+        clearable
+        w={200}
+      />
+      <Button variant="default" onClick={save}>
+        {t("reports.saveView")}
+      </Button>
+      {selected && (
+        <Button variant="subtle" color="red" onClick={del}>
+          {t("reports.deleteView")}
+        </Button>
+      )}
+    </Group>
+  );
 }
 
 export function ReportsPage() {
@@ -302,15 +381,32 @@ function StatisticsTab() {
 
   return (
     <Stack>
-      <Group justify="flex-end">
-        <Button component="a" href={statisticsCsvUrl(walletId, groupBy, params)} variant="default">
-          {t("reports.exportCsv")}
-        </Button>
-        {view === "chart" && (
-          <Button variant="default" onClick={exportPng}>
-            {t("reports.exportPng")}
+      <Group justify="space-between" align="flex-end">
+        <SavedViews
+          tab="statistics"
+          walletId={walletId}
+          current={{ groupBy, view, chartType, filters }}
+          onApply={(c) => {
+            if (c.groupBy) setGroupBy(c.groupBy as ReportGroupBy);
+            if (c.view) setView(c.view as "chart" | "table");
+            if (c.chartType) setChartType(c.chartType as "pie" | "bar");
+            if (c.filters) setFilters(c.filters as Filters);
+          }}
+        />
+        <Group gap="xs">
+          <Button
+            component="a"
+            href={statisticsCsvUrl(walletId, groupBy, params)}
+            variant="default"
+          >
+            {t("reports.exportCsv")}
           </Button>
-        )}
+          {view === "chart" && (
+            <Button variant="default" onClick={exportPng}>
+              {t("reports.exportPng")}
+            </Button>
+          )}
+        </Group>
       </Group>
 
       <RegisterFilters
@@ -561,7 +657,19 @@ function TrendTab() {
 
   return (
     <Stack>
-      <Group justify="flex-end">
+      <Group justify="space-between" align="flex-end">
+        <SavedViews
+          tab="trend"
+          walletId={walletId}
+          current={{ bucket, breakdown, chartType, cumulative, filters }}
+          onApply={(c) => {
+            if (c.bucket) setBucket(c.bucket as ReportBucket);
+            if (c.breakdown) setBreakdown(c.breakdown as TrendBreakdown);
+            if (c.chartType) setChartType(c.chartType as "line" | "bar");
+            if (typeof c.cumulative === "boolean") setCumulative(c.cumulative);
+            if (c.filters) setFilters(c.filters as Filters);
+          }}
+        />
         <Button variant="default" onClick={exportPng}>
           {t("reports.exportPng")}
         </Button>
