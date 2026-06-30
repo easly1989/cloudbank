@@ -282,6 +282,11 @@
     "amountMax": "Importo max",
     "search": "Cerca",
     "hideFuture": "Nascondi future",
+    "transfers": "Trasferimenti",
+    "transfersAll": "Tutti",
+    "transfersOnly": "Solo trasferimenti",
+    "transfersNone": "Escludi trasferimenti",
+    "noFlags": "Senza stato",
     "clear": "Azzera filtri",
     "presets": {
       "all": "Tutte le date",

@@ -282,6 +282,11 @@
     "amountMax": "Max amount",
     "search": "Search",
     "hideFuture": "Hide future",
+    "transfers": "Transfers",
+    "transfersAll": "All",
+    "transfersOnly": "Transfers only",
+    "transfersNone": "Exclude transfers",
+    "noFlags": "No status",
     "clear": "Clear filters",
     "presets": {
       "all": "All dates",

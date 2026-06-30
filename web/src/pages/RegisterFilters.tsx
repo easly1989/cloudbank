@@ -6,7 +6,13 @@ import { useTranslation } from "react-i18next";
 import type { Category, Payee } from "../api/client";
 import { type MoneyFormat } from "../money";
 import { useAmountParser } from "../useAmountParser";
-import { type DatePreset, type Filters, emptyFilters, isActive } from "./registerFilters";
+import {
+  type DatePreset,
+  type Filters,
+  type TransferFilter,
+  emptyFilters,
+  isActive,
+} from "./registerFilters";
 
 const PRESETS: DatePreset[] = [
   "all",
@@ -134,6 +140,18 @@ export function RegisterFilters({
           searchable
           w={170}
         />
+        <Select
+          label={t("filters.transfers")}
+          data={[
+            { value: "all", label: t("filters.transfersAll") },
+            { value: "only", label: t("filters.transfersOnly") },
+            { value: "none", label: t("filters.transfersNone") },
+          ]}
+          value={filters.transfers}
+          onChange={(v) => onChange({ ...filters, transfers: (v as TransferFilter) ?? "all" })}
+          allowDeselect={false}
+          w={170}
+        />
         <TextInput
           label={t("filters.amountMin")}
           value={amin}
@@ -162,6 +180,12 @@ export function RegisterFilters({
           label={t("filters.hideFuture")}
           checked={filters.hideFuture}
           onChange={(e) => onChange({ ...filters, hideFuture: e.currentTarget.checked })}
+          mb={8}
+        />
+        <Switch
+          label={t("filters.noFlags")}
+          checked={filters.noFlags}
+          onChange={(e) => onChange({ ...filters, noFlags: e.currentTarget.checked })}
           mb={8}
         />
         {isActive(filters) && (
