@@ -94,6 +94,21 @@ export function AccountsPage() {
   if (!currentWallet) return null;
   const accounts = (accountsQuery.data ?? []).filter((a) => showClosed || !a.closed);
 
+  // Each account's share of all same-currency accounts, by absolute balance.
+  // Using magnitudes keeps it 0–100% regardless of negative (e.g. credit-card)
+  // balances; shown only when a currency has more than one account.
+  const absByCurrency = new Map<number, number>();
+  const countByCurrency = new Map<number, number>();
+  for (const a of accounts) {
+    absByCurrency.set(a.currencyId, (absByCurrency.get(a.currencyId) ?? 0) + Math.abs(a.balance));
+    countByCurrency.set(a.currencyId, (countByCurrency.get(a.currencyId) ?? 0) + 1);
+  }
+  const sharePct = (a: Account): number | null => {
+    const total = absByCurrency.get(a.currencyId) ?? 0;
+    if ((countByCurrency.get(a.currencyId) ?? 0) < 2 || total <= 0) return null;
+    return Math.round((Math.abs(a.balance) / total) * 100);
+  };
+
   return (
     <Stack>
       <Group justify="space-between">
@@ -142,6 +157,11 @@ export function AccountsPage() {
                       {a.futureBalance !== a.balance && (
                         <Text size="xs" c="dimmed">
                           {t("register.future")}: {formatMinor(a.futureBalance, acctFmt(a))}
+                        </Text>
+                      )}
+                      {sharePct(a) !== null && (
+                        <Text size="xs" c="dimmed">
+                          {sharePct(a)}% {t("accounts.ofTotal")}
                         </Text>
                       )}
                     </Table.Td>
