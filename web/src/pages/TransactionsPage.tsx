@@ -582,7 +582,7 @@ function ReconcilePanel({
   );
 }
 
-function TransactionForm({
+export function TransactionForm({
   opened,
   onClose,
   walletId,
