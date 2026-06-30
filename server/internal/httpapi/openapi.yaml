@@ -1660,7 +1660,8 @@ components:
         name: { type: string }
         isIncome: { type: boolean }
         noBudget: { type: boolean }
-      required: [id, name, isIncome, noBudget]
+        noReport: { type: boolean }
+      required: [id, name, isIncome, noBudget, noReport]
     CategoryInput:
       type: object
       properties:
@@ -1668,6 +1669,7 @@ components:
         parentId: { type: integer, format: int64, nullable: true }
         isIncome: { type: boolean }
         noBudget: { type: boolean }
+        noReport: { type: boolean }
       required: [name]
     CategoryUsage:
       type: object

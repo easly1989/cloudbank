@@ -465,6 +465,7 @@
     "topLevel": "Top level",
     "isIncome": "Income category",
     "excludeBudget": "Exclude from budget",
+    "excludeReport": "Exclude from reports",
     "income": "Income",
     "expense": "Expense",
     "empty": "No categories yet.",

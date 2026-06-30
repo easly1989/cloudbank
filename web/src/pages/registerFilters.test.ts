@@ -30,9 +30,9 @@ function row(p: Partial<RegisterRow>): RegisterRow {
 }
 
 const categories: Category[] = [
-  { id: 10, name: "Food", isIncome: false, noBudget: false },
-  { id: 11, parentId: 10, name: "Groceries", isIncome: false, noBudget: false },
-  { id: 20, name: "Car", isIncome: false, noBudget: false },
+  { id: 10, name: "Food", isIncome: false, noBudget: false, noReport: false },
+  { id: 11, parentId: 10, name: "Groceries", isIncome: false, noBudget: false, noReport: false },
+  { id: 20, name: "Car", isIncome: false, noBudget: false, noReport: false },
 ];
 
 describe("applyFilters", () => {

@@ -20,6 +20,7 @@ JOIN accounts a ON a.id = t.account_id
 WHERE t.wallet_id = sqlc.arg(wallet_id)
   AND t.is_split = 0
   AND t.category_id IS NOT NULL
+  AND t.category_id NOT IN (SELECT cc.id FROM categories cc LEFT JOIN categories pp ON pp.id = cc.parent_id WHERE cc.wallet_id = sqlc.arg(wallet_id) AND (cc.no_report = 1 OR pp.no_report = 1))
   AND t.date >= sqlc.arg(from_date)
   AND t.date <= sqlc.arg(to_date)
 UNION ALL
@@ -29,6 +30,7 @@ JOIN transactions t ON t.id = s.transaction_id
 JOIN accounts a ON a.id = t.account_id
 WHERE t.wallet_id = sqlc.arg(wallet_id)
   AND s.category_id IS NOT NULL
+  AND s.category_id NOT IN (SELECT cc.id FROM categories cc LEFT JOIN categories pp ON pp.id = cc.parent_id WHERE cc.wallet_id = sqlc.arg(wallet_id) AND (cc.no_report = 1 OR pp.no_report = 1))
   AND t.date >= sqlc.arg(from_date)
   AND t.date <= sqlc.arg(to_date);
 
@@ -55,6 +57,7 @@ FROM transactions t
 JOIN accounts a ON a.id = t.account_id
 WHERE t.wallet_id = sqlc.arg(wallet_id)
   AND t.payment_mode <> 5
+  AND (t.category_id IS NULL OR t.category_id NOT IN (SELECT cc.id FROM categories cc LEFT JOIN categories pp ON pp.id = cc.parent_id WHERE cc.wallet_id = sqlc.arg(wallet_id) AND (cc.no_report = 1 OR pp.no_report = 1)))
   AND t.date >= sqlc.arg(from_date)
   AND t.date <= sqlc.arg(to_date)
 GROUP BY month, a.currency_id;

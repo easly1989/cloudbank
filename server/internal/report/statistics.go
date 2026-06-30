@@ -142,6 +142,11 @@ func (s *Service) conds(ctx context.Context, walletID int64, f Filter) (parts []
 			args = append(args, tag)
 		}
 	}
+	// Drop transactions whose category (or its parent) is flagged "exclude from
+	// reports". Split parents (category_id NULL) pass here; their split lines are
+	// filtered by the category-dimension query via c.no_report / par.no_report.
+	parts = append(parts, "(t.category_id IS NULL OR t.category_id NOT IN ("+noReportCatIDs+"))")
+	args = append(args, walletID)
 	catIDs, err = s.categoryIDs(ctx, walletID, f.CategoryID)
 	return parts, args, catIDs, err
 }
@@ -149,6 +154,11 @@ func (s *Service) conds(ctx context.Context, walletID int64, f Filter) (parts []
 func placeholders(n int) string {
 	return strings.TrimSuffix(strings.Repeat("?,", n), ",")
 }
+
+// noReportCatIDs is a sub-SELECT (one ? for wallet_id) of the category ids that
+// are excluded from reports — those flagged no_report, or whose parent is.
+const noReportCatIDs = "SELECT cc.id FROM categories cc LEFT JOIN categories pp ON pp.id = cc.parent_id " +
+	"WHERE cc.wallet_id = ? AND (cc.no_report = 1 OR pp.no_report = 1)"
 
 // Statistics aggregates filtered transactions by the given dimension, in SQL,
 // converting per-currency subtotals to the base currency.
@@ -268,7 +278,7 @@ SELECT CAST(grp AS TEXT) AS key, label, currency_id, CAST(SUM(amount) AS INTEGER
   LEFT JOIN payees p ON p.id = t.payee_id
   JOIN categories c ON c.id = t.category_id
   LEFT JOIN categories par ON par.id = c.parent_id
-  WHERE t.is_split = 0 AND t.category_id IS NOT NULL AND %[3]s%[4]s
+  WHERE t.is_split = 0 AND t.category_id IS NOT NULL AND c.no_report = 0 AND (par.id IS NULL OR par.no_report = 0) AND %[3]s%[4]s
   UNION ALL
   SELECT %[1]s AS grp, %[2]s AS label, a.currency_id AS currency_id, s.amount AS amount
   FROM splits s
@@ -277,7 +287,7 @@ SELECT CAST(grp AS TEXT) AS key, label, currency_id, CAST(SUM(amount) AS INTEGER
   LEFT JOIN payees p ON p.id = t.payee_id
   JOIN categories c ON c.id = s.category_id
   LEFT JOIN categories par ON par.id = c.parent_id
-  WHERE s.category_id IS NOT NULL AND %[3]s%[5]s
+  WHERE s.category_id IS NOT NULL AND c.no_report = 0 AND (par.id IS NULL OR par.no_report = 0) AND %[3]s%[5]s
 )
 GROUP BY grp, currency_id`, keyExpr, labelExpr, where, nonSplitCat, splitCat)
 		return q, append(nsArgs, spArgs...), nil

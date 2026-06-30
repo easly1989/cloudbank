@@ -20,10 +20,11 @@ type categoryResponse struct {
 	Name     string `json:"name"`
 	IsIncome bool   `json:"isIncome"`
 	NoBudget bool   `json:"noBudget"`
+	NoReport bool   `json:"noReport"`
 }
 
 func toCategoryResponse(c category.Category) categoryResponse {
-	return categoryResponse{ID: c.ID, ParentID: c.ParentID, Name: c.Name, IsIncome: c.IsIncome, NoBudget: c.NoBudget}
+	return categoryResponse{ID: c.ID, ParentID: c.ParentID, Name: c.Name, IsIncome: c.IsIncome, NoBudget: c.NoBudget, NoReport: c.NoReport}
 }
 
 func (h *categoryHandlers) walletRoutes(r chi.Router) {
@@ -56,6 +57,7 @@ type categoryInput struct {
 	ParentID *int64 `json:"parentId"`
 	IsIncome bool   `json:"isIncome"`
 	NoBudget bool   `json:"noBudget"`
+	NoReport bool   `json:"noReport"`
 }
 
 func (h *categoryHandlers) create(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +70,7 @@ func (h *categoryHandlers) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid", "name is required")
 		return
 	}
-	c, err := h.svc.Create(r.Context(), wl.ID, in.Name, in.ParentID, in.IsIncome, in.NoBudget)
+	c, err := h.svc.Create(r.Context(), wl.ID, in.Name, in.ParentID, in.IsIncome, in.NoBudget, in.NoReport)
 	if !writeCategoryError(w, err) {
 		return
 	}
@@ -88,7 +90,7 @@ func (h *categoryHandlers) update(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid", "name is required")
 		return
 	}
-	updated, err := h.svc.Update(r.Context(), c.ID, in.Name, in.IsIncome, in.NoBudget)
+	updated, err := h.svc.Update(r.Context(), c.ID, in.Name, in.IsIncome, in.NoBudget, in.NoReport)
 	if !writeCategoryError(w, err) {
 		return
 	}
