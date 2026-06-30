@@ -158,9 +158,13 @@ func Build(doc *backup.Document) ([]byte, error) {
 		x.Payees = append(x.Payees, importer.XPayee{Key: key, Name: p.Name})
 	}
 
-	// Budgets grouped by category for the b0..b12 attributes.
+	// Budgets grouped by category for the b0..b12 attributes. HomeBank has no
+	// per-year budgets, so only the "every year" (year 0) defaults are exported.
 	budByCat := make(map[int64][]backup.Budget)
 	for _, b := range doc.Budgets {
+		if b.Year != 0 {
+			continue
+		}
 		budByCat[b.CategoryID] = append(budByCat[b.CategoryID], b)
 	}
 

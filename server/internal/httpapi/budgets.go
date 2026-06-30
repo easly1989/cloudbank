@@ -26,7 +26,8 @@ func (h *budgetHandlers) walletRoutes(r chi.Router) {
 
 func (h *budgetHandlers) list(w http.ResponseWriter, r *http.Request) {
 	wl, _ := walletFromContext(r.Context())
-	out, err := h.svc.List(r.Context(), wl.ID)
+	year, _ := strconv.ParseInt(r.URL.Query().Get("year"), 10, 64)
+	out, err := h.svc.List(r.Context(), wl.ID, year)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not list budgets")
 		return
@@ -35,6 +36,7 @@ func (h *budgetHandlers) list(w http.ResponseWriter, r *http.Request) {
 }
 
 type budgetInput struct {
+	Year    int64     `json:"year"`
 	Mode    string    `json:"mode"`
 	Same    int64     `json:"same"`
 	Monthly [12]int64 `json:"monthly"`
@@ -51,7 +53,7 @@ func (h *budgetHandlers) set(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &in) {
 		return
 	}
-	err = h.svc.SetCategoryBudget(r.Context(), wl.ID, categoryID, budget.Input{Mode: in.Mode, Same: in.Same, Monthly: in.Monthly})
+	err = h.svc.SetCategoryBudget(r.Context(), wl.ID, categoryID, in.Year, budget.Input{Mode: in.Mode, Same: in.Same, Monthly: in.Monthly})
 	switch {
 	case err == nil:
 		w.WriteHeader(http.StatusNoContent)
@@ -71,7 +73,8 @@ func (h *budgetHandlers) clear(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found", "category not found")
 		return
 	}
-	if err := h.svc.SetCategoryBudget(r.Context(), wl.ID, categoryID, budget.Input{Mode: budget.ModeSame, Same: 0}); err != nil {
+	year, _ := strconv.ParseInt(r.URL.Query().Get("year"), 10, 64)
+	if err := h.svc.SetCategoryBudget(r.Context(), wl.ID, categoryID, year, budget.Input{Mode: budget.ModeSame, Same: 0}); err != nil {
 		if errors.Is(err, budget.ErrInvalidCategory) {
 			writeError(w, http.StatusNotFound, "not_found", "category not found")
 			return

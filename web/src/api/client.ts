@@ -830,12 +830,14 @@ export type BudgetMode = "same" | "monthly";
 
 export interface CategoryBudget {
   categoryId: number;
+  year: number;
   mode: BudgetMode;
   same: number;
   monthly: number[];
 }
 
 export interface BudgetInput {
+  year?: number;
   mode: BudgetMode;
   same?: number;
   monthly?: number[];
@@ -859,14 +861,14 @@ export interface BudgetReport {
   currency: CurrencyInfo | null;
 }
 
-export const listBudgets = (walletId: number) =>
-  api.get<CategoryBudget[]>(`/api/v1/wallets/${walletId}/budgets`);
+export const listBudgets = (walletId: number, year = 0) =>
+  api.get<CategoryBudget[]>(`/api/v1/wallets/${walletId}/budgets?year=${year}`);
 
 export const setCategoryBudget = (walletId: number, categoryId: number, body: BudgetInput) =>
   api.put<void>(`/api/v1/wallets/${walletId}/budgets/${categoryId}`, body);
 
-export const clearCategoryBudget = (walletId: number, categoryId: number) =>
-  api.del<void>(`/api/v1/wallets/${walletId}/budgets/${categoryId}`);
+export const clearCategoryBudget = (walletId: number, categoryId: number, year = 0) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/budgets/${categoryId}?year=${year}`);
 
 export const getBudgetReport = (walletId: number, from: string, to: string, rollup: boolean) =>
   api.get<BudgetReport>(

@@ -1,11 +1,11 @@
 -- name: ListBudgetsForWallet :many
-SELECT * FROM budgets WHERE wallet_id = ? ORDER BY category_id, month;
+SELECT * FROM budgets WHERE wallet_id = ? ORDER BY category_id, year, month;
 
 -- name: DeleteCategoryBudget :exec
-DELETE FROM budgets WHERE wallet_id = ? AND category_id = ?;
+DELETE FROM budgets WHERE wallet_id = ? AND category_id = ? AND year = ?;
 
 -- name: InsertBudget :exec
-INSERT INTO budgets (wallet_id, category_id, month, amount) VALUES (?, ?, ?, ?);
+INSERT INTO budgets (wallet_id, category_id, year, month, amount) VALUES (?, ?, ?, ?, ?);
 
 -- name: CategoryActualsForBudget :many
 -- Category amounts in a date range (plain transactions + split lines), excluding
