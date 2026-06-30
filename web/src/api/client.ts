@@ -79,6 +79,17 @@ export interface Preferences {
   dashboardLayout?: { order: string[]; hidden: string[]; spans?: Record<string, string> };
   /** Whether the first-login onboarding tour has been seen (so it runs only once). */
   tutorialSeen?: boolean;
+  /** Saved report configurations (Statistics/Trend), scoped per wallet + tab. */
+  reportViews?: SavedReportView[];
+}
+
+/** A named, saved report configuration. `config` is the tab-specific state. */
+export interface SavedReportView {
+  id: string;
+  walletId: number;
+  tab: string;
+  name: string;
+  config: Record<string, unknown>;
 }
 
 export interface User {
