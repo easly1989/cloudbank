@@ -13,6 +13,7 @@
     "transactions": "Transactions",
     "schedules": "Schedules",
     "templates": "Templates",
+    "tags": "Tags",
     "assignments": "Rules",
     "budget": "Budget",
     "reports": "Reports",
@@ -261,6 +262,15 @@
     "fromTemplatePlaceholder": "Optional",
     "transferNote": "This is a transfer; only the amount, memo and schedule can be changed here.",
     "untitled": "Scheduled"
+  },
+  "tags": {
+    "title": "Tags",
+    "empty": "No tags yet. They are created as you tag transactions.",
+    "name": "Tag",
+    "count": "Used",
+    "mergeInto": "Merge into…",
+    "delete": "Delete tag",
+    "confirmDelete": "Delete the tag \"{{name}}\"? It will be removed from every transaction."
   },
   "templates": {
     "apply": "Use a template",

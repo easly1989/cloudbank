@@ -743,6 +743,53 @@ paths:
       responses:
         "200": { description: Tags., content: { application/json: { schema: { type: array, items: { type: string } } } } }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/tags/manage:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listTagsWithCounts
+      summary: List a wallet's tags with usage counts
+      responses:
+        "200": { description: Tags., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/TagInfo" } } } } }
+  /api/v1/wallets/{walletId}/tags/{tagId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: tagId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: renameTag
+      summary: Rename a tag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [name], properties: { name: { type: string } } }
+      responses:
+        "204": { description: Renamed. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: A tag with that name already exists. }
+    delete:
+      operationId: deleteTag
+      summary: Delete a tag (untags every transaction)
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/tags/{tagId}/merge:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: tagId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: mergeTag
+      summary: Merge this tag into another, then delete it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [targetId], properties: { targetId: { type: integer, format: int64 } } }
+      responses:
+        "204": { description: Merged. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/transactions:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -1682,6 +1729,13 @@ components:
         payees: { type: integer, format: int64 }
         transactions: { type: integer, format: int64 }
       required: [subcategories, payees, transactions]
+    TagInfo:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        count: { type: integer, format: int64, description: "number of transactions using this tag" }
+      required: [id, name, count]
     Payee:
       type: object
       properties:

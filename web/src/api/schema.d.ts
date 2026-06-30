@@ -676,6 +676,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/tags/manage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List a wallet's tags with usage counts */
+        get: operations["listTagsWithCounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/tags/{tagId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                tagId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a tag (untags every transaction) */
+        delete: operations["deleteTag"];
+        options?: never;
+        head?: never;
+        /** Rename a tag */
+        patch: operations["renameTag"];
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/tags/{tagId}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                tagId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge this tag into another, then delete it */
+        post: operations["mergeTag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/transactions": {
         parameters: {
             query?: never;
@@ -1632,6 +1692,16 @@ export interface components {
             payees: number;
             /** Format: int64 */
             transactions: number;
+        };
+        TagInfo: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /**
+             * Format: int64
+             * @description number of transactions using this tag
+             */
+            count: number;
         };
         Payee: {
             /** Format: int64 */
@@ -3557,6 +3627,116 @@ export interface operations {
                     "application/json": string[];
                 };
             };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listTagsWithCounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tags. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagInfo"][];
+                };
+            };
+        };
+    };
+    deleteTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                tagId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    renameTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                tagId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Renamed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description A tag with that name already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mergeTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                tagId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    targetId: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Merged. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
         };
     };
