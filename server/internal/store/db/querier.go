@@ -47,6 +47,7 @@ type Querier interface {
 	DeleteSchedule(ctx context.Context, id int64) error
 	DeleteSession(ctx context.Context, id string) error
 	DeleteSplits(ctx context.Context, transactionID int64) error
+	DeleteTag(ctx context.Context, id int64) error
 	DeleteTemplate(ctx context.Context, id int64) error
 	DeleteTemplateSplits(ctx context.Context, templateID int64) error
 	DeleteTransaction(ctx context.Context, id int64) error
@@ -63,6 +64,7 @@ type Querier interface {
 	GetPayee(ctx context.Context, id int64) (Payee, error)
 	GetSchedule(ctx context.Context, id int64) (Schedule, error)
 	GetSession(ctx context.Context, id string) (Session, error)
+	GetTag(ctx context.Context, id int64) (Tag, error)
 	GetTagByName(ctx context.Context, arg GetTagByNameParams) (Tag, error)
 	GetTemplate(ctx context.Context, id int64) (Template, error)
 	GetTransaction(ctx context.Context, id int64) (Transaction, error)
@@ -102,6 +104,7 @@ type Querier interface {
 	ListSchedulesForWallet(ctx context.Context, walletID int64) ([]ListSchedulesForWalletRow, error)
 	ListSplits(ctx context.Context, transactionID int64) ([]Split, error)
 	ListTagsForWallet(ctx context.Context, walletID int64) ([]Tag, error)
+	ListTagsWithCounts(ctx context.Context, walletID int64) ([]ListTagsWithCountsRow, error)
 	ListTemplateSplits(ctx context.Context, templateID int64) ([]TemplateSplit, error)
 	ListTemplatesForWallet(ctx context.Context, walletID int64) ([]Template, error)
 	ListTransactionTags(ctx context.Context, transactionID int64) ([]string, error)
@@ -128,8 +131,13 @@ type Querier interface {
 	PayeeExpenseTotals(ctx context.Context, arg PayeeExpenseTotalsParams) ([]PayeeExpenseTotalsRow, error)
 	ReassignPayeeCategory(ctx context.Context, arg ReassignPayeeCategoryParams) error
 	ReassignSplitCategory(ctx context.Context, arg ReassignSplitCategoryParams) error
+	// Move tag references onto another tag; OR IGNORE skips rows where the target
+	// tag is already present on that transaction (those source rows go away when the
+	// source tag is deleted).
+	ReassignTag(ctx context.Context, arg ReassignTagParams) error
 	ReassignTransactionCategory(ctx context.Context, arg ReassignTransactionCategoryParams) error
 	ReassignTransactionPayee(ctx context.Context, arg ReassignTransactionPayeeParams) error
+	RenameTag(ctx context.Context, arg RenameTagParams) error
 	ReparentChildren(ctx context.Context, arg ReparentChildrenParams) error
 	SetAssignmentPosition(ctx context.Context, arg SetAssignmentPositionParams) error
 	SetChildrenIncome(ctx context.Context, arg SetChildrenIncomeParams) error

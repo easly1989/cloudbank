@@ -35,6 +35,9 @@ var (
 	ErrInvalidDate        = errors.New("transaction: invalid date (want YYYY-MM-DD)")
 	ErrSplitMismatch      = errors.New("transaction: split amounts must sum to the transaction amount")
 	ErrEmptySplit         = errors.New("transaction: a split transaction needs at least one line")
+	ErrTagNotFound        = errors.New("tag: not found")
+	ErrTagDuplicate       = errors.New("tag: a tag with that name already exists")
+	ErrTagInvalid         = errors.New("tag: invalid name or target")
 )
 
 // Split is one line of a split transaction.
@@ -634,4 +637,86 @@ func (s *Service) ListTags(ctx context.Context, walletID int64) ([]string, error
 		out = append(out, t.Name)
 	}
 	return out, nil
+}
+
+// TagInfo is a tag with how many transactions use it.
+type TagInfo struct {
+	ID    int64  `json:"id"`
+	Name  string `json:"name"`
+	Count int64  `json:"count"`
+}
+
+// ListTagsWithCounts returns the wallet's tags with their usage counts.
+func (s *Service) ListTagsWithCounts(ctx context.Context, walletID int64) ([]TagInfo, error) {
+	rows, err := s.q.ListTagsWithCounts(ctx, walletID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]TagInfo, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, TagInfo{ID: r.ID, Name: r.Name, Count: r.Count})
+	}
+	return out, nil
+}
+
+// tagInWallet loads a tag and verifies it belongs to the wallet.
+func (s *Service) tagInWallet(ctx context.Context, walletID, tagID int64) (db.Tag, error) {
+	tag, err := s.q.GetTag(ctx, tagID)
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && tag.WalletID != walletID) {
+		return db.Tag{}, ErrTagNotFound
+	}
+	return tag, err
+}
+
+// RenameTag renames a tag. Renaming onto an existing name is rejected (use
+// MergeTags to combine them).
+func (s *Service) RenameTag(ctx context.Context, walletID, tagID int64, name string) error {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return ErrTagInvalid
+	}
+	if _, err := s.tagInWallet(ctx, walletID, tagID); err != nil {
+		return err
+	}
+	if existing, err := s.q.GetTagByName(ctx, db.GetTagByNameParams{WalletID: walletID, Name: name}); err == nil && existing.ID != tagID {
+		return ErrTagDuplicate
+	} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	return s.q.RenameTag(ctx, db.RenameTagParams{Name: name, ID: tagID})
+}
+
+// MergeTags moves every transaction tagged with sourceID onto targetID and
+// deletes the source tag.
+func (s *Service) MergeTags(ctx context.Context, walletID, sourceID, targetID int64) error {
+	if sourceID == targetID {
+		return ErrTagInvalid
+	}
+	if _, err := s.tagInWallet(ctx, walletID, sourceID); err != nil {
+		return err
+	}
+	if _, err := s.tagInWallet(ctx, walletID, targetID); err != nil {
+		return err
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	qtx := s.q.WithTx(tx)
+	if err := qtx.ReassignTag(ctx, db.ReassignTagParams{TagID: targetID, TagID_2: sourceID}); err != nil {
+		return err
+	}
+	if err := qtx.DeleteTag(ctx, sourceID); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// DeleteTag removes a tag and untags it from every transaction.
+func (s *Service) DeleteTag(ctx context.Context, walletID, tagID int64) error {
+	if _, err := s.tagInWallet(ctx, walletID, tagID); err != nil {
+		return err
+	}
+	return s.q.DeleteTag(ctx, tagID)
 }

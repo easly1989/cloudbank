@@ -498,6 +498,24 @@ export const findDuplicateTransactions = (
 
 export const listTags = (walletId: number) => api.get<string[]>(`/api/v1/wallets/${walletId}/tags`);
 
+export interface TagInfo {
+  id: number;
+  name: string;
+  count: number;
+}
+
+export const listTagsWithCounts = (walletId: number) =>
+  api.get<TagInfo[]>(`/api/v1/wallets/${walletId}/tags/manage`);
+
+export const renameTag = (walletId: number, tagId: number, name: string) =>
+  api.patch<void>(`/api/v1/wallets/${walletId}/tags/${tagId}`, { name });
+
+export const mergeTag = (walletId: number, tagId: number, targetId: number) =>
+  api.post<void>(`/api/v1/wallets/${walletId}/tags/${tagId}/merge`, { targetId });
+
+export const deleteTag = (walletId: number, tagId: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/tags/${tagId}`);
+
 // --- Register (account ledger with running balance) ---
 
 export interface RegisterRow extends Transaction {

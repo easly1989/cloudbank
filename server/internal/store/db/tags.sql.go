@@ -24,6 +24,15 @@ func (q *Queries) AddTransactionTag(ctx context.Context, arg AddTransactionTagPa
 	return err
 }
 
+const deleteTag = `-- name: DeleteTag :exec
+DELETE FROM tags WHERE id = ?
+`
+
+func (q *Queries) DeleteTag(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteTag, id)
+	return err
+}
+
 const deleteTransactionTags = `-- name: DeleteTransactionTags :exec
 DELETE FROM transaction_tags WHERE transaction_id = ?
 `
@@ -31,6 +40,17 @@ DELETE FROM transaction_tags WHERE transaction_id = ?
 func (q *Queries) DeleteTransactionTags(ctx context.Context, transactionID int64) error {
 	_, err := q.db.ExecContext(ctx, deleteTransactionTags, transactionID)
 	return err
+}
+
+const getTag = `-- name: GetTag :one
+SELECT id, wallet_id, name FROM tags WHERE id = ? LIMIT 1
+`
+
+func (q *Queries) GetTag(ctx context.Context, id int64) (Tag, error) {
+	row := q.db.QueryRowContext(ctx, getTag, id)
+	var i Tag
+	err := row.Scan(&i.ID, &i.WalletID, &i.Name)
+	return i, err
 }
 
 const getTagByName = `-- name: GetTagByName :one
@@ -92,6 +112,44 @@ func (q *Queries) ListTagsForWallet(ctx context.Context, walletID int64) ([]Tag,
 	return items, nil
 }
 
+const listTagsWithCounts = `-- name: ListTagsWithCounts :many
+SELECT t.id, t.name, COUNT(tt.transaction_id) AS count
+FROM tags t
+LEFT JOIN transaction_tags tt ON tt.tag_id = t.id
+WHERE t.wallet_id = ?
+GROUP BY t.id, t.name
+ORDER BY t.name
+`
+
+type ListTagsWithCountsRow struct {
+	ID    int64
+	Name  string
+	Count int64
+}
+
+func (q *Queries) ListTagsWithCounts(ctx context.Context, walletID int64) ([]ListTagsWithCountsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listTagsWithCounts, walletID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTagsWithCountsRow{}
+	for rows.Next() {
+		var i ListTagsWithCountsRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTransactionTags = `-- name: ListTransactionTags :many
 SELECT t.name
 FROM transaction_tags tt
@@ -121,4 +179,35 @@ func (q *Queries) ListTransactionTags(ctx context.Context, transactionID int64) 
 		return nil, err
 	}
 	return items, nil
+}
+
+const reassignTag = `-- name: ReassignTag :exec
+UPDATE OR IGNORE transaction_tags SET tag_id = ? WHERE tag_id = ?
+`
+
+type ReassignTagParams struct {
+	TagID   int64
+	TagID_2 int64
+}
+
+// Move tag references onto another tag; OR IGNORE skips rows where the target
+// tag is already present on that transaction (those source rows go away when the
+// source tag is deleted).
+func (q *Queries) ReassignTag(ctx context.Context, arg ReassignTagParams) error {
+	_, err := q.db.ExecContext(ctx, reassignTag, arg.TagID, arg.TagID_2)
+	return err
+}
+
+const renameTag = `-- name: RenameTag :exec
+UPDATE tags SET name = ? WHERE id = ?
+`
+
+type RenameTagParams struct {
+	Name string
+	ID   int64
+}
+
+func (q *Queries) RenameTag(ctx context.Context, arg RenameTagParams) error {
+	_, err := q.db.ExecContext(ctx, renameTag, arg.Name, arg.ID)
+	return err
 }
