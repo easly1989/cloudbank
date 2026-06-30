@@ -133,3 +133,46 @@ func TestDrilldown(t *testing.T) {
 }
 
 func itoa(v int64) string { return strconv.FormatInt(v, 10) }
+
+func TestStatisticsExcludesNoReportCategory(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	// A standalone category flagged "exclude from reports".
+	hidden, _ := f.q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: f.wid, Name: "Hidden", NoReport: 1})
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-01-10", Amount: -3000, CategoryID: iptr(f.groc)})
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-01-12", Amount: -4000, CategoryID: iptr(hidden.ID)})
+
+	// Category dimension shows only Food (rolled-up Groceries); Hidden is gone.
+	byCat, err := f.s.Statistics(ctx, f.wid, Filter{}, GroupCategory)
+	if err != nil {
+		t.Fatalf("Statistics category: %v", err)
+	}
+	if byCat.Total != -3000 {
+		t.Fatalf("category total = %d, want -3000 (hidden excluded)", byCat.Total)
+	}
+	for _, g := range byCat.Groups {
+		if g.Label == "Hidden" {
+			t.Fatalf("hidden category present: %+v", byCat.Groups)
+		}
+	}
+	// A non-category dimension drops the hidden transaction from the total too.
+	byMonth, _ := f.s.Statistics(ctx, f.wid, Filter{}, GroupMonth)
+	if byMonth.Total != -3000 {
+		t.Fatalf("month total = %d, want -3000", byMonth.Total)
+	}
+}
+
+func TestStatisticsExcludesChildrenOfNoReportParent(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	// Flagging the Food parent also hides its Groceries child.
+	if err := f.q.UpdateCategory(ctx, db.UpdateCategoryParams{ID: f.food, Name: "Food", NoReport: 1}); err != nil {
+		t.Fatalf("flag parent: %v", err)
+	}
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-01-10", Amount: -3000, CategoryID: iptr(f.groc)})
+
+	byCat, _ := f.s.Statistics(ctx, f.wid, Filter{}, GroupCategory)
+	if byCat.Total != 0 || len(byCat.Groups) != 0 {
+		t.Fatalf("expected empty report, got %+v (total %d)", byCat.Groups, byCat.Total)
+	}
+}

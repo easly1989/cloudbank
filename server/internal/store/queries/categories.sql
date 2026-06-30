@@ -1,6 +1,6 @@
 -- name: InsertCategory :one
-INSERT INTO categories (wallet_id, parent_id, name, is_income, no_budget)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO categories (wallet_id, parent_id, name, is_income, no_budget, no_report)
+VALUES (?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetCategory :one
@@ -10,7 +10,7 @@ SELECT * FROM categories WHERE id = ? LIMIT 1;
 SELECT * FROM categories WHERE wallet_id = ? ORDER BY name;
 
 -- name: UpdateCategory :exec
-UPDATE categories SET name = ?, is_income = ?, no_budget = ? WHERE id = ?;
+UPDATE categories SET name = ?, is_income = ?, no_budget = ?, no_report = ? WHERE id = ?;
 
 -- name: SetChildrenIncome :exec
 UPDATE categories SET is_income = ? WHERE parent_id = ?;

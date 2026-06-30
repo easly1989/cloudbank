@@ -202,6 +202,7 @@ function CategoryFormModal({
   const [name, setName] = useState("");
   const [isIncome, setIsIncome] = useState(false);
   const [noBudget, setNoBudget] = useState(false);
+  const [noReport, setNoReport] = useState(false);
   const [parentId, setParentId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -209,6 +210,7 @@ function CategoryFormModal({
     setName(editing?.name ?? "");
     setIsIncome(editing?.isIncome ?? presetParent?.isIncome ?? false);
     setNoBudget(editing?.noBudget ?? false);
+    setNoReport(editing?.noReport ?? false);
     setParentId(
       editing
         ? editing.parentId
@@ -224,7 +226,13 @@ function CategoryFormModal({
   const isSub = parentId != null;
   const save = useMutation({
     mutationFn: () => {
-      const body = { name, isIncome, noBudget, parentId: parentId ? Number(parentId) : null };
+      const body = {
+        name,
+        isIncome,
+        noBudget,
+        noReport,
+        parentId: parentId ? Number(parentId) : null,
+      };
       return editing ? updateCategory(walletId, editing.id, body) : createCategory(walletId, body);
     },
     onSuccess: () => {
@@ -272,6 +280,11 @@ function CategoryFormModal({
           label={t("categories.excludeBudget")}
           checked={noBudget}
           onChange={(e) => setNoBudget(e.currentTarget.checked)}
+        />
+        <Checkbox
+          label={t("categories.excludeReport")}
+          checked={noReport}
+          onChange={(e) => setNoReport(e.currentTarget.checked)}
         />
         <Group justify="flex-end">
           <Button variant="default" onClick={onClose}>

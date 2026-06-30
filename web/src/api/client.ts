@@ -342,6 +342,7 @@ export interface Category {
   name: string;
   isIncome: boolean;
   noBudget: boolean;
+  noReport: boolean;
 }
 
 export interface CategoryInput {
@@ -349,6 +350,7 @@ export interface CategoryInput {
   parentId?: number | null;
   isIncome?: boolean;
   noBudget?: boolean;
+  noReport?: boolean;
 }
 
 export interface CategoryUsage {
