@@ -13,6 +13,10 @@ and **onboarding/polish**.
 
 - **Customizable dashboard** — drag to reorder widgets, resize them (full / half /
   third width) and show or hide them; the layout persists per user.
+- **HomeBank-style dashboard** — pick an account and **Add** opens the full
+  transaction modal; the spending donut shows **percentages**; the income/expense
+  chart is wider; and the Upcoming panel is split into **Recurring / Future /
+  Reminders** tabs, each with post / skip / edit actions.
 - **Themes** — an **accent-colour picker** alongside light / dark / auto; the
   light/dark toggle now persists as a user setting (survives a refresh).
 - **Collapsible sidebar** (icon rail) and **pinnable, reorderable navigation**
@@ -25,21 +29,35 @@ and **onboarding/polish**.
   a zero line) with a selectable period.
 - **Smart amount entry** (HomeBank style) — `12.40` and `12,40` are both read as
   decimals; a per-user preference, on by default.
-- **Double-click a register row** to open it for editing.
+- **Double-click any grid row** — register, budget, currencies and the other
+  management grids — to open it for editing.
 - A **first-login tutorial** (coachmark tour) — dismissable, shown once per user,
   and restartable from Settings.
 - **Brand logo/icon** beside the app name and as the favicon.
 - A footer **donation** link (PayPal) and a **HomeBank** credit link.
-- **Quick-add** a transaction from the dashboard, with a richer Upcoming panel.
-- An **animated landing site** (Astro) published to GitHub Pages.
+- An **animated landing site** (Astro) published to GitHub Pages, now featuring
+  real app screenshots and a mouse-reactive background.
 - CI: a weekly **HomeBank version watch** that opens a compatibility-review issue
   when a newer HomeBank release appears.
+- The **Schedules** grid now shows each scheduled transaction's **amount**.
+- **Accounts** show both today's balance and a separate **projected future
+  balance** (initial balance plus all dated transactions, including future ones).
+- A **show / hide future transactions** toggle in the register's filter bar.
+- A per-wallet setting to **pre-register scheduled transactions up to N months
+  ahead** (HomeBank style, up to 3 months), used by the auto-posting scheduler.
 
 ### Changed
 
 - The **wallet switcher** now lists only wallets + "Create wallet"; categories,
   payees, currencies, integrity, backup/restore and `.xhb` export moved under
   **Settings → Wallet**.
+- **Import / export moved into Settings → Wallet** (it is wallet-scoped) and is
+  no longer a separate sidebar item; the old `/import` route redirects there.
+- The wallet **Settings tab is titled after the active wallet** and its sections
+  (general, import, backup, danger zone) are grouped behind a section selector so
+  they no longer overflow the page.
+- **Settings, Import and Preferences** pages now use the full page width instead
+  of a narrow centred column.
 - **Dates** are rendered everywhere in the user's configured format.
 - Documentation now states parity with **HomeBank** (no fixed version), so it
   tracks current and future HomeBank releases.
@@ -49,6 +67,13 @@ and **onboarding/polish**.
 - Reports: the **Statistics** pie is larger with a side legend, and the **Trend**
   and **Balance** charts render immediately instead of appearing blank until a
   control is changed.
+- The **theme toggle** now switches on the **first click** (previously the first
+  click was a no-op when the system theme resolved to "auto").
+- **Chart legend and axis text** stay readable in both light and dark themes and
+  update correctly when toggling the theme (they no longer keep stale colours).
+- **Account balances** are computed from the account's transactions instead of
+  always showing the initial balance (often zero).
+- The dashboard **quick-add** row no longer stretches wider when a tag is added.
 - Italian status labels aligned with the HomeBank desktop wording.
 
 ## [1.0.0] - 2026-06-22
