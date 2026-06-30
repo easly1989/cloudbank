@@ -110,11 +110,12 @@ const accents = [
     </script>
   </head>
   <body>
+    <div class="cursor-glow" id="cursor-glow" aria-hidden="true"></div>
     <div class="progress" aria-hidden="true"><span id="progress-bar"></span></div>
 
     <header class="nav">
       <a class="brand" href="#top" aria-label="CloudBank home">
-        <img src={asset("logo.svg")} alt="" width="30" height="30" />
+        <img src={asset("logo.svg")} alt="" width="40" height="40" />
         <span>CloudBank</span>
       </a>
       <nav class="nav-links" id="nav-links">
@@ -191,36 +192,26 @@ const accents = [
         <a class="scroll-hint" href="#preview" aria-label="Scroll down"><span></span></a>
       </section>
 
-      <!-- Live preview mockup -->
+      <!-- Real screenshots -->
       <section class="preview reveal" id="preview">
         <div class="window tilt" id="preview-window">
           <div class="window-bar">
             <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
             <span class="url">localhost:8080</span>
           </div>
-          <div class="window-body">
-            <aside class="mock-nav">
-              <span class="mock-logo"></span>
-              <i class="active"></i><i></i><i></i><i></i><i></i><i></i>
-            </aside>
-            <div class="mock-main">
-              <div class="mock-row">
-                <div class="mock-card kpi"><b data-kpi="0">€ 12,480</b><small>Net worth</small></div>
-                <div class="mock-card kpi"><b data-kpi="1">€ 2,310</b><small>This month</small></div>
-                <div class="mock-card kpi"><b data-kpi="2">4</b><small>Accounts</small></div>
-              </div>
-              <div class="mock-row">
-                <div class="mock-card chart">
-                  <span class="bars" id="mock-bars"
-                    ><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span
-                  >
-                </div>
-                <div class="mock-card donut"><span class="ring"></span></div>
-              </div>
-            </div>
-          </div>
+          <img class="shot" src={asset("shots/dashboard.png")} alt="The CloudBank dashboard" loading="lazy" />
         </div>
-        <p class="preview-cap">A live peek at the dashboard — customisable, themeable, yours.</p>
+        <div class="gallery">
+          <a class="gframe" href={asset("shots/reports.png")} target="_blank" rel="noopener" aria-label="Open the Reports screenshot">
+            <img src={asset("shots/reports.png")} alt="CloudBank reports with charts" loading="lazy" />
+          </a>
+          <a class="gframe" href={asset("shots/transactions.png")} target="_blank" rel="noopener" aria-label="Open the Transactions screenshot">
+            <img src={asset("shots/transactions.png")} alt="The CloudBank transaction register" loading="lazy" />
+          </a>
+        </div>
+        <p class="preview-cap">
+          Real screenshots — the dashboard, reports and register. Customisable, themeable, yours.
+        </p>
       </section>
 
       <!-- Features -->
@@ -440,22 +431,37 @@ volumes:
         counters.forEach(runCount);
       }
 
-      // --- Live-feeling preview (cycling KPIs + bars) --------------------------
-      if (!reduce) {
-        const kpis = document.querySelectorAll<HTMLElement>("[data-kpi]");
-        const netSeq = ["€ 12,480", "€ 12,905", "€ 13,140", "€ 12,760"];
-        const monSeq = ["€ 2,310", "€ 1,980", "€ 2,640", "€ 2,415"];
-        const bars = document.querySelectorAll<HTMLElement>("#mock-bars i");
-        let step = 0;
-        const cycle = () => {
-          step++;
-          const k0 = kpis[0],
-            k1 = kpis[1];
-          if (k0) k0.textContent = netSeq[step % netSeq.length];
-          if (k1) k1.textContent = monSeq[step % monSeq.length];
-          bars.forEach((b) => (b.style.height = 30 + Math.round(Math.random() * 65) + "%"));
+      // --- Mouse-reactive background: a glow that follows the cursor page-wide,
+      // plus subtle parallax on the hero's aurora blobs. ------------------------
+      const glow = document.getElementById("cursor-glow");
+      const heroBg = document.querySelector<HTMLElement>(".hero-bg");
+      if (!reduce && window.matchMedia("(pointer: fine)").matches) {
+        let rafId = 0;
+        let lastX = 0;
+        let lastY = 0;
+        const apply = () => {
+          rafId = 0;
+          if (glow) {
+            glow.style.setProperty("--mx", lastX + "px");
+            glow.style.setProperty("--my", lastY + "px");
+            glow.style.opacity = "1";
+          }
+          if (heroBg) {
+            // Parallax relative to the viewport centre (a few px of drift).
+            const dx = (lastX / window.innerWidth - 0.5) * 36;
+            const dy = (lastY / window.innerHeight - 0.5) * 36;
+            heroBg.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+          }
         };
-        setInterval(cycle, 2600);
+        window.addEventListener(
+          "pointermove",
+          (e) => {
+            lastX = e.clientX;
+            lastY = e.clientY;
+            if (!rafId) rafId = requestAnimationFrame(apply);
+          },
+          { passive: true },
+        );
       }
 
       // --- Hero pointer spotlight (desktop, motion-on) -------------------------
@@ -608,6 +614,18 @@ volumes:
       }
 
       /* Scroll progress */
+      /* A soft accent glow that follows the cursor, behind all content. */
+      .cursor-glow {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background: radial-gradient(
+          600px circle at var(--mx, 50%) var(--my, 50%),
+          color-mix(in srgb, var(--accent) 16%, transparent),
+          transparent 60%
+        );
+      }
       .progress {
         position: fixed;
         top: 0;
@@ -641,9 +659,9 @@ volumes:
       .brand {
         display: inline-flex;
         align-items: center;
-        gap: 0.55rem;
+        gap: 0.6rem;
         font-weight: 800;
-        font-size: 1.1rem;
+        font-size: 1.25rem;
         color: var(--text);
       }
       .brand:hover {
@@ -1004,6 +1022,41 @@ volumes:
       }
       .tilt:hover {
         transform: perspective(1200px) rotateX(1.4deg) translateY(-4px);
+      }
+      .shot {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      .gallery {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-top: 1.1rem;
+      }
+      .gframe {
+        display: block;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 12px 32px var(--shadow);
+        transition:
+          transform 0.2s ease,
+          border-color 0.2s ease;
+      }
+      .gframe:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent);
+      }
+      .gframe img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      @media (max-width: 680px) {
+        .gallery {
+          grid-template-columns: 1fr;
+        }
       }
       .window-bar {
         display: flex;
