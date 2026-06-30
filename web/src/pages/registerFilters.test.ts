@@ -82,6 +82,31 @@ describe("applyFilters", () => {
     // id 2 (2026-03-20) is in the future relative to now and is dropped.
     expect(applyFilters(rows, f, categories, now).map((r) => r.id)).toEqual([1, 3]);
   });
+
+  it("keeps only transfers when transfers=only", () => {
+    const xfer = row({ id: 4, transferId: 99 });
+    expect(
+      applyFilters([...rows, xfer], { ...emptyFilters, transfers: "only" }, categories).map(
+        (r) => r.id,
+      ),
+    ).toEqual([4]);
+  });
+
+  it("excludes transfers when transfers=none", () => {
+    const xfer = row({ id: 4, transferId: 99 });
+    expect(
+      applyFilters([...rows, xfer], { ...emptyFilters, transfers: "none" }, categories).map(
+        (r) => r.id,
+      ),
+    ).toEqual([1, 2, 3]);
+  });
+
+  it("keeps only unflagged rows when noFlags is on", () => {
+    // id 3 has status 2 (reconciled); ids 1 and 2 have status 0.
+    expect(
+      applyFilters(rows, { ...emptyFilters, noFlags: true }, categories).map((r) => r.id),
+    ).toEqual([1, 2]);
+  });
 });
 
 describe("dateBounds", () => {
@@ -115,6 +140,8 @@ describe("URL round-trip", () => {
       amountMax: 5000,
       text: "rent",
       hideFuture: true,
+      transfers: "none",
+      noFlags: true,
     };
     const round = parseFilters(new URLSearchParams(filtersToParams(f)));
     expect(round).toEqual(f);
