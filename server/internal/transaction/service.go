@@ -73,8 +73,11 @@ type Transaction struct {
 	// warn that deleting the row also removes the paired leg.
 	TransferID        *int64 `json:"transferId,omitempty"`
 	TransferAccountID *int64 `json:"transferAccountId,omitempty"`
-	CreatedAt         string `json:"createdAt"`
-	UpdatedAt         string `json:"updatedAt"`
+	// AttachmentCount is the number of files attached to the transaction. It is
+	// populated for register rows so the ledger can show a paperclip glyph.
+	AttachmentCount int    `json:"attachmentCount"`
+	CreatedAt       string `json:"createdAt"`
+	UpdatedAt       string `json:"updatedAt"`
 }
 
 // Input carries the editable fields of a transaction. When Splits is non-empty
@@ -102,11 +105,22 @@ type Input struct {
 type Service struct {
 	db *sql.DB
 	q  *db.Queries
+	// purgeAttachments, when set, removes the backing files of the given
+	// transactions' attachments. The DB rows cascade on transaction delete; this
+	// hook cleans the on-disk files. It is injected to avoid a hard dependency on
+	// the attachment service (which owns the filesystem).
+	purgeAttachments func(ctx context.Context, txnIDs []int64) error
 }
 
 // NewService builds a Service backed by the write connection pool.
 func NewService(write *sql.DB) *Service {
 	return &Service{db: write, q: db.New(write)}
+}
+
+// SetAttachmentPurger wires the attachment file cleanup invoked when a
+// transaction is deleted. Optional; when unset, deletion skips file cleanup.
+func (s *Service) SetAttachmentPurger(fn func(ctx context.Context, txnIDs []int64) error) {
+	s.purgeAttachments = fn
 }
 
 func nullID(p *int64) sql.NullInt64 {
@@ -447,6 +461,7 @@ func (s *Service) Register(ctx context.Context, accountID int64) ([]RegisterRow,
 				IsSplit: r.IsSplit != 0, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
 				Tags:       splitTags(r.Tags),
 				TransferID: idPtr(r.TransferID), TransferAccountID: idPtr(r.TransferAccountID),
+				AttachmentCount: int(r.AttachmentCount),
 			},
 			RunningBalance: acc.InitialBalance + r.RunningDelta,
 		}
@@ -582,11 +597,15 @@ func applyBulkField(ctx context.Context, qtx *db.Queries, id int64, field string
 func (s *Service) Delete(ctx context.Context, id int64) error {
 	tr, err := s.q.GetTransferByTransaction(ctx, db.GetTransferByTransactionParams{TxnFromID: id, TxnToID: id})
 	if errors.Is(err, sql.ErrNoRows) {
+		// Remove attachment files before the delete cascades away their rows.
+		s.purgeFiles(ctx, id)
 		return s.q.DeleteTransaction(ctx, id)
 	}
 	if err != nil {
 		return err
 	}
+	// Remove attachment files of both legs before the delete cascades their rows.
+	s.purgeFiles(ctx, tr.TxnFromID, tr.TxnToID)
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -600,6 +619,17 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+// purgeFiles best-effort removes the on-disk files of the given transactions'
+// attachments. Call it before the DB rows cascade away (the purger reads them
+// to find the files). Failures are ignored so a filesystem hiccup never fails
+// the delete — an orphaned file is harmless.
+func (s *Service) purgeFiles(ctx context.Context, txnIDs ...int64) {
+	if s.purgeAttachments == nil {
+		return
+	}
+	_ = s.purgeAttachments(ctx, txnIDs)
 }
 
 // SetStatus updates only a transaction's reconciliation status (used by the

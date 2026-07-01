@@ -1524,6 +1524,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List a transaction's attachments */
+        get: operations["listAttachments"];
+        put?: never;
+        /**
+         * Attach a file to a transaction
+         * @description Multipart upload. The `transactionId` field selects the transaction; the `file` field carries the bytes. Uploads over the size limit are rejected with 413.
+         */
+        post: operations["uploadAttachment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/attachments/{attachmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                attachmentId: number;
+            };
+            cookie?: never;
+        };
+        /** Download an attachment's file */
+        get: operations["downloadAttachment"];
+        put?: never;
+        post?: never;
+        /** Delete an attachment */
+        delete: operations["deleteAttachment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1804,6 +1848,8 @@ export interface components {
              * @description the counterpart leg's account
              */
             transferAccountId?: number;
+            /** @description number of files attached (populated on register rows) */
+            attachmentCount?: number;
             createdAt?: string;
             updatedAt?: string;
         };
@@ -1831,6 +1877,20 @@ export interface components {
             memo?: string;
             tags?: string[];
             splits?: components["schemas"]["Split"][];
+        };
+        Attachment: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            transactionId: number;
+            filename: string;
+            contentType: string;
+            /**
+             * Format: int64
+             * @description bytes
+             */
+            size: number;
+            createdAt: string;
         };
         Vehicle: {
             /** Format: int64 */
@@ -5338,6 +5398,119 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+        };
+    };
+    listAttachments: {
+        parameters: {
+            query: {
+                transactionId: number;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The transaction's attachments. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Attachment"][];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    uploadAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: int64 */
+                    transactionId: number;
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The file was attached. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Attachment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description The upload exceeds the size limit. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    downloadAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                attachmentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The file bytes (served inline). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                attachmentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
         };
     };
 }
