@@ -778,11 +778,12 @@ export function TransactionForm({
     const name = (payeesQuery.data ?? []).find((p) => String(p.id) === payeeId)?.name ?? "";
     if (!memo.trim() && !name) return;
     try {
-      const res = await suggestAssignment(walletId, memo, name);
+      const res = await suggestAssignment(walletId, memo, name, account?.id ?? 0);
       if (!res.matched) return;
       if (!payeeId && res.payeeId != null) setPayeeId(String(res.payeeId));
       if (!isSplit && !categoryId && res.categoryId != null) setCategoryId(String(res.categoryId));
       if (paymentMode === "0" && res.paymentMode != null) setPaymentMode(String(res.paymentMode));
+      if (!info && res.info != null) setInfo(res.info);
     } catch {
       // suggestion is best-effort; ignore failures
     }

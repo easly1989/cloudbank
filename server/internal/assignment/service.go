@@ -14,17 +14,19 @@ var ErrNotFound = errors.New("assignment: not found")
 
 // Definition is the public representation of a rule (config only).
 type Definition struct {
-	ID             int64  `json:"id"`
-	Position       int    `json:"position"`
-	MatchField     string `json:"matchField"`
-	MatchType      string `json:"matchType"`
-	Pattern        string `json:"pattern"`
-	CaseSensitive  bool   `json:"caseSensitive"`
-	SetPayeeID     *int64 `json:"setPayeeId,omitempty"`
-	SetCategoryID  *int64 `json:"setCategoryId,omitempty"`
-	SetPaymentMode *int   `json:"setPaymentMode,omitempty"`
-	ApplyOnManual  bool   `json:"applyOnManual"`
-	ApplyOnImport  bool   `json:"applyOnImport"`
+	ID             int64   `json:"id"`
+	Position       int     `json:"position"`
+	MatchField     string  `json:"matchField"`
+	MatchType      string  `json:"matchType"`
+	Pattern        string  `json:"pattern"`
+	CaseSensitive  bool    `json:"caseSensitive"`
+	MatchAccountID *int64  `json:"matchAccountId,omitempty"`
+	SetPayeeID     *int64  `json:"setPayeeId,omitempty"`
+	SetCategoryID  *int64  `json:"setCategoryId,omitempty"`
+	SetPaymentMode *int    `json:"setPaymentMode,omitempty"`
+	SetInfo        *string `json:"setInfo,omitempty"`
+	ApplyOnManual  bool    `json:"applyOnManual"`
+	ApplyOnImport  bool    `json:"applyOnImport"`
 }
 
 // Input carries the editable fields of a rule.
@@ -33,9 +35,11 @@ type Input struct {
 	MatchType      string
 	Pattern        string
 	CaseSensitive  bool
+	MatchAccountID *int64
 	SetPayeeID     *int64
 	SetCategoryID  *int64
 	SetPaymentMode *int
+	SetInfo        *string
 	ApplyOnManual  bool
 	ApplyOnImport  bool
 }
@@ -63,7 +67,8 @@ func NewService(write *sql.DB) *Service {
 func (in Input) toRule() Rule {
 	return Rule{
 		Field: in.MatchField, Type: in.MatchType, Pattern: in.Pattern, CaseSensitive: in.CaseSensitive,
-		SetPayeeID: in.SetPayeeID, SetCategoryID: in.SetCategoryID, SetPaymentMode: in.SetPaymentMode,
+		MatchAccountID: in.MatchAccountID, SetPayeeID: in.SetPayeeID, SetCategoryID: in.SetCategoryID,
+		SetPaymentMode: in.SetPaymentMode, SetInfo: in.SetInfo,
 	}
 }
 
@@ -72,6 +77,21 @@ func nullID(p *int64) sql.NullInt64 {
 		return sql.NullInt64{}
 	}
 	return sql.NullInt64{Int64: *p, Valid: true}
+}
+
+func nullStr(p *string) sql.NullString {
+	if p == nil {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: *p, Valid: true}
+}
+
+func strPtr(n sql.NullString) *string {
+	if !n.Valid {
+		return nil
+	}
+	v := n.String
+	return &v
 }
 
 func nullInt(p *int) sql.NullInt64 {
@@ -108,17 +128,19 @@ func toDefinition(a db.Assignment) Definition {
 	return Definition{
 		ID: a.ID, Position: int(a.Position), MatchField: a.MatchField, MatchType: a.MatchType,
 		Pattern: a.Pattern, CaseSensitive: a.CaseSensitive != 0,
-		SetPayeeID: idPtr(a.SetPayeeID), SetCategoryID: idPtr(a.SetCategoryID),
-		SetPaymentMode: intPtr(a.SetPaymentMode),
-		ApplyOnManual:  a.ApplyOnManual != 0, ApplyOnImport: a.ApplyOnImport != 0,
+		MatchAccountID: idPtr(a.MatchAccountID),
+		SetPayeeID:     idPtr(a.SetPayeeID), SetCategoryID: idPtr(a.SetCategoryID),
+		SetPaymentMode: intPtr(a.SetPaymentMode), SetInfo: strPtr(a.SetInfo),
+		ApplyOnManual: a.ApplyOnManual != 0, ApplyOnImport: a.ApplyOnImport != 0,
 	}
 }
 
 func toEngineRule(a db.Assignment) Rule {
 	return Rule{
 		ID: a.ID, Field: a.MatchField, Type: a.MatchType, Pattern: a.Pattern,
-		CaseSensitive: a.CaseSensitive != 0, SetPayeeID: idPtr(a.SetPayeeID),
-		SetCategoryID: idPtr(a.SetCategoryID), SetPaymentMode: intPtr(a.SetPaymentMode),
+		CaseSensitive: a.CaseSensitive != 0, MatchAccountID: idPtr(a.MatchAccountID),
+		SetPayeeID: idPtr(a.SetPayeeID), SetCategoryID: idPtr(a.SetCategoryID),
+		SetPaymentMode: intPtr(a.SetPaymentMode), SetInfo: strPtr(a.SetInfo),
 	}
 }
 
@@ -134,8 +156,9 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Definit
 	}
 	row, err := s.q.InsertAssignment(ctx, db.InsertAssignmentParams{
 		WalletID: walletID, Position: pos, MatchField: in.MatchField, MatchType: in.MatchType,
-		Pattern: in.Pattern, CaseSensitive: b2i(in.CaseSensitive), SetPayeeID: nullID(in.SetPayeeID),
-		SetCategoryID: nullID(in.SetCategoryID), SetPaymentMode: nullInt(in.SetPaymentMode),
+		Pattern: in.Pattern, CaseSensitive: b2i(in.CaseSensitive), MatchAccountID: nullID(in.MatchAccountID),
+		SetPayeeID: nullID(in.SetPayeeID), SetCategoryID: nullID(in.SetCategoryID),
+		SetPaymentMode: nullInt(in.SetPaymentMode), SetInfo: nullStr(in.SetInfo),
 		ApplyOnManual: b2i(in.ApplyOnManual), ApplyOnImport: b2i(in.ApplyOnImport),
 	})
 	if err != nil {
@@ -189,8 +212,9 @@ func (s *Service) Update(ctx context.Context, id int64, in Input) (Definition, e
 	}
 	if err := s.q.UpdateAssignment(ctx, db.UpdateAssignmentParams{
 		MatchField: in.MatchField, MatchType: in.MatchType, Pattern: in.Pattern,
-		CaseSensitive: b2i(in.CaseSensitive), SetPayeeID: nullID(in.SetPayeeID),
-		SetCategoryID: nullID(in.SetCategoryID), SetPaymentMode: nullInt(in.SetPaymentMode),
+		CaseSensitive: b2i(in.CaseSensitive), MatchAccountID: nullID(in.MatchAccountID),
+		SetPayeeID: nullID(in.SetPayeeID), SetCategoryID: nullID(in.SetCategoryID),
+		SetPaymentMode: nullInt(in.SetPaymentMode), SetInfo: nullStr(in.SetInfo),
 		ApplyOnManual: b2i(in.ApplyOnManual), ApplyOnImport: b2i(in.ApplyOnImport), ID: id,
 	}); err != nil {
 		return Definition{}, err
@@ -242,13 +266,14 @@ func (s *Service) rules(ctx context.Context, walletID int64, manualOnly bool) ([
 }
 
 // Suggest returns the assignments of the first apply-on-manual rule that matches
-// the memo/payee (used by the entry form).
-func (s *Service) Suggest(ctx context.Context, walletID int64, memo, payee string) (Result, bool, error) {
+// the memo/payee and account (used by the entry form). accountID 0 means no
+// account selected yet, so account-conditioned rules won't match.
+func (s *Service) Suggest(ctx context.Context, walletID int64, memo, payee string, accountID int64) (Result, bool, error) {
 	rules, err := s.rules(ctx, walletID, true)
 	if err != nil {
 		return Result{}, false, err
 	}
-	res, ok := FirstMatch(rules, memo, payee)
+	res, ok := FirstMatch(rules, memo, payee, accountID)
 	return res, ok, nil
 }
 
@@ -274,10 +299,10 @@ func (s *Service) ImportRules(ctx context.Context, walletID int64) ([]Rule, erro
 }
 
 // MatchRow applies the first matching rule (from ImportRules) to a memo/payee
-// pair and returns the assignment to apply, if any. It is a thin convenience
-// wrapper around FirstMatch for the importers.
-func MatchRow(rules []Rule, memo, payee string) (Result, bool) {
-	return FirstMatch(rules, memo, payee)
+// pair for the given target account and returns the assignment to apply, if any.
+// It is a thin convenience wrapper around FirstMatch for the importers.
+func MatchRow(rules []Rule, memo, payee string, accountID int64) (Result, bool) {
+	return FirstMatch(rules, memo, payee, accountID)
 }
 
 // Test compiles a candidate rule and returns up to `limit` existing transactions
@@ -293,7 +318,7 @@ func (s *Service) Test(ctx context.Context, walletID int64, in Input, limit int)
 	}
 	out := make([]MatchedTransaction, 0)
 	for _, r := range rows {
-		if rule.Matches(r.Memo, r.PayeeName) {
+		if rule.Matches(r.Memo, r.PayeeName, r.AccountID) {
 			out = append(out, MatchedTransaction{
 				ID: r.ID, AccountID: r.AccountID, Date: r.Date, Memo: r.Memo, PayeeName: r.PayeeName,
 			})
@@ -334,7 +359,7 @@ func (s *Service) ApplyToExisting(ctx context.Context, walletID int64, accountID
 		if accountID != nil && r.AccountID != *accountID {
 			continue
 		}
-		res, ok := FirstMatch(rules, r.Memo, r.PayeeName)
+		res, ok := FirstMatch(rules, r.Memo, r.PayeeName, r.AccountID)
 		if !ok {
 			continue
 		}
@@ -353,6 +378,12 @@ func (s *Service) ApplyToExisting(ctx context.Context, walletID int64, accountID
 		}
 		if res.PaymentMode != nil && (!onlyFillEmpty || r.PaymentMode == 0) {
 			if err := qtx.SetTransactionPaymentMode(ctx, db.SetTransactionPaymentModeParams{PaymentMode: int64(*res.PaymentMode), ID: r.ID}); err != nil {
+				return 0, err
+			}
+			touched = true
+		}
+		if res.Info != nil && (!onlyFillEmpty || r.Info == "") {
+			if err := qtx.SetTransactionInfo(ctx, db.SetTransactionInfoParams{Info: *res.Info, ID: r.ID}); err != nil {
 				return 0, err
 			}
 			touched = true

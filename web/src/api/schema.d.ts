@@ -1984,10 +1984,13 @@ export interface components {
             pattern: string;
             caseSensitive: boolean;
             /** Format: int64 */
+            matchAccountId?: number | null;
+            /** Format: int64 */
             setPayeeId?: number | null;
             /** Format: int64 */
             setCategoryId?: number | null;
             setPaymentMode?: number | null;
+            setInfo?: string | null;
             applyOnManual: boolean;
             applyOnImport: boolean;
         };
@@ -1999,10 +2002,13 @@ export interface components {
             pattern: string;
             caseSensitive?: boolean;
             /** Format: int64 */
+            matchAccountId?: number | null;
+            /** Format: int64 */
             setPayeeId?: number | null;
             /** Format: int64 */
             setCategoryId?: number | null;
             setPaymentMode?: number | null;
+            setInfo?: string | null;
             applyOnManual?: boolean;
             applyOnImport?: boolean;
         };
@@ -4599,6 +4605,11 @@ export interface operations {
                 "application/json": {
                     memo?: string;
                     payee?: string;
+                    /**
+                     * Format: int64
+                     * @description selected account, for account-conditioned rules
+                     */
+                    accountId?: number;
                 };
             };
         };
@@ -4616,6 +4627,7 @@ export interface operations {
                         /** Format: int64 */
                         categoryId?: number | null;
                         paymentMode?: number | null;
+                        info?: string | null;
                     };
                 };
             };

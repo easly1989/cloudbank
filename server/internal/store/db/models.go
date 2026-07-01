@@ -43,6 +43,8 @@ type Assignment struct {
 	ApplyOnManual  int64
 	ApplyOnImport  int64
 	CreatedAt      string
+	MatchAccountID sql.NullInt64
+	SetInfo        sql.NullString
 }
 
 type Budget struct {
