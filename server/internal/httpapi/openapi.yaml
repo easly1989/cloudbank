@@ -1208,7 +1208,10 @@ paths:
           application/json:
             schema:
               type: object
-              properties: { memo: { type: string }, payee: { type: string } }
+              properties:
+                memo: { type: string }
+                payee: { type: string }
+                accountId: { type: integer, format: int64, description: "selected account, for account-conditioned rules" }
       responses:
         "200":
           description: Suggestion.
@@ -1221,6 +1224,7 @@ paths:
                   payeeId: { type: integer, format: int64, nullable: true }
                   categoryId: { type: integer, format: int64, nullable: true }
                   paymentMode: { type: integer, nullable: true }
+                  info: { type: string, nullable: true }
                 required: [matched]
   /api/v1/wallets/{walletId}/assignments/{assignmentId}:
     parameters:
@@ -1949,9 +1953,11 @@ components:
         matchType: { type: string, enum: [exact, contains, regex] }
         pattern: { type: string }
         caseSensitive: { type: boolean }
+        matchAccountId: { type: integer, format: int64, nullable: true }
         setPayeeId: { type: integer, format: int64, nullable: true }
         setCategoryId: { type: integer, format: int64, nullable: true }
         setPaymentMode: { type: integer, nullable: true }
+        setInfo: { type: string, nullable: true }
         applyOnManual: { type: boolean }
         applyOnImport: { type: boolean }
       required: [id, position, matchField, matchType, pattern, caseSensitive, applyOnManual, applyOnImport]
@@ -1962,9 +1968,11 @@ components:
         matchType: { type: string, enum: [exact, contains, regex] }
         pattern: { type: string }
         caseSensitive: { type: boolean }
+        matchAccountId: { type: integer, format: int64, nullable: true }
         setPayeeId: { type: integer, format: int64, nullable: true }
         setCategoryId: { type: integer, format: int64, nullable: true }
         setPaymentMode: { type: integer, nullable: true }
+        setInfo: { type: string, nullable: true }
         applyOnManual: { type: boolean }
         applyOnImport: { type: boolean }
       required: [matchField, matchType, pattern]

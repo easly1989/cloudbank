@@ -33,7 +33,7 @@ func TestMatches(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			r := Rule{Field: c.field, Type: c.typ, Pattern: c.pattern, CaseSensitive: c.caseSensitive}
 			mustCompile(t, &r)
-			if got := r.Matches(c.memo, c.payee); got != c.want {
+			if got := r.Matches(c.memo, c.payee, 0); got != c.want {
 				t.Fatalf("Matches = %v, want %v", got, c.want)
 			}
 		})
@@ -71,11 +71,30 @@ func TestFirstMatchWins(t *testing.T) {
 		mustCompile(t, &rules[i])
 	}
 	// "uber eats" matches both; the first rule wins.
-	res, ok := FirstMatch(rules, "uber eats dinner", "")
+	res, ok := FirstMatch(rules, "uber eats dinner", "", 0)
 	if !ok || res.RuleID != 1 || res.CategoryID == nil || *res.CategoryID != 10 {
 		t.Fatalf("FirstMatch = %+v, %v", res, ok)
 	}
-	if _, ok := FirstMatch(rules, "groceries", ""); ok {
+	if _, ok := FirstMatch(rules, "groceries", "", 0); ok {
 		t.Fatalf("expected no match")
 	}
 }
+
+func TestAccountConditionAndSetInfo(t *testing.T) {
+	rules := []Rule{{
+		ID: 1, Field: FieldMemo, Type: TypeContains, Pattern: "cheque",
+		MatchAccountID: iptr(7), SetInfo: sptr("0001"),
+	}}
+	mustCompile(t, &rules[0])
+	// Right account → matches and sets the info field.
+	res, ok := FirstMatch(rules, "cheque to landlord", "", 7)
+	if !ok || res.Info == nil || *res.Info != "0001" {
+		t.Fatalf("account 7 = %+v, %v", res, ok)
+	}
+	// Different account → the account-conditioned rule does not apply.
+	if _, ok := FirstMatch(rules, "cheque to landlord", "", 9); ok {
+		t.Fatalf("account 9 should not match an account-7 rule")
+	}
+}
+
+func sptr(s string) *string { return &s }

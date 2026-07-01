@@ -30,22 +30,26 @@ func (h *assignmentHandlers) walletRoutes(r chi.Router) {
 }
 
 type assignmentInput struct {
-	MatchField     string `json:"matchField"`
-	MatchType      string `json:"matchType"`
-	Pattern        string `json:"pattern"`
-	CaseSensitive  bool   `json:"caseSensitive"`
-	SetPayeeID     *int64 `json:"setPayeeId"`
-	SetCategoryID  *int64 `json:"setCategoryId"`
-	SetPaymentMode *int   `json:"setPaymentMode"`
-	ApplyOnManual  bool   `json:"applyOnManual"`
-	ApplyOnImport  bool   `json:"applyOnImport"`
+	MatchField     string  `json:"matchField"`
+	MatchType      string  `json:"matchType"`
+	Pattern        string  `json:"pattern"`
+	CaseSensitive  bool    `json:"caseSensitive"`
+	MatchAccountID *int64  `json:"matchAccountId"`
+	SetPayeeID     *int64  `json:"setPayeeId"`
+	SetCategoryID  *int64  `json:"setCategoryId"`
+	SetPaymentMode *int    `json:"setPaymentMode"`
+	SetInfo        *string `json:"setInfo"`
+	ApplyOnManual  bool    `json:"applyOnManual"`
+	ApplyOnImport  bool    `json:"applyOnImport"`
 }
 
 func (in assignmentInput) toServiceInput() assignment.Input {
 	return assignment.Input{
 		MatchField: in.MatchField, MatchType: in.MatchType, Pattern: in.Pattern,
-		CaseSensitive: in.CaseSensitive, SetPayeeID: in.SetPayeeID, SetCategoryID: in.SetCategoryID,
-		SetPaymentMode: in.SetPaymentMode, ApplyOnManual: in.ApplyOnManual, ApplyOnImport: in.ApplyOnImport,
+		CaseSensitive: in.CaseSensitive, MatchAccountID: in.MatchAccountID,
+		SetPayeeID: in.SetPayeeID, SetCategoryID: in.SetCategoryID,
+		SetPaymentMode: in.SetPaymentMode, SetInfo: in.SetInfo,
+		ApplyOnManual: in.ApplyOnManual, ApplyOnImport: in.ApplyOnImport,
 	}
 }
 
@@ -148,19 +152,21 @@ func (h *assignmentHandlers) apply(w http.ResponseWriter, r *http.Request) {
 func (h *assignmentHandlers) suggest(w http.ResponseWriter, r *http.Request) {
 	wl, _ := walletFromContext(r.Context())
 	var body struct {
-		Memo  string `json:"memo"`
-		Payee string `json:"payee"`
+		Memo      string `json:"memo"`
+		Payee     string `json:"payee"`
+		AccountID int64  `json:"accountId"`
 	}
 	if !decodeJSON(w, r, &body) {
 		return
 	}
-	res, ok, err := h.svc.Suggest(r.Context(), wl.ID, body.Memo, body.Payee)
+	res, ok, err := h.svc.Suggest(r.Context(), wl.ID, body.Memo, body.Payee, body.AccountID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not evaluate rules")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"matched": ok, "payeeId": res.PayeeID, "categoryId": res.CategoryID, "paymentMode": res.PaymentMode,
+		"matched": ok, "payeeId": res.PayeeID, "categoryId": res.CategoryID,
+		"paymentMode": res.PaymentMode, "info": res.Info,
 	})
 }
 

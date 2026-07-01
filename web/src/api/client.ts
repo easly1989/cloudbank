@@ -782,9 +782,11 @@ export interface Assignment {
   matchType: MatchType;
   pattern: string;
   caseSensitive: boolean;
+  matchAccountId?: number | null;
   setPayeeId?: number | null;
   setCategoryId?: number | null;
   setPaymentMode?: number | null;
+  setInfo?: string | null;
   applyOnManual: boolean;
   applyOnImport: boolean;
 }
@@ -794,9 +796,11 @@ export interface AssignmentInput {
   matchType: MatchType;
   pattern: string;
   caseSensitive?: boolean;
+  matchAccountId?: number | null;
   setPayeeId?: number | null;
   setCategoryId?: number | null;
   setPaymentMode?: number | null;
+  setInfo?: string | null;
   applyOnManual?: boolean;
   applyOnImport?: boolean;
 }
@@ -814,6 +818,7 @@ export interface Suggestion {
   payeeId?: number | null;
   categoryId?: number | null;
   paymentMode?: number | null;
+  info?: string | null;
 }
 
 export const listAssignments = (walletId: number) =>
@@ -839,8 +844,12 @@ export const applyAssignments = (
   opts: { accountId?: number | null; onlyFillEmpty: boolean },
 ) => api.post<{ changed: number }>(`/api/v1/wallets/${walletId}/assignments/apply`, opts);
 
-export const suggestAssignment = (walletId: number, memo: string, payee: string) =>
-  api.post<Suggestion>(`/api/v1/wallets/${walletId}/assignments/suggest`, { memo, payee });
+export const suggestAssignment = (walletId: number, memo: string, payee: string, accountId = 0) =>
+  api.post<Suggestion>(`/api/v1/wallets/${walletId}/assignments/suggest`, {
+    memo,
+    payee,
+    accountId,
+  });
 
 // --- Budgets ---
 
