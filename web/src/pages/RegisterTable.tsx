@@ -325,161 +325,165 @@ export function RegisterTable({
   }, [display, cursorId]);
 
   return (
-    <Box>
-      <Box
-        style={{
-          display: "grid",
-          gridTemplateColumns: gridTemplate,
-          gap: 8,
-          padding: "6px 8px",
-          // Matches the 3px accent reserved on each row so columns stay aligned.
-          borderLeft: "3px solid transparent",
-          fontWeight: 600,
-          fontSize: 13,
-          borderBottom: "1px solid var(--mantine-color-default-border)",
-        }}
-      >
-        <Checkbox
-          size="xs"
-          aria-label={t("register.selectAll")}
-          checked={allSelected}
-          indeterminate={!allSelected && display.some((r) => selected.has(r.id))}
-          onChange={(e) =>
-            onToggleAll(
-              display.map((r) => r.id),
-              e.currentTarget.checked,
-            )
-          }
-        />
-        {table.getHeaderGroups()[0].headers.map((h) => (
-          <Box key={h.id}>{flexRender(h.column.columnDef.header, h.getContext())}</Box>
-        ))}
-        <Group justify="flex-end">
-          <Menu position="bottom-end" withinPortal closeOnItemClick={false}>
-            <Menu.Target>
-              <ActionIcon
-                variant="subtle"
-                size="sm"
-                color="gray"
-                aria-label={t("register.columns")}
-              >
-                <IconAdjustmentsHorizontal size={16} />
-              </ActionIcon>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Label>{t("register.columns")}</Menu.Label>
-              {TOGGLEABLE.map((c) => (
-                <Menu.Item key={c.id} onClick={() => table.getColumn(c.id)?.toggleVisibility()}>
+    // Scroll the ledger horizontally within its container on narrow screens so
+    // the page itself never overflows; the header and rows scroll together.
+    <Box style={{ overflowX: "auto" }}>
+      <Box style={{ minWidth: 900 }}>
+        <Box
+          style={{
+            display: "grid",
+            gridTemplateColumns: gridTemplate,
+            gap: 8,
+            padding: "6px 8px",
+            // Matches the 3px accent reserved on each row so columns stay aligned.
+            borderLeft: "3px solid transparent",
+            fontWeight: 600,
+            fontSize: 13,
+            borderBottom: "1px solid var(--mantine-color-default-border)",
+          }}
+        >
+          <Checkbox
+            size="xs"
+            aria-label={t("register.selectAll")}
+            checked={allSelected}
+            indeterminate={!allSelected && display.some((r) => selected.has(r.id))}
+            onChange={(e) =>
+              onToggleAll(
+                display.map((r) => r.id),
+                e.currentTarget.checked,
+              )
+            }
+          />
+          {table.getHeaderGroups()[0].headers.map((h) => (
+            <Box key={h.id}>{flexRender(h.column.columnDef.header, h.getContext())}</Box>
+          ))}
+          <Group justify="flex-end">
+            <Menu position="bottom-end" withinPortal closeOnItemClick={false}>
+              <Menu.Target>
+                <ActionIcon
+                  variant="subtle"
+                  size="sm"
+                  color="gray"
+                  aria-label={t("register.columns")}
+                >
+                  <IconAdjustmentsHorizontal size={16} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Label>{t("register.columns")}</Menu.Label>
+                {TOGGLEABLE.map((c) => (
+                  <Menu.Item key={c.id} onClick={() => table.getColumn(c.id)?.toggleVisibility()}>
+                    <Checkbox
+                      size="xs"
+                      readOnly
+                      checked={columnVisibility[c.id] ?? c.def}
+                      label={t(COL_LABEL[c.id])}
+                    />
+                  </Menu.Item>
+                ))}
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
+        </Box>
+        <div
+          ref={parentRef}
+          tabIndex={0}
+          onKeyDown={onKeyDown}
+          style={{ height: "min(560px, 65vh)", overflow: "auto", outline: "none" }}
+          aria-label={t("register.ledger")}
+        >
+          <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
+            {virtualizer.getVirtualItems().map((vi) => {
+              const row = tableRows[vi.index];
+              const r = row.original;
+              const onCursor = r.id === cursorId;
+              return (
+                <div
+                  key={row.id}
+                  onClick={() => setCursorId(r.id)}
+                  onDoubleClick={() => onEdit(r)}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    userSelect: "none",
+                    transform: `translateY(${vi.start}px)`,
+                    height: ROW_HEIGHT,
+                    display: "grid",
+                    gridTemplateColumns: gridTemplate,
+                    gap: 8,
+                    alignItems: "center",
+                    padding: "0 8px",
+                    // A left accent marks future (scheduled) rows; transparent on
+                    // past/today rows keeps the content aligned.
+                    borderLeft:
+                      r.date > todayStr
+                        ? "3px solid var(--mantine-color-blue-5)"
+                        : "3px solid transparent",
+                    background: selected.has(r.id)
+                      ? "var(--mantine-color-blue-light)"
+                      : onCursor
+                        ? "var(--mantine-color-default-hover)"
+                        : undefined,
+                    borderBottom: "1px solid var(--mantine-color-default-border)",
+                  }}
+                >
                   <Checkbox
                     size="xs"
-                    readOnly
-                    checked={columnVisibility[c.id] ?? c.def}
-                    label={t(COL_LABEL[c.id])}
+                    aria-label={t("register.selectRow")}
+                    checked={selected.has(r.id)}
+                    onChange={() => onToggleSelect(r.id)}
+                    onClick={(e) => e.stopPropagation()}
                   />
-                </Menu.Item>
-              ))}
-            </Menu.Dropdown>
-          </Menu>
-        </Group>
-      </Box>
-      <div
-        ref={parentRef}
-        tabIndex={0}
-        onKeyDown={onKeyDown}
-        style={{ height: 560, overflow: "auto", outline: "none" }}
-        aria-label={t("register.ledger")}
-      >
-        <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
-          {virtualizer.getVirtualItems().map((vi) => {
-            const row = tableRows[vi.index];
-            const r = row.original;
-            const onCursor = r.id === cursorId;
-            return (
-              <div
-                key={row.id}
-                onClick={() => setCursorId(r.id)}
-                onDoubleClick={() => onEdit(r)}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  userSelect: "none",
-                  transform: `translateY(${vi.start}px)`,
-                  height: ROW_HEIGHT,
-                  display: "grid",
-                  gridTemplateColumns: gridTemplate,
-                  gap: 8,
-                  alignItems: "center",
-                  padding: "0 8px",
-                  // A left accent marks future (scheduled) rows; transparent on
-                  // past/today rows keeps the content aligned.
-                  borderLeft:
-                    r.date > todayStr
-                      ? "3px solid var(--mantine-color-blue-5)"
-                      : "3px solid transparent",
-                  background: selected.has(r.id)
-                    ? "var(--mantine-color-blue-light)"
-                    : onCursor
-                      ? "var(--mantine-color-default-hover)"
-                      : undefined,
-                  borderBottom: "1px solid var(--mantine-color-default-border)",
-                }}
-              >
-                <Checkbox
-                  size="xs"
-                  aria-label={t("register.selectRow")}
-                  checked={selected.has(r.id)}
-                  onChange={() => onToggleSelect(r.id)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                {row.getVisibleCells().map((cell) => (
-                  <Box key={cell.id} style={{ minWidth: 0 }}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </Box>
-                ))}
-                <Group gap={2} justify="flex-end" wrap="nowrap" {...stopRowEdit}>
-                  <ActionIcon
-                    variant="subtle"
-                    size="sm"
-                    color="gray"
-                    aria-label={t("templates.saveAs")}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSaveTemplate(r);
-                    }}
-                  >
-                    <IconDeviceFloppy size={15} />
-                  </ActionIcon>
-                  <ActionIcon
-                    variant="subtle"
-                    size="sm"
-                    aria-label={t("transactions.edit")}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(r);
-                    }}
-                  >
-                    <IconPencil size={15} />
-                  </ActionIcon>
-                  <ActionIcon
-                    variant="subtle"
-                    size="sm"
-                    color="red"
-                    aria-label={t("transactions.delete")}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(r);
-                    }}
-                  >
-                    <IconTrash size={15} />
-                  </ActionIcon>
-                </Group>
-              </div>
-            );
-          })}
+                  {row.getVisibleCells().map((cell) => (
+                    <Box key={cell.id} style={{ minWidth: 0 }}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </Box>
+                  ))}
+                  <Group gap={2} justify="flex-end" wrap="nowrap" {...stopRowEdit}>
+                    <ActionIcon
+                      variant="subtle"
+                      size="sm"
+                      color="gray"
+                      aria-label={t("templates.saveAs")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSaveTemplate(r);
+                      }}
+                    >
+                      <IconDeviceFloppy size={15} />
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="subtle"
+                      size="sm"
+                      aria-label={t("transactions.edit")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(r);
+                      }}
+                    >
+                      <IconPencil size={15} />
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="subtle"
+                      size="sm"
+                      color="red"
+                      aria-label={t("transactions.delete")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(r);
+                      }}
+                    >
+                      <IconTrash size={15} />
+                    </ActionIcon>
+                  </Group>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      </Box>
     </Box>
   );
 }

@@ -127,27 +127,29 @@ function BudgetEditor({ walletId, fmt }: { walletId: number; fmt: MoneyFormat })
           </Text>
         )}
       </Group>
-      <Table>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>{t("budget.category")}</Table.Th>
-            <Table.Th>{t("budget.mode")}</Table.Th>
-            <Table.Th>{t("budget.amounts")}</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {categories.map((cat) => (
-            <BudgetRow
-              key={`${cat.id}-${year}`}
-              walletId={walletId}
-              category={cat}
-              year={year}
-              existing={budgetByCat.get(cat.id)}
-              fmt={fmt}
-            />
-          ))}
-        </Table.Tbody>
-      </Table>
+      <Table.ScrollContainer minWidth={480}>
+        <Table>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>{t("budget.category")}</Table.Th>
+              <Table.Th>{t("budget.mode")}</Table.Th>
+              <Table.Th>{t("budget.amounts")}</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {categories.map((cat) => (
+              <BudgetRow
+                key={`${cat.id}-${year}`}
+                walletId={walletId}
+                category={cat}
+                year={year}
+                existing={budgetByCat.get(cat.id)}
+                fmt={fmt}
+              />
+            ))}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
     </Stack>
   );
 }

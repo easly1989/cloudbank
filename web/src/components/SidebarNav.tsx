@@ -53,7 +53,13 @@ function resolveOrdered(items: NavItemDef[], order?: string[]): NavItemDef[] {
 // SidebarNav renders the navigation. Items are user-organizable: pinned items
 // stay in the sidebar (drag to reorder in edit mode), unpinned items collapse
 // into a "More" group. Order and pinned set persist in the user's preferences.
-export function SidebarNav({ railMode }: { railMode: boolean }) {
+export function SidebarNav({
+  railMode,
+  onNavigate,
+}: {
+  railMode: boolean;
+  onNavigate?: () => void;
+}) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -113,6 +119,7 @@ export function SidebarNav({ railMode }: { railMode: boolean }) {
               component={RouterNavLink}
               to={item.to}
               end={item.end}
+              onClick={onNavigate}
               leftSection={<item.icon size={18} />}
               styles={{ body: { display: "none" } }}
             />
@@ -133,6 +140,7 @@ export function SidebarNav({ railMode }: { railMode: boolean }) {
                   key={item.to}
                   component={RouterNavLink}
                   to={item.to}
+                  onClick={onNavigate}
                   leftSection={<item.icon size={16} />}
                 >
                   {t(item.labelKey)}
@@ -204,6 +212,7 @@ export function SidebarNav({ railMode }: { railMode: boolean }) {
           component={RouterNavLink}
           to={item.to}
           end={item.end}
+          onClick={onNavigate}
           label={t(item.labelKey)}
           leftSection={<item.icon size={18} />}
           data-tour={item.to === "/settings" ? "settings" : undefined}
@@ -217,6 +226,7 @@ export function SidebarNav({ railMode }: { railMode: boolean }) {
               component={RouterNavLink}
               to={item.to}
               end={item.end}
+              onClick={onNavigate}
               label={t(item.labelKey)}
               leftSection={<item.icon size={16} />}
             />

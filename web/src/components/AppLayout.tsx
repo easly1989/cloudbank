@@ -2,6 +2,7 @@ import {
   ActionIcon,
   AppShell,
   Avatar,
+  Box,
   Burger,
   Button,
   Group,
@@ -73,7 +74,7 @@ function WalletSwitcher() {
 }
 
 export function AppLayout() {
-  const [opened, { toggle }] = useDisclosure();
+  const [opened, { toggle, close }] = useDisclosure();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -117,8 +118,8 @@ export function AppLayout() {
         padding="md"
       >
         <AppShell.Header>
-          <Group h="100%" px="md" justify="space-between">
-            <Group>
+          <Group h="100%" px="md" justify="space-between" wrap="nowrap">
+            <Group wrap="nowrap" gap="xs" style={{ minWidth: 0 }}>
               <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
               <ActionIcon
                 variant="subtle"
@@ -135,14 +136,18 @@ export function AppLayout() {
               </ActionIcon>
               <Group gap={8} wrap="nowrap">
                 <Logo size={26} />
-                <Text fw={700} size="lg">
+                {/* The name label is hidden on phones to keep the header on one row. */}
+                <Text fw={700} size="lg" visibleFrom="xs">
                   {t("app.name")}
                 </Text>
               </Group>
               <WalletSwitcher />
             </Group>
-            <Group>
-              <LanguageSwitcher />
+            <Group wrap="nowrap" gap="xs">
+              {/* Language lives in Preferences too; hide the header picker on phones. */}
+              <Box visibleFrom="sm">
+                <LanguageSwitcher />
+              </Box>
               <ColorSchemeToggle />
               <Menu position="bottom-end" withinPortal>
                 <Menu.Target>
@@ -168,7 +173,7 @@ export function AppLayout() {
         </AppShell.Header>
 
         <AppShell.Navbar p="sm" data-tour="nav">
-          <SidebarNav railMode={railMode} />
+          <SidebarNav railMode={railMode} onNavigate={close} />
         </AppShell.Navbar>
 
         <AppShell.Main>
