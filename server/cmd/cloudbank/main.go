@@ -103,10 +103,10 @@ func run() error {
 	authSvc := auth.NewService(db.New(st.Write()))
 	walletSvc := wallet.NewService(st.Write())
 	currencySvc := currency.NewService(st.Write())
-	accountSvc := account.NewService(st.Write())
+	accountSvc := account.NewServiceWithRead(st.Read(), st.Write())
 	categorySvc := category.NewService(st.Write())
 	payeeSvc := payee.NewService(st.Write())
-	transactionSvc := transaction.NewService(st.Write())
+	transactionSvc := transaction.NewServiceWithRead(st.Read(), st.Write())
 	transferSvc := transfer.NewService(st.Write())
 	// The dashboard and report services are read-only (no writes), so they run on
 	// the multi-connection read pool instead of the single write connection —
@@ -116,7 +116,7 @@ func run() error {
 	templateSvc := template.NewService(st.Write())
 	scheduleSvc := schedule.NewService(st.Write(), transactionSvc, transferSvc, logger)
 	assignmentSvc := assignment.NewService(st.Write())
-	budgetSvc := budget.NewService(st.Write())
+	budgetSvc := budget.NewServiceWithRead(st.Read(), st.Write())
 	reportSvc := report.NewService(st.Read())
 	importSvc := importer.NewService(st.Write())
 	csvSvc := importio.NewService(st.Write(), transactionSvc, assignmentSvc, accountSvc)

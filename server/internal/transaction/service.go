@@ -104,7 +104,8 @@ type Input struct {
 // Service implements transaction management.
 type Service struct {
 	db *sql.DB
-	q  *db.Queries
+	q  *db.Queries // write pool (mutations)
+	rq *db.Queries // read pool (read-only methods)
 	// purgeAttachments, when set, removes the backing files of the given
 	// transactions' attachments. The DB rows cascade on transaction delete; this
 	// hook cleans the on-disk files. It is injected to avoid a hard dependency on
@@ -112,9 +113,17 @@ type Service struct {
 	purgeAttachments func(ctx context.Context, txnIDs []int64) error
 }
 
-// NewService builds a Service backed by the write connection pool.
+// NewService builds a Service backed by the write connection pool for both
+// reads and writes.
 func NewService(write *sql.DB) *Service {
-	return &Service{db: write, q: db.New(write)}
+	return &Service{db: write, q: db.New(write), rq: db.New(write)}
+}
+
+// NewServiceWithRead builds a Service whose read-only methods (register, list,
+// get, duplicate/tag/vehicle lookups) run on the read pool while mutations use
+// the single write connection (WAL allows concurrent readers).
+func NewServiceWithRead(read, write *sql.DB) *Service {
+	return &Service{db: write, q: db.New(write), rq: db.New(read)}
 }
 
 // SetAttachmentPurger wires the attachment file cleanup invoked when a
@@ -317,7 +326,7 @@ func (s *Service) getOrCreateTag(ctx context.Context, qtx *db.Queries, walletID 
 
 // Get returns a transaction with its splits and tags.
 func (s *Service) Get(ctx context.Context, id int64) (Transaction, error) {
-	row, err := s.q.GetTransaction(ctx, id)
+	row, err := s.rq.GetTransaction(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Transaction{}, ErrNotFound
 	}
@@ -332,13 +341,13 @@ func (s *Service) Get(ctx context.Context, id int64) (Transaction, error) {
 		IsSplit: row.IsSplit != 0, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
 		Tags: []string{},
 	}
-	tags, err := s.q.ListTransactionTags(ctx, id)
+	tags, err := s.rq.ListTransactionTags(ctx, id)
 	if err != nil {
 		return Transaction{}, err
 	}
 	out.Tags = append(out.Tags, tags...)
 	if out.IsSplit {
-		splits, err := s.q.ListSplits(ctx, id)
+		splits, err := s.rq.ListSplits(ctx, id)
 		if err != nil {
 			return Transaction{}, err
 		}
@@ -355,7 +364,7 @@ func (s *Service) Get(ctx context.Context, id int64) (Transaction, error) {
 // transferInfo returns the transfer id and the counterpart leg's account id when
 // txnID is one leg of an internal transfer; (nil, nil) otherwise.
 func (s *Service) transferInfo(ctx context.Context, txnID int64) (*int64, *int64, error) {
-	tr, err := s.q.GetTransferByTransaction(ctx, db.GetTransferByTransactionParams{TxnFromID: txnID, TxnToID: txnID})
+	tr, err := s.rq.GetTransferByTransaction(ctx, db.GetTransferByTransactionParams{TxnFromID: txnID, TxnToID: txnID})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil, nil
 	}
@@ -366,7 +375,7 @@ func (s *Service) transferInfo(ctx context.Context, txnID int64) (*int64, *int64
 	if otherTxn == txnID {
 		otherTxn = tr.TxnFromID
 	}
-	other, err := s.q.GetTransaction(ctx, otherTxn)
+	other, err := s.rq.GetTransaction(ctx, otherTxn)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -377,7 +386,7 @@ func (s *Service) transferInfo(ctx context.Context, txnID int64) (*int64, *int64
 // WalletOf returns the wallet id a transaction belongs to (for ownership
 // checks), or ErrNotFound.
 func (s *Service) WalletOf(ctx context.Context, id int64) (int64, error) {
-	row, err := s.q.GetTransaction(ctx, id)
+	row, err := s.rq.GetTransaction(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, ErrNotFound
 	}
@@ -390,13 +399,13 @@ func (s *Service) WalletOf(ctx context.Context, id int64) (int64, error) {
 // List returns a page of an account's transactions (newest first) and the total
 // count. Tags and splits are omitted here; fetch a single transaction for those.
 func (s *Service) List(ctx context.Context, accountID int64, limit, offset int64) ([]Transaction, int64, error) {
-	rows, err := s.q.ListTransactionsForAccount(ctx, db.ListTransactionsForAccountParams{
+	rows, err := s.rq.ListTransactionsForAccount(ctx, db.ListTransactionsForAccountParams{
 		AccountID: accountID, Limit: limit, Offset: offset,
 	})
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.q.CountTransactionsForAccount(ctx, accountID)
+	total, err := s.rq.CountTransactionsForAccount(ctx, accountID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -441,11 +450,11 @@ type RegisterSummary struct {
 // bank/today/future headline balances. Transfer legs carry transferId so the
 // register can flag them. Splits/tags are omitted (fetch a single transaction).
 func (s *Service) Register(ctx context.Context, accountID int64) ([]RegisterRow, RegisterSummary, error) {
-	acc, err := s.q.GetAccount(ctx, accountID)
+	acc, err := s.rq.GetAccount(ctx, accountID)
 	if err != nil {
 		return nil, RegisterSummary{}, err
 	}
-	rows, err := s.q.ListAccountRegister(ctx, accountID)
+	rows, err := s.rq.ListAccountRegister(ctx, accountID)
 	if err != nil {
 		return nil, RegisterSummary{}, err
 	}
@@ -653,7 +662,7 @@ func (s *Service) FindDuplicates(ctx context.Context, accountID int64, date stri
 	}
 	from := d.AddDate(0, 0, -windowDays).Format(dateLayout)
 	to := d.AddDate(0, 0, windowDays).Format(dateLayout)
-	rows, err := s.q.FindDuplicateTransactions(ctx, db.FindDuplicateTransactionsParams{
+	rows, err := s.rq.FindDuplicateTransactions(ctx, db.FindDuplicateTransactionsParams{
 		AccountID: accountID, Amount: amount, Date: from, Date_2: to,
 	})
 	if err != nil {
@@ -668,7 +677,7 @@ func (s *Service) FindDuplicates(ctx context.Context, accountID int64, date stri
 
 // ListTags returns a wallet's tag names.
 func (s *Service) ListTags(ctx context.Context, walletID int64) ([]string, error) {
-	rows, err := s.q.ListTagsForWallet(ctx, walletID)
+	rows, err := s.rq.ListTagsForWallet(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -688,7 +697,7 @@ type TagInfo struct {
 
 // ListTagsWithCounts returns the wallet's tags with their usage counts.
 func (s *Service) ListTagsWithCounts(ctx context.Context, walletID int64) ([]TagInfo, error) {
-	rows, err := s.q.ListTagsWithCounts(ctx, walletID)
+	rows, err := s.rq.ListTagsWithCounts(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -775,7 +784,7 @@ func toVehicle(v db.Vehicle) Vehicle {
 
 // ListVehicles returns the wallet's vehicles by name.
 func (s *Service) ListVehicles(ctx context.Context, walletID int64) ([]Vehicle, error) {
-	rows, err := s.q.ListVehiclesForWallet(ctx, walletID)
+	rows, err := s.rq.ListVehiclesForWallet(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}

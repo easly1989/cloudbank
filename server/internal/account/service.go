@@ -103,17 +103,26 @@ func b2i(b bool) int64 {
 // Service implements account CRUD.
 type Service struct {
 	db *sql.DB
-	q  *db.Queries
+	q  *db.Queries // write pool (mutations)
+	rq *db.Queries // read pool (read-only methods)
 }
 
-// NewService builds a Service backed by the write connection pool.
+// NewService builds a Service backed by the write connection pool for both
+// reads and writes.
 func NewService(write *sql.DB) *Service {
-	return &Service{db: write, q: db.New(write)}
+	return &Service{db: write, q: db.New(write), rq: db.New(write)}
+}
+
+// NewServiceWithRead builds a Service whose read-only methods run on the read
+// pool while mutations use the single write connection (WAL allows concurrent
+// readers, so reads no longer serialize behind writers).
+func NewServiceWithRead(read, write *sql.DB) *Service {
+	return &Service{db: write, q: db.New(write), rq: db.New(read)}
 }
 
 // List returns a wallet's accounts (ordered by position/group/name).
 func (s *Service) List(ctx context.Context, walletID int64) ([]Account, error) {
-	rows, err := s.q.ListAccountsForWallet(ctx, walletID)
+	rows, err := s.rq.ListAccountsForWallet(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +130,7 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]Account, error) {
 	// definitions as the dashboard and register header). No transactions → the
 	// zero-value delta leaves the balance at the initial balance.
 	today := time.Now().UTC().Format(dateLayout)
-	deltas, err := s.q.AccountBalanceDeltas(ctx, db.AccountBalanceDeltasParams{Today: today, WalletID: walletID})
+	deltas, err := s.rq.AccountBalanceDeltas(ctx, db.AccountBalanceDeltasParams{Today: today, WalletID: walletID})
 	if err != nil {
 		return nil, err
 	}
@@ -150,19 +159,19 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]Account, error) {
 
 // Get returns a single account with its currency metadata.
 func (s *Service) Get(ctx context.Context, accountID int64) (Account, error) {
-	a, err := s.q.GetAccount(ctx, accountID)
+	a, err := s.rq.GetAccount(ctx, accountID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Account{}, ErrNotFound
 	}
 	if err != nil {
 		return Account{}, err
 	}
-	cur, err := s.q.GetCurrency(ctx, a.CurrencyID)
+	cur, err := s.rq.GetCurrency(ctx, a.CurrencyID)
 	if err != nil {
 		return Account{}, err
 	}
 	today := time.Now().UTC().Format(dateLayout)
-	d, err := s.q.AccountBalanceDelta(ctx, db.AccountBalanceDeltaParams{Today: today, AccountID: accountID})
+	d, err := s.rq.AccountBalanceDelta(ctx, db.AccountBalanceDeltaParams{Today: today, AccountID: accountID})
 	if err != nil {
 		return Account{}, err
 	}

@@ -77,18 +77,26 @@ type Report struct {
 // Service implements budget management and reporting.
 type Service struct {
 	db *sql.DB
-	q  *db.Queries
+	q  *db.Queries // write pool (mutations)
+	rq *db.Queries // read pool (read-only methods)
 }
 
-// NewService builds a Service backed by the write connection pool.
+// NewService builds a Service backed by the write connection pool for both
+// reads and writes.
 func NewService(write *sql.DB) *Service {
-	return &Service{db: write, q: db.New(write)}
+	return &Service{db: write, q: db.New(write), rq: db.New(write)}
+}
+
+// NewServiceWithRead builds a Service whose read-only methods run on the read
+// pool while mutations use the single write connection.
+func NewServiceWithRead(read, write *sql.DB) *Service {
+	return &Service{db: write, q: db.New(write), rq: db.New(read)}
 }
 
 // List returns every category that has a budget configured for the given year
 // (year 0 = the "every year" default set).
 func (s *Service) List(ctx context.Context, walletID, year int64) ([]CategoryBudget, error) {
-	rows, err := s.q.ListBudgetsForWallet(ctx, walletID)
+	rows, err := s.rq.ListBudgetsForWallet(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +174,7 @@ func (s *Service) SetCategoryBudget(ctx context.Context, walletID, categoryID, y
 // Report computes budget vs actual per category over [from, to]. When rollup is
 // true, subcategory budgets and actuals roll up into their parent.
 func (s *Service) Report(ctx context.Context, walletID int64, from, to string, rollup bool) (Report, error) {
-	categories, err := s.q.ListCategoriesForWallet(ctx, walletID)
+	categories, err := s.rq.ListCategoriesForWallet(ctx, walletID)
 	if err != nil {
 		return Report{}, err
 	}
@@ -187,7 +195,7 @@ func (s *Service) Report(ctx context.Context, walletID int64, from, to string, r
 	}
 
 	// Currencies for converting actuals to the base currency.
-	currencies, err := s.q.ListCurrenciesForWallet(ctx, walletID)
+	currencies, err := s.rq.ListCurrenciesForWallet(ctx, walletID)
 	if err != nil {
 		return Report{}, err
 	}
@@ -201,7 +209,7 @@ func (s *Service) Report(ctx context.Context, walletID int64, from, to string, r
 	}
 
 	// Budgets per category and month.
-	budgetRows, err := s.q.ListBudgetsForWallet(ctx, walletID)
+	budgetRows, err := s.rq.ListBudgetsForWallet(ctx, walletID)
 	if err != nil {
 		return Report{}, err
 	}
@@ -214,7 +222,7 @@ func (s *Service) Report(ctx context.Context, walletID int64, from, to string, r
 	}
 
 	// Actuals in the period, converted to base.
-	actualRows, err := s.q.CategoryActualsForBudget(ctx, db.CategoryActualsForBudgetParams{WalletID: walletID, FromDate: from, ToDate: to})
+	actualRows, err := s.rq.CategoryActualsForBudget(ctx, db.CategoryActualsForBudgetParams{WalletID: walletID, FromDate: from, ToDate: to})
 	if err != nil {
 		return Report{}, err
 	}
