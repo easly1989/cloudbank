@@ -1,11 +1,13 @@
 package backup
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
 	"testing"
 
+	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
@@ -148,6 +150,78 @@ func TestBackupRestoreRoundTrip(t *testing.T) {
 		if newBal[name] != bal {
 			t.Fatalf("restored balance[%s] = %d, want %d", name, newBal[name], bal)
 		}
+	}
+}
+
+// TestBackupRestoreAttachments verifies attachment metadata and file bytes
+// survive an export → JSON → restore cycle into a fresh wallet.
+func TestBackupRestoreAttachments(t *testing.T) {
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("store.Open: %v", err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	q := db.New(st.Write())
+	ctx := context.Background()
+	user, _ := q.CreateUser(ctx, db.CreateUserParams{Username: "u", PasswordHash: "x"})
+	w, _ := q.CreateWallet(ctx, db.CreateWalletParams{Title: "W"})
+	cur, _ := q.InsertCurrency(ctx, db.InsertCurrencyParams{
+		WalletID: w.ID, IsoCode: "EUR", Name: "Euro", Symbol: "€",
+		DecimalChar: ",", GroupChar: ".", FracDigits: 2, IsBase: 1, Rate: 1,
+	})
+	acc, _ := q.InsertAccount(ctx, db.InsertAccountParams{
+		WalletID: w.ID, Name: "A", Type: "checking", CurrencyID: cur.ID, Position: 1,
+	})
+	ts := transaction.NewService(st.Write())
+	txn, err := ts.Create(ctx, w.ID, transaction.Input{AccountID: acc.ID, Date: "2026-01-01", Amount: -1000})
+	if err != nil {
+		t.Fatalf("create txn: %v", err)
+	}
+
+	att := attachment.NewService(st.Write(), t.TempDir())
+	content := []byte("PDF-bytes-\x00\x01\x02 receipt")
+	if _, err := att.Create(ctx, w.ID, txn.ID, "receipt.pdf", "application/pdf", bytes.NewReader(content)); err != nil {
+		t.Fatalf("create attachment: %v", err)
+	}
+
+	svc := NewService(st.Write())
+	svc.SetAttachments(att)
+	doc, err := svc.Export(ctx, w.ID)
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+	if len(doc.Attachments) != 1 || doc.Attachments[0].Filename != "receipt.pdf" ||
+		doc.Attachments[0].Size != int64(len(content)) {
+		t.Fatalf("exported attachments = %+v", doc.Attachments)
+	}
+
+	data, _ := json.Marshal(doc)
+	var restored Document
+	if err := json.Unmarshal(data, &restored); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	newID, err := svc.Restore(ctx, user.ID, &restored)
+	if err != nil {
+		t.Fatalf("Restore: %v", err)
+	}
+
+	rows, err := q.ListAttachmentsForWallet(ctx, newID)
+	if err != nil {
+		t.Fatalf("list restored attachments: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("restored attachments = %d, want 1", len(rows))
+	}
+	r := rows[0]
+	if r.Filename != "receipt.pdf" || r.ContentType != "application/pdf" || r.Size != int64(len(content)) || r.WalletID != newID {
+		t.Fatalf("restored metadata = %+v", r)
+	}
+	got, err := att.Bytes(newID, r.StorageKey)
+	if err != nil {
+		t.Fatalf("read restored file: %v", err)
+	}
+	if !bytes.Equal(got, content) {
+		t.Fatalf("restored bytes differ: %q vs %q", got, content)
 	}
 }
 
