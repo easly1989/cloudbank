@@ -39,6 +39,7 @@ type Querier interface {
 	CreateWallet(ctx context.Context, arg CreateWalletParams) (Wallet, error)
 	DeleteAccount(ctx context.Context, id int64) error
 	DeleteAssignment(ctx context.Context, id int64) error
+	DeleteAttachment(ctx context.Context, id int64) error
 	DeleteCategory(ctx context.Context, id int64) error
 	DeleteCategoryBudget(ctx context.Context, arg DeleteCategoryBudgetParams) error
 	DeleteCurrency(ctx context.Context, id int64) error
@@ -59,6 +60,7 @@ type Querier interface {
 	FindDuplicateTransactions(ctx context.Context, arg FindDuplicateTransactionsParams) ([]Transaction, error)
 	GetAccount(ctx context.Context, id int64) (Account, error)
 	GetAssignment(ctx context.Context, id int64) (Assignment, error)
+	GetAttachment(ctx context.Context, id int64) (Attachment, error)
 	GetBaseCurrency(ctx context.Context, walletID int64) (Currency, error)
 	GetCategory(ctx context.Context, id int64) (Category, error)
 	GetCurrency(ctx context.Context, id int64) (Currency, error)
@@ -78,6 +80,7 @@ type Querier interface {
 	GetWalletMembership(ctx context.Context, arg GetWalletMembershipParams) (string, error)
 	InsertAccount(ctx context.Context, arg InsertAccountParams) (Account, error)
 	InsertAssignment(ctx context.Context, arg InsertAssignmentParams) (Assignment, error)
+	InsertAttachment(ctx context.Context, arg InsertAttachmentParams) (Attachment, error)
 	InsertBudget(ctx context.Context, arg InsertBudgetParams) error
 	InsertCategory(ctx context.Context, arg InsertCategoryParams) (Category, error)
 	InsertCurrency(ctx context.Context, arg InsertCurrencyParams) (Currency, error)
@@ -98,6 +101,8 @@ type Querier interface {
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
 	ListAllWalletIDs(ctx context.Context) ([]int64, error)
 	ListAssignmentsForWallet(ctx context.Context, walletID int64) ([]Assignment, error)
+	ListAttachmentsForTransaction(ctx context.Context, transactionID int64) ([]Attachment, error)
+	ListAttachmentsForWallet(ctx context.Context, walletID int64) ([]Attachment, error)
 	ListBudgetsForWallet(ctx context.Context, walletID int64) ([]Budget, error)
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
 	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)

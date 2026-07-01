@@ -5,6 +5,7 @@ import {
   IconClock,
   IconDeviceFloppy,
   IconLock,
+  IconPaperclip,
   IconPencil,
   IconTrash,
 } from "@tabler/icons-react";
@@ -202,6 +203,14 @@ export function RegisterTable({
               {t(`status.${row.original.status}`)}
             </Badge>
             {row.original.status === STATUS_RECONCILED && <IconLock size={12} opacity={0.5} />}
+            {(row.original.attachmentCount ?? 0) > 0 && (
+              <Group gap={1} wrap="nowrap" c="dimmed" title={t("attachments.count")}>
+                <IconPaperclip size={13} />
+                {(row.original.attachmentCount ?? 0) > 1 && (
+                  <Text size="xs">{row.original.attachmentCount}</Text>
+                )}
+              </Group>
+            )}
           </Group>
         ),
       }),

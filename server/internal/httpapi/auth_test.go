@@ -9,11 +9,13 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
+	"path/filepath"
 	"strconv"
 	"testing"
 
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
+	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/backup"
 	"github.com/easly1989/cloudbank/server/internal/budget"
@@ -78,10 +80,12 @@ func newTestAPI(t *testing.T) *testClient {
 	csvsvc := importio.NewService(st.Write(), tsvc, asvc2, asvc)
 	intsvc := integrity.NewService(st.Write())
 	bksvc := backup.NewService(st.Write())
+	attsvc := attachment.NewService(st.Write(), filepath.Join(t.TempDir(), "attachments"))
+	tsvc.SetAttachmentPurger(attsvc.PurgeTransactions)
 	srv := httptest.NewServer(New(Options{
 		Auth: svc, Wallets: wsvc, Currencies: csvc, Accounts: asvc,
 		Categories: catsvc, Payees: psvc, Transactions: tsvc, Transfers: xsvc, Dashboard: dsvc, Templates: tplsvc, Schedules: ssvc, Assignments: asvc2, Budgets: bsvc, Reports: rsvc, Import: impsvc, CSV: csvsvc, RateProvider: stubRateProvider{},
-		Integrity: intsvc, Backup: bksvc, HotBackup: st, DataDir: t.TempDir(), Health: st,
+		Integrity: intsvc, Backup: bksvc, Attachments: attsvc, HotBackup: st, DataDir: t.TempDir(), Health: st,
 	}))
 	t.Cleanup(srv.Close)
 

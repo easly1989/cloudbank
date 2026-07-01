@@ -293,6 +293,13 @@
     "cancel": "Cancel",
     "save": "Save"
   },
+  "attachments": {
+    "title": "Attachments",
+    "add": "Add file",
+    "empty": "No files attached.",
+    "delete": "Delete attachment",
+    "count": "Attachments"
+  },
   "templates": {
     "apply": "Use a template",
     "applyPlaceholder": "Pick a template to pre-fill…",
