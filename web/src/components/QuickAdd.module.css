@@ -1,0 +1,17 @@
+/* The quick-add Tags field keeps a fixed width: its pills stay on a single
+ * line and scroll horizontally inside the field so adding a tag never grows
+ * the field or reflows the neighbouring inputs. The scrollbar is hidden so it
+ * doesn't add height to the row either (the pills still scroll via
+ * wheel/trackpad/drag). */
+.scrollPills {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  /* Let the pill list shrink below its content width so overflow-x can scroll
+   * instead of pushing the field wider. */
+  min-width: 0;
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollPills::-webkit-scrollbar {
+  display: none; /* Chrome / Safari / Edge */
+}
