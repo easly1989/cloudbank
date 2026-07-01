@@ -14,6 +14,7 @@ import {
 } from "../api/client";
 import { formatMinor } from "../money";
 import { useAmountParser } from "../useAmountParser";
+import classes from "./QuickAdd.module.css";
 
 const STATUSES = [0, 1, 2, 3, 4];
 
@@ -188,11 +189,13 @@ export function QuickAdd({
           value={tags}
           onChange={setTags}
           clearable
-          style={{ flex: "1 1 150px", minWidth: 120 }}
-          // Keep the tag pills on a single scrollable line so adding a tag
-          // doesn't wrap them and grow the field (and the whole quick-add row)
-          // taller. pillsList is the flex container that otherwise wraps.
-          styles={{ pillsList: { flexWrap: "nowrap", overflowX: "auto" } }}
+          w={170}
+          // Fixed width (no flex grow/shrink) and min-width:0 so the field can
+          // never widen to fit the pills — adding a tag must not reflow the row.
+          // The pills scroll horizontally inside it (see the CSS module).
+          style={{ flex: "0 0 170px", minWidth: 0 }}
+          styles={{ input: { minWidth: 0 } }}
+          classNames={{ pillsList: classes.scrollPills }}
         />
         <Select
           aria-label={t("transactions.status")}
