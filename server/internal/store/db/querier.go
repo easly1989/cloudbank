@@ -143,6 +143,7 @@ type Querier interface {
 	SetChildrenIncome(ctx context.Context, arg SetChildrenIncomeParams) error
 	SetCurrencyBase(ctx context.Context, id int64) error
 	SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error
+	SetTransactionInfo(ctx context.Context, arg SetTransactionInfoParams) error
 	SetTransactionPayee(ctx context.Context, arg SetTransactionPayeeParams) error
 	SetTransactionPaymentMode(ctx context.Context, arg SetTransactionPaymentModeParams) error
 	SetTransactionTemplate(ctx context.Context, arg SetTransactionTemplateParams) error

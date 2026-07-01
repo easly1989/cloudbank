@@ -20,7 +20,7 @@ func (q *Queries) DeleteAssignment(ctx context.Context, id int64) error {
 }
 
 const getAssignment = `-- name: GetAssignment :one
-SELECT id, wallet_id, position, match_field, match_type, pattern, case_sensitive, set_payee_id, set_category_id, set_payment_mode, apply_on_manual, apply_on_import, created_at FROM assignments WHERE id = ? LIMIT 1
+SELECT id, wallet_id, position, match_field, match_type, pattern, case_sensitive, set_payee_id, set_category_id, set_payment_mode, apply_on_manual, apply_on_import, created_at, match_account_id, set_info FROM assignments WHERE id = ? LIMIT 1
 `
 
 func (q *Queries) GetAssignment(ctx context.Context, id int64) (Assignment, error) {
@@ -40,17 +40,19 @@ func (q *Queries) GetAssignment(ctx context.Context, id int64) (Assignment, erro
 		&i.ApplyOnManual,
 		&i.ApplyOnImport,
 		&i.CreatedAt,
+		&i.MatchAccountID,
+		&i.SetInfo,
 	)
 	return i, err
 }
 
 const insertAssignment = `-- name: InsertAssignment :one
 INSERT INTO assignments (
-    wallet_id, position, match_field, match_type, pattern, case_sensitive,
-    set_payee_id, set_category_id, set_payment_mode, apply_on_manual, apply_on_import
+    wallet_id, position, match_field, match_type, pattern, case_sensitive, match_account_id,
+    set_payee_id, set_category_id, set_payment_mode, set_info, apply_on_manual, apply_on_import
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, wallet_id, position, match_field, match_type, pattern, case_sensitive, set_payee_id, set_category_id, set_payment_mode, apply_on_manual, apply_on_import, created_at
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, wallet_id, position, match_field, match_type, pattern, case_sensitive, set_payee_id, set_category_id, set_payment_mode, apply_on_manual, apply_on_import, created_at, match_account_id, set_info
 `
 
 type InsertAssignmentParams struct {
@@ -60,9 +62,11 @@ type InsertAssignmentParams struct {
 	MatchType      string
 	Pattern        string
 	CaseSensitive  int64
+	MatchAccountID sql.NullInt64
 	SetPayeeID     sql.NullInt64
 	SetCategoryID  sql.NullInt64
 	SetPaymentMode sql.NullInt64
+	SetInfo        sql.NullString
 	ApplyOnManual  int64
 	ApplyOnImport  int64
 }
@@ -75,9 +79,11 @@ func (q *Queries) InsertAssignment(ctx context.Context, arg InsertAssignmentPara
 		arg.MatchType,
 		arg.Pattern,
 		arg.CaseSensitive,
+		arg.MatchAccountID,
 		arg.SetPayeeID,
 		arg.SetCategoryID,
 		arg.SetPaymentMode,
+		arg.SetInfo,
 		arg.ApplyOnManual,
 		arg.ApplyOnImport,
 	)
@@ -96,12 +102,14 @@ func (q *Queries) InsertAssignment(ctx context.Context, arg InsertAssignmentPara
 		&i.ApplyOnManual,
 		&i.ApplyOnImport,
 		&i.CreatedAt,
+		&i.MatchAccountID,
+		&i.SetInfo,
 	)
 	return i, err
 }
 
 const listAssignmentsForWallet = `-- name: ListAssignmentsForWallet :many
-SELECT id, wallet_id, position, match_field, match_type, pattern, case_sensitive, set_payee_id, set_category_id, set_payment_mode, apply_on_manual, apply_on_import, created_at FROM assignments WHERE wallet_id = ? ORDER BY position, id
+SELECT id, wallet_id, position, match_field, match_type, pattern, case_sensitive, set_payee_id, set_category_id, set_payment_mode, apply_on_manual, apply_on_import, created_at, match_account_id, set_info FROM assignments WHERE wallet_id = ? ORDER BY position, id
 `
 
 func (q *Queries) ListAssignmentsForWallet(ctx context.Context, walletID int64) ([]Assignment, error) {
@@ -127,6 +135,8 @@ func (q *Queries) ListAssignmentsForWallet(ctx context.Context, walletID int64) 
 			&i.ApplyOnManual,
 			&i.ApplyOnImport,
 			&i.CreatedAt,
+			&i.MatchAccountID,
+			&i.SetInfo,
 		); err != nil {
 			return nil, err
 		}
@@ -142,7 +152,7 @@ func (q *Queries) ListAssignmentsForWallet(ctx context.Context, walletID int64) 
 }
 
 const listWalletTransactionsForRules = `-- name: ListWalletTransactionsForRules :many
-SELECT t.id, t.account_id, t.date, t.memo, t.payee_id, t.category_id, t.payment_mode,
+SELECT t.id, t.account_id, t.date, t.memo, t.info, t.payee_id, t.category_id, t.payment_mode,
        COALESCE(p.name, '') AS payee_name
 FROM transactions t
 LEFT JOIN payees p ON p.id = t.payee_id
@@ -155,6 +165,7 @@ type ListWalletTransactionsForRulesRow struct {
 	AccountID   int64
 	Date        string
 	Memo        string
+	Info        string
 	PayeeID     sql.NullInt64
 	CategoryID  sql.NullInt64
 	PaymentMode int64
@@ -175,6 +186,7 @@ func (q *Queries) ListWalletTransactionsForRules(ctx context.Context, walletID i
 			&i.AccountID,
 			&i.Date,
 			&i.Memo,
+			&i.Info,
 			&i.PayeeID,
 			&i.CategoryID,
 			&i.PaymentMode,
@@ -221,8 +233,8 @@ func (q *Queries) SetAssignmentPosition(ctx context.Context, arg SetAssignmentPo
 
 const updateAssignment = `-- name: UpdateAssignment :exec
 UPDATE assignments SET
-    match_field = ?, match_type = ?, pattern = ?, case_sensitive = ?,
-    set_payee_id = ?, set_category_id = ?, set_payment_mode = ?,
+    match_field = ?, match_type = ?, pattern = ?, case_sensitive = ?, match_account_id = ?,
+    set_payee_id = ?, set_category_id = ?, set_payment_mode = ?, set_info = ?,
     apply_on_manual = ?, apply_on_import = ?
 WHERE id = ?
 `
@@ -232,9 +244,11 @@ type UpdateAssignmentParams struct {
 	MatchType      string
 	Pattern        string
 	CaseSensitive  int64
+	MatchAccountID sql.NullInt64
 	SetPayeeID     sql.NullInt64
 	SetCategoryID  sql.NullInt64
 	SetPaymentMode sql.NullInt64
+	SetInfo        sql.NullString
 	ApplyOnManual  int64
 	ApplyOnImport  int64
 	ID             int64
@@ -246,9 +260,11 @@ func (q *Queries) UpdateAssignment(ctx context.Context, arg UpdateAssignmentPara
 		arg.MatchType,
 		arg.Pattern,
 		arg.CaseSensitive,
+		arg.MatchAccountID,
 		arg.SetPayeeID,
 		arg.SetCategoryID,
 		arg.SetPaymentMode,
+		arg.SetInfo,
 		arg.ApplyOnManual,
 		arg.ApplyOnImport,
 		arg.ID,

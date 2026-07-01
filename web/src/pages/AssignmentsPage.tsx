@@ -30,6 +30,7 @@ import {
   applyAssignments,
   createAssignment,
   deleteAssignment,
+  listAccounts,
   listAssignments,
   listCategories,
   listPayees,
@@ -277,12 +278,21 @@ function RuleForm({
   const [matchType, setMatchType] = useState<MatchType>("contains");
   const [pattern, setPattern] = useState("");
   const [caseSensitive, setCaseSensitive] = useState(false);
+  const [matchAccountId, setMatchAccountId] = useState<string | null>(null);
   const [setPayeeId, setSetPayeeId] = useState<string | null>(null);
   const [setCategoryId, setSetCategoryId] = useState<string | null>(null);
   const [setPaymentMode, setSetPaymentMode] = useState<string | null>(null);
+  const [setInfo, setSetInfo] = useState("");
   const [applyOnManual, setApplyOnManual] = useState(true);
   const [applyOnImport, setApplyOnImport] = useState(true);
   const [testResult, setTestResult] = useState<MatchedTransaction[] | null>(null);
+
+  const accountsQuery = useQuery({
+    queryKey: ["accounts", walletId],
+    queryFn: () => listAccounts(walletId),
+    enabled: walletId > 0,
+  });
+  const accounts = accountsQuery.data ?? [];
 
   useEffect(() => {
     if (!opened) return;
@@ -291,9 +301,11 @@ function RuleForm({
     setMatchType(e?.matchType ?? "contains");
     setPattern(e?.pattern ?? "");
     setCaseSensitive(e?.caseSensitive ?? false);
+    setMatchAccountId(e?.matchAccountId ? String(e.matchAccountId) : null);
     setSetPayeeId(e?.setPayeeId ? String(e.setPayeeId) : null);
     setSetCategoryId(e?.setCategoryId ? String(e.setCategoryId) : null);
     setSetPaymentMode(e?.setPaymentMode != null ? String(e.setPaymentMode) : null);
+    setSetInfo(e?.setInfo ?? "");
     setApplyOnManual(e?.applyOnManual ?? true);
     setApplyOnImport(e?.applyOnImport ?? true);
     setTestResult(null);
@@ -304,9 +316,11 @@ function RuleForm({
     matchType,
     pattern,
     caseSensitive,
+    matchAccountId: matchAccountId ? Number(matchAccountId) : null,
     setPayeeId: setPayeeId ? Number(setPayeeId) : null,
     setCategoryId: setCategoryId ? Number(setCategoryId) : null,
     setPaymentMode: setPaymentMode != null ? Number(setPaymentMode) : null,
+    setInfo: setInfo.trim() ? setInfo.trim() : null,
     applyOnManual,
     applyOnImport,
   });
@@ -380,6 +394,15 @@ function RuleForm({
           onChange={(e) => setCaseSensitive(e.currentTarget.checked)}
         />
         <Select
+          label={t("assignments.matchAccount")}
+          placeholder={t("assignments.anyAccount")}
+          data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
+          value={matchAccountId}
+          onChange={setMatchAccountId}
+          clearable
+          searchable
+        />
+        <Select
           label={t("assignments.setPayee")}
           data={payees.map((p) => ({ value: String(p.id), label: p.name }))}
           value={setPayeeId}
@@ -401,6 +424,12 @@ function RuleForm({
           value={setPaymentMode}
           onChange={setSetPaymentMode}
           clearable
+        />
+        <TextInput
+          label={t("assignments.setInfo")}
+          placeholder={t("assignments.setInfoPlaceholder")}
+          value={setInfo}
+          onChange={(e) => setSetInfo(e.currentTarget.value)}
         />
         <Group>
           <Checkbox
