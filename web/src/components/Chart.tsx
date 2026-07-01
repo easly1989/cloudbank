@@ -1,6 +1,34 @@
 import { useComputedColorScheme } from "@mantine/core";
-import * as echarts from "echarts";
+import type { EChartsOption } from "echarts";
+import { BarChart, LineChart, PieChart } from "echarts/charts";
+import {
+  GridComponent,
+  LegendComponent,
+  MarkLineComponent,
+  TitleComponent,
+  TooltipComponent,
+} from "echarts/components";
+// `use` is aliased so eslint's react-hooks rule doesn't mistake it for React's
+// `use` hook (ECharts' use() registers renderers/charts at module load).
+import { init, use as registerEcharts, type ECharts } from "echarts/core";
+import { CanvasRenderer } from "echarts/renderers";
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
+
+// Register only the chart types and components the app actually uses, so the
+// bundle doesn't pull in the whole ECharts library (saves ~400 KB of JS versus
+// `import * as echarts from "echarts"`). Add to this list if a new chart/feature
+// is introduced.
+registerEcharts([
+  BarChart,
+  LineChart,
+  PieChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  TitleComponent,
+  MarkLineComponent,
+  CanvasRenderer,
+]);
 
 export interface ChartHandle {
   /** Returns the chart as a PNG data URL (for export). */
@@ -14,7 +42,7 @@ const asDict = (v: unknown): Dict => (v && typeof v === "object" ? (v as Dict) :
 // text are readable in both light and dark mode. Only components actually
 // present in the option are touched (so a pie chart never grows phantom axes),
 // and any explicit per-option colour wins over the default.
-function applyChartTheme(option: echarts.EChartsOption, dark: boolean): echarts.EChartsOption {
+function applyChartTheme(option: EChartsOption, dark: boolean): EChartsOption {
   const text = dark ? "#c1c2c5" : "#373a40";
   const line = dark ? "#373a40" : "#ced4da";
   const split = dark ? "#2c2e33" : "#e9ecef";
@@ -44,7 +72,7 @@ function applyChartTheme(option: echarts.EChartsOption, dark: boolean): echarts.
   if (o.legend) themed.legend = themeLegend(o.legend);
   if (o.xAxis) themed.xAxis = themeAxis(o.xAxis);
   if (o.yAxis) themed.yAxis = themeAxis(o.yAxis);
-  return themed as unknown as echarts.EChartsOption;
+  return themed as unknown as EChartsOption;
 }
 
 // Chart is a thin React wrapper over ECharts: it renders an option, resizes with
@@ -52,13 +80,13 @@ function applyChartTheme(option: echarts.EChartsOption, dark: boolean): echarts.
 export const Chart = forwardRef<
   ChartHandle,
   {
-    option: echarts.EChartsOption;
+    option: EChartsOption;
     height?: number;
     onSelect?: (key: string) => void;
   }
 >(function Chart({ option, height = 360, onSelect }, ref) {
   const el = useRef<HTMLDivElement>(null);
-  const chart = useRef<echarts.ECharts | null>(null);
+  const chart = useRef<ECharts | null>(null);
   // Re-theme (and re-render) the option whenever the colour scheme changes so
   // chart text stays readable after a light/dark toggle.
   const scheme = useComputedColorScheme("light");
@@ -70,7 +98,7 @@ export const Chart = forwardRef<
 
   useEffect(() => {
     if (!el.current) return;
-    const instance = echarts.init(el.current);
+    const instance = init(el.current);
     chart.current = instance;
     const onResize = () => instance.resize();
     window.addEventListener("resize", onResize);
