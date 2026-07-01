@@ -36,6 +36,7 @@ import {
   listCurrencies,
   listPayees,
   listTags,
+  listVehicles,
   statisticsCsvUrl,
   updateMe,
 } from "../api/client";
@@ -867,9 +868,9 @@ function VehicleTab() {
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
 
-  const categoriesQuery = useQuery({
-    queryKey: ["categories", walletId],
-    queryFn: () => listCategories(walletId),
+  const vehiclesQuery = useQuery({
+    queryKey: ["vehicles", walletId],
+    queryFn: () => listVehicles(walletId),
     enabled: walletId > 0,
   });
   const currenciesQuery = useQuery({
@@ -879,11 +880,11 @@ function VehicleTab() {
   });
   const base = (currenciesQuery.data ?? []).find((c) => c.isBase);
 
-  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [vehicleId, setVehicleId] = useState<string | null>(null);
   const query = useQuery({
-    queryKey: ["vehicle", walletId, categoryId],
-    queryFn: () => getVehicleReport(walletId, Number(categoryId)),
-    enabled: walletId > 0 && !!categoryId,
+    queryKey: ["vehicle", walletId, vehicleId],
+    queryFn: () => getVehicleReport(walletId, Number(vehicleId)),
+    enabled: walletId > 0 && !!vehicleId,
   });
   const report: VehicleReport | undefined = query.data;
   const fmt = useMemo(() => baseFmt(report?.currency ?? base), [report?.currency, base]);
@@ -895,16 +896,11 @@ function VehicleTab() {
     <Stack>
       <Group align="flex-end">
         <Select
-          label={t("reports.vehicleCategory")}
-          placeholder={t("reports.pickCategory")}
-          data={(categoriesQuery.data ?? []).map((c) => ({
-            value: String(c.id),
-            label: c.parentId
-              ? `${(categoriesQuery.data ?? []).find((p) => p.id === c.parentId)?.name ?? ""} › ${c.name}`
-              : c.name,
-          }))}
-          value={categoryId}
-          onChange={setCategoryId}
+          label={t("reports.vehicle")}
+          placeholder={t("reports.pickVehicle")}
+          data={(vehiclesQuery.data ?? []).map((v) => ({ value: String(v.id), label: v.name }))}
+          value={vehicleId}
+          onChange={setVehicleId}
           searchable
           clearable
           w={280}
@@ -937,7 +933,7 @@ function VehicleTab() {
         </Group>
       )}
 
-      {report && report.entries.length === 0 && categoryId && (
+      {report && report.entries.length === 0 && vehicleId && (
         <Text c="dimmed">{t("reports.empty")}</Text>
       )}
 
