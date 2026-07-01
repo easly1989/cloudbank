@@ -1,9 +1,9 @@
 -- name: InsertTransaction :one
 INSERT INTO transactions (
     wallet_id, account_id, date, amount, payment_mode, status, info,
-    payee_id, category_id, memo, is_split, import_ref
+    payee_id, category_id, memo, is_split, import_ref, vehicle_id
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: ListImportRefsForAccount :many
@@ -50,7 +50,7 @@ SELECT COUNT(*) FROM transactions WHERE account_id = ?;
 -- name: UpdateTransaction :exec
 UPDATE transactions SET
     date = ?, amount = ?, payment_mode = ?, status = ?, info = ?,
-    payee_id = ?, category_id = ?, memo = ?, is_split = ?,
+    payee_id = ?, category_id = ?, memo = ?, is_split = ?, vehicle_id = ?,
     updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 WHERE id = ?;
 

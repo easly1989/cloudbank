@@ -66,17 +66,17 @@ type VehicleReport struct {
 	Currency       *CurrencyInfo  `json:"currency"`
 }
 
-// Vehicle computes the fuel-consumption report for a category. Consumption is
+// Vehicle computes the fuel-consumption report for a vehicle. Consumption is
 // only computed between full fills (HomeBank's algorithm): the refill volume at
 // a full fill is the fuel consumed over the distance since the previous full
 // fill; partial fills (no volume) contribute distance that carries forward.
-func (s *Service) Vehicle(ctx context.Context, walletID, categoryID int64, from, to string) (VehicleReport, error) {
+func (s *Service) Vehicle(ctx context.Context, walletID, vehicleID int64, from, to string) (VehicleReport, error) {
 	base, curByID, err := s.baseAndCurrencies(ctx, walletID)
 	if err != nil {
 		return VehicleReport{}, err
 	}
 	rows, err := s.q.ListVehicleTransactions(ctx, db.ListVehicleTransactionsParams{
-		WalletID: walletID, CategoryID: sql.NullInt64{Int64: categoryID, Valid: true}, Date: from, Date_2: to,
+		WalletID: walletID, VehicleID: sql.NullInt64{Int64: vehicleID, Valid: true}, Date: from, Date_2: to,
 	})
 	if err != nil {
 		return VehicleReport{}, err

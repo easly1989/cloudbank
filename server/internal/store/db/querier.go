@@ -54,6 +54,7 @@ type Querier interface {
 	DeleteTransactionTags(ctx context.Context, transactionID int64) error
 	DeleteTransfer(ctx context.Context, id int64) error
 	DeleteUserSessions(ctx context.Context, userID int64) error
+	DeleteVehicle(ctx context.Context, id int64) error
 	DeleteWallet(ctx context.Context, id int64) error
 	FindDuplicateTransactions(ctx context.Context, arg FindDuplicateTransactionsParams) ([]Transaction, error)
 	GetAccount(ctx context.Context, id int64) (Account, error)
@@ -72,6 +73,7 @@ type Querier interface {
 	GetTransferByTransaction(ctx context.Context, arg GetTransferByTransactionParams) (Transfer, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	GetVehicle(ctx context.Context, id int64) (Vehicle, error)
 	GetWallet(ctx context.Context, id int64) (Wallet, error)
 	GetWalletMembership(ctx context.Context, arg GetWalletMembershipParams) (string, error)
 	InsertAccount(ctx context.Context, arg InsertAccountParams) (Account, error)
@@ -87,6 +89,7 @@ type Querier interface {
 	InsertTemplateSplit(ctx context.Context, arg InsertTemplateSplitParams) error
 	InsertTransaction(ctx context.Context, arg InsertTransactionParams) (Transaction, error)
 	InsertTransfer(ctx context.Context, arg InsertTransferParams) (Transfer, error)
+	InsertVehicle(ctx context.Context, arg InsertVehicleParams) (Vehicle, error)
 	// The full account ledger ordered chronologically (date, then id) with a
 	// server-computed cumulative delta. The application adds the account's initial
 	// balance to produce each row's running balance.
@@ -112,10 +115,11 @@ type Querier interface {
 	ListTransfersForWallet(ctx context.Context, walletID int64) ([]Transfer, error)
 	ListUpcomingSchedules(ctx context.Context, arg ListUpcomingSchedulesParams) ([]ListUpcomingSchedulesRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
-	// Fuel transactions for a vehicle category in a date range, with the account
+	// Fuel transactions linked to a vehicle in a date range, with the account
 	// currency so costs can be converted to base. Ordered for sequential odometer
 	// processing.
 	ListVehicleTransactions(ctx context.Context, arg ListVehicleTransactionsParams) ([]ListVehicleTransactionsRow, error)
+	ListVehiclesForWallet(ctx context.Context, walletID int64) ([]Vehicle, error)
 	ListWalletSettings(ctx context.Context) ([]ListWalletSettingsRow, error)
 	ListWalletTransactionsForRules(ctx context.Context, walletID int64) ([]ListWalletTransactionsForRulesRow, error)
 	ListWalletsForUser(ctx context.Context, userID int64) ([]ListWalletsForUserRow, error)
@@ -162,6 +166,7 @@ type Querier interface {
 	UpdateTransactionStatus(ctx context.Context, arg UpdateTransactionStatusParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpdateUserSettings(ctx context.Context, arg UpdateUserSettingsParams) error
+	UpdateVehicle(ctx context.Context, arg UpdateVehicleParams) error
 	UpdateWallet(ctx context.Context, arg UpdateWalletParams) error
 	UpdateWalletBaseCurrency(ctx context.Context, arg UpdateWalletBaseCurrencyParams) error
 	UpsertExchangeRate(ctx context.Context, arg UpsertExchangeRateParams) error

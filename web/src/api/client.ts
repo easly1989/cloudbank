@@ -438,6 +438,7 @@ export interface Transaction {
   info: string;
   payeeId?: number | null;
   categoryId?: number | null;
+  vehicleId?: number | null;
   memo: string;
   isSplit: boolean;
   tags: string[];
@@ -459,6 +460,7 @@ export interface TransactionInput {
   info?: string;
   payeeId?: number | null;
   categoryId?: number | null;
+  vehicleId?: number | null;
   memo?: string;
   tags?: string[];
   splits?: Split[];
@@ -1035,15 +1037,42 @@ export interface VehicleReport {
 
 export const getVehicleReport = (
   walletId: number,
-  categoryId: number,
+  vehicleId: number,
   from?: string,
   to?: string,
 ) => {
-  const q = new URLSearchParams({ categoryId: String(categoryId) });
+  const q = new URLSearchParams({ vehicleId: String(vehicleId) });
   if (from) q.set("from", from);
   if (to) q.set("to", to);
   return api.get<VehicleReport>(`/api/v1/wallets/${walletId}/reports/vehicle?${q.toString()}`);
 };
+
+// --- Vehicles ---
+
+export interface Vehicle {
+  id: number;
+  name: string;
+  plate: string;
+  notes: string;
+}
+
+export interface VehicleInput {
+  name: string;
+  plate?: string;
+  notes?: string;
+}
+
+export const listVehicles = (walletId: number) =>
+  api.get<Vehicle[]>(`/api/v1/wallets/${walletId}/vehicles`);
+
+export const createVehicle = (walletId: number, body: VehicleInput) =>
+  api.post<Vehicle>(`/api/v1/wallets/${walletId}/vehicles`, body);
+
+export const updateVehicle = (walletId: number, id: number, body: VehicleInput) =>
+  api.patch<Vehicle>(`/api/v1/wallets/${walletId}/vehicles/${id}`, body);
+
+export const deleteVehicle = (walletId: number, id: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/vehicles/${id}`);
 
 // --- Imports ---
 

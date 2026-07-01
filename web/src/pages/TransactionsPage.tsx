@@ -57,6 +57,7 @@ import {
   listPayees,
   listTags,
   listTemplates,
+  listVehicles,
   setTransactionStatus,
   suggestAssignment,
   updateTransaction,
@@ -612,6 +613,10 @@ export function TransactionForm({
     queryFn: () => listCategories(walletId),
   });
   const tagsQuery = useQuery({ queryKey: ["tags", walletId], queryFn: () => listTags(walletId) });
+  const vehiclesQuery = useQuery({
+    queryKey: ["vehicles", walletId],
+    queryFn: () => listVehicles(walletId),
+  });
 
   const dc = account.currencyDecimalChar;
   const fd = account.currencyFracDigits;
@@ -623,6 +628,7 @@ export function TransactionForm({
   const [status, setStatus] = useState("0");
   const [payeeId, setPayeeId] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [vehicleId, setVehicleId] = useState<string | null>(null);
   const [memo, setMemo] = useState("");
   const [info, setInfo] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -639,6 +645,7 @@ export function TransactionForm({
     setStatus(String(e?.status ?? 0));
     setPayeeId(e?.payeeId ? String(e.payeeId) : null);
     setCategoryId(e?.categoryId ? String(e.categoryId) : null);
+    setVehicleId(e?.vehicleId ? String(e.vehicleId) : null);
     setMemo(e?.memo ?? "");
     setInfo(e?.info ?? "");
     setTags(e?.tags ?? []);
@@ -680,6 +687,7 @@ export function TransactionForm({
         memo,
         payeeId: payeeId ? Number(payeeId) : null,
         categoryId: isSplit ? null : categoryId ? Number(categoryId) : null,
+        vehicleId: vehicleId ? Number(vehicleId) : null,
         tags,
         splits: isSplit
           ? splits.map<Split>((s) => ({
@@ -770,6 +778,10 @@ export function TransactionForm({
       })),
     [categoriesQuery.data],
   );
+  const vehicleOptions = (vehiclesQuery.data ?? []).map((v) => ({
+    value: String(v.id),
+    label: v.name,
+  }));
 
   // Apply-on-manual: when adding a transaction, the first matching rule fills
   // any empty payee/category/payment-mode fields (the user can still override).
@@ -922,6 +934,16 @@ export function TransactionForm({
           value={tags}
           onChange={setTags}
         />
+        {vehicleOptions.length > 0 && (
+          <Select
+            label={t("transactions.vehicle")}
+            data={vehicleOptions}
+            value={vehicleId}
+            onChange={setVehicleId}
+            clearable
+            searchable
+          />
+        )}
         <Group grow>
           <Select
             label={t("transactions.status")}
