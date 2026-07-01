@@ -17,6 +17,7 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
+	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/backup"
 	"github.com/easly1989/cloudbank/server/internal/budget"
@@ -118,6 +119,9 @@ func run() error {
 	rateProvider := &currency.Frankfurter{BaseURL: cfg.RateProviderURL}
 	integritySvc := integrity.NewService(st.Write())
 	backupSvc := backup.NewService(st.Write())
+	attachmentSvc := attachment.NewService(st.Write(), filepath.Join(cfg.DataDir, "attachments"))
+	// Remove an attachment's file when its transaction is deleted (rows cascade).
+	transactionSvc.SetAttachmentPurger(attachmentSvc.PurgeTransactions)
 
 	handler := httpapi.New(httpapi.Options{
 		Logger:        logger,
@@ -141,6 +145,7 @@ func run() error {
 		RateProvider:  rateProvider,
 		Integrity:     integritySvc,
 		Backup:        backupSvc,
+		Attachments:   attachmentSvc,
 		HotBackup:     st,
 		DataDir:       cfg.DataDir,
 		Version:       version,

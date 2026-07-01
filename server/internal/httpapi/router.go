@@ -13,6 +13,7 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
+	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/backup"
 	"github.com/easly1989/cloudbank/server/internal/budget"
@@ -81,6 +82,9 @@ type Options struct {
 	Integrity *integrity.Service
 	// Backup, if non-nil, mounts the wallet JSON backup/restore endpoints (requires Auth).
 	Backup *backup.Service
+	// Attachments, if non-nil, mounts the transaction file-attachment endpoints
+	// (requires Wallets).
+	Attachments *attachment.Service
 	// HotBackup, if non-nil, mounts the admin VACUUM hot-backup endpoint.
 	HotBackup HotBackuper
 	// DataDir is the writable directory used to stage hot backups.
@@ -153,7 +157,7 @@ func New(opts Options) http.Handler {
 						transfers: opts.Transfers, dashboard: opts.Dashboard, templates: opts.Templates,
 						schedules: opts.Schedules, assignments: opts.Assignments, budgets: opts.Budgets,
 						reports: opts.Reports, csv: opts.CSV, rateProvider: opts.RateProvider,
-						integrity: opts.Integrity, backup: opts.Backup,
+						integrity: opts.Integrity, backup: opts.Backup, attachments: opts.Attachments,
 					}).routes(pr)
 					if opts.Currencies != nil {
 						pr.Get("/catalog/currencies", (&currencyHandlers{svc: opts.Currencies}).catalog)

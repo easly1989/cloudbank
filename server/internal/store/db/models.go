@@ -47,6 +47,17 @@ type Assignment struct {
 	SetInfo        sql.NullString
 }
 
+type Attachment struct {
+	ID            int64
+	WalletID      int64
+	TransactionID int64
+	Filename      string
+	ContentType   string
+	Size          int64
+	StorageKey    string
+	CreatedAt     string
+}
+
 type Budget struct {
 	ID         int64
 	WalletID   int64
