@@ -1038,7 +1038,7 @@ function QuickAddCard({ walletId }: { walletId: number }) {
 
   return (
     <Card withBorder data-tour="quick-add">
-      <Group justify="space-between" wrap="wrap" gap="sm">
+      <Stack gap="xs">
         <Title order={4}>{t("dashboard.addTransaction")}</Title>
         <Group gap="xs" wrap="nowrap">
           <Select
@@ -1048,13 +1048,18 @@ function QuickAddCard({ walletId }: { walletId: number }) {
             onChange={setAccountId}
             allowDeselect={false}
             searchable
-            w={220}
+            style={{ flex: 1, minWidth: 0, maxWidth: 260 }}
           />
-          <Button leftSection={<IconPlus size={16} />} onClick={modal.open} disabled={!account}>
+          <Button
+            leftSection={<IconPlus size={16} />}
+            onClick={modal.open}
+            disabled={!account}
+            style={{ flexShrink: 0 }}
+          >
             {t("dashboard.addTransaction")}
           </Button>
         </Group>
-      </Group>
+      </Stack>
       {account && (
         <TransactionForm
           opened={opened}
