@@ -122,6 +122,8 @@ func run() error {
 	attachmentSvc := attachment.NewService(st.Write(), filepath.Join(cfg.DataDir, "attachments"))
 	// Remove an attachment's file when its transaction is deleted (rows cascade).
 	transactionSvc.SetAttachmentPurger(attachmentSvc.PurgeTransactions)
+	// Include attachment files in wallet backup/restore.
+	backupSvc.SetAttachments(attachmentSvc)
 
 	handler := httpapi.New(httpapi.Options{
 		Logger:        logger,
