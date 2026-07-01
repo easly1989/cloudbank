@@ -146,7 +146,7 @@ func TestDashboardExcludesNoReportCategory(t *testing.T) {
 	ctx := context.Background()
 	acc := account(t, q, wid, eur(t, q, wid), 0, 0, "Main")
 	now := time.Now().UTC()
-	thisMonth := time.Date(now.Year(), now.Month(), 15, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
+	thisMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
 
 	car, _ := q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: wid, Name: "Car"})
 	hidden, _ := q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: wid, Name: "Hidden", NoReport: 1})
@@ -215,9 +215,9 @@ func TestDashboardIncomeExpense(t *testing.T) {
 
 	now := time.Now().UTC()
 	thisMonth := now.Format("2006-01")
-	// A safe day-15 date this many whole months before now.
+	// The 1st of the month this many whole months before now (always <= today).
 	d := func(monthsAgo int) string {
-		m := time.Date(now.Year(), now.Month(), 15, 0, 0, 0, 0, time.UTC).AddDate(0, -monthsAgo, 0)
+		m := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC).AddDate(0, -monthsAgo, 0)
 		return m.Format("2006-01-02")
 	}
 
@@ -261,7 +261,7 @@ func TestDashboardIncomeExpenseWindow(t *testing.T) {
 	acc := account(t, q, wid, eur(t, q, wid), 0, 0, "Main")
 	now := time.Now().UTC()
 	d := func(monthsAgo int) string {
-		m := time.Date(now.Year(), now.Month(), 15, 0, 0, 0, 0, time.UTC).AddDate(0, -monthsAgo, 0)
+		m := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC).AddDate(0, -monthsAgo, 0)
 		return m.Format("2006-01-02")
 	}
 	_, _ = ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: d(0), Amount: -1000})
