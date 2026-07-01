@@ -28,9 +28,9 @@ func (h *reportHandlers) walletRoutes(r chi.Router) {
 func (h *reportHandlers) vehicle(w http.ResponseWriter, r *http.Request) {
 	wl, _ := walletFromContext(r.Context())
 	q := r.URL.Query()
-	categoryID, err := strconv.ParseInt(q.Get("categoryId"), 10, 64)
-	if err != nil || categoryID <= 0 {
-		writeError(w, http.StatusBadRequest, "invalid", "categoryId is required")
+	vehicleID, err := strconv.ParseInt(q.Get("vehicleId"), 10, 64)
+	if err != nil || vehicleID <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid", "vehicleId is required")
 		return
 	}
 	from, to := q.Get("from"), q.Get("to")
@@ -40,7 +40,7 @@ func (h *reportHandlers) vehicle(w http.ResponseWriter, r *http.Request) {
 	if to == "" {
 		to = "9999-12-31"
 	}
-	res, err := h.svc.Vehicle(r.Context(), wl.ID, categoryID, from, to)
+	res, err := h.svc.Vehicle(r.Context(), wl.ID, vehicleID, from, to)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not build vehicle report")
 		return

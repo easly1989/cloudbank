@@ -1371,14 +1371,53 @@ paths:
       responses:
         "200": { description: The balance report., content: { application/json: { schema: { $ref: "#/components/schemas/BalanceResult" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/vehicles:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listVehicles
+      summary: List the wallet's vehicles
+      responses:
+        "200": { description: Vehicles., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Vehicle" } } } } }
+    post:
+      operationId: createVehicle
+      summary: Create a vehicle
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/VehicleInput" } } }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Vehicle" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { description: A vehicle with that name already exists. }
+  /api/v1/wallets/{walletId}/vehicles/{vehicleId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: vehicleId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: updateVehicle
+      summary: Update a vehicle
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/VehicleInput" } } }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Vehicle" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: A vehicle with that name already exists. }
+    delete:
+      operationId: deleteVehicle
+      summary: Delete a vehicle (its transactions are unlinked)
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/reports/vehicle:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
     get:
       operationId: getVehicleReport
-      summary: Fuel-consumption report for a vehicle category (memo d=/v=/p=)
+      summary: Fuel-consumption report for a vehicle (memo d=/v=/p=)
       parameters:
-        - { name: categoryId, in: query, required: true, schema: { type: integer, format: int64 } }
+        - { name: vehicleId, in: query, required: true, schema: { type: integer, format: int64 } }
         - { name: from, in: query, required: false, schema: { type: string } }
         - { name: to, in: query, required: false, schema: { type: string } }
       responses:
@@ -1779,6 +1818,7 @@ components:
         info: { type: string }
         payeeId: { type: integer, format: int64, nullable: true }
         categoryId: { type: integer, format: int64, nullable: true }
+        vehicleId: { type: integer, format: int64, nullable: true }
         memo: { type: string }
         isSplit: { type: boolean }
         tags: { type: array, items: { type: string } }
@@ -1801,10 +1841,26 @@ components:
         info: { type: string }
         payeeId: { type: integer, format: int64, nullable: true }
         categoryId: { type: integer, format: int64, nullable: true }
+        vehicleId: { type: integer, format: int64, nullable: true }
         memo: { type: string }
         tags: { type: array, items: { type: string } }
         splits: { type: array, items: { $ref: "#/components/schemas/Split" } }
       required: [accountId, date, amount]
+    Vehicle:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        plate: { type: string }
+        notes: { type: string }
+      required: [id, name, plate, notes]
+    VehicleInput:
+      type: object
+      properties:
+        name: { type: string }
+        plate: { type: string }
+        notes: { type: string }
+      required: [name]
     RegisterRow:
       allOf:
         - $ref: "#/components/schemas/Transaction"
