@@ -447,6 +447,7 @@ export interface Transaction {
   categoryName?: string;
   transferId?: number | null;
   transferAccountId?: number | null;
+  attachmentCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -487,6 +488,56 @@ export const updateTransaction = (walletId: number, id: number, body: Transactio
 
 export const deleteTransaction = (walletId: number, id: number) =>
   api.del<void>(`/api/v1/wallets/${walletId}/transactions/${id}`);
+
+// --- Attachments ---
+
+export interface Attachment {
+  id: number;
+  transactionId: number;
+  filename: string;
+  contentType: string;
+  size: number;
+  createdAt: string;
+}
+
+export const listAttachments = (walletId: number, transactionId: number) =>
+  api.get<Attachment[]>(`/api/v1/wallets/${walletId}/attachments?transactionId=${transactionId}`);
+
+// uploadAttachment posts a multipart form. It does not use the JSON `request`
+// helper because the browser must set the multipart Content-Type/boundary.
+export const uploadAttachment = async (
+  walletId: number,
+  transactionId: number,
+  file: File,
+): Promise<Attachment> => {
+  const form = new FormData();
+  form.append("transactionId", String(transactionId));
+  form.append("file", file);
+  const res = await fetch(`/api/v1/wallets/${walletId}/attachments`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "X-Requested-With": "XMLHttpRequest" },
+    body: form,
+  });
+  if (!res.ok) {
+    let message = res.statusText;
+    try {
+      const body = (await res.json()) as { error?: { message?: string } };
+      if (body?.error?.message) message = body.error.message;
+    } catch {
+      // non-JSON error body; keep statusText
+    }
+    throw new ApiError(res.status, message);
+  }
+  return (await res.json()) as Attachment;
+};
+
+export const deleteAttachment = (walletId: number, id: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/attachments/${id}`);
+
+// attachmentUrl is the direct download/preview link (cookie-authenticated).
+export const attachmentUrl = (walletId: number, id: number) =>
+  `/api/v1/wallets/${walletId}/attachments/${id}`;
 
 export const findDuplicateTransactions = (
   walletId: number,

@@ -11,6 +11,7 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
+	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/backup"
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/category"
@@ -49,6 +50,7 @@ type walletHandlers struct {
 	rateProvider currency.RateProvider
 	integrity    *integrity.Service
 	backup       *backup.Service
+	attachments  *attachment.Service
 }
 
 type walletResponse struct {
@@ -121,6 +123,9 @@ func (h *walletHandlers) routes(r chi.Router) {
 		}
 		if h.backup != nil {
 			(&backupHandlers{svc: h.backup}).walletRoutes(r)
+		}
+		if h.attachments != nil {
+			(&attachmentHandlers{svc: h.attachments}).walletRoutes(r)
 		}
 	})
 }
@@ -228,6 +233,10 @@ func (h *walletHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	if err := h.svc.Delete(r.Context(), wl.ID); err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not delete wallet")
 		return
+	}
+	// The DB rows cascade; remove the wallet's attachment files too.
+	if h.attachments != nil {
+		_ = h.attachments.PurgeWallet(wl.ID)
 	}
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -1536,6 +1536,59 @@ paths:
       responses:
         "201": { description: The file was imported., content: { application/json: { schema: { $ref: "#/components/schemas/ImportResult" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/attachments:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listAttachments
+      summary: List a transaction's attachments
+      parameters:
+        - { name: transactionId, in: query, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        "200":
+          description: The transaction's attachments.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Attachment" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: uploadAttachment
+      summary: Attach a file to a transaction
+      description: >
+        Multipart upload. The `transactionId` field selects the transaction; the
+        `file` field carries the bytes. Uploads over the size limit are rejected
+        with 413.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                transactionId: { type: integer, format: int64 }
+                file: { type: string, format: binary }
+              required: [transactionId, file]
+      responses:
+        "201": { description: The file was attached., content: { application/json: { schema: { $ref: "#/components/schemas/Attachment" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "413": { description: The upload exceeds the size limit., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/wallets/{walletId}/attachments/{attachmentId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: attachmentId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: downloadAttachment
+      summary: Download an attachment's file
+      responses:
+        "200": { description: The file bytes (served inline)., content: { application/octet-stream: { schema: { type: string, format: binary } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteAttachment
+      summary: Delete an attachment
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
 components:
   responses:
     BadRequest:
@@ -1827,6 +1880,7 @@ components:
         categoryName: { type: string }
         transferId: { type: integer, format: int64, description: "set when the transaction is one leg of an internal transfer" }
         transferAccountId: { type: integer, format: int64, description: "the counterpart leg's account" }
+        attachmentCount: { type: integer, description: "number of files attached (populated on register rows)" }
         createdAt: { type: string }
         updatedAt: { type: string }
       required: [id, accountId, date, amount, paymentMode, status, info, memo, isSplit, tags]
@@ -1846,6 +1900,16 @@ components:
         tags: { type: array, items: { type: string } }
         splits: { type: array, items: { $ref: "#/components/schemas/Split" } }
       required: [accountId, date, amount]
+    Attachment:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        transactionId: { type: integer, format: int64 }
+        filename: { type: string }
+        contentType: { type: string }
+        size: { type: integer, format: int64, description: "bytes" }
+        createdAt: { type: string }
+      required: [id, transactionId, filename, contentType, size, createdAt]
     Vehicle:
       type: object
       properties:

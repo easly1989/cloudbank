@@ -65,6 +65,7 @@ import {
 } from "../api/client";
 import { formatMinor, type MoneyFormat } from "../money";
 import { useAmountParser } from "../useAmountParser";
+import { AttachmentsField } from "../components/AttachmentsField";
 import { QuickAdd } from "../components/QuickAdd";
 import { useWallet } from "../wallet/WalletProvider";
 import { RegisterFilters } from "./RegisterFilters";
@@ -964,6 +965,7 @@ export function TransactionForm({
           onChange={(e) => setMemo(e.currentTarget.value)}
           onBlur={() => void runSuggest()}
         />
+        {editing && <AttachmentsField walletId={walletId} transactionId={editing.id} />}
         <Group justify="space-between">
           <Button
             variant="subtle"
