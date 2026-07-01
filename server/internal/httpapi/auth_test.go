@@ -82,6 +82,7 @@ func newTestAPI(t *testing.T) *testClient {
 	bksvc := backup.NewService(st.Write())
 	attsvc := attachment.NewService(st.Write(), filepath.Join(t.TempDir(), "attachments"))
 	tsvc.SetAttachmentPurger(attsvc.PurgeTransactions)
+	bksvc.SetAttachments(attsvc)
 	srv := httptest.NewServer(New(Options{
 		Auth: svc, Wallets: wsvc, Currencies: csvc, Accounts: asvc,
 		Categories: catsvc, Payees: psvc, Transactions: tsvc, Transfers: xsvc, Dashboard: dsvc, Templates: tplsvc, Schedules: ssvc, Assignments: asvc2, Budgets: bsvc, Reports: rsvc, Import: impsvc, CSV: csvsvc, RateProvider: stubRateProvider{},
