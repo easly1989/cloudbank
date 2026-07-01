@@ -1,29 +1,66 @@
 import { Center, Loader } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
+import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { getSetupStatus } from "./api/client";
 import { useAuth } from "./auth/AuthProvider";
 import { AppLayout } from "./components/AppLayout";
-import { AccountsPage } from "./pages/AccountsPage";
-import { CategoriesPage } from "./pages/CategoriesPage";
-import { CreateWalletPage } from "./pages/CreateWalletPage";
-import { CurrenciesPage } from "./pages/CurrenciesPage";
-import { PayeesPage } from "./pages/PayeesPage";
-import { TransactionsPage } from "./pages/TransactionsPage";
-import { DashboardPage } from "./pages/DashboardPage";
+// Setup and login are the entry screens (critical first paint), so they stay
+// eager; every other page is code-split into its own chunk (loaded on demand)
+// to keep the initial bundle small.
 import { LoginPage } from "./pages/LoginPage";
-import { AssignmentsPage } from "./pages/AssignmentsPage";
-import { BudgetPage } from "./pages/BudgetPage";
-import { ReportsPage } from "./pages/ReportsPage";
-import { SchedulesPage } from "./pages/SchedulesPage";
-import { SettingsPage } from "./pages/SettingsPage";
-import { TemplatesPage } from "./pages/TemplatesPage";
-import { TagsPage } from "./pages/TagsPage";
-import { VehiclesPage } from "./pages/VehiclesPage";
 import { SetupPage } from "./pages/SetupPage";
-import { UsersPage } from "./pages/admin/UsersPage";
 import { WalletProvider, useWallet } from "./wallet/WalletProvider";
+
+// Each page is a named export, so map it to the default shape React.lazy wants.
+// Inlining (rather than a generic helper) keeps each component's prop types.
+const DashboardPage = lazy(() =>
+  import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
+);
+const AccountsPage = lazy(() =>
+  import("./pages/AccountsPage").then((m) => ({ default: m.AccountsPage })),
+);
+const TransactionsPage = lazy(() =>
+  import("./pages/TransactionsPage").then((m) => ({ default: m.TransactionsPage })),
+);
+const CategoriesPage = lazy(() =>
+  import("./pages/CategoriesPage").then((m) => ({ default: m.CategoriesPage })),
+);
+const PayeesPage = lazy(() =>
+  import("./pages/PayeesPage").then((m) => ({ default: m.PayeesPage })),
+);
+const SchedulesPage = lazy(() =>
+  import("./pages/SchedulesPage").then((m) => ({ default: m.SchedulesPage })),
+);
+const TemplatesPage = lazy(() =>
+  import("./pages/TemplatesPage").then((m) => ({ default: m.TemplatesPage })),
+);
+const TagsPage = lazy(() => import("./pages/TagsPage").then((m) => ({ default: m.TagsPage })));
+const VehiclesPage = lazy(() =>
+  import("./pages/VehiclesPage").then((m) => ({ default: m.VehiclesPage })),
+);
+const AssignmentsPage = lazy(() =>
+  import("./pages/AssignmentsPage").then((m) => ({ default: m.AssignmentsPage })),
+);
+const BudgetPage = lazy(() =>
+  import("./pages/BudgetPage").then((m) => ({ default: m.BudgetPage })),
+);
+const ReportsPage = lazy(() =>
+  import("./pages/ReportsPage").then((m) => ({ default: m.ReportsPage })),
+);
+const SettingsPage = lazy(() =>
+  import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+);
+const CurrenciesPage = lazy(() =>
+  import("./pages/CurrenciesPage").then((m) => ({ default: m.CurrenciesPage })),
+);
+const CreateWalletPage = lazy(() =>
+  import("./pages/CreateWalletPage").then((m) => ({ default: m.CreateWalletPage })),
+);
+const UsersPage = lazy(() =>
+  import("./pages/admin/UsersPage").then((m) => ({ default: m.UsersPage })),
+);
 
 function FullScreenLoader() {
   return (
@@ -77,9 +114,17 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
 
   if (isLoading) return <FullScreenLoader />;
 
-  // No wallets yet: first-wallet wizard.
-  if (wallets.length === 0) return <CreateWalletPage firstRun />;
+  // No wallets yet: first-wallet wizard (lazy → needs its own Suspense).
+  if (wallets.length === 0) {
+    return (
+      <Suspense fallback={<FullScreenLoader />}>
+        <CreateWalletPage firstRun />
+      </Suspense>
+    );
+  }
 
+  // AppLayout wraps the routed pages in a <Suspense> around its <Outlet>, so the
+  // shell (header/nav/footer) stays put while a lazy page chunk loads.
   return (
     <Routes>
       <Route element={<AppLayout />}>
