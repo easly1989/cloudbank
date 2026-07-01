@@ -6,9 +6,11 @@ package backup
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"time"
 
+	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
@@ -32,6 +34,18 @@ type Document struct {
 	Schedules    []Schedule    `json:"schedules"`
 	Assignments  []Assignment  `json:"assignments"`
 	Budgets      []Budget      `json:"budgets"`
+	Attachments  []Attachment  `json:"attachments,omitempty"`
+}
+
+// Attachment is a backed-up transaction file: its metadata plus the file bytes
+// (base64) so a restore is fully self-contained. TransactionID references the
+// transaction by its in-document id.
+type Attachment struct {
+	TransactionID int64  `json:"transactionId"`
+	Filename      string `json:"filename"`
+	ContentType   string `json:"contentType"`
+	Size          int64  `json:"size"`
+	Content       string `json:"content"` // base64-encoded file bytes
 }
 
 // WalletMeta is the wallet's own metadata.
@@ -197,14 +211,19 @@ type Budget struct {
 
 // Service exports and restores wallets.
 type Service struct {
-	db *sql.DB
-	q  *db.Queries
+	db          *sql.DB
+	q           *db.Queries
+	attachments *attachment.Service
 }
 
 // NewService builds a backup Service backed by the write connection pool.
 func NewService(write *sql.DB) *Service {
 	return &Service{db: write, q: db.New(write)}
 }
+
+// SetAttachments wires the attachment service so exports embed attachment files
+// and restores recreate them. Optional; when unset, attachments are skipped.
+func (s *Service) SetAttachments(a *attachment.Service) { s.attachments = a }
 
 func np(n sql.NullInt64) *int64 {
 	if n.Valid {
@@ -405,6 +424,25 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 		})
 	}
 
+	// Embed attachment files (metadata + base64 bytes) so the backup is
+	// self-contained. Skipped when no attachment store is wired.
+	if s.attachments != nil {
+		atts, err := q.ListAttachmentsForWallet(ctx, walletID)
+		if err != nil {
+			return nil, err
+		}
+		for _, a := range atts {
+			data, err := s.attachments.Bytes(walletID, a.StorageKey)
+			if err != nil {
+				return nil, fmt.Errorf("read attachment %d: %w", a.ID, err)
+			}
+			doc.Attachments = append(doc.Attachments, Attachment{
+				TransactionID: a.TransactionID, Filename: a.Filename, ContentType: a.ContentType,
+				Size: a.Size, Content: base64.StdEncoding.EncodeToString(data),
+			})
+		}
+	}
+
 	return doc, nil
 }
 
@@ -595,6 +633,38 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 		}
 	}
 
+	// Recreate attachments: insert the metadata rows inside the transaction, and
+	// stage the file bytes to write to disk only after a successful commit (so a
+	// rollback never leaves orphaned files). Skipped when no store is wired.
+	type pendingFile struct {
+		key  string
+		data []byte
+	}
+	var pendingFiles []pendingFile
+	if s.attachments != nil {
+		for _, a := range doc.Attachments {
+			newTxn, ok := txnMap[a.TransactionID]
+			if !ok {
+				continue
+			}
+			data, err := base64.StdEncoding.DecodeString(a.Content)
+			if err != nil {
+				return 0, fmt.Errorf("decode attachment for txn %d: %w", a.TransactionID, err)
+			}
+			key, err := attachment.NewStorageKey()
+			if err != nil {
+				return 0, err
+			}
+			if _, err := q.InsertAttachment(ctx, db.InsertAttachmentParams{
+				WalletID: w.ID, TransactionID: newTxn, Filename: a.Filename,
+				ContentType: a.ContentType, Size: a.Size, StorageKey: key,
+			}); err != nil {
+				return 0, err
+			}
+			pendingFiles = append(pendingFiles, pendingFile{key: key, data: data})
+		}
+	}
+
 	remapAcc := func(p *int64) *int64 {
 		if p == nil {
 			return nil
@@ -660,6 +730,14 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 
 	if err := tx.Commit(); err != nil {
 		return 0, err
+	}
+	// The DB rows are committed; now write the attachment files. A failure here
+	// leaves a row without its file (download 404) rather than failing the whole
+	// restore — the ledger data is already safely persisted.
+	for _, pf := range pendingFiles {
+		if err := s.attachments.Put(w.ID, pf.key, pf.data); err != nil {
+			return 0, fmt.Errorf("write restored attachment: %w", err)
+		}
 	}
 	return w.ID, nil
 }

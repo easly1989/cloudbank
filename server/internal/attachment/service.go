@@ -200,6 +200,25 @@ func (s *Service) PurgeWallet(walletID int64) error {
 	return os.RemoveAll(s.walletDir(walletID))
 }
 
+// Bytes reads a stored file by its wallet + storage key. Used by the backup
+// exporter to embed attachment content.
+func (s *Service) Bytes(walletID int64, storageKey string) ([]byte, error) {
+	return os.ReadFile(s.path(walletID, storageKey))
+}
+
+// Put writes file bytes under a wallet's directory at the given storage key,
+// creating the directory as needed. Used by the backup restorer.
+func (s *Service) Put(walletID int64, storageKey string, data []byte) error {
+	if err := os.MkdirAll(s.walletDir(walletID), 0o750); err != nil {
+		return err
+	}
+	return os.WriteFile(s.path(walletID, storageKey), data, 0o640)
+}
+
+// NewStorageKey returns a fresh unguessable storage key. Used by the backup
+// restorer to name re-created files.
+func NewStorageKey() (string, error) { return randomKey() }
+
 // transactionInWallet verifies the transaction exists and belongs to walletID.
 func (s *Service) transactionInWallet(ctx context.Context, walletID, txnID int64) error {
 	row, err := s.q.GetTransaction(ctx, txnID)
