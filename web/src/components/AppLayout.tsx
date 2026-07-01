@@ -5,7 +5,9 @@ import {
   Box,
   Burger,
   Button,
+  Center,
   Group,
+  Loader,
   Menu,
   Text,
   UnstyledButton,
@@ -13,7 +15,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import {
   IconChevronDown,
   IconLayoutSidebarLeftCollapse,
@@ -177,7 +179,17 @@ export function AppLayout() {
         </AppShell.Navbar>
 
         <AppShell.Main>
-          <Outlet />
+          {/* Each page is a lazy chunk; show a loader in the content area (the
+              shell stays put) while it loads. */}
+          <Suspense
+            fallback={
+              <Center mih="60vh">
+                <Loader />
+              </Center>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </AppShell.Main>
 
         <AppShell.Footer>
