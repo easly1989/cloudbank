@@ -22,6 +22,10 @@ func (h *transactionHandlers) walletRoutes(r chi.Router) {
 	r.Patch("/tags/{tagId}", h.renameTag)
 	r.Post("/tags/{tagId}/merge", h.mergeTag)
 	r.Delete("/tags/{tagId}", h.deleteTag)
+	r.Get("/vehicles", h.listVehicles)
+	r.Post("/vehicles", h.createVehicle)
+	r.Patch("/vehicles/{vehicleId}", h.updateVehicle)
+	r.Delete("/vehicles/{vehicleId}", h.deleteVehicle)
 	r.Get("/transactions", h.list)
 	r.Post("/transactions", h.create)
 	r.Post("/transactions/bulk", h.bulk)
@@ -194,6 +198,89 @@ func (h *transactionHandlers) deleteTag(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
+type vehicleInput struct {
+	Name  string `json:"name"`
+	Plate string `json:"plate"`
+	Notes string `json:"notes"`
+}
+
+func writeVehicleError(w http.ResponseWriter, err error) bool {
+	switch {
+	case err == nil:
+		return true
+	case errors.Is(err, transaction.ErrVehicleNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "vehicle not found")
+	case errors.Is(err, transaction.ErrVehicleDuplicate):
+		writeError(w, http.StatusConflict, "conflict", "a vehicle with that name already exists")
+	case errors.Is(err, transaction.ErrVehicleInvalid):
+		writeError(w, http.StatusBadRequest, "invalid", "vehicle name is required")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", "could not save vehicle")
+	}
+	return false
+}
+
+func vehicleIDParam(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	id, err := strconv.ParseInt(chi.URLParam(r, "vehicleId"), 10, 64)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusNotFound, "not_found", "vehicle not found")
+		return 0, false
+	}
+	return id, true
+}
+
+func (h *transactionHandlers) listVehicles(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	out, err := h.svc.ListVehicles(r.Context(), wl.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not list vehicles")
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+func (h *transactionHandlers) createVehicle(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var in vehicleInput
+	if !decodeJSON(w, r, &in) {
+		return
+	}
+	v, err := h.svc.CreateVehicle(r.Context(), wl.ID, in.Name, in.Plate, in.Notes)
+	if !writeVehicleError(w, err) {
+		return
+	}
+	writeJSON(w, http.StatusCreated, v)
+}
+
+func (h *transactionHandlers) updateVehicle(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := vehicleIDParam(w, r)
+	if !ok {
+		return
+	}
+	var in vehicleInput
+	if !decodeJSON(w, r, &in) {
+		return
+	}
+	v, err := h.svc.UpdateVehicle(r.Context(), wl.ID, id, in.Name, in.Plate, in.Notes)
+	if !writeVehicleError(w, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, v)
+}
+
+func (h *transactionHandlers) deleteVehicle(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := vehicleIDParam(w, r)
+	if !ok {
+		return
+	}
+	if !writeVehicleError(w, h.svc.DeleteVehicle(r.Context(), wl.ID, id)) {
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // requireAccountInWallet validates the accountId query param against the wallet.
 func (h *transactionHandlers) requireAccountInWallet(w http.ResponseWriter, r *http.Request) (int64, bool) {
 	wl, _ := walletFromContext(r.Context())
@@ -264,6 +351,7 @@ type transactionInput struct {
 	Info        string              `json:"info"`
 	PayeeID     *int64              `json:"payeeId"`
 	CategoryID  *int64              `json:"categoryId"`
+	VehicleID   *int64              `json:"vehicleId"`
 	Memo        string              `json:"memo"`
 	Tags        []string            `json:"tags"`
 	Splits      []transaction.Split `json:"splits"`
@@ -273,7 +361,7 @@ func (in transactionInput) toServiceInput() transaction.Input {
 	return transaction.Input{
 		AccountID: in.AccountID, Date: in.Date, Amount: in.Amount, PaymentMode: in.PaymentMode,
 		Status: in.Status, Info: in.Info, PayeeID: in.PayeeID, CategoryID: in.CategoryID,
-		Memo: in.Memo, Tags: in.Tags, Splits: in.Splits,
+		VehicleID: in.VehicleID, Memo: in.Memo, Tags: in.Tags, Splits: in.Splits,
 	}
 }
 

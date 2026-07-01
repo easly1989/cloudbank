@@ -20,6 +20,7 @@ import { SchedulesPage } from "./pages/SchedulesPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { TemplatesPage } from "./pages/TemplatesPage";
 import { TagsPage } from "./pages/TagsPage";
+import { VehiclesPage } from "./pages/VehiclesPage";
 import { SetupPage } from "./pages/SetupPage";
 import { UsersPage } from "./pages/admin/UsersPage";
 import { WalletProvider, useWallet } from "./wallet/WalletProvider";
@@ -90,6 +91,7 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
         <Route path="schedules" element={<SchedulesPage />} />
         <Route path="templates" element={<TemplatesPage />} />
         <Route path="tags" element={<TagsPage />} />
+        <Route path="vehicles" element={<VehiclesPage />} />
         <Route path="assignments" element={<AssignmentsPage />} />
         <Route path="budget" element={<BudgetPage />} />
         <Route path="reports" element={<ReportsPage />} />

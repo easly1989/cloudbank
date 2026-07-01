@@ -38,6 +38,9 @@ var (
 	ErrTagNotFound        = errors.New("tag: not found")
 	ErrTagDuplicate       = errors.New("tag: a tag with that name already exists")
 	ErrTagInvalid         = errors.New("tag: invalid name or target")
+	ErrVehicleNotFound    = errors.New("vehicle: not found")
+	ErrVehicleDuplicate   = errors.New("vehicle: a vehicle with that name already exists")
+	ErrVehicleInvalid     = errors.New("vehicle: name is required")
 )
 
 // Split is one line of a split transaction.
@@ -58,6 +61,7 @@ type Transaction struct {
 	Info         string   `json:"info"`
 	PayeeID      *int64   `json:"payeeId,omitempty"`
 	CategoryID   *int64   `json:"categoryId,omitempty"`
+	VehicleID    *int64   `json:"vehicleId,omitempty"`
 	Memo         string   `json:"memo"`
 	IsSplit      bool     `json:"isSplit"`
 	Tags         []string `json:"tags"`
@@ -84,6 +88,7 @@ type Input struct {
 	Info        string
 	PayeeID     *int64
 	CategoryID  *int64
+	VehicleID   *int64
 	Memo        string
 	Tags        []string
 	Splits      []Split
@@ -117,6 +122,10 @@ func idPtr(n sql.NullInt64) *int64 {
 	}
 	v := n.Int64
 	return &v
+}
+
+func isUniqueViolation(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "unique")
 }
 
 func b2i(b bool) int64 {
@@ -204,7 +213,7 @@ func (s *Service) CreateInTx(ctx context.Context, qtx *db.Queries, walletID int6
 		WalletID: walletID, AccountID: in.AccountID, Date: in.Date, Amount: in.Amount,
 		PaymentMode: int64(in.PaymentMode), Status: int64(in.Status), Info: in.Info,
 		PayeeID: nullID(in.PayeeID), CategoryID: nullID(categoryID), Memo: in.Memo, IsSplit: b2i(isSplit),
-		ImportRef: in.ImportRef,
+		ImportRef: in.ImportRef, VehicleID: nullID(in.VehicleID),
 	})
 	if err != nil {
 		return 0, err
@@ -236,7 +245,7 @@ func (s *Service) Update(ctx context.Context, walletID, id int64, in Input) (Tra
 	if err := qtx.UpdateTransaction(ctx, db.UpdateTransactionParams{
 		Date: in.Date, Amount: in.Amount, PaymentMode: int64(in.PaymentMode), Status: int64(in.Status),
 		Info: in.Info, PayeeID: nullID(in.PayeeID), CategoryID: nullID(categoryID), Memo: in.Memo,
-		IsSplit: b2i(isSplit), ID: id,
+		IsSplit: b2i(isSplit), VehicleID: nullID(in.VehicleID), ID: id,
 	}); err != nil {
 		return Transaction{}, err
 	}
@@ -304,7 +313,8 @@ func (s *Service) Get(ctx context.Context, id int64) (Transaction, error) {
 	out := Transaction{
 		ID: row.ID, AccountID: row.AccountID, Date: row.Date, Amount: row.Amount,
 		PaymentMode: int(row.PaymentMode), Status: int(row.Status), Info: row.Info,
-		PayeeID: idPtr(row.PayeeID), CategoryID: idPtr(row.CategoryID), Memo: row.Memo,
+		PayeeID: idPtr(row.PayeeID), CategoryID: idPtr(row.CategoryID), VehicleID: idPtr(row.VehicleID),
+		Memo:    row.Memo,
 		IsSplit: row.IsSplit != 0, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
 		Tags: []string{},
 	}
@@ -719,4 +729,88 @@ func (s *Service) DeleteTag(ctx context.Context, walletID, tagID int64) error {
 		return err
 	}
 	return s.q.DeleteTag(ctx, tagID)
+}
+
+// Vehicle is a managed vehicle for the car-cost report.
+type Vehicle struct {
+	ID    int64  `json:"id"`
+	Name  string `json:"name"`
+	Plate string `json:"plate"`
+	Notes string `json:"notes"`
+}
+
+func toVehicle(v db.Vehicle) Vehicle {
+	return Vehicle{ID: v.ID, Name: v.Name, Plate: v.Plate, Notes: v.Notes}
+}
+
+// ListVehicles returns the wallet's vehicles by name.
+func (s *Service) ListVehicles(ctx context.Context, walletID int64) ([]Vehicle, error) {
+	rows, err := s.q.ListVehiclesForWallet(ctx, walletID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Vehicle, 0, len(rows))
+	for _, v := range rows {
+		out = append(out, toVehicle(v))
+	}
+	return out, nil
+}
+
+func (s *Service) vehicleInWallet(ctx context.Context, walletID, id int64) (db.Vehicle, error) {
+	v, err := s.q.GetVehicle(ctx, id)
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && v.WalletID != walletID) {
+		return db.Vehicle{}, ErrVehicleNotFound
+	}
+	return v, err
+}
+
+// CreateVehicle adds a vehicle.
+func (s *Service) CreateVehicle(ctx context.Context, walletID int64, name, plate, notes string) (Vehicle, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return Vehicle{}, ErrVehicleInvalid
+	}
+	v, err := s.q.InsertVehicle(ctx, db.InsertVehicleParams{WalletID: walletID, Name: name, Plate: plate, Notes: notes})
+	if err != nil {
+		if isUniqueViolation(err) {
+			return Vehicle{}, ErrVehicleDuplicate
+		}
+		return Vehicle{}, err
+	}
+	return toVehicle(v), nil
+}
+
+// UpdateVehicle renames/edits a vehicle.
+func (s *Service) UpdateVehicle(ctx context.Context, walletID, id int64, name, plate, notes string) (Vehicle, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return Vehicle{}, ErrVehicleInvalid
+	}
+	if _, err := s.vehicleInWallet(ctx, walletID, id); err != nil {
+		return Vehicle{}, err
+	}
+	if err := s.q.UpdateVehicle(ctx, db.UpdateVehicleParams{Name: name, Plate: plate, Notes: notes, ID: id}); err != nil {
+		if isUniqueViolation(err) {
+			return Vehicle{}, ErrVehicleDuplicate
+		}
+		return Vehicle{}, err
+	}
+	return s.vehicleGet(ctx, id)
+}
+
+func (s *Service) vehicleGet(ctx context.Context, id int64) (Vehicle, error) {
+	v, err := s.q.GetVehicle(ctx, id)
+	if err != nil {
+		return Vehicle{}, err
+	}
+	return toVehicle(v), nil
+}
+
+// DeleteVehicle removes a vehicle; its transactions keep their data but are
+// unlinked (vehicle_id → NULL via ON DELETE SET NULL).
+func (s *Service) DeleteVehicle(ctx context.Context, walletID, id int64) error {
+	if _, err := s.vehicleInWallet(ctx, walletID, id); err != nil {
+		return err
+	}
+	return s.q.DeleteVehicle(ctx, id)
 }

@@ -181,6 +181,7 @@ type Transaction struct {
 	UpdatedAt   string
 	TemplateID  sql.NullInt64
 	ImportRef   string
+	VehicleID   sql.NullInt64
 }
 
 type TransactionTag struct {
@@ -205,6 +206,14 @@ type User struct {
 	Disabled     int64
 	CreatedAt    string
 	Preferences  string
+}
+
+type Vehicle struct {
+	ID       int64
+	WalletID int64
+	Name     string
+	Plate    string
+	Notes    string
 }
 
 type Wallet struct {

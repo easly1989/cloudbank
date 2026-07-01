@@ -1311,6 +1311,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/vehicles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List the wallet's vehicles */
+        get: operations["listVehicles"];
+        put?: never;
+        /** Create a vehicle */
+        post: operations["createVehicle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/vehicles/{vehicleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                vehicleId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a vehicle (its transactions are unlinked) */
+        delete: operations["deleteVehicle"];
+        options?: never;
+        head?: never;
+        /** Update a vehicle */
+        patch: operations["updateVehicle"];
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/reports/vehicle": {
         parameters: {
             query?: never;
@@ -1320,7 +1361,7 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Fuel-consumption report for a vehicle category (memo d=/v=/p=) */
+        /** Fuel-consumption report for a vehicle (memo d=/v=/p=) */
         get: operations["getVehicleReport"];
         put?: never;
         post?: never;
@@ -1745,6 +1786,8 @@ export interface components {
             payeeId?: number | null;
             /** Format: int64 */
             categoryId?: number | null;
+            /** Format: int64 */
+            vehicleId?: number | null;
             memo: string;
             isSplit: boolean;
             tags: string[];
@@ -1783,9 +1826,23 @@ export interface components {
             payeeId?: number | null;
             /** Format: int64 */
             categoryId?: number | null;
+            /** Format: int64 */
+            vehicleId?: number | null;
             memo?: string;
             tags?: string[];
             splits?: components["schemas"]["Split"][];
+        };
+        Vehicle: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            plate: string;
+            notes: string;
+        };
+        VehicleInput: {
+            name: string;
+            plate?: string;
+            notes?: string;
         };
         RegisterRow: components["schemas"]["Transaction"] & {
             /**
@@ -4924,10 +4981,124 @@ export interface operations {
             400: components["responses"]["BadRequest"];
         };
     };
+    listVehicles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Vehicles. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vehicle"][];
+                };
+            };
+        };
+    };
+    createVehicle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleInput"];
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vehicle"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            /** @description A vehicle with that name already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteVehicle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                vehicleId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateVehicle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                vehicleId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleInput"];
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vehicle"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description A vehicle with that name already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getVehicleReport: {
         parameters: {
             query: {
-                categoryId: number;
+                vehicleId: number;
                 from?: string;
                 to?: string;
             };

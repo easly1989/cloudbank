@@ -34,8 +34,8 @@ func approx(a, b float64) bool { return math.Abs(a-b) < 1e-6 }
 func TestVehicleConsumptionBetweenFullFills(t *testing.T) {
 	f := newFixture(t)
 	ctx := context.Background()
-	carCat, _ := f.q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: f.wid, Name: "Car"})
-	car := carCat.ID
+	veh, _ := f.q.InsertVehicle(ctx, db.InsertVehicleParams{WalletID: f.wid, Name: "Car"})
+	car := veh.ID
 
 	// A full fill, a full fill (segment 1), a partial fill, then a full fill
 	// (segment 2 spans the partial). Costs in EUR.
@@ -49,7 +49,7 @@ func TestVehicleConsumptionBetweenFullFills(t *testing.T) {
 		{"2026-01-25", "d=11000 v=45 p=1.50", -6750}, // 500 km (since last full), 45 L → 9.0
 	}
 	for _, s := range seq {
-		_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: s.date, Amount: s.amount, CategoryID: &car, Memo: s.memo})
+		_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: s.date, Amount: s.amount, VehicleID: &car, Memo: s.memo})
 	}
 
 	rep, err := f.s.Vehicle(ctx, f.wid, car, "2026-01-01", "2026-12-31")
