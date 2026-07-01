@@ -57,7 +57,7 @@ func TestSuggestRespectsApplyOnManual(t *testing.T) {
 		MatchField: FieldMemo, MatchType: TypeContains, Pattern: "coffee",
 		SetCategoryID: &food, ApplyOnManual: true,
 	})
-	res, ok, err := f.s.Suggest(ctx, f.wid, "morning coffee", "")
+	res, ok, err := f.s.Suggest(ctx, f.wid, "morning coffee", "", 0)
 	if err != nil || !ok || res.CategoryID == nil || *res.CategoryID != food {
 		t.Fatalf("suggest = %+v ok=%v err=%v", res, ok, err)
 	}
@@ -68,7 +68,7 @@ func TestSuggestRespectsApplyOnManual(t *testing.T) {
 		MatchField: FieldMemo, MatchType: TypeContains, Pattern: "fuel",
 		SetCategoryID: &car, ApplyOnManual: false,
 	})
-	if _, ok, _ := f.s.Suggest(ctx, f.wid, "fuel station", ""); ok {
+	if _, ok, _ := f.s.Suggest(ctx, f.wid, "fuel station", "", 0); ok {
 		t.Fatalf("manual-disabled rule should not be suggested")
 	}
 }
@@ -126,13 +126,13 @@ func TestReorderChangesFirstMatch(t *testing.T) {
 	r1, _ := f.s.Create(ctx, f.wid, Input{MatchField: FieldMemo, MatchType: TypeContains, Pattern: "x", SetCategoryID: &a, ApplyOnManual: true})
 	r2, _ := f.s.Create(ctx, f.wid, Input{MatchField: FieldMemo, MatchType: TypeContains, Pattern: "x", SetCategoryID: &b, ApplyOnManual: true})
 
-	if res, _, _ := f.s.Suggest(ctx, f.wid, "xx", ""); res.CategoryID == nil || *res.CategoryID != a {
+	if res, _, _ := f.s.Suggest(ctx, f.wid, "xx", "", 0); res.CategoryID == nil || *res.CategoryID != a {
 		t.Fatalf("before reorder should match A")
 	}
 	if err := f.s.Reorder(ctx, f.wid, []int64{r2.ID, r1.ID}); err != nil {
 		t.Fatalf("Reorder: %v", err)
 	}
-	if res, _, _ := f.s.Suggest(ctx, f.wid, "xx", ""); res.CategoryID == nil || *res.CategoryID != b {
+	if res, _, _ := f.s.Suggest(ctx, f.wid, "xx", "", 0); res.CategoryID == nil || *res.CategoryID != b {
 		t.Fatalf("after reorder should match B")
 	}
 }

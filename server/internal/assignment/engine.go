@@ -40,9 +40,11 @@ type Rule struct {
 	Type           string
 	Pattern        string
 	CaseSensitive  bool
+	MatchAccountID *int64 // nil = any account; else only transactions in that account
 	SetPayeeID     *int64
 	SetCategoryID  *int64
 	SetPaymentMode *int
+	SetInfo        *string // nil = don't set the info / "number" field
 
 	re *regexp.Regexp // compiled when Type == regex
 }
@@ -78,9 +80,13 @@ func (r *Rule) Compile() error {
 	}
 }
 
-// Matches reports whether the rule matches the given memo/payee text. The rule
-// must have been Compiled first.
-func (r *Rule) Matches(memo, payee string) bool {
+// Matches reports whether the rule matches the given memo/payee text and (when
+// the rule has an account condition) the transaction's account. The rule must
+// have been Compiled first.
+func (r *Rule) Matches(memo, payee string, accountID int64) bool {
+	if r.MatchAccountID != nil && *r.MatchAccountID != accountID {
+		return false
+	}
 	switch r.Field {
 	case FieldMemo:
 		return r.matchText(memo)
@@ -114,16 +120,19 @@ type Result struct {
 	PayeeID     *int64
 	CategoryID  *int64
 	PaymentMode *int
+	Info        *string
 }
 
 // FirstMatch returns the assignments of the first rule (in slice order) that
-// matches the memo/payee, and whether any rule matched. Rules must be Compiled.
-func FirstMatch(rules []Rule, memo, payee string) (Result, bool) {
+// matches the memo/payee and account, and whether any rule matched. Rules must
+// be Compiled.
+func FirstMatch(rules []Rule, memo, payee string, accountID int64) (Result, bool) {
 	for i := range rules {
-		if rules[i].Matches(memo, payee) {
+		if rules[i].Matches(memo, payee, accountID) {
 			return Result{
 				RuleID: rules[i].ID, PayeeID: rules[i].SetPayeeID,
 				CategoryID: rules[i].SetCategoryID, PaymentMode: rules[i].SetPaymentMode,
+				Info: rules[i].SetInfo,
 			}, true
 		}
 	}

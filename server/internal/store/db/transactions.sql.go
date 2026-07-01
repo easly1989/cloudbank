@@ -388,6 +388,22 @@ func (q *Queries) SetTransactionCategory(ctx context.Context, arg SetTransaction
 	return err
 }
 
+const setTransactionInfo = `-- name: SetTransactionInfo :exec
+UPDATE transactions SET
+    info = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE id = ?
+`
+
+type SetTransactionInfoParams struct {
+	Info string
+	ID   int64
+}
+
+func (q *Queries) SetTransactionInfo(ctx context.Context, arg SetTransactionInfoParams) error {
+	_, err := q.db.ExecContext(ctx, setTransactionInfo, arg.Info, arg.ID)
+	return err
+}
+
 const setTransactionPayee = `-- name: SetTransactionPayee :exec
 UPDATE transactions SET
     payee_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')

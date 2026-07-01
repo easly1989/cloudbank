@@ -74,6 +74,11 @@ UPDATE transactions SET
     payment_mode = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 WHERE id = ?;
 
+-- name: SetTransactionInfo :exec
+UPDATE transactions SET
+    info = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE id = ?;
+
 -- name: SetTransactionTemplate :exec
 UPDATE transactions SET template_id = ? WHERE id = ?;
 
