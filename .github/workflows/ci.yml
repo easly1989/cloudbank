@@ -22,6 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
+        id: setup-go
         with:
           go-version-file: server/go.mod
           cache-dependency-path: server/go.sum
@@ -35,13 +36,25 @@ jobs:
         run: diff -u ../api/openapi.yaml internal/httpapi/openapi.yaml
       - name: Vet
         run: go vet ./...
+      - name: Cache golangci-lint binary
+        uses: actions/cache@v4
+        with:
+          # Cache the from-source build below. The key pins both the linter
+          # version and the Go toolchain it was built with, so bumping either
+          # rebuilds it.
+          path: ~/go/bin/golangci-lint
+          key: golangci-lint-${{ runner.os }}-v2.1.6-go${{ steps.setup-go.outputs.go-version }}
       - name: golangci-lint
         # Build golangci-lint from source with the project's Go toolchain so its
         # build-time Go version always matches the module's target (prebuilt
         # binaries lag behind new Go releases and refuse newer module targets).
+        # The binary is cached above, so this only rebuilds when the key changes.
         run: |
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
-          "$(go env GOPATH)/bin/golangci-lint" run ./...
+          bin="$(go env GOPATH)/bin/golangci-lint"
+          if [ ! -x "$bin" ]; then
+            go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
+          fi
+          "$bin" run ./...
       - name: Test
         run: go test ./... -race -count=1
       - name: Build
@@ -127,9 +140,25 @@ jobs:
       - name: Install e2e dependencies
         working-directory: e2e
         run: npm ci
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          # Keyed on the e2e lockfile so a @playwright/test bump re-downloads the
+          # matching browser; unchanged deps reuse the cached Chromium.
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/package-lock.json') }}
       - name: Install Playwright browser
         working-directory: e2e
-        run: npx playwright install --with-deps chromium
+        # On a cache hit only the OS libraries need (re)installing (they are
+        # system packages, not part of the cached browser); otherwise download
+        # the browser too.
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install-deps chromium
+          else
+            npx playwright install --with-deps chromium
+          fi
       - name: Run the e2e suite
         working-directory: e2e
         run: npm test
