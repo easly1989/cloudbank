@@ -1,27 +1,9 @@
 import {
-  DndContext,
-  type DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  rectSortingStrategy,
-  sortableKeyboardCoordinates,
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import {
   ActionIcon,
   Badge,
   Box,
   Button,
   Card,
-  Grid,
   Group,
   Menu,
   SegmentedControl,
@@ -38,7 +20,6 @@ import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
   IconAdjustmentsHorizontal,
-  IconEye,
   IconEyeOff,
   IconGripVertical,
   IconPencil,
@@ -48,7 +29,7 @@ import {
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { EChartsOption } from "echarts";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -73,38 +54,20 @@ import { useAuth } from "../auth/AuthProvider";
 import { BudgetGauge } from "../components/BudgetGauge";
 import { Chart } from "../components/Chart";
 import { Donut } from "../components/Donut";
+import { GridDashboard } from "../components/dashboard/GridDashboard";
+import {
+  type DashboardLayoutV2,
+  type PlacedWidget,
+  WIDGET_SIZES,
+  type WidgetType,
+  migrateLayout,
+  unplacedTypes,
+} from "../components/dashboard/layout";
 import { useDateFormat } from "../dates";
 import { formatMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
 import { TransactionForm } from "../components/TransactionForm";
 import { type DatePreset, dateBounds, emptyFilters } from "./registerFilters";
-
-const WIDGET_IDS = [
-  "totals",
-  "quickAdd",
-  "incomeExpense",
-  "accounts",
-  "spending",
-  "budget",
-  "upcoming",
-] as const;
-type WidgetId = (typeof WIDGET_IDS)[number];
-type WidgetSize = "full" | "half" | "third";
-
-// resolveLayout returns the widget ids in the user's saved order, appending any
-// not listed (e.g. widgets added in a later release) in their default order.
-function resolveLayout(saved?: string[]): WidgetId[] {
-  const valid = new Set<string>(WIDGET_IDS);
-  const out: WidgetId[] = [];
-  const seen = new Set<string>();
-  for (const id of saved ?? [])
-    if (valid.has(id) && !seen.has(id)) {
-      out.push(id as WidgetId);
-      seen.add(id);
-    }
-  for (const id of WIDGET_IDS) if (!seen.has(id)) out.push(id);
-  return out;
-}
 
 // A fixed, color-blind-friendly palette cycled across spending slices.
 const DONUT_PALETTE = [
@@ -179,21 +142,27 @@ export function DashboardPage() {
   const qc = useQueryClient();
   const walletId = currentWallet?.id ?? 0;
 
-  // Per-user dashboard layout: widget order, hidden ids, and per-widget width.
-  const savedLayout = user?.preferences?.dashboardLayout;
-  const [order, setOrder] = useState<WidgetId[]>(() => resolveLayout(savedLayout?.order));
-  const [hidden, setHidden] = useState<string[]>(() => savedLayout?.hidden ?? []);
-  const [spans, setSpans] = useState<Record<string, string>>(() => savedLayout?.spans ?? {});
+  // Per-user dashboard layout: a free-form 2D grid of placed widgets. The legacy
+  // { order, hidden, spans } model is migrated on load (see layout.ts).
+  const [layout, setLayout] = useState<DashboardLayoutV2>(() =>
+    migrateLayout(user?.preferences?.dashboardLayout),
+  );
+  const layoutRef = useRef(layout);
+  layoutRef.current = layout;
   const [editingLayout, setEditingLayout] = useState(false);
   const persistLayout = useMutation({
-    mutationFn: (next: { order: string[]; hidden: string[]; spans: Record<string, string> }) =>
+    mutationFn: (next: DashboardLayoutV2) =>
       updateMe({ preferences: { ...(user?.preferences ?? {}), dashboardLayout: next } }),
     onSuccess: (u: User) => qc.setQueryData(["me"], u),
   });
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
+  // Debounce persistence so a drag/resize burst is a single network write.
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const commitLayout = (next: DashboardLayoutV2) => {
+    setLayout(next);
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => persistLayout.mutate(next), 500);
+  };
+  useEffect(() => () => clearTimeout(saveTimer.current), []);
 
   // The spending widget's period and chart options, remembered across reloads.
   const [view, setView] = useState<DashView>(loadView);
@@ -230,7 +199,7 @@ export function DashboardPage() {
   // Widget elements are memoized so drag/layout-edit re-renders (which only
   // touch order/hidden/spans) don't rebuild every widget — notably the ECharts
   // cards — from scratch on each interaction.
-  const widgets = useMemo<Record<WidgetId, ReactNode>>(
+  const widgets = useMemo<Record<WidgetType, ReactNode>>(
     () => ({
       totals:
         base && data ? (
@@ -266,38 +235,35 @@ export function DashboardPage() {
 
   if (!currentWallet) return null;
 
-  const hiddenSet = new Set(hidden);
-  const visible = order.filter((id) => !hiddenSet.has(id));
-  const hiddenIds = order.filter((id) => hiddenSet.has(id));
-
-  const onDragEnd = (e: DragEndEvent) => {
-    const { active, over } = e;
-    if (!over || active.id === over.id) return;
-    const oldI = order.indexOf(active.id as WidgetId);
-    const newI = order.indexOf(over.id as WidgetId);
-    if (oldI < 0 || newI < 0) return;
-    const next = arrayMove(order, oldI, newI);
-    setOrder(next);
-    persistLayout.mutate({ order: next, hidden, spans });
-  };
-  const setVisibility = (id: WidgetId, hide: boolean) => {
-    const next = hide ? [...hidden, id] : hidden.filter((x) => x !== id);
-    setHidden(next);
-    persistLayout.mutate({ order, hidden: next, spans });
-  };
-  const setSpan = (id: WidgetId, size: WidgetSize) => {
-    const next = { ...spans, [id]: size };
-    setSpans(next);
-    persistLayout.mutate({ order, hidden, spans: next });
-  };
-  // Per-widget width → Mantine 12-column span (full screen-wide on small screens).
-  const sizeOf = (id: WidgetId): WidgetSize => (spans[id] as WidgetSize) ?? "full";
-  const spanCols = (id: WidgetId): number => {
-    const s = sizeOf(id);
-    return s === "half" ? 6 : s === "third" ? 4 : 12;
+  // Merge gridstack's new positions back into the placed widgets.
+  const applyGridChange = (
+    positions: { id: string; x: number; y: number; w: number; h: number }[],
+  ) => {
+    const byId = new Map(positions.map((p) => [p.id, p]));
+    commitLayout({
+      version: 2,
+      widgets: layoutRef.current.widgets.map((wgt) => {
+        const p = byId.get(wgt.id);
+        return p ? { ...wgt, x: p.x, y: p.y, w: p.w, h: p.h } : wgt;
+      }),
+    });
   };
 
-  const labels: Record<WidgetId, string> = {
+  const addWidget = (type: WidgetType) => {
+    const size = WIDGET_SIZES[type];
+    // Place the new widget on a fresh row below everything else.
+    const bottom = layoutRef.current.widgets.reduce((m, wgt) => Math.max(m, wgt.y + wgt.h), 0);
+    const placed: PlacedWidget = { id: type, type, x: 0, y: bottom, w: size.w, h: size.h };
+    commitLayout({ version: 2, widgets: [...layoutRef.current.widgets, placed] });
+  };
+
+  const removeWidget = (id: string) => {
+    commitLayout({ version: 2, widgets: layoutRef.current.widgets.filter((wgt) => wgt.id !== id) });
+  };
+
+  const unplaced = unplacedTypes(layout.widgets);
+
+  const labels: Record<WidgetType, string> = {
     totals: t("dashboard.widgets.totals"),
     quickAdd: t("dashboard.quickAdd"),
     incomeExpense: t("dashboard.incomeExpense"),
@@ -311,150 +277,109 @@ export function DashboardPage() {
     <Stack>
       <Group justify="space-between">
         <Title order={2}>{t("dashboard.title")}</Title>
-        <Button
-          variant={editingLayout ? "light" : "subtle"}
-          color="gray"
-          size="xs"
-          leftSection={<IconAdjustmentsHorizontal size={16} />}
-          onClick={() => setEditingLayout((v) => !v)}
-          data-tour="customize"
-        >
-          {editingLayout ? t("dashboard.layoutDone") : t("dashboard.customize")}
-        </Button>
+        <Group gap="xs">
+          {editingLayout && unplaced.length > 0 && (
+            <Menu position="bottom-end" withinPortal>
+              <Menu.Target>
+                <Button variant="default" size="xs" leftSection={<IconPlus size={16} />}>
+                  {t("dashboard.addWidget")}
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                {unplaced.map((type) => (
+                  <Menu.Item key={type} onClick={() => addWidget(type)}>
+                    {labels[type]}
+                  </Menu.Item>
+                ))}
+              </Menu.Dropdown>
+            </Menu>
+          )}
+          <Button
+            variant={editingLayout ? "light" : "subtle"}
+            color="gray"
+            size="xs"
+            leftSection={<IconAdjustmentsHorizontal size={16} />}
+            onClick={() => setEditingLayout((v) => !v)}
+            data-tour="customize"
+          >
+            {editingLayout ? t("dashboard.layoutDone") : t("dashboard.customize")}
+          </Button>
+        </Group>
       </Group>
 
-      {editingLayout ? (
-        <>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-            <SortableContext items={visible} strategy={rectSortingStrategy}>
-              <Grid gap="md">
-                {visible.map((id) => (
-                  <SortableWidget
-                    key={id}
-                    id={id}
-                    label={labels[id]}
-                    cols={spanCols(id)}
-                    size={sizeOf(id)}
-                    onHide={() => setVisibility(id, true)}
-                    onSize={(s) => setSpan(id, s)}
-                  >
-                    {widgets[id]}
-                  </SortableWidget>
-                ))}
-              </Grid>
-            </SortableContext>
-          </DndContext>
-          {hiddenIds.length > 0 && (
-            <Card withBorder>
-              <Text size="sm" fw={600} c="dimmed" mb="xs">
-                {t("dashboard.hiddenWidgets")}
-              </Text>
-              <Group gap="xs">
-                {hiddenIds.map((id) => (
-                  <Button
-                    key={id}
-                    variant="default"
-                    size="xs"
-                    leftSection={<IconEye size={14} />}
-                    onClick={() => setVisibility(id as WidgetId, false)}
-                  >
-                    {labels[id as WidgetId]}
-                  </Button>
-                ))}
-              </Group>
-            </Card>
-          )}
-        </>
-      ) : (
-        <Grid gap="md">
-          {visible.map((id) => (
-            <Grid.Col key={id} span={{ base: 12, sm: spanCols(id) }}>
-              {widgets[id]}
-            </Grid.Col>
-          ))}
-        </Grid>
+      {editingLayout && (
+        <Text size="xs" c="dimmed">
+          {t("dashboard.editHint")}
+        </Text>
       )}
+
+      <GridDashboard
+        items={layout.widgets}
+        editing={editingLayout}
+        onChange={applyGridChange}
+        sizes={WIDGET_SIZES}
+        render={(item) => (
+          <WidgetFrame
+            editing={editingLayout}
+            label={labels[item.type]}
+            onRemove={() => removeWidget(item.id)}
+          >
+            {widgets[item.type]}
+          </WidgetFrame>
+        )}
+      />
     </Stack>
   );
 }
 
-// SortableWidget wraps a dashboard widget in edit mode within a grid column: a
-// drag handle reorders it, a size control sets its width, and a hide button
-// removes it. The content is non-interactive while editing.
-function SortableWidget({
-  id,
+// WidgetFrame fills its grid cell. In edit mode it shows a header bar (drag
+// affordance + remove button); the remove button stops pointer events from
+// starting a gridstack drag.
+function WidgetFrame({
+  editing,
   label,
-  cols,
-  size,
-  onHide,
-  onSize,
+  onRemove,
   children,
 }: {
-  id: string;
+  editing: boolean;
   label: string;
-  cols: number;
-  size: WidgetSize;
-  onHide: () => void;
-  onSize: (s: WidgetSize) => void;
+  onRemove: () => void;
   children: ReactNode;
 }) {
-  const { t } = useTranslation();
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id,
-  });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.6 : 1,
-    zIndex: isDragging ? 2 : undefined,
-  };
   return (
-    <Grid.Col span={{ base: 12, sm: cols }} ref={setNodeRef} style={style}>
-      <Group
-        justify="space-between"
-        wrap="nowrap"
-        mb={4}
-        px="xs"
-        py={4}
-        bg="var(--mantine-color-default-hover)"
-        style={{ borderRadius: "var(--mantine-radius-sm)" }}
-      >
-        <Group gap="xs" wrap="nowrap">
-          <Box
-            {...attributes}
-            {...listeners}
-            style={{ cursor: "grab", display: "flex" }}
-            aria-label={t("nav.drag")}
-          >
-            <IconGripVertical size={16} opacity={0.6} />
-          </Box>
-          <Text size="sm" fw={600}>
-            {label}
-          </Text>
-        </Group>
-        <Group gap="xs" wrap="nowrap">
-          <SegmentedControl
-            size="xs"
-            value={size}
-            onChange={(v) => onSize(v as WidgetSize)}
-            data={[
-              { value: "full", label: "1/1" },
-              { value: "half", label: "1/2" },
-              { value: "third", label: "1/3" },
-            ]}
-          />
+    <Box style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+      {editing && (
+        <Group
+          justify="space-between"
+          wrap="nowrap"
+          px="xs"
+          py={4}
+          bg="var(--mantine-color-default-hover)"
+          style={{
+            borderTopLeftRadius: "var(--mantine-radius-md)",
+            borderTopRightRadius: "var(--mantine-radius-md)",
+          }}
+        >
+          <Group gap={4} wrap="nowrap">
+            <IconGripVertical size={14} opacity={0.6} />
+            <Text size="xs" fw={600} c="dimmed" lineClamp={1}>
+              {label}
+            </Text>
+          </Group>
           <ActionIcon
+            size="sm"
             variant="subtle"
-            color="gray"
-            aria-label={t("dashboard.hideWidget")}
-            onClick={onHide}
+            color="red"
+            aria-label={label}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={onRemove}
           >
-            <IconEyeOff size={16} />
+            <IconEyeOff size={14} />
           </ActionIcon>
         </Group>
-      </Group>
-      <Box style={{ pointerEvents: "none" }}>{children}</Box>
-    </Grid.Col>
+      )}
+      <Box style={{ flex: 1, minHeight: 0 }}>{children}</Box>
+    </Box>
   );
 }
 

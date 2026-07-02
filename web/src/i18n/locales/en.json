@@ -609,6 +609,8 @@
     "quickAdd": "Quick add",
     "customize": "Customize",
     "layoutDone": "Done",
+    "addWidget": "Add widget",
+    "editHint": "Drag to move, drag an edge or corner to resize. Changes save automatically.",
     "hiddenWidgets": "Hidden widgets",
     "hideWidget": "Hide widget",
     "widgets": {
