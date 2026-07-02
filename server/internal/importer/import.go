@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/easly1989/cloudbank/server/internal/dbconv"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
@@ -62,13 +63,6 @@ func accountType(code int) string {
 	}
 }
 
-func b2i(b bool) int64 {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 func clamp(v, lo, hi int) int64 {
 	if v < lo {
 		v = lo
@@ -113,7 +107,7 @@ func (s *Service) ImportXHB(ctx context.Context, userID int64, x *XHB) (Result, 
 		row, err := q.InsertCurrency(ctx, db.InsertCurrencyParams{
 			WalletID: w.ID, IsoCode: c.ISO, Name: orDefault(c.Name, c.ISO), Symbol: c.Symb,
 			SymbolPrefix: int64(c.Syprf), DecimalChar: orDefault(c.Dchar, "."), GroupChar: orDefault(c.Gchar, ","),
-			FracDigits: clamp(c.Frac, 0, 6), IsBase: b2i(c.Key == x.Properties.Curr), Rate: c.Rate,
+			FracDigits: clamp(c.Frac, 0, 6), IsBase: dbconv.B2i(c.Key == x.Properties.Curr), Rate: c.Rate,
 		})
 		if err != nil {
 			return res, err
@@ -141,8 +135,8 @@ func (s *Service) ImportXHB(ctx context.Context, userID int64, x *XHB) (Result, 
 			WalletID: w.ID, Name: a.Name, Type: accountType(a.Type), CurrencyID: cid,
 			Institution: a.Bankname, Number: a.Number, Notes: a.Notes,
 			InitialBalance: parseAmount(a.Initial, frac), MinimumBalance: parseAmount(a.Minimum, frac),
-			Closed: b2i(a.Flags&accClosed != 0), NoSummary: b2i(a.Flags&accNoSum != 0),
-			NoBudget: b2i(a.Flags&accNoBudg != 0), NoReport: b2i(a.Flags&accNoRep != 0),
+			Closed: dbconv.B2i(a.Flags&accClosed != 0), NoSummary: dbconv.B2i(a.Flags&accNoSum != 0),
+			NoBudget: dbconv.B2i(a.Flags&accNoBudg != 0), NoReport: dbconv.B2i(a.Flags&accNoRep != 0),
 			Position: int64(a.Pos),
 		})
 		if err != nil {
@@ -174,7 +168,7 @@ func (s *Service) ImportXHB(ctx context.Context, userID int64, x *XHB) (Result, 
 			}
 		}
 		row, err := q.InsertCategory(ctx, db.InsertCategoryParams{
-			WalletID: w.ID, ParentID: parent, Name: c.Name, IsIncome: b2i(c.Flags&catIncome != 0),
+			WalletID: w.ID, ParentID: parent, Name: c.Name, IsIncome: dbconv.B2i(c.Flags&catIncome != 0),
 		})
 		if err != nil {
 			return err
@@ -267,7 +261,7 @@ func (s *Service) ImportXHB(ctx context.Context, userID int64, x *XHB) (Result, 
 		row, err := q.InsertTransaction(ctx, db.InsertTransactionParams{
 			WalletID: w.ID, AccountID: aid, Date: julianToDate(o.Date), Amount: amount,
 			PaymentMode: clamp(o.Paymode, 0, 11), Status: clamp(o.St, 0, 4), Info: o.Info,
-			PayeeID: payee, CategoryID: category, Memo: o.Wording, IsSplit: b2i(isSplit),
+			PayeeID: payee, CategoryID: category, Memo: o.Wording, IsSplit: dbconv.B2i(isSplit),
 		})
 		if err != nil {
 			return res, err
@@ -415,7 +409,7 @@ func (s *Service) importTemplates(ctx context.Context, q *db.Queries, walletID i
 			if _, err := q.InsertSchedule(ctx, db.InsertScheduleParams{
 				WalletID: walletID, TemplateID: tpl.ID, Unit: scheduleUnit(fav.Unit), EveryN: int64(fav.Every),
 				NextDue: julianToDate(fav.Nextdate), WeekendMode: clamp(fav.Weekend, 0, 3),
-				Remaining: remaining, PostAdvance: 0, AutoPost: b2i(fav.Flags&favAuto != 0),
+				Remaining: remaining, PostAdvance: 0, AutoPost: dbconv.B2i(fav.Flags&favAuto != 0),
 			}); err != nil {
 				return err
 			}

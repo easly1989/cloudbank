@@ -172,23 +172,12 @@ func (h *scheduleHandlers) scheduleFromPath(w http.ResponseWriter, r *http.Reque
 }
 
 func writeScheduleError(w http.ResponseWriter, err error) bool {
-	switch {
-	case err == nil:
-		return true
-	case errors.Is(err, schedule.ErrNotFound):
-		writeError(w, http.StatusNotFound, "not_found", "schedule not found")
-	case errors.Is(err, schedule.ErrInvalidUnit):
-		writeError(w, http.StatusBadRequest, "invalid_unit", "invalid unit (day, week, month or year)")
-	case errors.Is(err, schedule.ErrInvalidEveryN):
-		writeError(w, http.StatusBadRequest, "invalid_every_n", "every_n must be at least 1")
-	case errors.Is(err, schedule.ErrInvalidDate):
-		writeError(w, http.StatusBadRequest, "invalid_date", "invalid next-due date (want YYYY-MM-DD)")
-	case errors.Is(err, schedule.ErrTemplate):
-		writeError(w, http.StatusBadRequest, "invalid_template", "template not found in this wallet")
-	case errors.Is(err, schedule.ErrTemplateNoAcct):
-		writeError(w, http.StatusBadRequest, "template_no_account", "template must target an account")
-	default:
-		writeError(w, http.StatusInternalServerError, "internal", "could not save schedule")
-	}
-	return false
+	return mapError(w, err, "could not save schedule",
+		errCase{schedule.ErrNotFound, http.StatusNotFound, "not_found", "schedule not found"},
+		errCase{schedule.ErrInvalidUnit, http.StatusBadRequest, "invalid_unit", "invalid unit (day, week, month or year)"},
+		errCase{schedule.ErrInvalidEveryN, http.StatusBadRequest, "invalid_every_n", "every_n must be at least 1"},
+		errCase{schedule.ErrInvalidDate, http.StatusBadRequest, "invalid_date", "invalid next-due date (want YYYY-MM-DD)"},
+		errCase{schedule.ErrTemplate, http.StatusBadRequest, "invalid_template", "template not found in this wallet"},
+		errCase{schedule.ErrTemplateNoAcct, http.StatusBadRequest, "template_no_account", "template must target an account"},
+	)
 }

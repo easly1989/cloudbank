@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -117,17 +116,9 @@ func attachmentIDParam(w http.ResponseWriter, r *http.Request) (int64, bool) {
 // writeAttachmentError maps service errors to HTTP responses. Returns false when
 // it has written an error (the caller should stop).
 func writeAttachmentError(w http.ResponseWriter, err error) bool {
-	switch {
-	case err == nil:
-		return true
-	case errors.Is(err, attachment.ErrNotFound):
-		writeError(w, http.StatusNotFound, "not_found", "attachment not found")
-	case errors.Is(err, attachment.ErrTooLarge):
-		writeError(w, http.StatusRequestEntityTooLarge, "too_large", "attachment too large")
-	case errors.Is(err, attachment.ErrEmpty):
-		writeError(w, http.StatusBadRequest, "invalid_request", "attachment is empty")
-	default:
-		writeError(w, http.StatusInternalServerError, "internal", "attachment operation failed")
-	}
-	return false
+	return mapError(w, err, "attachment operation failed",
+		errCase{attachment.ErrNotFound, http.StatusNotFound, "not_found", "attachment not found"},
+		errCase{attachment.ErrTooLarge, http.StatusRequestEntityTooLarge, "too_large", "attachment too large"},
+		errCase{attachment.ErrEmpty, http.StatusBadRequest, "invalid_request", "attachment is empty"},
+	)
 }

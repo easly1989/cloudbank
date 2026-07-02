@@ -8,6 +8,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/easly1989/cloudbank/server/internal/dbconv"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -56,13 +57,6 @@ func nullID(p *int64) sql.NullInt64 {
 		return sql.NullInt64{}
 	}
 	return sql.NullInt64{Int64: *p, Valid: true}
-}
-
-func b2i(b bool) int64 {
-	if b {
-		return 1
-	}
-	return 0
 }
 
 // Service implements category management.
@@ -119,7 +113,7 @@ func (s *Service) Create(ctx context.Context, walletID int64, name string, paren
 	}
 	c, err := s.q.InsertCategory(ctx, db.InsertCategoryParams{
 		WalletID: walletID, ParentID: nullID(parentID), Name: name,
-		IsIncome: b2i(isIncome), NoBudget: b2i(noBudget), NoReport: b2i(noReport),
+		IsIncome: dbconv.B2i(isIncome), NoBudget: dbconv.B2i(noBudget), NoReport: dbconv.B2i(noReport),
 	})
 	if err != nil {
 		if isUnique(err) {
@@ -142,7 +136,7 @@ func (s *Service) Update(ctx context.Context, id int64, name string, isIncome, n
 		isIncome = cur.IsIncome // subcategory type is fixed by its parent
 	}
 	if err := s.q.UpdateCategory(ctx, db.UpdateCategoryParams{
-		Name: name, IsIncome: b2i(isIncome), NoBudget: b2i(noBudget), NoReport: b2i(noReport), ID: id,
+		Name: name, IsIncome: dbconv.B2i(isIncome), NoBudget: dbconv.B2i(noBudget), NoReport: dbconv.B2i(noReport), ID: id,
 	}); err != nil {
 		if isUnique(err) {
 			return Category{}, ErrDuplicate
@@ -150,7 +144,7 @@ func (s *Service) Update(ctx context.Context, id int64, name string, isIncome, n
 		return Category{}, err
 	}
 	if cur.ParentID == nil {
-		if err := s.q.SetChildrenIncome(ctx, db.SetChildrenIncomeParams{IsIncome: b2i(isIncome), ParentID: nullID(&id)}); err != nil {
+		if err := s.q.SetChildrenIncome(ctx, db.SetChildrenIncomeParams{IsIncome: dbconv.B2i(isIncome), ParentID: nullID(&id)}); err != nil {
 			return Category{}, err
 		}
 	}

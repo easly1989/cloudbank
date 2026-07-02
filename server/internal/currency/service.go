@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/easly1989/cloudbank/server/internal/dbconv"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -52,13 +53,6 @@ func toCurrency(c db.Currency) Currency {
 		out.RateUpdatedAt = c.RateUpdatedAt.String
 	}
 	return out
-}
-
-func b2i(b bool) int64 {
-	if b {
-		return 1
-	}
-	return 0
 }
 
 // Service implements per-wallet currency management.
@@ -125,8 +119,8 @@ func (s *Service) AddCurrency(ctx context.Context, walletID int64, isoCode strin
 	}
 	c, err := qtx.InsertCurrency(ctx, db.InsertCurrencyParams{
 		WalletID: walletID, IsoCode: entry.Code, Name: entry.Name, Symbol: entry.Symbol,
-		SymbolPrefix: b2i(entry.SymbolPrefix), DecimalChar: ".", GroupChar: ",",
-		FracDigits: int64(entry.FracDigits), IsBase: b2i(base), Rate: 1,
+		SymbolPrefix: dbconv.B2i(entry.SymbolPrefix), DecimalChar: ".", GroupChar: ",",
+		FracDigits: int64(entry.FracDigits), IsBase: dbconv.B2i(base), Rate: 1,
 	})
 	if err != nil {
 		if isUnique(err) {
@@ -280,7 +274,7 @@ func (s *Service) RefreshAll(ctx context.Context, provider RateProvider, log fun
 // UpdateFormat changes a currency's display metadata.
 func (s *Service) UpdateFormat(ctx context.Context, currencyID int64, symbol string, prefix bool, decimalChar, groupChar string, fracDigits int) error {
 	return s.q.UpdateCurrencyFormat(ctx, db.UpdateCurrencyFormatParams{
-		Symbol: symbol, SymbolPrefix: b2i(prefix), DecimalChar: decimalChar,
+		Symbol: symbol, SymbolPrefix: dbconv.B2i(prefix), DecimalChar: decimalChar,
 		GroupChar: groupChar, FracDigits: int64(fracDigits), ID: currencyID,
 	})
 }
