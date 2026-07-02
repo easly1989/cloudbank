@@ -52,6 +52,34 @@ func TestCreateAssignsPositionAndCurrency(t *testing.T) {
 	}
 }
 
+func TestDefaultPaymentModeRoundTrips(t *testing.T) {
+	s, wid, cid := newTestService(t)
+	ctx := context.Background()
+
+	// Create carries the default payment mode through to Get/List.
+	a, err := s.Create(ctx, wid, Input{Name: "Card", Type: "creditcard", CurrencyID: cid, DefaultPaymentMode: 3})
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if a.DefaultPaymentMode != 3 {
+		t.Fatalf("created default paymode = %d, want 3", a.DefaultPaymentMode)
+	}
+	list, err := s.List(ctx, wid)
+	if err != nil || len(list) != 1 || list[0].DefaultPaymentMode != 3 {
+		t.Fatalf("list = %+v, err %v", list, err)
+	}
+
+	// Update changes it; unset means the default 0 (None).
+	up, err := s.Update(ctx, wid, a.ID, Input{Name: "Card", Type: "creditcard", CurrencyID: cid, DefaultPaymentMode: 5})
+	if err != nil || up.DefaultPaymentMode != 5 {
+		t.Fatalf("update = %+v, err %v", up, err)
+	}
+	def, err := s.Create(ctx, wid, Input{Name: "Plain", Type: "bank", CurrencyID: cid})
+	if err != nil || def.DefaultPaymentMode != 0 {
+		t.Fatalf("default = %+v, err %v", def, err)
+	}
+}
+
 func TestCreateRejectsForeignCurrency(t *testing.T) {
 	s, wid, _ := newTestService(t)
 	if _, err := s.Create(context.Background(), wid, Input{Name: "A", Type: "bank", CurrencyID: 9999}); err != ErrCurrencyNotInWallet {

@@ -2,9 +2,9 @@
 INSERT INTO accounts (
     wallet_id, name, type, currency_id, institution, number,
     initial_balance, minimum_balance, closed, no_summary, no_budget, no_report,
-    position, group_name, notes, website
+    position, group_name, notes, website, default_payment_mode
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetAccount :one
@@ -40,7 +40,8 @@ SELECT COALESCE(MAX(position), 0) + 1 FROM accounts WHERE wallet_id = ?;
 UPDATE accounts SET
     name = ?, type = ?, currency_id = ?, institution = ?, number = ?,
     initial_balance = ?, minimum_balance = ?, closed = ?,
-    no_summary = ?, no_budget = ?, no_report = ?, group_name = ?, notes = ?, website = ?
+    no_summary = ?, no_budget = ?, no_report = ?, group_name = ?, notes = ?, website = ?,
+    default_payment_mode = ?
 WHERE id = ?;
 
 -- name: UpdateAccountPosition :exec
