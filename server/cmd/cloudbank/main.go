@@ -34,9 +34,11 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/schedule"
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
+	"github.com/easly1989/cloudbank/server/internal/tag"
 	"github.com/easly1989/cloudbank/server/internal/template"
 	"github.com/easly1989/cloudbank/server/internal/transaction"
 	"github.com/easly1989/cloudbank/server/internal/transfer"
+	"github.com/easly1989/cloudbank/server/internal/vehicle"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
 
@@ -107,6 +109,8 @@ func run() error {
 	categorySvc := category.NewService(st.Write())
 	payeeSvc := payee.NewService(st.Write())
 	transactionSvc := transaction.NewServiceWithRead(st.Read(), st.Write())
+	tagSvc := tag.NewServiceWithRead(st.Read(), st.Write())
+	vehicleSvc := vehicle.NewServiceWithRead(st.Read(), st.Write())
 	transferSvc := transfer.NewService(st.Write())
 	// The dashboard and report services are read-only (no writes), so they run on
 	// the multi-connection read pool instead of the single write connection —
@@ -139,6 +143,8 @@ func run() error {
 		Categories:    categorySvc,
 		Payees:        payeeSvc,
 		Transactions:  transactionSvc,
+		Tags:          tagSvc,
+		Vehicles:      vehicleSvc,
 		Transfers:     transferSvc,
 		Dashboard:     dashboardSvc,
 		Templates:     templateSvc,
