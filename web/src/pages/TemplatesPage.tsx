@@ -34,11 +34,9 @@ import {
 } from "../api/client";
 import { formatMinor, type MoneyFormat } from "../money";
 import { rowEditProps, stopRowEdit } from "../rowEdit";
+import { PAYMENT_MODES, STATUSES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
-
-const PAYMENT_MODES = Array.from({ length: 12 }, (_, i) => i);
-const STATUSES = [0, 1, 2, 3, 4];
 
 const accountFormat = (a?: Account): MoneyFormat => ({
   fracDigits: a?.currencyFracDigits ?? 2,

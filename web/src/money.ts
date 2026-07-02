@@ -46,6 +46,21 @@ export function formatMinor(amount: number, fmt: MoneyFormat): string {
 }
 
 /**
+ * Render minor units as a plain, editable decimal string: no grouping
+ * separators, currency symbol or sign padding — just the number with the
+ * currency's decimal character, suitable for a text input's value.
+ */
+export function minorToInput(amount: number, fracDigits: number, decimalChar: string): string {
+  return formatMinor(amount, {
+    fracDigits,
+    decimalChar,
+    groupChar: "",
+    symbol: "",
+    symbolPrefix: false,
+  });
+}
+
+/**
  * Parse a user-entered amount into integer minor units. Group separators,
  * symbols and spaces are ignored; decimalChar splits the fractional part. Extra
  * fractional digits are rounded half away from zero. Returns null on no digits.

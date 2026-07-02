@@ -13,10 +13,9 @@ import {
   type Account,
 } from "../api/client";
 import { formatMinor } from "../money";
+import { STATUSES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import classes from "./QuickAdd.module.css";
-
-const STATUSES = [0, 1, 2, 3, 4];
 
 // QuickAdd is a one-line transaction entry: pick a payee (its default category
 // and payment mode are applied automatically), type an amount, and add without

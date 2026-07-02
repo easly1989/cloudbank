@@ -32,7 +32,7 @@ import {
   listCurrencies,
   updateAccount,
 } from "../api/client";
-import { type MoneyFormat, formatMinor } from "../money";
+import { type MoneyFormat, formatMinor, minorToInput } from "../money";
 import { rowEditProps, stopRowEdit } from "../rowEdit";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
@@ -361,16 +361,4 @@ function AccountModal({
       </Stack>
     </Modal>
   );
-}
-
-// minorToInput renders minor units as a plain editable decimal string using the
-// currency's separator (no grouping, no symbol).
-function minorToInput(amount: number, fracDigits: number, decimalChar: string): string {
-  return formatMinor(amount, {
-    fracDigits,
-    decimalChar,
-    groupChar: "",
-    symbol: "",
-    symbolPrefix: false,
-  });
 }

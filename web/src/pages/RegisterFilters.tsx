@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import type { Category, Payee } from "../api/client";
 import { type MoneyFormat } from "../money";
+import { STATUSES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import {
   type DatePreset,
@@ -23,7 +24,6 @@ const PRESETS: DatePreset[] = [
   "last90",
   "custom",
 ];
-const STATUSES = [0, 1, 2, 3, 4];
 
 function minorToInput(amount: number | null, fmt: MoneyFormat): string {
   if (amount === null) return "";
