@@ -113,19 +113,10 @@ func transferIDFromPath(w http.ResponseWriter, r *http.Request) (int64, bool) {
 }
 
 func writeTransferError(w http.ResponseWriter, err error) bool {
-	switch {
-	case err == nil:
-		return true
-	case errors.Is(err, transfer.ErrNotFound):
-		writeError(w, http.StatusNotFound, "not_found", "transfer not found")
-	case errors.Is(err, transfer.ErrSameAccount):
-		writeError(w, http.StatusBadRequest, "same_account", "source and destination accounts must differ")
-	case errors.Is(err, transfer.ErrInvalidAccount):
-		writeError(w, http.StatusBadRequest, "invalid_account", "account does not belong to this wallet")
-	case errors.Is(err, transfer.ErrInvalidAmount):
-		writeError(w, http.StatusBadRequest, "invalid_amount", "amounts must be greater than zero")
-	default:
-		writeError(w, http.StatusInternalServerError, "internal", "could not save transfer")
-	}
-	return false
+	return mapError(w, err, "could not save transfer",
+		errCase{transfer.ErrNotFound, http.StatusNotFound, "not_found", "transfer not found"},
+		errCase{transfer.ErrSameAccount, http.StatusBadRequest, "same_account", "source and destination accounts must differ"},
+		errCase{transfer.ErrInvalidAccount, http.StatusBadRequest, "invalid_account", "account does not belong to this wallet"},
+		errCase{transfer.ErrInvalidAmount, http.StatusBadRequest, "invalid_amount", "amounts must be greater than zero"},
+	)
 }

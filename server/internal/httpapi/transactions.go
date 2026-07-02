@@ -135,19 +135,11 @@ func tagIDParam(w http.ResponseWriter, r *http.Request) (int64, bool) {
 }
 
 func writeTagError(w http.ResponseWriter, err error) bool {
-	switch {
-	case err == nil:
-		return true
-	case errors.Is(err, transaction.ErrTagNotFound):
-		writeError(w, http.StatusNotFound, "not_found", "tag not found")
-	case errors.Is(err, transaction.ErrTagDuplicate):
-		writeError(w, http.StatusConflict, "conflict", "a tag with that name already exists")
-	case errors.Is(err, transaction.ErrTagInvalid):
-		writeError(w, http.StatusBadRequest, "invalid", "invalid tag name or merge target")
-	default:
-		writeError(w, http.StatusInternalServerError, "internal", "could not update tag")
-	}
-	return false
+	return mapError(w, err, "could not update tag",
+		errCase{transaction.ErrTagNotFound, http.StatusNotFound, "not_found", "tag not found"},
+		errCase{transaction.ErrTagDuplicate, http.StatusConflict, "conflict", "a tag with that name already exists"},
+		errCase{transaction.ErrTagInvalid, http.StatusBadRequest, "invalid", "invalid tag name or merge target"},
+	)
 }
 
 func (h *transactionHandlers) renameTag(w http.ResponseWriter, r *http.Request) {
@@ -205,19 +197,11 @@ type vehicleInput struct {
 }
 
 func writeVehicleError(w http.ResponseWriter, err error) bool {
-	switch {
-	case err == nil:
-		return true
-	case errors.Is(err, transaction.ErrVehicleNotFound):
-		writeError(w, http.StatusNotFound, "not_found", "vehicle not found")
-	case errors.Is(err, transaction.ErrVehicleDuplicate):
-		writeError(w, http.StatusConflict, "conflict", "a vehicle with that name already exists")
-	case errors.Is(err, transaction.ErrVehicleInvalid):
-		writeError(w, http.StatusBadRequest, "invalid", "vehicle name is required")
-	default:
-		writeError(w, http.StatusInternalServerError, "internal", "could not save vehicle")
-	}
-	return false
+	return mapError(w, err, "could not save vehicle",
+		errCase{transaction.ErrVehicleNotFound, http.StatusNotFound, "not_found", "vehicle not found"},
+		errCase{transaction.ErrVehicleDuplicate, http.StatusConflict, "conflict", "a vehicle with that name already exists"},
+		errCase{transaction.ErrVehicleInvalid, http.StatusBadRequest, "invalid", "vehicle name is required"},
+	)
 }
 
 func vehicleIDParam(w http.ResponseWriter, r *http.Request) (int64, bool) {
@@ -454,23 +438,12 @@ func queryInt(r *http.Request, name string, def int64) int64 {
 }
 
 func writeTransactionError(w http.ResponseWriter, err error) bool {
-	switch {
-	case err == nil:
-		return true
-	case errors.Is(err, transaction.ErrNotFound):
-		writeError(w, http.StatusNotFound, "not_found", "transaction not found")
-	case errors.Is(err, transaction.ErrInvalidAccount):
-		writeError(w, http.StatusBadRequest, "invalid_account", "account does not belong to this wallet")
-	case errors.Is(err, transaction.ErrInvalidPaymentMode):
-		writeError(w, http.StatusBadRequest, "invalid_payment_mode", "invalid payment mode")
-	case errors.Is(err, transaction.ErrInvalidStatus):
-		writeError(w, http.StatusBadRequest, "invalid_status", "invalid status")
-	case errors.Is(err, transaction.ErrInvalidDate):
-		writeError(w, http.StatusBadRequest, "invalid_date", "invalid date (want YYYY-MM-DD)")
-	case errors.Is(err, transaction.ErrSplitMismatch):
-		writeError(w, http.StatusBadRequest, "split_mismatch", "split amounts must sum to the transaction amount")
-	default:
-		writeError(w, http.StatusInternalServerError, "internal", "could not save transaction")
-	}
-	return false
+	return mapError(w, err, "could not save transaction",
+		errCase{transaction.ErrNotFound, http.StatusNotFound, "not_found", "transaction not found"},
+		errCase{transaction.ErrInvalidAccount, http.StatusBadRequest, "invalid_account", "account does not belong to this wallet"},
+		errCase{transaction.ErrInvalidPaymentMode, http.StatusBadRequest, "invalid_payment_mode", "invalid payment mode"},
+		errCase{transaction.ErrInvalidStatus, http.StatusBadRequest, "invalid_status", "invalid status"},
+		errCase{transaction.ErrInvalidDate, http.StatusBadRequest, "invalid_date", "invalid date (want YYYY-MM-DD)"},
+		errCase{transaction.ErrSplitMismatch, http.StatusBadRequest, "split_mismatch", "split amounts must sum to the transaction amount"},
+	)
 }
