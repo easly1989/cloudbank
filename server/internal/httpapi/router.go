@@ -107,7 +107,10 @@ func New(opts Options) http.Handler {
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
+	// Note: chi's RealIP is intentionally NOT used — it trusts client-supplied
+	// X-Forwarded-For / X-Real-IP headers, which are spoofable (GHSA-3fxj-...),
+	// so it would let an attacker bypass the login rate limiter or frame another
+	// IP. The rate limiter keys on the real TCP peer (r.RemoteAddr) instead.
 	r.Use(requestLogger(logger))
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
