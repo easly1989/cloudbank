@@ -99,7 +99,9 @@ export function TransactionForm({
     setDate(e?.date ?? new Date().toISOString().slice(0, 10));
     setDirection((e?.amount ?? -1) < 0 ? "expense" : "income");
     setAmount(e ? minorToInput(Math.abs(e.amount), fd, dc) : "");
-    setPaymentMode(String(e?.paymentMode ?? 0));
+    // New transactions pre-fill the account's default payment mode; editing
+    // keeps the stored one. (A picked payee's own default still overrides.)
+    setPaymentMode(String(e?.paymentMode ?? account.defaultPaymentMode));
     setStatus(String(e?.status ?? 0));
     setPayeeId(e?.payeeId ? String(e.payeeId) : null);
     setCategoryId(e?.categoryId ? String(e.categoryId) : null);

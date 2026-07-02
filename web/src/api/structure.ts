@@ -115,6 +115,8 @@ export interface Account {
   groupName: string;
   notes: string;
   website: string;
+  /** HomeBank payment mode 0..11 pre-filled for new transactions in this account. */
+  defaultPaymentMode: number;
   createdAt: string;
   currencyCode: string;
   currencySymbol: string;
@@ -139,6 +141,7 @@ export interface AccountInput {
   groupName?: string;
   notes?: string;
   website?: string;
+  defaultPaymentMode?: number;
 }
 
 export const listAccounts = (walletId: number) =>
