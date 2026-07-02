@@ -145,19 +145,10 @@ func (h *payeeHandlers) payeeFromPath(w http.ResponseWriter, r *http.Request) (p
 }
 
 func writePayeeError(w http.ResponseWriter, err error) bool {
-	switch {
-	case err == nil:
-		return true
-	case errors.Is(err, payee.ErrNotFound):
-		writeError(w, http.StatusNotFound, "not_found", "payee not found")
-	case errors.Is(err, payee.ErrDuplicate):
-		writeError(w, http.StatusConflict, "duplicate", "a payee with that name already exists")
-	case errors.Is(err, payee.ErrSelfReference):
-		writeError(w, http.StatusBadRequest, "self", "cannot merge a payee into itself")
-	case errors.Is(err, payee.ErrBadTarget):
-		writeError(w, http.StatusBadRequest, "bad_target", "invalid target payee")
-	default:
-		writeError(w, http.StatusInternalServerError, "internal", "could not save payee")
-	}
-	return false
+	return mapError(w, err, "could not save payee",
+		errCase{payee.ErrNotFound, http.StatusNotFound, "not_found", "payee not found"},
+		errCase{payee.ErrDuplicate, http.StatusConflict, "duplicate", "a payee with that name already exists"},
+		errCase{payee.ErrSelfReference, http.StatusBadRequest, "self", "cannot merge a payee into itself"},
+		errCase{payee.ErrBadTarget, http.StatusBadRequest, "bad_target", "invalid target payee"},
+	)
 }

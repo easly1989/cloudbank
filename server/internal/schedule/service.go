@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/easly1989/cloudbank/server/internal/dbconv"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/transaction"
 	"github.com/easly1989/cloudbank/server/internal/transfer"
@@ -134,19 +135,12 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Schedul
 	row, err := s.q.InsertSchedule(ctx, db.InsertScheduleParams{
 		WalletID: walletID, TemplateID: in.TemplateID, Unit: in.Unit, EveryN: int64(in.EveryN),
 		NextDue: in.NextDue, WeekendMode: int64(in.WeekendMode), Remaining: nval(in.Remaining),
-		PostAdvance: int64(in.PostAdvance), AutoPost: b2i(in.AutoPost),
+		PostAdvance: int64(in.PostAdvance), AutoPost: dbconv.B2i(in.AutoPost),
 	})
 	if err != nil {
 		return Schedule{}, err
 	}
 	return s.Get(ctx, row.ID)
-}
-
-func b2i(b bool) int64 {
-	if b {
-		return 1
-	}
-	return 0
 }
 
 func toSchedule(r db.ListSchedulesForWalletRow) Schedule {
@@ -238,7 +232,7 @@ func (s *Service) Update(ctx context.Context, walletID, id int64, in Input) (Sch
 	}
 	if err := s.q.UpdateScheduleConfig(ctx, db.UpdateScheduleConfigParams{
 		Unit: in.Unit, EveryN: int64(in.EveryN), NextDue: in.NextDue, WeekendMode: int64(in.WeekendMode),
-		Remaining: nval(in.Remaining), PostAdvance: int64(in.PostAdvance), AutoPost: b2i(in.AutoPost), ID: id,
+		Remaining: nval(in.Remaining), PostAdvance: int64(in.PostAdvance), AutoPost: dbconv.B2i(in.AutoPost), ID: id,
 	}); err != nil {
 		return Schedule{}, err
 	}

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/easly1989/cloudbank/server/internal/dbconv"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -89,13 +90,6 @@ func idPtr(n sql.NullInt64) *int64 {
 	return &v
 }
 
-func b2i(b bool) int64 {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 func joinTags(tags []string) string { return strings.Join(dedupe(tags), ",") }
 
 func splitTags(s string) []string {
@@ -161,7 +155,7 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Templat
 		WalletID: walletID, Name: in.Name, AccountID: nullID(in.AccountID), Amount: in.Amount,
 		PaymentMode: int64(in.PaymentMode), Status: int64(in.Status), Info: in.Info,
 		PayeeID: nullID(in.PayeeID), CategoryID: nullID(in.CategoryID), Memo: in.Memo,
-		Tags: joinTags(in.Tags), IsSplit: b2i(len(in.Splits) > 0), IsTransfer: b2i(in.IsTransfer),
+		Tags: joinTags(in.Tags), IsSplit: dbconv.B2i(len(in.Splits) > 0), IsTransfer: dbconv.B2i(in.IsTransfer),
 		ToAccountID: nullID(in.ToAccountID),
 	})
 	if err != nil {
@@ -271,7 +265,7 @@ func (s *Service) Update(ctx context.Context, walletID, id int64, in Input) (Tem
 		Name: in.Name, AccountID: nullID(in.AccountID), Amount: in.Amount,
 		PaymentMode: int64(in.PaymentMode), Status: int64(in.Status), Info: in.Info,
 		PayeeID: nullID(in.PayeeID), CategoryID: nullID(in.CategoryID), Memo: in.Memo,
-		Tags: joinTags(in.Tags), IsSplit: b2i(len(in.Splits) > 0), IsTransfer: b2i(in.IsTransfer),
+		Tags: joinTags(in.Tags), IsSplit: dbconv.B2i(len(in.Splits) > 0), IsTransfer: dbconv.B2i(in.IsTransfer),
 		ToAccountID: nullID(in.ToAccountID), ID: id,
 	}); err != nil {
 		return Template{}, err

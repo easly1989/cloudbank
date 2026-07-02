@@ -191,21 +191,11 @@ func (h *assignmentHandlers) ownedID(w http.ResponseWriter, r *http.Request) (in
 }
 
 func writeAssignmentError(w http.ResponseWriter, err error) bool {
-	switch {
-	case err == nil:
-		return true
-	case errors.Is(err, assignment.ErrNotFound):
-		writeError(w, http.StatusNotFound, "not_found", "rule not found")
-	case errors.Is(err, assignment.ErrInvalidField):
-		writeError(w, http.StatusBadRequest, "invalid_field", "invalid match field")
-	case errors.Is(err, assignment.ErrInvalidType):
-		writeError(w, http.StatusBadRequest, "invalid_type", "invalid match type")
-	case errors.Is(err, assignment.ErrEmptyPattern):
-		writeError(w, http.StatusBadRequest, "empty_pattern", "pattern is required")
-	case errors.Is(err, assignment.ErrInvalidRegex):
-		writeError(w, http.StatusBadRequest, "invalid_regex", "invalid regular expression")
-	default:
-		writeError(w, http.StatusInternalServerError, "internal", "could not save rule")
-	}
-	return false
+	return mapError(w, err, "could not save rule",
+		errCase{assignment.ErrNotFound, http.StatusNotFound, "not_found", "rule not found"},
+		errCase{assignment.ErrInvalidField, http.StatusBadRequest, "invalid_field", "invalid match field"},
+		errCase{assignment.ErrInvalidType, http.StatusBadRequest, "invalid_type", "invalid match type"},
+		errCase{assignment.ErrEmptyPattern, http.StatusBadRequest, "empty_pattern", "pattern is required"},
+		errCase{assignment.ErrInvalidRegex, http.StatusBadRequest, "invalid_regex", "invalid regular expression"},
+	)
 }

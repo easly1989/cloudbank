@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/easly1989/cloudbank/server/internal/dbconv"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -117,13 +118,6 @@ func intPtr(n sql.NullInt64) *int {
 	return &v
 }
 
-func b2i(b bool) int64 {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 func toDefinition(a db.Assignment) Definition {
 	return Definition{
 		ID: a.ID, Position: int(a.Position), MatchField: a.MatchField, MatchType: a.MatchType,
@@ -156,10 +150,10 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Definit
 	}
 	row, err := s.q.InsertAssignment(ctx, db.InsertAssignmentParams{
 		WalletID: walletID, Position: pos, MatchField: in.MatchField, MatchType: in.MatchType,
-		Pattern: in.Pattern, CaseSensitive: b2i(in.CaseSensitive), MatchAccountID: nullID(in.MatchAccountID),
+		Pattern: in.Pattern, CaseSensitive: dbconv.B2i(in.CaseSensitive), MatchAccountID: nullID(in.MatchAccountID),
 		SetPayeeID: nullID(in.SetPayeeID), SetCategoryID: nullID(in.SetCategoryID),
 		SetPaymentMode: nullInt(in.SetPaymentMode), SetInfo: nullStr(in.SetInfo),
-		ApplyOnManual: b2i(in.ApplyOnManual), ApplyOnImport: b2i(in.ApplyOnImport),
+		ApplyOnManual: dbconv.B2i(in.ApplyOnManual), ApplyOnImport: dbconv.B2i(in.ApplyOnImport),
 	})
 	if err != nil {
 		return Definition{}, err
@@ -212,10 +206,10 @@ func (s *Service) Update(ctx context.Context, id int64, in Input) (Definition, e
 	}
 	if err := s.q.UpdateAssignment(ctx, db.UpdateAssignmentParams{
 		MatchField: in.MatchField, MatchType: in.MatchType, Pattern: in.Pattern,
-		CaseSensitive: b2i(in.CaseSensitive), MatchAccountID: nullID(in.MatchAccountID),
+		CaseSensitive: dbconv.B2i(in.CaseSensitive), MatchAccountID: nullID(in.MatchAccountID),
 		SetPayeeID: nullID(in.SetPayeeID), SetCategoryID: nullID(in.SetCategoryID),
 		SetPaymentMode: nullInt(in.SetPaymentMode), SetInfo: nullStr(in.SetInfo),
-		ApplyOnManual: b2i(in.ApplyOnManual), ApplyOnImport: b2i(in.ApplyOnImport), ID: id,
+		ApplyOnManual: dbconv.B2i(in.ApplyOnManual), ApplyOnImport: dbconv.B2i(in.ApplyOnImport), ID: id,
 	}); err != nil {
 		return Definition{}, err
 	}

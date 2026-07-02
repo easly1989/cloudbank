@@ -176,23 +176,12 @@ func optionalIDParam(r *http.Request, name string) *int64 {
 
 // writeCategoryError maps service errors to responses; returns true when no error.
 func writeCategoryError(w http.ResponseWriter, err error) bool {
-	switch {
-	case err == nil:
-		return true
-	case errors.Is(err, category.ErrNotFound):
-		writeError(w, http.StatusNotFound, "not_found", "category not found")
-	case errors.Is(err, category.ErrDuplicate):
-		writeError(w, http.StatusConflict, "duplicate", "a category with that name already exists here")
-	case errors.Is(err, category.ErrTooDeep):
-		writeError(w, http.StatusBadRequest, "too_deep", "subcategories cannot have children")
-	case errors.Is(err, category.ErrHasChildren):
-		writeError(w, http.StatusConflict, "has_children", "this category has subcategories; choose a reassignment target")
-	case errors.Is(err, category.ErrSelfReference):
-		writeError(w, http.StatusBadRequest, "self", "cannot merge a category into itself")
-	case errors.Is(err, category.ErrBadTarget):
-		writeError(w, http.StatusBadRequest, "bad_target", "invalid target category")
-	default:
-		writeError(w, http.StatusInternalServerError, "internal", "could not save category")
-	}
-	return false
+	return mapError(w, err, "could not save category",
+		errCase{category.ErrNotFound, http.StatusNotFound, "not_found", "category not found"},
+		errCase{category.ErrDuplicate, http.StatusConflict, "duplicate", "a category with that name already exists here"},
+		errCase{category.ErrTooDeep, http.StatusBadRequest, "too_deep", "subcategories cannot have children"},
+		errCase{category.ErrHasChildren, http.StatusConflict, "has_children", "this category has subcategories; choose a reassignment target"},
+		errCase{category.ErrSelfReference, http.StatusBadRequest, "self", "cannot merge a category into itself"},
+		errCase{category.ErrBadTarget, http.StatusBadRequest, "bad_target", "invalid target category"},
+	)
 }

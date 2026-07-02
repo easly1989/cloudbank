@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/attachment"
+	"github.com/easly1989/cloudbank/server/internal/dbconv"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
@@ -225,28 +226,6 @@ func NewService(write *sql.DB) *Service {
 // and restores recreate them. Optional; when unset, attachments are skipped.
 func (s *Service) SetAttachments(a *attachment.Service) { s.attachments = a }
 
-func np(n sql.NullInt64) *int64 {
-	if n.Valid {
-		v := n.Int64
-		return &v
-	}
-	return nil
-}
-
-func nn(p *int64) sql.NullInt64 {
-	if p == nil {
-		return sql.NullInt64{}
-	}
-	return sql.NullInt64{Int64: *p, Valid: true}
-}
-
-func b2i(v bool) int64 {
-	if v {
-		return 1
-	}
-	return 0
-}
-
 // Export reads a whole wallet into a backup document.
 func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error) {
 	q := s.q
@@ -300,8 +279,8 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 	}
 	for _, p := range payees {
 		doc.Payees = append(doc.Payees, Payee{
-			ID: p.ID, Name: p.Name, DefaultCategoryID: np(p.DefaultCategoryID),
-			DefaultPaymentMode: np(p.DefaultPaymentMode),
+			ID: p.ID, Name: p.Name, DefaultCategoryID: dbconv.NullToPtr(p.DefaultCategoryID),
+			DefaultPaymentMode: dbconv.NullToPtr(p.DefaultPaymentMode),
 		})
 	}
 
@@ -311,7 +290,7 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 	}
 	for _, c := range cats {
 		doc.Categories = append(doc.Categories, Category{
-			ID: c.ID, ParentID: np(c.ParentID), Name: c.Name,
+			ID: c.ID, ParentID: dbconv.NullToPtr(c.ParentID), Name: c.Name,
 			IsIncome: c.IsIncome != 0, NoBudget: c.NoBudget != 0, NoReport: c.NoReport != 0,
 		})
 	}
@@ -335,7 +314,7 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 			txn := Transaction{
 				ID: r.ID, AccountID: r.AccountID, Date: r.Date, Amount: r.Amount,
 				PaymentMode: r.PaymentMode, Status: r.Status, Info: r.Info,
-				PayeeID: np(r.PayeeID), CategoryID: np(r.CategoryID), Memo: r.Memo,
+				PayeeID: dbconv.NullToPtr(r.PayeeID), CategoryID: dbconv.NullToPtr(r.CategoryID), Memo: r.Memo,
 				IsSplit: r.IsSplit != 0, ImportRef: r.ImportRef,
 			}
 			if txn.Tags, err = q.ListTransactionTags(ctx, r.ID); err != nil {
@@ -347,7 +326,7 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 			}
 			for _, sp := range splits {
 				txn.Splits = append(txn.Splits, Split{
-					CategoryID: np(sp.CategoryID), Amount: sp.Amount, Memo: sp.Memo, Position: sp.Position,
+					CategoryID: dbconv.NullToPtr(sp.CategoryID), Amount: sp.Amount, Memo: sp.Memo, Position: sp.Position,
 				})
 			}
 			doc.Transactions = append(doc.Transactions, txn)
@@ -368,10 +347,10 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 	}
 	for _, t := range tpls {
 		tpl := Template{
-			ID: t.ID, Name: t.Name, AccountID: np(t.AccountID), Amount: t.Amount,
+			ID: t.ID, Name: t.Name, AccountID: dbconv.NullToPtr(t.AccountID), Amount: t.Amount,
 			PaymentMode: t.PaymentMode, Status: t.Status, Info: t.Info,
-			PayeeID: np(t.PayeeID), CategoryID: np(t.CategoryID), Memo: t.Memo, Tags: t.Tags,
-			IsSplit: t.IsSplit != 0, IsTransfer: t.IsTransfer != 0, ToAccountID: np(t.ToAccountID),
+			PayeeID: dbconv.NullToPtr(t.PayeeID), CategoryID: dbconv.NullToPtr(t.CategoryID), Memo: t.Memo, Tags: t.Tags,
+			IsSplit: t.IsSplit != 0, IsTransfer: t.IsTransfer != 0, ToAccountID: dbconv.NullToPtr(t.ToAccountID),
 		}
 		splits, err := q.ListTemplateSplits(ctx, t.ID)
 		if err != nil {
@@ -379,7 +358,7 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 		}
 		for _, sp := range splits {
 			tpl.Splits = append(tpl.Splits, Split{
-				CategoryID: np(sp.CategoryID), Amount: sp.Amount, Memo: sp.Memo, Position: sp.Position,
+				CategoryID: dbconv.NullToPtr(sp.CategoryID), Amount: sp.Amount, Memo: sp.Memo, Position: sp.Position,
 			})
 		}
 		doc.Templates = append(doc.Templates, tpl)
@@ -392,7 +371,7 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 	for _, s := range scheds {
 		sc := Schedule{
 			ID: s.ID, TemplateID: s.TemplateID, Unit: s.Unit, EveryN: s.EveryN,
-			NextDue: s.NextDue, WeekendMode: s.WeekendMode, Remaining: np(s.Remaining),
+			NextDue: s.NextDue, WeekendMode: s.WeekendMode, Remaining: dbconv.NullToPtr(s.Remaining),
 			PostAdvance: s.PostAdvance, AutoPost: s.AutoPost,
 		}
 		if s.LastPosted.Valid {
@@ -408,8 +387,8 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 	for _, a := range asgs {
 		doc.Assignments = append(doc.Assignments, Assignment{
 			ID: a.ID, Position: a.Position, MatchField: a.MatchField, MatchType: a.MatchType,
-			Pattern: a.Pattern, CaseSensitive: a.CaseSensitive != 0, SetPayeeID: np(a.SetPayeeID),
-			SetCategoryID: np(a.SetCategoryID), SetPaymentMode: np(a.SetPaymentMode),
+			Pattern: a.Pattern, CaseSensitive: a.CaseSensitive != 0, SetPayeeID: dbconv.NullToPtr(a.SetPayeeID),
+			SetCategoryID: dbconv.NullToPtr(a.SetCategoryID), SetPaymentMode: dbconv.NullToPtr(a.SetPaymentMode),
 			ApplyOnManual: a.ApplyOnManual != 0, ApplyOnImport: a.ApplyOnImport != 0,
 		})
 	}
@@ -476,8 +455,8 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 	for _, c := range doc.Currencies {
 		row, err := q.InsertCurrency(ctx, db.InsertCurrencyParams{
 			WalletID: w.ID, IsoCode: c.IsoCode, Name: c.Name, Symbol: c.Symbol,
-			SymbolPrefix: b2i(c.SymbolPrefix), DecimalChar: c.DecimalChar, GroupChar: c.GroupChar,
-			FracDigits: c.FracDigits, IsBase: b2i(c.IsBase), Rate: c.Rate,
+			SymbolPrefix: dbconv.B2i(c.SymbolPrefix), DecimalChar: c.DecimalChar, GroupChar: c.GroupChar,
+			FracDigits: c.FracDigits, IsBase: dbconv.B2i(c.IsBase), Rate: c.Rate,
 		})
 		if err != nil {
 			return 0, err
@@ -507,8 +486,8 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 		row, err := q.InsertAccount(ctx, db.InsertAccountParams{
 			WalletID: w.ID, Name: a.Name, Type: a.Type, CurrencyID: curMap[a.CurrencyID],
 			Institution: a.Institution, Number: a.Number, InitialBalance: a.InitialBalance,
-			MinimumBalance: a.MinimumBalance, Closed: b2i(a.Closed), NoSummary: b2i(a.NoSummary),
-			NoBudget: b2i(a.NoBudget), NoReport: b2i(a.NoReport), Position: a.Position,
+			MinimumBalance: a.MinimumBalance, Closed: dbconv.B2i(a.Closed), NoSummary: dbconv.B2i(a.NoSummary),
+			NoBudget: dbconv.B2i(a.NoBudget), NoReport: dbconv.B2i(a.NoReport), Position: a.Position,
 			GroupName: a.GroupName, Notes: a.Notes, Website: a.Website,
 		})
 		if err != nil {
@@ -528,7 +507,7 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 		}
 		row, err := q.InsertCategory(ctx, db.InsertCategoryParams{
 			WalletID: w.ID, ParentID: parent, Name: c.Name,
-			IsIncome: b2i(c.IsIncome), NoBudget: b2i(c.NoBudget), NoReport: b2i(c.NoReport),
+			IsIncome: dbconv.B2i(c.IsIncome), NoBudget: dbconv.B2i(c.NoBudget), NoReport: dbconv.B2i(c.NoReport),
 		})
 		if err != nil {
 			return err
@@ -564,8 +543,8 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 	payMap := map[int64]int64{}
 	for _, p := range doc.Payees {
 		row, err := q.InsertPayee(ctx, db.InsertPayeeParams{
-			WalletID: w.ID, Name: p.Name, DefaultCategoryID: nn(remapCat(p.DefaultCategoryID)),
-			DefaultPaymentMode: nn(p.DefaultPaymentMode),
+			WalletID: w.ID, Name: p.Name, DefaultCategoryID: dbconv.PtrToNull(remapCat(p.DefaultCategoryID)),
+			DefaultPaymentMode: dbconv.PtrToNull(p.DefaultPaymentMode),
 		})
 		if err != nil {
 			return 0, err
@@ -596,8 +575,8 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 		row, err := q.InsertTransaction(ctx, db.InsertTransactionParams{
 			WalletID: w.ID, AccountID: accMap[t.AccountID], Date: t.Date, Amount: t.Amount,
 			PaymentMode: t.PaymentMode, Status: t.Status, Info: t.Info,
-			PayeeID: nn(remapPayee(t.PayeeID)), CategoryID: nn(remapCat(t.CategoryID)),
-			Memo: t.Memo, IsSplit: b2i(t.IsSplit), ImportRef: t.ImportRef,
+			PayeeID: dbconv.PtrToNull(remapPayee(t.PayeeID)), CategoryID: dbconv.PtrToNull(remapCat(t.CategoryID)),
+			Memo: t.Memo, IsSplit: dbconv.B2i(t.IsSplit), ImportRef: t.ImportRef,
 		})
 		if err != nil {
 			return 0, err
@@ -605,7 +584,7 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 		txnMap[t.ID] = row.ID
 		for _, sp := range t.Splits {
 			if err := q.InsertSplit(ctx, db.InsertSplitParams{
-				TransactionID: row.ID, CategoryID: nn(remapCat(sp.CategoryID)),
+				TransactionID: row.ID, CategoryID: dbconv.PtrToNull(remapCat(sp.CategoryID)),
 				Amount: sp.Amount, Memo: sp.Memo, Position: sp.Position,
 			}); err != nil {
 				return 0, err
@@ -676,18 +655,18 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 	}
 	for _, t := range doc.Templates {
 		row, err := q.InsertTemplate(ctx, db.InsertTemplateParams{
-			WalletID: w.ID, Name: t.Name, AccountID: nn(remapAcc(t.AccountID)), Amount: t.Amount,
+			WalletID: w.ID, Name: t.Name, AccountID: dbconv.PtrToNull(remapAcc(t.AccountID)), Amount: t.Amount,
 			PaymentMode: t.PaymentMode, Status: t.Status, Info: t.Info,
-			PayeeID: nn(remapPayee(t.PayeeID)), CategoryID: nn(remapCat(t.CategoryID)),
-			Memo: t.Memo, Tags: t.Tags, IsSplit: b2i(t.IsSplit), IsTransfer: b2i(t.IsTransfer),
-			ToAccountID: nn(remapAcc(t.ToAccountID)),
+			PayeeID: dbconv.PtrToNull(remapPayee(t.PayeeID)), CategoryID: dbconv.PtrToNull(remapCat(t.CategoryID)),
+			Memo: t.Memo, Tags: t.Tags, IsSplit: dbconv.B2i(t.IsSplit), IsTransfer: dbconv.B2i(t.IsTransfer),
+			ToAccountID: dbconv.PtrToNull(remapAcc(t.ToAccountID)),
 		})
 		if err != nil {
 			return 0, err
 		}
 		for _, sp := range t.Splits {
 			if err := q.InsertTemplateSplit(ctx, db.InsertTemplateSplitParams{
-				TemplateID: row.ID, CategoryID: nn(remapCat(sp.CategoryID)),
+				TemplateID: row.ID, CategoryID: dbconv.PtrToNull(remapCat(sp.CategoryID)),
 				Amount: sp.Amount, Memo: sp.Memo, Position: sp.Position,
 			}); err != nil {
 				return 0, err
@@ -699,7 +678,7 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 			}
 			if _, err := q.InsertSchedule(ctx, db.InsertScheduleParams{
 				WalletID: w.ID, TemplateID: row.ID, Unit: sc.Unit, EveryN: sc.EveryN,
-				NextDue: sc.NextDue, WeekendMode: sc.WeekendMode, Remaining: nn(sc.Remaining),
+				NextDue: sc.NextDue, WeekendMode: sc.WeekendMode, Remaining: dbconv.PtrToNull(sc.Remaining),
 				PostAdvance: sc.PostAdvance, AutoPost: sc.AutoPost,
 			}); err != nil {
 				return 0, err
@@ -710,9 +689,9 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 	for _, a := range doc.Assignments {
 		if _, err := q.InsertAssignment(ctx, db.InsertAssignmentParams{
 			WalletID: w.ID, Position: a.Position, MatchField: a.MatchField, MatchType: a.MatchType,
-			Pattern: a.Pattern, CaseSensitive: b2i(a.CaseSensitive), SetPayeeID: nn(remapPayee(a.SetPayeeID)),
-			SetCategoryID: nn(remapCat(a.SetCategoryID)), SetPaymentMode: nn(a.SetPaymentMode),
-			ApplyOnManual: b2i(a.ApplyOnManual), ApplyOnImport: b2i(a.ApplyOnImport),
+			Pattern: a.Pattern, CaseSensitive: dbconv.B2i(a.CaseSensitive), SetPayeeID: dbconv.PtrToNull(remapPayee(a.SetPayeeID)),
+			SetCategoryID: dbconv.PtrToNull(remapCat(a.SetCategoryID)), SetPaymentMode: dbconv.PtrToNull(a.SetPaymentMode),
+			ApplyOnManual: dbconv.B2i(a.ApplyOnManual), ApplyOnImport: dbconv.B2i(a.ApplyOnImport),
 		}); err != nil {
 			return 0, err
 		}
