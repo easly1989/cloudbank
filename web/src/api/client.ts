@@ -277,14 +277,7 @@ export const refreshRates = (walletId: number) =>
 // --- Accounts ---
 
 export type AccountType =
-  | "bank"
-  | "cash"
-  | "checking"
-  | "savings"
-  | "creditcard"
-  | "liability"
-  | "asset"
-  | "investment";
+  "bank" | "cash" | "checking" | "savings" | "creditcard" | "liability" | "asset" | "investment";
 
 export interface Account {
   id: number;

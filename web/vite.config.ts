@@ -15,14 +15,22 @@ export default defineConfig({
         // Split large third-party libraries into their own long-cacheable
         // vendor chunks so the initial download is small and navigations reuse
         // cached vendor code. Pages themselves are code-split via React.lazy.
-        manualChunks: {
-          react: ["react", "react-dom", "react-router-dom"],
-          mantine: ["@mantine/core", "@mantine/hooks", "@mantine/notifications"],
-          echarts: ["echarts"],
-          tanstack: ["@tanstack/react-query", "@tanstack/react-table", "@tanstack/react-virtual"],
-          icons: ["@tabler/icons-react"],
-          dndkit: ["@dnd-kit/core", "@dnd-kit/sortable", "@dnd-kit/utilities"],
-          i18n: ["i18next", "react-i18next", "i18next-browser-languagedetector"],
+        // (Function form: the object form's type was tightened in newer Vite.)
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (
+            /[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(
+              id,
+            )
+          )
+            return "react";
+          if (id.includes("@mantine")) return "mantine";
+          if (id.includes("echarts") || id.includes("zrender")) return "echarts";
+          if (id.includes("@tanstack")) return "tanstack";
+          if (id.includes("@tabler")) return "icons";
+          if (id.includes("@dnd-kit")) return "dndkit";
+          if (id.includes("i18next")) return "i18n";
+          return undefined;
         },
       },
     },
