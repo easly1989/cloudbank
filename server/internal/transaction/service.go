@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/easly1989/cloudbank/server/internal/dbconv"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -151,13 +152,6 @@ func isUniqueViolation(err error) bool {
 	return err != nil && strings.Contains(strings.ToLower(err.Error()), "unique")
 }
 
-func b2i(b bool) int64 {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 // AccountInWallet reports whether accountID exists and belongs to walletID.
 func (s *Service) AccountInWallet(ctx context.Context, walletID, accountID int64) (bool, error) {
 	acc, err := s.q.GetAccount(ctx, accountID)
@@ -235,7 +229,7 @@ func (s *Service) CreateInTx(ctx context.Context, qtx *db.Queries, walletID int6
 	row, err := qtx.InsertTransaction(ctx, db.InsertTransactionParams{
 		WalletID: walletID, AccountID: in.AccountID, Date: in.Date, Amount: in.Amount,
 		PaymentMode: int64(in.PaymentMode), Status: int64(in.Status), Info: in.Info,
-		PayeeID: nullID(in.PayeeID), CategoryID: nullID(categoryID), Memo: in.Memo, IsSplit: b2i(isSplit),
+		PayeeID: nullID(in.PayeeID), CategoryID: nullID(categoryID), Memo: in.Memo, IsSplit: dbconv.B2i(isSplit),
 		ImportRef: in.ImportRef, VehicleID: nullID(in.VehicleID),
 	})
 	if err != nil {
@@ -268,7 +262,7 @@ func (s *Service) Update(ctx context.Context, walletID, id int64, in Input) (Tra
 	if err := qtx.UpdateTransaction(ctx, db.UpdateTransactionParams{
 		Date: in.Date, Amount: in.Amount, PaymentMode: int64(in.PaymentMode), Status: int64(in.Status),
 		Info: in.Info, PayeeID: nullID(in.PayeeID), CategoryID: nullID(categoryID), Memo: in.Memo,
-		IsSplit: b2i(isSplit), VehicleID: nullID(in.VehicleID), ID: id,
+		IsSplit: dbconv.B2i(isSplit), VehicleID: nullID(in.VehicleID), ID: id,
 	}); err != nil {
 		return Transaction{}, err
 	}

@@ -159,17 +159,9 @@ func (h *templateHandlers) templateFromPath(w http.ResponseWriter, r *http.Reque
 }
 
 func writeTemplateError(w http.ResponseWriter, err error) bool {
-	switch {
-	case err == nil:
-		return true
-	case errors.Is(err, template.ErrNotFound):
-		writeError(w, http.StatusNotFound, "not_found", "template not found")
-	case errors.Is(err, template.ErrNameRequired):
-		writeError(w, http.StatusBadRequest, "name_required", "name is required")
-	case errors.Is(err, template.ErrInvalidAccount):
-		writeError(w, http.StatusBadRequest, "invalid_account", "account does not belong to this wallet")
-	default:
-		writeError(w, http.StatusInternalServerError, "internal", "could not save template")
-	}
-	return false
+	return mapError(w, err, "could not save template",
+		errCase{template.ErrNotFound, http.StatusNotFound, "not_found", "template not found"},
+		errCase{template.ErrNameRequired, http.StatusBadRequest, "name_required", "name is required"},
+		errCase{template.ErrInvalidAccount, http.StatusBadRequest, "invalid_account", "account does not belong to this wallet"},
+	)
 }

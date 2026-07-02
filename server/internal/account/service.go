@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/easly1989/cloudbank/server/internal/dbconv"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -91,13 +92,6 @@ type PositionUpdate struct {
 	ID        int64
 	Position  int64
 	GroupName string
-}
-
-func b2i(b bool) int64 {
-	if b {
-		return 1
-	}
-	return 0
 }
 
 // Service implements account CRUD.
@@ -200,7 +194,7 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Account
 		WalletID: walletID, Name: in.Name, Type: in.Type, CurrencyID: in.CurrencyID,
 		Institution: in.Institution, Number: in.Number,
 		InitialBalance: in.InitialBalance, MinimumBalance: in.MinimumBalance,
-		Closed: b2i(in.Closed), NoSummary: b2i(in.NoSummary), NoBudget: b2i(in.NoBudget), NoReport: b2i(in.NoReport),
+		Closed: dbconv.B2i(in.Closed), NoSummary: dbconv.B2i(in.NoSummary), NoBudget: dbconv.B2i(in.NoBudget), NoReport: dbconv.B2i(in.NoReport),
 		Position: pos, GroupName: in.GroupName, Notes: in.Notes, Website: in.Website,
 	})
 	if err != nil {
@@ -222,7 +216,7 @@ func (s *Service) Update(ctx context.Context, walletID, accountID int64, in Inpu
 		Name: in.Name, Type: in.Type, CurrencyID: in.CurrencyID,
 		Institution: in.Institution, Number: in.Number,
 		InitialBalance: in.InitialBalance, MinimumBalance: in.MinimumBalance,
-		Closed: b2i(in.Closed), NoSummary: b2i(in.NoSummary), NoBudget: b2i(in.NoBudget), NoReport: b2i(in.NoReport),
+		Closed: dbconv.B2i(in.Closed), NoSummary: dbconv.B2i(in.NoSummary), NoBudget: dbconv.B2i(in.NoBudget), NoReport: dbconv.B2i(in.NoReport),
 		GroupName: in.GroupName, Notes: in.Notes, Website: in.Website, ID: accountID,
 	}); err != nil {
 		if isUnique(err) {
