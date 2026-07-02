@@ -46,7 +46,7 @@ func (q *Queries) DeleteAccount(ctx context.Context, id int64) error {
 }
 
 const getAccount = `-- name: GetAccount :one
-SELECT id, wallet_id, name, type, currency_id, institution, number, initial_balance, minimum_balance, closed, no_summary, no_budget, no_report, position, group_name, notes, website, created_at FROM accounts WHERE id = ? LIMIT 1
+SELECT id, wallet_id, name, type, currency_id, institution, number, initial_balance, minimum_balance, closed, no_summary, no_budget, no_report, position, group_name, notes, website, created_at, default_payment_mode FROM accounts WHERE id = ? LIMIT 1
 `
 
 func (q *Queries) GetAccount(ctx context.Context, id int64) (Account, error) {
@@ -71,6 +71,7 @@ func (q *Queries) GetAccount(ctx context.Context, id int64) (Account, error) {
 		&i.Notes,
 		&i.Website,
 		&i.CreatedAt,
+		&i.DefaultPaymentMode,
 	)
 	return i, err
 }
@@ -79,29 +80,30 @@ const insertAccount = `-- name: InsertAccount :one
 INSERT INTO accounts (
     wallet_id, name, type, currency_id, institution, number,
     initial_balance, minimum_balance, closed, no_summary, no_budget, no_report,
-    position, group_name, notes, website
+    position, group_name, notes, website, default_payment_mode
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, wallet_id, name, type, currency_id, institution, number, initial_balance, minimum_balance, closed, no_summary, no_budget, no_report, position, group_name, notes, website, created_at
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, wallet_id, name, type, currency_id, institution, number, initial_balance, minimum_balance, closed, no_summary, no_budget, no_report, position, group_name, notes, website, created_at, default_payment_mode
 `
 
 type InsertAccountParams struct {
-	WalletID       int64
-	Name           string
-	Type           string
-	CurrencyID     int64
-	Institution    string
-	Number         string
-	InitialBalance int64
-	MinimumBalance int64
-	Closed         int64
-	NoSummary      int64
-	NoBudget       int64
-	NoReport       int64
-	Position       int64
-	GroupName      string
-	Notes          string
-	Website        string
+	WalletID           int64
+	Name               string
+	Type               string
+	CurrencyID         int64
+	Institution        string
+	Number             string
+	InitialBalance     int64
+	MinimumBalance     int64
+	Closed             int64
+	NoSummary          int64
+	NoBudget           int64
+	NoReport           int64
+	Position           int64
+	GroupName          string
+	Notes              string
+	Website            string
+	DefaultPaymentMode int64
 }
 
 func (q *Queries) InsertAccount(ctx context.Context, arg InsertAccountParams) (Account, error) {
@@ -122,6 +124,7 @@ func (q *Queries) InsertAccount(ctx context.Context, arg InsertAccountParams) (A
 		arg.GroupName,
 		arg.Notes,
 		arg.Website,
+		arg.DefaultPaymentMode,
 	)
 	var i Account
 	err := row.Scan(
@@ -143,13 +146,14 @@ func (q *Queries) InsertAccount(ctx context.Context, arg InsertAccountParams) (A
 		&i.Notes,
 		&i.Website,
 		&i.CreatedAt,
+		&i.DefaultPaymentMode,
 	)
 	return i, err
 }
 
 const listAccountsForWallet = `-- name: ListAccountsForWallet :many
 SELECT
-    a.id, a.wallet_id, a.name, a.type, a.currency_id, a.institution, a.number, a.initial_balance, a.minimum_balance, a.closed, a.no_summary, a.no_budget, a.no_report, a.position, a.group_name, a.notes, a.website, a.created_at,
+    a.id, a.wallet_id, a.name, a.type, a.currency_id, a.institution, a.number, a.initial_balance, a.minimum_balance, a.closed, a.no_summary, a.no_budget, a.no_report, a.position, a.group_name, a.notes, a.website, a.created_at, a.default_payment_mode,
     c.iso_code      AS currency_code,
     c.symbol        AS currency_symbol,
     c.symbol_prefix AS currency_symbol_prefix,
@@ -181,6 +185,7 @@ type ListAccountsForWalletRow struct {
 	Notes                string
 	Website              string
 	CreatedAt            string
+	DefaultPaymentMode   int64
 	CurrencyCode         string
 	CurrencySymbol       string
 	CurrencySymbolPrefix int64
@@ -217,6 +222,7 @@ func (q *Queries) ListAccountsForWallet(ctx context.Context, walletID int64) ([]
 			&i.Notes,
 			&i.Website,
 			&i.CreatedAt,
+			&i.DefaultPaymentMode,
 			&i.CurrencyCode,
 			&i.CurrencySymbol,
 			&i.CurrencySymbolPrefix,
@@ -252,26 +258,28 @@ const updateAccount = `-- name: UpdateAccount :exec
 UPDATE accounts SET
     name = ?, type = ?, currency_id = ?, institution = ?, number = ?,
     initial_balance = ?, minimum_balance = ?, closed = ?,
-    no_summary = ?, no_budget = ?, no_report = ?, group_name = ?, notes = ?, website = ?
+    no_summary = ?, no_budget = ?, no_report = ?, group_name = ?, notes = ?, website = ?,
+    default_payment_mode = ?
 WHERE id = ?
 `
 
 type UpdateAccountParams struct {
-	Name           string
-	Type           string
-	CurrencyID     int64
-	Institution    string
-	Number         string
-	InitialBalance int64
-	MinimumBalance int64
-	Closed         int64
-	NoSummary      int64
-	NoBudget       int64
-	NoReport       int64
-	GroupName      string
-	Notes          string
-	Website        string
-	ID             int64
+	Name               string
+	Type               string
+	CurrencyID         int64
+	Institution        string
+	Number             string
+	InitialBalance     int64
+	MinimumBalance     int64
+	Closed             int64
+	NoSummary          int64
+	NoBudget           int64
+	NoReport           int64
+	GroupName          string
+	Notes              string
+	Website            string
+	DefaultPaymentMode int64
+	ID                 int64
 }
 
 func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) error {
@@ -290,6 +298,7 @@ func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) er
 		arg.GroupName,
 		arg.Notes,
 		arg.Website,
+		arg.DefaultPaymentMode,
 		arg.ID,
 	)
 	return err

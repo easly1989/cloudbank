@@ -101,7 +101,8 @@ export function QuickAdd({
         accountId: account.id,
         date,
         amount: (parseAmount(amount, fd, dc) ?? 0) * (direction === "expense" ? -1 : 1),
-        paymentMode: p?.defaultPaymentMode ?? 0,
+        // A chosen payee's own default wins; otherwise the account's default.
+        paymentMode: p?.defaultPaymentMode ?? account.defaultPaymentMode,
         status: Number(status),
         payeeId: payeeId ? Number(payeeId) : null,
         categoryId: categoryId ? Number(categoryId) : null,

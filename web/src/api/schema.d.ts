@@ -1721,6 +1721,8 @@ export interface components {
             groupName?: string;
             notes?: string;
             website?: string;
+            /** @description HomeBank payment mode 0..11 pre-filled for new transactions in this account */
+            defaultPaymentMode: number;
             createdAt?: string;
             currencyCode: string;
             currencySymbol: string;
@@ -1751,6 +1753,8 @@ export interface components {
             groupName?: string;
             notes?: string;
             website?: string;
+            /** @description HomeBank payment mode 0..11 */
+            defaultPaymentMode?: number;
         };
         Category: {
             /** Format: int64 */
