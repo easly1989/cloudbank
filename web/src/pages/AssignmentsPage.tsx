@@ -39,11 +39,11 @@ import {
   updateAssignment,
 } from "../api/client";
 import { stopRowEdit } from "../rowEdit";
+import { PAYMENT_MODES } from "../transactionEnums";
 import { useWallet } from "../wallet/WalletProvider";
 
 const FIELDS: MatchField[] = ["memo", "payee", "both"];
 const TYPES: MatchType[] = ["exact", "contains", "regex"];
-const PAYMENT_MODES = Array.from({ length: 12 }, (_, i) => i);
 
 export function AssignmentsPage() {
   const { t } = useTranslation();
