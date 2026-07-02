@@ -18,8 +18,17 @@ export interface Preferences {
   navOrder?: string[];
   /** Pinned sidebar nav route ids; unpinned items fall into the "More" group. */
   navPinned?: string[];
-  /** Dashboard widget layout: order, hidden ids, and per-widget width (full/half/third). */
-  dashboardLayout?: { order: string[]; hidden: string[]; spans?: Record<string, string> };
+  /**
+   * Dashboard widget layout. Legacy shape ({ order, hidden, spans }) is migrated
+   * on load into the free-form 2D model ({ version: 2, widgets: [...] }); see
+   * components/dashboard/layout.ts.
+   */
+  dashboardLayout?:
+    | { order: string[]; hidden: string[]; spans?: Record<string, string> }
+    | {
+        version: 2;
+        widgets: { id: string; type: string; x: number; y: number; w: number; h: number }[];
+      };
   /** Whether the first-login onboarding tour has been seen (so it runs only once). */
   tutorialSeen?: boolean;
   /** Saved report configurations (Statistics/Trend), scoped per wallet + tab. */
