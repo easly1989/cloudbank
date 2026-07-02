@@ -368,7 +368,8 @@ func pathID(w http.ResponseWriter, r *http.Request) (int64, bool) {
 }
 
 func clientIP(r *http.Request) string {
-	// chi's RealIP middleware sets RemoteAddr from X-Forwarded-For/X-Real-IP.
+	// Uses the real TCP peer address (RealIP is deliberately not used — see
+	// router.go). Behind a trusted reverse proxy this is the proxy's address.
 	host := r.RemoteAddr
 	if i := strings.LastIndex(host, ":"); i != -1 {
 		host = host[:i]
