@@ -315,7 +315,7 @@ export function DashboardPage() {
         <>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={visible} strategy={rectSortingStrategy}>
-              <Grid gutter="md">
+              <Grid gap="md">
                 {visible.map((id) => (
                   <SortableWidget
                     key={id}
@@ -354,7 +354,7 @@ export function DashboardPage() {
           )}
         </>
       ) : (
-        <Grid gutter="md">
+        <Grid gap="md">
           {visible.map((id) => (
             <Grid.Col key={id} span={{ base: 12, sm: spanCols(id) }}>
               {widgets[id]}
