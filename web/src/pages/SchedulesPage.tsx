@@ -52,12 +52,12 @@ import {
 import { useDateFormat } from "../dates";
 import { formatMinor, type MoneyFormat } from "../money";
 import { rowEditProps, stopRowEdit } from "../rowEdit";
+import { PAYMENT_MODES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
 
 const UNITS: ScheduleUnit[] = ["day", "week", "month", "year"];
 const WEEKEND_MODES = [0, 1, 2, 3];
-const PAYMENT_MODES = Array.from({ length: 12 }, (_, i) => i);
 
 // Currency formatting for an account (falls back to plain 2-decimal numbers when
 // the account/currency isn't known).

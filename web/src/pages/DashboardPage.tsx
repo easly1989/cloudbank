@@ -76,7 +76,7 @@ import { Donut } from "../components/Donut";
 import { useDateFormat } from "../dates";
 import { formatMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
-import { TransactionForm } from "./TransactionsPage";
+import { TransactionForm } from "../components/TransactionForm";
 import { type DatePreset, dateBounds, emptyFilters } from "./registerFilters";
 
 const WIDGET_IDS = [
@@ -226,8 +226,45 @@ export function DashboardPage() {
     return [...byType.entries()];
   }, [data]);
 
-  if (!currentWallet) return null;
   const base = data?.baseCurrency ?? undefined;
+  // Widget elements are memoized so drag/layout-edit re-renders (which only
+  // touch order/hidden/spans) don't rebuild every widget — notably the ECharts
+  // cards — from scratch on each interaction.
+  const widgets = useMemo<Record<WidgetId, ReactNode>>(
+    () => ({
+      totals:
+        base && data ? (
+          <SimpleGrid cols={{ base: 1, sm: 3 }}>
+            <TotalCard label={t("register.bank")} value={data.totals.bank} fmt={base} />
+            <TotalCard label={t("register.today")} value={data.totals.today} fmt={base} />
+            <TotalCard label={t("register.future")} value={data.totals.future} fmt={base} />
+          </SimpleGrid>
+        ) : null,
+      quickAdd: <QuickAddCard walletId={walletId} />,
+      incomeExpense: (
+        <IncomeExpenseCard
+          view={view}
+          setView={setView}
+          points={data?.incomeExpense ?? []}
+          base={base}
+        />
+      ),
+      accounts: <AccountsPanel groups={groups} base={base} totals={data?.totals} />,
+      spending: (
+        <SpendingCard
+          view={view}
+          setView={setView}
+          slices={data?.topCategories ?? []}
+          base={base}
+        />
+      ),
+      budget: <BudgetWidget walletId={walletId} base={base} />,
+      upcoming: <UpcomingPanel walletId={walletId} base={base} />,
+    }),
+    [base, data, walletId, view, setView, groups, t],
+  );
+
+  if (!currentWallet) return null;
 
   const hiddenSet = new Set(hidden);
   const visible = order.filter((id) => !hiddenSet.has(id));
@@ -260,31 +297,6 @@ export function DashboardPage() {
     return s === "half" ? 6 : s === "third" ? 4 : 12;
   };
 
-  const widgets: Record<WidgetId, ReactNode> = {
-    totals:
-      base && data ? (
-        <SimpleGrid cols={{ base: 1, sm: 3 }}>
-          <TotalCard label={t("register.bank")} value={data.totals.bank} fmt={base} />
-          <TotalCard label={t("register.today")} value={data.totals.today} fmt={base} />
-          <TotalCard label={t("register.future")} value={data.totals.future} fmt={base} />
-        </SimpleGrid>
-      ) : null,
-    quickAdd: <QuickAddCard walletId={walletId} />,
-    incomeExpense: (
-      <IncomeExpenseCard
-        view={view}
-        setView={setView}
-        points={data?.incomeExpense ?? []}
-        base={base}
-      />
-    ),
-    accounts: <AccountsPanel groups={groups} base={base} totals={data?.totals} />,
-    spending: (
-      <SpendingCard view={view} setView={setView} slices={data?.topCategories ?? []} base={base} />
-    ),
-    budget: <BudgetWidget walletId={walletId} base={base} />,
-    upcoming: <UpcomingPanel walletId={walletId} base={base} />,
-  };
   const labels: Record<WidgetId, string> = {
     totals: t("dashboard.widgets.totals"),
     quickAdd: t("dashboard.quickAdd"),
