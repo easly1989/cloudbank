@@ -4,13 +4,7 @@
 import type { Category, RegisterRow } from "../api/client";
 
 export type DatePreset =
-  | "all"
-  | "thisMonth"
-  | "thisQuarter"
-  | "thisYear"
-  | "last30"
-  | "last90"
-  | "custom";
+  "all" | "thisMonth" | "thisQuarter" | "thisYear" | "last30" | "last90" | "custom";
 
 // Quick filter for transfer legs: show everything, only transfers, or hide them.
 export type TransferFilter = "all" | "only" | "none";
