@@ -609,6 +609,8 @@
     "quickAdd": "Aggiungi veloce",
     "customize": "Personalizza",
     "layoutDone": "Fatto",
+    "addWidget": "Aggiungi widget",
+    "editHint": "Trascina per spostare, trascina un bordo o un angolo per ridimensionare. Le modifiche si salvano da sole.",
     "hiddenWidgets": "Widget nascosti",
     "hideWidget": "Nascondi widget",
     "widgets": {
