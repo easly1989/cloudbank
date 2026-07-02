@@ -34,6 +34,7 @@ import {
 } from "../api/client";
 import { type MoneyFormat, formatMinor, minorToInput } from "../money";
 import { rowEditProps, stopRowEdit } from "../rowEdit";
+import { PAYMENT_MODES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
 
@@ -240,6 +241,7 @@ function AccountModal({
   const [minimum, setMinimum] = useState("");
   const [closed, setClosed] = useState(false);
   const [groupName, setGroupName] = useState("");
+  const [defaultPaymentMode, setDefaultPaymentMode] = useState("0");
 
   // Reset the form whenever the modal opens for a (different) account.
   useEffect(() => {
@@ -251,6 +253,7 @@ function AccountModal({
     setNumber(account?.number ?? "");
     setGroupName(account?.groupName ?? "");
     setClosed(account?.closed ?? false);
+    setDefaultPaymentMode(String(account?.defaultPaymentMode ?? 0));
     const cur = currencies.find((c) => c.id === (account?.currencyId ?? base?.id));
     const fd = cur?.fracDigits ?? 2;
     const dc = cur?.decimalChar ?? ".";
@@ -275,6 +278,7 @@ function AccountModal({
         minimumBalance: parseAmount(minimum, fd, dc) ?? 0,
         closed,
         groupName,
+        defaultPaymentMode: Number(defaultPaymentMode),
       };
       return account ? updateAccount(walletId, account.id, body) : createAccount(walletId, body);
     },
@@ -344,6 +348,14 @@ function AccountModal({
           label={t("accounts.group")}
           value={groupName}
           onChange={(e) => setGroupName(e.currentTarget.value)}
+        />
+        <Select
+          label={t("accounts.defaultPaymentMode")}
+          description={t("accounts.defaultPaymentModeHint")}
+          data={PAYMENT_MODES.map((m) => ({ value: String(m), label: t(`paymentModes.${m}`) }))}
+          value={defaultPaymentMode}
+          allowDeselect={false}
+          onChange={(v) => v && setDefaultPaymentMode(v)}
         />
         <Checkbox
           label={t("accounts.closed")}

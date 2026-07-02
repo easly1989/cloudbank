@@ -488,6 +488,8 @@
     "institution": "Institution",
     "number": "Account number",
     "group": "Group",
+    "defaultPaymentMode": "Default payment mode",
+    "defaultPaymentModeHint": "Pre-fills new transactions in this account (a payee's own default still wins).",
     "types": {
       "bank": "Bank",
       "cash": "Cash",

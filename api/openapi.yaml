@@ -1769,6 +1769,7 @@ components:
         groupName: { type: string }
         notes: { type: string }
         website: { type: string }
+        defaultPaymentMode: { type: integer, description: "HomeBank payment mode 0..11 pre-filled for new transactions in this account" }
         createdAt: { type: string }
         currencyCode: { type: string }
         currencySymbol: { type: string }
@@ -1778,6 +1779,7 @@ components:
         currencyFracDigits: { type: integer }
       required:
         [id, name, type, currencyId, initialBalance, minimumBalance, balance, futureBalance, closed, position,
+         defaultPaymentMode,
          currencyCode, currencySymbol, currencySymbolPrefix, currencyDecimalChar, currencyGroupChar, currencyFracDigits]
     AccountInput:
       type: object
@@ -1798,6 +1800,7 @@ components:
         groupName: { type: string }
         notes: { type: string }
         website: { type: string }
+        defaultPaymentMode: { type: integer, description: "HomeBank payment mode 0..11" }
       required: [name, type]
     Category:
       type: object

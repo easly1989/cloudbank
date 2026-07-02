@@ -40,26 +40,27 @@ func ValidType(t string) bool { return typeSet[t] }
 // Account is the public representation of an account, including its currency's
 // formatting metadata and current balance.
 type Account struct {
-	ID             int64
-	WalletID       int64
-	Name           string
-	Type           string
-	CurrencyID     int64
-	Institution    string
-	Number         string
-	InitialBalance int64
-	MinimumBalance int64
-	Balance        int64 // today's balance: initial_balance + sum(transactions dated on/before today)
-	FutureBalance  int64 // initial_balance + sum(all transactions, including future-dated)
-	Closed         bool
-	NoSummary      bool
-	NoBudget       bool
-	NoReport       bool
-	Position       int64
-	GroupName      string
-	Notes          string
-	Website        string
-	CreatedAt      string
+	ID                 int64
+	WalletID           int64
+	Name               string
+	Type               string
+	CurrencyID         int64
+	Institution        string
+	Number             string
+	InitialBalance     int64
+	MinimumBalance     int64
+	Balance            int64 // today's balance: initial_balance + sum(transactions dated on/before today)
+	FutureBalance      int64 // initial_balance + sum(all transactions, including future-dated)
+	Closed             bool
+	NoSummary          bool
+	NoBudget           bool
+	NoReport           bool
+	Position           int64
+	GroupName          string
+	Notes              string
+	Website            string
+	DefaultPaymentMode int64
+	CreatedAt          string
 
 	CurrencyCode         string
 	CurrencySymbol       string
@@ -71,20 +72,21 @@ type Account struct {
 
 // Input carries the editable fields of an account.
 type Input struct {
-	Name           string
-	Type           string
-	CurrencyID     int64
-	Institution    string
-	Number         string
-	InitialBalance int64
-	MinimumBalance int64
-	Closed         bool
-	NoSummary      bool
-	NoBudget       bool
-	NoReport       bool
-	GroupName      string
-	Notes          string
-	Website        string
+	Name               string
+	Type               string
+	CurrencyID         int64
+	Institution        string
+	Number             string
+	InitialBalance     int64
+	MinimumBalance     int64
+	Closed             bool
+	NoSummary          bool
+	NoBudget           bool
+	NoReport           bool
+	GroupName          string
+	Notes              string
+	Website            string
+	DefaultPaymentMode int64
 }
 
 // PositionUpdate moves an account to a position/group (for reordering).
@@ -141,7 +143,8 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]Account, error) {
 			InitialBalance: r.InitialBalance, MinimumBalance: r.MinimumBalance,
 			Balance: r.InitialBalance + d.TodayDelta, FutureBalance: r.InitialBalance + d.FutureDelta,
 			Closed: r.Closed != 0, NoSummary: r.NoSummary != 0, NoBudget: r.NoBudget != 0, NoReport: r.NoReport != 0,
-			Position: r.Position, GroupName: r.GroupName, Notes: r.Notes, Website: r.Website, CreatedAt: r.CreatedAt,
+			Position: r.Position, GroupName: r.GroupName, Notes: r.Notes, Website: r.Website,
+			DefaultPaymentMode: r.DefaultPaymentMode, CreatedAt: r.CreatedAt,
 			CurrencyCode: r.CurrencyCode, CurrencySymbol: r.CurrencySymbol,
 			CurrencySymbolPrefix: r.CurrencySymbolPrefix != 0,
 			CurrencyDecimalChar:  r.CurrencyDecimalChar, CurrencyGroupChar: r.CurrencyGroupChar,
@@ -175,7 +178,8 @@ func (s *Service) Get(ctx context.Context, accountID int64) (Account, error) {
 		InitialBalance: a.InitialBalance, MinimumBalance: a.MinimumBalance,
 		Balance: a.InitialBalance + d.TodayDelta, FutureBalance: a.InitialBalance + d.FutureDelta,
 		Closed: a.Closed != 0, NoSummary: a.NoSummary != 0, NoBudget: a.NoBudget != 0, NoReport: a.NoReport != 0,
-		Position: a.Position, GroupName: a.GroupName, Notes: a.Notes, Website: a.Website, CreatedAt: a.CreatedAt,
+		Position: a.Position, GroupName: a.GroupName, Notes: a.Notes, Website: a.Website,
+		DefaultPaymentMode: a.DefaultPaymentMode, CreatedAt: a.CreatedAt,
 		CurrencyCode: cur.IsoCode, CurrencySymbol: cur.Symbol, CurrencySymbolPrefix: cur.SymbolPrefix != 0,
 		CurrencyDecimalChar: cur.DecimalChar, CurrencyGroupChar: cur.GroupChar, CurrencyFracDigits: int(cur.FracDigits),
 	}, nil
@@ -196,6 +200,7 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Account
 		InitialBalance: in.InitialBalance, MinimumBalance: in.MinimumBalance,
 		Closed: dbconv.B2i(in.Closed), NoSummary: dbconv.B2i(in.NoSummary), NoBudget: dbconv.B2i(in.NoBudget), NoReport: dbconv.B2i(in.NoReport),
 		Position: pos, GroupName: in.GroupName, Notes: in.Notes, Website: in.Website,
+		DefaultPaymentMode: in.DefaultPaymentMode,
 	})
 	if err != nil {
 		if isUnique(err) {
@@ -217,7 +222,7 @@ func (s *Service) Update(ctx context.Context, walletID, accountID int64, in Inpu
 		Institution: in.Institution, Number: in.Number,
 		InitialBalance: in.InitialBalance, MinimumBalance: in.MinimumBalance,
 		Closed: dbconv.B2i(in.Closed), NoSummary: dbconv.B2i(in.NoSummary), NoBudget: dbconv.B2i(in.NoBudget), NoReport: dbconv.B2i(in.NoReport),
-		GroupName: in.GroupName, Notes: in.Notes, Website: in.Website, ID: accountID,
+		GroupName: in.GroupName, Notes: in.Notes, Website: in.Website, DefaultPaymentMode: in.DefaultPaymentMode, ID: accountID,
 	}); err != nil {
 		if isUnique(err) {
 			return Account{}, ErrDuplicateName

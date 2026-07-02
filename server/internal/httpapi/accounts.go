@@ -17,25 +17,26 @@ type accountHandlers struct {
 }
 
 type accountResponse struct {
-	ID             int64  `json:"id"`
-	Name           string `json:"name"`
-	Type           string `json:"type"`
-	CurrencyID     int64  `json:"currencyId"`
-	Institution    string `json:"institution"`
-	Number         string `json:"number"`
-	InitialBalance int64  `json:"initialBalance"`
-	MinimumBalance int64  `json:"minimumBalance"`
-	Balance        int64  `json:"balance"`
-	FutureBalance  int64  `json:"futureBalance"`
-	Closed         bool   `json:"closed"`
-	NoSummary      bool   `json:"noSummary"`
-	NoBudget       bool   `json:"noBudget"`
-	NoReport       bool   `json:"noReport"`
-	Position       int64  `json:"position"`
-	GroupName      string `json:"groupName"`
-	Notes          string `json:"notes"`
-	Website        string `json:"website"`
-	CreatedAt      string `json:"createdAt"`
+	ID                 int64  `json:"id"`
+	Name               string `json:"name"`
+	Type               string `json:"type"`
+	CurrencyID         int64  `json:"currencyId"`
+	Institution        string `json:"institution"`
+	Number             string `json:"number"`
+	InitialBalance     int64  `json:"initialBalance"`
+	MinimumBalance     int64  `json:"minimumBalance"`
+	Balance            int64  `json:"balance"`
+	FutureBalance      int64  `json:"futureBalance"`
+	Closed             bool   `json:"closed"`
+	NoSummary          bool   `json:"noSummary"`
+	NoBudget           bool   `json:"noBudget"`
+	NoReport           bool   `json:"noReport"`
+	Position           int64  `json:"position"`
+	GroupName          string `json:"groupName"`
+	Notes              string `json:"notes"`
+	Website            string `json:"website"`
+	DefaultPaymentMode int64  `json:"defaultPaymentMode"`
+	CreatedAt          string `json:"createdAt"`
 
 	CurrencyCode         string `json:"currencyCode"`
 	CurrencySymbol       string `json:"currencySymbol"`
@@ -52,7 +53,8 @@ func toAccountResponse(a account.Account) accountResponse {
 		InitialBalance: a.InitialBalance, MinimumBalance: a.MinimumBalance, Balance: a.Balance,
 		FutureBalance: a.FutureBalance,
 		Closed:        a.Closed, NoSummary: a.NoSummary, NoBudget: a.NoBudget, NoReport: a.NoReport,
-		Position: a.Position, GroupName: a.GroupName, Notes: a.Notes, Website: a.Website, CreatedAt: a.CreatedAt,
+		Position: a.Position, GroupName: a.GroupName, Notes: a.Notes, Website: a.Website,
+		DefaultPaymentMode: a.DefaultPaymentMode, CreatedAt: a.CreatedAt,
 		CurrencyCode: a.CurrencyCode, CurrencySymbol: a.CurrencySymbol, CurrencySymbolPrefix: a.CurrencySymbolPrefix,
 		CurrencyDecimalChar: a.CurrencyDecimalChar, CurrencyGroupChar: a.CurrencyGroupChar,
 		CurrencyFracDigits: a.CurrencyFracDigits,
@@ -85,20 +87,21 @@ func (h *accountHandlers) list(w http.ResponseWriter, r *http.Request) {
 }
 
 type accountInput struct {
-	Name           string `json:"name"`
-	Type           string `json:"type"`
-	CurrencyID     int64  `json:"currencyId"`
-	Institution    string `json:"institution"`
-	Number         string `json:"number"`
-	InitialBalance int64  `json:"initialBalance"`
-	MinimumBalance int64  `json:"minimumBalance"`
-	Closed         bool   `json:"closed"`
-	NoSummary      bool   `json:"noSummary"`
-	NoBudget       bool   `json:"noBudget"`
-	NoReport       bool   `json:"noReport"`
-	GroupName      string `json:"groupName"`
-	Notes          string `json:"notes"`
-	Website        string `json:"website"`
+	Name               string `json:"name"`
+	Type               string `json:"type"`
+	CurrencyID         int64  `json:"currencyId"`
+	Institution        string `json:"institution"`
+	Number             string `json:"number"`
+	InitialBalance     int64  `json:"initialBalance"`
+	MinimumBalance     int64  `json:"minimumBalance"`
+	Closed             bool   `json:"closed"`
+	NoSummary          bool   `json:"noSummary"`
+	NoBudget           bool   `json:"noBudget"`
+	NoReport           bool   `json:"noReport"`
+	GroupName          string `json:"groupName"`
+	Notes              string `json:"notes"`
+	Website            string `json:"website"`
+	DefaultPaymentMode int64  `json:"defaultPaymentMode"`
 }
 
 func (in accountInput) toServiceInput() account.Input {
@@ -108,6 +111,7 @@ func (in accountInput) toServiceInput() account.Input {
 		InitialBalance: in.InitialBalance, MinimumBalance: in.MinimumBalance,
 		Closed: in.Closed, NoSummary: in.NoSummary, NoBudget: in.NoBudget, NoReport: in.NoReport,
 		GroupName: in.GroupName, Notes: in.Notes, Website: in.Website,
+		DefaultPaymentMode: in.DefaultPaymentMode,
 	}
 }
 
@@ -228,6 +232,10 @@ func validateAccount(w http.ResponseWriter, in *accountInput, baseCurrencyID *in
 	}
 	if !account.ValidType(in.Type) {
 		writeError(w, http.StatusBadRequest, "invalid_type", "invalid account type")
+		return false
+	}
+	if in.DefaultPaymentMode < 0 || in.DefaultPaymentMode > 11 {
+		writeError(w, http.StatusBadRequest, "invalid", "invalid default payment mode")
 		return false
 	}
 	if in.CurrencyID == 0 {

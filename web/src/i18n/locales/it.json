@@ -488,6 +488,8 @@
     "institution": "Istituto",
     "number": "Numero di conto",
     "group": "Gruppo",
+    "defaultPaymentMode": "Metodo di pagamento predefinito",
+    "defaultPaymentModeHint": "Precompila le nuove transazioni di questo conto (il predefinito del beneficiario ha comunque la priorità).",
     "types": {
       "bank": "Banca",
       "cash": "Contanti",
