@@ -45,6 +45,19 @@ func serveOpenAPISpec(w http.ResponseWriter, _ *http.Request) {
 }
 
 func serveSwaggerUI(w http.ResponseWriter, _ *http.Request) {
+	// Swagger UI loads its chrome (JS/CSS/fonts) from a pinned CDN and uses an
+	// inline bootstrap script plus runtime eval, so it needs a looser policy than
+	// the strict SPA CSP set by the securityHeaders middleware. This overrides it.
+	// The spec it renders is fetched same-origin and is already public, so the
+	// broader policy on this one page is low-risk.
+	w.Header().Set("Content-Security-Policy",
+		"default-src 'self'; "+
+			"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "+
+			"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "+
+			"img-src 'self' data:; "+
+			"font-src 'self' data: https://cdn.jsdelivr.net; "+
+			"connect-src 'self'; "+
+			"base-uri 'self'; frame-ancestors 'none'")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = w.Write([]byte(swaggerUIPage))
 }
