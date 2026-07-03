@@ -67,12 +67,20 @@ type Input struct {
 // Service implements template management.
 type Service struct {
 	db *sql.DB
-	q  *db.Queries
+	q  *db.Queries // write pool (mutations)
+	rq *db.Queries // read pool (read-only methods)
 }
 
-// NewService builds a Service backed by the write connection pool.
+// NewService builds a Service backed by the write connection pool for both
+// reads and writes.
 func NewService(write *sql.DB) *Service {
-	return &Service{db: write, q: db.New(write)}
+	return &Service{db: write, q: db.New(write), rq: db.New(write)}
+}
+
+// NewServiceWithRead builds a Service whose read-only methods run on the read
+// pool while mutations use the single write connection.
+func NewServiceWithRead(read, write *sql.DB) *Service {
+	return &Service{db: write, q: db.New(write), rq: db.New(read)}
 }
 
 func nullID(p *int64) sql.NullInt64 {
@@ -194,7 +202,7 @@ func toTemplate(row db.Template) Template {
 
 // Get returns a template with its split lines.
 func (s *Service) Get(ctx context.Context, id int64) (Template, error) {
-	row, err := s.q.GetTemplate(ctx, id)
+	row, err := s.rq.GetTemplate(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Template{}, ErrNotFound
 	}
@@ -203,7 +211,7 @@ func (s *Service) Get(ctx context.Context, id int64) (Template, error) {
 	}
 	out := toTemplate(row)
 	if out.IsSplit {
-		splits, err := s.q.ListTemplateSplits(ctx, id)
+		splits, err := s.rq.ListTemplateSplits(ctx, id)
 		if err != nil {
 			return Template{}, err
 		}
@@ -216,7 +224,7 @@ func (s *Service) Get(ctx context.Context, id int64) (Template, error) {
 
 // WalletOf returns the wallet a template belongs to (for ownership checks).
 func (s *Service) WalletOf(ctx context.Context, id int64) (int64, error) {
-	row, err := s.q.GetTemplate(ctx, id)
+	row, err := s.rq.GetTemplate(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, ErrNotFound
 	}
@@ -228,7 +236,7 @@ func (s *Service) WalletOf(ctx context.Context, id int64) (int64, error) {
 
 // List returns a wallet's templates (with split lines), name-sorted.
 func (s *Service) List(ctx context.Context, walletID int64) ([]Template, error) {
-	rows, err := s.q.ListTemplatesForWallet(ctx, walletID)
+	rows, err := s.rq.ListTemplatesForWallet(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +244,7 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]Template, error) 
 	for _, row := range rows {
 		t := toTemplate(row)
 		if t.IsSplit {
-			splits, err := s.q.ListTemplateSplits(ctx, row.ID)
+			splits, err := s.rq.ListTemplateSplits(ctx, row.ID)
 			if err != nil {
 				return nil, err
 			}
