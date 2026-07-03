@@ -105,6 +105,11 @@ describe("App routing", () => {
       },
     });
     renderApp("/");
-    await waitFor(() => expect(screen.getByText("Your accounts")).toBeInTheDocument());
+    // The dashboard widgets render into gridstack-owned nodes via portals, which
+    // mount after the grid's init + build effects (a few render cycles), so allow
+    // more than the default 1s for the content to appear in jsdom.
+    await waitFor(() => expect(screen.getByText("Your accounts")).toBeInTheDocument(), {
+      timeout: 4000,
+    });
   });
 });
