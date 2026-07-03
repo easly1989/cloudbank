@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -85,11 +86,45 @@ func (h *attachmentHandlers) download(w http.ResponseWriter, r *http.Request) {
 	defer func() { _ = f.Close() }()
 	w.Header().Set("Content-Type", att.ContentType)
 	w.Header().Set("Content-Length", strconv.FormatInt(att.Size, 10))
-	// inline so images/PDFs preview in the browser; filename drives "save as".
-	w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=%q", att.Filename))
+	// An attachment is untrusted user-supplied content, so it must never be able
+	// to execute in the app's origin. Only known-safe preview types (raster
+	// images, PDF) get an "inline" disposition; everything else — SVG, HTML,
+	// scripts, unknown types — is forced to download, so a crafted file can't
+	// render and run script when another wallet member views it. The sandbox CSP
+	// is defence-in-depth that neutralises active content even for inline types.
+	w.Header().Set("Content-Disposition",
+		fmt.Sprintf("%s; filename=%q", contentDisposition(att.ContentType), att.Filename))
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; sandbox")
+	w.Header().Set("Referrer-Policy", "no-referrer")
 	// Zero modtime: skip Last-Modified/If-Modified-Since (files are immutable).
 	http.ServeContent(w, r, att.Filename, time.Time{}, f)
+}
+
+// inlineSafeTypes are the content types served with an "inline" disposition so
+// they preview in the browser. Raster images can't execute; PDFs are inline for
+// convenience but the sandbox CSP blocks any embedded scripts. Every other type
+// (notably image/svg+xml and text/html) is served as a download instead.
+var inlineSafeTypes = map[string]bool{
+	"image/png":       true,
+	"image/jpeg":      true,
+	"image/gif":       true,
+	"image/webp":      true,
+	"application/pdf": true,
+}
+
+// contentDisposition returns "inline" for known-safe preview types and
+// "attachment" (forced download) for everything else. The content type is
+// normalised (parameters stripped, lower-cased) before the allowlist check.
+func contentDisposition(contentType string) string {
+	ct := contentType
+	if i := strings.IndexByte(ct, ';'); i >= 0 {
+		ct = ct[:i]
+	}
+	if inlineSafeTypes[strings.ToLower(strings.TrimSpace(ct))] {
+		return "inline"
+	}
+	return "attachment"
 }
 
 func (h *attachmentHandlers) delete(w http.ResponseWriter, r *http.Request) {

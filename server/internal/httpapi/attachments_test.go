@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/textproto"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -142,6 +143,60 @@ func TestAttachmentLifecycle(t *testing.T) {
 		t.Fatalf("download after delete = %d, want 404", d2.StatusCode)
 	}
 	d2.Body.Close()
+}
+
+func TestAttachmentDownloadDisposition(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	txnID := makeTxn(t, c, wid, acc)
+
+	cases := []struct {
+		name        string
+		filename    string
+		contentType string
+		wantInline  bool
+	}{
+		{"png previews inline", "shot.png", "image/png", true},
+		{"pdf previews inline", "receipt.pdf", "application/pdf", true},
+		{"jpeg with charset param inline", "photo.jpg", "image/jpeg; charset=binary", true},
+		// The XSS vectors: an SVG or HTML upload must be forced to download so it
+		// can never render and execute script in the app's origin (#230).
+		{"svg forced to download", "evil.svg", "image/svg+xml", false},
+		{"html forced to download", "evil.html", "text/html", false},
+		{"unknown type forced to download", "blob.bin", "application/octet-stream", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			up := uploadAttachment(t, c, wid, txnID, tc.filename, tc.contentType, []byte("<data/>"))
+			if up.StatusCode != http.StatusCreated {
+				t.Fatalf("upload = %d", up.StatusCode)
+			}
+			var att struct {
+				ID int64 `json:"id"`
+			}
+			json.NewDecoder(up.Body).Decode(&att)
+			up.Body.Close()
+
+			d := c.do(http.MethodGet, base+"/attachments/"+strconv.FormatInt(att.ID, 10), nil, false)
+			d.Body.Close()
+			disp := d.Header.Get("Content-Disposition")
+			wantPrefix := "attachment;"
+			if tc.wantInline {
+				wantPrefix = "inline;"
+			}
+			if !strings.HasPrefix(disp, wantPrefix) {
+				t.Fatalf("Content-Disposition = %q, want prefix %q", disp, wantPrefix)
+			}
+			// Every attachment response is locked down regardless of type.
+			if csp := d.Header.Get("Content-Security-Policy"); csp != "default-src 'none'; sandbox" {
+				t.Fatalf("CSP = %q", csp)
+			}
+			if d.Header.Get("X-Content-Type-Options") != "nosniff" {
+				t.Fatalf("missing nosniff header")
+			}
+		})
+	}
 }
 
 func TestAttachmentDeletedWithTransaction(t *testing.T) {
