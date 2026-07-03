@@ -51,17 +51,25 @@ func nullID(p *int64) sql.NullInt64 {
 // Service implements payee management.
 type Service struct {
 	db *sql.DB
-	q  *db.Queries
+	q  *db.Queries // write pool (mutations)
+	rq *db.Queries // read pool (read-only methods)
 }
 
-// NewService builds a Service backed by the write connection pool.
+// NewService builds a Service backed by the write connection pool for both
+// reads and writes.
 func NewService(write *sql.DB) *Service {
-	return &Service{db: write, q: db.New(write)}
+	return &Service{db: write, q: db.New(write), rq: db.New(write)}
+}
+
+// NewServiceWithRead builds a Service whose read-only methods run on the read
+// pool while mutations use the single write connection.
+func NewServiceWithRead(read, write *sql.DB) *Service {
+	return &Service{db: write, q: db.New(write), rq: db.New(read)}
 }
 
 // List returns a wallet's payees.
 func (s *Service) List(ctx context.Context, walletID int64) ([]Payee, error) {
-	rows, err := s.q.ListPayeesForWallet(ctx, walletID)
+	rows, err := s.rq.ListPayeesForWallet(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +82,7 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]Payee, error) {
 
 // Get returns a payee by id.
 func (s *Service) Get(ctx context.Context, id int64) (Payee, error) {
-	p, err := s.q.GetPayee(ctx, id)
+	p, err := s.rq.GetPayee(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Payee{}, ErrNotFound
 	}

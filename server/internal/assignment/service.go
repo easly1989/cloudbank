@@ -57,12 +57,20 @@ type MatchedTransaction struct {
 // Service implements rule management and application.
 type Service struct {
 	db *sql.DB
-	q  *db.Queries
+	q  *db.Queries // write pool (mutations)
+	rq *db.Queries // read pool (read-only methods)
 }
 
-// NewService builds a Service backed by the write connection pool.
+// NewService builds a Service backed by the write connection pool for both
+// reads and writes.
 func NewService(write *sql.DB) *Service {
-	return &Service{db: write, q: db.New(write)}
+	return &Service{db: write, q: db.New(write), rq: db.New(write)}
+}
+
+// NewServiceWithRead builds a Service whose read-only methods run on the read
+// pool while mutations use the single write connection.
+func NewServiceWithRead(read, write *sql.DB) *Service {
+	return &Service{db: write, q: db.New(write), rq: db.New(read)}
 }
 
 func (in Input) toRule() Rule {
@@ -163,7 +171,7 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Definit
 
 // Get returns one rule.
 func (s *Service) Get(ctx context.Context, id int64) (Definition, error) {
-	a, err := s.q.GetAssignment(ctx, id)
+	a, err := s.rq.GetAssignment(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Definition{}, ErrNotFound
 	}
@@ -175,7 +183,7 @@ func (s *Service) Get(ctx context.Context, id int64) (Definition, error) {
 
 // WalletOf returns the wallet a rule belongs to (for ownership checks).
 func (s *Service) WalletOf(ctx context.Context, id int64) (int64, error) {
-	a, err := s.q.GetAssignment(ctx, id)
+	a, err := s.rq.GetAssignment(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, ErrNotFound
 	}
@@ -187,7 +195,7 @@ func (s *Service) WalletOf(ctx context.Context, id int64) (int64, error) {
 
 // List returns a wallet's rules in match order.
 func (s *Service) List(ctx context.Context, walletID int64) ([]Definition, error) {
-	rows, err := s.q.ListAssignmentsForWallet(ctx, walletID)
+	rows, err := s.rq.ListAssignmentsForWallet(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +249,7 @@ func (s *Service) Reorder(ctx context.Context, walletID int64, ids []int64) erro
 
 // rules loads the wallet's rules and compiles them for matching.
 func (s *Service) rules(ctx context.Context, walletID int64, manualOnly bool) ([]Rule, error) {
-	rows, err := s.q.ListAssignmentsForWallet(ctx, walletID)
+	rows, err := s.rq.ListAssignmentsForWallet(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +282,7 @@ func (s *Service) Suggest(ctx context.Context, walletID int64, memo, payee strin
 // ImportRules returns the compiled apply-on-import rules for the wallet, in
 // priority order. The file importers use them to auto-categorise rows.
 func (s *Service) ImportRules(ctx context.Context, walletID int64) ([]Rule, error) {
-	rows, err := s.q.ListAssignmentsForWallet(ctx, walletID)
+	rows, err := s.rq.ListAssignmentsForWallet(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -306,7 +314,7 @@ func (s *Service) Test(ctx context.Context, walletID int64, in Input, limit int)
 	if err := rule.Compile(); err != nil {
 		return nil, err
 	}
-	rows, err := s.q.ListWalletTransactionsForRules(ctx, walletID)
+	rows, err := s.rq.ListWalletTransactionsForRules(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}

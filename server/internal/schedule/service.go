@@ -67,18 +67,29 @@ type Input struct {
 // transfer services.
 type Service struct {
 	db        *sql.DB
-	q         *db.Queries
+	q         *db.Queries // write pool (mutations)
+	rq        *db.Queries // read pool (read-only methods)
 	txns      *transaction.Service
 	transfers *transfer.Service
 	logger    *slog.Logger
 }
 
-// NewService builds a Service backed by the write connection pool.
+// NewService builds a Service backed by the write connection pool for both
+// reads and writes.
 func NewService(write *sql.DB, txns *transaction.Service, transfers *transfer.Service, logger *slog.Logger) *Service {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Service{db: write, q: db.New(write), txns: txns, transfers: transfers, logger: logger}
+	return &Service{db: write, q: db.New(write), rq: db.New(write), txns: txns, transfers: transfers, logger: logger}
+}
+
+// NewServiceWithRead builds a Service whose read-only methods run on the read
+// pool while mutations use the single write connection.
+func NewServiceWithRead(read, write *sql.DB, txns *transaction.Service, transfers *transfer.Service, logger *slog.Logger) *Service {
+	if logger == nil {
+		logger = slog.Default()
+	}
+	return &Service{db: write, q: db.New(write), rq: db.New(read), txns: txns, transfers: transfers, logger: logger}
 }
 
 func validUnit(u string) bool {
@@ -160,14 +171,14 @@ func toSchedule(r db.ListSchedulesForWalletRow) Schedule {
 func (s *Service) Get(ctx context.Context, id int64) (Schedule, error) {
 	// Reuse the list query shape by fetching the wallet's rows is wasteful;
 	// instead load the raw schedule and its template name.
-	sc, err := s.q.GetSchedule(ctx, id)
+	sc, err := s.rq.GetSchedule(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Schedule{}, ErrNotFound
 	}
 	if err != nil {
 		return Schedule{}, err
 	}
-	tpl, err := s.q.GetTemplate(ctx, sc.TemplateID)
+	tpl, err := s.rq.GetTemplate(ctx, sc.TemplateID)
 	if err != nil {
 		return Schedule{}, err
 	}
@@ -185,7 +196,7 @@ func (s *Service) Get(ctx context.Context, id int64) (Schedule, error) {
 
 // WalletOf returns the wallet a schedule belongs to (for ownership checks).
 func (s *Service) WalletOf(ctx context.Context, id int64) (int64, error) {
-	sc, err := s.q.GetSchedule(ctx, id)
+	sc, err := s.rq.GetSchedule(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, ErrNotFound
 	}
@@ -197,7 +208,7 @@ func (s *Service) WalletOf(ctx context.Context, id int64) (int64, error) {
 
 // List returns a wallet's schedules.
 func (s *Service) List(ctx context.Context, walletID int64) ([]Schedule, error) {
-	rows, err := s.q.ListSchedulesForWallet(ctx, walletID)
+	rows, err := s.rq.ListSchedulesForWallet(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +222,7 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]Schedule, error) 
 // Upcoming returns schedules whose next occurrence is due on or before `before`
 // (used for the pending list and the dashboard's upcoming widget).
 func (s *Service) Upcoming(ctx context.Context, walletID int64, before string) ([]Schedule, error) {
-	rows, err := s.q.ListUpcomingSchedules(ctx, db.ListUpcomingSchedulesParams{WalletID: walletID, NextDue: before})
+	rows, err := s.rq.ListUpcomingSchedules(ctx, db.ListUpcomingSchedulesParams{WalletID: walletID, NextDue: before})
 	if err != nil {
 		return nil, err
 	}

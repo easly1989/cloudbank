@@ -29,16 +29,24 @@ type Issue struct {
 
 // Service runs integrity checks against the database.
 type Service struct {
-	db *sql.DB
+	db   *sql.DB // write pool (fixes)
+	read *sql.DB // read pool (checks)
 }
 
-// NewService builds an integrity Service backed by the write connection pool.
+// NewService builds an integrity Service backed by the write connection pool for
+// both checks and fixes.
 func NewService(write *sql.DB) *Service {
-	return &Service{db: write}
+	return &Service{db: write, read: write}
+}
+
+// NewServiceWithRead builds a Service whose read-only checks run on the read
+// pool while fixes use the single write connection.
+func NewServiceWithRead(read, write *sql.DB) *Service {
+	return &Service{db: write, read: read}
 }
 
 func (s *Service) ids(ctx context.Context, query string, args ...any) ([]int64, error) {
-	rows, err := s.db.QueryContext(ctx, query, args...)
+	rows, err := s.read.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
