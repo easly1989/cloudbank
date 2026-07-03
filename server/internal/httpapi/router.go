@@ -119,6 +119,7 @@ func New(opts Options) http.Handler {
 	// IP. The rate limiter keys on the real TCP peer (r.RemoteAddr) instead.
 	r.Use(requestLogger(logger))
 	r.Use(middleware.Recoverer)
+	r.Use(securityHeaders(opts.SecureCookies))
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Get("/healthz", healthHandler(opts.Health))
