@@ -14,6 +14,7 @@ import {
   Table,
   Tabs,
   Text,
+  Textarea,
   Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
@@ -34,6 +35,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import {
+  type Account,
   ApiError,
   type CurrencyInfo,
   type DashboardAccount,
@@ -43,6 +45,7 @@ import {
   type User,
   getBudgetReport,
   getDashboard,
+  getRegister,
   listAccounts,
   listSchedules,
   listTemplates,
@@ -194,6 +197,38 @@ export function DashboardPage() {
         return <BudgetWidget walletId={walletId} base={base} />;
       case "upcoming":
         return <UpcomingPanel walletId={walletId} base={base} />;
+      case "accountBalance":
+        return (
+          <AccountBalanceCard
+            walletId={walletId}
+            config={(item.config ?? {}) as { accountId?: number }}
+            onConfig={(c) => setConfig(item.id, c)}
+          />
+        );
+      case "recentTransactions":
+        return (
+          <RecentTransactionsCard
+            walletId={walletId}
+            config={(item.config ?? {}) as { accountId?: number }}
+            onConfig={(c) => setConfig(item.id, c)}
+          />
+        );
+      case "kpi":
+        return (
+          <KpiCard
+            data={data}
+            base={base}
+            config={{ ...DEFAULT_KPI, ...(item.config as Partial<KpiConfig>) }}
+            onConfig={(c) => setConfig(item.id, c)}
+          />
+        );
+      case "notes":
+        return (
+          <NotesCard
+            config={(item.config ?? {}) as { text?: string }}
+            onConfig={(c) => setConfig(item.id, c)}
+          />
+        );
     }
   };
 
@@ -247,6 +282,10 @@ export function DashboardPage() {
     spending: t("dashboard.whereMoneyGoes"),
     budget: t("dashboard.budget"),
     upcoming: t("dashboard.upcoming"),
+    accountBalance: t("dashboard.accountBalance"),
+    recentTransactions: t("dashboard.recentTransactions"),
+    kpi: t("dashboard.kpi"),
+    notes: t("dashboard.notes"),
   };
 
   return (
@@ -1014,6 +1053,216 @@ function QuickAddCard({ walletId }: { walletId: number }) {
           onTemplateSaved={() => void qc.invalidateQueries({ queryKey: ["templates", walletId] })}
         />
       )}
+    </Card>
+  );
+}
+
+// accountFmt maps an account's currency metadata to the money formatter shape.
+function accountFmt(a: Account) {
+  return {
+    fracDigits: a.currencyFracDigits,
+    decimalChar: a.currencyDecimalChar,
+    groupChar: a.currencyGroupChar,
+    symbol: a.currencySymbol,
+    symbolPrefix: a.currencySymbolPrefix,
+  };
+}
+
+// AccountBalanceCard shows a single account's today balance big, with the future
+// balance secondary. The account is chosen per instance (defaults to the first).
+function AccountBalanceCard({
+  walletId,
+  config,
+  onConfig,
+}: {
+  walletId: number;
+  config: { accountId?: number };
+  onConfig: (c: { accountId?: number }) => void;
+}) {
+  const { t } = useTranslation();
+  const q = useQuery({
+    queryKey: ["accounts", walletId],
+    queryFn: () => listAccounts(walletId),
+    enabled: walletId > 0,
+  });
+  const accounts = q.data ?? [];
+  const account = accounts.find((a) => a.id === config.accountId) ?? accounts[0];
+  return (
+    <Card withBorder h="100%">
+      <Group justify="space-between" mb="xs" wrap="nowrap" gap="xs">
+        <Text size="xs" c="dimmed" tt="uppercase" truncate>
+          {t("dashboard.accountBalance")}
+        </Text>
+        {accounts.length > 0 && (
+          <Select
+            aria-label={t("dashboard.selectAccount")}
+            data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
+            value={account ? String(account.id) : null}
+            onChange={(v) => v && onConfig({ accountId: Number(v) })}
+            allowDeselect={false}
+            size="xs"
+            w={150}
+          />
+        )}
+      </Group>
+      {account ? (
+        <>
+          <Text fw={700} size="xl" c={account.balance < 0 ? "red" : undefined}>
+            {formatMinor(account.balance, accountFmt(account))}
+          </Text>
+          <Text size="xs" c="dimmed">
+            {t("register.future")}: {formatMinor(account.futureBalance, accountFmt(account))}
+          </Text>
+        </>
+      ) : (
+        <Text c="dimmed" size="sm">
+          {t("dashboard.noData")}
+        </Text>
+      )}
+    </Card>
+  );
+}
+
+// RecentTransactionsCard lists the latest transactions in a chosen account.
+function RecentTransactionsCard({
+  walletId,
+  config,
+  onConfig,
+}: {
+  walletId: number;
+  config: { accountId?: number };
+  onConfig: (c: { accountId?: number }) => void;
+}) {
+  const { t } = useTranslation();
+  const fmtDate = useDateFormat();
+  const accountsQ = useQuery({
+    queryKey: ["accounts", walletId],
+    queryFn: () => listAccounts(walletId),
+    enabled: walletId > 0,
+  });
+  const accounts = accountsQ.data ?? [];
+  const account = accounts.find((a) => a.id === config.accountId) ?? accounts[0];
+  const regQ = useQuery({
+    queryKey: ["register", walletId, account?.id],
+    queryFn: () => getRegister(walletId, account!.id),
+    enabled: walletId > 0 && !!account,
+  });
+  const rows = (regQ.data?.rows ?? []).slice(-8).reverse();
+  return (
+    <Card withBorder h="100%">
+      <Group justify="space-between" mb="xs" wrap="nowrap" gap="xs">
+        <Title order={4}>{t("dashboard.recentTransactions")}</Title>
+        {accounts.length > 0 && (
+          <Select
+            aria-label={t("dashboard.selectAccount")}
+            data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
+            value={account ? String(account.id) : null}
+            onChange={(v) => v && onConfig({ accountId: Number(v) })}
+            allowDeselect={false}
+            size="xs"
+            w={150}
+          />
+        )}
+      </Group>
+      {account && rows.length > 0 ? (
+        <Stack gap={4}>
+          {rows.map((r) => (
+            <Group key={r.id} justify="space-between" wrap="nowrap" gap="xs">
+              <div style={{ minWidth: 0 }}>
+                <Text size="sm" truncate>
+                  {r.payeeName || r.memo || "—"}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  {fmtDate(r.date)}
+                </Text>
+              </div>
+              <Text size="sm" fw={600} c={r.amount < 0 ? "red" : "teal"}>
+                {formatMinor(r.amount, accountFmt(account))}
+              </Text>
+            </Group>
+          ))}
+        </Stack>
+      ) : (
+        <Text c="dimmed" size="sm">
+          {t("dashboard.recentEmpty")}
+        </Text>
+      )}
+    </Card>
+  );
+}
+
+type KpiConfig = { metric: "today" | "future" | "bank" };
+const DEFAULT_KPI: KpiConfig = { metric: "today" };
+
+// KpiCard shows one wallet-wide figure as a big number.
+function KpiCard({
+  data,
+  base,
+  config,
+  onConfig,
+}: {
+  data?: { totals: { bank: number; today: number; future: number } };
+  base?: CurrencyInfo;
+  config: KpiConfig;
+  onConfig: (c: KpiConfig) => void;
+}) {
+  const { t } = useTranslation();
+  const metrics: Record<KpiConfig["metric"], { label: string; value?: number }> = {
+    today: { label: t("dashboard.metricToday"), value: data?.totals.today },
+    future: { label: t("dashboard.metricFuture"), value: data?.totals.future },
+    bank: { label: t("dashboard.metricBank"), value: data?.totals.bank },
+  };
+  const m = metrics[config.metric];
+  return (
+    <Card withBorder h="100%">
+      <Group justify="space-between" mb="xs" wrap="nowrap" gap="xs">
+        <Text size="xs" c="dimmed" tt="uppercase" truncate>
+          {m.label}
+        </Text>
+        <Select
+          aria-label={t("dashboard.metric")}
+          data={(["today", "future", "bank"] as const).map((k) => ({
+            value: k,
+            label: metrics[k].label,
+          }))}
+          value={config.metric}
+          onChange={(v) => v && onConfig({ metric: v as KpiConfig["metric"] })}
+          allowDeselect={false}
+          size="xs"
+          w={130}
+        />
+      </Group>
+      <Text fw={700} size="xl" c={m.value != null && m.value < 0 ? "red" : undefined}>
+        {base && m.value != null ? formatMinor(m.value, base) : "—"}
+      </Text>
+    </Card>
+  );
+}
+
+// NotesCard is a free-text note stored in the widget's config (persisted on blur).
+function NotesCard({
+  config,
+  onConfig,
+}: {
+  config: { text?: string };
+  onConfig: (c: { text?: string }) => void;
+}) {
+  const { t } = useTranslation();
+  const [text, setText] = useState(config.text ?? "");
+  // Reflect an externally-changed note (e.g. loaded from the server).
+  useEffect(() => setText(config.text ?? ""), [config.text]);
+  return (
+    <Card withBorder h="100%">
+      <Textarea
+        aria-label={t("dashboard.notes")}
+        placeholder={t("dashboard.notesPlaceholder")}
+        value={text}
+        onChange={(e) => setText(e.currentTarget.value)}
+        onBlur={() => text !== (config.text ?? "") && onConfig({ text })}
+        autosize
+        minRows={3}
+        variant="unstyled"
+      />
     </Card>
   );
 }
