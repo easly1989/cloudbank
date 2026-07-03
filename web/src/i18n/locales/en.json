@@ -354,6 +354,9 @@
   },
   "bulk": {
     "title": "{{count}} selected",
+    "selectedTotal": "Total",
+    "selectedIn": "in",
+    "selectedOut": "out",
     "field": "Set field",
     "apply": "Apply",
     "clearSelection": "Clear",
