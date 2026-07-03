@@ -2,12 +2,14 @@ import {
   ActionIcon,
   Badge,
   Button,
+  Card,
   Divider,
   Group,
   Modal,
   NumberInput,
   SegmentedControl,
   Select,
+  SimpleGrid,
   Stack,
   Switch,
   Table,
@@ -108,6 +110,40 @@ export function SchedulesPage() {
     return accId != null ? accountById.get(accId) : undefined;
   };
 
+  // Approximate income/expense commitments normalized per week / month / year:
+  // each active (non-exhausted, non-transfer) schedule fires once every
+  // everyN×unit days, so scale its amount by how many times that lands in the
+  // period. Amounts are summed in minor units and shown in one representative
+  // account currency — exact for a single-currency wallet (the common case).
+  // Month = year / 12 so a monthly schedule normalizes to exactly 12× per year.
+  const MONTH_DAYS = 365.25 / 12;
+  const UNIT_DAYS: Record<ScheduleUnit, number> = {
+    day: 1,
+    week: 7,
+    month: MONTH_DAYS,
+    year: 365.25,
+  };
+  const PERIOD_DAYS = { week: 7, month: MONTH_DAYS, year: 365.25 } as const;
+  const summary = useMemo(() => {
+    const acc = {
+      week: { in: 0, out: 0 },
+      month: { in: 0, out: 0 },
+      year: { in: 0, out: 0 },
+    };
+    for (const s of schedules) {
+      if (s.remaining === 0 || s.templateIsTransfer) continue;
+      const periodDays = Math.max(1, s.everyN) * (UNIT_DAYS[s.unit] ?? 30.44);
+      for (const p of ["week", "month", "year"] as const) {
+        const amt = Math.round((s.templateAmount * PERIOD_DAYS[p]) / periodDays);
+        if (amt >= 0) acc[p].in += amt;
+        else acc[p].out += amt;
+      }
+    }
+    return acc;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schedules]);
+  const summaryFmt = accountFormat(schedules.map((s) => accountFor(s)).find((a) => a));
+
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: ["schedules", walletId] });
     void qc.invalidateQueries({ queryKey: ["dashboard", walletId] });
@@ -154,6 +190,45 @@ export function SchedulesPage() {
           {t("schedules.add")}
         </Button>
       </Group>
+
+      {schedules.length > 0 && (
+        <SimpleGrid cols={{ base: 1, sm: 3 }}>
+          {(["week", "month", "year"] as const).map((p) => {
+            const net = summary[p].in + summary[p].out;
+            return (
+              <Card key={p} withBorder padding="sm">
+                <Text size="xs" c="dimmed" tt="uppercase">
+                  {t(`schedules.per.${p}`)}
+                </Text>
+                <Group justify="space-between" gap="xs" mt={4}>
+                  <Text size="sm" c="teal">
+                    {t("schedules.income")}
+                  </Text>
+                  <Text size="sm" c="teal">
+                    {formatMinor(summary[p].in, summaryFmt)}
+                  </Text>
+                </Group>
+                <Group justify="space-between" gap="xs">
+                  <Text size="sm" c="red">
+                    {t("schedules.expense")}
+                  </Text>
+                  <Text size="sm" c="red">
+                    {formatMinor(summary[p].out, summaryFmt)}
+                  </Text>
+                </Group>
+                <Group justify="space-between" gap="xs" mt={4}>
+                  <Text size="sm" fw={700}>
+                    {t("schedules.net")}
+                  </Text>
+                  <Text size="sm" fw={700} c={net < 0 ? "red" : net > 0 ? "teal" : undefined}>
+                    {formatMinor(net, summaryFmt)}
+                  </Text>
+                </Group>
+              </Card>
+            );
+          })}
+        </SimpleGrid>
+      )}
 
       {schedules.length === 0 && <Text c="dimmed">{t("schedules.empty")}</Text>}
 
