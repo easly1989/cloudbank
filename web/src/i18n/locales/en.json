@@ -240,6 +240,14 @@
     "autoPost": "Post automatically",
     "cadenceLabel": "Repeats",
     "cadence": "Every {{n}} {{unit}}",
+    "income": "Income",
+    "expense": "Expense",
+    "net": "Net",
+    "per": {
+      "week": "Per week",
+      "month": "Per month",
+      "year": "Per year"
+    },
     "mode": "Mode",
     "autoLabel": "Auto",
     "remindLabel": "Remind",
