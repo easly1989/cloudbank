@@ -138,6 +138,21 @@ export function TransactionsPage() {
     });
   const clearSelection = () => setSelected(new Set());
 
+  // Sum of the selected register rows (net, plus inflow/outflow split) so the
+  // bulk bar can show a subtotal of the current selection (HomeBank-style).
+  const selectionTotals = useMemo(() => {
+    let total = 0;
+    let inflow = 0;
+    let outflow = 0;
+    for (const r of rows) {
+      if (!selected.has(r.id)) continue;
+      total += r.amount;
+      if (r.amount >= 0) inflow += r.amount;
+      else outflow += r.amount;
+    }
+    return { total, inflow, outflow };
+  }, [rows, selected]);
+
   const remove = useMutation({
     mutationFn: (id: number) => deleteTransaction(walletId, id),
     onSuccess: invalidate,
@@ -314,6 +329,10 @@ export function TransactionsPage() {
       {account && !reconcile && selected.size > 0 && (
         <BulkBar
           count={selected.size}
+          total={selectionTotals.total}
+          inflow={selectionTotals.inflow}
+          outflow={selectionTotals.outflow}
+          fmt={fmt}
           payees={payeesQuery.data ?? []}
           categories={categoriesQuery.data ?? []}
           loading={bulk.isPending}
@@ -387,6 +406,10 @@ function BalanceCard({ label, value, fmt }: { label: string; value: number; fmt:
 // request (all-or-nothing, server-side).
 function BulkBar({
   count,
+  total,
+  inflow,
+  outflow,
+  fmt,
   payees,
   categories,
   loading,
@@ -394,6 +417,10 @@ function BulkBar({
   onClear,
 }: {
   count: number;
+  total: number;
+  inflow: number;
+  outflow: number;
+  fmt: MoneyFormat;
   payees: Payee[];
   categories: Category[];
   loading: boolean;
@@ -455,6 +482,20 @@ function BulkBar({
     <Card withBorder padding="xs" bg="var(--mantine-color-blue-light)">
       <Group gap="xs" align="flex-end">
         <Text fw={500}>{t("bulk.title", { count })}</Text>
+        <Group gap={6} align="baseline" wrap="nowrap">
+          <Text size="xs" c="dimmed" tt="uppercase">
+            {t("bulk.selectedTotal")}
+          </Text>
+          <Text fw={700} c={total < 0 ? "red" : total > 0 ? "teal" : undefined}>
+            {formatMinor(total, fmt)}
+          </Text>
+          {inflow > 0 && outflow < 0 && (
+            <Text size="xs" c="dimmed">
+              ({t("bulk.selectedIn")} {formatMinor(inflow, fmt)} · {t("bulk.selectedOut")}{" "}
+              {formatMinor(outflow, fmt)})
+            </Text>
+          )}
+        </Group>
         <Select
           label={t("bulk.field")}
           data={(["status", "category", "payee", "paymentMode"] as BulkField[]).map((f) => ({
