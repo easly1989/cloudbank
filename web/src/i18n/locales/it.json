@@ -354,6 +354,9 @@
   },
   "bulk": {
     "title": "{{count}} selezionate",
+    "selectedTotal": "Totale",
+    "selectedIn": "entrate",
+    "selectedOut": "uscite",
     "field": "Imposta campo",
     "apply": "Applica",
     "clearSelection": "Deseleziona",
