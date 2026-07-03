@@ -1350,11 +1350,14 @@ volumes:
       .start {
         text-align: center;
       }
+      /* Terminal-style snippet: always a dark block with light text, in both
+         themes. (A theme-relative background would resolve to near-white in
+         dark mode and make the light text unreadable.) */
       .code {
         text-align: left;
         max-width: 640px;
         margin: 0 auto 1.2rem;
-        background: color-mix(in srgb, var(--text) 92%, #07101f);
+        background: #0c1626;
         color: #cfe6dd;
         border: 1px solid var(--border);
         border-radius: 12px;
@@ -1362,10 +1365,6 @@ volumes:
         overflow-x: auto;
         font-size: 0.88rem;
         line-height: 1.5;
-      }
-      :root[data-theme="light"] .code,
-      :root:not([data-theme]) .code {
-        background: #0c1626;
       }
       .code code {
         background: none;
