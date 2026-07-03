@@ -59,9 +59,10 @@ import {
   type DashboardLayoutV2,
   type PlacedWidget,
   WIDGET_SIZES,
+  WIDGET_TYPES,
   type WidgetType,
   migrateLayout,
-  unplacedTypes,
+  newInstanceId,
 } from "../components/dashboard/layout";
 import { useDateFormat } from "../dates";
 import { formatMinor } from "../money";
@@ -85,46 +86,13 @@ const DONUT_PALETTE = [
 type ChartType = "donut" | "bar";
 type IEStyle = "bars" | "lines";
 
-// DashView is the on-the-fly dashboard chart configuration the user can tweak;
-// it is remembered in localStorage across reloads. period/chartType/groupBy
-// drive the spending widget; ieMonths/ieStyle drive the income/expense chart.
-interface DashView {
-  period: DatePreset;
-  chartType: ChartType;
-  groupBy: DashboardGroupBy;
-  ieMonths: number;
-  ieStyle: IEStyle;
-  ieNet: boolean; // overlay a net (income − expense) line
-  ieCumulative: boolean; // accumulate the net line over the window
-}
-
 // Income/expense trailing windows offered in the chart's period dropdown
 // (0 = all dates).
 const IE_MONTHS: number[] = [6, 12, 24, 36, 0];
 
-const VIEW_KEY = "cb.dashboard.view";
-const DEFAULT_VIEW: DashView = {
-  period: "thisMonth",
-  chartType: "donut",
-  groupBy: "category",
-  ieMonths: 12,
-  ieStyle: "bars",
-  ieNet: false,
-  ieCumulative: false,
-};
 // Periods offered for the spending widget (the register's "custom" range is
 // omitted here to keep the dashboard control a single dropdown).
 const PERIODS: DatePreset[] = ["thisMonth", "thisQuarter", "thisYear", "last30", "last90", "all"];
-
-function loadView(): DashView {
-  try {
-    const raw = localStorage.getItem(VIEW_KEY);
-    if (raw) return { ...DEFAULT_VIEW, ...(JSON.parse(raw) as Partial<DashView>) };
-  } catch {
-    /* ignore malformed storage */
-  }
-  return DEFAULT_VIEW;
-}
 
 // resolveBounds turns a preset into explicit inclusive YYYY-MM-DD bounds. "all"
 // (and any open-ended preset) becomes wide sentinels so the request always
@@ -164,20 +132,12 @@ export function DashboardPage() {
   };
   useEffect(() => () => clearTimeout(saveTimer.current), []);
 
-  // The spending widget's period and chart options, remembered across reloads.
-  const [view, setView] = useState<DashView>(loadView);
-  useEffect(() => {
-    try {
-      localStorage.setItem(VIEW_KEY, JSON.stringify(view));
-    } catch {
-      /* ignore storage failures */
-    }
-  }, [view]);
-  const { from, to } = resolveBounds(view.period);
-
+  // Base dashboard query for the wallet-wide widgets (totals, accounts, base
+  // currency), independent of any widget's period. The spending / income-expense
+  // widgets fetch their own slices from their per-instance config.
   const query = useQuery({
-    queryKey: ["dashboard", walletId, from, to, view.groupBy, view.ieMonths],
-    queryFn: () => getDashboard(walletId, from, to, view.groupBy, view.ieMonths),
+    queryKey: ["dashboard", walletId, "0001-01-01", "9999-12-31", "category", 12],
+    queryFn: () => getDashboard(walletId, "0001-01-01", "9999-12-31", "category", 12),
     enabled: walletId > 0,
   });
   const data = query.data;
@@ -196,42 +156,46 @@ export function DashboardPage() {
   }, [data]);
 
   const base = data?.baseCurrency ?? undefined;
-  // Widget elements are memoized so drag/layout-edit re-renders (which only
-  // touch order/hidden/spans) don't rebuild every widget — notably the ECharts
-  // cards — from scratch on each interaction.
-  const widgets = useMemo<Record<WidgetType, ReactNode>>(
-    () => ({
-      totals:
-        base && data ? (
+
+  // Render one placed widget instance by type, passing its per-instance config.
+  const renderWidget = (item: PlacedWidget): ReactNode => {
+    switch (item.type) {
+      case "totals":
+        return base && data ? (
           <SimpleGrid cols={{ base: 1, sm: 3 }}>
             <TotalCard label={t("register.bank")} value={data.totals.bank} fmt={base} />
             <TotalCard label={t("register.today")} value={data.totals.today} fmt={base} />
             <TotalCard label={t("register.future")} value={data.totals.future} fmt={base} />
           </SimpleGrid>
-        ) : null,
-      quickAdd: <QuickAddCard walletId={walletId} />,
-      incomeExpense: (
-        <IncomeExpenseCard
-          view={view}
-          setView={setView}
-          points={data?.incomeExpense ?? []}
-          base={base}
-        />
-      ),
-      accounts: <AccountsPanel groups={groups} base={base} totals={data?.totals} />,
-      spending: (
-        <SpendingCard
-          view={view}
-          setView={setView}
-          slices={data?.topCategories ?? []}
-          base={base}
-        />
-      ),
-      budget: <BudgetWidget walletId={walletId} base={base} />,
-      upcoming: <UpcomingPanel walletId={walletId} base={base} />,
-    }),
-    [base, data, walletId, view, setView, groups, t],
-  );
+        ) : null;
+      case "quickAdd":
+        return <QuickAddCard walletId={walletId} />;
+      case "incomeExpense":
+        return (
+          <IncomeExpenseCard
+            walletId={walletId}
+            base={base}
+            config={{ ...DEFAULT_IE, ...(item.config as Partial<IEConfig>) }}
+            onConfig={(c) => setConfig(item.id, c)}
+          />
+        );
+      case "accounts":
+        return <AccountsPanel groups={groups} base={base} totals={data?.totals} />;
+      case "spending":
+        return (
+          <SpendingCard
+            walletId={walletId}
+            base={base}
+            config={{ ...DEFAULT_SPENDING, ...(item.config as Partial<SpendingConfig>) }}
+            onConfig={(c) => setConfig(item.id, c)}
+          />
+        );
+      case "budget":
+        return <BudgetWidget walletId={walletId} base={base} />;
+      case "upcoming":
+        return <UpcomingPanel walletId={walletId} base={base} />;
+    }
+  };
 
   if (!currentWallet) return null;
 
@@ -251,9 +215,16 @@ export function DashboardPage() {
 
   const addWidget = (type: WidgetType) => {
     const size = WIDGET_SIZES[type];
-    // Place the new widget on a fresh row below everything else.
+    // Place the new instance on a fresh row below everything else.
     const bottom = layoutRef.current.widgets.reduce((m, wgt) => Math.max(m, wgt.y + wgt.h), 0);
-    const placed: PlacedWidget = { id: type, type, x: 0, y: bottom, w: size.w, h: size.h };
+    const placed: PlacedWidget = {
+      id: newInstanceId(type, layoutRef.current.widgets),
+      type,
+      x: 0,
+      y: bottom,
+      w: size.w,
+      h: size.h,
+    };
     commitLayout({ version: 2, widgets: [...layoutRef.current.widgets, placed] });
   };
 
@@ -261,7 +232,12 @@ export function DashboardPage() {
     commitLayout({ version: 2, widgets: layoutRef.current.widgets.filter((wgt) => wgt.id !== id) });
   };
 
-  const unplaced = unplacedTypes(layout.widgets);
+  const setConfig = (id: string, config: Record<string, unknown>) => {
+    commitLayout({
+      version: 2,
+      widgets: layoutRef.current.widgets.map((wgt) => (wgt.id === id ? { ...wgt, config } : wgt)),
+    });
+  };
 
   const labels: Record<WidgetType, string> = {
     totals: t("dashboard.widgets.totals"),
@@ -278,7 +254,7 @@ export function DashboardPage() {
       <Group justify="space-between">
         <Title order={2}>{t("dashboard.title")}</Title>
         <Group gap="xs">
-          {editingLayout && unplaced.length > 0 && (
+          {editingLayout && (
             <Menu position="bottom-end" withinPortal>
               <Menu.Target>
                 <Button variant="default" size="xs" leftSection={<IconPlus size={16} />}>
@@ -286,7 +262,7 @@ export function DashboardPage() {
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
-                {unplaced.map((type) => (
+                {WIDGET_TYPES.map((type) => (
                   <Menu.Item key={type} onClick={() => addWidget(type)}>
                     {labels[type]}
                   </Menu.Item>
@@ -324,7 +300,7 @@ export function DashboardPage() {
             label={labels[item.type]}
             onRemove={() => removeWidget(item.id)}
           >
-            {widgets[item.type]}
+            {renderWidget(item)}
           </WidgetFrame>
         )}
       />
@@ -451,18 +427,34 @@ function AccountsPanel({
 
 // SpendingCard is the spending breakdown with its period and chart-option
 // controls.
+type SpendingConfig = { period: DatePreset; chartType: ChartType; groupBy: DashboardGroupBy };
+const DEFAULT_SPENDING: SpendingConfig = {
+  period: "thisMonth",
+  chartType: "donut",
+  groupBy: "category",
+};
+
+// SpendingCard is self-contained: it fetches its own top-categories slice for
+// its configured period/dimension, so multiple instances are independent.
 function SpendingCard({
-  view,
-  setView,
-  slices,
+  walletId,
   base,
+  config,
+  onConfig,
 }: {
-  view: DashView;
-  setView: (v: DashView) => void;
-  slices: { categoryId: number; name: string; amount: number }[];
+  walletId: number;
   base?: CurrencyInfo;
+  config: SpendingConfig;
+  onConfig: (c: SpendingConfig) => void;
 }) {
   const { t } = useTranslation();
+  const { from, to } = resolveBounds(config.period);
+  const q = useQuery({
+    queryKey: ["dashboard", walletId, from, to, config.groupBy, 12],
+    queryFn: () => getDashboard(walletId, from, to, config.groupBy, 12),
+    enabled: walletId > 0,
+  });
+  const slices = q.data?.topCategories ?? [];
   return (
     <Card withBorder>
       <Group justify="space-between" mb="sm" wrap="nowrap" gap="xs">
@@ -471,8 +463,8 @@ function SpendingCard({
           <Select
             aria-label={t("dashboard.period")}
             data={PERIODS.map((p) => ({ value: p, label: t(`filters.presets.${p}`) }))}
-            value={view.period}
-            onChange={(v) => v && setView({ ...view, period: v as DatePreset })}
+            value={config.period}
+            onChange={(v) => v && onConfig({ ...config, period: v as DatePreset })}
             allowDeselect={false}
             w={150}
           />
@@ -493,8 +485,8 @@ function SpendingCard({
                 <SegmentedControl
                   fullWidth
                   size="xs"
-                  value={view.chartType}
-                  onChange={(v) => setView({ ...view, chartType: v as ChartType })}
+                  value={config.chartType}
+                  onChange={(v) => onConfig({ ...config, chartType: v as ChartType })}
                   data={[
                     { value: "donut", label: t("dashboard.chartDonut") },
                     { value: "bar", label: t("dashboard.chartBar") },
@@ -506,8 +498,8 @@ function SpendingCard({
                 <SegmentedControl
                   fullWidth
                   size="xs"
-                  value={view.groupBy}
-                  onChange={(v) => setView({ ...view, groupBy: v as DashboardGroupBy })}
+                  value={config.groupBy}
+                  onChange={(v) => onConfig({ ...config, groupBy: v as DashboardGroupBy })}
                   data={[
                     { value: "category", label: t("dashboard.byCategory") },
                     { value: "payee", label: t("dashboard.byPayee") },
@@ -518,7 +510,7 @@ function SpendingCard({
           </Menu>
         </Group>
       </Group>
-      <SpendingChart slices={slices} base={base} chartType={view.chartType} />
+      <SpendingChart slices={slices} base={base} chartType={config.chartType} />
     </Card>
   );
 }
@@ -526,18 +518,31 @@ function SpendingCard({
 // IncomeExpenseCard is the income/expense-over-time widget: a HomeBank-style
 // diverging chart (income up, expense down) with a period dropdown and a gear to
 // switch between bars and lines.
+type IEConfig = { months: number; style: IEStyle; net: boolean; cumulative: boolean };
+const DEFAULT_IE: IEConfig = { months: 12, style: "bars", net: false, cumulative: false };
+
+// IncomeExpenseCard is self-contained: it fetches its own income/expense series
+// for its configured trailing window, so multiple instances are independent.
 function IncomeExpenseCard({
-  view,
-  setView,
-  points,
+  walletId,
   base,
+  config,
+  onConfig,
 }: {
-  view: DashView;
-  setView: (v: DashView) => void;
-  points: MonthPoint[];
+  walletId: number;
   base?: CurrencyInfo;
+  config: IEConfig;
+  onConfig: (c: IEConfig) => void;
 }) {
   const { t } = useTranslation();
+  // The income/expense series depends only on the trailing-month window, so the
+  // range is left wide (it drives topCategories, unused here).
+  const q = useQuery({
+    queryKey: ["dashboard", walletId, "0001-01-01", "9999-12-31", "category", config.months],
+    queryFn: () => getDashboard(walletId, "0001-01-01", "9999-12-31", "category", config.months),
+    enabled: walletId > 0,
+  });
+  const points = q.data?.incomeExpense ?? [];
   return (
     <Card withBorder>
       <Group justify="space-between" mb="sm" wrap="nowrap" gap="xs">
@@ -549,8 +554,8 @@ function IncomeExpenseCard({
               value: String(m),
               label: m === 0 ? t("filters.presets.all") : t("dashboard.lastMonths", { count: m }),
             }))}
-            value={String(view.ieMonths)}
-            onChange={(v) => v != null && setView({ ...view, ieMonths: Number(v) })}
+            value={String(config.months)}
+            onChange={(v) => v != null && onConfig({ ...config, months: Number(v) })}
             allowDeselect={false}
             w={160}
           />
@@ -571,8 +576,8 @@ function IncomeExpenseCard({
                 <SegmentedControl
                   fullWidth
                   size="xs"
-                  value={view.ieStyle}
-                  onChange={(v) => setView({ ...view, ieStyle: v as IEStyle })}
+                  value={config.style}
+                  onChange={(v) => onConfig({ ...config, style: v as IEStyle })}
                   data={[
                     { value: "bars", label: t("dashboard.chartBar") },
                     { value: "lines", label: t("dashboard.chartLines") },
@@ -583,16 +588,16 @@ function IncomeExpenseCard({
                 <Switch
                   size="xs"
                   label={t("dashboard.showNet")}
-                  checked={view.ieNet}
-                  onChange={(e) => setView({ ...view, ieNet: e.currentTarget.checked })}
+                  checked={config.net}
+                  onChange={(e) => onConfig({ ...config, net: e.currentTarget.checked })}
                 />
                 <Switch
                   size="xs"
                   mt={6}
                   label={t("dashboard.cumulative")}
-                  checked={view.ieCumulative}
-                  disabled={!view.ieNet}
-                  onChange={(e) => setView({ ...view, ieCumulative: e.currentTarget.checked })}
+                  checked={config.cumulative}
+                  disabled={!config.net}
+                  onChange={(e) => onConfig({ ...config, cumulative: e.currentTarget.checked })}
                 />
               </Box>
             </Menu.Dropdown>
@@ -602,9 +607,9 @@ function IncomeExpenseCard({
       <IncomeExpenseChart
         points={points}
         base={base}
-        style={view.ieStyle}
-        showNet={view.ieNet}
-        cumulative={view.ieCumulative}
+        style={config.style}
+        showNet={config.net}
+        cumulative={config.cumulative}
       />
     </Card>
   );
