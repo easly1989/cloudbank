@@ -62,17 +62,25 @@ func nullID(p *int64) sql.NullInt64 {
 // Service implements category management.
 type Service struct {
 	db *sql.DB
-	q  *db.Queries
+	q  *db.Queries // write pool (mutations)
+	rq *db.Queries // read pool (read-only methods)
 }
 
-// NewService builds a Service backed by the write connection pool.
+// NewService builds a Service backed by the write connection pool for both
+// reads and writes.
 func NewService(write *sql.DB) *Service {
-	return &Service{db: write, q: db.New(write)}
+	return &Service{db: write, q: db.New(write), rq: db.New(write)}
+}
+
+// NewServiceWithRead builds a Service whose read-only methods run on the read
+// pool while mutations use the single write connection.
+func NewServiceWithRead(read, write *sql.DB) *Service {
+	return &Service{db: write, q: db.New(write), rq: db.New(read)}
 }
 
 // List returns a wallet's categories (the caller builds the two-level tree).
 func (s *Service) List(ctx context.Context, walletID int64) ([]Category, error) {
-	rows, err := s.q.ListCategoriesForWallet(ctx, walletID)
+	rows, err := s.rq.ListCategoriesForWallet(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +93,7 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]Category, error) 
 
 // Get returns a category by id.
 func (s *Service) Get(ctx context.Context, id int64) (Category, error) {
-	c, err := s.q.GetCategory(ctx, id)
+	c, err := s.rq.GetCategory(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Category{}, ErrNotFound
 	}
@@ -153,15 +161,15 @@ func (s *Service) Update(ctx context.Context, id int64, name string, isIncome, n
 
 // Usage reports how many things reference a category.
 func (s *Service) Usage(ctx context.Context, id int64) (Usage, error) {
-	subs, err := s.q.CountSubcategories(ctx, nullID(&id))
+	subs, err := s.rq.CountSubcategories(ctx, nullID(&id))
 	if err != nil {
 		return Usage{}, err
 	}
-	pays, err := s.q.CountPayeesWithCategory(ctx, nullID(&id))
+	pays, err := s.rq.CountPayeesWithCategory(ctx, nullID(&id))
 	if err != nil {
 		return Usage{}, err
 	}
-	txns, err := s.q.CountTransactionsWithCategory(ctx, nullID(&id))
+	txns, err := s.rq.CountTransactionsWithCategory(ctx, nullID(&id))
 	if err != nil {
 		return Usage{}, err
 	}

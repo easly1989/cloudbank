@@ -104,10 +104,10 @@ func run() error {
 	// Writes (including auth and wallets) go through the single write connection.
 	authSvc := auth.NewService(db.New(st.Write()))
 	walletSvc := wallet.NewService(st.Write())
-	currencySvc := currency.NewService(st.Write())
+	currencySvc := currency.NewServiceWithRead(st.Read(), st.Write())
 	accountSvc := account.NewServiceWithRead(st.Read(), st.Write())
-	categorySvc := category.NewService(st.Write())
-	payeeSvc := payee.NewService(st.Write())
+	categorySvc := category.NewServiceWithRead(st.Read(), st.Write())
+	payeeSvc := payee.NewServiceWithRead(st.Read(), st.Write())
 	transactionSvc := transaction.NewServiceWithRead(st.Read(), st.Write())
 	tagSvc := tag.NewServiceWithRead(st.Read(), st.Write())
 	vehicleSvc := vehicle.NewServiceWithRead(st.Read(), st.Write())
@@ -117,15 +117,15 @@ func run() error {
 	// their heavy aggregation queries no longer serialize behind writers (WAL
 	// allows concurrent readers).
 	dashboardSvc := dashboard.NewService(st.Read())
-	templateSvc := template.NewService(st.Write())
-	scheduleSvc := schedule.NewService(st.Write(), transactionSvc, transferSvc, logger)
-	assignmentSvc := assignment.NewService(st.Write())
+	templateSvc := template.NewServiceWithRead(st.Read(), st.Write())
+	scheduleSvc := schedule.NewServiceWithRead(st.Read(), st.Write(), transactionSvc, transferSvc, logger)
+	assignmentSvc := assignment.NewServiceWithRead(st.Read(), st.Write())
 	budgetSvc := budget.NewServiceWithRead(st.Read(), st.Write())
 	reportSvc := report.NewService(st.Read())
 	importSvc := importer.NewService(st.Write())
 	csvSvc := importio.NewService(st.Write(), transactionSvc, assignmentSvc, accountSvc)
 	rateProvider := &currency.Frankfurter{BaseURL: cfg.RateProviderURL}
-	integritySvc := integrity.NewService(st.Write())
+	integritySvc := integrity.NewServiceWithRead(st.Read(), st.Write())
 	backupSvc := backup.NewService(st.Write())
 	attachmentSvc := attachment.NewService(st.Write(), filepath.Join(cfg.DataDir, "attachments"))
 	// Remove an attachment's file when its transaction is deleted (rows cascade).

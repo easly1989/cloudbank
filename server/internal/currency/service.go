@@ -58,17 +58,25 @@ func toCurrency(c db.Currency) Currency {
 // Service implements per-wallet currency management.
 type Service struct {
 	db *sql.DB
-	q  *db.Queries
+	q  *db.Queries // write pool (mutations)
+	rq *db.Queries // read pool (read-only methods)
 }
 
-// NewService builds a Service backed by the write connection pool.
+// NewService builds a Service backed by the write connection pool for both
+// reads and writes.
 func NewService(write *sql.DB) *Service {
-	return &Service{db: write, q: db.New(write)}
+	return &Service{db: write, q: db.New(write), rq: db.New(write)}
+}
+
+// NewServiceWithRead builds a Service whose read-only methods run on the read
+// pool while mutations use the single write connection.
+func NewServiceWithRead(read, write *sql.DB) *Service {
+	return &Service{db: write, q: db.New(write), rq: db.New(read)}
 }
 
 // ListForWallet returns a wallet's currencies (base first).
 func (s *Service) ListForWallet(ctx context.Context, walletID int64) ([]Currency, error) {
-	rows, err := s.q.ListCurrenciesForWallet(ctx, walletID)
+	rows, err := s.rq.ListCurrenciesForWallet(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +89,7 @@ func (s *Service) ListForWallet(ctx context.Context, walletID int64) ([]Currency
 
 // Get returns a currency by id.
 func (s *Service) Get(ctx context.Context, id int64) (Currency, error) {
-	c, err := s.q.GetCurrency(ctx, id)
+	c, err := s.rq.GetCurrency(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Currency{}, ErrNotFound
 	}
@@ -293,7 +301,7 @@ func (s *Service) Delete(ctx context.Context, currencyID int64) error {
 
 // RateHistory returns a currency's exchange-rate history (newest first).
 func (s *Service) RateHistory(ctx context.Context, currencyID int64) ([]Rate, error) {
-	rows, err := s.q.ListExchangeRates(ctx, currencyID)
+	rows, err := s.rq.ListExchangeRates(ctx, currencyID)
 	if err != nil {
 		return nil, err
 	}
