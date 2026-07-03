@@ -18,13 +18,18 @@ export type WidgetType = (typeof WIDGET_TYPES)[number];
 export const COLUMNS = 12;
 
 export interface PlacedWidget {
-  /** Instance id. In phase 1 there is one instance per type, so id === type. */
+  /**
+   * Unique instance id. The first instance of a type uses the bare type name
+   * (so phase-1 layouts stay valid); further instances get "type-2", "type-3", …
+   */
   id: string;
   type: WidgetType;
   x: number;
   y: number;
   w: number;
   h: number;
+  /** Opaque per-instance configuration, interpreted by the widget's renderer. */
+  config?: Record<string, unknown>;
 }
 
 export interface DashboardLayoutV2 {
@@ -141,8 +146,15 @@ export function migrateLayout(saved: unknown): DashboardLayoutV2 {
   };
 }
 
-/** Widget types not currently placed — offered in the "add widget" menu. */
-export function unplacedTypes(widgets: PlacedWidget[]): WidgetType[] {
-  const placed = new Set(widgets.map((w) => w.type));
-  return WIDGET_TYPES.filter((t) => !placed.has(t));
+/**
+ * A fresh unique instance id for a new widget of the given type: the bare type
+ * name if free, else "type-2", "type-3", … (so multiple instances of a type can
+ * coexist).
+ */
+export function newInstanceId(type: WidgetType, existing: PlacedWidget[]): string {
+  const ids = new Set(existing.map((w) => w.id));
+  if (!ids.has(type)) return type;
+  let n = 2;
+  while (ids.has(`${type}-${n}`)) n++;
+  return `${type}-${n}`;
 }
