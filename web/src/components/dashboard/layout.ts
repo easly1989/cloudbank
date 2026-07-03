@@ -12,8 +12,25 @@ export const WIDGET_TYPES = [
   "spending",
   "budget",
   "upcoming",
+  "accountBalance",
+  "recentTransactions",
+  "kpi",
+  "notes",
 ] as const;
 export type WidgetType = (typeof WIDGET_TYPES)[number];
+
+// The widgets placed on a fresh dashboard (and back-filled when migrating an
+// older layout). The remaining WIDGET_TYPES are opt-in from the "Add widget"
+// palette, so new widget types don't clutter existing users' dashboards.
+export const DEFAULT_WIDGET_TYPES: WidgetType[] = [
+  "totals",
+  "quickAdd",
+  "incomeExpense",
+  "accounts",
+  "spending",
+  "budget",
+  "upcoming",
+];
 
 export const COLUMNS = 12;
 
@@ -49,6 +66,10 @@ export const WIDGET_SIZES: Record<
   spending: { w: 6, h: 4, minW: 3, minH: 3 },
   budget: { w: 6, h: 3, minW: 3, minH: 2 },
   upcoming: { w: 12, h: 4, minW: 4, minH: 3 },
+  accountBalance: { w: 4, h: 2, minW: 2, minH: 2 },
+  recentTransactions: { w: 6, h: 4, minW: 3, minH: 3 },
+  kpi: { w: 3, h: 2, minW: 2, minH: 2 },
+  notes: { w: 4, h: 3, minW: 2, minH: 2 },
 };
 
 const isWidgetType = (t: string): t is WidgetType =>
@@ -79,9 +100,9 @@ function pack(sizes: { w: number; h: number }[]): { x: number; y: number }[] {
   return out;
 }
 
-/** The default layout: every widget in its natural order and size, packed. */
+/** The default layout: the default widgets in their natural order and size. */
 export function defaultLayout(order?: WidgetType[]): DashboardLayoutV2 {
-  const types = order && order.length > 0 ? order : [...WIDGET_TYPES];
+  const types = order && order.length > 0 ? order : [...DEFAULT_WIDGET_TYPES];
   const sizes = types.map((t) => WIDGET_SIZES[t]);
   const pos = pack(sizes);
   return {
@@ -124,7 +145,7 @@ export function migrateLayout(saved: unknown): DashboardLayoutV2 {
       order.push(id);
       seen.add(id);
     }
-  for (const t of WIDGET_TYPES) if (!seen.has(t)) order.push(t);
+  for (const t of DEFAULT_WIDGET_TYPES) if (!seen.has(t)) order.push(t);
 
   const hidden = new Set(legacy.hidden ?? []);
   const visible = order.filter((t) => !hidden.has(t));
