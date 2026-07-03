@@ -11,8 +11,22 @@ and **onboarding/polish**.
 
 ### Added
 
-- **Customizable dashboard** — drag to reorder widgets, resize them (full / half /
-  third width) and show or hide them; the layout persists per user.
+- **Fully customizable, free-form dashboard** — place and resize widgets anywhere
+  on a snap grid (not just reorder); add **multiple instances of any widget** from
+  an "Add widget" palette, each with its **own settings** (e.g. two spending
+  donuts over different periods); the layout persists per user and stacks to a
+  single column on phones. New widget types beyond the standard set: a single
+  **account balance** card, a **recent transactions** list, a **key-figure**
+  big-number, and a free-text **notes** card. Existing dashboards are migrated
+  automatically.
+- **Per-account default payment mode** — each account can pre-fill the payment
+  mode of new transactions (e.g. Direct Debit for a bank account, Credit Card for
+  a card); a chosen payee's own default still takes precedence.
+- **Selected-transactions total** — selecting rows in the register now shows the
+  selection's net total (plus an income/expense split for mixed selections) in the
+  bulk bar, HomeBank-style.
+- **Scheduled income/expense summary** — the Scheduled page shows the recurring
+  income, expense and net normalized **per week / month / year** at a glance.
 - **HomeBank-style dashboard** — pick an account and **Add** opens the full
   transaction modal; the spending donut shows **percentages**; the income/expense
   chart is wider; and the Upcoming panel is split into **Recurring / Future /
@@ -59,6 +73,12 @@ and **onboarding/polish**.
 - **Settings, Import and Preferences** pages now use the full page width instead
   of a narrow centred column.
 - **Dates** are rendered everywhere in the user's configured format.
+- **Faster initial load** — the app is code-split per route with vendor chunks and
+  imports only the chart pieces it uses, so the first download is much smaller.
+- Modernized the stack (React 19, Mantine 9, Vite 8, React Router 7, current Go
+  dependencies) and internal refactors (per-domain API client, dedicated
+  vehicle/tag packages, a SQLite read pool for read-only queries) with no change
+  in behaviour.
 - Documentation now states parity with **HomeBank** (no fixed version), so it
   tracks current and future HomeBank releases.
 

@@ -53,7 +53,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/): `type(scope
 
 ## Local development
 
-Prerequisites: **Go 1.24+**, **Node 22+**, and Docker (for the container build).
+Prerequisites: **Go 1.25+**, **Node 22+**, and Docker (for the container build).
 
 ```bash
 # Backend
