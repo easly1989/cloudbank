@@ -240,6 +240,14 @@
     "autoPost": "Registra automaticamente",
     "cadenceLabel": "Ricorrenza",
     "cadence": "Ogni {{n}} {{unit}}",
+    "income": "Entrate",
+    "expense": "Uscite",
+    "net": "Netto",
+    "per": {
+      "week": "Alla settimana",
+      "month": "Al mese",
+      "year": "All'anno"
+    },
     "mode": "Modalità",
     "autoLabel": "Auto",
     "remindLabel": "Promemoria",
