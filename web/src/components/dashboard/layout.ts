@@ -16,6 +16,8 @@ export const WIDGET_TYPES = [
   "recentTransactions",
   "kpi",
   "notes",
+  "currencyRates",
+  "categoryBudget",
 ] as const;
 export type WidgetType = (typeof WIDGET_TYPES)[number];
 
@@ -70,6 +72,8 @@ export const WIDGET_SIZES: Record<
   recentTransactions: { w: 6, h: 4, minW: 3, minH: 3 },
   kpi: { w: 3, h: 2, minW: 2, minH: 2 },
   notes: { w: 4, h: 3, minW: 2, minH: 2 },
+  currencyRates: { w: 4, h: 3, minW: 2, minH: 2 },
+  categoryBudget: { w: 6, h: 3, minW: 3, minH: 2 },
 };
 
 const isWidgetType = (t: string): t is WidgetType =>

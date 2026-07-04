@@ -634,6 +634,12 @@
     "metricFuture": "Patrimonio (incl. futuro)",
     "metricBank": "Conti bancari",
     "notesPlaceholder": "Scrivi una nota…",
+    "currencyRates": "Tassi di cambio",
+    "currencyRatesEmpty": "È impostata solo la valuta base.",
+    "perBase": "per {{code}}",
+    "categoryBudget": "Budget per categoria",
+    "selectCategory": "Categoria",
+    "noBudgetForCategory": "Nessun budget di categoria per questo mese.",
     "hiddenWidgets": "Widget nascosti",
     "hideWidget": "Nascondi widget",
     "widgets": {
