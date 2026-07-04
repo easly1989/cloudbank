@@ -28,6 +28,7 @@ import { BalanceSparklineCard } from "../components/dashboard/widgets/BalanceSpa
 import { CategoryBudgetCard } from "../components/dashboard/widgets/CategoryBudgetCard";
 import { CurrencyRatesCard } from "../components/dashboard/widgets/CurrencyRatesCard";
 import { NetWorthTrendCard } from "../components/dashboard/widgets/NetWorthTrendCard";
+import { SpendingHeatmapCard } from "../components/dashboard/widgets/SpendingHeatmapCard";
 import { IncomeExpenseCard } from "../components/dashboard/widgets/IncomeExpenseCard";
 import { KpiCard } from "../components/dashboard/widgets/KpiCard";
 import { NotesCard } from "../components/dashboard/widgets/NotesCard";
@@ -184,6 +185,8 @@ export function DashboardPage() {
             onConfig={(c) => setConfig(item.id, c)}
           />
         );
+      case "spendingHeatmap":
+        return <SpendingHeatmapCard walletId={walletId} />;
     }
   };
 
@@ -245,6 +248,7 @@ export function DashboardPage() {
     categoryBudget: t("dashboard.categoryBudget"),
     netWorthTrend: t("dashboard.netWorth"),
     balanceSparkline: t("dashboard.balanceSparkline"),
+    spendingHeatmap: t("dashboard.spendingHeatmap"),
   };
 
   return (
