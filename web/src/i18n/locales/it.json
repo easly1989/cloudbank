@@ -646,6 +646,7 @@
     "uncleared": "Da riconciliare",
     "allCleared": "Tutto riconciliato.",
     "unclearedCount": "{{count}} da riconciliare",
+    "cashflow": "Previsione flusso di cassa",
     "hiddenWidgets": "Widget nascosti",
     "hideWidget": "Nascondi widget",
     "widgets": {
