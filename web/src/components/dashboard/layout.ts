@@ -18,6 +18,8 @@ export const WIDGET_TYPES = [
   "notes",
   "currencyRates",
   "categoryBudget",
+  "netWorthTrend",
+  "balanceSparkline",
 ] as const;
 export type WidgetType = (typeof WIDGET_TYPES)[number];
 
@@ -74,6 +76,8 @@ export const WIDGET_SIZES: Record<
   notes: { w: 4, h: 3, minW: 2, minH: 2 },
   currencyRates: { w: 4, h: 3, minW: 2, minH: 2 },
   categoryBudget: { w: 6, h: 3, minW: 3, minH: 2 },
+  netWorthTrend: { w: 6, h: 3, minW: 3, minH: 3 },
+  balanceSparkline: { w: 4, h: 2, minW: 2, minH: 2 },
 };
 
 const isWidgetType = (t: string): t is WidgetType =>
