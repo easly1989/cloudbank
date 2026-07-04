@@ -427,13 +427,20 @@ func (s *Service) materialize(ctx context.Context, qtx *db.Queries, sc db.Schedu
 	if !tpl.AccountID.Valid {
 		return ErrTemplateNoAcct
 	}
+	// A posted scheduled transaction has actually occurred, so default it to
+	// Cleared when the template leaves the status unset (None). An explicitly-set
+	// Cleared/Reconciled status on the template is preserved. (#243)
+	postStatus := int(tpl.Status)
+	if postStatus == transaction.StatusNone {
+		postStatus = transaction.StatusCleared
+	}
 	if tpl.IsTransfer != 0 {
 		if !tpl.ToAccountID.Valid {
 			return ErrTemplateNoAcct
 		}
 		fromID, toID, err := s.transfers.CreateInTx(ctx, qtx, sc.WalletID, transfer.Input{
 			FromAccountID: tpl.AccountID.Int64, ToAccountID: tpl.ToAccountID.Int64, Date: date,
-			FromAmount: -tpl.Amount, Memo: tpl.Memo, Status: int(tpl.Status),
+			FromAmount: -tpl.Amount, Memo: tpl.Memo, Status: postStatus,
 		})
 		if err != nil {
 			return err
@@ -450,7 +457,7 @@ func (s *Service) materialize(ctx context.Context, qtx *db.Queries, sc db.Schedu
 
 	in := transaction.Input{
 		AccountID: tpl.AccountID.Int64, Date: date, Amount: tpl.Amount,
-		PaymentMode: int(tpl.PaymentMode), Status: int(tpl.Status), Info: tpl.Info,
+		PaymentMode: int(tpl.PaymentMode), Status: postStatus, Info: tpl.Info,
 		PayeeID: nptr(tpl.PayeeID), CategoryID: nptr(tpl.CategoryID), Memo: tpl.Memo,
 		Tags: splitTags(tpl.Tags),
 	}
