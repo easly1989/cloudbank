@@ -51,7 +51,7 @@ export function QuickAddCard({ walletId }: { walletId: number }) {
   };
 
   return (
-    <Card withBorder data-tour="quick-add">
+    <Card withBorder h="100%" data-tour="quick-add">
       <Stack gap="xs">
         <Title order={4}>{t("dashboard.addTransaction")}</Title>
         <Group gap="xs" wrap="nowrap">

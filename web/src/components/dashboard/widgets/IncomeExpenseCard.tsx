@@ -46,7 +46,7 @@ export function IncomeExpenseCard({
   });
   const points = q.data?.incomeExpense ?? [];
   return (
-    <Card withBorder>
+    <Card withBorder h="100%">
       <Group justify="space-between" mb="sm" wrap="nowrap" gap="xs">
         <Title order={4}>{t("dashboard.incomeExpense")}</Title>
         <Group gap="xs" wrap="nowrap">
