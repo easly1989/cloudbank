@@ -24,6 +24,8 @@ import {
 import { AccountBalanceCard } from "../components/dashboard/widgets/AccountBalanceCard";
 import { AccountsPanel } from "../components/dashboard/widgets/AccountsPanel";
 import { BudgetWidget } from "../components/dashboard/widgets/BudgetWidget";
+import { CategoryBudgetCard } from "../components/dashboard/widgets/CategoryBudgetCard";
+import { CurrencyRatesCard } from "../components/dashboard/widgets/CurrencyRatesCard";
 import { IncomeExpenseCard } from "../components/dashboard/widgets/IncomeExpenseCard";
 import { KpiCard } from "../components/dashboard/widgets/KpiCard";
 import { NotesCard } from "../components/dashboard/widgets/NotesCard";
@@ -159,6 +161,17 @@ export function DashboardPage() {
             onConfig={(c) => setConfig(item.id, c)}
           />
         );
+      case "currencyRates":
+        return <CurrencyRatesCard walletId={walletId} />;
+      case "categoryBudget":
+        return (
+          <CategoryBudgetCard
+            walletId={walletId}
+            base={base}
+            config={(item.config ?? {}) as { categoryId?: number }}
+            onConfig={(c) => setConfig(item.id, c)}
+          />
+        );
     }
   };
 
@@ -216,6 +229,8 @@ export function DashboardPage() {
     recentTransactions: t("dashboard.recentTransactions"),
     kpi: t("dashboard.kpi"),
     notes: t("dashboard.notes"),
+    currencyRates: t("dashboard.currencyRates"),
+    categoryBudget: t("dashboard.categoryBudget"),
   };
 
   return (
