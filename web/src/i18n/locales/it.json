@@ -643,6 +643,9 @@
     "netWorth": "Patrimonio netto",
     "balanceSparkline": "Andamento saldo",
     "spendingHeatmap": "Calendario spese",
+    "uncleared": "Da riconciliare",
+    "allCleared": "Tutto riconciliato.",
+    "unclearedCount": "{{count}} da riconciliare",
     "hiddenWidgets": "Widget nascosti",
     "hideWidget": "Nascondi widget",
     "widgets": {

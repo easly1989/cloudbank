@@ -194,3 +194,20 @@ export const getVehicleReport = (
   if (to) q.set("to", to);
   return api.get<VehicleReport>(`/api/v1/wallets/${walletId}/reports/vehicle?${q.toString()}`);
 };
+
+// --- Uncleared / reconciliation summary ---
+
+export interface UnclearedAccount {
+  accountId: number;
+  accountName: string;
+  count: number;
+  amount: number;
+  currency: CurrencyInfo;
+}
+
+export interface UnclearedReport {
+  accounts: UnclearedAccount[];
+}
+
+export const getUnclearedReport = (walletId: number) =>
+  api.get<UnclearedReport>(`/api/v1/wallets/${walletId}/reports/uncleared`);

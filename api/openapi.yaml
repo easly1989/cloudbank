@@ -1371,6 +1371,14 @@ paths:
       responses:
         "200": { description: The balance report., content: { application/json: { schema: { $ref: "#/components/schemas/BalanceResult" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/reports/uncleared:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getUnclearedReport
+      summary: Per-account count and amount of uncleared (status None) transactions
+      responses:
+        "200": { description: The uncleared report., content: { application/json: { schema: { $ref: "#/components/schemas/UnclearedReport" } } } }
   /api/v1/wallets/{walletId}/vehicles:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -2186,6 +2194,20 @@ components:
         series: { type: array, items: { $ref: "#/components/schemas/BalanceSeries" } }
         currency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
       required: [buckets, series]
+    UnclearedAccount:
+      type: object
+      properties:
+        accountId: { type: integer, format: int64 }
+        accountName: { type: string }
+        count: { type: integer, format: int64 }
+        amount: { type: integer, format: int64 }
+        currency: { $ref: "#/components/schemas/CurrencyInfo" }
+      required: [accountId, accountName, count, amount, currency]
+    UnclearedReport:
+      type: object
+      properties:
+        accounts: { type: array, items: { $ref: "#/components/schemas/UnclearedAccount" } }
+      required: [accounts]
     CategoryBudget:
       type: object
       properties:

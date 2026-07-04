@@ -1311,6 +1311,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/reports/uncleared": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Per-account count and amount of uncleared (status None) transactions */
+        get: operations["getUnclearedReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/vehicles": {
         parameters: {
             query?: never;
@@ -2214,6 +2233,19 @@ export interface components {
             buckets: string[];
             series: components["schemas"]["BalanceSeries"][];
             currency?: components["schemas"]["CurrencyInfo"];
+        };
+        UnclearedAccount: {
+            /** Format: int64 */
+            accountId: number;
+            accountName: string;
+            /** Format: int64 */
+            count: number;
+            /** Format: int64 */
+            amount: number;
+            currency: components["schemas"]["CurrencyInfo"];
+        };
+        UnclearedReport: {
+            accounts: components["schemas"]["UnclearedAccount"][];
         };
         CategoryBudget: {
             /** Format: int64 */
@@ -5043,6 +5075,28 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+        };
+    };
+    getUnclearedReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The uncleared report. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnclearedReport"];
+                };
+            };
         };
     };
     listVehicles: {

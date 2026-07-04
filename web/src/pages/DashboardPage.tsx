@@ -29,6 +29,7 @@ import { CategoryBudgetCard } from "../components/dashboard/widgets/CategoryBudg
 import { CurrencyRatesCard } from "../components/dashboard/widgets/CurrencyRatesCard";
 import { NetWorthTrendCard } from "../components/dashboard/widgets/NetWorthTrendCard";
 import { SpendingHeatmapCard } from "../components/dashboard/widgets/SpendingHeatmapCard";
+import { UnclearedSummaryCard } from "../components/dashboard/widgets/UnclearedSummaryCard";
 import { IncomeExpenseCard } from "../components/dashboard/widgets/IncomeExpenseCard";
 import { KpiCard } from "../components/dashboard/widgets/KpiCard";
 import { NotesCard } from "../components/dashboard/widgets/NotesCard";
@@ -187,6 +188,8 @@ export function DashboardPage() {
         );
       case "spendingHeatmap":
         return <SpendingHeatmapCard walletId={walletId} />;
+      case "uncleared":
+        return <UnclearedSummaryCard walletId={walletId} />;
     }
   };
 
@@ -249,6 +252,7 @@ export function DashboardPage() {
     netWorthTrend: t("dashboard.netWorth"),
     balanceSparkline: t("dashboard.balanceSparkline"),
     spendingHeatmap: t("dashboard.spendingHeatmap"),
+    uncleared: t("dashboard.uncleared"),
   };
 
   return (
