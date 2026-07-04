@@ -634,6 +634,12 @@
     "metricFuture": "Net worth (incl. future)",
     "metricBank": "Bank accounts",
     "notesPlaceholder": "Write a note…",
+    "currencyRates": "Exchange rates",
+    "currencyRatesEmpty": "Only the base currency is set.",
+    "perBase": "per {{code}}",
+    "categoryBudget": "Category budget",
+    "selectCategory": "Category",
+    "noBudgetForCategory": "No category budget set for this month.",
     "hiddenWidgets": "Hidden widgets",
     "hideWidget": "Hide widget",
     "widgets": {
