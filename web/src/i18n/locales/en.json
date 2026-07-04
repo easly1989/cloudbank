@@ -646,6 +646,7 @@
     "uncleared": "Uncleared",
     "allCleared": "Everything is cleared.",
     "unclearedCount": "{{count}} to reconcile",
+    "cashflow": "Cashflow forecast",
     "hiddenWidgets": "Hidden widgets",
     "hideWidget": "Hide widget",
     "widgets": {
