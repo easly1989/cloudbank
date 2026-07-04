@@ -16,7 +16,7 @@ export function TotalsWidget({
   const { t } = useTranslation();
   if (!base || !totals) return null;
   return (
-    <SimpleGrid cols={{ base: 1, sm: 3 }}>
+    <SimpleGrid cols={{ base: 1, sm: 3 }} h="100%">
       <TotalCard label={t("register.bank")} value={totals.bank} fmt={base} />
       <TotalCard label={t("register.today")} value={totals.today} fmt={base} />
       <TotalCard label={t("register.future")} value={totals.future} fmt={base} />
@@ -26,7 +26,7 @@ export function TotalsWidget({
 
 function TotalCard({ label, value, fmt }: { label: string; value: number; fmt: CurrencyInfo }) {
   return (
-    <Card withBorder padding="sm">
+    <Card withBorder padding="sm" h="100%">
       <Text size="xs" c="dimmed" tt="uppercase">
         {label} · {fmt.code}
       </Text>
