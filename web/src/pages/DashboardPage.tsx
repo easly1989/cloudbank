@@ -24,8 +24,10 @@ import {
 import { AccountBalanceCard } from "../components/dashboard/widgets/AccountBalanceCard";
 import { AccountsPanel } from "../components/dashboard/widgets/AccountsPanel";
 import { BudgetWidget } from "../components/dashboard/widgets/BudgetWidget";
+import { BalanceSparklineCard } from "../components/dashboard/widgets/BalanceSparklineCard";
 import { CategoryBudgetCard } from "../components/dashboard/widgets/CategoryBudgetCard";
 import { CurrencyRatesCard } from "../components/dashboard/widgets/CurrencyRatesCard";
+import { NetWorthTrendCard } from "../components/dashboard/widgets/NetWorthTrendCard";
 import { IncomeExpenseCard } from "../components/dashboard/widgets/IncomeExpenseCard";
 import { KpiCard } from "../components/dashboard/widgets/KpiCard";
 import { NotesCard } from "../components/dashboard/widgets/NotesCard";
@@ -172,6 +174,16 @@ export function DashboardPage() {
             onConfig={(c) => setConfig(item.id, c)}
           />
         );
+      case "netWorthTrend":
+        return <NetWorthTrendCard walletId={walletId} />;
+      case "balanceSparkline":
+        return (
+          <BalanceSparklineCard
+            walletId={walletId}
+            config={(item.config ?? {}) as { accountId?: number }}
+            onConfig={(c) => setConfig(item.id, c)}
+          />
+        );
     }
   };
 
@@ -231,6 +243,8 @@ export function DashboardPage() {
     notes: t("dashboard.notes"),
     currencyRates: t("dashboard.currencyRates"),
     categoryBudget: t("dashboard.categoryBudget"),
+    netWorthTrend: t("dashboard.netWorth"),
+    balanceSparkline: t("dashboard.balanceSparkline"),
   };
 
   return (

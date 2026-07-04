@@ -75,3 +75,14 @@ export function accountFmt(a: Account) {
     symbolPrefix: a.currencySymbolPrefix,
   };
 }
+
+// trailingYearBounds returns a [from, to] window covering the last ~12 months
+// (from the 1st of the month a year ago through today), for the balance-report
+// based trend widgets.
+export function trailingYearBounds(): { from: string; to: string } {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const to = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const from = `${now.getFullYear() - 1}-${pad(now.getMonth() + 1)}-01`;
+  return { from, to };
+}
