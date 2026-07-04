@@ -640,6 +640,8 @@
     "categoryBudget": "Budget per categoria",
     "selectCategory": "Categoria",
     "noBudgetForCategory": "Nessun budget di categoria per questo mese.",
+    "netWorth": "Patrimonio netto",
+    "balanceSparkline": "Andamento saldo",
     "hiddenWidgets": "Widget nascosti",
     "hideWidget": "Nascondi widget",
     "widgets": {
