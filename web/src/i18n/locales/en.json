@@ -643,6 +643,9 @@
     "netWorth": "Net worth",
     "balanceSparkline": "Balance trend",
     "spendingHeatmap": "Spending calendar",
+    "uncleared": "Uncleared",
+    "allCleared": "Everything is cleared.",
+    "unclearedCount": "{{count}} to reconcile",
     "hiddenWidgets": "Hidden widgets",
     "hideWidget": "Hide widget",
     "widgets": {

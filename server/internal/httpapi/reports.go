@@ -23,6 +23,17 @@ func (h *reportHandlers) walletRoutes(r chi.Router) {
 	r.Get("/reports/trend", h.trend)
 	r.Get("/reports/balance", h.balance)
 	r.Get("/reports/vehicle", h.vehicle)
+	r.Get("/reports/uncleared", h.uncleared)
+}
+
+func (h *reportHandlers) uncleared(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	out, err := h.svc.Uncleared(r.Context(), wl.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not build the uncleared report")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"accounts": out})
 }
 
 func (h *reportHandlers) vehicle(w http.ResponseWriter, r *http.Request) {
