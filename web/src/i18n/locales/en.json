@@ -640,6 +640,8 @@
     "categoryBudget": "Category budget",
     "selectCategory": "Category",
     "noBudgetForCategory": "No category budget set for this month.",
+    "netWorth": "Net worth",
+    "balanceSparkline": "Balance trend",
     "hiddenWidgets": "Hidden widgets",
     "hideWidget": "Hide widget",
     "widgets": {
