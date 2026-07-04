@@ -55,6 +55,19 @@ test("full journey: setup → wallet → account → transaction → import → 
     await expect(page.getByText("2026-02-01")).toBeVisible();
   });
 
+  await test.step("attach a file to the transaction", async () => {
+    // Double-click the register row to open its edit form (which hosts the
+    // attachments field), upload a file, and confirm it is listed. The upload
+    // persists immediately, independently of the form's Save.
+    await page.getByText("2026-02-01").first().dblclick();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await dialog.locator('input[type="file"]').setInputFiles("fixtures/receipt.txt");
+    await expect(dialog.getByText("receipt.txt")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  });
+
   await test.step("enter and cancel the reconcile workflow", async () => {
     await page.getByRole("button", { name: "Reconcile" }).click();
     await expect(page.getByLabel("Statement balance")).toBeVisible();
