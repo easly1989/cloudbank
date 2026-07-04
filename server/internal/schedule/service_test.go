@@ -125,6 +125,10 @@ func TestPostedTransactionReferencesTemplate(t *testing.T) {
 	if !full.TemplateID.Valid || full.TemplateID.Int64 != tpl {
 		t.Fatalf("template_id = %+v, want %d", full.TemplateID, tpl)
 	}
+	// A posted scheduled transaction defaults to Cleared (1), not None (0). (#243)
+	if full.Status != 1 {
+		t.Fatalf("posted status = %d, want Cleared (1)", full.Status)
+	}
 }
 
 func TestOccurrenceLimit(t *testing.T) {
