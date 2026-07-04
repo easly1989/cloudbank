@@ -642,6 +642,7 @@
     "noBudgetForCategory": "No category budget set for this month.",
     "netWorth": "Net worth",
     "balanceSparkline": "Balance trend",
+    "spendingHeatmap": "Spending calendar",
     "hiddenWidgets": "Hidden widgets",
     "hideWidget": "Hide widget",
     "widgets": {
