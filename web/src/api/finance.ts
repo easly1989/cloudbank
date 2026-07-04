@@ -211,3 +211,17 @@ export interface UnclearedReport {
 
 export const getUnclearedReport = (walletId: number) =>
   api.get<UnclearedReport>(`/api/v1/wallets/${walletId}/reports/uncleared`);
+
+// --- Cashflow forecast ---
+
+export interface CashflowResult {
+  dates: string[];
+  balances: number[];
+  minimum: number;
+  currency: CurrencyInfo | null;
+}
+
+export const getCashflowForecast = (walletId: number, accountId: number, days = 90) =>
+  api.get<CashflowResult>(
+    `/api/v1/wallets/${walletId}/reports/cashflow?accountId=${accountId}&days=${days}`,
+  );

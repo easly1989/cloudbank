@@ -1379,6 +1379,18 @@ paths:
       summary: Per-account count and amount of uncleared (status None) transactions
       responses:
         "200": { description: The uncleared report., content: { application/json: { schema: { $ref: "#/components/schemas/UnclearedReport" } } } }
+  /api/v1/wallets/{walletId}/reports/cashflow:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getCashflowForecast
+      summary: Projected daily balance for an account (future transactions + schedules)
+      parameters:
+        - { name: accountId, in: query, required: true, schema: { type: integer, format: int64 } }
+        - { name: days, in: query, required: false, schema: { type: integer }, description: "horizon in days (1-365, default 90)" }
+      responses:
+        "200": { description: The forecast., content: { application/json: { schema: { $ref: "#/components/schemas/CashflowResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
   /api/v1/wallets/{walletId}/vehicles:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -2194,6 +2206,14 @@ components:
         series: { type: array, items: { $ref: "#/components/schemas/BalanceSeries" } }
         currency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
       required: [buckets, series]
+    CashflowResult:
+      type: object
+      properties:
+        dates: { type: array, items: { type: string } }
+        balances: { type: array, items: { type: integer, format: int64 } }
+        minimum: { type: integer, format: int64 }
+        currency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
+      required: [dates, balances, minimum]
     UnclearedAccount:
       type: object
       properties:

@@ -1330,6 +1330,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/reports/cashflow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Projected daily balance for an account (future transactions + schedules) */
+        get: operations["getCashflowForecast"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/vehicles": {
         parameters: {
             query?: never;
@@ -2232,6 +2251,13 @@ export interface components {
         BalanceResult: {
             buckets: string[];
             series: components["schemas"]["BalanceSeries"][];
+            currency?: components["schemas"]["CurrencyInfo"];
+        };
+        CashflowResult: {
+            dates: string[];
+            balances: number[];
+            /** Format: int64 */
+            minimum: number;
             currency?: components["schemas"]["CurrencyInfo"];
         };
         UnclearedAccount: {
@@ -5097,6 +5123,33 @@ export interface operations {
                     "application/json": components["schemas"]["UnclearedReport"];
                 };
             };
+        };
+    };
+    getCashflowForecast: {
+        parameters: {
+            query: {
+                accountId: number;
+                /** @description horizon in days (1-365, default 90) */
+                days?: number;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The forecast. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashflowResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
         };
     };
     listVehicles: {

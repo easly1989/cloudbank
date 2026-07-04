@@ -24,6 +24,7 @@ func (h *reportHandlers) walletRoutes(r chi.Router) {
 	r.Get("/reports/balance", h.balance)
 	r.Get("/reports/vehicle", h.vehicle)
 	r.Get("/reports/uncleared", h.uncleared)
+	r.Get("/reports/cashflow", h.cashflow)
 }
 
 func (h *reportHandlers) uncleared(w http.ResponseWriter, r *http.Request) {
@@ -34,6 +35,28 @@ func (h *reportHandlers) uncleared(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"accounts": out})
+}
+
+func (h *reportHandlers) cashflow(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	q := r.URL.Query()
+	accountID, err := strconv.ParseInt(q.Get("accountId"), 10, 64)
+	if err != nil || accountID <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid_request", "accountId is required")
+		return
+	}
+	days := 90
+	if d := q.Get("days"); d != "" {
+		if n, perr := strconv.Atoi(d); perr == nil {
+			days = n
+		}
+	}
+	out, err := h.svc.Cashflow(r.Context(), wl.ID, accountID, days)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not build the cashflow forecast")
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (h *reportHandlers) vehicle(w http.ResponseWriter, r *http.Request) {
