@@ -1,9 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="CloudBank">
-  <g fill="#12b886">
-    <circle cx="10" cy="19" r="6" />
-    <circle cx="16" cy="13" r="8" />
-    <circle cx="22" cy="19" r="6" />
-    <rect x="7" y="18" width="18" height="7" rx="3.5" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="CloudBank">
+  <defs>
+    <linearGradient id="cbCloud" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8ecbfd"/>
+      <stop offset=".55" stop-color="#5aa9f4"/>
+      <stop offset="1" stop-color="#3d86e0"/>
+    </linearGradient>
+    <radialGradient id="cbCoin" cx=".38" cy=".32" r=".85">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e7eef4"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="30" cy="55.5" rx="20" ry="3.2" fill="#000" opacity=".07"/>
+  <path transform="translate(9 7) scale(1.92)" fill="url(#cbCloud)"
+        d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/>
+  <circle cx="23" cy="45.5" r="13.2" fill="url(#cbCoin)" stroke="#3aa64a" stroke-width="2.4"/>
+  <g stroke="#3aa64a" stroke-linecap="round" fill="none">
+    <path d="M28 40a7 7 0 1 0 0 11" stroke-width="2.7"/>
+    <path d="M16.9 43.9h10.4M16.9 47.1h10.4" stroke-width="2.3"/>
   </g>
-  <text x="16" y="22.5" text-anchor="middle" font-size="12" font-weight="700" font-family="Arial, Helvetica, sans-serif" fill="#ffffff">€</text>
 </svg>

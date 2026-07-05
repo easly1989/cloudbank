@@ -1,0 +1,74 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const REPO = "https://github.com/easly1989/cloudbank";
+const source = `# Backend (Go 1.25+)
+cd server
+go run ./cmd/cloudbank        # serves on :8080
+
+# Frontend (Node 22+, separate terminal)
+cd web
+npm install
+npm run dev                   # Vite dev server, proxies /api → :8080`;
+---
+
+<Layout page="contribute" title="Contribute — CloudBank" description="Help build CloudBank: run it from source, follow the conventions, report bugs and request features.">
+  <section class="page-hero">
+    <span class="eyebrow reveal">Open source</span>
+    <h1 class="reveal">Contribute</h1>
+    <p class="lead reveal">
+      CloudBank is an open-source labour of love. Code, translations, bug reports and ideas are all
+      welcome.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2 class="reveal" style="text-align:center">Run it from source</h2>
+    <p class="section-lead reveal" style="text-align:center">
+      A Go backend embedding a React SPA. Requires Go 1.25+, Node 22+ and Docker for the container build.
+    </p>
+    <pre class="code reveal"><code>{source}</code></pre>
+    <p class="run reveal">
+      Common tasks are wrapped in the <code>Makefile</code>: <code>make gen / lint / test / build / docker</code>.
+    </p>
+  </section>
+
+  <section class="section">
+    <div class="card-grid">
+      <a class="info-card reveal" href={`${REPO}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noopener">
+        <div class="ic">📐</div><h3>Conventions</h3>
+        <p>One issue → one branch → one PR. Money is int64 minor units; dates are civil strings; SQL via sqlc.</p>
+      </a>
+      <a class="info-card reveal" href={`${REPO}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22`} target="_blank" rel="noopener">
+        <div class="ic">🌱</div><h3>Good first issues</h3>
+        <p>Looking for a place to start? Browse the beginner-friendly issues.</p>
+      </a>
+      <a class="info-card reveal" href={`${REPO}/issues/new`} target="_blank" rel="noopener">
+        <div class="ic">🐛</div><h3>Report a bug</h3>
+        <p>Found something off? Open an issue with steps to reproduce.</p>
+      </a>
+      <a class="info-card reveal" href={`${REPO}/issues/new`} target="_blank" rel="noopener">
+        <div class="ic">💡</div><h3>Request a feature</h3>
+        <p>Have an idea (or a HomeBank feature you miss)? Let us know.</p>
+      </a>
+      <a class="info-card reveal" href={`${REPO}/tree/main/web/src/i18n/locales`} target="_blank" rel="noopener">
+        <div class="ic">🌍</div><h3>Translations</h3>
+        <p>The UI ships English &amp; Italian — help add or improve a language.</p>
+      </a>
+      <a class="info-card reveal" href={REPO} target="_blank" rel="noopener">
+        <div class="ic">⭐</div><h3>Star &amp; share</h3>
+        <p>The quickest way to help: star the repo and tell a fellow HomeBank user.</p>
+      </a>
+    </div>
+  </section>
+
+  <section class="section start" style="text-align:center">
+    <p class="section-lead reveal">
+      By contributing you agree your work is licensed under the AGPL-3.0. Please don't paste code from
+      HomeBank or other GPL sources — CloudBank is a clean-room reimplementation.
+    </p>
+    <div class="hero-cta reveal" style="justify-content:center">
+      <a class="btn primary magnetic" href={REPO} target="_blank" rel="noopener">View the source</a>
+    </div>
+  </section>
+</Layout>
