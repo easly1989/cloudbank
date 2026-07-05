@@ -26,7 +26,7 @@ export function AccountBalanceCard({
   const accounts = q.data ?? [];
   const account = accounts.find((a) => a.id === config.accountId) ?? accounts[0];
   return (
-    <Card withBorder h="100%">
+    <Card withBorder>
       <Group justify="space-between" mb="xs" wrap="nowrap" gap="xs">
         <Text size="xs" c="dimmed" tt="uppercase" truncate>
           {t("dashboard.accountBalance")}

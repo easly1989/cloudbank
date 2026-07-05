@@ -15,7 +15,7 @@ export function NotesCard({
   // Reflect an externally-changed note (e.g. loaded from the server).
   useEffect(() => setText(config.text ?? ""), [config.text]);
   return (
-    <Card withBorder h="100%">
+    <Card withBorder>
       <Textarea
         aria-label={t("dashboard.notes")}
         placeholder={t("dashboard.notesPlaceholder")}

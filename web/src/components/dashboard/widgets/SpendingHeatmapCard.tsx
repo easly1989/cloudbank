@@ -60,7 +60,7 @@ export function SpendingHeatmapCard({ walletId }: { walletId: number }) {
   });
 
   return (
-    <Card withBorder h="100%">
+    <Card withBorder>
       <Group justify="space-between" mb="xs" wrap="nowrap" gap="xs">
         <Title order={4} tt="capitalize">
           {monthLabel}

@@ -81,7 +81,7 @@ export function CashflowForecastCard({
   );
 
   return (
-    <Card withBorder h="100%">
+    <Card withBorder>
       <Group justify="space-between" mb="xs" wrap="nowrap" gap="xs">
         <Title order={4}>{t("dashboard.cashflow")}</Title>
         <Group gap="xs" wrap="nowrap">
