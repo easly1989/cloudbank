@@ -18,7 +18,7 @@ export function CurrencyRatesCard({ walletId }: { walletId: number }) {
   const others = currencies.filter((c) => !c.isBase);
 
   return (
-    <Card withBorder h="100%">
+    <Card withBorder>
       <Group justify="space-between" mb="xs" wrap="nowrap" gap="xs">
         <Title order={4}>{t("dashboard.currencyRates")}</Title>
         {base && (

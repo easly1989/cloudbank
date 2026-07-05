@@ -18,7 +18,7 @@ export function UnclearedSummaryCard({ walletId }: { walletId: number }) {
   const accounts = q.data?.accounts ?? [];
 
   return (
-    <Card withBorder h="100%">
+    <Card withBorder>
       <Group justify="space-between" mb="xs" wrap="nowrap" gap="xs">
         <Title order={4}>{t("dashboard.uncleared")}</Title>
       </Group>

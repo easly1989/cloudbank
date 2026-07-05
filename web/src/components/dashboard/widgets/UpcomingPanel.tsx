@@ -145,7 +145,7 @@ export function UpcomingPanel({ walletId, base }: { walletId: number; base?: Cur
     );
 
   return (
-    <Card withBorder h="100%">
+    <Card withBorder>
       <Title order={4} mb="sm">
         {t("dashboard.upcoming")}
       </Title>
