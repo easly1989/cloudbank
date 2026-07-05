@@ -1,0 +1,63 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const REPO = "https://github.com/easly1989/cloudbank";
+
+const releases = [
+  {
+    version: "Latest — post-1.0 polish",
+    date: "Ongoing",
+    items: [
+      "New dashboard widgets: net-worth trend, balance sparkline, spending calendar, category budget, currency rates, uncleared summary and a cashflow forecast.",
+      "Security hardening: a strict Content-Security-Policy and safe attachment downloads.",
+      "A per-account default payment mode, a running selection total in the register, and a per-week/month/year income & expense summary on Schedules.",
+    ],
+  },
+  {
+    version: "Personalization & interop",
+    date: "M7–M10",
+    items: [
+      "A fully customisable, free-form dashboard — place, resize and add widgets anywhere.",
+      "Native HomeBank .xhb export (round-trips with the importer), plus an accent-colour picker, collapsible sidebar and pinnable navigation.",
+      "Templates management, a first-login tutorial, and this animated landing site.",
+    ],
+  },
+  {
+    version: "1.0.0",
+    date: "2026-06-22",
+    items: [
+      "First public release: a self-hosted, web-based personal finance manager with HomeBank feature parity, shipped as a single Docker container.",
+      "Accounts, a powerful register, scheduled transactions, budgets, a full suite of reports, and multi-format import (native .xhb, QIF, OFX/QFX, CSV).",
+      "Multi-currency, multi-user, English + Italian, and interactive API docs.",
+    ],
+  },
+];
+---
+
+<Layout page="news" title="News — CloudBank" description="What's new in CloudBank: release highlights and the changelog.">
+  <section class="page-hero">
+    <span class="eyebrow reveal">Changelog</span>
+    <h1 class="reveal">News</h1>
+    <p class="lead reveal">Release highlights. The full changelog lives in the repository.</p>
+  </section>
+
+  <section class="section">
+    {
+      releases.map((r) => (
+        <div class="release reveal">
+          <h3>{r.version}</h3>
+          <div class="date">{r.date}</div>
+          <ul>
+            {r.items.map((it) => (
+              <li>{it}</li>
+            ))}
+          </ul>
+        </div>
+      ))
+    }
+    <div class="hero-cta reveal" style="justify-content:center;margin-top:2rem">
+      <a class="btn primary magnetic" href={`${REPO}/blob/main/CHANGELOG.md`} target="_blank" rel="noopener">Full changelog</a>
+      <a class="btn magnetic" href={`${REPO}/releases`} target="_blank" rel="noopener">Releases</a>
+    </div>
+  </section>
+</Layout>

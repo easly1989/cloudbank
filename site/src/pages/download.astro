@@ -1,0 +1,121 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const REPO = "https://github.com/easly1989/cloudbank";
+const compose = `services:
+  cloudbank:
+    image: ghcr.io/easly1989/cloudbank:main   # latest stable release
+    container_name: cloudbank
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      CB_SECURE_COOKIES: "false"   # behind HTTPS? set to "true"
+    volumes:
+      - cloudbank-data:/data
+
+volumes:
+  cloudbank-data:`;
+
+const tags = [
+  { tag: ":main", meaning: "Latest stable release — use this for a stable self-hosted install." },
+  { tag: ":latest", meaning: "Nightly build from the main branch — bleeding edge, may break." },
+  { tag: ":vX.Y.Z", meaning: "A specific released version (also :vX.Y)." },
+];
+
+const env = [
+  { k: "CB_ADDR", d: ":8080", v: "Address the HTTP server listens on." },
+  { k: "CB_DATA_DIR", d: "/data", v: "Directory holding the SQLite database and backups." },
+  { k: "CB_LOG_LEVEL", d: "info", v: "debug, info, warn or error." },
+  { k: "CB_SECURE_COOKIES", d: "true", v: "Set false for plain-HTTP LAN installs (no TLS)." },
+  { k: "CB_RATE_URL", d: "frankfurter.app", v: "Override the online exchange-rate API root." },
+];
+---
+
+<Layout page="download" title="Download & install — CloudBank" description="Self-host CloudBank in one Docker container. Install instructions, image tags and configuration.">
+  <section class="page-hero">
+    <span class="eyebrow reveal">Self-host</span>
+    <h1 class="reveal">Download &amp; install</h1>
+    <p class="lead reveal">
+      One Docker container, no external database. You only need Docker with the Compose plugin.
+    </p>
+  </section>
+
+  <section class="section">
+    <div class="steps">
+      <div class="step reveal">
+        <div class="num">1</div>
+        <div>
+          <h3>Install Docker</h3>
+          <p>Install <a href="https://docs.docker.com/get-docker/" target="_blank" rel="noopener">Docker</a> with the Compose plugin on your server.</p>
+        </div>
+      </div>
+      <div class="step reveal">
+        <div class="num">2</div>
+        <div>
+          <h3>Create a docker-compose.yml</h3>
+          <p>Copy the file below (or the one in the repo).</p>
+        </div>
+      </div>
+    </div>
+    <pre class="code reveal" style="margin-top:1rem"><code>{compose}</code></pre>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="num">3</div>
+        <div>
+          <h3>Start it</h3>
+          <p><code>docker compose up -d</code> — the whole install, one container.</p>
+        </div>
+      </div>
+      <div class="step reveal">
+        <div class="num">4</div>
+        <div>
+          <h3>Open the app</h3>
+          <p>Visit <code>http://localhost:8080</code> and complete the first-run admin setup. Your data lives in the <code>cloudbank-data</code> volume.</p>
+        </div>
+      </div>
+    </div>
+    <div class="hero-cta reveal" style="justify-content:center;margin-top:1.6rem">
+      <a class="btn primary magnetic" href={`${REPO}#quick-start`} target="_blank" rel="noopener">Full install guide</a>
+      <a class="btn magnetic" href={REPO} target="_blank" rel="noopener">Star on GitHub ★</a>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="reveal" style="text-align:center">Image tags</h2>
+    <p class="section-lead reveal" style="text-align:center">
+      Images are published to GHCR: <code>ghcr.io/easly1989/cloudbank</code>. The tag scheme is
+      intentional — <code>:main</code> is stable, <code>:latest</code> is the nightly.
+    </p>
+    <table class="tag-table reveal">
+      <thead><tr><th>Tag</th><th>Meaning</th></tr></thead>
+      <tbody>
+        {tags.map((t) => (<tr><td><code>{t.tag}</code></td><td>{t.meaning}</td></tr>))}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section">
+    <h2 class="reveal" style="text-align:center">Configuration</h2>
+    <table class="tag-table reveal" style="max-width:760px">
+      <thead><tr><th>Env var</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        {env.map((e) => (<tr><td><code>{e.k}</code></td><td><code>{e.d}</code></td><td>{e.v}</td></tr>))}
+      </tbody>
+    </table>
+    <div class="card-grid" style="margin-top:2rem">
+      <a class="info-card reveal" href={`${REPO}/blob/main/docs/reverse-proxy.md`} target="_blank" rel="noopener">
+        <div class="ic">🔒</div><h3>Reverse proxy &amp; HTTPS</h3>
+        <p>Run behind Caddy / nginx / Traefik with TLS for anything beyond a trusted LAN.</p>
+      </a>
+      <a class="info-card reveal" href={`${REPO}/blob/main/docs/migrate-from-homebank.md`} target="_blank" rel="noopener">
+        <div class="ic">📦</div><h3>Coming from HomeBank?</h3>
+        <p>Import your <code>.xhb</code> file and CloudBank recreates the whole wallet.</p>
+      </a>
+      <a class="info-card reveal" href={`${REPO}/pkgs/container/cloudbank`} target="_blank" rel="noopener">
+        <div class="ic">🐳</div><h3>Container images</h3>
+        <p>amd64 + arm64 on GHCR. Pin <code>:main</code> for a stable install.</p>
+      </a>
+    </div>
+  </section>
+</Layout>

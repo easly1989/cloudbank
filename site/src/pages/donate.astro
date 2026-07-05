@@ -1,0 +1,84 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+// Donation links. Fill in the URLs to activate each method (an empty string
+// renders a "coming soon" card). PayPal is live; the others are added once the
+// owner has registered the account and provided the link.
+const donations = {
+  paypal: "https://paypal.me/carloruggiero",
+  liberapay: "", // e.g. "https://liberapay.com/easly1989"
+  githubSponsors: "", // e.g. "https://github.com/sponsors/easly1989"
+  stripe: "", // Stripe payment link, e.g. "https://buy.stripe.com/…"
+};
+
+const methods = [
+  {
+    key: "paypal",
+    name: "PayPal",
+    icon: "💳",
+    blurb: "A quick one-off (or recurring) donation via PayPal.",
+    url: donations.paypal,
+    featured: true,
+  },
+  {
+    key: "liberapay",
+    name: "Liberapay",
+    icon: "🔁",
+    blurb: "Free, zero-fee recurring donations — the open-source favourite.",
+    url: donations.liberapay,
+  },
+  {
+    key: "githubSponsors",
+    name: "GitHub Sponsors",
+    icon: "❤️",
+    blurb: "Sponsor the project right from GitHub, monthly or one-time.",
+    url: donations.githubSponsors,
+  },
+  {
+    key: "stripe",
+    name: "Card (Stripe)",
+    icon: "🏦",
+    blurb: "Pay by card through a secure Stripe checkout.",
+    url: donations.stripe,
+  },
+];
+---
+
+<Layout page="donate" title="Donate — CloudBank" description="CloudBank is free and open source. If it's useful to you, consider supporting its development.">
+  <section class="page-hero">
+    <span class="eyebrow reveal">Thank you ♥</span>
+    <h1 class="reveal">Support CloudBank</h1>
+    <p class="lead reveal">
+      CloudBank is free and open source — a labour of love. If it saves you time or money,
+      a donation helps keep it maintained and moving forward.
+    </p>
+  </section>
+
+  <section class="section">
+    <div class="donate-grid">
+      {
+        methods.map((m) => (
+          <div class={`donate-card${m.featured ? " featured" : ""}`}>
+            {m.featured && <span class="tag">Available now</span>}
+            <div class="ic" style="font-size:1.8rem">{m.icon}</div>
+            <h3>{m.name}</h3>
+            <p>{m.blurb}</p>
+            {m.url ? (
+              <a class="btn primary magnetic" href={m.url} target="_blank" rel="noopener">
+                Donate with {m.name}
+              </a>
+            ) : (
+              <span class="btn soon" aria-disabled="true">Coming soon</span>
+            )}
+          </div>
+        ))
+      }
+    </div>
+    <p class="section-lead reveal" style="text-align:center;margin-top:2rem">
+      Not into donating? Starring the repo and telling a fellow HomeBank user helps just as much.
+    </p>
+    <div class="hero-cta reveal" style="justify-content:center">
+      <a class="btn magnetic" href="https://github.com/easly1989/cloudbank" target="_blank" rel="noopener">Star on GitHub ★</a>
+    </div>
+  </section>
+</Layout>

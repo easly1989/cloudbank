@@ -1,0 +1,171 @@
+---
+// Shared layout for every page of the CloudBank marketing site.
+import "../styles/site.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** slug of the current page, for nav active-state (e.g. "download"). */
+  page?: string;
+}
+const {
+  title = "CloudBank — your money, self-hosted",
+  description = "CloudBank is a free, self-hosted, web-based personal finance manager — a from-scratch web port of HomeBank. One Docker container, your data on your server.",
+  page = "home",
+} = Astro.props;
+
+const base = import.meta.env.BASE_URL; // e.g. "/cloudbank" or "/cloudbank/"
+const asset = (p: string) => `${base.replace(/\/$/, "")}/${p.replace(/^\//, "")}`;
+const nav = (slug: string) => asset(slug); // "" → home, "download" → /cloudbank/download
+
+const REPO = "https://github.com/easly1989/cloudbank";
+const HOMEBANK = "https://www.gethomebank.org/";
+
+const NAV = [
+  { slug: "", label: "Home", href: nav("") },
+  { slug: "download", label: "Download", href: nav("download") },
+  { slug: "support", label: "Support", href: nav("support") },
+  { slug: "contribute", label: "Contribute", href: nav("contribute") },
+  { slug: "news", label: "News", href: nav("news") },
+];
+
+// Accent presets the on-page picker offers (mirrors the app's accent feature).
+const accents = [
+  { name: "teal", c: ["#12b886", "#15aabf", "#4dabf7"] },
+  { name: "blue", c: ["#4dabf7", "#3b82f6", "#7048e8"] },
+  { name: "violet", c: ["#7048e8", "#9775fa", "#e64980"] },
+  { name: "grape", c: ["#e64980", "#f06595", "#ff922b"] },
+  { name: "orange", c: ["#ff922b", "#fab005", "#40c057"] },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href={asset("favicon.svg")} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0b1120" />
+    <!-- Apply the saved theme/accent and flag JS before paint (no flash). -->
+    <script is:inline>
+      (function () {
+        const d = document.documentElement;
+        d.classList.add("js");
+        try {
+          const t = localStorage.getItem("cb-site-theme");
+          if (t) d.setAttribute("data-theme", t);
+          const a = localStorage.getItem("cb-site-accent");
+          if (a) {
+            const [c1, c2, c3] = JSON.parse(a);
+            d.style.setProperty("--accent", c1);
+            d.style.setProperty("--accent-2", c2);
+            d.style.setProperty("--accent-3", c3);
+          }
+        } catch (e) {
+          /* ignore */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="cursor-glow" id="cursor-glow" aria-hidden="true"></div>
+    <div class="progress" aria-hidden="true"><span id="progress-bar"></span></div>
+
+    <header class="nav">
+      <a class="brand" href={nav("")} aria-label="CloudBank home">
+        <img src={asset("logo.svg")} alt="" width="40" height="40" />
+        <span>CloudBank</span>
+      </a>
+      <button
+        type="button"
+        id="nav-burger"
+        class="nav-burger icon-btn"
+        aria-label="Menu"
+        aria-expanded="false"
+        aria-controls="nav-links"
+      >
+        <span class="burger-bars" aria-hidden="true"></span>
+      </button>
+      <nav class="nav-links" id="nav-links">
+        {
+          NAV.map((n) => (
+            <a href={n.href} class={page === n.slug ? "active" : undefined}>
+              {n.label}
+            </a>
+          ))
+        }
+        <div class="accent-picker" role="group" aria-label="Accent colour">
+          {
+            accents.map((a) => (
+              <button
+                type="button"
+                class="swatch"
+                data-accent={JSON.stringify(a.c)}
+                style={`--sw:${a.c[0]}`}
+                aria-label={`Accent ${a.name}`}
+                title={`Accent ${a.name}`}
+              />
+            ))
+          }
+        </div>
+        <button type="button" id="theme-toggle" class="icon-btn" aria-label="Toggle light / dark">
+          <span class="theme-icon" aria-hidden="true"></span>
+        </button>
+        <a class="ghost" href={REPO} target="_blank" rel="noopener">GitHub</a>
+        <a class="cta" href={nav("donate")}>Donate ♥</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <slot />
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <div class="footer-cols">
+          <div class="footer-col">
+            <a class="brand small" href={nav("")}>
+              <img src={asset("logo.svg")} alt="" width="24" height="24" />
+              <span>CloudBank</span>
+            </a>
+            <p class="muted">Your money, self-hosted — a clean-room web port of HomeBank.</p>
+          </div>
+          <div class="footer-col">
+            <h4>CloudBank</h4>
+            <a href={nav("")}>Home</a>
+            <a href={nav("download")}>Download</a>
+            <a href={nav("news")}>News</a>
+            <a href={nav("donate")}>Donate</a>
+          </div>
+          <div class="footer-col">
+            <h4>Support</h4>
+            <a href={nav("support")}>Get help</a>
+            <a href={`${REPO}#readme`} target="_blank" rel="noopener">Documentation</a>
+            <a href={`${REPO}/issues`} target="_blank" rel="noopener">Ask a question</a>
+          </div>
+          <div class="footer-col">
+            <h4>Project</h4>
+            <a href={REPO} target="_blank" rel="noopener">Source code</a>
+            <a href={`${REPO}/issues/new`} target="_blank" rel="noopener">Report a bug</a>
+            <a href={nav("contribute")}>Contribute</a>
+            <a href={HOMEBANK} target="_blank" rel="noopener">HomeBank</a>
+          </div>
+        </div>
+        <p class="copy">
+          Free &amp; open source under the AGPL-3.0 · A clean-room web port of
+          <a href={HOMEBANK} target="_blank" rel="noopener">HomeBank</a> · Not affiliated with
+          HomeBank · Made with <span style="color:var(--accent)">♥</span>
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      import "../scripts/site.ts";
+    </script>
+  </body>
+</html>
