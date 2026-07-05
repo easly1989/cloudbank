@@ -36,7 +36,7 @@ export function BudgetWidget({ walletId, base }: { walletId: number; base?: Curr
   }, [query.data]);
 
   return (
-    <Card withBorder h="100%">
+    <Card withBorder>
       <Group justify="space-between" mb="sm">
         <Title order={4}>{t("dashboard.budget")}</Title>
         <Text size="sm" c="dimmed">
