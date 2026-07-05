@@ -39,7 +39,7 @@ export function CategoryBudgetCard({
   const row = budgeted.find((r) => r.categoryId === config.categoryId) ?? budgeted[0];
 
   return (
-    <Card withBorder h="100%">
+    <Card withBorder>
       <Group justify="space-between" mb="sm" wrap="nowrap" gap="xs">
         <Title order={4}>{t("dashboard.categoryBudget")}</Title>
         {budgeted.length > 0 && (

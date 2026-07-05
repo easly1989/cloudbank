@@ -324,9 +324,10 @@ export function DashboardPage() {
   );
 }
 
-// WidgetFrame fills its grid cell. In edit mode it shows a header bar (drag
-// affordance + remove button); the remove button stops pointer events from
-// starting a gridstack drag.
+// WidgetFrame wraps a widget at its natural height (the grid cell hugs the
+// content — see GridDashboard's resize observer). In edit mode it shows a header
+// bar (drag affordance + remove button); the remove button stops pointer events
+// from starting a gridstack drag.
 function WidgetFrame({
   editing,
   label,
@@ -339,7 +340,7 @@ function WidgetFrame({
   children: ReactNode;
 }) {
   return (
-    <Box style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+    <Box style={{ display: "flex", flexDirection: "column" }}>
       {editing && (
         <Group
           justify="space-between"
@@ -370,7 +371,7 @@ function WidgetFrame({
           </ActionIcon>
         </Group>
       )}
-      <Box style={{ flex: 1, minHeight: 0 }}>{children}</Box>
+      <Box>{children}</Box>
     </Box>
   );
 }

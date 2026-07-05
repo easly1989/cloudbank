@@ -17,7 +17,7 @@ export function AccountsPanel({
 }) {
   const { t } = useTranslation();
   return (
-    <Card withBorder h="100%">
+    <Card withBorder>
       <Title order={4} mb="sm">
         {t("dashboard.yourAccounts")}
       </Title>

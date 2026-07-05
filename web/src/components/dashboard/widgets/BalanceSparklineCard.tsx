@@ -65,7 +65,7 @@ export function BalanceSparklineCard({
 
   const latest = values.length > 0 ? values[values.length - 1] : undefined;
   return (
-    <Card withBorder h="100%">
+    <Card withBorder>
       <Group justify="space-between" mb="xs" wrap="nowrap" gap="xs">
         <Text size="xs" c="dimmed" tt="uppercase" truncate>
           {t("dashboard.balanceSparkline")}

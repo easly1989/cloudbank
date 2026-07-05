@@ -6,7 +6,11 @@ import { createPortal } from "react-dom";
 
 import { COLUMNS, type PlacedWidget } from "./layout";
 
-const CELL_HEIGHT = 96;
+// A small cell height keeps the row-rounding waste tiny: every widget's height
+// is derived from its content (gridstack's resizeToContent, driven by the
+// observer below) as ceil(contentPx / CELL_HEIGHT) rows, so a smaller cell means
+// a tighter hug (≤ CELL_HEIGHT px of slack) with no dead band below the content.
+const CELL_HEIGHT = 20;
 const MOBILE_BREAKPOINT = 700;
 
 /**
@@ -15,6 +19,13 @@ const MOBILE_BREAKPOINT = 700;
  * on drag); React renders each widget's content into the item's
  * `.grid-stack-item-content` element via a portal, so the widget's React tree
  * (and its queries/state) survives the moves.
+ *
+ * Widgets **hug their content**: a per-item ResizeObserver (below) calls
+ * gridstack's `resizeToContent` to size each item to its content's natural
+ * height — so there is no manual vertical resize (the handles only change
+ * width) — and `float: false` compacts everything upward so there are no gaps.
+ * (We drive this ourselves rather than the grid-level `sizeToContent` option,
+ * whose auto-measure runs before the React portal has rendered any content.)
  *
  * The grid is rebuilt only when the set of widget ids changes (add/remove).
  * Position/size changes flow back through the `change` event to `onChange`. On
@@ -62,8 +73,11 @@ export function GridDashboard({
         column: COLUMNS,
         cellHeight: CELL_HEIGHT,
         margin: 8,
-        float: true,
+        float: false, // compact upward — no vertical gaps
         staticGrid: true, // toggled by the editing effect
+        // Height is content-driven (see the resize observer below), so only
+        // allow horizontal resize — the corner/bottom handles are dropped.
+        resizable: { handles: "e, w" },
         columnOpts: { breakpointForWindow: true, breakpoints: [{ w: MOBILE_BREAKPOINT, c: 1 }] },
       },
       elRef.current,
@@ -118,6 +132,47 @@ export function GridDashboard({
   useEffect(() => {
     gridRef.current?.setStatic(!editing);
   }, [editing]);
+
+  // Content-driven heights. Each widget hugs its content: we observe every
+  // item's natural-height content child and ask gridstack to recompute that
+  // item's row-span (ceil(contentPx / CELL_HEIGHT)). This also covers content
+  // that changes after mount — an async query resolving, a tab switch, the edit
+  // header appearing — which gridstack's own grid-level observer would miss.
+  //
+  // The whole burst is coalesced into one rAF tick and committed inside a single
+  // batchUpdate so the container height is recomputed once, from the final
+  // layout (a bare resizeToContent leaves `.grid-stack`'s height stale, so a
+  // grown widget would spill past the page). Vertical compaction never changes a
+  // child's width, so its measured height is stable → no observer feedback loop.
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid || hosts.size === 0 || typeof ResizeObserver === "undefined") return;
+    const pending = new Set<HTMLElement>();
+    let raf = 0;
+    const flush = () => {
+      raf = 0;
+      if (pending.size === 0) return;
+      grid.batchUpdate();
+      for (const item of pending) grid.resizeToContent(item);
+      pending.clear();
+      grid.batchUpdate(false); // commit → recompact + refresh container height
+    };
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const item = (entry.target as HTMLElement).closest<HTMLElement>(".grid-stack-item");
+        if (item) pending.add(item);
+      }
+      if (raf === 0) raf = requestAnimationFrame(flush);
+    });
+    for (const host of hosts.values()) {
+      const child = host.firstElementChild;
+      if (child) ro.observe(child);
+    }
+    return () => {
+      if (raf !== 0) cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [hosts]);
 
   return (
     <div ref={elRef} className={`grid-stack${editing ? " grid-stack--editing" : ""}`}>

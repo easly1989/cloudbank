@@ -1,6 +1,8 @@
-/* Free-form dashboard grid (issue #199). gridstack owns item positioning; these
-   rules make each widget fill its cell (so charts resize) and scroll when the
-   cell is smaller than the content, plus edit-mode affordances. */
+/* Free-form dashboard grid (issue #199). gridstack owns item positioning; each
+   item's height hugs its content (resizeToContent, see GridDashboard), so the
+   content is laid out at its natural height rather than stretched to fill the
+   cell. These rules keep the content flush in the cell plus edit-mode
+   affordances. */
 
 .grid-stack {
   min-height: 120px;
@@ -9,15 +11,9 @@
 .grid-stack .grid-stack-item-content {
   inset: 0;
   padding: 0;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-/* The widget's React root (usually a Mantine Card) fills the cell. */
-.grid-stack .grid-stack-item-content > * {
-  flex: 1 1 auto;
-  min-height: 0;
+  /* Item height is derived from this content, so nothing overflows at rest;
+     hidden avoids a transient scrollbar during the resize-to-content settle. */
+  overflow: hidden;
 }
 
 /* Edit mode: dashed outline + move cursor; the resize handle is drawn by

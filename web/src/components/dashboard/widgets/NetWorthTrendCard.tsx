@@ -50,7 +50,7 @@ export function NetWorthTrendCard({ walletId }: { walletId: number }) {
 
   const latest = net.length > 0 ? net[net.length - 1] : undefined;
   return (
-    <Card withBorder h="100%">
+    <Card withBorder>
       <Group justify="space-between" mb="xs" wrap="nowrap" gap="xs">
         <Title order={4}>{t("dashboard.netWorth")}</Title>
         {base && latest != null && (

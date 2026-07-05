@@ -25,7 +25,7 @@ export function KpiCard({
   };
   const m = metrics[config.metric];
   return (
-    <Card withBorder h="100%">
+    <Card withBorder>
       <Group justify="space-between" mb="xs" wrap="nowrap" gap="xs">
         <Text size="xs" c="dimmed" tt="uppercase" truncate>
           {m.label}

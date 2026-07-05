@@ -51,7 +51,7 @@ export function SpendingCard({
   });
   const slices = q.data?.topCategories ?? [];
   return (
-    <Card withBorder h="100%">
+    <Card withBorder>
       <Group justify="space-between" mb="sm" wrap="nowrap" gap="xs">
         <Title order={4}>{t("dashboard.whereMoneyGoes")}</Title>
         <Group gap="xs" wrap="nowrap">
