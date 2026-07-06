@@ -16,6 +16,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="License: AGPL v3" /></a>
   <a href="https://paypal.me/carloruggiero"><img src="https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&logoColor=white" alt="Donate via PayPal" /></a>
   <a href="https://liberapay.com/amon2126/donate"><img src="https://img.shields.io/liberapay/patrons/amon2126.svg?logo=liberapay" alt="Donate via Liberapay" ></a>
+  <a href="https://github.com/sponsors/easly1989"><img src="https://img.shields.io/badge/Sponsor-GitHub-EA4AAA?logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub" /></a>
 </p>
 
 ---
@@ -151,9 +152,12 @@ CloudBank is licensed under the **GNU Affero General Public License v3.0** — s
 
 ## Support the project
 
-CloudBank is an open-source labour of love. If it's useful to you, consider
-[**donating via PayPal**](https://paypal.me/carloruggiero) — it genuinely helps
-and is much appreciated. ♥
+CloudBank is an open-source labour of love. If it's useful to you, consider a
+donation — it genuinely helps and is much appreciated. ♥ Pick whichever suits
+you on the [**donation page**](https://easly1989.github.io/cloudbank/donate/):
+[PayPal](https://paypal.me/carloruggiero),
+[Liberapay](https://liberapay.com/amon2126/donate) or
+[GitHub Sponsors](https://github.com/sponsors/easly1989).
 
 ## Credits
 

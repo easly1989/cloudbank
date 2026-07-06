@@ -8,7 +8,8 @@ import { getVersion } from "../api/client";
 // it from every page. It also surfaces the build version, the API docs, a
 // donation link and a credit to HomeBank (the desktop app CloudBank ports).
 const SOURCE_URL = "https://github.com/easly1989/cloudbank";
-const DONATE_URL = "https://paypal.me/carloruggiero";
+// The donation page lists every method (PayPal / Liberapay / GitHub Sponsors / …).
+const DONATE_URL = "https://easly1989.github.io/cloudbank/donate/";
 const HOMEBANK_URL = "http://homebank.free.fr";
 
 export function AppFooter() {
