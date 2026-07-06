@@ -15,6 +15,7 @@
   <a href="https://github.com/easly1989/cloudbank/pkgs/container/cloudbank"><img src="https://img.shields.io/badge/ghcr.io-cloudbank-2496ED?logo=docker&logoColor=white" alt="Container image" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="License: AGPL v3" /></a>
   <a href="https://paypal.me/carloruggiero"><img src="https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&logoColor=white" alt="Donate via PayPal" /></a>
+  <a href="https://liberapay.com/amon2126/donate"><img src="https://img.shields.io/liberapay/patrons/amon2126.svg?logo=liberapay" alt="Donate via Liberapay" ></a>
 </p>
 
 ---
