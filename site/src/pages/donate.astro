@@ -13,19 +13,19 @@ const donations = {
 
 const methods = [
   {
-    key: "paypal",
-    name: "PayPal",
-    icon: "💳",
-    blurb: "A quick one-off (or recurring) donation via PayPal.",
-    url: donations.paypal,
-    featured: true,
-  },
-  {
     key: "liberapay",
     name: "Liberapay",
     icon: "🔁",
     blurb: "Free, zero-fee recurring donations — the open-source favourite.",
     url: donations.liberapay,
+    featured: true,
+  },
+  {
+    key: "paypal",
+    name: "PayPal",
+    icon: "💳",
+    blurb: "A quick one-off (or recurring) donation via PayPal.",
+    url: donations.paypal,
   },
   {
     key: "githubSponsors",
@@ -59,7 +59,7 @@ const methods = [
       {
         methods.map((m) => (
           <div class={`donate-card${m.featured ? " featured" : ""}`}>
-            {m.featured && <span class="tag">Available now</span>}
+            {m.featured && <span class="tag">Recommended</span>}
             <div class="ic" style="font-size:1.8rem">{m.icon}</div>
             <h3>{m.name}</h3>
             <p>{m.blurb}</p>
