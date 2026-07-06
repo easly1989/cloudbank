@@ -1,0 +1,86 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const REPO = "https://github.com/easly1989/cloudbank";
+
+const faqs = [
+  {
+    q: "Is CloudBank free?",
+    a: "Yes — free and open source under the AGPL-3.0. Self-host it yourself; there is no paid tier.",
+  },
+  {
+    q: "Where is my data stored?",
+    a: "In a single SQLite database on the /data volume you control. Nothing is sent to any third party; there is no tracking.",
+  },
+  {
+    q: "Can I import my HomeBank file?",
+    a: "Yes. Upload your .xhb file and CloudBank recreates the whole wallet — accounts, payees, categories, transactions, transfers, schedules and budgets — to the cent. You can also export back to .xhb.",
+  },
+  {
+    q: "Does it support multiple users?",
+    a: "Yes — admin-managed users, each with isolated wallets. There is no self-registration; the first run creates the admin.",
+  },
+  {
+    q: "How do I back up?",
+    a: "Copy the cloudbank-data volume, or use the in-app wallet backup (Settings → Wallet) and the admin full-database backup.",
+  },
+  {
+    q: "How do I update?",
+    a: "Pull the newer image (docker compose pull) and recreate the container. Migrations run automatically at startup.",
+  },
+];
+---
+
+<Layout page="support" title="Support — CloudBank" description="Get help with CloudBank: documentation, FAQ, API docs and how to ask a question.">
+  <section class="page-hero">
+    <span class="eyebrow reveal">Help</span>
+    <h1 class="reveal">Support</h1>
+    <p class="lead reveal">Documentation, answers to common questions, and where to ask.</p>
+  </section>
+
+  <section class="section">
+    <div class="card-grid">
+      <a class="info-card reveal" href={`${REPO}#readme`} target="_blank" rel="noopener">
+        <div class="ic">📖</div><h3>Documentation</h3>
+        <p>The README covers install, features, configuration and the tag scheme.</p>
+      </a>
+      <a class="info-card reveal" href={`${REPO}/blob/main/docs/migrate-from-homebank.md`} target="_blank" rel="noopener">
+        <div class="ic">📦</div><h3>Migrate from HomeBank</h3>
+        <p>Move your <code>.xhb</code> wallet across — a step-by-step guide.</p>
+      </a>
+      <a class="info-card reveal" href={`${REPO}/blob/main/docs/reverse-proxy.md`} target="_blank" rel="noopener">
+        <div class="ic">🔒</div><h3>Reverse proxy / HTTPS</h3>
+        <p>Run behind TLS for anything beyond a trusted LAN.</p>
+      </a>
+      <div class="info-card reveal">
+        <div class="ic">🧩</div><h3>API docs</h3>
+        <p>Interactive Swagger UI is served by the app itself at <code>/api/docs</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="reveal" style="text-align:center">Frequently asked</h2>
+    <div class="faq">
+      {
+        faqs.map((f) => (
+          <details class="reveal">
+            <summary>{f.q}</summary>
+            <p>{f.a}</p>
+          </details>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="section start" style="text-align:center">
+    <h2 class="reveal">Still stuck?</h2>
+    <p class="section-lead reveal">
+      Open an issue on GitHub — bugs, questions and ideas are all welcome.
+    </p>
+    <div class="hero-cta reveal" style="justify-content:center">
+      <a class="btn primary magnetic" href={`${REPO}/issues`} target="_blank" rel="noopener">Ask a question</a>
+      <a class="btn magnetic" href={`${REPO}/issues/new`} target="_blank" rel="noopener">Report a bug</a>
+    </div>
+  </section>
+</Layout>
