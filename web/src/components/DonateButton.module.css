@@ -1,0 +1,89 @@
+/* A small attention-grabbing donate pill for the app header. Warm gradient, a
+   glow that pulses on hover, and a heartbeat on the icon. Motion is disabled
+   under prefers-reduced-motion. */
+.donate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+  background: linear-gradient(135deg, #f43f5e, #fb7185 45%, #f97316);
+  background-size: 180% 180%;
+  background-position: 0% 50%;
+  box-shadow: 0 2px 8px -2px rgba(244, 63, 94, 0.5);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.3s ease,
+    background-position 0.6s ease;
+}
+.donate:hover,
+.donate:focus-visible {
+  transform: translateY(-1px);
+  background-position: 100% 50%;
+  outline: none;
+  animation: donate-glow 1.4s ease-in-out infinite;
+}
+.donate:hover .heart,
+.donate:focus-visible .heart {
+  animation: donate-beat 0.7s ease-in-out infinite;
+}
+
+.heart {
+  display: inline-flex;
+}
+
+@keyframes donate-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px rgba(244, 63, 94, 0.18),
+      0 6px 18px -6px rgba(244, 63, 94, 0.6);
+  }
+  50% {
+    box-shadow:
+      0 0 0 5px rgba(244, 63, 94, 0.1),
+      0 8px 26px -4px rgba(249, 115, 22, 0.75);
+  }
+}
+@keyframes donate-beat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.25);
+  }
+  40% {
+    transform: scale(0.95);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+}
+
+/* On very small screens the label collapses to just the heart. */
+@media (max-width: 30em) {
+  .label {
+    display: none;
+  }
+  .donate {
+    padding: 6px 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .donate,
+  .donate:hover,
+  .donate:focus-visible,
+  .donate:hover .heart,
+  .donate:focus-visible .heart {
+    animation: none;
+    transition: none;
+  }
+}

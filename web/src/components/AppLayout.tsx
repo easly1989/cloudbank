@@ -33,6 +33,7 @@ import { OnboardingTourProvider } from "../onboarding/TourProvider";
 import { useWallet } from "../wallet/WalletProvider";
 import { AppFooter } from "./AppFooter";
 import { ColorSchemeToggle } from "./ColorSchemeToggle";
+import { DonateButton } from "./DonateButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Logo } from "./Logo";
 import { SidebarNav } from "./SidebarNav";
@@ -146,6 +147,7 @@ export function AppLayout() {
               <WalletSwitcher />
             </Group>
             <Group wrap="nowrap" gap="xs">
+              <DonateButton />
               {/* Language lives in Preferences too; hide the header picker on phones. */}
               <Box visibleFrom="sm">
                 <LanguageSwitcher />
