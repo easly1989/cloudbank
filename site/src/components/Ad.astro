@@ -1,0 +1,26 @@
+---
+// A single, non-intrusive in-flow AdSense unit, labelled "Advertisement". It
+// renders nothing unless both the publisher id and a slot id are configured
+// (see adsense.ts), so with ads disabled the page makes no ad requests. The
+// loader script itself is added once in Layout.astro's <head>.
+import { ADSENSE_CLIENT, ADSENSE_SLOT } from "../adsense";
+---
+
+{
+  ADSENSE_CLIENT && ADSENSE_SLOT && (
+    <aside class="ad-slot reveal" aria-label="Advertisement">
+      <span class="ad-label">Advertisement</span>
+      <ins
+        class="adsbygoogle"
+        style="display:block"
+        data-ad-client={ADSENSE_CLIENT}
+        data-ad-slot={ADSENSE_SLOT}
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      />
+      <script is:inline>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </aside>
+  )
+}
