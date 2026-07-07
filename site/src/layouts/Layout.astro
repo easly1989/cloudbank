@@ -1,6 +1,7 @@
 ---
 // Shared layout for every page of the CloudBank marketing site.
 import "../styles/site.css";
+import { ADSENSE_CLIENT } from "../adsense";
 
 interface Props {
   title?: string;
@@ -51,6 +52,18 @@ const accents = [
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta name="theme-color" content="#0b1120" />
+    {
+      /* AdSense loader — only when a publisher id is configured (see adsense.ts).
+         Brings Google's consent CMP and, once ad units exist, the ads. */
+      ADSENSE_CLIENT && (
+        <script
+          async
+          is:inline
+          crossorigin="anonymous"
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+        />
+      )
+    }
     <!-- Apply the saved theme/accent and flag JS before paint (no flash). -->
     <script is:inline>
       (function () {
