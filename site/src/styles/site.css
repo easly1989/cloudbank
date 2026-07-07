@@ -323,6 +323,23 @@
         }
       }
 
+      /* AdSense unit — non-intrusive, labelled, reserves height to limit CLS */
+      .ad-slot {
+        max-width: 728px;
+        margin: 3rem auto 0;
+        text-align: center;
+        min-height: 100px;
+      }
+      .ad-label {
+        display: block;
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        opacity: 0.65;
+        margin-bottom: 0.35rem;
+      }
+
       /* Hero */
       .hero {
         position: relative;

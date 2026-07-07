@@ -7,3 +7,7 @@
 // runs. ads.txt lives once at the domain root (the easly1989.github.io repo) and
 // authorises this publisher for the whole host, including /cloudbank/.
 export const ADSENSE_CLIENT = "ca-pub-8801916031911396";
+
+// A display ad-unit slot id (AdSense → Ads → By ad unit → Display). Empty ⇒ the
+// <Ad /> component renders nothing, so no ad requests are made.
+export const ADSENSE_SLOT = "6336355352";
