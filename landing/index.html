@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CloudBank — Your money, self-hosted</title>
+    <meta
+      name="description"
+      content="CloudBank is a free, self-hosted, web-based personal finance manager — a web port of HomeBank. Open the app."
+    />
+    <meta name="theme-color" content="#0b1120" />
+    <link rel="icon" type="image/svg+xml" href="logo.svg" />
+    <meta property="og:title" content="CloudBank — Your money, self-hosted" />
+    <meta
+      property="og:description"
+      content="A free, self-hosted personal finance manager. A web port of HomeBank."
+    />
+    <meta property="og:type" content="website" />
+
+    <!-- ===== AdSense config =====================================================
+         Paste your AdSense publisher id to enable ads. Leave BOTH empty to
+         disable every ad (no external request, no cookies) — this is the
+         "turn ads off" switch. -->
+    <script>
+      window.ADSENSE_CLIENT = ""; // e.g. "ca-pub-1234567890123456"
+      window.ADSENSE_SLOT = ""; // the display ad unit's data-ad-slot id
+    </script>
+
+    <style>
+      :root {
+        --bg: #0b1120;
+        --bg-2: #0f172a;
+        --text: #e8eef7;
+        --muted: #9fb0c6;
+        --border: #1e293b;
+        --accent: #12b886;
+        --accent-2: #15aabf;
+        --blue: #5aa9f4;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f6f9fc;
+          --bg-2: #ffffff;
+          --text: #0f172a;
+          --muted: #566579;
+          --border: #dbe4ee;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        color: var(--text);
+        background: var(--bg);
+        overflow-x: hidden;
+      }
+      a {
+        color: inherit;
+      }
+      /* Animated aurora background */
+      .bg {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        overflow: hidden;
+      }
+      .blob {
+        position: absolute;
+        width: 46vw;
+        height: 46vw;
+        border-radius: 50%;
+        filter: blur(70px);
+        opacity: 0.5;
+        animation: drift 18s ease-in-out infinite alternate;
+      }
+      .blob.a {
+        background: #12b886;
+        top: -12vw;
+        left: -8vw;
+      }
+      .blob.b {
+        background: #5aa9f4;
+        bottom: -14vw;
+        right: -8vw;
+        animation-delay: -6s;
+      }
+      .blob.c {
+        background: #7048e8;
+        top: 30vh;
+        right: 20vw;
+        opacity: 0.32;
+        animation-delay: -12s;
+      }
+      @keyframes drift {
+        to {
+          transform: translate3d(6vw, 4vh, 0) scale(1.12);
+        }
+      }
+
+      main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 4rem 1.25rem 2rem;
+        gap: 1.4rem;
+      }
+      .logo {
+        width: 96px;
+        height: 96px;
+        filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.3));
+        animation: pop 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+      }
+      @keyframes pop {
+        from {
+          opacity: 0;
+          transform: translateY(10px) scale(0.9);
+        }
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(2.6rem, 8vw, 4.6rem);
+        line-height: 1.02;
+        letter-spacing: -0.02em;
+        font-weight: 800;
+      }
+      h1 .grad {
+        background: linear-gradient(120deg, var(--accent), var(--accent-2) 55%, var(--blue));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .lead {
+        margin: 0;
+        max-width: 40ch;
+        color: var(--muted);
+        font-size: clamp(1.05rem, 2.6vw, 1.3rem);
+      }
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.8rem;
+        justify-content: center;
+        margin-top: 0.4rem;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.85rem 1.5rem;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 1.02rem;
+        text-decoration: none;
+        border: 1px solid var(--border);
+        color: var(--text);
+        background: var(--bg-2);
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.25s ease,
+          filter 0.2s ease;
+      }
+      .btn:hover {
+        transform: translateY(-2px);
+      }
+      .btn.primary {
+        border: none;
+        color: #08240f;
+        background: linear-gradient(120deg, var(--accent), var(--accent-2));
+        box-shadow: 0 10px 26px -10px var(--accent);
+      }
+      .btn.primary:hover {
+        filter: brightness(1.06);
+        box-shadow: 0 14px 32px -8px var(--accent);
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: center;
+        margin-top: 0.6rem;
+      }
+      .chip {
+        font-size: 0.85rem;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.32rem 0.8rem;
+        background: color-mix(in srgb, var(--bg-2) 60%, transparent);
+      }
+
+      /* Non-intrusive ad slot (hidden until configured) */
+      .ad {
+        width: min(728px, 100%);
+        margin: 1.5rem auto 0;
+        text-align: center;
+      }
+      .ad-label {
+        display: block;
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        opacity: 0.7;
+        margin-bottom: 0.3rem;
+      }
+
+      footer {
+        text-align: center;
+        padding: 1.5rem 1rem 2rem;
+        color: var(--muted);
+        font-size: 0.85rem;
+        border-top: 1px solid var(--border);
+      }
+      footer a {
+        color: var(--muted);
+        text-decoration: none;
+      }
+      footer a:hover {
+        color: var(--text);
+      }
+      footer .sep {
+        opacity: 0.5;
+        margin: 0 0.5rem;
+      }
+      .privacy {
+        margin-top: 0.6rem;
+        font-size: 0.75rem;
+        opacity: 0.7;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .blob,
+        .logo {
+          animation: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true">
+      <span class="blob a"></span>
+      <span class="blob b"></span>
+      <span class="blob c"></span>
+    </div>
+
+    <main>
+      <img class="logo" src="logo.svg" alt="CloudBank logo" width="96" height="96" />
+      <h1>Cloud<span class="grad">Bank</span></h1>
+      <p class="lead">
+        A free, self-hosted personal finance manager — a from-scratch web port of
+        <strong>HomeBank</strong>. Your data on a server you control.
+      </p>
+      <div class="cta-row">
+        <a class="btn primary" href="https://easly1989.github.io/cloudbank/">Open CloudBank →</a>
+        <a class="btn" href="https://github.com/easly1989/cloudbank" rel="noopener">View on GitHub</a>
+        <a class="btn" href="https://easly1989.github.io/cloudbank/donate/">Donate ♥</a>
+      </div>
+      <div class="chips">
+        <span class="chip">Self-hosted</span>
+        <span class="chip">One Docker container</span>
+        <span class="chip">AGPL-3.0</span>
+        <span class="chip">No tracking</span>
+      </div>
+
+      <!-- Ad slot: stays hidden (no network calls) until ADSENSE_CLIENT/SLOT are set. -->
+      <aside id="ad" class="ad" hidden aria-label="Advertisement">
+        <span class="ad-label">Advertisement</span>
+        <ins
+          class="adsbygoogle"
+          style="display: block"
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        ></ins>
+      </aside>
+    </main>
+
+    <footer>
+      <a href="https://github.com/easly1989/cloudbank" rel="noopener">Source code</a>
+      <span class="sep">·</span>
+      <a href="https://easly1989.github.io/cloudbank/donate/">Donate</a>
+      <span class="sep">·</span>
+      <a href="https://www.gethomebank.org/" rel="noopener">a web port of HomeBank</a>
+      <div class="privacy" id="privacy" hidden>
+        This site shows ads via Google AdSense, which may use cookies. See Google's
+        <a href="https://policies.google.com/technologies/ads" rel="noopener">ads policy</a>.
+      </div>
+    </footer>
+
+    <script>
+      // Load AdSense only when configured; otherwise the page makes no ad calls.
+      (function () {
+        var client = window.ADSENSE_CLIENT,
+          slot = window.ADSENSE_SLOT;
+        if (!client) return; // ads disabled
+        var s = document.createElement("script");
+        s.async = true;
+        s.crossOrigin = "anonymous";
+        s.src =
+          "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + client;
+        document.head.appendChild(s);
+        var privacy = document.getElementById("privacy");
+        if (privacy) privacy.hidden = false;
+        var box = document.getElementById("ad");
+        if (box && slot) {
+          box.hidden = false;
+          var ins = box.querySelector("ins.adsbygoogle");
+          ins.setAttribute("data-ad-client", client);
+          ins.setAttribute("data-ad-slot", slot);
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+        }
+      })();
+    </script>
+  </body>
+</html>
