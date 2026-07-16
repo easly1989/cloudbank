@@ -43,11 +43,12 @@ export function QuickAddCard({ walletId }: { walletId: number }) {
   const account = accounts.find((a) => String(a.id) === accountId);
   if (accounts.length === 0) return null;
 
+  // Refresh only — the form closes itself via onClose on a plain save, and stays
+  // open (with the fields kept) on "Save & keep".
   const onSaved = () => {
     void qc.invalidateQueries({ queryKey: ["dashboard", walletId] });
     void qc.invalidateQueries({ queryKey: ["accounts", walletId] });
     void qc.invalidateQueries({ queryKey: ["register", walletId] });
-    modal.close();
   };
 
   return (

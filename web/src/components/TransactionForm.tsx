@@ -16,7 +16,7 @@ import {
 import { notifications } from "@mantine/notifications";
 import { IconDeviceFloppy, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -93,6 +93,25 @@ export function TransactionForm({
   const [isSplit, setIsSplit] = useState(false);
   const [splits, setSplits] = useState<{ categoryId: string | null; amount: string }[]>([]);
 
+  // "Save & keep" support: keepOpenRef carries the clicked button's intent into
+  // the (async) mutation success; savingKeep drives which button shows loading;
+  // amountRef refocuses the amount for the next entry; savedMsg is announced.
+  const keepOpenRef = useRef(false);
+  const [savingKeep, setSavingKeep] = useState(false);
+  const amountRef = useRef<HTMLInputElement>(null);
+  const [savedMsg, setSavedMsg] = useState("");
+  const pulse = () => {
+    document
+      .querySelector<HTMLElement>(".txnFormContent")
+      ?.animate(
+        [
+          { boxShadow: "0 8px 30px rgba(0,0,0,.3), 0 0 0 0 rgba(18,184,134,.7)" },
+          { boxShadow: "0 8px 30px rgba(0,0,0,.3), 0 0 0 12px rgba(18,184,134,0)" },
+        ],
+        { duration: 750, easing: "ease-out" },
+      );
+  };
+
   useEffect(() => {
     if (!opened) return;
     const e = editing;
@@ -162,7 +181,16 @@ export function TransactionForm({
     },
     onSuccess: () => {
       onSaved();
-      onClose();
+      if (keepOpenRef.current) {
+        // Keep the modal open with the fields intact for the next similar entry;
+        // flash the border, announce it, and select the amount to overtype.
+        pulse();
+        setSavedMsg(t("transactions.savedKeepOpen"));
+        amountRef.current?.focus();
+        amountRef.current?.select();
+      } else {
+        onClose();
+      }
     },
     onError: (err: unknown) =>
       notifications.show({
@@ -170,6 +198,13 @@ export function TransactionForm({
         message: err instanceof ApiError ? err.message : String(err),
       }),
   });
+
+  // Save, optionally keeping the modal open for the next entry.
+  const submit = (keep: boolean) => {
+    keepOpenRef.current = keep;
+    setSavingKeep(keep);
+    save.mutate();
+  };
 
   // Apply a template into the form (user reviews, then saves).
   const applyTemplate = (id: string | null) => {
@@ -266,6 +301,7 @@ export function TransactionForm({
       opened={opened}
       onClose={onClose}
       size="lg"
+      classNames={{ content: "txnFormContent" }}
       title={editing ? t("transactions.editTitle") : t("transactions.addTitle")}
     >
       <Stack>
@@ -302,6 +338,7 @@ export function TransactionForm({
         </Group>
         <Group grow>
           <TextInput
+            ref={amountRef}
             label={t("transactions.amount")}
             value={amount}
             onChange={(e) => setAmount(e.currentTarget.value)}
@@ -443,15 +480,38 @@ export function TransactionForm({
             <Button variant="default" onClick={onClose}>
               {t("transactions.cancel")}
             </Button>
+            {!editing && (
+              <Button
+                variant="light"
+                onClick={() => submit(true)}
+                loading={save.isPending && savingKeep}
+                disabled={!date || totalMinor === 0 || splitMismatch || save.isPending}
+              >
+                {t("transactions.saveAndKeep")}
+              </Button>
+            )}
             <Button
-              onClick={() => save.mutate()}
-              loading={save.isPending}
-              disabled={!date || totalMinor === 0 || splitMismatch}
+              onClick={() => submit(false)}
+              loading={save.isPending && !savingKeep}
+              disabled={!date || totalMinor === 0 || splitMismatch || save.isPending}
             >
               {t("transactions.save")}
             </Button>
           </Group>
         </Group>
+        <Text
+          role="status"
+          aria-live="polite"
+          style={{
+            position: "absolute",
+            width: 1,
+            height: 1,
+            overflow: "hidden",
+            clip: "rect(0 0 0 0)",
+          }}
+        >
+          {savedMsg}
+        </Text>
       </Stack>
     </Modal>
   );
