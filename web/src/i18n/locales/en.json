@@ -59,6 +59,8 @@
     "memo": "Memo",
     "cancel": "Cancel",
     "save": "Save",
+    "saveAndKeep": "Save & keep",
+    "savedKeepOpen": "Transaction saved — the form stays open for the next one.",
     "duplicateWarning": "Found {{count}} similar transaction(s) — possible duplicate."
   },
   "transfers": {
