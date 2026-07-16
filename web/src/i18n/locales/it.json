@@ -59,6 +59,8 @@
     "memo": "Note",
     "cancel": "Annulla",
     "save": "Salva",
+    "saveAndKeep": "Salva e continua",
+    "savedKeepOpen": "Transazione salvata — il modulo resta aperto per la prossima.",
     "duplicateWarning": "Trovate {{count}} transazioni simili — possibile duplicato."
   },
   "transfers": {
