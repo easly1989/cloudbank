@@ -3,6 +3,7 @@ package importio
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"encoding/xml"
 	"fmt"
 	"strconv"
@@ -163,5 +164,45 @@ func TestParseIntesaXLSX(t *testing.T) {
 func TestParseIntesaXLSX_NotAnXLSX(t *testing.T) {
 	if _, err := ParseIntesaXLSX([]byte("not a zip")); err == nil {
 		t.Fatal("expected an error for non-xlsx input")
+	}
+}
+
+// TestIntesaReimportDedup proves the everyday case: exporting again a week later
+// produces mostly the same rows, and a second import flags every identical
+// (date + amount + description) row as an already-imported duplicate — excluded
+// by default, never silently re-imported.
+func TestIntesaReimportDedup(t *testing.T) {
+	s, _, _, _, wid, acc := newTestService(t)
+	ctx := context.Background()
+	xlsx := buildXLSX(t, [][]cellVal{
+		{blank(), blank(), blank(), str("Operazioni contabilizzate")},
+		{str("Data contabile"), str("Data valuta"), str("Descrizione"), str("Accrediti"), str("Addebiti"), str("Descrizione estesa")},
+		{num(46189), num(46184), str("PAGAMENTO POS"), blank(), num(-50.0), str("EFFETTUATO IL 11/06 PRESSO CAF")},
+		{num(46206), num(46206), str("STIPENDIO O PENSIONE"), num(2617.0), blank(), str("RETRIBUZIONE")},
+		{num(46216), num(46210), str("PAGAMENTO POS"), blank(), num(-11.26), str("AMZN Mktp IT")},
+	})
+
+	rows, err := ParseIntesaXLSX(xlsx)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	pv, err := s.PreviewParsed(ctx, wid, acc, rows, false)
+	if err != nil {
+		t.Fatalf("PreviewParsed: %v", err)
+	}
+	for _, r := range pv.Rows {
+		if r.Duplicate || !r.Include || r.ImportRef == "" || r.Status != 1 {
+			t.Fatalf("first import row unexpected: %+v", r)
+		}
+	}
+	commitPreview(t, s, wid, acc, pv)
+
+	// Second export/import a week later: same rows → all flagged duplicates, excluded.
+	rows2, _ := ParseIntesaXLSX(xlsx)
+	pv2, _ := s.PreviewParsed(ctx, wid, acc, rows2, false)
+	for _, r := range pv2.Rows {
+		if !r.Duplicate || r.Include {
+			t.Fatalf("re-import row should be a flagged, excluded duplicate: %+v", r)
+		}
 	}
 }
