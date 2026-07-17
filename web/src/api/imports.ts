@@ -37,6 +37,7 @@ export interface CSVPreviewRow {
   memo: string;
   category: string;
   tags: string[];
+  status?: number;
   importRef?: string;
 }
 
@@ -54,7 +55,24 @@ export interface CSVCommitRow {
   memo: string;
   category: string;
   tags: string[];
+  status?: number;
   importRef?: string;
+}
+
+// A bank-specific import plugin (e.g. Intesa Sanpaolo Excel).
+export interface ImportPlugin {
+  id: string;
+  label: string;
+  country: string;
+  bank: string;
+  accept: string[];
+}
+
+export interface PluginPreviewRequest {
+  pluginId: string;
+  accountId: number;
+  content: string; // base64-encoded file bytes
+  applyRules?: boolean;
 }
 
 // ParsedPreviewRequest is the body for the QIF and OFX previews (no column map).
@@ -85,6 +103,12 @@ export const previewQIF = (walletId: number, body: ParsedPreviewRequest) =>
 
 export const previewOFX = (walletId: number, body: ParsedPreviewRequest) =>
   api.post<CSVPreview>(`/api/v1/wallets/${walletId}/import/ofx/preview`, body);
+
+export const listImportPlugins = (walletId: number) =>
+  api.get<{ plugins: ImportPlugin[] }>(`/api/v1/wallets/${walletId}/import/plugins`);
+
+export const previewPlugin = (walletId: number, body: PluginPreviewRequest) =>
+  api.post<CSVPreview>(`/api/v1/wallets/${walletId}/import/plugin/preview`, body);
 
 export const commitImport = (walletId: number, accountId: number, rows: CSVCommitRow[]) =>
   api.post<{ created: number }>(`/api/v1/wallets/${walletId}/import/commit`, {
