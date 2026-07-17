@@ -70,6 +70,7 @@ type Row struct {
 	Category    string   // full category name ("Parent:Sub") or ""
 	Tags        []string // tag names
 	FITID       string   // OFX financial-institution transaction id (for dedupe)
+	Status      int      // transaction status 0..2 (0 = None); bank plugins set 1 = Cleared
 	Err         string   // non-empty when this line could not be parsed
 }
 

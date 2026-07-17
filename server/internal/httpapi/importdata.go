@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"net/http"
 	"strconv"
@@ -18,12 +19,57 @@ type importDataHandlers struct {
 }
 
 func (h *importDataHandlers) walletRoutes(r chi.Router) {
+	r.Get("/import/plugins", h.plugins)
+	r.Post("/import/plugin/preview", h.previewPlugin)
 	r.Post("/import/csv/preview", h.previewCSV)
 	r.Post("/import/qif/preview", h.previewQIF)
 	r.Post("/import/ofx/preview", h.previewOFX)
 	r.Post("/import/commit", h.commit)
 	r.Get("/export/csv", h.exportCSV)
 	r.Get("/export/qif", h.exportQIF)
+}
+
+// plugins lists the available bank-specific import plugins.
+func (h *importDataHandlers) plugins(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"plugins": importio.Plugins()})
+}
+
+type pluginPreviewBody struct {
+	PluginID   string `json:"pluginId"`
+	AccountID  int64  `json:"accountId"`
+	Content    string `json:"content"` // base64-encoded file bytes
+	ApplyRules bool   `json:"applyRules"`
+}
+
+// previewPlugin runs a registered plugin's parser over the uploaded file, then
+// the shared preview pipeline (duplicate flagging + rules).
+func (h *importDataHandlers) previewPlugin(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body pluginPreviewBody
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	plugin, ok := importio.PluginByID(body.PluginID)
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid", "unknown import plugin")
+		return
+	}
+	raw, err := base64.StdEncoding.DecodeString(body.Content)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid", "content must be base64-encoded")
+		return
+	}
+	rows, err := plugin.Parse(raw)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_file", "could not parse the file: "+err.Error())
+		return
+	}
+	res, err := h.svc.PreviewParsed(r.Context(), wl.ID, body.AccountID, rows, body.ApplyRules)
+	if err != nil {
+		notFoundOr(w, err, "invalid_file", "could not import the file", http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 func notFoundOr(w http.ResponseWriter, err error, code, msg string, status int) {
