@@ -680,7 +680,7 @@
     },
     "tabs": {
       "xhb": "File HomeBank",
-      "csv": "CSV / QIF / OFX",
+      "csv": "Banca / CSV / QIF / OFX",
       "export": "Esporta CSV"
     }
   },
@@ -695,8 +695,11 @@
       "homebank": "CSV HomeBank",
       "generic": "CSV generico",
       "qif": "QIF",
-      "ofx": "OFX/QFX"
+      "ofx": "OFX/QFX",
+      "bank": "Banca"
     },
+    "plugin": "Banca",
+    "pluginPlaceholder": "Scegli la tua banca",
     "account": "Conto di destinazione",
     "accountPlaceholder": "Scegli un conto",
     "file": "File CSV",
