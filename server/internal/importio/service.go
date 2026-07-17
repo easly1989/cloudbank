@@ -61,6 +61,7 @@ type PreviewRow struct {
 	Memo        string   `json:"memo"`
 	Category    string   `json:"category"`
 	Tags        []string `json:"tags"`
+	Status      int      `json:"status"`
 	ImportRef   string   `json:"importRef,omitempty"`
 }
 
@@ -169,7 +170,8 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 	for _, r := range rows {
 		pr := PreviewRow{
 			Line: r.Line, Date: r.Date, PaymentMode: r.PaymentMode, Info: r.Info,
-			Payee: r.Payee, Memo: r.Memo, Category: r.Category, Tags: r.Tags, ImportRef: r.FITID,
+			Payee: r.Payee, Memo: r.Memo, Category: r.Category, Tags: r.Tags, Status: r.Status,
+			ImportRef: r.FITID,
 		}
 		if r.Err != "" {
 			pr.Error = r.Err
@@ -230,6 +232,7 @@ type CommitRow struct {
 	Memo        string   `json:"memo"`
 	Category    string   `json:"category"`
 	Tags        []string `json:"tags"`
+	Status      int      `json:"status"`
 	ImportRef   string   `json:"importRef"`
 }
 
@@ -353,9 +356,13 @@ func (s *Service) Commit(ctx context.Context, walletID, accountID int64, rows []
 		} else if mode > 11 {
 			mode = 11
 		}
+		status := r.Status
+		if status < 0 || status > 2 {
+			status = 0
+		}
 		in := transaction.Input{
 			AccountID: accountID, Date: r.Date, Amount: r.Amount, PaymentMode: mode,
-			Status: 0, Info: r.Info, PayeeID: pid, CategoryID: cid, Memo: r.Memo, Tags: r.Tags,
+			Status: status, Info: r.Info, PayeeID: pid, CategoryID: cid, Memo: r.Memo, Tags: r.Tags,
 			ImportRef: r.ImportRef,
 		}
 		if _, err := s.txn.CreateInTx(ctx, qtx, walletID, in); err != nil {

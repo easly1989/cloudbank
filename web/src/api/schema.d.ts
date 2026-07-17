@@ -1485,6 +1485,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/import/plugins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List the available bank-specific import plugins */
+        get: operations["listImportPlugins"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/import/plugin/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parse an uploaded file with a bank plugin, flag duplicates and (optionally) apply import rules */
+        post: operations["previewPluginImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/import/commit": {
         parameters: {
             query?: never;
@@ -2416,7 +2454,9 @@ export interface components {
             memo: string;
             category: string;
             tags: string[];
-            /** @description OFX FITID, when present (used for duplicate detection) */
+            /** @description transaction status to apply (0 None, 1 Cleared); bank plugins set 1 */
+            status?: number;
+            /** @description external reference, when present (used for duplicate detection) */
             importRef?: string;
         };
         ParsedPreviewRequest: {
@@ -2448,8 +2488,30 @@ export interface components {
             /** @description full name 'Parent:Sub' or empty */
             category?: string;
             tags?: string[];
-            /** @description OFX FITID to persist for future duplicate detection */
+            /** @description transaction status to apply (0 None, 1 Cleared) */
+            status?: number;
+            /** @description external reference to persist for future duplicate detection */
             importRef?: string;
+        };
+        ImportPlugin: {
+            id: string;
+            label: string;
+            /** @description ISO country code, e.g. IT */
+            country: string;
+            bank: string;
+            /** @description accepted file extensions, e.g. ['.xlsx'] */
+            accept: string[];
+        };
+        ImportPluginList: {
+            plugins: components["schemas"]["ImportPlugin"][];
+        };
+        PluginPreviewRequest: {
+            pluginId: string;
+            /** Format: int64 */
+            accountId: number;
+            /** @description base64-encoded file bytes */
+            content: string;
+            applyRules?: boolean;
         };
         CSVCommitRequest: {
             /** Format: int64 */
@@ -5393,6 +5455,56 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ParsedPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description The preview. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CSVPreview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listImportPlugins: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The plugins. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportPluginList"];
+                };
+            };
+        };
+    };
+    previewPluginImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PluginPreviewRequest"];
             };
         };
         responses: {

@@ -1503,6 +1503,29 @@ paths:
         "200": { description: The preview., content: { application/json: { schema: { $ref: "#/components/schemas/CSVPreview" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/import/plugins:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listImportPlugins
+      summary: List the available bank-specific import plugins
+      responses:
+        "200": { description: The plugins., content: { application/json: { schema: { $ref: "#/components/schemas/ImportPluginList" } } } }
+  /api/v1/wallets/{walletId}/import/plugin/preview:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: previewPluginImport
+      summary: Parse an uploaded file with a bank plugin, flag duplicates and (optionally) apply import rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PluginPreviewRequest" }
+      responses:
+        "200": { description: The preview., content: { application/json: { schema: { $ref: "#/components/schemas/CSVPreview" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/import/commit:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -2326,7 +2349,8 @@ components:
         memo: { type: string }
         category: { type: string }
         tags: { type: array, items: { type: string } }
-        importRef: { type: string, description: "OFX FITID, when present (used for duplicate detection)" }
+        status: { type: integer, description: "transaction status to apply (0 None, 1 Cleared); bank plugins set 1" }
+        importRef: { type: string, description: "external reference, when present (used for duplicate detection)" }
       required: [line, include, duplicate, ruleApplied, date, amount, paymentMode, info, payee, memo, category, tags]
     ParsedPreviewRequest:
       type: object
@@ -2353,8 +2377,31 @@ components:
         memo: { type: string }
         category: { type: string, description: "full name 'Parent:Sub' or empty" }
         tags: { type: array, items: { type: string } }
-        importRef: { type: string, description: "OFX FITID to persist for future duplicate detection" }
+        status: { type: integer, description: "transaction status to apply (0 None, 1 Cleared)" }
+        importRef: { type: string, description: "external reference to persist for future duplicate detection" }
       required: [date, amount]
+    ImportPlugin:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        country: { type: string, description: "ISO country code, e.g. IT" }
+        bank: { type: string }
+        accept: { type: array, items: { type: string }, description: "accepted file extensions, e.g. ['.xlsx']" }
+      required: [id, label, country, bank, accept]
+    ImportPluginList:
+      type: object
+      properties:
+        plugins: { type: array, items: { $ref: "#/components/schemas/ImportPlugin" } }
+      required: [plugins]
+    PluginPreviewRequest:
+      type: object
+      properties:
+        pluginId: { type: string }
+        accountId: { type: integer, format: int64 }
+        content: { type: string, description: "base64-encoded file bytes" }
+        applyRules: { type: boolean }
+      required: [pluginId, accountId, content]
     CSVCommitRequest:
       type: object
       properties:

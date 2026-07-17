@@ -25,8 +25,10 @@ import {
   CSV_FIELDS,
   commitImport,
   listAccounts,
+  listImportPlugins,
   previewCSV,
   previewOFX,
+  previewPlugin,
   previewQIF,
   type Account,
   type CSVDateFormat,
@@ -36,8 +38,18 @@ import {
 import { formatMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
 
-type Format = "homebank" | "generic" | "qif" | "ofx";
+type Format = "homebank" | "generic" | "qif" | "ofx" | "plugin";
 type Phase = "source" | "map" | "review" | "done";
+
+// Read a (binary) file as base64 for plugin uploads.
+function readAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(",", 2)[1] ?? "");
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
 const REQUIRED_FIELDS = ["date", "amount"];
 
@@ -53,8 +65,16 @@ export function ImportWizard() {
   });
   const accounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data]);
 
+  const pluginsQuery = useQuery({
+    queryKey: ["importPlugins", walletId],
+    queryFn: () => listImportPlugins(walletId),
+    enabled: walletId > 0,
+  });
+  const plugins = pluginsQuery.data?.plugins ?? [];
+
   const [phase, setPhase] = useState<Phase>("source");
   const [format, setFormat] = useState<Format>("homebank");
+  const [pluginId, setPluginId] = useState<string | null>(null);
   const [content, setContent] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<string | null>(null);
@@ -75,6 +95,11 @@ export function ImportWizard() {
     () => accounts.find((a) => String(a.id) === accountId),
     [accounts, accountId],
   );
+  const selectedPlugin = plugins.find((p) => p.id === pluginId);
+  const fileAccept =
+    format === "plugin"
+      ? (selectedPlugin?.accept.join(",") ?? ".xlsx")
+      : ".csv,.qif,.ofx,.qfx,text/csv,text/plain,application/x-ofx";
 
   const fmtAmount = (minor: number) =>
     account
@@ -90,6 +115,14 @@ export function ImportWizard() {
   // runPreview dispatches to the format-specific preview endpoint.
   const runPreview = (opts: { withMapping: boolean; rules: boolean }): Promise<CSVPreview> => {
     const acc = Number(accountId);
+    if (format === "plugin") {
+      return previewPlugin(walletId, {
+        pluginId: pluginId ?? "",
+        accountId: acc,
+        content,
+        applyRules: opts.rules,
+      });
+    }
     if (format === "qif") {
       return previewQIF(walletId, { accountId: acc, content, dateFormat, applyRules: opts.rules });
     }
@@ -127,6 +160,7 @@ export function ImportWizard() {
           memo: r.memo,
           category: r.category,
           tags: r.tags,
+          status: r.status,
           importRef: r.importRef,
         }));
       return commitImport(walletId, Number(accountId), keep);
@@ -144,7 +178,12 @@ export function ImportWizard() {
       setContent("");
       return;
     }
-    void file.text().then(setContent);
+    // Plugin uploads may be binary (e.g. .xlsx) → send base64; text formats as-is.
+    if (format === "plugin") {
+      void readAsBase64(file).then(setContent);
+    } else {
+      void file.text().then(setContent);
+    }
   };
 
   const startFromSource = async () => {
@@ -211,14 +250,35 @@ export function ImportWizard() {
           <Stack>
             <SegmentedControl
               value={format}
-              onChange={(v) => setFormat(v as Format)}
+              onChange={(v) => {
+                setFormat(v as Format);
+                setContent("");
+                setFileName(null);
+              }}
               data={[
                 { label: t("importCsv.format.homebank"), value: "homebank" },
                 { label: t("importCsv.format.generic"), value: "generic" },
                 { label: t("importCsv.format.qif"), value: "qif" },
                 { label: t("importCsv.format.ofx"), value: "ofx" },
+                ...(plugins.length > 0
+                  ? [{ label: t("importCsv.format.bank"), value: "plugin" }]
+                  : []),
               ]}
             />
+            {format === "plugin" && (
+              <Select
+                label={t("importCsv.plugin")}
+                placeholder={t("importCsv.pluginPlaceholder")}
+                data={plugins.map((p) => ({ value: p.id, label: `${p.label} (${p.country})` }))}
+                value={pluginId}
+                onChange={(v) => {
+                  setPluginId(v);
+                  setContent("");
+                  setFileName(null);
+                }}
+                searchable
+              />
+            )}
             <Select
               label={t("importCsv.account")}
               placeholder={t("importCsv.accountPlaceholder")}
@@ -230,10 +290,11 @@ export function ImportWizard() {
             <FileInput
               label={t("importCsv.file")}
               placeholder={fileName ?? t("importCsv.filePlaceholder")}
-              accept=".csv,.qif,.ofx,.qfx,text/csv,text/plain,application/x-ofx"
+              accept={fileAccept}
               leftSection={<IconFileImport size={16} />}
               onChange={onPickFile}
               clearable
+              disabled={format === "plugin" && !pluginId}
             />
             {format === "generic" && (
               <Group grow>
@@ -277,7 +338,7 @@ export function ImportWizard() {
             )}
             <Group justify="flex-end">
               <Button
-                disabled={!content || !accountId}
+                disabled={!content || !accountId || (format === "plugin" && !pluginId)}
                 loading={preview.isPending}
                 onClick={() => void startFromSource()}
               >
