@@ -90,6 +90,21 @@ func ParseIntesaXLSX(content []byte) ([]Row, error) {
 		}
 		desc := strings.TrimSpace(cell(r, colDescrizione))
 		estesa := strings.TrimSpace(cell(r, colEstesa))
+		// A settled (posted) row carries a MatchDate — its real purchase date,
+		// from "EFFETTUATO IL DD/MM/YYYY" when present, else the value date — so
+		// it can be reconciled against a previously-imported pending row (whose
+		// stored date is that value date). Pending rows are the reconcile targets
+		// and don't themselves reconcile.
+		matchDate := ""
+		if section == "posted" {
+			if pd, ok := effettuatoDate(estesa); ok {
+				matchDate = pd
+			} else if vd, ok := excelSerialToISO(cell(r, colDataValuta)); ok {
+				matchDate = vd
+			} else {
+				matchDate = date
+			}
+		}
 		rows = append(rows, Row{
 			Line:        line,
 			Date:        date,
@@ -98,6 +113,7 @@ func ParseIntesaXLSX(content []byte) ([]Row, error) {
 			Info:        desc,
 			Memo:        estesa,
 			Status:      1, // Cleared / "Non riconciliata"
+			MatchDate:   matchDate,
 			FITID:       intesaRef(section, date, amount, estesa),
 		})
 	}
@@ -110,10 +126,24 @@ func ParseIntesaXLSX(content []byte) ([]Row, error) {
 // intesaRef is a stable per-row fingerprint used to de-duplicate a re-import of
 // the same export. It intentionally includes the (section-specific) extended
 // description, so an identical row is matched but genuinely different same-day/
-// same-amount rows are not.
+// same-amount rows are not. The section is also in the ref prefix
+// ("intesa:pending:" / "intesa:posted:") so a settled row can find the pending
+// rows to reconcile.
 func intesaRef(section, date string, amount int64, estesa string) string {
 	sum := sha1.Sum([]byte(fmt.Sprintf("intesa|%s|%s|%d|%s", section, date, amount, estesa)))
-	return "intesa:" + hex.EncodeToString(sum[:])[:16]
+	return "intesa:" + section + ":" + hex.EncodeToString(sum[:])[:16]
+}
+
+var effettuatoRe = regexp.MustCompile(`EFFETTUATO IL (\d{2})/(\d{2})/(\d{4})`)
+
+// effettuatoDate extracts the purchase date from a POS extended description
+// ("EFFETTUATO IL DD/MM/YYYY …") as YYYY-MM-DD.
+func effettuatoDate(estesa string) (string, bool) {
+	m := effettuatoRe.FindStringSubmatch(estesa)
+	if m == nil {
+		return "", false
+	}
+	return m[3] + "-" + m[2] + "-" + m[1], true
 }
 
 // intesaPaymentMode maps the Intesa operation type to a HomeBank payment mode.
