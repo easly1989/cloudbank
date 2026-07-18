@@ -188,6 +188,12 @@ export function RegisterFilters({
           onChange={(e) => onChange({ ...filters, noFlags: e.currentTarget.checked })}
           mb={8}
         />
+        <Switch
+          label={t("filters.uncategorised")}
+          checked={filters.uncategorised}
+          onChange={(e) => onChange({ ...filters, uncategorised: e.currentTarget.checked })}
+          mb={8}
+        />
         {isActive(filters) && (
           <Button
             variant="subtle"

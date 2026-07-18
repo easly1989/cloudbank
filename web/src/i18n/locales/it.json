@@ -351,6 +351,7 @@
     "transfersOnly": "Solo trasferimenti",
     "transfersNone": "Escludi trasferimenti",
     "noFlags": "Senza stato",
+    "uncategorised": "Senza categoria",
     "clear": "Azzera filtri",
     "presets": {
       "all": "Tutte le date",
@@ -730,12 +731,15 @@
     "duplicate": "Duplicato",
     "merge": "Unione",
     "ambiguous": "Possibile corrispondenza — nuova",
+    "mergeInto": "Unisci a…",
+    "keepNew": "Mantieni come nuova",
     "alreadyImported": "Già importata",
     "rule": "Regola",
     "import": "Importa {{count}}",
     "done": "Importazione completata",
     "createdCount": "Create {{count}} operazioni.",
     "updatedCount": "Riconciliate {{count}} operazioni in sospeso.",
+    "reviewImported": "Rivedi e categorizza",
     "importAnother": "Importa un altro file"
   },
   "exportCsv": {
