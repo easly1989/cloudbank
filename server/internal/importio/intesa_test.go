@@ -271,3 +271,38 @@ func TestIntesaReconcilePendingToPosted(t *testing.T) {
 		t.Fatalf("after reconcile want one :posted: ref, got %v", refs)
 	}
 }
+
+// TestIntesaReconcileAmbiguous: two pending rows with the same amount/date, then
+// a posted row that could be either → ambiguous, imported as new (not merged),
+// with both candidates offered for the user to resolve.
+func TestIntesaReconcileAmbiguous(t *testing.T) {
+	s, _, _, _, wid, acc := newTestService(t)
+	ctx := context.Background()
+	pending := buildXLSX(t, [][]cellVal{
+		{blank(), blank(), blank(), str("Operazioni non contabilizzate")},
+		{blank(), str("Data"), str("Descrizione"), str("Accrediti"), str("Addebiti"), str("Descrizione estesa")},
+		{blank(), num(46216), str("PAGAMENTO POS"), blank(), num(-11.26), str("Cino/AMZN Mktp IT")},
+		{blank(), num(46216), str("PAGAMENTO POS"), blank(), num(-11.26), str("Cino/OTHER SHOP")},
+	})
+	pr, _ := ParseIntesaXLSX(pending)
+	pv, err := s.PreviewParsed(ctx, wid, acc, pr, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pv.Rows) != 2 {
+		t.Fatalf("want 2 pending rows, got %d", len(pv.Rows))
+	}
+	commitPreview(t, s, wid, acc, pv)
+
+	posted := buildXLSX(t, [][]cellVal{
+		{blank(), blank(), blank(), str("Operazioni contabilizzate")},
+		{str("Data contabile"), str("Data valuta"), str("Descrizione"), str("Accrediti"), str("Addebiti"), str("Descrizione estesa")},
+		{num(46219), num(46216), str("PAGAMENTO POS"), blank(), num(-11.26), str("EFFETTUATO IL 13/07/2026 PRESSO AMZN Mktp IT")},
+	})
+	po, _ := ParseIntesaXLSX(posted)
+	pv2, _ := s.PreviewParsed(ctx, wid, acc, po, false)
+	row := pv2.Rows[0]
+	if row.Match != "ambiguous" || len(row.Candidates) != 2 || !row.Include {
+		t.Fatalf("expected ambiguous with 2 candidates imported as new, got %+v", row)
+	}
+}
