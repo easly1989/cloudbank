@@ -39,6 +39,8 @@ export interface CSVPreviewRow {
   tags: string[];
   status?: number;
   importRef?: string;
+  match?: "" | "update" | "ambiguous";
+  matchId?: number;
 }
 
 export interface CSVPreview {
@@ -57,6 +59,7 @@ export interface CSVCommitRow {
   tags: string[];
   status?: number;
   importRef?: string;
+  updateId?: number;
 }
 
 // A bank-specific import plugin (e.g. Intesa Sanpaolo Excel).
@@ -111,7 +114,7 @@ export const previewPlugin = (walletId: number, body: PluginPreviewRequest) =>
   api.post<CSVPreview>(`/api/v1/wallets/${walletId}/import/plugin/preview`, body);
 
 export const commitImport = (walletId: number, accountId: number, rows: CSVCommitRow[]) =>
-  api.post<{ created: number }>(`/api/v1/wallets/${walletId}/import/commit`, {
+  api.post<{ created: number; updated?: number }>(`/api/v1/wallets/${walletId}/import/commit`, {
     accountId,
     rows,
   });

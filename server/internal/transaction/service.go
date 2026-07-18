@@ -658,3 +658,36 @@ func (s *Service) FindDuplicates(ctx context.Context, accountID int64, date stri
 	}
 	return out, nil
 }
+
+// ReconcileCandidate is an existing transaction that an incoming imported row
+// might be the settled ("contabilizzata") form of.
+type ReconcileCandidate struct {
+	ID        int64
+	Date      string
+	Amount    int64
+	Memo      string
+	ImportRef string
+}
+
+// FindReconcileCandidates returns transactions in the account with the exact
+// amount within windowDays of date, with their import ref — used to match an
+// incoming posted row to a previously-imported pending one.
+func (s *Service) FindReconcileCandidates(ctx context.Context, accountID int64, date string, amount int64, windowDays int) ([]ReconcileCandidate, error) {
+	d, err := time.Parse(dateLayout, date)
+	if err != nil {
+		return nil, ErrInvalidDate
+	}
+	from := d.AddDate(0, 0, -windowDays).Format(dateLayout)
+	to := d.AddDate(0, 0, windowDays).Format(dateLayout)
+	rows, err := s.rq.FindDuplicateTransactions(ctx, db.FindDuplicateTransactionsParams{
+		AccountID: accountID, Amount: amount, Date: from, Date_2: to,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ReconcileCandidate, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, ReconcileCandidate{ID: r.ID, Date: r.Date, Amount: r.Amount, Memo: r.Memo, ImportRef: r.ImportRef})
+	}
+	return out, nil
+}

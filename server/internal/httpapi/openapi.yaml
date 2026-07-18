@@ -2351,6 +2351,8 @@ components:
         tags: { type: array, items: { type: string } }
         status: { type: integer, description: "transaction status to apply (0 None, 1 Cleared); bank plugins set 1" }
         importRef: { type: string, description: "external reference, when present (used for duplicate detection)" }
+        match: { type: string, description: "reconciliation: '' new/duplicate, 'update' (settles pending matchId), 'ambiguous' (imported as new)" }
+        matchId: { type: integer, format: int64, description: "the pending transaction this settled row updates (when match=update)" }
       required: [line, include, duplicate, ruleApplied, date, amount, paymentMode, info, payee, memo, category, tags]
     ParsedPreviewRequest:
       type: object
@@ -2379,6 +2381,7 @@ components:
         tags: { type: array, items: { type: string } }
         status: { type: integer, description: "transaction status to apply (0 None, 1 Cleared)" }
         importRef: { type: string, description: "external reference to persist for future duplicate detection" }
+        updateId: { type: integer, format: int64, description: "reconcile: update this existing pending transaction instead of inserting" }
       required: [date, amount]
     ImportPlugin:
       type: object
@@ -2412,4 +2415,5 @@ components:
       type: object
       properties:
         created: { type: integer }
+        updated: { type: integer, description: "reconciled (updated) existing transactions" }
       required: [created]

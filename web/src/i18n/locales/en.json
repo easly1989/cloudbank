@@ -728,10 +728,13 @@
     "applyRules": "Apply import rules",
     "willImport": "{{count}} rows will be imported",
     "duplicate": "Duplicate",
+    "merge": "Merge",
+    "ambiguous": "Possible match — new",
     "rule": "Rule",
     "import": "Import {{count}}",
     "done": "Import complete",
     "createdCount": "Created {{count}} transactions.",
+    "updatedCount": "Reconciled {{count}} pending transactions.",
     "importAnother": "Import another file"
   },
   "exportCsv": {

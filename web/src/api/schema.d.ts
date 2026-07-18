@@ -2458,6 +2458,13 @@ export interface components {
             status?: number;
             /** @description external reference, when present (used for duplicate detection) */
             importRef?: string;
+            /** @description reconciliation: '' new/duplicate, 'update' (settles pending matchId), 'ambiguous' (imported as new) */
+            match?: string;
+            /**
+             * Format: int64
+             * @description the pending transaction this settled row updates (when match=update)
+             */
+            matchId?: number;
         };
         ParsedPreviewRequest: {
             /** Format: int64 */
@@ -2492,6 +2499,11 @@ export interface components {
             status?: number;
             /** @description external reference to persist for future duplicate detection */
             importRef?: string;
+            /**
+             * Format: int64
+             * @description reconcile: update this existing pending transaction instead of inserting
+             */
+            updateId?: number;
         };
         ImportPlugin: {
             id: string;
@@ -2520,6 +2532,8 @@ export interface components {
         };
         CSVCommitResult: {
             created: number;
+            /** @description reconciled (updated) existing transactions */
+            updated?: number;
         };
     };
     responses: {

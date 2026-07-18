@@ -71,6 +71,7 @@ type Row struct {
 	Tags        []string // tag names
 	FITID       string   // OFX financial-institution transaction id (for dedupe)
 	Status      int      // transaction status 0..2 (0 = None); bank plugins set 1 = Cleared
+	MatchDate   string   // reconciliation date (a settled row's purchase date); "" = don't reconcile
 	Err         string   // non-empty when this line could not be parsed
 }
 

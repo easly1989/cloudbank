@@ -7,6 +7,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -204,5 +205,69 @@ func TestIntesaReimportDedup(t *testing.T) {
 		if !r.Duplicate || r.Include {
 			t.Fatalf("re-import row should be a flagged, excluded duplicate: %+v", r)
 		}
+	}
+}
+
+// TestIntesaReconcilePendingToPosted proves phase-2: a pending ("non
+// contabilizzata") row imported today, then appearing next week as posted (with
+// a *different* description and booking date), is recognised as the same
+// movement and updates the existing row instead of creating a duplicate.
+func TestIntesaReconcilePendingToPosted(t *testing.T) {
+	s, _, _, _, wid, acc := newTestService(t)
+	ctx := context.Background()
+
+	// 1) Today: import the pending row (value date 2026-07-13, -11.26).
+	pending := buildXLSX(t, [][]cellVal{
+		{blank(), blank(), blank(), str("Operazioni non contabilizzate")},
+		{blank(), str("Data"), str("Descrizione"), str("Accrediti"), str("Addebiti"), str("Descrizione estesa")},
+		{blank(), num(46216), str("PAGAMENTO EFFETTUATO SU POS ESTERO"), blank(), num(-11.26), str("Cino/AMZN Mktp IT")},
+	})
+	pr, _ := ParseIntesaXLSX(pending)
+	pv, err := s.PreviewParsed(ctx, wid, acc, pr, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pv.Rows) != 1 || pv.Rows[0].Duplicate || pv.Rows[0].Match != "" {
+		t.Fatalf("pending preview unexpected: %+v", pv.Rows)
+	}
+	commitPreview(t, s, wid, acc, pv)
+
+	// 2) Next week: same movement now posted — different description ("EFFETTUATO
+	//    IL 13/07/2026 …") and a later booking date (2026-07-16).
+	posted := buildXLSX(t, [][]cellVal{
+		{blank(), blank(), blank(), str("Operazioni contabilizzate")},
+		{str("Data contabile"), str("Data valuta"), str("Descrizione"), str("Accrediti"), str("Addebiti"), str("Descrizione estesa")},
+		{num(46219), num(46216), str("PAGAMENTO EFFETTUATO SU POS ESTERO"), blank(), num(-11.26), str("EFFETTUATO IL 13/07/2026 PRESSO AMZN Mktp IT")},
+	})
+	po, _ := ParseIntesaXLSX(posted)
+	pv2, err := s.PreviewParsed(ctx, wid, acc, po, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	row := pv2.Rows[0]
+	if row.Match != "update" || row.MatchID == 0 || row.Duplicate || !row.Include {
+		t.Fatalf("expected an update match against the pending row, got %+v", row)
+	}
+
+	// 3) Commit the reconciliation update.
+	res, err := s.Commit(ctx, wid, acc, []CommitRow{{
+		Date: row.Date, Amount: row.Amount, PaymentMode: row.PaymentMode, Info: row.Info,
+		Memo: row.Memo, Status: row.Status, ImportRef: row.ImportRef, UpdateID: row.MatchID,
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Created != 0 || res.Updated != 1 {
+		t.Fatalf("commit result = %+v, want {Created:0 Updated:1}", res)
+	}
+
+	// 4) Exactly one Intesa transaction remains, now carrying the *posted* ref
+	//    (the pending ref was replaced — no duplicate).
+	refs, err := s.q.ListImportRefsForAccount(ctx, acc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(refs) != 1 || !strings.Contains(refs[0], ":posted:") {
+		t.Fatalf("after reconcile want one :posted: ref, got %v", refs)
 	}
 }
