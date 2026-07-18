@@ -16,6 +16,10 @@ import (
 // ErrNotFound is returned when an account does not belong to the wallet.
 var ErrNotFound = errors.New("importio: account not found in wallet")
 
+// reconcileWindowDays bounds how far a settled row's purchase date may be from a
+// pending import's date to be treated as the same movement.
+const reconcileWindowDays = 4
+
 // Service previews and commits imports (CSV/QIF/OFX) and exports account data.
 type Service struct {
 	db    *sql.DB
@@ -63,6 +67,12 @@ type PreviewRow struct {
 	Tags        []string `json:"tags"`
 	Status      int      `json:"status"`
 	ImportRef   string   `json:"importRef,omitempty"`
+	// Match classifies a reconciliation outcome: "" (a plain new/duplicate row),
+	// "update" (this settled row is the posted form of the pending txn MatchID —
+	// it will update it, not add a duplicate), or "ambiguous" (several possible
+	// pending matches — imported as new, not merged).
+	Match   string `json:"match,omitempty"`
+	MatchID int64  `json:"matchId,omitempty"`
 }
 
 // Preview is the wizard's preview payload.
@@ -165,6 +175,7 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 	for _, r := range existingRefs {
 		refSeen[r] = true
 	}
+	matchedIDs := map[int64]bool{} // pending txns already claimed by an earlier row this batch
 
 	out := make([]PreviewRow, 0, len(rows))
 	for _, r := range rows {
@@ -202,19 +213,53 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 			}
 		}
 
+		// Exact re-import of the same row (by import ref) → already imported.
 		if r.FITID != "" {
 			if refSeen[r.FITID] {
 				pr.Duplicate = true
 			}
 			refSeen[r.FITID] = true
 		}
-		if !pr.Duplicate {
-			dups, err := s.txn.FindDuplicates(ctx, accountID, pr.Date, pr.Amount, 0)
+		if pr.Duplicate {
+			pr.Include = false
+			out = append(out, pr)
+			continue
+		}
+
+		// Reconciliation: a settled row (MatchDate set) may be the posted form of
+		// a previously-imported pending row. Match on exact amount within a small
+		// date window against pending imports. A unique match updates it (no
+		// duplicate); several candidates are left ambiguous and imported as new.
+		if r.MatchDate != "" {
+			cands, err := s.txn.FindReconcileCandidates(ctx, accountID, r.MatchDate, pr.Amount, reconcileWindowDays)
 			if err != nil {
 				return nil, err
 			}
-			pr.Duplicate = len(dups) > 0
+			var pending []int64
+			for _, c := range cands {
+				if strings.Contains(c.ImportRef, ":pending:") && !matchedIDs[c.ID] {
+					pending = append(pending, c.ID)
+				}
+			}
+			switch {
+			case len(pending) == 1:
+				pr.Match = "update"
+				pr.MatchID = pending[0]
+				matchedIDs[pending[0]] = true
+			case len(pending) > 1:
+				pr.Match = "ambiguous"
+			}
+			pr.Include = true
+			out = append(out, pr)
+			continue
 		}
+
+		// Otherwise fall back to the date+amount duplicate heuristic.
+		dups, err := s.txn.FindDuplicates(ctx, accountID, pr.Date, pr.Amount, 0)
+		if err != nil {
+			return nil, err
+		}
+		pr.Duplicate = len(dups) > 0
 		pr.Include = !pr.Duplicate
 		out = append(out, pr)
 	}
@@ -234,11 +279,15 @@ type CommitRow struct {
 	Tags        []string `json:"tags"`
 	Status      int      `json:"status"`
 	ImportRef   string   `json:"importRef"`
+	// UpdateID > 0 reconciles: update that existing (pending) transaction to this
+	// settled row instead of inserting a new one.
+	UpdateID int64 `json:"updateId,omitempty"`
 }
 
-// CommitResult reports how many transactions were created.
+// CommitResult reports how many transactions were created and reconciled.
 type CommitResult struct {
 	Created int `json:"created"`
+	Updated int `json:"updated"`
 }
 
 // Commit creates a transaction for every row in one database transaction,
@@ -337,9 +386,31 @@ func (s *Service) Commit(ctx context.Context, walletID, accountID int64, rows []
 		return &id, nil
 	}
 
-	created := 0
+	created, updated := 0, 0
 	for _, r := range rows {
 		if !isISODate(r.Date) {
+			continue
+		}
+		// Reconcile: update an existing pending transaction to its settled form,
+		// touching only bank-owned fields so user edits (category/tags/payee) stay.
+		if r.UpdateID > 0 {
+			mode := r.PaymentMode
+			if mode < 0 {
+				mode = 0
+			} else if mode > 11 {
+				mode = 11
+			}
+			status := r.Status
+			if status < 0 || status > 2 {
+				status = 0
+			}
+			if _, err := tx.ExecContext(ctx,
+				`UPDATE transactions SET date=?, memo=?, info=?, payment_mode=?, status=?, import_ref=? WHERE id=? AND wallet_id=?`,
+				r.Date, r.Memo, r.Info, mode, status, r.ImportRef, r.UpdateID, walletID,
+			); err != nil {
+				return CommitResult{}, err
+			}
+			updated++
 			continue
 		}
 		pid, err := ensurePayee(r.Payee)
@@ -374,7 +445,7 @@ func (s *Service) Commit(ctx context.Context, walletID, accountID int64, rows []
 	if err := tx.Commit(); err != nil {
 		return CommitResult{}, err
 	}
-	return CommitResult{Created: created}, nil
+	return CommitResult{Created: created, Updated: updated}, nil
 }
 
 // exportContext loads an account, its transactions (oldest-first) and the

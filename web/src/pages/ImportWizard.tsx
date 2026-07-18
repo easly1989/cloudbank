@@ -87,6 +87,7 @@ export function ImportWizard() {
   const [rows, setRows] = useState<CSVPreviewRow[]>([]);
   const [applyRules, setApplyRules] = useState(false);
   const [created, setCreated] = useState(0);
+  const [updated, setUpdated] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const showMapping = format === "generic";
@@ -162,11 +163,13 @@ export function ImportWizard() {
           tags: r.tags,
           status: r.status,
           importRef: r.importRef,
+          updateId: r.match === "update" ? r.matchId : undefined,
         }));
       return commitImport(walletId, Number(accountId), keep);
     },
     onSuccess: (res) => {
       setCreated(res.created);
+      setUpdated(res.updated ?? 0);
       setPhase("done");
     },
     onError: (err: unknown) => setError(err instanceof ApiError ? err.message : String(err)),
@@ -430,6 +433,16 @@ export function ImportWizard() {
                       <Table.Td ta="right">{r.error ? "—" : fmtAmount(r.amount)}</Table.Td>
                       <Table.Td>
                         <Group gap={4}>
+                          {r.match === "update" && (
+                            <Badge color="teal" size="sm">
+                              {t("importCsv.merge")}
+                            </Badge>
+                          )}
+                          {r.match === "ambiguous" && (
+                            <Badge color="gray" size="sm">
+                              {t("importCsv.ambiguous")}
+                            </Badge>
+                          )}
                           {r.duplicate && (
                             <Badge color="yellow" size="sm">
                               {t("importCsv.duplicate")}
@@ -472,6 +485,7 @@ export function ImportWizard() {
         <Alert color="green" title={t("importCsv.done")}>
           <Stack align="flex-start">
             <Text>{t("importCsv.createdCount", { count: created })}</Text>
+            {updated > 0 && <Text>{t("importCsv.updatedCount", { count: updated })}</Text>}
             <Button variant="light" onClick={reset}>
               {t("importCsv.importAnother")}
             </Button>
