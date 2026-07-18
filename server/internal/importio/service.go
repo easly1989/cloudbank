@@ -217,6 +217,7 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 		if r.FITID != "" {
 			if refSeen[r.FITID] {
 				pr.Duplicate = true
+				pr.Match = "imported" // exact match (grey), vs the date+amount heuristic (yellow)
 			}
 			refSeen[r.FITID] = true
 		}
