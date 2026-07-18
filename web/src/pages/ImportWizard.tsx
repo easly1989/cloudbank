@@ -12,6 +12,7 @@ import {
   Stepper,
   Switch,
   Table,
+  TagsInput,
   Text,
   TextInput,
 } from "@mantine/core";
@@ -25,7 +26,9 @@ import {
   CSV_FIELDS,
   commitImport,
   listAccounts,
+  listCategories,
   listImportPlugins,
+  listTags,
   previewCSV,
   previewOFX,
   previewPlugin,
@@ -71,6 +74,27 @@ export function ImportWizard() {
     enabled: walletId > 0,
   });
   const plugins = pluginsQuery.data?.plugins ?? [];
+
+  // Categories + tags for the inline quick-edit in the review step.
+  const categoriesQuery = useQuery({
+    queryKey: ["categories", walletId],
+    queryFn: () => listCategories(walletId),
+    enabled: walletId > 0,
+  });
+  const categoryOptions = useMemo(() => {
+    const cats = categoriesQuery.data ?? [];
+    return cats.map((c) => ({
+      value: c.parentId ? `${cats.find((p) => p.id === c.parentId)?.name ?? ""}:${c.name}` : c.name,
+      label: c.parentId
+        ? `${cats.find((p) => p.id === c.parentId)?.name ?? ""} › ${c.name}`
+        : c.name,
+    }));
+  }, [categoriesQuery.data]);
+  const tagsQuery = useQuery({
+    queryKey: ["tags", walletId],
+    queryFn: () => listTags(walletId),
+    enabled: walletId > 0,
+  });
 
   const [phase, setPhase] = useState<Phase>("source");
   const [format, setFormat] = useState<Format>("homebank");
@@ -217,6 +241,10 @@ export function ImportWizard() {
 
   const toggleRow = (i: number, include: boolean) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, include } : r)));
+  const setRowCategory = (i: number, category: string) =>
+    setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, category } : r)));
+  const setRowTags = (i: number, tags: string[]) =>
+    setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, tags } : r)));
 
   const reset = () => {
     setPhase("source");
@@ -412,14 +440,18 @@ export function ImportWizard() {
                     <Table.Th />
                     <Table.Th>{t("importCsv.fields.date")}</Table.Th>
                     <Table.Th>{t("importCsv.fields.payee")}</Table.Th>
-                    <Table.Th>{t("importCsv.fields.category")}</Table.Th>
+                    <Table.Th miw={170}>{t("importCsv.fields.category")}</Table.Th>
+                    <Table.Th miw={150}>{t("importCsv.fields.tags")}</Table.Th>
                     <Table.Th ta="right">{t("importCsv.fields.amount")}</Table.Th>
                     <Table.Th />
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
                   {rows.map((r, i) => (
-                    <Table.Tr key={i} c={r.error ? "red" : undefined}>
+                    <Table.Tr
+                      key={i}
+                      c={r.error ? "red" : r.match === "imported" ? "dimmed" : undefined}
+                    >
                       <Table.Td>
                         <Checkbox
                           checked={r.include}
@@ -429,7 +461,30 @@ export function ImportWizard() {
                       </Table.Td>
                       <Table.Td>{r.date || "—"}</Table.Td>
                       <Table.Td>{r.payee}</Table.Td>
-                      <Table.Td>{r.category}</Table.Td>
+                      <Table.Td>
+                        <Select
+                          aria-label={t("importCsv.fields.category")}
+                          data={categoryOptions}
+                          value={r.category || null}
+                          onChange={(v) => setRowCategory(i, v ?? "")}
+                          disabled={!r.include || !!r.error}
+                          size="xs"
+                          searchable
+                          clearable
+                          comboboxProps={{ withinPortal: true }}
+                        />
+                      </Table.Td>
+                      <Table.Td>
+                        <TagsInput
+                          aria-label={t("importCsv.fields.tags")}
+                          data={tagsQuery.data ?? []}
+                          value={r.tags}
+                          onChange={(v) => setRowTags(i, v)}
+                          disabled={!r.include || !!r.error}
+                          size="xs"
+                          maxTags={6}
+                        />
+                      </Table.Td>
                       <Table.Td ta="right">{r.error ? "—" : fmtAmount(r.amount)}</Table.Td>
                       <Table.Td>
                         <Group gap={4}>
@@ -438,12 +493,17 @@ export function ImportWizard() {
                               {t("importCsv.merge")}
                             </Badge>
                           )}
+                          {r.match === "imported" && (
+                            <Badge color="gray" size="sm" variant="light">
+                              {t("importCsv.alreadyImported")}
+                            </Badge>
+                          )}
                           {r.match === "ambiguous" && (
                             <Badge color="gray" size="sm">
                               {t("importCsv.ambiguous")}
                             </Badge>
                           )}
-                          {r.duplicate && (
+                          {r.duplicate && r.match !== "imported" && (
                             <Badge color="yellow" size="sm">
                               {t("importCsv.duplicate")}
                             </Badge>

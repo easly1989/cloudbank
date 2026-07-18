@@ -2458,7 +2458,7 @@ export interface components {
             status?: number;
             /** @description external reference, when present (used for duplicate detection) */
             importRef?: string;
-            /** @description reconciliation: '' new/duplicate, 'update' (settles pending matchId), 'ambiguous' (imported as new) */
+            /** @description reconciliation: '' plain, 'imported' (exact re-import), 'update' (settles pending matchId), 'ambiguous' (imported as new) */
             match?: string;
             /**
              * Format: int64

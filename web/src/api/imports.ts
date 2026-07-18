@@ -39,7 +39,7 @@ export interface CSVPreviewRow {
   tags: string[];
   status?: number;
   importRef?: string;
-  match?: "" | "update" | "ambiguous";
+  match?: "" | "imported" | "update" | "ambiguous";
   matchId?: number;
 }
 

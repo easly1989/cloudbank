@@ -730,6 +730,7 @@
     "duplicate": "Duplicate",
     "merge": "Merge",
     "ambiguous": "Possible match — new",
+    "alreadyImported": "Already imported",
     "rule": "Rule",
     "import": "Import {{count}}",
     "done": "Import complete",
