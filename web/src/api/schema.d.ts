@@ -2465,6 +2465,13 @@ export interface components {
              * @description the pending transaction this settled row updates (when match=update)
              */
             matchId?: number;
+            /** @description possible pending matches to resolve when match=ambiguous */
+            candidates?: {
+                /** Format: int64 */
+                id: number;
+                date: string;
+                memo: string;
+            }[];
         };
         ParsedPreviewRequest: {
             /** Format: int64 */

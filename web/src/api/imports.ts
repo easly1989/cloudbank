@@ -41,6 +41,7 @@ export interface CSVPreviewRow {
   importRef?: string;
   match?: "" | "imported" | "update" | "ambiguous";
   matchId?: number;
+  candidates?: { id: number; date: string; memo: string }[];
 }
 
 export interface CSVPreview {

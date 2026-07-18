@@ -2353,6 +2353,16 @@ components:
         importRef: { type: string, description: "external reference, when present (used for duplicate detection)" }
         match: { type: string, description: "reconciliation: '' plain, 'imported' (exact re-import), 'update' (settles pending matchId), 'ambiguous' (imported as new)" }
         matchId: { type: integer, format: int64, description: "the pending transaction this settled row updates (when match=update)" }
+        candidates:
+          type: array
+          description: "possible pending matches to resolve when match=ambiguous"
+          items:
+            type: object
+            properties:
+              id: { type: integer, format: int64 }
+              date: { type: string }
+              memo: { type: string }
+            required: [id, date, memo]
       required: [line, include, duplicate, ruleApplied, date, amount, paymentMode, info, payee, memo, category, tags]
     ParsedPreviewRequest:
       type: object

@@ -23,6 +23,7 @@ export interface Filters {
   hideFuture: boolean; // hide rows dated after today
   transfers: TransferFilter; // all | only transfers | exclude transfers
   noFlags: boolean; // keep only unflagged rows (status === 0)
+  uncategorised: boolean; // keep only rows with no category (e.g. just-imported)
 }
 
 export const emptyFilters: Filters = {
@@ -39,6 +40,7 @@ export const emptyFilters: Filters = {
   hideFuture: false,
   transfers: "all",
   noFlags: false,
+  uncategorised: false,
 };
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -87,7 +89,8 @@ export function isActive(f: Filters): boolean {
     f.text.trim() !== "" ||
     f.hideFuture ||
     f.transfers !== "all" ||
-    f.noFlags
+    f.noFlags ||
+    f.uncategorised
   );
 }
 
@@ -106,6 +109,7 @@ export function applyFilters(
     if (f.transfers === "only" && r.transferId == null) return false;
     if (f.transfers === "none" && r.transferId != null) return false;
     if (f.noFlags && r.status !== 0) return false;
+    if (f.uncategorised && r.categoryId != null) return false;
     if (from && r.date < from) return false;
     if (to && r.date > to) return false;
     if (f.status !== null && r.status !== f.status) return false;
@@ -143,6 +147,7 @@ export function parseFilters(p: URLSearchParams): Filters {
     hideFuture: p.get("hf") === "1",
     transfers: (p.get("xf") as TransferFilter) || "all",
     noFlags: p.get("nf") === "1",
+    uncategorised: p.get("unc") === "1",
   };
 }
 
@@ -163,5 +168,6 @@ export function filtersToParams(f: Filters): Record<string, string> {
   if (f.hideFuture) out.hf = "1";
   if (f.transfers !== "all") out.xf = f.transfers;
   if (f.noFlags) out.nf = "1";
+  if (f.uncategorised) out.unc = "1";
   return out;
 }

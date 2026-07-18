@@ -351,6 +351,7 @@
     "transfersOnly": "Transfers only",
     "transfersNone": "Exclude transfers",
     "noFlags": "No status",
+    "uncategorised": "Uncategorised",
     "clear": "Clear filters",
     "presets": {
       "all": "All dates",
@@ -730,12 +731,15 @@
     "duplicate": "Duplicate",
     "merge": "Merge",
     "ambiguous": "Possible match — new",
+    "mergeInto": "Merge into…",
+    "keepNew": "Keep as new",
     "alreadyImported": "Already imported",
     "rule": "Rule",
     "import": "Import {{count}}",
     "done": "Import complete",
     "createdCount": "Created {{count}} transactions.",
     "updatedCount": "Reconciled {{count}} pending transactions.",
+    "reviewImported": "Review & categorise",
     "importAnother": "Import another file"
   },
   "exportCsv": {
