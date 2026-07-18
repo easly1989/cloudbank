@@ -142,6 +142,7 @@ describe("URL round-trip", () => {
       hideFuture: true,
       transfers: "none",
       noFlags: true,
+      uncategorised: true,
     };
     const round = parseFilters(new URLSearchParams(filtersToParams(f)));
     expect(round).toEqual(f);

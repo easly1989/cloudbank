@@ -73,6 +73,16 @@ type PreviewRow struct {
 	// pending matches — imported as new, not merged).
 	Match   string `json:"match,omitempty"`
 	MatchID int64  `json:"matchId,omitempty"`
+	// Candidates lists the possible pending matches when Match is "ambiguous", so
+	// the user can pick one to merge into (or keep the row as new).
+	Candidates []MatchCandidate `json:"candidates,omitempty"`
+}
+
+// MatchCandidate is a pending transaction an ambiguous settled row might settle.
+type MatchCandidate struct {
+	ID   int64  `json:"id"`
+	Date string `json:"date"`
+	Memo string `json:"memo"`
 }
 
 // Preview is the wizard's preview payload.
@@ -236,19 +246,22 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 			if err != nil {
 				return nil, err
 			}
-			var pending []int64
+			var pending []transaction.ReconcileCandidate
 			for _, c := range cands {
 				if strings.Contains(c.ImportRef, ":pending:") && !matchedIDs[c.ID] {
-					pending = append(pending, c.ID)
+					pending = append(pending, c)
 				}
 			}
 			switch {
 			case len(pending) == 1:
 				pr.Match = "update"
-				pr.MatchID = pending[0]
-				matchedIDs[pending[0]] = true
+				pr.MatchID = pending[0].ID
+				matchedIDs[pending[0].ID] = true
 			case len(pending) > 1:
 				pr.Match = "ambiguous"
+				for _, c := range pending {
+					pr.Candidates = append(pr.Candidates, MatchCandidate{ID: c.ID, Date: c.Date, Memo: c.Memo})
+				}
 			}
 			pr.Include = true
 			out = append(out, pr)

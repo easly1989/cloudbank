@@ -20,6 +20,7 @@ import { IconAlertTriangle, IconFileImport } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import {
   ApiError,
@@ -59,6 +60,7 @@ const REQUIRED_FIELDS = ["date", "amount"];
 export function ImportWizard() {
   const { t } = useTranslation();
   const { currentWallet } = useWallet();
+  const navigate = useNavigate();
   const walletId = currentWallet?.id ?? 0;
 
   const accountsQuery = useQuery({
@@ -245,6 +247,13 @@ export function ImportWizard() {
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, category } : r)));
   const setRowTags = (i: number, tags: string[]) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, tags } : r)));
+  // Resolve an ambiguous match: pick a candidate id to merge into, or "" = new.
+  const resolveAmbiguous = (i: number, v: string | null) =>
+    setRows((rs) =>
+      rs.map((r, idx) =>
+        idx === i ? { ...r, match: v ? "update" : "ambiguous", matchId: v ? Number(v) : 0 } : r,
+      ),
+    );
 
   const reset = () => {
     setPhase("source");
@@ -488,19 +497,32 @@ export function ImportWizard() {
                       <Table.Td ta="right">{r.error ? "—" : fmtAmount(r.amount)}</Table.Td>
                       <Table.Td>
                         <Group gap={4}>
-                          {r.match === "update" && (
+                          {r.match === "update" && !r.candidates?.length && (
                             <Badge color="teal" size="sm">
                               {t("importCsv.merge")}
                             </Badge>
                           )}
+                          {r.candidates && r.candidates.length > 0 && (
+                            <Select
+                              aria-label={t("importCsv.mergeInto")}
+                              placeholder={t("importCsv.mergeInto")}
+                              data={[
+                                { value: "", label: t("importCsv.keepNew") },
+                                ...r.candidates.map((c) => ({
+                                  value: String(c.id),
+                                  label: `${c.date} · ${c.memo}`.slice(0, 42),
+                                })),
+                              ]}
+                              value={r.match === "update" ? String(r.matchId) : ""}
+                              onChange={(v) => resolveAmbiguous(i, v)}
+                              comboboxProps={{ withinPortal: true }}
+                              size="xs"
+                              w={210}
+                            />
+                          )}
                           {r.match === "imported" && (
                             <Badge color="gray" size="sm" variant="light">
                               {t("importCsv.alreadyImported")}
-                            </Badge>
-                          )}
-                          {r.match === "ambiguous" && (
-                            <Badge color="gray" size="sm">
-                              {t("importCsv.ambiguous")}
                             </Badge>
                           )}
                           {r.duplicate && r.match !== "imported" && (
@@ -546,9 +568,14 @@ export function ImportWizard() {
           <Stack align="flex-start">
             <Text>{t("importCsv.createdCount", { count: created })}</Text>
             {updated > 0 && <Text>{t("importCsv.updatedCount", { count: updated })}</Text>}
-            <Button variant="light" onClick={reset}>
-              {t("importCsv.importAnother")}
-            </Button>
+            <Group>
+              <Button onClick={() => navigate("/transactions?unc=1")}>
+                {t("importCsv.reviewImported")}
+              </Button>
+              <Button variant="light" onClick={reset}>
+                {t("importCsv.importAnother")}
+              </Button>
+            </Group>
           </Stack>
         </Alert>
       )}
