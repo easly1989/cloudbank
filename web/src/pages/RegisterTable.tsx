@@ -18,7 +18,7 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { updateMe, type Account, type RegisterRow, type User } from "../api/client";
@@ -71,6 +71,10 @@ export interface RegisterTableProps {
   onDelete: (row: RegisterRow) => void;
   onToggleStatus: (row: RegisterRow, status: number) => void;
   onSaveTemplate: (row: RegisterRow) => void;
+  // When provided, the ledger body grows to fill the viewport down from the
+  // bottom of this element (the block above the table); collapsing sections above
+  // reclaims their space for the ledger. Without it, a fixed height is used.
+  fillRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 // RegisterTable renders the account ledger newest-first with a chronological
@@ -90,6 +94,7 @@ export function RegisterTable({
   onDelete,
   onToggleStatus,
   onSaveTemplate,
+  fillRef,
 }: RegisterTableProps) {
   const { t } = useTranslation();
   const fmtDate = useDateFormat();
@@ -97,6 +102,30 @@ export function RegisterTable({
   const { user } = useAuth();
   const parentRef = useRef<HTMLDivElement>(null);
   const [cursorId, setCursorId] = useState<number | null>(null);
+
+  // Fill mode: size the scroll body so its bottom sits just above the footer,
+  // recomputing whenever the block above (fillRef) changes size — e.g. an
+  // accordion collapses or the bulk bar appears — and on window resize.
+  const [bodyHeight, setBodyHeight] = useState<number>();
+  useLayoutEffect(() => {
+    if (!fillRef) return;
+    const scroll = parentRef.current;
+    if (!scroll) return;
+    // Footer (36) + Main bottom padding (md=16) + a little breathing room.
+    const BOTTOM_GAP = 56;
+    const measure = () => {
+      const top = scroll.getBoundingClientRect().top;
+      setBodyHeight(Math.max(240, Math.round(window.innerHeight - top - BOTTOM_GAP)));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (fillRef.current) ro.observe(fillRef.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [fillRef]);
 
   // Column visibility is a per-user preference; resolve defaults for any unset.
   const savedColumns = user?.preferences?.registerColumns;
@@ -392,7 +421,7 @@ export function RegisterTable({
           ref={parentRef}
           tabIndex={0}
           onKeyDown={onKeyDown}
-          style={{ height: "min(560px, 65vh)", overflow: "auto", outline: "none" }}
+          style={{ height: bodyHeight ?? "min(560px, 65vh)", overflow: "auto", outline: "none" }}
           aria-label={t("register.ledger")}
         >
           <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
