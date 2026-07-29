@@ -1,5 +1,4 @@
-import { Button, Card, Group, Select, Stack, Switch, TagsInput, TextInput } from "@mantine/core";
-import { IconFilterOff } from "@tabler/icons-react";
+import { Card, Group, Select, Stack, Switch, TagsInput, TextInput } from "@mantine/core";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -8,13 +7,7 @@ import { type MoneyFormat } from "../money";
 import tagClasses from "../tagPills.module.css";
 import { STATUSES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
-import {
-  type DatePreset,
-  type Filters,
-  type TransferFilter,
-  emptyFilters,
-  isActive,
-} from "./registerFilters";
+import { type DatePreset, type Filters, type TransferFilter } from "./registerFilters";
 
 const PRESETS: DatePreset[] = [
   "all",
@@ -182,37 +175,25 @@ export function RegisterFilters({
             w={180}
           />
         </Group>
-        {/* Toggles grouped together on their own row, with Clear rendered as a
-            proper button so it doesn't read as just another field label. */}
-        <Group gap="md" align="center" justify="space-between" wrap="wrap">
-          <Group gap="lg" wrap="wrap">
-            <Switch
-              label={t("filters.hideFuture")}
-              checked={filters.hideFuture}
-              onChange={(e) => onChange({ ...filters, hideFuture: e.currentTarget.checked })}
-            />
-            <Switch
-              label={t("filters.noFlags")}
-              checked={filters.noFlags}
-              onChange={(e) => onChange({ ...filters, noFlags: e.currentTarget.checked })}
-            />
-            <Switch
-              label={t("filters.uncategorised")}
-              checked={filters.uncategorised}
-              onChange={(e) => onChange({ ...filters, uncategorised: e.currentTarget.checked })}
-            />
-          </Group>
-          {isActive(filters) && (
-            <Button
-              variant="light"
-              color="gray"
-              size="xs"
-              leftSection={<IconFilterOff size={16} />}
-              onClick={() => onChange(emptyFilters)}
-            >
-              {t("filters.clear")}
-            </Button>
-          )}
+        {/* The three toggles grouped together on their own row. Clear lives on
+            the section header (see TransactionsPage) so it stays reachable even
+            when the filters section is collapsed. */}
+        <Group gap="lg" wrap="wrap">
+          <Switch
+            label={t("filters.hideFuture")}
+            checked={filters.hideFuture}
+            onChange={(e) => onChange({ ...filters, hideFuture: e.currentTarget.checked })}
+          />
+          <Switch
+            label={t("filters.noFlags")}
+            checked={filters.noFlags}
+            onChange={(e) => onChange({ ...filters, noFlags: e.currentTarget.checked })}
+          />
+          <Switch
+            label={t("filters.uncategorised")}
+            checked={filters.uncategorised}
+            onChange={(e) => onChange({ ...filters, uncategorised: e.currentTarget.checked })}
+          />
         </Group>
       </Stack>
     </Card>
