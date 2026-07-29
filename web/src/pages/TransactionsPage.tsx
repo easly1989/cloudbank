@@ -12,9 +12,9 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconArrowsExchange, IconChecklist, IconPlus } from "@tabler/icons-react";
+import { IconArrowsExchange, IconChecklist, IconFilterOff, IconPlus } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
@@ -49,7 +49,14 @@ import { PAYMENT_MODES, STATUSES } from "../transactionEnums";
 import { useWallet } from "../wallet/WalletProvider";
 import { RegisterFilters } from "./RegisterFilters";
 import { RegisterTable } from "./RegisterTable";
-import { activeFilterCount, applyFilters, filtersToParams, parseFilters } from "./registerFilters";
+import {
+  activeFilterCount,
+  applyFilters,
+  emptyFilters,
+  filtersToParams,
+  isActive,
+  parseFilters,
+} from "./registerFilters";
 
 export function TransactionsPage() {
   const { t } = useTranslation();
@@ -94,10 +101,43 @@ export function TransactionsPage() {
   const invalidateTemplates = () =>
     void qc.invalidateQueries({ queryKey: ["templates", walletId] });
 
-  // Filters live in the URL query string so they round-trip and are shareable.
+  // Filters live in the URL query string so they round-trip and are shareable,
+  // and are mirrored to localStorage (per wallet) so leaving the page and coming
+  // back restores them instead of resetting to empty.
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = useMemo(() => parseFilters(searchParams), [searchParams]);
-  const setFilters = (f: typeof filters) => setSearchParams(filtersToParams(f), { replace: true });
+  const filtersKey = `cb.reg.filters.${walletId}`;
+  const setFilters = (f: typeof filters) => {
+    const params = filtersToParams(f);
+    setSearchParams(params, { replace: true });
+    try {
+      localStorage.setItem(filtersKey, new URLSearchParams(params).toString());
+    } catch {
+      /* storage unavailable — URL still carries the filters this session */
+    }
+  };
+  // On (re)mount, if the URL carries no filters (e.g. arrived via the sidebar,
+  // not a deep link like ?unc=1), restore the last-used filters for this wallet.
+  const restored = useRef(false);
+  useEffect(() => {
+    if (walletId <= 0 || restored.current) return;
+    restored.current = true;
+    if (isActive(filters)) return; // an explicit URL/deep link wins
+    try {
+      const saved = localStorage.getItem(filtersKey);
+      if (saved) {
+        const params = new URLSearchParams(saved);
+        if ([...params.keys()].length > 0) setSearchParams(params, { replace: true });
+      }
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walletId]);
+
+  // The block above the ledger; the ledger fills the viewport down from its
+  // bottom, so collapsing a section here hands its space to the ledger.
+  const topRef = useRef<HTMLDivElement>(null);
   // `today` (reactive) is only a recompute trigger here: including it in the deps
   // makes `hideFuture` re-evaluate when the day rolls over while the page stays
   // open (even with no other change), at which point applyFilters' own `new
@@ -239,153 +279,168 @@ export function TransactionsPage() {
 
   return (
     <Stack>
-      <Group justify="space-between">
-        <Title order={2}>{t("transactions.title")}</Title>
-        <Group>
-          <Select
-            aria-label={t("transactions.account")}
-            data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
-            value={accountId}
-            onChange={setAccountId}
-            allowDeselect={false}
-            w={220}
-          />
-          <Button
-            variant={reconcile ? "filled" : "default"}
-            leftSection={<IconChecklist size={16} />}
-            disabled={!account}
-            onClick={() => {
-              clearSelection();
-              setReconcile((v) => !v);
-            }}
-          >
-            {t("reconcile.start")}
-          </Button>
-          <Button
-            variant="default"
-            leftSection={<IconArrowsExchange size={16} />}
-            disabled={accounts.length < 2}
-            onClick={() => {
-              setEditingTransferId(null);
-              transferForm.open();
-            }}
-          >
-            {t("transfers.add")}
-          </Button>
-          <Button
-            leftSection={<IconPlus size={16} />}
-            disabled={!account}
-            onClick={() => {
-              setEditing(null);
-              form.open();
-            }}
-          >
-            {t("transactions.add")}
-          </Button>
+      <Stack ref={topRef} gap="md">
+        <Group justify="space-between">
+          <Title order={2}>{t("transactions.title")}</Title>
+          <Group>
+            <Select
+              aria-label={t("transactions.account")}
+              data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
+              value={accountId}
+              onChange={setAccountId}
+              allowDeselect={false}
+              w={220}
+            />
+            <Button
+              variant={reconcile ? "filled" : "default"}
+              leftSection={<IconChecklist size={16} />}
+              disabled={!account}
+              onClick={() => {
+                clearSelection();
+                setReconcile((v) => !v);
+              }}
+            >
+              {t("reconcile.start")}
+            </Button>
+            <Button
+              variant="default"
+              leftSection={<IconArrowsExchange size={16} />}
+              disabled={accounts.length < 2}
+              onClick={() => {
+                setEditingTransferId(null);
+                transferForm.open();
+              }}
+            >
+              {t("transfers.add")}
+            </Button>
+            <Button
+              leftSection={<IconPlus size={16} />}
+              disabled={!account}
+              onClick={() => {
+                setEditing(null);
+                form.open();
+              }}
+            >
+              {t("transactions.add")}
+            </Button>
+          </Group>
         </Group>
-      </Group>
 
-      {accounts.length === 0 && <Text c="dimmed">{t("transactions.noAccounts")}</Text>}
+        {accounts.length === 0 && <Text c="dimmed">{t("transactions.noAccounts")}</Text>}
 
-      {account && registerQuery.data && (
-        <CollapsibleSection
-          title={t("register.balances")}
-          storageKey="cb.reg.balances"
-          summary={
-            <Text size="xs" truncate>
-              {t("register.bank")} {formatMinor(registerQuery.data.summary.bank, fmt)} ·{" "}
-              {t("register.today")} {formatMinor(registerQuery.data.summary.today, fmt)} ·{" "}
-              {t("register.future")} {formatMinor(registerQuery.data.summary.future, fmt)}
-            </Text>
-          }
-        >
-          <SimpleGrid cols={{ base: 1, sm: 3 }}>
-            <BalanceCard
-              label={t("register.bank")}
-              value={registerQuery.data.summary.bank}
-              fmt={fmt}
-            />
-            <BalanceCard
-              label={t("register.today")}
-              value={registerQuery.data.summary.today}
-              fmt={fmt}
-            />
-            <BalanceCard
-              label={t("register.future")}
-              value={registerQuery.data.summary.future}
-              fmt={fmt}
-            />
-          </SimpleGrid>
-        </CollapsibleSection>
-      )}
+        {account && registerQuery.data && (
+          <CollapsibleSection
+            title={t("register.balances")}
+            storageKey="cb.reg.balances"
+            summary={
+              <Text size="xs" truncate>
+                {t("register.bank")} {formatMinor(registerQuery.data.summary.bank, fmt)} ·{" "}
+                {t("register.today")} {formatMinor(registerQuery.data.summary.today, fmt)} ·{" "}
+                {t("register.future")} {formatMinor(registerQuery.data.summary.future, fmt)}
+              </Text>
+            }
+          >
+            <SimpleGrid cols={{ base: 1, sm: 3 }}>
+              <BalanceCard
+                label={t("register.bank")}
+                value={registerQuery.data.summary.bank}
+                fmt={fmt}
+              />
+              <BalanceCard
+                label={t("register.today")}
+                value={registerQuery.data.summary.today}
+                fmt={fmt}
+              />
+              <BalanceCard
+                label={t("register.future")}
+                value={registerQuery.data.summary.future}
+                fmt={fmt}
+              />
+            </SimpleGrid>
+          </CollapsibleSection>
+        )}
 
-      {account && reconcile && (
-        <ReconcilePanel
-          account={account}
-          rows={rows}
-          selected={selected}
-          fmt={fmt}
-          onFinish={() => {
-            const ids = [...selected];
-            if (ids.length > 0) bulk.mutate({ ids, field: "status", value: 2 });
-            setReconcile(false);
-          }}
-          onCancel={() => {
-            clearSelection();
-            setReconcile(false);
-          }}
-        />
-      )}
+        {account && reconcile && (
+          <ReconcilePanel
+            account={account}
+            rows={rows}
+            selected={selected}
+            fmt={fmt}
+            onFinish={() => {
+              const ids = [...selected];
+              if (ids.length > 0) bulk.mutate({ ids, field: "status", value: 2 });
+              setReconcile(false);
+            }}
+            onCancel={() => {
+              clearSelection();
+              setReconcile(false);
+            }}
+          />
+        )}
 
-      {account && !reconcile && (
-        <CollapsibleSection
-          title={t("filters.section")}
-          storageKey="cb.reg.tools"
-          summary={
-            activeFilterCount(filters) > 0 ? (
-              <Badge size="sm" variant="light" aria-label={t("filters.activeCount")}>
-                {activeFilterCount(filters)}
-              </Badge>
-            ) : undefined
-          }
-        >
-          <Stack gap="xs">
-            <RegisterFilters
-              filters={filters}
-              onChange={setFilters}
-              payees={payeesQuery.data ?? []}
-              categories={categoriesQuery.data ?? []}
-              tags={tagsQuery.data ?? []}
-              fmt={fmt}
-            />
-            <QuickAdd
-              walletId={walletId}
-              account={account}
-              onAdded={invalidate}
-              onError={onError}
-            />
-          </Stack>
-        </CollapsibleSection>
-      )}
+        {account && !reconcile && (
+          <CollapsibleSection
+            title={t("filters.section")}
+            storageKey="cb.reg.tools"
+            summary={
+              activeFilterCount(filters) > 0 ? (
+                <Badge size="sm" variant="light" aria-label={t("filters.activeCount")}>
+                  {activeFilterCount(filters)}
+                </Badge>
+              ) : undefined
+            }
+            action={
+              activeFilterCount(filters) > 0 ? (
+                <Button
+                  variant="light"
+                  color="gray"
+                  size="xs"
+                  leftSection={<IconFilterOff size={14} />}
+                  onClick={() => setFilters(emptyFilters)}
+                >
+                  {t("filters.clear")}
+                </Button>
+              ) : undefined
+            }
+          >
+            <Stack gap="xs">
+              <RegisterFilters
+                filters={filters}
+                onChange={setFilters}
+                payees={payeesQuery.data ?? []}
+                categories={categoriesQuery.data ?? []}
+                tags={tagsQuery.data ?? []}
+                fmt={fmt}
+              />
+              <QuickAdd
+                walletId={walletId}
+                account={account}
+                onAdded={invalidate}
+                onError={onError}
+              />
+            </Stack>
+          </CollapsibleSection>
+        )}
 
-      {/* Selection actions stay outside the collapsible so they remain reachable
+        {/* Selection actions stay outside the collapsible so they remain reachable
           even when filters/entry are folded away. */}
-      {account && !reconcile && selected.size > 0 && (
-        <BulkBar
-          count={selected.size}
-          total={selectionTotals.total}
-          inflow={selectionTotals.inflow}
-          outflow={selectionTotals.outflow}
-          fmt={fmt}
-          payees={payeesQuery.data ?? []}
-          categories={categoriesQuery.data ?? []}
-          loading={bulk.isPending}
-          onApply={(field, value) => bulk.mutate({ ids: [...selected], field, value })}
-          onClear={clearSelection}
-        />
-      )}
+        {account && !reconcile && selected.size > 0 && (
+          <BulkBar
+            count={selected.size}
+            total={selectionTotals.total}
+            inflow={selectionTotals.inflow}
+            outflow={selectionTotals.outflow}
+            fmt={fmt}
+            payees={payeesQuery.data ?? []}
+            categories={categoriesQuery.data ?? []}
+            loading={bulk.isPending}
+            onApply={(field, value) => bulk.mutate({ ids: [...selected], field, value })}
+            onClear={clearSelection}
+          />
+        )}
 
-      {account && filteredRows.length === 0 && <Text c="dimmed">{t("transactions.empty")}</Text>}
+        {account && filteredRows.length === 0 && <Text c="dimmed">{t("transactions.empty")}</Text>}
+      </Stack>
 
       {account && filteredRows.length > 0 && (
         <RegisterTable
@@ -399,6 +454,7 @@ export function TransactionsPage() {
           onDelete={deleteRow}
           onToggleStatus={(row, status) => toggleStatus.mutate({ id: row.id, status })}
           onSaveTemplate={templateFromRow}
+          fillRef={topRef}
         />
       )}
 
