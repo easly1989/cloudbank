@@ -1,10 +1,11 @@
-import { Button, Card, Group, MultiSelect, Select, Switch, TextInput } from "@mantine/core";
+import { Button, Card, Group, Select, Stack, Switch, TagsInput, TextInput } from "@mantine/core";
 import { IconFilterOff } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { Category, Payee } from "../api/client";
 import { type MoneyFormat } from "../money";
+import tagClasses from "../tagPills.module.css";
 import { STATUSES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import {
@@ -78,133 +79,142 @@ export function RegisterFilters({
 
   return (
     <Card withBorder padding="xs">
-      <Group gap="xs" align="flex-end" wrap="wrap">
-        <Select
-          label={t("filters.dateRange")}
-          data={PRESETS.map((p) => ({ value: p, label: t(`filters.presets.${p}`) }))}
-          value={filters.preset}
-          onChange={(v) => onChange({ ...filters, preset: (v as DatePreset) ?? "all" })}
-          allowDeselect={false}
-          w={150}
-        />
-        {filters.preset === "custom" && (
-          <>
-            <TextInput
-              type="date"
-              label={t("filters.from")}
-              value={filters.from}
-              onChange={(e) => onChange({ ...filters, from: e.currentTarget.value })}
-              w={150}
+      <Stack gap="xs">
+        <Group gap="xs" align="flex-end" wrap="wrap">
+          <Select
+            label={t("filters.dateRange")}
+            data={PRESETS.map((p) => ({ value: p, label: t(`filters.presets.${p}`) }))}
+            value={filters.preset}
+            onChange={(v) => onChange({ ...filters, preset: (v as DatePreset) ?? "all" })}
+            allowDeselect={false}
+            w={150}
+          />
+          {filters.preset === "custom" && (
+            <>
+              <TextInput
+                type="date"
+                label={t("filters.from")}
+                value={filters.from}
+                onChange={(e) => onChange({ ...filters, from: e.currentTarget.value })}
+                w={150}
+              />
+              <TextInput
+                type="date"
+                label={t("filters.to")}
+                value={filters.to}
+                onChange={(e) => onChange({ ...filters, to: e.currentTarget.value })}
+                w={150}
+              />
+            </>
+          )}
+          <Select
+            label={t("transactions.status")}
+            data={STATUSES.map((s) => ({ value: String(s), label: t(`status.${s}`) }))}
+            value={filters.status === null ? null : String(filters.status)}
+            onChange={(v) => onChange({ ...filters, status: v === null ? null : Number(v) })}
+            clearable
+            w={130}
+          />
+          <Select
+            label={t("transactions.payee")}
+            data={payees.map((p) => ({ value: String(p.id), label: p.name }))}
+            value={filters.payeeId === null ? null : String(filters.payeeId)}
+            onChange={(v) => onChange({ ...filters, payeeId: v === null ? null : Number(v) })}
+            clearable
+            searchable
+            w={160}
+          />
+          <Select
+            label={t("transactions.category")}
+            data={categoryOptions}
+            value={filters.categoryId === null ? null : String(filters.categoryId)}
+            onChange={(v) => onChange({ ...filters, categoryId: v === null ? null : Number(v) })}
+            clearable
+            searchable
+            w={170}
+          />
+          <TagsInput
+            label={t("transactions.tags")}
+            data={tags}
+            value={filters.tags}
+            onChange={(v) => onChange({ ...filters, tags: v })}
+            clearable
+            // Same fixed-width, single-line scrolling-pills field as Quick Add so
+            // the two behave identically (see tagPills.module.css).
+            style={{ flex: "0 0 170px", minWidth: 0 }}
+            styles={{ input: { minWidth: 0 } }}
+            classNames={{ pillsList: tagClasses.scrollPills }}
+          />
+          <Select
+            label={t("filters.transfers")}
+            data={[
+              { value: "all", label: t("filters.transfersAll") },
+              { value: "only", label: t("filters.transfersOnly") },
+              { value: "none", label: t("filters.transfersNone") },
+            ]}
+            value={filters.transfers}
+            onChange={(v) => onChange({ ...filters, transfers: (v as TransferFilter) ?? "all" })}
+            allowDeselect={false}
+            w={170}
+          />
+          <TextInput
+            label={t("filters.amountMin")}
+            value={amin}
+            onChange={(e) => setAmin(e.currentTarget.value)}
+            onBlur={() => onChange({ ...filters, amountMin: amountToMinor(amin) })}
+            w={110}
+          />
+          <TextInput
+            label={t("filters.amountMax")}
+            value={amax}
+            onChange={(e) => setAmax(e.currentTarget.value)}
+            onBlur={() => onChange({ ...filters, amountMax: amountToMinor(amax) })}
+            w={110}
+          />
+          <TextInput
+            label={t("filters.search")}
+            value={text}
+            onChange={(e) => setText(e.currentTarget.value)}
+            onBlur={() => onChange({ ...filters, text })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onChange({ ...filters, text });
+            }}
+            w={180}
+          />
+        </Group>
+        {/* Toggles grouped together on their own row, with Clear rendered as a
+            proper button so it doesn't read as just another field label. */}
+        <Group gap="md" align="center" justify="space-between" wrap="wrap">
+          <Group gap="lg" wrap="wrap">
+            <Switch
+              label={t("filters.hideFuture")}
+              checked={filters.hideFuture}
+              onChange={(e) => onChange({ ...filters, hideFuture: e.currentTarget.checked })}
             />
-            <TextInput
-              type="date"
-              label={t("filters.to")}
-              value={filters.to}
-              onChange={(e) => onChange({ ...filters, to: e.currentTarget.value })}
-              w={150}
+            <Switch
+              label={t("filters.noFlags")}
+              checked={filters.noFlags}
+              onChange={(e) => onChange({ ...filters, noFlags: e.currentTarget.checked })}
             />
-          </>
-        )}
-        <Select
-          label={t("transactions.status")}
-          data={STATUSES.map((s) => ({ value: String(s), label: t(`status.${s}`) }))}
-          value={filters.status === null ? null : String(filters.status)}
-          onChange={(v) => onChange({ ...filters, status: v === null ? null : Number(v) })}
-          clearable
-          w={130}
-        />
-        <Select
-          label={t("transactions.payee")}
-          data={payees.map((p) => ({ value: String(p.id), label: p.name }))}
-          value={filters.payeeId === null ? null : String(filters.payeeId)}
-          onChange={(v) => onChange({ ...filters, payeeId: v === null ? null : Number(v) })}
-          clearable
-          searchable
-          w={160}
-        />
-        <Select
-          label={t("transactions.category")}
-          data={categoryOptions}
-          value={filters.categoryId === null ? null : String(filters.categoryId)}
-          onChange={(v) => onChange({ ...filters, categoryId: v === null ? null : Number(v) })}
-          clearable
-          searchable
-          w={170}
-        />
-        <MultiSelect
-          label={t("transactions.tags")}
-          data={tags}
-          value={filters.tags}
-          onChange={(v) => onChange({ ...filters, tags: v })}
-          clearable
-          searchable
-          w={170}
-        />
-        <Select
-          label={t("filters.transfers")}
-          data={[
-            { value: "all", label: t("filters.transfersAll") },
-            { value: "only", label: t("filters.transfersOnly") },
-            { value: "none", label: t("filters.transfersNone") },
-          ]}
-          value={filters.transfers}
-          onChange={(v) => onChange({ ...filters, transfers: (v as TransferFilter) ?? "all" })}
-          allowDeselect={false}
-          w={170}
-        />
-        <TextInput
-          label={t("filters.amountMin")}
-          value={amin}
-          onChange={(e) => setAmin(e.currentTarget.value)}
-          onBlur={() => onChange({ ...filters, amountMin: amountToMinor(amin) })}
-          w={110}
-        />
-        <TextInput
-          label={t("filters.amountMax")}
-          value={amax}
-          onChange={(e) => setAmax(e.currentTarget.value)}
-          onBlur={() => onChange({ ...filters, amountMax: amountToMinor(amax) })}
-          w={110}
-        />
-        <TextInput
-          label={t("filters.search")}
-          value={text}
-          onChange={(e) => setText(e.currentTarget.value)}
-          onBlur={() => onChange({ ...filters, text })}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") onChange({ ...filters, text });
-          }}
-          w={180}
-        />
-        <Switch
-          label={t("filters.hideFuture")}
-          checked={filters.hideFuture}
-          onChange={(e) => onChange({ ...filters, hideFuture: e.currentTarget.checked })}
-          mb={8}
-        />
-        <Switch
-          label={t("filters.noFlags")}
-          checked={filters.noFlags}
-          onChange={(e) => onChange({ ...filters, noFlags: e.currentTarget.checked })}
-          mb={8}
-        />
-        <Switch
-          label={t("filters.uncategorised")}
-          checked={filters.uncategorised}
-          onChange={(e) => onChange({ ...filters, uncategorised: e.currentTarget.checked })}
-          mb={8}
-        />
-        {isActive(filters) && (
-          <Button
-            variant="subtle"
-            color="gray"
-            leftSection={<IconFilterOff size={16} />}
-            onClick={() => onChange(emptyFilters)}
-          >
-            {t("filters.clear")}
-          </Button>
-        )}
-      </Group>
+            <Switch
+              label={t("filters.uncategorised")}
+              checked={filters.uncategorised}
+              onChange={(e) => onChange({ ...filters, uncategorised: e.currentTarget.checked })}
+            />
+          </Group>
+          {isActive(filters) && (
+            <Button
+              variant="light"
+              color="gray"
+              size="xs"
+              leftSection={<IconFilterOff size={16} />}
+              onClick={() => onChange(emptyFilters)}
+            >
+              {t("filters.clear")}
+            </Button>
+          )}
+        </Group>
+      </Stack>
     </Card>
   );
 }

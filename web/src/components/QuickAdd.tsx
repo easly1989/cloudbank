@@ -15,7 +15,7 @@ import {
 import { formatMinor } from "../money";
 import { STATUSES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
-import classes from "./QuickAdd.module.css";
+import classes from "../tagPills.module.css";
 
 // QuickAdd is a one-line transaction entry: pick a payee (its default category
 // and payment mode are applied automatically), type an amount, and add without

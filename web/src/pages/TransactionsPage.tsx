@@ -1,4 +1,5 @@
 import {
+  Badge,
   Button,
   Card,
   Group,
@@ -39,6 +40,8 @@ import {
 } from "../api/client";
 import { formatMinor, type MoneyFormat } from "../money";
 import { useAmountParser } from "../useAmountParser";
+import { useToday } from "../useToday";
+import { CollapsibleSection } from "../components/CollapsibleSection";
 import { QuickAdd } from "../components/QuickAdd";
 import { TransactionForm } from "../components/TransactionForm";
 import { TransferForm } from "../components/TransferForm";
@@ -46,7 +49,7 @@ import { PAYMENT_MODES, STATUSES } from "../transactionEnums";
 import { useWallet } from "../wallet/WalletProvider";
 import { RegisterFilters } from "./RegisterFilters";
 import { RegisterTable } from "./RegisterTable";
-import { applyFilters, filtersToParams, parseFilters } from "./registerFilters";
+import { activeFilterCount, applyFilters, filtersToParams, parseFilters } from "./registerFilters";
 
 export function TransactionsPage() {
   const { t } = useTranslation();
@@ -95,9 +98,16 @@ export function TransactionsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = useMemo(() => parseFilters(searchParams), [searchParams]);
   const setFilters = (f: typeof filters) => setSearchParams(filtersToParams(f), { replace: true });
+  // `today` (reactive) is only a recompute trigger here: including it in the deps
+  // makes `hideFuture` re-evaluate when the day rolls over while the page stays
+  // open (even with no other change), at which point applyFilters' own `new
+  // Date()` default is fresh. Passing a synthetic date instead would shift the
+  // preset bounds by a day in western timezones, so we don't.
+  const today = useToday();
   const filteredRows = useMemo(
     () => applyFilters(rows, filters, categoriesQuery.data ?? []),
-    [rows, filters, categoriesQuery.data],
+    // `today` is an intentional recompute trigger, not read inside the callback.
+    [rows, filters, categoriesQuery.data, today], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const invalidate = () => {
@@ -278,23 +288,35 @@ export function TransactionsPage() {
       {accounts.length === 0 && <Text c="dimmed">{t("transactions.noAccounts")}</Text>}
 
       {account && registerQuery.data && (
-        <SimpleGrid cols={{ base: 1, sm: 3 }}>
-          <BalanceCard
-            label={t("register.bank")}
-            value={registerQuery.data.summary.bank}
-            fmt={fmt}
-          />
-          <BalanceCard
-            label={t("register.today")}
-            value={registerQuery.data.summary.today}
-            fmt={fmt}
-          />
-          <BalanceCard
-            label={t("register.future")}
-            value={registerQuery.data.summary.future}
-            fmt={fmt}
-          />
-        </SimpleGrid>
+        <CollapsibleSection
+          title={t("register.balances")}
+          storageKey="cb.reg.balances"
+          summary={
+            <Text size="xs" truncate>
+              {t("register.bank")} {formatMinor(registerQuery.data.summary.bank, fmt)} ·{" "}
+              {t("register.today")} {formatMinor(registerQuery.data.summary.today, fmt)} ·{" "}
+              {t("register.future")} {formatMinor(registerQuery.data.summary.future, fmt)}
+            </Text>
+          }
+        >
+          <SimpleGrid cols={{ base: 1, sm: 3 }}>
+            <BalanceCard
+              label={t("register.bank")}
+              value={registerQuery.data.summary.bank}
+              fmt={fmt}
+            />
+            <BalanceCard
+              label={t("register.today")}
+              value={registerQuery.data.summary.today}
+              fmt={fmt}
+            />
+            <BalanceCard
+              label={t("register.future")}
+              value={registerQuery.data.summary.future}
+              fmt={fmt}
+            />
+          </SimpleGrid>
+        </CollapsibleSection>
       )}
 
       {account && reconcile && (
@@ -316,16 +338,38 @@ export function TransactionsPage() {
       )}
 
       {account && !reconcile && (
-        <RegisterFilters
-          filters={filters}
-          onChange={setFilters}
-          payees={payeesQuery.data ?? []}
-          categories={categoriesQuery.data ?? []}
-          tags={tagsQuery.data ?? []}
-          fmt={fmt}
-        />
+        <CollapsibleSection
+          title={t("filters.section")}
+          storageKey="cb.reg.tools"
+          summary={
+            activeFilterCount(filters) > 0 ? (
+              <Badge size="sm" variant="light" aria-label={t("filters.activeCount")}>
+                {activeFilterCount(filters)}
+              </Badge>
+            ) : undefined
+          }
+        >
+          <Stack gap="xs">
+            <RegisterFilters
+              filters={filters}
+              onChange={setFilters}
+              payees={payeesQuery.data ?? []}
+              categories={categoriesQuery.data ?? []}
+              tags={tagsQuery.data ?? []}
+              fmt={fmt}
+            />
+            <QuickAdd
+              walletId={walletId}
+              account={account}
+              onAdded={invalidate}
+              onError={onError}
+            />
+          </Stack>
+        </CollapsibleSection>
       )}
 
+      {/* Selection actions stay outside the collapsible so they remain reachable
+          even when filters/entry are folded away. */}
       {account && !reconcile && selected.size > 0 && (
         <BulkBar
           count={selected.size}
@@ -339,10 +383,6 @@ export function TransactionsPage() {
           onApply={(field, value) => bulk.mutate({ ids: [...selected], field, value })}
           onClear={clearSelection}
         />
-      )}
-
-      {account && !reconcile && (
-        <QuickAdd walletId={walletId} account={account} onAdded={invalidate} onError={onError} />
       )}
 
       {account && filteredRows.length === 0 && <Text c="dimmed">{t("transactions.empty")}</Text>}
