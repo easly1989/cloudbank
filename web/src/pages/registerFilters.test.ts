@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import type { Category, RegisterRow } from "../api/client";
 import {
+  activeFilterCount,
   applyFilters,
   dateBounds,
   emptyFilters,
   filtersToParams,
+  isActive,
   parseFilters,
   type Filters,
 } from "./registerFilters";
@@ -150,5 +152,30 @@ describe("URL round-trip", () => {
 
   it("omits default keys", () => {
     expect(filtersToParams(emptyFilters)).toEqual({});
+  });
+});
+
+describe("activeFilterCount / isActive", () => {
+  it("is zero (inactive) for empty filters", () => {
+    expect(activeFilterCount(emptyFilters)).toBe(0);
+    expect(isActive(emptyFilters)).toBe(false);
+  });
+
+  it("counts each set facet once", () => {
+    const f: Filters = {
+      ...emptyFilters,
+      preset: "thisMonth",
+      status: 1,
+      tags: ["a", "b"], // still one facet
+      hideFuture: true,
+      uncategorised: true,
+    };
+    expect(activeFilterCount(f)).toBe(5);
+    expect(isActive(f)).toBe(true);
+  });
+
+  it("ignores whitespace-only search text", () => {
+    expect(activeFilterCount({ ...emptyFilters, text: "   " })).toBe(0);
+    expect(activeFilterCount({ ...emptyFilters, text: "rent" })).toBe(1);
   });
 });

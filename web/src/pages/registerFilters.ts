@@ -77,21 +77,28 @@ export function categoryWithChildren(categoryId: number, categories: Category[])
   return ids;
 }
 
+// activeFilterCount counts how many distinct filter facets are set (each of the
+// switches/inputs contributes at most one). Used for the collapsed "N active"
+// badge and, via isActive, to gate the Clear button.
+export function activeFilterCount(f: Filters): number {
+  let n = 0;
+  if (f.preset !== "all") n++;
+  if (f.status !== null) n++;
+  if (f.payeeId !== null) n++;
+  if (f.categoryId !== null) n++;
+  if (f.tags.length > 0) n++;
+  if (f.amountMin !== null) n++;
+  if (f.amountMax !== null) n++;
+  if (f.text.trim() !== "") n++;
+  if (f.hideFuture) n++;
+  if (f.transfers !== "all") n++;
+  if (f.noFlags) n++;
+  if (f.uncategorised) n++;
+  return n;
+}
+
 export function isActive(f: Filters): boolean {
-  return (
-    f.preset !== "all" ||
-    f.status !== null ||
-    f.payeeId !== null ||
-    f.categoryId !== null ||
-    f.tags.length > 0 ||
-    f.amountMin !== null ||
-    f.amountMax !== null ||
-    f.text.trim() !== "" ||
-    f.hideFuture ||
-    f.transfers !== "all" ||
-    f.noFlags ||
-    f.uncategorised
-  );
+  return activeFilterCount(f) > 0;
 }
 
 export function applyFilters(

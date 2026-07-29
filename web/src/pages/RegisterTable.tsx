@@ -26,6 +26,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useDateFormat } from "../dates";
 import { formatMinor, type MoneyFormat } from "../money";
 import { stopRowEdit } from "../rowEdit";
+import { useToday } from "../useToday";
 
 const ROW_HEIGHT = 40;
 // Per-column grid widths (fixed so virtualized rows stay aligned). Status is
@@ -119,7 +120,9 @@ export function RegisterTable({
   // Newest-first display; each row keeps its chronological running balance.
   const display = useMemo(() => [...rows].reverse(), [rows]);
   // Today's civil date (YYYY-MM-DD) for distinguishing future (scheduled) rows.
-  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  // Reactive so a page left open past midnight stops mislabelling the new day's
+  // rows as future without a manual reload.
+  const todayStr = useToday();
   const accountName = useCallback(
     (id?: number | null) => accounts.find((a) => a.id === id)?.name,
     [accounts],
