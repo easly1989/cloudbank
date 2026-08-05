@@ -327,9 +327,12 @@
     "complexNote": "This template has splits or is a transfer; edit its details from a transaction. You can still rename it here."
   },
   "register": {
-    "bank": "Bank",
+    "bank": "Reconciled",
     "today": "Today",
     "future": "Future",
+    "bankHelp": "In the bank today — reconciled transactions only",
+    "todayHelp": "In the bank today — including transactions not yet reconciled",
+    "futureHelp": "Projected balance — including future and not-yet-reconciled transactions",
     "balance": "Balance",
     "balances": "Balances",
     "ledger": "Account ledger",

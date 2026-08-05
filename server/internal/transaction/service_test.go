@@ -228,6 +228,54 @@ func TestRegisterSummaryAndInitialBalance(t *testing.T) {
 	_ = past
 }
 
+// Bank counts only reconciled rows dated on or before today: cleared-but-not-
+// reconciled rows and future-dated reconciled rows are excluded, so Bank stays
+// the confirmed subset of Today (Bank <= Today).
+func TestRegisterBankExcludesClearedAndFuture(t *testing.T) {
+	s, q, wid, _ := newTestService(t)
+	ctx := context.Background()
+	cur, err := q.InsertCurrency(ctx, db.InsertCurrencyParams{
+		WalletID: wid, IsoCode: "USD", Name: "USD", Symbol: "$",
+		DecimalChar: ".", GroupChar: ",", FracDigits: 2, IsBase: 0, Rate: 1,
+	})
+	if err != nil {
+		t.Fatalf("InsertCurrency: %v", err)
+	}
+	acc, err := q.InsertAccount(ctx, db.InsertAccountParams{
+		WalletID: wid, Name: "Checking2", Type: "checking", CurrencyID: cur.ID,
+		InitialBalance: 100000, Position: 2,
+	})
+	if err != nil {
+		t.Fatalf("InsertAccount: %v", err)
+	}
+	for _, in := range []Input{
+		{AccountID: acc.ID, Date: "2000-01-01", Amount: 5000, Status: StatusReconciled},
+		{AccountID: acc.ID, Date: "2000-02-01", Amount: -2000, Status: StatusCleared},
+		{AccountID: acc.ID, Date: "2099-12-31", Amount: 9000, Status: StatusReconciled},
+	} {
+		if _, err := s.Create(ctx, wid, in); err != nil {
+			t.Fatalf("Create(%s): %v", in.Date, err)
+		}
+	}
+
+	_, summary, err := s.Register(ctx, acc.ID)
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+	// Only the past reconciled row (+5000) counts toward Bank.
+	if summary.Bank != 105000 {
+		t.Fatalf("bank = %d, want 105000 (cleared and future-reconciled excluded)", summary.Bank)
+	}
+	// Today includes both past rows regardless of status (+5000 - 2000).
+	if summary.Today != 103000 {
+		t.Fatalf("today = %d, want 103000", summary.Today)
+	}
+	// Future includes every row (+5000 - 2000 + 9000).
+	if summary.Future != 112000 {
+		t.Fatalf("future = %d, want 112000", summary.Future)
+	}
+}
+
 func TestRegisterIncludesTags(t *testing.T) {
 	s, _, wid, acc := newTestService(t)
 	ctx := context.Background()

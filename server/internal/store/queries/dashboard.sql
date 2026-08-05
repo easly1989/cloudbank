@@ -1,12 +1,12 @@
 -- name: AccountBalanceDeltas :many
 -- Per-account transaction sums using the same definitions as the register
--- header: future = all, today = dated on/before today, bank = cleared(1) or
--- reconciled(2). The application adds each account's initial balance.
+-- header: future = all, today = dated on/before today, bank = reconciled(2)
+-- dated on/before today. The application adds each account's initial balance.
 SELECT
     account_id,
     CAST(SUM(amount) AS INTEGER) AS future_delta,
     CAST(SUM(CASE WHEN date <= sqlc.arg(today) THEN amount ELSE 0 END) AS INTEGER) AS today_delta,
-    CAST(SUM(CASE WHEN status IN (1, 2) THEN amount ELSE 0 END) AS INTEGER) AS bank_delta
+    CAST(SUM(CASE WHEN status = 2 AND date <= sqlc.arg(today) THEN amount ELSE 0 END) AS INTEGER) AS bank_delta
 FROM transactions
 WHERE wallet_id = sqlc.arg(wallet_id)
 GROUP BY account_id;

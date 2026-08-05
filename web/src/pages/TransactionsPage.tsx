@@ -9,10 +9,17 @@ import {
   Text,
   TextInput,
   Title,
+  Tooltip,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconArrowsExchange, IconChecklist, IconFilterOff, IconPlus } from "@tabler/icons-react";
+import {
+  IconArrowsExchange,
+  IconChecklist,
+  IconFilterOff,
+  IconInfoCircle,
+  IconPlus,
+} from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -343,16 +350,19 @@ export function TransactionsPage() {
             <SimpleGrid cols={{ base: 1, sm: 3 }}>
               <BalanceCard
                 label={t("register.bank")}
+                help={t("register.bankHelp")}
                 value={registerQuery.data.summary.bank}
                 fmt={fmt}
               />
               <BalanceCard
                 label={t("register.today")}
+                help={t("register.todayHelp")}
                 value={registerQuery.data.summary.today}
                 fmt={fmt}
               />
               <BalanceCard
                 label={t("register.future")}
+                help={t("register.futureHelp")}
                 value={registerQuery.data.summary.future}
                 fmt={fmt}
               />
@@ -485,12 +495,29 @@ export function TransactionsPage() {
   );
 }
 
-function BalanceCard({ label, value, fmt }: { label: string; value: number; fmt: MoneyFormat }) {
+function BalanceCard({
+  label,
+  value,
+  fmt,
+  help,
+}: {
+  label: string;
+  value: number;
+  fmt: MoneyFormat;
+  help?: string;
+}) {
   return (
     <Card withBorder padding="sm">
-      <Text size="xs" c="dimmed" tt="uppercase">
-        {label}
-      </Text>
+      <Group gap={4} wrap="nowrap">
+        <Text size="xs" c="dimmed" tt="uppercase">
+          {label}
+        </Text>
+        {help && (
+          <Tooltip label={help} multiline w={240} withArrow>
+            <IconInfoCircle size={13} style={{ opacity: 0.5, flexShrink: 0 }} />
+          </Tooltip>
+        )}
+      </Group>
       <Text size="lg" fw={600} c={value < 0 ? "red" : undefined}>
         {formatMinor(value, fmt)}
       </Text>
