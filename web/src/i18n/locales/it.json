@@ -327,9 +327,12 @@
     "complexNote": "Questo modello ha suddivisioni o è un trasferimento; modifica i dettagli da una transazione. Puoi comunque rinominarlo qui."
   },
   "register": {
-    "bank": "Banca",
+    "bank": "Riconciliato",
     "today": "Oggi",
     "future": "Futuro",
+    "bankHelp": "In banca oggi — solo transazioni riconciliate",
+    "todayHelp": "In banca oggi — incluse le transazioni non ancora riconciliate",
+    "futureHelp": "Saldo previsto — incluse le transazioni future e non ancora riconciliate",
     "balance": "Saldo",
     "balances": "Saldi",
     "ledger": "Registro del conto",

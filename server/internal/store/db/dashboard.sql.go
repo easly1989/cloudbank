@@ -15,7 +15,7 @@ SELECT
     account_id,
     CAST(SUM(amount) AS INTEGER) AS future_delta,
     CAST(SUM(CASE WHEN date <= ?1 THEN amount ELSE 0 END) AS INTEGER) AS today_delta,
-    CAST(SUM(CASE WHEN status IN (1, 2) THEN amount ELSE 0 END) AS INTEGER) AS bank_delta
+    CAST(SUM(CASE WHEN status = 2 AND date <= ?1 THEN amount ELSE 0 END) AS INTEGER) AS bank_delta
 FROM transactions
 WHERE wallet_id = ?2
 GROUP BY account_id
@@ -34,8 +34,8 @@ type AccountBalanceDeltasRow struct {
 }
 
 // Per-account transaction sums using the same definitions as the register
-// header: future = all, today = dated on/before today, bank = cleared(1) or
-// reconciled(2). The application adds each account's initial balance.
+// header: future = all, today = dated on/before today, bank = reconciled(2)
+// dated on/before today. The application adds each account's initial balance.
 func (q *Queries) AccountBalanceDeltas(ctx context.Context, arg AccountBalanceDeltasParams) ([]AccountBalanceDeltasRow, error) {
 	rows, err := q.db.QueryContext(ctx, accountBalanceDeltas, arg.Today, arg.WalletID)
 	if err != nil {
