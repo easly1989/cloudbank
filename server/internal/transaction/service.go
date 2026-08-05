@@ -424,7 +424,7 @@ type RegisterRow struct {
 
 // RegisterSummary holds an account's headline balances (HomeBank semantics).
 type RegisterSummary struct {
-	Bank   int64 `json:"bank"`   // initial + cleared/reconciled amounts
+	Bank   int64 `json:"bank"`   // initial + reconciled amounts dated on or before today
 	Today  int64 `json:"today"`  // initial + amounts dated on or before today
 	Future int64 `json:"future"` // initial + all amounts
 }
@@ -468,7 +468,10 @@ func (s *Service) Register(ctx context.Context, accountID int64) ([]RegisterRow,
 		if r.Date <= today {
 			sum.Today += r.Amount
 		}
-		if r.Status == StatusCleared || r.Status == StatusReconciled {
+		// Bank = what the bank has actually confirmed: reconciled rows only, up to
+		// today. This is the confirmed subset of Today (Bank <= Today); cleared but
+		// not-yet-reconciled rows count toward Today/Future, not Bank.
+		if r.Status == StatusReconciled && r.Date <= today {
 			sum.Bank += r.Amount
 		}
 		out = append(out, row)
