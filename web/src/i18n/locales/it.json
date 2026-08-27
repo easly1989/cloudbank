@@ -47,6 +47,7 @@
     "delete": "Elimina",
     "confirmDelete": "Eliminare questa transazione?",
     "split": "Suddivisa",
+    "type": "Tipo",
     "expense": "Uscita",
     "income": "Entrata",
     "paymentMode": "Pagamento",
@@ -63,6 +64,8 @@
     "saveAndKeep": "Salva e continua",
     "savedKeepOpen": "Transazione salvata — il modulo resta aperto per la prossima.",
     "savedNew": "Transazione salvata — il modulo è pronto per una nuova voce.",
+    "saved": "Transazione salvata",
+    "discardConfirm": "Le modifiche non salvate andranno perse. Scartarle?",
     "duplicateWarning": "Trovate {{count}} transazioni simili — possibile duplicato."
   },
   "transfers": {

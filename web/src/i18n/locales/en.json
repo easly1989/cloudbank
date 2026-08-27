@@ -47,6 +47,7 @@
     "delete": "Delete",
     "confirmDelete": "Delete this transaction?",
     "split": "Split",
+    "type": "Type",
     "expense": "Expense",
     "income": "Income",
     "paymentMode": "Payment",
@@ -63,6 +64,8 @@
     "saveAndKeep": "Save & keep",
     "savedKeepOpen": "Transaction saved — the form stays open for the next one.",
     "savedNew": "Transaction saved — the form is cleared for a new one.",
+    "saved": "Transaction saved",
+    "discardConfirm": "Unsaved changes will be lost. Discard them?",
     "duplicateWarning": "Found {{count}} similar transaction(s) — possible duplicate."
   },
   "transfers": {
