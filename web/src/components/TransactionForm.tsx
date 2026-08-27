@@ -3,6 +3,7 @@ import {
   Alert,
   Button,
   Group,
+  Input,
   Modal,
   NumberFormatter,
   SegmentedControl,
@@ -104,6 +105,25 @@ export function TransactionForm({
   const [savingMode, setSavingMode] = useState<SaveMode | null>(null);
   const amountRef = useRef<HTMLInputElement>(null);
   const [savedMsg, setSavedMsg] = useState("");
+  // Snapshot of the form as opened, to detect unsaved edits (dirty) for the
+  // discard guard on Cancel / ✕ / Escape.
+  const initialRef = useRef("");
+  const snapshot = () =>
+    JSON.stringify({
+      date,
+      direction,
+      amount,
+      paymentMode,
+      status,
+      payeeId,
+      categoryId,
+      vehicleId,
+      memo,
+      info,
+      tags,
+      isSplit,
+      splits,
+    });
   const pulse = () => {
     document
       .querySelector<HTMLElement>(".txnFormContent")
@@ -119,26 +139,43 @@ export function TransactionForm({
   useEffect(() => {
     if (!opened) return;
     const e = editing;
-    setDate(e?.date ?? new Date().toISOString().slice(0, 10));
-    setDirection((e?.amount ?? -1) < 0 ? "expense" : "income");
-    setAmount(e ? minorToInput(Math.abs(e.amount), fd, dc) : "");
-    // New transactions pre-fill the account's default payment mode; editing
-    // keeps the stored one. (A picked payee's own default still overrides.)
-    setPaymentMode(String(e?.paymentMode ?? account.defaultPaymentMode));
-    setStatus(String(e?.status ?? 0));
-    setPayeeId(e?.payeeId ? String(e.payeeId) : null);
-    setCategoryId(e?.categoryId ? String(e.categoryId) : null);
-    setVehicleId(e?.vehicleId ? String(e.vehicleId) : null);
-    setMemo(e?.memo ?? "");
-    setInfo(e?.info ?? "");
-    setTags(e?.tags ?? []);
-    setIsSplit(e?.isSplit ?? false);
-    setSplits(
-      e?.splits?.map((s) => ({
-        categoryId: s.categoryId ? String(s.categoryId) : null,
-        amount: minorToInput(Math.abs(s.amount), fd, dc),
-      })) ?? [],
-    );
+    // Build the initial values once, so we can both seed the fields and remember
+    // them for dirty detection. New transactions pre-fill the account's default
+    // payment mode; editing keeps the stored one (a picked payee's default still
+    // overrides).
+    const init = {
+      date: e?.date ?? new Date().toISOString().slice(0, 10),
+      direction: ((e?.amount ?? -1) < 0 ? "expense" : "income") as "expense" | "income",
+      amount: e ? minorToInput(Math.abs(e.amount), fd, dc) : "",
+      paymentMode: String(e?.paymentMode ?? account.defaultPaymentMode),
+      status: String(e?.status ?? 0),
+      payeeId: e?.payeeId ? String(e.payeeId) : null,
+      categoryId: e?.categoryId ? String(e.categoryId) : null,
+      vehicleId: e?.vehicleId ? String(e.vehicleId) : null,
+      memo: e?.memo ?? "",
+      info: e?.info ?? "",
+      tags: e?.tags ?? [],
+      isSplit: e?.isSplit ?? false,
+      splits:
+        e?.splits?.map((s) => ({
+          categoryId: s.categoryId ? String(s.categoryId) : null,
+          amount: minorToInput(Math.abs(s.amount), fd, dc),
+        })) ?? [],
+    };
+    setDate(init.date);
+    setDirection(init.direction);
+    setAmount(init.amount);
+    setPaymentMode(init.paymentMode);
+    setStatus(init.status);
+    setPayeeId(init.payeeId);
+    setCategoryId(init.categoryId);
+    setVehicleId(init.vehicleId);
+    setMemo(init.memo);
+    setInfo(init.info);
+    setTags(init.tags);
+    setIsSplit(init.isSplit);
+    setSplits(init.splits);
+    initialRef.current = JSON.stringify(init);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened, editing?.id]);
 
@@ -191,9 +228,11 @@ export function TransactionForm({
         return;
       }
       // Keep the modal open for another entry: "new" clears the fields, "keep"
-      // leaves them for a similar entry. Flash the border, announce, refocus.
+      // leaves them for a similar entry. Flash the border, toast, announce, refocus
+      // — so the save clearly registered even though the modal stayed put.
       if (mode === "new") resetFields();
       pulse();
+      notifications.show({ color: "green", message: t("transactions.saved"), autoClose: 1400 });
       setSavedMsg(t(mode === "new" ? "transactions.savedNew" : "transactions.savedKeepOpen"));
       amountRef.current?.focus();
       amountRef.current?.select();
@@ -205,21 +244,38 @@ export function TransactionForm({
       }),
   });
 
-  // Reset the form to the blank new-transaction defaults (used by "Save").
+  // Reset the form to the blank new-transaction defaults (used by "Save"), and
+  // rebase the dirty snapshot so the just-cleared form isn't flagged as edited.
   const resetFields = () => {
-    setDate(new Date().toISOString().slice(0, 10));
-    setDirection("expense");
-    setAmount("");
-    setPaymentMode(String(account.defaultPaymentMode));
-    setStatus("0");
-    setPayeeId(null);
-    setCategoryId(null);
-    setVehicleId(null);
-    setMemo("");
-    setInfo("");
-    setTags([]);
-    setIsSplit(false);
-    setSplits([]);
+    const init = {
+      date: new Date().toISOString().slice(0, 10),
+      direction: "expense" as "expense" | "income",
+      amount: "",
+      paymentMode: String(account.defaultPaymentMode),
+      status: "0",
+      payeeId: null as string | null,
+      categoryId: null as string | null,
+      vehicleId: null as string | null,
+      memo: "",
+      info: "",
+      tags: [] as string[],
+      isSplit: false,
+      splits: [] as { categoryId: string | null; amount: string }[],
+    };
+    setDate(init.date);
+    setDirection(init.direction);
+    setAmount(init.amount);
+    setPaymentMode(init.paymentMode);
+    setStatus(init.status);
+    setPayeeId(init.payeeId);
+    setCategoryId(init.categoryId);
+    setVehicleId(init.vehicleId);
+    setMemo(init.memo);
+    setInfo(init.info);
+    setTags(init.tags);
+    setIsSplit(init.isSplit);
+    setSplits(init.splits);
+    initialRef.current = JSON.stringify(init);
   };
 
   // Save, resolving the modal per mode (close / keep fields / clear fields).
@@ -227,6 +283,16 @@ export function TransactionForm({
     modeRef.current = mode;
     setSavingMode(mode);
     save.mutate();
+  };
+
+  // True once the form differs from how it opened — drives the red Cancel and
+  // the discard confirmation.
+  const dirty = opened && snapshot() !== initialRef.current;
+
+  // Close, warning first if there are unsaved edits (Cancel / ✕ / Escape).
+  const requestClose = () => {
+    if (dirty && !window.confirm(t("transactions.discardConfirm"))) return;
+    onClose();
   };
 
   // Apply a template into the form (user reviews, then saves).
@@ -322,42 +388,65 @@ export function TransactionForm({
   return (
     <Modal
       opened={opened}
-      onClose={onClose}
+      onClose={requestClose}
       size="lg"
-      classNames={{ content: "txnFormContent" }}
+      classNames={{ content: "txnFormContent", inner: "txnFormInner" }}
       title={editing ? t("transactions.editTitle") : t("transactions.addTitle")}
     >
       <Stack>
-        {!editing && templates.length > 0 && (
-          <Select
-            label={t("templates.apply")}
-            placeholder={t("templates.applyPlaceholder")}
-            data={templates.map((tpl) => ({ value: String(tpl.id), label: tpl.name }))}
-            onChange={applyTemplate}
-            searchable
-            clearable
-          />
+        {/* Template picker + "Save as template" share the top row. */}
+        {!editing && (
+          <Group align="flex-end" gap="xs" wrap="nowrap">
+            {templates.length > 0 && (
+              <Select
+                label={t("templates.apply")}
+                placeholder={t("templates.applyPlaceholder")}
+                data={templates.map((tpl) => ({ value: String(tpl.id), label: tpl.name }))}
+                onChange={applyTemplate}
+                searchable
+                clearable
+                style={{ flex: 1, minWidth: 0 }}
+              />
+            )}
+            <Button
+              variant="subtle"
+              color="gray"
+              leftSection={<IconDeviceFloppy size={16} />}
+              loading={saveTemplate.isPending}
+              disabled={totalMinor === 0 && !isSplit}
+              ml={templates.length > 0 ? undefined : "auto"}
+              onClick={() => {
+                const name = window.prompt(t("templates.namePrompt"));
+                if (name && name.trim()) saveTemplate.mutate(name.trim());
+              }}
+            >
+              {t("templates.saveAs")}
+            </Button>
+          </Group>
         )}
         {duplicates.length > 0 && (
           <Alert color="yellow">
             {t("transactions.duplicateWarning", { count: duplicates.length })}
           </Alert>
         )}
-        <Group grow>
+        <Group grow align="flex-start">
           <TextInput
             type="date"
             label={t("transactions.date")}
             value={date}
             onChange={(e) => setDate(e.currentTarget.value)}
           />
-          <SegmentedControl
-            value={direction}
-            onChange={(v) => setDirection(v as "expense" | "income")}
-            data={[
-              { value: "expense", label: t("transactions.expense") },
-              { value: "income", label: t("transactions.income") },
-            ]}
-          />
+          <Input.Wrapper label={t("transactions.type")}>
+            <SegmentedControl
+              fullWidth
+              value={direction}
+              onChange={(v) => setDirection(v as "expense" | "income")}
+              data={[
+                { value: "expense", label: t("transactions.expense") },
+                { value: "income", label: t("transactions.income") },
+              ]}
+            />
+          </Input.Wrapper>
         </Group>
         <Group grow>
           <TextInput
@@ -389,14 +478,22 @@ export function TransactionForm({
           onChange={(e) => setIsSplit(e.currentTarget.checked)}
         />
         {!isSplit ? (
-          <Select
-            label={t("transactions.category")}
-            data={categoryOptions}
-            value={categoryId}
-            onChange={setCategoryId}
-            clearable
-            searchable
-          />
+          <Group grow align="flex-start">
+            <Select
+              label={t("transactions.category")}
+              data={categoryOptions}
+              value={categoryId}
+              onChange={setCategoryId}
+              clearable
+              searchable
+            />
+            <TagsInput
+              label={t("transactions.tags")}
+              data={tagsQuery.data ?? []}
+              value={tags}
+              onChange={setTags}
+            />
+          </Group>
         ) : (
           <Stack gap="xs">
             {splits.map((s, i) => (
@@ -446,14 +543,14 @@ export function TransactionForm({
                 </Text>
               )}
             </Group>
+            <TagsInput
+              label={t("transactions.tags")}
+              data={tagsQuery.data ?? []}
+              value={tags}
+              onChange={setTags}
+            />
           </Stack>
         )}
-        <TagsInput
-          label={t("transactions.tags")}
-          data={tagsQuery.data ?? []}
-          value={tags}
-          onChange={setTags}
-        />
         {vehicleOptions.length > 0 && (
           <Select
             label={t("transactions.vehicle")}
@@ -485,52 +582,41 @@ export function TransactionForm({
           onBlur={() => void runSuggest()}
         />
         {editing && <AttachmentsField walletId={walletId} transactionId={editing.id} />}
-        <Group justify="space-between">
+        <Group justify="flex-end" gap="xs">
           <Button
-            variant="subtle"
-            color="gray"
-            leftSection={<IconDeviceFloppy size={16} />}
-            loading={saveTemplate.isPending}
-            disabled={totalMinor === 0 && !isSplit}
-            onClick={() => {
-              const name = window.prompt(t("templates.namePrompt"));
-              if (name && name.trim()) saveTemplate.mutate(name.trim());
-            }}
+            variant={dirty ? "light" : "default"}
+            color={dirty ? "red" : "gray"}
+            onClick={requestClose}
           >
-            {t("templates.saveAs")}
+            {t("transactions.cancel")}
           </Button>
-          <Group justify="flex-end" gap="xs">
-            <Button variant="default" onClick={onClose}>
-              {t("transactions.cancel")}
-            </Button>
-            {!editing && (
-              <>
-                <Button
-                  variant="light"
-                  onClick={() => submit("new")}
-                  loading={save.isPending && savingMode === "new"}
-                  disabled={!date || totalMinor === 0 || splitMismatch || save.isPending}
-                >
-                  {t("transactions.save")}
-                </Button>
-                <Button
-                  variant="light"
-                  onClick={() => submit("keep")}
-                  loading={save.isPending && savingMode === "keep"}
-                  disabled={!date || totalMinor === 0 || splitMismatch || save.isPending}
-                >
-                  {t("transactions.saveAndKeep")}
-                </Button>
-              </>
-            )}
-            <Button
-              onClick={() => submit("close")}
-              loading={save.isPending && savingMode === "close"}
-              disabled={!date || totalMinor === 0 || splitMismatch || save.isPending}
-            >
-              {editing ? t("transactions.save") : t("transactions.saveClose")}
-            </Button>
-          </Group>
+          {!editing && (
+            <>
+              <Button
+                variant="light"
+                onClick={() => submit("new")}
+                loading={save.isPending && savingMode === "new"}
+                disabled={!date || totalMinor === 0 || splitMismatch || save.isPending}
+              >
+                {t("transactions.save")}
+              </Button>
+              <Button
+                variant="light"
+                onClick={() => submit("keep")}
+                loading={save.isPending && savingMode === "keep"}
+                disabled={!date || totalMinor === 0 || splitMismatch || save.isPending}
+              >
+                {t("transactions.saveAndKeep")}
+              </Button>
+            </>
+          )}
+          <Button
+            onClick={() => submit("close")}
+            loading={save.isPending && savingMode === "close"}
+            disabled={!date || totalMinor === 0 || splitMismatch || save.isPending}
+          >
+            {editing ? t("transactions.save") : t("transactions.saveClose")}
+          </Button>
         </Group>
         <Text
           role="status"
