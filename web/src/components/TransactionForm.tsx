@@ -41,6 +41,10 @@ import { PAYMENT_MODES, STATUSES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import { AttachmentsField } from "./AttachmentsField";
 
+// How a save resolves: close the modal, keep the fields for a similar entry, or
+// clear the fields for a fresh one. Editing always uses "close".
+type SaveMode = "close" | "keep" | "new";
+
 export function TransactionForm({
   opened,
   onClose,
@@ -93,11 +97,11 @@ export function TransactionForm({
   const [isSplit, setIsSplit] = useState(false);
   const [splits, setSplits] = useState<{ categoryId: string | null; amount: string }[]>([]);
 
-  // "Save & keep" support: keepOpenRef carries the clicked button's intent into
-  // the (async) mutation success; savingKeep drives which button shows loading;
+  // Save-mode support: modeRef carries the clicked button's intent into the
+  // (async) mutation success; savingMode drives which button shows loading;
   // amountRef refocuses the amount for the next entry; savedMsg is announced.
-  const keepOpenRef = useRef(false);
-  const [savingKeep, setSavingKeep] = useState(false);
+  const modeRef = useRef<SaveMode>("close");
+  const [savingMode, setSavingMode] = useState<SaveMode | null>(null);
   const amountRef = useRef<HTMLInputElement>(null);
   const [savedMsg, setSavedMsg] = useState("");
   const pulse = () => {
@@ -181,16 +185,18 @@ export function TransactionForm({
     },
     onSuccess: () => {
       onSaved();
-      if (keepOpenRef.current) {
-        // Keep the modal open with the fields intact for the next similar entry;
-        // flash the border, announce it, and select the amount to overtype.
-        pulse();
-        setSavedMsg(t("transactions.savedKeepOpen"));
-        amountRef.current?.focus();
-        amountRef.current?.select();
-      } else {
+      const mode = modeRef.current;
+      if (mode === "close") {
         onClose();
+        return;
       }
+      // Keep the modal open for another entry: "new" clears the fields, "keep"
+      // leaves them for a similar entry. Flash the border, announce, refocus.
+      if (mode === "new") resetFields();
+      pulse();
+      setSavedMsg(t(mode === "new" ? "transactions.savedNew" : "transactions.savedKeepOpen"));
+      amountRef.current?.focus();
+      amountRef.current?.select();
     },
     onError: (err: unknown) =>
       notifications.show({
@@ -199,10 +205,27 @@ export function TransactionForm({
       }),
   });
 
-  // Save, optionally keeping the modal open for the next entry.
-  const submit = (keep: boolean) => {
-    keepOpenRef.current = keep;
-    setSavingKeep(keep);
+  // Reset the form to the blank new-transaction defaults (used by "Save").
+  const resetFields = () => {
+    setDate(new Date().toISOString().slice(0, 10));
+    setDirection("expense");
+    setAmount("");
+    setPaymentMode(String(account.defaultPaymentMode));
+    setStatus("0");
+    setPayeeId(null);
+    setCategoryId(null);
+    setVehicleId(null);
+    setMemo("");
+    setInfo("");
+    setTags([]);
+    setIsSplit(false);
+    setSplits([]);
+  };
+
+  // Save, resolving the modal per mode (close / keep fields / clear fields).
+  const submit = (mode: SaveMode) => {
+    modeRef.current = mode;
+    setSavingMode(mode);
     save.mutate();
   };
 
@@ -476,26 +499,36 @@ export function TransactionForm({
           >
             {t("templates.saveAs")}
           </Button>
-          <Group justify="flex-end">
+          <Group justify="flex-end" gap="xs">
             <Button variant="default" onClick={onClose}>
               {t("transactions.cancel")}
             </Button>
             {!editing && (
-              <Button
-                variant="light"
-                onClick={() => submit(true)}
-                loading={save.isPending && savingKeep}
-                disabled={!date || totalMinor === 0 || splitMismatch || save.isPending}
-              >
-                {t("transactions.saveAndKeep")}
-              </Button>
+              <>
+                <Button
+                  variant="light"
+                  onClick={() => submit("new")}
+                  loading={save.isPending && savingMode === "new"}
+                  disabled={!date || totalMinor === 0 || splitMismatch || save.isPending}
+                >
+                  {t("transactions.save")}
+                </Button>
+                <Button
+                  variant="light"
+                  onClick={() => submit("keep")}
+                  loading={save.isPending && savingMode === "keep"}
+                  disabled={!date || totalMinor === 0 || splitMismatch || save.isPending}
+                >
+                  {t("transactions.saveAndKeep")}
+                </Button>
+              </>
             )}
             <Button
-              onClick={() => submit(false)}
-              loading={save.isPending && !savingKeep}
+              onClick={() => submit("close")}
+              loading={save.isPending && savingMode === "close"}
               disabled={!date || totalMinor === 0 || splitMismatch || save.isPending}
             >
-              {t("transactions.save")}
+              {editing ? t("transactions.save") : t("transactions.saveClose")}
             </Button>
           </Group>
         </Group>
