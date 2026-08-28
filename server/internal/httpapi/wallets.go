@@ -17,6 +17,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
+	"github.com/easly1989/cloudbank/server/internal/goal"
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
 	"github.com/easly1989/cloudbank/server/internal/payee"
@@ -43,6 +44,7 @@ type walletHandlers struct {
 	transactions *transaction.Service
 	tags         *tag.Service
 	vehicles     *vehicle.Service
+	goals        *goal.Service
 	transfers    *transfer.Service
 	dashboard    *dashboard.Service
 	templates    *template.Service
@@ -103,6 +105,9 @@ func (h *walletHandlers) routes(r chi.Router) {
 		}
 		if h.vehicles != nil {
 			(&vehicleHandlers{svc: h.vehicles}).walletRoutes(r)
+		}
+		if h.goals != nil {
+			(&goalHandlers{svc: h.goals}).walletRoutes(r)
 		}
 		if h.transfers != nil {
 			(&transferHandlers{svc: h.transfers}).walletRoutes(r)

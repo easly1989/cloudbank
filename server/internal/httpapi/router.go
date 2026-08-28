@@ -20,6 +20,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
+	"github.com/easly1989/cloudbank/server/internal/goal"
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
@@ -68,6 +69,8 @@ type Options struct {
 	Tags *tag.Service
 	// Vehicles, if non-nil, mounts the vehicle endpoints (requires Wallets).
 	Vehicles *vehicle.Service
+	// Goals, if non-nil, mounts the savings-goal endpoints (requires Wallets).
+	Goals *goal.Service
 	// Transfers, if non-nil, mounts the internal-transfer endpoints (requires Wallets).
 	Transfers *transfer.Service
 	// Dashboard, if non-nil, mounts the dashboard endpoint (requires Wallets).
@@ -164,7 +167,7 @@ func New(opts Options) http.Handler {
 					(&walletHandlers{
 						svc: opts.Wallets, currencies: opts.Currencies, accounts: opts.Accounts,
 						categories: opts.Categories, payees: opts.Payees, transactions: opts.Transactions,
-						tags: opts.Tags, vehicles: opts.Vehicles,
+						tags: opts.Tags, vehicles: opts.Vehicles, goals: opts.Goals,
 						transfers: opts.Transfers, dashboard: opts.Dashboard, templates: opts.Templates,
 						schedules: opts.Schedules, assignments: opts.Assignments, budgets: opts.Budgets,
 						reports: opts.Reports, csv: opts.CSV, rateProvider: opts.RateProvider,
