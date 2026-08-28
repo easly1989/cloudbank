@@ -1511,6 +1511,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/bills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** What's due: scheduled outflows classified as overdue, due, or recently paid */
+        get: operations["listBills"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/import/csv/preview": {
         parameters: {
             query?: never;
@@ -2266,6 +2285,49 @@ export interface components {
             from: string;
             to: string;
             upcoming: components["schemas"]["Schedule"][];
+        };
+        /** @description One occurrence of a scheduled outflow with its payment state. */
+        Bill: {
+            /** Format: int64 */
+            scheduleId: number;
+            /** Format: int64 */
+            templateId: number;
+            name: string;
+            /** Format: int64 */
+            accountId?: number | null;
+            accountName?: string;
+            /** @description occurrence date (YYYY-MM-DD); for a paid bill, its post date */
+            dueDate: string;
+            /**
+             * Format: int64
+             * @description signed minor units in the account's currency (negative outflow)
+             */
+            amount: number;
+            /**
+             * Format: int64
+             * @description amount converted to the wallet's base currency
+             */
+            baseAmount: number;
+            currency: components["schemas"]["CurrencyInfo"];
+            /** @enum {string} */
+            state: "overdue" | "due" | "paid";
+            isTransfer: boolean;
+            autoPost: boolean;
+        };
+        /** @description The Bills view: scheduled outflows classified over a date window. */
+        BillsSummary: {
+            from: string;
+            to: string;
+            baseCurrency?: components["schemas"]["CurrencyInfo"];
+            bills: components["schemas"]["Bill"][];
+            /**
+             * Format: int64
+             * @description base-currency amount still to pay (positive magnitude of all unpaid outflows)
+             */
+            totalDue: number;
+            overdue: number;
+            due: number;
+            paid: number;
         };
         Schedule: {
             /** Format: int64 */
@@ -5719,6 +5781,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listBills: {
+        parameters: {
+            query?: {
+                /** @description window start for recently-paid context (defaults to the current month's first day) */
+                from?: string;
+                /** @description horizon for upcoming bills (defaults to the end of next month) */
+                to?: string;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The bills summary. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillsSummary"];
+                };
+            };
             404: components["responses"]["NotFound"];
         };
     };

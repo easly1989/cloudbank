@@ -47,6 +47,7 @@ const BudgetPage = lazy(() =>
   import("./pages/BudgetPage").then((m) => ({ default: m.BudgetPage })),
 );
 const GoalsPage = lazy(() => import("./pages/GoalsPage").then((m) => ({ default: m.GoalsPage })));
+const BillsPage = lazy(() => import("./pages/BillsPage").then((m) => ({ default: m.BillsPage })));
 const ReportsPage = lazy(() =>
   import("./pages/ReportsPage").then((m) => ({ default: m.ReportsPage })),
 );
@@ -141,6 +142,7 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
         <Route path="assignments" element={<AssignmentsPage />} />
         <Route path="budget" element={<BudgetPage />} />
         <Route path="goals" element={<GoalsPage />} />
+        <Route path="bills" element={<BillsPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="wallet" element={<Navigate to="/settings?tab=wallet" replace />} />

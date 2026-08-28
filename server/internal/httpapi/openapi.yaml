@@ -1526,6 +1526,18 @@ paths:
         "200": { description: The dashboard., content: { application/json: { schema: { $ref: "#/components/schemas/Dashboard" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/bills:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listBills
+      summary: "What's due: scheduled outflows classified as overdue, due, or recently paid"
+      parameters:
+        - { name: from, in: query, required: false, schema: { type: string }, description: "window start for recently-paid context (defaults to the current month's first day)" }
+        - { name: to, in: query, required: false, schema: { type: string }, description: "horizon for upcoming bills (defaults to the end of next month)" }
+      responses:
+        "200": { description: The bills summary., content: { application/json: { schema: { $ref: "#/components/schemas/BillsSummary" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/import/csv/preview:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -2186,6 +2198,36 @@ components:
         to: { type: string }
         upcoming: { type: array, items: { $ref: "#/components/schemas/Schedule" } }
       required: [accounts, totals, topCategories, incomeExpense, from, to, upcoming]
+    Bill:
+      type: object
+      description: One occurrence of a scheduled outflow with its payment state.
+      properties:
+        scheduleId: { type: integer, format: int64 }
+        templateId: { type: integer, format: int64 }
+        name: { type: string }
+        accountId: { type: integer, format: int64, nullable: true }
+        accountName: { type: string }
+        dueDate: { type: string, description: "occurrence date (YYYY-MM-DD); for a paid bill, its post date" }
+        amount: { type: integer, format: int64, description: "signed minor units in the account's currency (negative outflow)" }
+        baseAmount: { type: integer, format: int64, description: "amount converted to the wallet's base currency" }
+        currency: { $ref: "#/components/schemas/CurrencyInfo" }
+        state: { type: string, enum: [overdue, due, paid] }
+        isTransfer: { type: boolean }
+        autoPost: { type: boolean }
+      required: [scheduleId, templateId, name, dueDate, amount, baseAmount, currency, state, isTransfer, autoPost]
+    BillsSummary:
+      type: object
+      description: "The Bills view: scheduled outflows classified over a date window."
+      properties:
+        from: { type: string }
+        to: { type: string }
+        baseCurrency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
+        bills: { type: array, items: { $ref: "#/components/schemas/Bill" } }
+        totalDue: { type: integer, format: int64, description: "base-currency amount still to pay (positive magnitude of all unpaid outflows)" }
+        overdue: { type: integer }
+        due: { type: integer }
+        paid: { type: integer }
+      required: [from, to, bills, totalDue, overdue, due, paid]
     Schedule:
       type: object
       properties:

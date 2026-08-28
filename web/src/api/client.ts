@@ -5,6 +5,7 @@ export * from "./auth";
 export * from "./structure";
 export * from "./ledger";
 export * from "./dashboard";
+export * from "./bills";
 export * from "./automation";
 export * from "./finance";
 export * from "./imports";
