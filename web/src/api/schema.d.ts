@@ -133,6 +133,41 @@ export interface paths {
         patch: operations["updateMe"];
         trace?: never;
     };
+    "/api/v1/auth/tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's personal API tokens (session only) */
+        get: operations["listApiTokens"];
+        put?: never;
+        /** Create a personal API token — the plaintext is returned once (session only) */
+        post: operations["createApiToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/tokens/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke one of the current user's API tokens (session only) */
+        delete: operations["revokeApiToken"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/backup": {
         parameters: {
             query?: never;
@@ -1802,6 +1837,37 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** @description A personal API token's metadata — never the token itself. */
+        ApiToken: {
+            /** @description opaque id (sha256 of the token); used to revoke */
+            id: string;
+            name: string;
+            /** @enum {string} */
+            scope: "read" | "write";
+            /** @description leading characters, so the token is recognizable */
+            prefix: string;
+            createdAt: string;
+            /** @description empty until first use */
+            lastUsedAt?: string;
+            /** @description empty = never expires */
+            expiresAt?: string;
+        };
+        ApiTokenInput: {
+            name: string;
+            /**
+             * @default read
+             * @enum {string}
+             */
+            scope: "read" | "write";
+            /** @description 0 / omit = never expires */
+            expiresInDays?: number;
+        };
+        /** @description The created token — plaintext is present exactly once. */
+        ApiTokenCreated: {
+            /** @description the plaintext token; shown once, never recoverable */
+            token: string;
+            info: components["schemas"]["ApiToken"];
+        };
         IntegrityIssue: {
             type: string;
             description: string;
@@ -3027,6 +3093,78 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    listApiTokens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tokens. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiToken"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createApiToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApiTokenInput"];
+            };
+        };
+        responses: {
+            /** @description The new token (plaintext returned once). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiTokenCreated"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    revokeApiToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revoked. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     hotBackup: {

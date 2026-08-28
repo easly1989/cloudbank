@@ -20,6 +20,37 @@ type ctxKey int
 
 const userCtxKey ctxKey = iota
 
+// viaTokenCtxKey marks a request authenticated by a personal API token (rather
+// than a session cookie). A distinct base keeps it clear of userCtxKey (0) and
+// walletCtxKey (1).
+const viaTokenCtxKey ctxKey = iota + 10
+
+// bearerToken extracts the token from an "Authorization: Bearer <token>" header,
+// or "" when absent.
+func bearerToken(r *http.Request) string {
+	const p = "Bearer "
+	h := r.Header.Get("Authorization")
+	if len(h) > len(p) && strings.EqualFold(h[:len(p)], p) {
+		return strings.TrimSpace(h[len(p):])
+	}
+	return ""
+}
+
+// isSafeMethod reports whether m only reads (so a read-scoped token may use it).
+func isSafeMethod(m string) bool {
+	switch m {
+	case http.MethodGet, http.MethodHead, http.MethodOptions:
+		return true
+	}
+	return false
+}
+
+// authViaToken reports whether the request was authenticated by an API token.
+func authViaToken(ctx context.Context) bool {
+	v, _ := ctx.Value(viaTokenCtxKey).(bool)
+	return v
+}
+
 // authHandlers groups the auth/setup/admin HTTP handlers and middleware.
 type authHandlers struct {
 	svc    *auth.Service
@@ -64,6 +95,7 @@ func (h *authHandlers) protectedRoutes(r chi.Router) {
 	r.Post("/auth/logout", h.logout)
 	r.Get("/auth/me", h.me)
 	r.Patch("/auth/me", h.updateMe)
+	h.tokenRoutes(r)
 
 	r.Group(func(r chi.Router) {
 		r.Use(h.requireAdmin)
@@ -260,9 +292,26 @@ func (h *authHandlers) resetPassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// requireAuth validates the session cookie and stashes the user in the context.
+// requireAuth authenticates the request by an "Authorization: Bearer" personal
+// API token if present, otherwise by the session cookie, and stashes the user in
+// the context. A read-scoped token may only make safe (GET/HEAD) requests.
 func (h *authHandlers) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if bearer := bearerToken(r); bearer != "" {
+			u, scope, err := h.svc.AuthenticateToken(r.Context(), bearer)
+			if err != nil {
+				writeError(w, http.StatusUnauthorized, "unauthorized", "authentication required")
+				return
+			}
+			if scope == auth.ScopeRead && !isSafeMethod(r.Method) {
+				writeError(w, http.StatusForbidden, "forbidden", "this API token is read-only")
+				return
+			}
+			ctx := context.WithValue(r.Context(), userCtxKey, u)
+			ctx = context.WithValue(ctx, viaTokenCtxKey, true)
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
 		c, err := r.Cookie(sessionCookie)
 		if err != nil {
 			writeError(w, http.StatusUnauthorized, "unauthorized", "authentication required")
@@ -327,7 +376,10 @@ func csrf(next http.Handler) http.Handler {
 		switch r.Method {
 		case http.MethodGet, http.MethodHead, http.MethodOptions:
 		default:
-			if r.Header.Get("X-Requested-With") == "" {
+			// A Bearer-authenticated request is inherently CSRF-safe: a custom
+			// Authorization header is never attached to cross-site form posts or
+			// navigations, so it needs no X-Requested-With.
+			if bearerToken(r) == "" && r.Header.Get("X-Requested-With") == "" {
 				writeError(w, http.StatusForbidden, "csrf", "missing X-Requested-With header")
 				return
 			}
