@@ -161,6 +161,12 @@ type Querier interface {
 	ReassignTransactionPayee(ctx context.Context, arg ReassignTransactionPayeeParams) error
 	RenameTag(ctx context.Context, arg RenameTagParams) error
 	ReparentChildren(ctx context.Context, arg ReparentChildrenParams) error
+	// Wallet-wide register search: case-insensitive substring match of @q against
+	// memo, info, payee name, category name and tag names (INSTR/LOWER, mirroring
+	// the client-side filter), with optional account / date / amount / status
+	// filters. Each row also carries the total match count (window) so the caller
+	// can paginate.
+	SearchTransactions(ctx context.Context, arg SearchTransactionsParams) ([]SearchTransactionsRow, error)
 	SetAssignmentPosition(ctx context.Context, arg SetAssignmentPositionParams) error
 	SetChildrenIncome(ctx context.Context, arg SetChildrenIncomeParams) error
 	SetCurrencyBase(ctx context.Context, id int64) error

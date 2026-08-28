@@ -34,6 +34,7 @@ import { useWallet } from "../wallet/WalletProvider";
 import { AppFooter } from "./AppFooter";
 import { ColorSchemeToggle } from "./ColorSchemeToggle";
 import { DonateButton } from "./DonateButton";
+import { GlobalSearch } from "./GlobalSearch";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Logo } from "./Logo";
 import { SidebarNav } from "./SidebarNav";
@@ -80,6 +81,7 @@ export function AppLayout() {
   const [opened, { toggle, close }] = useDisclosure();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { currentWallet } = useWallet();
   const qc = useQueryClient();
   const { setColorScheme } = useMantineColorScheme();
   const logout = useLogout();
@@ -147,6 +149,7 @@ export function AppLayout() {
               <WalletSwitcher />
             </Group>
             <Group wrap="nowrap" gap="xs">
+              {currentWallet && <GlobalSearch walletId={currentWallet.id} />}
               <DonateButton />
               {/* Language lives in Preferences too; hide the header picker on phones. */}
               <Box visibleFrom="sm">

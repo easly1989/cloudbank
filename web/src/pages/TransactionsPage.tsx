@@ -77,9 +77,15 @@ export function TransactionsPage() {
     enabled: walletId > 0,
   });
   const accounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data]);
-  const [accountId, setAccountId] = useState<string | null>(null);
+  // Preselect the account named in ?account= (e.g. a deep link from global
+  // search); otherwise fall back to the first account.
+  const [accountId, setAccountId] = useState<string | null>(() =>
+    new URLSearchParams(window.location.search).get("account"),
+  );
   useEffect(() => {
-    if (!accountId && accounts.length > 0) setAccountId(String(accounts[0].id));
+    if (accounts.length === 0) return;
+    const valid = accountId != null && accounts.some((a) => String(a.id) === accountId);
+    if (!valid) setAccountId(String(accounts[0].id));
   }, [accounts, accountId]);
   const account = accounts.find((a) => String(a.id) === accountId);
 

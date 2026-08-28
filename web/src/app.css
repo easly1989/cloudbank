@@ -13,3 +13,13 @@
 .txnFormContent::-webkit-scrollbar {
   display: none; /* Chrome / Safari / Edge */
 }
+
+/* Global-search result rows: a subtle hover highlight (the whole row is a
+   button). Uses Mantine's theme hover token so it works in light and dark. */
+.cb-search-hit {
+  display: block;
+  width: 100%;
+}
+.cb-search-hit:hover {
+  background: var(--mantine-color-default-hover);
+}

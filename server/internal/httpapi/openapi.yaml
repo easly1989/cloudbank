@@ -881,6 +881,25 @@ paths:
                 required: [rows, summary]
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/search:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: searchTransactions
+      summary: "Wallet-wide register search across memo / info / payee / category / tags"
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string }, description: "case-insensitive substring; blank returns no rows" }
+        - { name: account, in: query, required: false, schema: { type: integer, format: int64 }, description: "limit to one account (0 / omit = whole wallet)" }
+        - { name: from, in: query, required: false, schema: { type: string }, description: "inclusive lower date bound (YYYY-MM-DD)" }
+        - { name: to, in: query, required: false, schema: { type: string }, description: "inclusive upper date bound" }
+        - { name: status, in: query, required: false, schema: { type: integer }, description: "transaction status (0..2)" }
+        - { name: amountMin, in: query, required: false, schema: { type: integer, format: int64 }, description: "signed minor units" }
+        - { name: amountMax, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int64, default: 100 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int64, default: 0 } }
+      responses:
+        "200": { description: The matches., content: { application/json: { schema: { $ref: "#/components/schemas/TransactionSearch" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/transactions/duplicates:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -2095,6 +2114,21 @@ components:
           properties:
             runningBalance: { type: integer, format: int64, description: "initial balance + cumulative amount through this row (chronological)" }
           required: [runningBalance]
+    SearchRow:
+      allOf:
+        - $ref: "#/components/schemas/Transaction"
+        - type: object
+          properties:
+            accountName: { type: string, description: "name of the account this hit belongs to (results span accounts)" }
+          required: [accountName]
+    TransactionSearch:
+      type: object
+      properties:
+        rows: { type: array, items: { $ref: "#/components/schemas/SearchRow" } }
+        total: { type: integer, format: int64, description: "total matches across all pages" }
+        limit: { type: integer, format: int64 }
+        offset: { type: integer, format: int64 }
+      required: [rows, total, limit, offset]
     RegisterSummary:
       type: object
       properties:
