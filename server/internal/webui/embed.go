@@ -7,10 +7,17 @@ import (
 	"embed"
 	"io"
 	"io/fs"
+	"mime"
 	"net/http"
 	"path"
 	"strings"
 )
+
+func init() {
+	// Serve the PWA manifest with the correct type even on a minimal image that
+	// lacks /etc/mime.types (the http.FileServer relies on the MIME registry).
+	_ = mime.AddExtensionType(".webmanifest", "application/manifest+json")
+}
 
 // dist holds the production build of the web app. It is populated by the web
 // build (Vite outputs into this directory) before `go build` runs. When the
