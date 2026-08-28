@@ -25,6 +25,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/config"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
+	"github.com/easly1989/cloudbank/server/internal/goal"
 	"github.com/easly1989/cloudbank/server/internal/httpapi"
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/importio"
@@ -111,6 +112,7 @@ func run() error {
 	transactionSvc := transaction.NewServiceWithRead(st.Read(), st.Write())
 	tagSvc := tag.NewServiceWithRead(st.Read(), st.Write())
 	vehicleSvc := vehicle.NewServiceWithRead(st.Read(), st.Write())
+	goalSvc := goal.NewServiceWithRead(st.Read(), st.Write())
 	transferSvc := transfer.NewService(st.Write())
 	// The dashboard and report services are read-only (no writes), so they run on
 	// the multi-connection read pool instead of the single write connection —
@@ -145,6 +147,7 @@ func run() error {
 		Transactions:  transactionSvc,
 		Tags:          tagSvc,
 		Vehicles:      vehicleSvc,
+		Goals:         goalSvc,
 		Transfers:     transferSvc,
 		Dashboard:     dashboardSvc,
 		Templates:     templateSvc,

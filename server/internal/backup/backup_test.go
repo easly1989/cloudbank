@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/easly1989/cloudbank/server/internal/attachment"
+	"github.com/easly1989/cloudbank/server/internal/goal"
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
@@ -222,6 +223,93 @@ func TestBackupRestoreAttachments(t *testing.T) {
 	}
 	if !bytes.Equal(got, content) {
 		t.Fatalf("restored bytes differ: %q vs %q", got, content)
+	}
+}
+
+// TestBackupRestoreGoals verifies savings goals and their signed contributions
+// survive an export → JSON → restore cycle, with the optional linked account
+// remapped to the restored wallet.
+func TestBackupRestoreGoals(t *testing.T) {
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("store.Open: %v", err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	q := db.New(st.Write())
+	ctx := context.Background()
+	user, _ := q.CreateUser(ctx, db.CreateUserParams{Username: "u", PasswordHash: "x"})
+	w, _ := q.CreateWallet(ctx, db.CreateWalletParams{Title: "W"})
+	cur, _ := q.InsertCurrency(ctx, db.InsertCurrencyParams{
+		WalletID: w.ID, IsoCode: "EUR", Name: "Euro", Symbol: "€",
+		DecimalChar: ",", GroupChar: ".", FracDigits: 2, IsBase: 1, Rate: 1,
+	})
+	acc, _ := q.InsertAccount(ctx, db.InsertAccountParams{
+		WalletID: w.ID, Name: "Savings", Type: "savings", CurrencyID: cur.ID, Position: 1,
+	})
+
+	gs := goal.NewService(st.Write())
+	date := "2026-12-31"
+	g, err := gs.Create(ctx, w.ID, goal.Input{
+		Name: "New laptop", TargetAmount: 150000, TargetDate: &date, AccountID: &acc.ID, Note: "for work",
+	})
+	if err != nil {
+		t.Fatalf("create goal: %v", err)
+	}
+	if _, err := gs.AddContribution(ctx, w.ID, g.ID, "2026-02-01", 60000, "first"); err != nil {
+		t.Fatalf("add contribution: %v", err)
+	}
+	if _, err := gs.AddContribution(ctx, w.ID, g.ID, "2026-03-01", -10000, "oops"); err != nil {
+		t.Fatalf("withdraw contribution: %v", err)
+	}
+
+	svc := NewService(st.Write())
+	doc, err := svc.Export(ctx, w.ID)
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+	if len(doc.Goals) != 1 || len(doc.Goals[0].Contributions) != 2 {
+		t.Fatalf("exported goals = %+v", doc.Goals)
+	}
+
+	data, _ := json.Marshal(doc)
+	var restored Document
+	if err := json.Unmarshal(data, &restored); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	newID, err := svc.Restore(ctx, user.ID, &restored)
+	if err != nil {
+		t.Fatalf("Restore: %v", err)
+	}
+
+	goals, err := gs.List(ctx, newID)
+	if err != nil {
+		t.Fatalf("list restored goals: %v", err)
+	}
+	if len(goals) != 1 {
+		t.Fatalf("restored goals = %d, want 1", len(goals))
+	}
+	rg := goals[0]
+	if rg.Name != "New laptop" || rg.TargetAmount != 150000 || rg.Note != "for work" {
+		t.Fatalf("restored goal = %+v", rg)
+	}
+	if rg.TargetDate == nil || *rg.TargetDate != date {
+		t.Fatalf("restored targetDate = %v, want %s", rg.TargetDate, date)
+	}
+	// Saved total = 60000 − 10000: both contributions survived with their signs.
+	if rg.Saved != 50000 {
+		t.Fatalf("restored saved = %d, want 50000", rg.Saved)
+	}
+	// The optional linked account was remapped into the new wallet.
+	newAccts, _ := q.ListAccountsForWallet(ctx, newID)
+	if len(newAccts) != 1 || rg.AccountID == nil || *rg.AccountID != newAccts[0].ID {
+		t.Fatalf("restored accountId = %v, new accounts = %+v", rg.AccountID, newAccts)
+	}
+	contribs, err := gs.Contributions(ctx, newID, rg.ID)
+	if err != nil {
+		t.Fatalf("list restored contributions: %v", err)
+	}
+	if len(contribs) != 2 {
+		t.Fatalf("restored contributions = %d, want 2", len(contribs))
 	}
 }
 
