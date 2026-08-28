@@ -12,6 +12,7 @@
     "accounts": "Accounts",
     "transactions": "Transactions",
     "schedules": "Schedules",
+    "bills": "Bills",
     "templates": "Templates",
     "tags": "Tags",
     "vehicles": "Vehicles",
@@ -338,6 +339,24 @@
     "confirmDelete": "Delete the goal \"{{name}}\" and its contributions?",
     "cancel": "Cancel",
     "save": "Save"
+  },
+  "bills": {
+    "title": "Bills",
+    "hint": "What's due over your scheduled payments — overdue, coming up, or already paid. Mark one paid to post its scheduled transaction.",
+    "toPay": "to pay",
+    "empty": "Nothing due right now.",
+    "markPaid": "Mark paid",
+    "marked": "Marked paid",
+    "viewAll": "View all",
+    "error": "Could not load bills.",
+    "overdueCount": "{{count}} overdue",
+    "dueCount": "{{count}} due",
+    "more": "+{{count}} more",
+    "state": {
+      "overdue": "Overdue",
+      "due": "Due",
+      "paid": "Paid"
+    }
   },
   "attachments": {
     "title": "Attachments",

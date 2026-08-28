@@ -20,6 +20,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/backup"
+	"github.com/easly1989/cloudbank/server/internal/bills"
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/config"
@@ -119,6 +120,7 @@ func run() error {
 	// their heavy aggregation queries no longer serialize behind writers (WAL
 	// allows concurrent readers).
 	dashboardSvc := dashboard.NewService(st.Read())
+	billsSvc := bills.NewService(st.Read())
 	templateSvc := template.NewServiceWithRead(st.Read(), st.Write())
 	scheduleSvc := schedule.NewServiceWithRead(st.Read(), st.Write(), transactionSvc, transferSvc, logger)
 	assignmentSvc := assignment.NewServiceWithRead(st.Read(), st.Write())
@@ -150,6 +152,7 @@ func run() error {
 		Goals:         goalSvc,
 		Transfers:     transferSvc,
 		Dashboard:     dashboardSvc,
+		Bills:         billsSvc,
 		Templates:     templateSvc,
 		Schedules:     scheduleSvc,
 		Assignments:   assignmentSvc,
