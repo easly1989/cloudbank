@@ -12,6 +12,7 @@
     "accounts": "Conti",
     "transactions": "Transazioni",
     "schedules": "Pianificazioni",
+    "bills": "Scadenze",
     "templates": "Modelli",
     "tags": "Tag",
     "vehicles": "Veicoli",
@@ -338,6 +339,24 @@
     "confirmDelete": "Eliminare l'obiettivo \"{{name}}\" e i suoi versamenti?",
     "cancel": "Annulla",
     "save": "Salva"
+  },
+  "bills": {
+    "title": "Scadenze",
+    "hint": "Cosa c'è da pagare tra i pagamenti pianificati — in ritardo, in arrivo o già pagati. Segna una scadenza come pagata per registrarne la transazione pianificata.",
+    "toPay": "da pagare",
+    "empty": "Nessuna scadenza al momento.",
+    "markPaid": "Segna pagata",
+    "marked": "Segnata come pagata",
+    "viewAll": "Vedi tutte",
+    "error": "Impossibile caricare le scadenze.",
+    "overdueCount": "{{count}} in ritardo",
+    "dueCount": "{{count}} in scadenza",
+    "more": "+{{count}} altre",
+    "state": {
+      "overdue": "In ritardo",
+      "due": "In scadenza",
+      "paid": "Pagata"
+    }
   },
   "attachments": {
     "title": "Allegati",

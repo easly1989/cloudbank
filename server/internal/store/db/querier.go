@@ -118,6 +118,10 @@ type Querier interface {
 	ListGoalsForWallet(ctx context.Context, walletID int64) ([]ListGoalsForWalletRow, error)
 	ListImportRefsForAccount(ctx context.Context, accountID int64) ([]string, error)
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
+	// Every schedule in the wallet with the template fields the Bills view needs:
+	// amount (signed), the target account and its currency (for base conversion),
+	// and the recurrence state used to enumerate occurrences and classify them.
+	ListScheduleBills(ctx context.Context, walletID int64) ([]ListScheduleBillsRow, error)
 	ListSchedulesForWallet(ctx context.Context, walletID int64) ([]ListSchedulesForWalletRow, error)
 	ListSplits(ctx context.Context, transactionID int64) ([]Split, error)
 	ListTagsForWallet(ctx context.Context, walletID int64) ([]Tag, error)
