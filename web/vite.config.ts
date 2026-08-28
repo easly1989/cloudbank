@@ -1,12 +1,53 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { VitePWA } from "vite-plugin-pwa";
 
 // The production build is emitted into the Go server's embed directory so the
 // single binary can serve the SPA. In dev, /api and /healthz are proxied to the
 // Go backend on :8080.
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Installable PWA: a web manifest plus a Workbox service worker that
+    // precaches the built app shell so it loads offline. `autoUpdate` swaps in a
+    // new build seamlessly on the next load. The SW never serves the SPA shell
+    // for /api or /healthz, and it deliberately does NOT cache API responses —
+    // stale financial data is worse than an honest offline error, so the shell
+    // loads offline while data still needs the network.
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["logo.svg", "apple-touch-icon-180x180.png"],
+      manifest: {
+        id: "/",
+        name: "CloudBank",
+        short_name: "CloudBank",
+        description: "Self-hosted personal finance — a web port of HomeBank.",
+        start_url: "/",
+        scope: "/",
+        display: "standalone",
+        theme_color: "#3d86e0",
+        background_color: "#ffffff",
+        icons: [
+          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
+          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
+          {
+            src: "maskable-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
+        navigateFallback: "index.html",
+        // API and health checks must reach the network, never the SPA shell.
+        navigateFallbackDenylist: [/^\/api/, /^\/healthz/],
+        cleanupOutdatedCaches: true,
+      },
+    }),
+  ],
   build: {
     outDir: "../server/internal/webui/dist",
     emptyOutDir: true,
