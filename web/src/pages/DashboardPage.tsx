@@ -23,6 +23,7 @@ import {
 } from "../components/dashboard/layout";
 import { AccountBalanceCard } from "../components/dashboard/widgets/AccountBalanceCard";
 import { AccountsPanel } from "../components/dashboard/widgets/AccountsPanel";
+import { BillsPanel } from "../components/dashboard/widgets/BillsPanel";
 import { BudgetWidget } from "../components/dashboard/widgets/BudgetWidget";
 import { BalanceSparklineCard } from "../components/dashboard/widgets/BalanceSparklineCard";
 import { CategoryBudgetCard } from "../components/dashboard/widgets/CategoryBudgetCard";
@@ -134,6 +135,8 @@ export function DashboardPage() {
         return <BudgetWidget walletId={walletId} base={base} />;
       case "upcoming":
         return <UpcomingPanel walletId={walletId} base={base} />;
+      case "bills":
+        return <BillsPanel walletId={walletId} />;
       case "accountBalance":
         return (
           <AccountBalanceCard
@@ -263,6 +266,7 @@ export function DashboardPage() {
     spendingHeatmap: t("dashboard.spendingHeatmap"),
     uncleared: t("dashboard.uncleared"),
     cashflow: t("dashboard.cashflow"),
+    bills: t("bills.title"),
   };
 
   return (

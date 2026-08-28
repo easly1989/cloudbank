@@ -23,6 +23,7 @@ export const WIDGET_TYPES = [
   "spendingHeatmap",
   "uncleared",
   "cashflow",
+  "bills",
 ] as const;
 export type WidgetType = (typeof WIDGET_TYPES)[number];
 
@@ -84,6 +85,7 @@ export const WIDGET_SIZES: Record<
   spendingHeatmap: { w: 5, h: 4, minW: 3, minH: 3 },
   uncleared: { w: 4, h: 3, minW: 2, minH: 2 },
   cashflow: { w: 6, h: 3, minW: 3, minH: 3 },
+  bills: { w: 6, h: 4, minW: 3, minH: 3 },
 };
 
 const isWidgetType = (t: string): t is WidgetType =>
