@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -167,5 +168,78 @@ func TestExpiredSessionRejected(t *testing.T) {
 	}
 	if _, err := s.Authenticate(ctx, token); !errors.Is(err, ErrUnauthorized) {
 		t.Fatalf("expired session err = %v; want ErrUnauthorized", err)
+	}
+}
+
+func TestAPITokens(t *testing.T) {
+	s, _ := newTestService(t)
+	ctx := context.Background()
+	admin, _, _ := s.Setup(ctx, "admin", "", "password123", "")
+
+	// Create a read and a write token; the plaintext is prefixed and shown once.
+	rt, rplain, err := s.CreateAPIToken(ctx, admin.ID, "reader", ScopeRead, "")
+	if err != nil {
+		t.Fatalf("create read token: %v", err)
+	}
+	if rt.Scope != ScopeRead || rt.Prefix == "" || !strings.HasPrefix(rplain, "cbp_") {
+		t.Fatalf("read token = %+v plain=%q", rt, rplain)
+	}
+	_, wplain, err := s.CreateAPIToken(ctx, admin.ID, "writer", ScopeWrite, "")
+	if err != nil {
+		t.Fatalf("create write token: %v", err)
+	}
+
+	// Authenticate returns the owning user and the token's scope.
+	u, scope, err := s.AuthenticateToken(ctx, rplain)
+	if err != nil || u.ID != admin.ID || scope != ScopeRead {
+		t.Fatalf("auth read token: u=%d scope=%q err=%v", u.ID, scope, err)
+	}
+	if _, scope, _ := s.AuthenticateToken(ctx, wplain); scope != ScopeWrite {
+		t.Fatalf("write token scope = %q, want write", scope)
+	}
+	// Unknown token and invalid scope are rejected.
+	if _, _, err := s.AuthenticateToken(ctx, "cbp_nope"); !errors.Is(err, ErrUnauthorized) {
+		t.Fatalf("unknown token err = %v, want ErrUnauthorized", err)
+	}
+	if _, _, err := s.CreateAPIToken(ctx, admin.ID, "x", "admin", ""); !errors.Is(err, ErrInvalidScope) {
+		t.Fatalf("invalid scope err = %v, want ErrInvalidScope", err)
+	}
+
+	toks, _ := s.ListAPITokens(ctx, admin.ID)
+	if len(toks) != 2 {
+		t.Fatalf("token count = %d, want 2", len(toks))
+	}
+	var writerID string
+	for _, tk := range toks {
+		if tk.Name == "writer" {
+			writerID = tk.ID
+		}
+	}
+
+	// An already-expired token is rejected (and cleaned up).
+	past := time.Now().Add(-time.Hour).UTC().Format(time.RFC3339)
+	_, eplain, _ := s.CreateAPIToken(ctx, admin.ID, "old", ScopeRead, past)
+	if _, _, err := s.AuthenticateToken(ctx, eplain); !errors.Is(err, ErrUnauthorized) {
+		t.Fatalf("expired token err = %v, want ErrUnauthorized", err)
+	}
+
+	// Revoke the reader: it stops working; re-revoking is ErrNotFound.
+	if err := s.RevokeAPIToken(ctx, admin.ID, rt.ID); err != nil {
+		t.Fatalf("revoke: %v", err)
+	}
+	if _, _, err := s.AuthenticateToken(ctx, rplain); !errors.Is(err, ErrUnauthorized) {
+		t.Fatalf("revoked token still valid: %v", err)
+	}
+	if err := s.RevokeAPIToken(ctx, admin.ID, rt.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("re-revoke err = %v, want ErrNotFound", err)
+	}
+
+	// Another user cannot revoke someone else's token.
+	bob, _ := s.CreateUser(ctx, "bob", "", "bobpassword", false)
+	if err := s.RevokeAPIToken(ctx, bob.ID, writerID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("cross-user revoke err = %v, want ErrNotFound", err)
+	}
+	if _, _, err := s.AuthenticateToken(ctx, wplain); err != nil {
+		t.Fatalf("writer token should still be valid: %v", err)
 	}
 }
