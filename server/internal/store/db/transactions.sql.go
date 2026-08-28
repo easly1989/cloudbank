@@ -382,6 +382,133 @@ func (q *Queries) ListTransactionsForAccount(ctx context.Context, arg ListTransa
 	return items, nil
 }
 
+const searchTransactions = `-- name: SearchTransactions :many
+SELECT t.id, t.account_id, t.date, t.amount, t.payment_mode, t.status, t.info,
+       t.payee_id, t.category_id, t.memo, t.is_split, t.created_at, t.updated_at,
+       a.name AS account_name,
+       p.name AS payee_name,
+       c.name AS category_name,
+       COALESCE((SELECT group_concat(tg.name, ',') FROM transaction_tags tt JOIN tags tg ON tg.id = tt.tag_id WHERE tt.transaction_id = t.id), '') AS tags,
+       CAST(COUNT(*) OVER () AS INTEGER) AS total_count
+FROM transactions t
+JOIN accounts a ON a.id = t.account_id
+LEFT JOIN payees p ON p.id = t.payee_id
+LEFT JOIN categories c ON c.id = t.category_id
+WHERE t.wallet_id = ?1
+  AND (?2 = 0 OR t.account_id = ?2)
+  AND (?3 = '' OR t.date >= ?3)
+  AND (?4 = '' OR t.date <= ?4)
+  AND (?5 = -1 OR t.status = ?5)
+  AND (?6 = 0 OR t.amount >= ?7)
+  AND (?8 = 0 OR t.amount <= ?9)
+  AND (
+    INSTR(LOWER(t.memo), LOWER(?10)) > 0
+    OR INSTR(LOWER(t.info), LOWER(?10)) > 0
+    OR INSTR(LOWER(p.name), LOWER(?10)) > 0
+    OR INSTR(LOWER(c.name), LOWER(?10)) > 0
+    OR EXISTS (SELECT 1 FROM transaction_tags tt JOIN tags tg ON tg.id = tt.tag_id
+               WHERE tt.transaction_id = t.id AND INSTR(LOWER(tg.name), LOWER(?10)) > 0)
+  )
+ORDER BY t.date DESC, t.id DESC
+LIMIT ?12 OFFSET ?11
+`
+
+type SearchTransactionsParams struct {
+	WalletID     int64
+	AccountID    interface{}
+	FromDate     interface{}
+	ToDate       interface{}
+	Status       interface{}
+	AmountMinSet interface{}
+	AmountMin    int64
+	AmountMaxSet interface{}
+	AmountMax    int64
+	Q            string
+	Off          int64
+	Lim          int64
+}
+
+type SearchTransactionsRow struct {
+	ID           int64
+	AccountID    int64
+	Date         string
+	Amount       int64
+	PaymentMode  int64
+	Status       int64
+	Info         string
+	PayeeID      sql.NullInt64
+	CategoryID   sql.NullInt64
+	Memo         string
+	IsSplit      int64
+	CreatedAt    string
+	UpdatedAt    string
+	AccountName  string
+	PayeeName    sql.NullString
+	CategoryName sql.NullString
+	Tags         interface{}
+	TotalCount   int64
+}
+
+// Wallet-wide register search: case-insensitive substring match of @q against
+// memo, info, payee name, category name and tag names (INSTR/LOWER, mirroring
+// the client-side filter), with optional account / date / amount / status
+// filters. Each row also carries the total match count (window) so the caller
+// can paginate.
+func (q *Queries) SearchTransactions(ctx context.Context, arg SearchTransactionsParams) ([]SearchTransactionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, searchTransactions,
+		arg.WalletID,
+		arg.AccountID,
+		arg.FromDate,
+		arg.ToDate,
+		arg.Status,
+		arg.AmountMinSet,
+		arg.AmountMin,
+		arg.AmountMaxSet,
+		arg.AmountMax,
+		arg.Q,
+		arg.Off,
+		arg.Lim,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SearchTransactionsRow{}
+	for rows.Next() {
+		var i SearchTransactionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccountID,
+			&i.Date,
+			&i.Amount,
+			&i.PaymentMode,
+			&i.Status,
+			&i.Info,
+			&i.PayeeID,
+			&i.CategoryID,
+			&i.Memo,
+			&i.IsSplit,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.AccountName,
+			&i.PayeeName,
+			&i.CategoryName,
+			&i.Tags,
+			&i.TotalCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setTransactionCategory = `-- name: SetTransactionCategory :exec
 UPDATE transactions SET
     category_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')

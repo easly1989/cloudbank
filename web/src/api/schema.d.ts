@@ -794,6 +794,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/transactions/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Wallet-wide register search across memo / info / payee / category / tags */
+        get: operations["searchTransactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/transactions/duplicates": {
         parameters: {
             query?: never;
@@ -2147,6 +2166,22 @@ export interface components {
              * @description initial balance + cumulative amount through this row (chronological)
              */
             runningBalance: number;
+        };
+        SearchRow: components["schemas"]["Transaction"] & {
+            /** @description name of the account this hit belongs to (results span accounts) */
+            accountName: string;
+        };
+        TransactionSearch: {
+            rows: components["schemas"]["SearchRow"][];
+            /**
+             * Format: int64
+             * @description total matches across all pages
+             */
+            total: number;
+            /** Format: int64 */
+            limit: number;
+            /** Format: int64 */
+            offset: number;
         };
         RegisterSummary: {
             /**
@@ -4333,6 +4368,45 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    searchTransactions: {
+        parameters: {
+            query: {
+                /** @description case-insensitive substring; blank returns no rows */
+                q: string;
+                /** @description limit to one account (0 / omit = whole wallet) */
+                account?: number;
+                /** @description inclusive lower date bound (YYYY-MM-DD) */
+                from?: string;
+                /** @description inclusive upper date bound */
+                to?: string;
+                /** @description transaction status (0..2) */
+                status?: number;
+                /** @description signed minor units */
+                amountMin?: number;
+                amountMax?: number;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The matches. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionSearch"];
+                };
+            };
             404: components["responses"]["NotFound"];
         };
     };

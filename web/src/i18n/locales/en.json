@@ -358,6 +358,17 @@
       "paid": "Paid"
     }
   },
+  "search": {
+    "open": "Search transactions",
+    "title": "Search transactions",
+    "placeholder": "Search memo, payee, category, tags…",
+    "hint": "Type at least {{n}} characters to search the whole wallet.",
+    "error": "Search failed.",
+    "empty": "No transactions match \"{{q}}\".",
+    "count": "{{count}} result(s)",
+    "more": "+{{count}} more — refine your search to narrow it down.",
+    "untitled": "(no description)"
+  },
   "attachments": {
     "title": "Attachments",
     "add": "Add file",

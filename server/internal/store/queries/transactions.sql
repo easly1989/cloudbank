@@ -90,3 +90,38 @@ DELETE FROM transactions WHERE id = ?;
 SELECT * FROM transactions
 WHERE account_id = ? AND amount = ? AND date >= ? AND date <= ?
 ORDER BY date DESC;
+
+-- name: SearchTransactions :many
+-- Wallet-wide register search: case-insensitive substring match of @q against
+-- memo, info, payee name, category name and tag names (INSTR/LOWER, mirroring
+-- the client-side filter), with optional account / date / amount / status
+-- filters. Each row also carries the total match count (window) so the caller
+-- can paginate.
+SELECT t.id, t.account_id, t.date, t.amount, t.payment_mode, t.status, t.info,
+       t.payee_id, t.category_id, t.memo, t.is_split, t.created_at, t.updated_at,
+       a.name AS account_name,
+       p.name AS payee_name,
+       c.name AS category_name,
+       COALESCE((SELECT group_concat(tg.name, ',') FROM transaction_tags tt JOIN tags tg ON tg.id = tt.tag_id WHERE tt.transaction_id = t.id), '') AS tags,
+       CAST(COUNT(*) OVER () AS INTEGER) AS total_count
+FROM transactions t
+JOIN accounts a ON a.id = t.account_id
+LEFT JOIN payees p ON p.id = t.payee_id
+LEFT JOIN categories c ON c.id = t.category_id
+WHERE t.wallet_id = sqlc.arg(wallet_id)
+  AND (sqlc.arg(account_id) = 0 OR t.account_id = sqlc.arg(account_id))
+  AND (sqlc.arg(from_date) = '' OR t.date >= sqlc.arg(from_date))
+  AND (sqlc.arg(to_date) = '' OR t.date <= sqlc.arg(to_date))
+  AND (sqlc.arg(status) = -1 OR t.status = sqlc.arg(status))
+  AND (sqlc.arg(amount_min_set) = 0 OR t.amount >= sqlc.arg(amount_min))
+  AND (sqlc.arg(amount_max_set) = 0 OR t.amount <= sqlc.arg(amount_max))
+  AND (
+    INSTR(LOWER(t.memo), LOWER(sqlc.arg(q))) > 0
+    OR INSTR(LOWER(t.info), LOWER(sqlc.arg(q))) > 0
+    OR INSTR(LOWER(p.name), LOWER(sqlc.arg(q))) > 0
+    OR INSTR(LOWER(c.name), LOWER(sqlc.arg(q))) > 0
+    OR EXISTS (SELECT 1 FROM transaction_tags tt JOIN tags tg ON tg.id = tt.tag_id
+               WHERE tt.transaction_id = t.id AND INSTR(LOWER(tg.name), LOWER(sqlc.arg(q))) > 0)
+  )
+ORDER BY t.date DESC, t.id DESC
+LIMIT sqlc.arg(lim) OFFSET sqlc.arg(off);

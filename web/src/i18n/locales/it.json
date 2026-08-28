@@ -358,6 +358,17 @@
       "paid": "Pagata"
     }
   },
+  "search": {
+    "open": "Cerca transazioni",
+    "title": "Cerca transazioni",
+    "placeholder": "Cerca memo, beneficiario, categoria, tag…",
+    "hint": "Digita almeno {{n}} caratteri per cercare in tutto il portafoglio.",
+    "error": "Ricerca non riuscita.",
+    "empty": "Nessuna transazione corrisponde a \"{{q}}\".",
+    "count": "{{count}} risultato/i",
+    "more": "+{{count}} altri — affina la ricerca per restringere.",
+    "untitled": "(senza descrizione)"
+  },
   "attachments": {
     "title": "Allegati",
     "add": "Aggiungi file",

@@ -367,3 +367,125 @@ func TestSetStatus(t *testing.T) {
 		t.Fatalf("invalid status = %v, want ErrInvalidStatus", err)
 	}
 }
+
+func TestSearchTransactions(t *testing.T) {
+	s, q, wid, acc := newTestService(t)
+	ctx := context.Background()
+
+	payee, _ := q.InsertPayee(ctx, db.InsertPayeeParams{WalletID: wid, Name: "Amazon"})
+	cat, _ := q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: wid, Name: "Groceries"})
+	savings, _ := q.InsertAccount(ctx, db.InsertAccountParams{
+		WalletID: wid, Name: "Savings", Type: "savings", CurrencyID: 1, Position: 2,
+	})
+
+	t1, _ := s.Create(ctx, wid, Input{
+		AccountID: acc, Date: "2026-01-10", Amount: -5000, PayeeID: iptr(payee.ID),
+		CategoryID: iptr(cat.ID), Memo: "Weekly shop", Tags: []string{"online"},
+	})
+	t2, _ := s.Create(ctx, wid, Input{
+		AccountID: acc, Date: "2026-02-01", Amount: -100000, Info: "Rent payment", Status: StatusReconciled,
+	})
+	t3, _ := s.Create(ctx, wid, Input{
+		AccountID: savings.ID, Date: "2026-01-20", Amount: -1500, Memo: "coffee beans",
+	})
+
+	ids := func(res SearchResult) map[int64]bool {
+		m := map[int64]bool{}
+		for _, r := range res.Rows {
+			m[r.ID] = true
+		}
+		return m
+	}
+	search := func(sq SearchQuery) SearchResult {
+		res, err := s.Search(ctx, wid, sq)
+		if err != nil {
+			t.Fatalf("Search(%+v): %v", sq, err)
+		}
+		return res
+	}
+
+	// Each searchable field matches (case-insensitively) as a substring.
+	cases := []struct {
+		q    string
+		want int64
+	}{
+		{"amazon", t1.ID}, // payee name, lower-cased
+		{"grocer", t1.ID}, // category name, substring
+		{"shop", t1.ID},   // memo
+		{"ONLINE", t1.ID}, // tag, upper-cased
+		{"rent", t2.ID},   // info
+		{"coffee", t3.ID}, // memo on the other account
+	}
+	for _, c := range cases {
+		res := search(SearchQuery{Query: c.q})
+		if len(res.Rows) != 1 || !ids(res)[c.want] {
+			t.Fatalf("search %q → %d rows, want only txn %d (%+v)", c.q, len(res.Rows), c.want, res.Rows)
+		}
+	}
+
+	// Account name is returned per row (results span accounts).
+	if r := search(SearchQuery{Query: "coffee"}).Rows[0]; r.AccountName != "Savings" {
+		t.Fatalf("coffee row accountName = %q, want Savings", r.AccountName)
+	}
+
+	// Account filter narrows to one account.
+	if res := search(SearchQuery{Query: "coffee", AccountID: acc}); len(res.Rows) != 0 {
+		t.Fatalf("coffee scoped to Checking → %d rows, want 0", len(res.Rows))
+	}
+
+	// Blank query returns nothing (not the whole ledger).
+	if res := search(SearchQuery{Query: "   "}); len(res.Rows) != 0 {
+		t.Fatalf("blank query → %d rows, want 0", len(res.Rows))
+	}
+
+	// Date and status filters combine with the text match.
+	if res := search(SearchQuery{Query: "e", From: "2026-01-15"}); ids(res)[t1.ID] {
+		t.Fatalf("from-date filter should exclude the Jan 10 txn")
+	}
+	if res := search(SearchQuery{Query: "e", Status: iptr(StatusReconciled)}); !ids(res)[t2.ID] || ids(res)[t1.ID] {
+		t.Fatalf("status filter should keep only the reconciled txn: %+v", res.Rows)
+	}
+	// Amount filter (signed minor units).
+	if res := search(SearchQuery{Query: "e", AmountMax: iptr(-50000)}); !ids(res)[t2.ID] || len(res.Rows) != 1 {
+		t.Fatalf("amountMax filter should keep only the -100000 txn: %+v", res.Rows)
+	}
+
+	// Wallet scoping: an identical memo in another wallet must not leak.
+	w2, _ := q.CreateWallet(ctx, db.CreateWalletParams{Title: "W2"})
+	cur2, _ := q.InsertCurrency(ctx, db.InsertCurrencyParams{
+		WalletID: w2.ID, IsoCode: "USD", Name: "US Dollar", Symbol: "$",
+		DecimalChar: ".", GroupChar: ",", FracDigits: 2, IsBase: 1, Rate: 1,
+	})
+	acc2, _ := q.InsertAccount(ctx, db.InsertAccountParams{
+		WalletID: w2.ID, Name: "Other", Type: "checking", CurrencyID: cur2.ID, Position: 1,
+	})
+	_, _ = s.Create(ctx, w2.ID, Input{AccountID: acc2.ID, Date: "2026-01-10", Amount: -5000, Memo: "Weekly shop"})
+	if res := search(SearchQuery{Query: "shop"}); len(res.Rows) != 1 || !ids(res)[t1.ID] {
+		t.Fatalf("wallet scoping leaked: %+v", res.Rows)
+	}
+}
+
+func TestSearchPaginationTotal(t *testing.T) {
+	s, _, wid, acc := newTestService(t)
+	ctx := context.Background()
+	for i := 0; i < 5; i++ {
+		if _, err := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-03-01", Amount: -100, Memo: "subscription fee"}); err != nil {
+			t.Fatalf("Create: %v", err)
+		}
+	}
+	res, err := s.Search(ctx, wid, SearchQuery{Query: "subscription", Limit: 2})
+	if err != nil {
+		t.Fatalf("Search: %v", err)
+	}
+	if len(res.Rows) != 2 {
+		t.Fatalf("page size = %d, want 2", len(res.Rows))
+	}
+	if res.Total != 5 {
+		t.Fatalf("total = %d, want 5", res.Total)
+	}
+	// Second page.
+	res2, _ := s.Search(ctx, wid, SearchQuery{Query: "subscription", Limit: 2, Offset: 4})
+	if len(res2.Rows) != 1 || res2.Total != 5 {
+		t.Fatalf("offset page = %d rows / total %d, want 1 / 5", len(res2.Rows), res2.Total)
+	}
+}

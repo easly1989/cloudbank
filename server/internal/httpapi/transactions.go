@@ -21,6 +21,7 @@ func (h *transactionHandlers) walletRoutes(r chi.Router) {
 	r.Post("/transactions", h.create)
 	r.Post("/transactions/bulk", h.bulk)
 	r.Get("/transactions/register", h.register)
+	r.Get("/transactions/search", h.search)
 	r.Get("/transactions/duplicates", h.duplicates)
 	r.Route("/transactions/{transactionId}", func(r chi.Router) {
 		r.Get("/", h.get)
@@ -41,6 +42,42 @@ func (h *transactionHandlers) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"rows": rows, "summary": summary})
+}
+
+func (h *transactionHandlers) search(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	q := r.URL.Query()
+	optInt := func(key string) *int64 {
+		if v := q.Get(key); v != "" {
+			if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+				return &n
+			}
+		}
+		return nil
+	}
+	sq := transaction.SearchQuery{
+		Query:     q.Get("q"),
+		From:      q.Get("from"),
+		To:        q.Get("to"),
+		Status:    optInt("status"),
+		AmountMin: optInt("amountMin"),
+		AmountMax: optInt("amountMax"),
+	}
+	if v := optInt("account"); v != nil {
+		sq.AccountID = *v
+	}
+	if v := optInt("limit"); v != nil {
+		sq.Limit = *v
+	}
+	if v := optInt("offset"); v != nil {
+		sq.Offset = *v
+	}
+	res, err := h.svc.Search(r.Context(), wl.ID, sq)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not run search")
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 func (h *transactionHandlers) bulk(w http.ResponseWriter, r *http.Request) {

@@ -169,6 +169,45 @@ export interface RegisterPage {
 export const getRegister = (walletId: number, accountId: number) =>
   api.get<RegisterPage>(`/api/v1/wallets/${walletId}/transactions/register?accountId=${accountId}`);
 
+// --- Wallet-wide register search ---
+
+export interface SearchRow extends Transaction {
+  accountName: string;
+}
+
+export interface TransactionSearch {
+  rows: SearchRow[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface SearchOptions {
+  account?: number; // limit to one account
+  from?: string;
+  to?: string;
+  status?: number;
+  amountMin?: number;
+  amountMax?: number;
+  limit?: number;
+  offset?: number;
+}
+
+export const searchTransactions = (walletId: number, q: string, opts: SearchOptions = {}) => {
+  const p = new URLSearchParams({ q });
+  if (opts.account) p.set("account", String(opts.account));
+  if (opts.from) p.set("from", opts.from);
+  if (opts.to) p.set("to", opts.to);
+  if (opts.status != null) p.set("status", String(opts.status));
+  if (opts.amountMin != null) p.set("amountMin", String(opts.amountMin));
+  if (opts.amountMax != null) p.set("amountMax", String(opts.amountMax));
+  if (opts.limit != null) p.set("limit", String(opts.limit));
+  if (opts.offset != null) p.set("offset", String(opts.offset));
+  return api.get<TransactionSearch>(
+    `/api/v1/wallets/${walletId}/transactions/search?${p.toString()}`,
+  );
+};
+
 export const setTransactionStatus = (walletId: number, id: number, status: number) =>
   api.patch<void>(`/api/v1/wallets/${walletId}/transactions/${id}/status`, { status });
 
