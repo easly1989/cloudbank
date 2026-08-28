@@ -14,8 +14,8 @@ type Querier interface {
 	// account's initial balance. Mirrors AccountBalanceDeltas (the per-wallet form).
 	AccountBalanceDelta(ctx context.Context, arg AccountBalanceDeltaParams) (AccountBalanceDeltaRow, error)
 	// Per-account transaction sums using the same definitions as the register
-	// header: future = all, today = dated on/before today, bank = cleared(1) or
-	// reconciled(2). The application adds each account's initial balance.
+	// header: future = all, today = dated on/before today, bank = reconciled(2)
+	// dated on/before today. The application adds each account's initial balance.
 	AccountBalanceDeltas(ctx context.Context, arg AccountBalanceDeltasParams) ([]AccountBalanceDeltasRow, error)
 	AddTransactionTag(ctx context.Context, arg AddTransactionTagParams) error
 	AddWalletMember(ctx context.Context, arg AddWalletMemberParams) error
@@ -42,8 +42,10 @@ type Querier interface {
 	DeleteAttachment(ctx context.Context, id int64) error
 	DeleteCategory(ctx context.Context, id int64) error
 	DeleteCategoryBudget(ctx context.Context, arg DeleteCategoryBudgetParams) error
+	DeleteContribution(ctx context.Context, id int64) error
 	DeleteCurrency(ctx context.Context, id int64) error
 	DeleteExpiredSessions(ctx context.Context, expiresAt string) error
+	DeleteGoal(ctx context.Context, id int64) error
 	DeletePayee(ctx context.Context, id int64) error
 	DeleteSchedule(ctx context.Context, id int64) error
 	DeleteSession(ctx context.Context, id string) error
@@ -63,7 +65,9 @@ type Querier interface {
 	GetAttachment(ctx context.Context, id int64) (Attachment, error)
 	GetBaseCurrency(ctx context.Context, walletID int64) (Currency, error)
 	GetCategory(ctx context.Context, id int64) (Category, error)
+	GetContribution(ctx context.Context, id int64) (GoalContribution, error)
 	GetCurrency(ctx context.Context, id int64) (Currency, error)
+	GetGoal(ctx context.Context, id int64) (Goal, error)
 	GetPayee(ctx context.Context, id int64) (Payee, error)
 	GetSchedule(ctx context.Context, id int64) (Schedule, error)
 	GetSession(ctx context.Context, id string) (Session, error)
@@ -78,12 +82,15 @@ type Querier interface {
 	GetVehicle(ctx context.Context, id int64) (Vehicle, error)
 	GetWallet(ctx context.Context, id int64) (Wallet, error)
 	GetWalletMembership(ctx context.Context, arg GetWalletMembershipParams) (string, error)
+	GoalSaved(ctx context.Context, goalID int64) (int64, error)
 	InsertAccount(ctx context.Context, arg InsertAccountParams) (Account, error)
 	InsertAssignment(ctx context.Context, arg InsertAssignmentParams) (Assignment, error)
 	InsertAttachment(ctx context.Context, arg InsertAttachmentParams) (Attachment, error)
 	InsertBudget(ctx context.Context, arg InsertBudgetParams) error
 	InsertCategory(ctx context.Context, arg InsertCategoryParams) (Category, error)
+	InsertContribution(ctx context.Context, arg InsertContributionParams) (GoalContribution, error)
 	InsertCurrency(ctx context.Context, arg InsertCurrencyParams) (Currency, error)
+	InsertGoal(ctx context.Context, arg InsertGoalParams) (Goal, error)
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
 	InsertSchedule(ctx context.Context, arg InsertScheduleParams) (Schedule, error)
 	InsertSplit(ctx context.Context, arg InsertSplitParams) error
@@ -105,8 +112,10 @@ type Querier interface {
 	ListAttachmentsForWallet(ctx context.Context, walletID int64) ([]Attachment, error)
 	ListBudgetsForWallet(ctx context.Context, walletID int64) ([]Budget, error)
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
+	ListContributionsForGoal(ctx context.Context, goalID int64) ([]GoalContribution, error)
 	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)
 	ListExchangeRates(ctx context.Context, currencyID int64) ([]ExchangeRate, error)
+	ListGoalsForWallet(ctx context.Context, walletID int64) ([]ListGoalsForWalletRow, error)
 	ListImportRefsForAccount(ctx context.Context, accountID int64) ([]string, error)
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
 	ListSchedulesForWallet(ctx context.Context, walletID int64) ([]ListSchedulesForWalletRow, error)
@@ -164,6 +173,7 @@ type Querier interface {
 	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) error
 	UpdateCurrencyFormat(ctx context.Context, arg UpdateCurrencyFormatParams) error
 	UpdateCurrencyRate(ctx context.Context, arg UpdateCurrencyRateParams) error
+	UpdateGoal(ctx context.Context, arg UpdateGoalParams) error
 	UpdatePayee(ctx context.Context, arg UpdatePayeeParams) error
 	UpdateScheduleConfig(ctx context.Context, arg UpdateScheduleConfigParams) error
 	UpdateTemplate(ctx context.Context, arg UpdateTemplateParams) error

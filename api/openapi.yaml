@@ -1443,6 +1443,74 @@ paths:
       responses:
         "200": { description: The report., content: { application/json: { schema: { $ref: "#/components/schemas/VehicleReport" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/goals:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listGoals
+      summary: List the wallet's savings goals (each with its saved total)
+      responses:
+        "200": { description: Goals., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Goal" } } } } }
+    post:
+      operationId: createGoal
+      summary: Create a savings goal
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/GoalInput" } } }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Goal" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/goals/{goalId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: goalId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: updateGoal
+      summary: Update a savings goal
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/GoalInput" } } }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { $ref: "#/components/schemas/Goal" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteGoal
+      summary: Delete a savings goal (its contributions are removed)
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/goals/{goalId}/contributions:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: goalId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listGoalContributions
+      summary: List a goal's contributions (newest first)
+      responses:
+        "200": { description: Contributions., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/GoalContribution" } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: addGoalContribution
+      summary: Add a signed contribution to a goal (+ add / − withdraw)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/GoalContributionInput" } } }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/GoalContribution" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/goals/{goalId}/contributions/{contribId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: goalId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: contribId, in: path, required: true, schema: { type: integer, format: int64 } }
+    delete:
+      operationId: deleteGoalContribution
+      summary: Delete one contribution from a goal
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/dashboard:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -1971,6 +2039,43 @@ components:
         plate: { type: string }
         notes: { type: string }
       required: [name]
+    Goal:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        targetAmount: { type: integer, format: int64, description: "minor units, base currency" }
+        targetDate: { type: string, nullable: true, description: "YYYY-MM-DD or null" }
+        accountId: { type: integer, format: int64, nullable: true, description: "optional linked account (reference)" }
+        note: { type: string }
+        position: { type: integer, format: int64 }
+        saved: { type: integer, format: int64, description: "sum of contributions (minor units)" }
+      required: [id, name, targetAmount, note, position, saved]
+    GoalInput:
+      type: object
+      properties:
+        name: { type: string }
+        targetAmount: { type: integer, format: int64 }
+        targetDate: { type: string, nullable: true }
+        accountId: { type: integer, format: int64, nullable: true }
+        note: { type: string }
+      required: [name, targetAmount]
+    GoalContribution:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        goalId: { type: integer, format: int64 }
+        date: { type: string, description: "YYYY-MM-DD" }
+        amount: { type: integer, format: int64, description: "signed minor units (+ add / − withdraw)" }
+        note: { type: string }
+      required: [id, goalId, date, amount, note]
+    GoalContributionInput:
+      type: object
+      properties:
+        date: { type: string, description: "YYYY-MM-DD" }
+        amount: { type: integer, format: int64 }
+        note: { type: string }
+      required: [date, amount]
     RegisterRow:
       allOf:
         - $ref: "#/components/schemas/Transaction"
