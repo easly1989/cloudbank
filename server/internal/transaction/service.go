@@ -479,6 +479,115 @@ func (s *Service) Register(ctx context.Context, accountID int64) ([]RegisterRow,
 	return out, sum, nil
 }
 
+// SearchQuery carries the register-search filters. Query is the text to match
+// (case-insensitive substring across memo/info/payee/category/tags); every other
+// field is optional — its zero value (or nil) means "no filter".
+type SearchQuery struct {
+	Query     string
+	AccountID int64  // 0 = every account in the wallet
+	From      string // "" = no lower date bound (YYYY-MM-DD)
+	To        string // "" = no upper date bound
+	Status    *int64 // nil = any status
+	AmountMin *int64 // nil = no lower amount bound (signed minor units)
+	AmountMax *int64 // nil = no upper amount bound
+	Limit     int64
+	Offset    int64
+}
+
+// SearchRow is a search hit: a transaction plus the name of its account (results
+// span accounts, so each row shows which account it belongs to).
+type SearchRow struct {
+	Transaction
+	AccountName string `json:"accountName"`
+}
+
+// SearchResult is one page of search hits with the total match count (so the
+// client can paginate and show "N results").
+type SearchResult struct {
+	Rows   []SearchRow `json:"rows"`
+	Total  int64       `json:"total"`
+	Limit  int64       `json:"limit"`
+	Offset int64       `json:"offset"`
+}
+
+const (
+	searchDefaultLimit = 100
+	searchMaxLimit     = 500
+)
+
+// Search runs a wallet-wide register search (newest first). A blank query
+// returns no rows (rather than the whole ledger).
+func (s *Service) Search(ctx context.Context, walletID int64, sq SearchQuery) (SearchResult, error) {
+	q := strings.TrimSpace(sq.Query)
+	limit := sq.Limit
+	if limit <= 0 {
+		limit = searchDefaultLimit
+	}
+	if limit > searchMaxLimit {
+		limit = searchMaxLimit
+	}
+	offset := sq.Offset
+	if offset < 0 {
+		offset = 0
+	}
+	res := SearchResult{Rows: []SearchRow{}, Limit: limit, Offset: offset}
+	if q == "" {
+		return res, nil
+	}
+
+	status := int64(-1) // -1 = any
+	if sq.Status != nil {
+		status = *sq.Status
+	}
+	amountMinSet, amountMin := int64(0), int64(0)
+	if sq.AmountMin != nil {
+		amountMinSet, amountMin = 1, *sq.AmountMin
+	}
+	amountMaxSet, amountMax := int64(0), int64(0)
+	if sq.AmountMax != nil {
+		amountMaxSet, amountMax = 1, *sq.AmountMax
+	}
+
+	rows, err := s.rq.SearchTransactions(ctx, db.SearchTransactionsParams{
+		WalletID:     walletID,
+		AccountID:    sq.AccountID,
+		FromDate:     sq.From,
+		ToDate:       sq.To,
+		Status:       status,
+		AmountMinSet: amountMinSet,
+		AmountMin:    amountMin,
+		AmountMaxSet: amountMaxSet,
+		AmountMax:    amountMax,
+		Q:            q,
+		Off:          offset,
+		Lim:          limit,
+	})
+	if err != nil {
+		return SearchResult{}, err
+	}
+	for _, r := range rows {
+		row := SearchRow{
+			Transaction: Transaction{
+				ID: r.ID, AccountID: r.AccountID, Date: r.Date, Amount: r.Amount,
+				PaymentMode: int(r.PaymentMode), Status: int(r.Status), Info: r.Info,
+				PayeeID: idPtr(r.PayeeID), CategoryID: idPtr(r.CategoryID), Memo: r.Memo,
+				IsSplit: r.IsSplit != 0, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
+				Tags: splitTags(r.Tags),
+			},
+			AccountName: r.AccountName,
+		}
+		if r.PayeeName.Valid {
+			row.PayeeName = r.PayeeName.String
+		}
+		if r.CategoryName.Valid {
+			row.CategoryName = r.CategoryName.String
+		}
+		res.Total = r.TotalCount
+		res.Rows = append(res.Rows, row)
+	}
+	return res, nil
+}
+
 // splitTags turns a group_concat list ("a,b,c") into a slice (empty when none).
 // The column is an untyped expression, so the driver hands back string/[]byte.
 func splitTags(v any) []string {
