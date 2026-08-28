@@ -35,6 +35,7 @@ type Document struct {
 	Schedules    []Schedule    `json:"schedules"`
 	Assignments  []Assignment  `json:"assignments"`
 	Budgets      []Budget      `json:"budgets"`
+	Goals        []Goal        `json:"goals,omitempty"`
 	Attachments  []Attachment  `json:"attachments,omitempty"`
 }
 
@@ -208,6 +209,27 @@ type Budget struct {
 	Year       int64 `json:"year"`
 	Month      int64 `json:"month"`
 	Amount     int64 `json:"amount"`
+}
+
+// Goal is a backed-up savings goal with its contributions. AccountID (an
+// optional reference) is remapped to the restored account; the running saved
+// total is derived from the contributions, so it is not stored.
+type Goal struct {
+	ID            int64              `json:"id"`
+	Name          string             `json:"name"`
+	TargetAmount  int64              `json:"targetAmount"`
+	TargetDate    string             `json:"targetDate,omitempty"`
+	AccountID     *int64             `json:"accountId,omitempty"`
+	Note          string             `json:"note"`
+	Position      int64              `json:"position"`
+	Contributions []GoalContribution `json:"contributions,omitempty"`
+}
+
+// GoalContribution is one signed top-up (+) or withdrawal (−) of a goal.
+type GoalContribution struct {
+	Date   string `json:"date"`
+	Amount int64  `json:"amount"`
+	Note   string `json:"note"`
 }
 
 // Service exports and restores wallets.
@@ -401,6 +423,30 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 		doc.Budgets = append(doc.Budgets, Budget{
 			ID: bd.ID, CategoryID: bd.CategoryID, Year: bd.Year, Month: bd.Month, Amount: bd.Amount,
 		})
+	}
+
+	goals, err := q.ListGoalsForWallet(ctx, walletID)
+	if err != nil {
+		return nil, err
+	}
+	for _, g := range goals {
+		gd := Goal{
+			ID: g.ID, Name: g.Name, TargetAmount: g.TargetAmount,
+			AccountID: dbconv.NullToPtr(g.AccountID), Note: g.Note, Position: g.Position,
+		}
+		if g.TargetDate.Valid {
+			gd.TargetDate = g.TargetDate.String
+		}
+		contribs, err := q.ListContributionsForGoal(ctx, g.ID)
+		if err != nil {
+			return nil, err
+		}
+		for _, c := range contribs {
+			gd.Contributions = append(gd.Contributions, GoalContribution{
+				Date: c.Date, Amount: c.Amount, Note: c.Note,
+			})
+		}
+		doc.Goals = append(doc.Goals, gd)
 	}
 
 	// Embed attachment files (metadata + base64 bytes) so the backup is
@@ -701,6 +747,24 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 		if cid, ok := catMap[bd.CategoryID]; ok {
 			if err := q.InsertBudget(ctx, db.InsertBudgetParams{
 				WalletID: w.ID, CategoryID: cid, Year: bd.Year, Month: bd.Month, Amount: bd.Amount,
+			}); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	for _, g := range doc.Goals {
+		row, err := q.InsertGoal(ctx, db.InsertGoalParams{
+			WalletID: w.ID, Name: g.Name, TargetAmount: g.TargetAmount,
+			TargetDate: sql.NullString{String: g.TargetDate, Valid: g.TargetDate != ""},
+			AccountID:  dbconv.PtrToNull(remapAcc(g.AccountID)), Note: g.Note, Position: g.Position,
+		})
+		if err != nil {
+			return 0, err
+		}
+		for _, c := range g.Contributions {
+			if _, err := q.InsertContribution(ctx, db.InsertContributionParams{
+				GoalID: row.ID, Date: c.Date, Amount: c.Amount, Note: c.Note,
 			}); err != nil {
 				return 0, err
 			}
