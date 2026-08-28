@@ -101,6 +101,25 @@ type ExchangeRate struct {
 	Source     string
 }
 
+type Goal struct {
+	ID           int64
+	WalletID     int64
+	Name         string
+	TargetAmount int64
+	TargetDate   sql.NullString
+	AccountID    sql.NullInt64
+	Note         string
+	Position     int64
+}
+
+type GoalContribution struct {
+	ID     int64
+	GoalID int64
+	Date   string
+	Amount int64
+	Note   string
+}
+
 type Payee struct {
 	ID                 int64
 	WalletID           int64

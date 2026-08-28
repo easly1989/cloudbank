@@ -266,3 +266,61 @@ export const updateVehicle = (walletId: number, id: number, body: VehicleInput) 
 
 export const deleteVehicle = (walletId: number, id: number) =>
   api.del<void>(`/api/v1/wallets/${walletId}/vehicles/${id}`);
+
+// --- Savings goals ---
+
+export interface Goal {
+  id: number;
+  name: string;
+  targetAmount: number;
+  targetDate: string | null;
+  accountId: number | null;
+  note: string;
+  position: number;
+  saved: number;
+}
+
+export interface GoalInput {
+  name: string;
+  targetAmount: number;
+  targetDate?: string | null;
+  accountId?: number | null;
+  note?: string;
+}
+
+export interface GoalContribution {
+  id: number;
+  goalId: number;
+  date: string;
+  amount: number;
+  note: string;
+}
+
+export interface GoalContributionInput {
+  date: string;
+  amount: number;
+  note?: string;
+}
+
+export const listGoals = (walletId: number) => api.get<Goal[]>(`/api/v1/wallets/${walletId}/goals`);
+
+export const createGoal = (walletId: number, body: GoalInput) =>
+  api.post<Goal>(`/api/v1/wallets/${walletId}/goals`, body);
+
+export const updateGoal = (walletId: number, id: number, body: GoalInput) =>
+  api.patch<Goal>(`/api/v1/wallets/${walletId}/goals/${id}`, body);
+
+export const deleteGoal = (walletId: number, id: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/goals/${id}`);
+
+export const listGoalContributions = (walletId: number, goalId: number) =>
+  api.get<GoalContribution[]>(`/api/v1/wallets/${walletId}/goals/${goalId}/contributions`);
+
+export const addGoalContribution = (
+  walletId: number,
+  goalId: number,
+  body: GoalContributionInput,
+) => api.post<GoalContribution>(`/api/v1/wallets/${walletId}/goals/${goalId}/contributions`, body);
+
+export const deleteGoalContribution = (walletId: number, goalId: number, contribId: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/goals/${goalId}/contributions/${contribId}`);

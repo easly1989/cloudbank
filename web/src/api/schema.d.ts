@@ -1409,6 +1409,89 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List the wallet's savings goals (each with its saved total) */
+        get: operations["listGoals"];
+        put?: never;
+        /** Create a savings goal */
+        post: operations["createGoal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/goals/{goalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                goalId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a savings goal (its contributions are removed) */
+        delete: operations["deleteGoal"];
+        options?: never;
+        head?: never;
+        /** Update a savings goal */
+        patch: operations["updateGoal"];
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/goals/{goalId}/contributions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                goalId: number;
+            };
+            cookie?: never;
+        };
+        /** List a goal's contributions (newest first) */
+        get: operations["listGoalContributions"];
+        put?: never;
+        /** Add a signed contribution to a goal (+ add / − withdraw) */
+        post: operations["addGoalContribution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/goals/{goalId}/contributions/{contribId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                goalId: number;
+                contribId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete one contribution from a goal */
+        delete: operations["deleteGoalContribution"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/dashboard": {
         parameters: {
             query?: never;
@@ -1983,6 +2066,61 @@ export interface components {
             name: string;
             plate?: string;
             notes?: string;
+        };
+        Goal: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /**
+             * Format: int64
+             * @description minor units, base currency
+             */
+            targetAmount: number;
+            /** @description YYYY-MM-DD or null */
+            targetDate?: string | null;
+            /**
+             * Format: int64
+             * @description optional linked account (reference)
+             */
+            accountId?: number | null;
+            note: string;
+            /** Format: int64 */
+            position: number;
+            /**
+             * Format: int64
+             * @description sum of contributions (minor units)
+             */
+            saved: number;
+        };
+        GoalInput: {
+            name: string;
+            /** Format: int64 */
+            targetAmount: number;
+            targetDate?: string | null;
+            /** Format: int64 */
+            accountId?: number | null;
+            note?: string;
+        };
+        GoalContribution: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            goalId: number;
+            /** @description YYYY-MM-DD */
+            date: string;
+            /**
+             * Format: int64
+             * @description signed minor units (+ add / − withdraw)
+             */
+            amount: number;
+            note: string;
+        };
+        GoalContributionInput: {
+            /** @description YYYY-MM-DD */
+            date: string;
+            /** Format: int64 */
+            amount: number;
+            note?: string;
         };
         RegisterRow: components["schemas"]["Transaction"] & {
             /**
@@ -5374,6 +5512,182 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+        };
+    };
+    listGoals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Goals. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goal"][];
+                };
+            };
+        };
+    };
+    createGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalInput"];
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goal"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    deleteGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                goalId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                goalId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalInput"];
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goal"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listGoalContributions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                goalId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contributions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalContribution"][];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    addGoalContribution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                goalId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalContributionInput"];
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalContribution"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteGoalContribution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                goalId: number;
+                contribId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
         };
     };
     getDashboard: {
