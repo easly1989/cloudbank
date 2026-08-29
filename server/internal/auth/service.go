@@ -262,6 +262,123 @@ func (s *Service) createUser(ctx context.Context, username, email, password stri
 	})
 }
 
+// API-token scopes.
+const (
+	ScopeRead  = "read"  // safe methods only (GET/HEAD)
+	ScopeWrite = "write" // all methods
+)
+
+// ErrInvalidScope is returned when an API token is created with an unknown scope.
+var ErrInvalidScope = errors.New("auth: invalid token scope")
+
+// APIToken is the public representation of a personal access token — never the
+// token itself, only its metadata.
+type APIToken struct {
+	ID         string
+	Name       string
+	Scope      string
+	Prefix     string
+	CreatedAt  string
+	LastUsedAt string // "" until first use
+	ExpiresAt  string // "" = never
+}
+
+func toAPIToken(t db.ApiToken) APIToken {
+	out := APIToken{
+		ID: t.ID, Name: t.Name, Scope: t.Scope, Prefix: t.Prefix, CreatedAt: t.CreatedAt,
+	}
+	if t.LastUsedAt.Valid {
+		out.LastUsedAt = t.LastUsedAt.String
+	}
+	if t.ExpiresAt.Valid {
+		out.ExpiresAt = t.ExpiresAt.String
+	}
+	return out
+}
+
+// CreateAPIToken mints a personal access token for the user and returns its
+// metadata plus the plaintext token, which is shown once and never recoverable.
+// expiresAt is optional (empty = never expires).
+func (s *Service) CreateAPIToken(ctx context.Context, userID int64, name, scope, expiresAt string) (APIToken, string, error) {
+	if scope != ScopeRead && scope != ScopeWrite {
+		return APIToken{}, "", ErrInvalidScope
+	}
+	token, id, prefix, err := newAPIToken()
+	if err != nil {
+		return APIToken{}, "", err
+	}
+	exp := sql.NullString{}
+	if expiresAt != "" {
+		exp = sql.NullString{String: expiresAt, Valid: true}
+	}
+	row, err := s.q.InsertAPIToken(ctx, db.InsertAPITokenParams{
+		ID: id, UserID: userID, Name: name, Scope: scope, Prefix: prefix, ExpiresAt: exp,
+	})
+	if err != nil {
+		return APIToken{}, "", err
+	}
+	return toAPIToken(row), token, nil
+}
+
+// ListAPITokens returns the user's tokens (metadata only), newest first.
+func (s *Service) ListAPITokens(ctx context.Context, userID int64) ([]APIToken, error) {
+	rows, err := s.q.ListAPITokensForUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]APIToken, 0, len(rows))
+	for _, t := range rows {
+		out = append(out, toAPIToken(t))
+	}
+	return out, nil
+}
+
+// RevokeAPIToken deletes one of the user's tokens. Revoking an unknown token (or
+// one owned by someone else) yields ErrNotFound.
+func (s *Service) RevokeAPIToken(ctx context.Context, userID int64, id string) error {
+	n, err := s.q.DeleteAPIToken(ctx, db.DeleteAPITokenParams{ID: id, UserID: userID})
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// AuthenticateToken validates a personal API token and returns its user and
+// scope. Unknown, expired, or disabled-owner tokens yield ErrUnauthorized (an
+// expired token is deleted). Last-used is recorded on success.
+func (s *Service) AuthenticateToken(ctx context.Context, token string) (User, string, error) {
+	if token == "" {
+		return User{}, "", ErrUnauthorized
+	}
+	id := hashToken(token)
+	t, err := s.q.GetAPIToken(ctx, id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return User{}, "", ErrUnauthorized
+	}
+	if err != nil {
+		return User{}, "", err
+	}
+	if t.ExpiresAt.Valid {
+		exp, perr := time.Parse(time.RFC3339, t.ExpiresAt.String)
+		if perr != nil || !s.now().Before(exp) {
+			_, _ = s.q.DeleteAPIToken(ctx, db.DeleteAPITokenParams{ID: id, UserID: t.UserID})
+			return User{}, "", ErrUnauthorized
+		}
+	}
+	u, err := s.q.GetUserByID(ctx, t.UserID)
+	if err != nil {
+		return User{}, "", err
+	}
+	if u.Disabled != 0 {
+		return User{}, "", ErrUnauthorized
+	}
+	_ = s.q.TouchAPIToken(ctx, id)
+	return toUser(u), t.Scope, nil
+}
+
 func (s *Service) openSession(ctx context.Context, userID int64, userAgent string) (string, error) {
 	token, id, err := newToken()
 	if err != nil {

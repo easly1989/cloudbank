@@ -147,6 +147,38 @@ paths:
       responses:
         "200": { description: The updated user., content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/auth/tokens:
+    get:
+      operationId: listApiTokens
+      summary: List the current user's personal API tokens (session only)
+      responses:
+        "200": { description: The tokens., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ApiToken" } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      operationId: createApiToken
+      summary: Create a personal API token — the plaintext is returned once (session only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApiTokenInput" }
+      responses:
+        "201": { description: The new token (plaintext returned once)., content: { application/json: { schema: { $ref: "#/components/schemas/ApiTokenCreated" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/auth/tokens/{id}:
+    delete:
+      operationId: revokeApiToken
+      summary: Revoke one of the current user's API tokens (session only)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Revoked. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/admin/backup:
     get:
       operationId: hotBackup
@@ -1798,6 +1830,32 @@ components:
         locale: { type: string }
         theme: { type: string }
         preferences: { type: object, additionalProperties: true }
+    ApiToken:
+      type: object
+      description: A personal API token's metadata — never the token itself.
+      properties:
+        id: { type: string, description: "opaque id (sha256 of the token); used to revoke" }
+        name: { type: string }
+        scope: { type: string, enum: [read, write] }
+        prefix: { type: string, description: "leading characters, so the token is recognizable" }
+        createdAt: { type: string }
+        lastUsedAt: { type: string, description: "empty until first use" }
+        expiresAt: { type: string, description: "empty = never expires" }
+      required: [id, name, scope, prefix, createdAt]
+    ApiTokenInput:
+      type: object
+      properties:
+        name: { type: string }
+        scope: { type: string, enum: [read, write], default: read }
+        expiresInDays: { type: integer, description: "0 / omit = never expires" }
+      required: [name]
+    ApiTokenCreated:
+      type: object
+      description: The created token — plaintext is present exactly once.
+      properties:
+        token: { type: string, description: "the plaintext token; shown once, never recoverable" }
+        info: { $ref: "#/components/schemas/ApiToken" }
+      required: [token, info]
     IntegrityIssue:
       type: object
       properties:

@@ -293,3 +293,86 @@ func TestAdminEndpointsRequireAdmin(t *testing.T) {
 	}
 	resp.Body.Close()
 }
+
+func TestAPITokenAuth(t *testing.T) {
+	c := newTestAPI(t)
+	resp := c.do(http.MethodPost, "/api/v1/setup",
+		map[string]any{"username": "admin", "email": "a@b.c", "password": "supersecret"}, true)
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("setup = %d", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// Mint read + write tokens (session-authenticated).
+	mint := func(name, scope string) string {
+		r := c.do(http.MethodPost, "/api/v1/auth/tokens", map[string]any{"name": name, "scope": scope}, true)
+		if r.StatusCode != http.StatusCreated {
+			t.Fatalf("create %s token = %d", name, r.StatusCode)
+		}
+		defer r.Body.Close()
+		var out struct {
+			Token string `json:"token"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&out)
+		if out.Token == "" {
+			t.Fatalf("no plaintext token returned for %s", name)
+		}
+		return out.Token
+	}
+	readTok := mint("reader", "read")
+	writeTok := mint("writer", "write")
+
+	// A bare client (no session cookie) using only the Bearer header — and
+	// deliberately no X-Requested-With, to prove Bearer bypasses CSRF.
+	bare := &http.Client{}
+	bearer := func(method, path, tok string, body any) *http.Response {
+		var rdr io.Reader
+		if body != nil {
+			b, _ := json.Marshal(body)
+			rdr = bytes.NewReader(b)
+		}
+		req, _ := http.NewRequest(method, c.base+path, rdr)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		if tok != "" {
+			req.Header.Set("Authorization", "Bearer "+tok)
+		}
+		r, err := bare.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return r
+	}
+
+	// Read token: a safe request works.
+	if r := bearer(http.MethodGet, "/api/v1/auth/me", readTok, nil); r.StatusCode != http.StatusOK {
+		t.Fatalf("read token GET /me = %d, want 200", r.StatusCode)
+	} else {
+		r.Body.Close()
+	}
+	// Read token: a state-changing request is rejected by scope (403), not CSRF.
+	if r := bearer(http.MethodPost, "/api/v1/wallets", readTok, map[string]any{"title": "W"}); r.StatusCode != http.StatusForbidden {
+		t.Fatalf("read token POST /wallets = %d, want 403", r.StatusCode)
+	} else {
+		r.Body.Close()
+	}
+	// Write token: the same POST succeeds (CSRF bypassed, scope allows).
+	if r := bearer(http.MethodPost, "/api/v1/wallets", writeTok, map[string]any{"title": "W"}); r.StatusCode != http.StatusCreated {
+		t.Fatalf("write token POST /wallets = %d, want 201", r.StatusCode)
+	} else {
+		r.Body.Close()
+	}
+	// A token cannot manage tokens (privilege guard): session-only.
+	if r := bearer(http.MethodGet, "/api/v1/auth/tokens", writeTok, nil); r.StatusCode != http.StatusForbidden {
+		t.Fatalf("token listing tokens = %d, want 403", r.StatusCode)
+	} else {
+		r.Body.Close()
+	}
+	// An unknown token is unauthorized.
+	if r := bearer(http.MethodGet, "/api/v1/auth/me", "cbp_bogus", nil); r.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("bogus token = %d, want 401", r.StatusCode)
+	} else {
+		r.Body.Close()
+	}
+}
