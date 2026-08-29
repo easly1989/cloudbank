@@ -53,6 +53,7 @@ export interface User {
   theme: string;
   preferences: Preferences;
   disabled: boolean;
+  twoFactorEnabled: boolean;
   createdAt: string;
 }
 
@@ -60,13 +61,21 @@ export interface Credentials {
   username: string;
   email?: string;
   password: string;
+  /** Second factor (TOTP or a recovery code); sent on the follow-up submit. */
+  totpCode?: string;
 }
+
+/** Login returns the user, or a challenge when a second factor is required. */
+export type LoginResult = User | { totpRequired: true };
+
+export const isTotpChallenge = (r: LoginResult): r is { totpRequired: true } =>
+  (r as { totpRequired?: boolean }).totpRequired === true;
 
 export const getSetupStatus = () => api.get<{ needsSetup: boolean }>("/api/v1/setup/status");
 
 export const postSetup = (body: Credentials) => api.post<User>("/api/v1/setup", body);
 
-export const login = (body: Credentials) => api.post<User>("/api/v1/auth/login", body);
+export const login = (body: Credentials) => api.post<LoginResult>("/api/v1/auth/login", body);
 
 export const logout = () => api.post<void>("/api/v1/auth/logout");
 
@@ -104,6 +113,21 @@ export const createApiToken = (body: {
 }) => api.post<ApiTokenCreated>("/api/v1/auth/tokens", body);
 
 export const revokeApiToken = (id: string) => api.del<void>(`/api/v1/auth/tokens/${id}`);
+
+// --- Two-factor authentication (TOTP) ---
+
+export interface TotpSetup {
+  secret: string;
+  otpauthUri: string;
+}
+
+export const setup2fa = () => api.post<TotpSetup>("/api/v1/auth/2fa/setup");
+
+export const enable2fa = (secret: string, code: string) =>
+  api.post<{ recoveryCodes: string[] }>("/api/v1/auth/2fa/enable", { secret, code });
+
+export const disable2fa = (password: string) =>
+  api.post<void>("/api/v1/auth/2fa/disable", { password });
 
 // --- Integrity & backup ---
 
