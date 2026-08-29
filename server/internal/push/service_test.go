@@ -27,7 +27,7 @@ type mockClient struct {
 	status int
 }
 
-func (m *mockClient) Do(r *http.Request) (*http.Response, error) {
+func (m *mockClient) Do(_ *http.Request) (*http.Response, error) {
 	m.calls++
 	return &http.Response{StatusCode: m.status, Body: io.NopCloser(strings.NewReader(""))}, nil
 }
