@@ -2867,10 +2867,12 @@ export interface components {
             dateFormat?: "" | "iso" | "dmy" | "mdy";
             /** @description '.' or ','; defaults '.' */
             decimalChar?: string;
-            /** @description generic: field name → column index */
+            /** @description generic: field name → column index. Fields: date, paymode, info, payee, memo, amount, category, tags. As an alternative to 'amount', map 'debit' and/or 'credit' (separate outflow/inflow columns; amount = credit − debit). */
             mapping?: {
                 [key: string]: number;
             };
+            /** @description flip the sign of every amount (for banks whose convention is reversed) */
+            invertAmount?: boolean;
             /** @description apply on-import assignment rules to the preview */
             applyRules?: boolean;
         };

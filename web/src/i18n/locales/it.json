@@ -825,10 +825,12 @@
     "next": "Avanti",
     "back": "Indietro",
     "preview": "Anteprima",
-    "mapHint": "Associa ogni campo dell'operazione a una colonna del file. Data e importo sono obbligatori.",
+    "mapHint": "Associa ogni campo dell'operazione a una colonna del file. La data è obbligatoria, più Importo oppure Dare/Avere.",
     "fields": {
       "date": "Data",
       "amount": "Importo",
+      "debit": "Dare (uscita)",
+      "credit": "Avere (entrata)",
       "payee": "Beneficiario",
       "memo": "Note",
       "category": "Categoria",
@@ -836,6 +838,9 @@
       "paymode": "Modalità",
       "tags": "Etichette"
     },
+    "debitCreditHint": "Usa al posto di Importo quando il file ha colonne separate per uscite ed entrate.",
+    "invertAmount": "Inverti segno",
+    "invertAmountHint": "Attiva se la banca scrive le spese come positive e le entrate come negative.",
     "applyRules": "Applica regole di importazione",
     "willImport": "{{count}} righe verranno importate",
     "duplicate": "Duplicato",

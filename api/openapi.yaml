@@ -2676,7 +2676,8 @@ components:
         hasHeader: { type: boolean, description: "generic only: skip the first row" }
         dateFormat: { type: string, enum: ["", iso, dmy, mdy], description: "field order of the date column" }
         decimalChar: { type: string, description: "'.' or ','; defaults '.'" }
-        mapping: { type: object, additionalProperties: { type: integer }, description: "generic: field name → column index" }
+        mapping: { type: object, additionalProperties: { type: integer }, description: "generic: field name → column index. Fields: date, paymode, info, payee, memo, amount, category, tags. As an alternative to 'amount', map 'debit' and/or 'credit' (separate outflow/inflow columns; amount = credit − debit)." }
+        invertAmount: { type: boolean, description: "flip the sign of every amount (for banks whose convention is reversed)" }
         applyRules: { type: boolean, description: "apply on-import assignment rules to the preview" }
       required: [accountId, content, dialect]
     CSVPreviewRow:

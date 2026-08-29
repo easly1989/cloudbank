@@ -20,6 +20,7 @@ export interface CSVPreviewRequest {
   dateFormat?: CSVDateFormat;
   decimalChar?: string;
   mapping?: Record<string, number>;
+  invertAmount?: boolean;
   applyRules?: boolean;
 }
 
@@ -91,6 +92,8 @@ export interface ParsedPreviewRequest {
 export const CSV_FIELDS = [
   "date",
   "amount",
+  "debit",
+  "credit",
   "payee",
   "memo",
   "category",

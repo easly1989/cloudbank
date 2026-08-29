@@ -81,15 +81,16 @@ func notFoundOr(w http.ResponseWriter, err error, code, msg string, status int) 
 }
 
 type csvPreviewBody struct {
-	AccountID   int64          `json:"accountId"`
-	Content     string         `json:"content"`
-	Dialect     string         `json:"dialect"`
-	Delimiter   string         `json:"delimiter"`
-	HasHeader   bool           `json:"hasHeader"`
-	DateFormat  string         `json:"dateFormat"`
-	DecimalChar string         `json:"decimalChar"`
-	Mapping     map[string]int `json:"mapping"`
-	ApplyRules  bool           `json:"applyRules"`
+	AccountID    int64          `json:"accountId"`
+	Content      string         `json:"content"`
+	Dialect      string         `json:"dialect"`
+	Delimiter    string         `json:"delimiter"`
+	HasHeader    bool           `json:"hasHeader"`
+	DateFormat   string         `json:"dateFormat"`
+	DecimalChar  string         `json:"decimalChar"`
+	Mapping      map[string]int `json:"mapping"`
+	InvertAmount bool           `json:"invertAmount"`
+	ApplyRules   bool           `json:"applyRules"`
 }
 
 func (h *importDataHandlers) previewCSV(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +107,8 @@ func (h *importDataHandlers) previewCSV(w http.ResponseWriter, r *http.Request) 
 	res, err := h.svc.Preview(r.Context(), wl.ID, importio.PreviewRequest{
 		AccountID: body.AccountID, Content: body.Content, Dialect: dialect,
 		Delimiter: body.Delimiter, HasHeader: body.HasHeader, DateFormat: body.DateFormat,
-		DecimalChar: body.DecimalChar, Mapping: body.Mapping, ApplyRules: body.ApplyRules,
+		DecimalChar: body.DecimalChar, Mapping: body.Mapping, InvertAmount: body.InvertAmount,
+		ApplyRules: body.ApplyRules,
 	})
 	if err != nil {
 		notFoundOr(w, err, "invalid_file", "could not parse the CSV file", http.StatusBadRequest)

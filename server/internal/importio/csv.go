@@ -36,6 +36,10 @@ const (
 	FieldAmount   = "amount"
 	FieldCategory = "category"
 	FieldTags     = "tags"
+	// FieldDebit / FieldCredit are an alternative to FieldAmount: separate
+	// outflow / inflow columns (positive magnitudes), as many banks export.
+	FieldDebit  = "debit"
+	FieldCredit = "credit"
 )
 
 // homebankLayout is the fixed column order of the HomeBank CSV dialect.
@@ -56,6 +60,9 @@ type ParseOptions struct {
 	DateFormat  string         // "iso"/"ymd", "dmy", "mdy"; "" = auto
 	DecimalChar string         // "." or ","; "" defaults to "."
 	Mapping     map[string]int // generic: field name → column index
+	// InvertAmount flips the sign of every parsed amount, for banks whose
+	// convention is reversed (e.g. expenses positive).
+	InvertAmount bool
 }
 
 // Row is one parsed CSV transaction line, before payee/category resolution.
@@ -171,12 +178,32 @@ func Parse(content string, opts ParseOptions) ([]Row, error) {
 		}
 		row.Date = date
 
-		amtStr := get(FieldAmount)
-		amt, aerr := money.Parse(amtStr, 6, decimalChar) // parse at high precision; rescale below
-		if aerr != nil {
-			row.Err = fmt.Sprintf("invalid amount %q", amtStr)
-			rows = append(rows, row)
-			continue
+		// Amount comes either from a single signed column, or from separate
+		// debit (outflow) and credit (inflow) columns: amount = credit − debit.
+		_, hasDebit := colmap[FieldDebit]
+		_, hasCredit := colmap[FieldCredit]
+		var amt int64
+		if hasDebit || hasCredit {
+			debit, derr := parseAmountOrZero(get(FieldDebit), decimalChar)
+			credit, cerr := parseAmountOrZero(get(FieldCredit), decimalChar)
+			if derr != nil || cerr != nil {
+				row.Err = fmt.Sprintf("invalid debit/credit amount %q / %q", get(FieldDebit), get(FieldCredit))
+				rows = append(rows, row)
+				continue
+			}
+			amt = credit - debit
+		} else {
+			amtStr := get(FieldAmount)
+			a, aerr := money.Parse(amtStr, 6, decimalChar) // parse at high precision; rescale below
+			if aerr != nil {
+				row.Err = fmt.Sprintf("invalid amount %q", amtStr)
+				rows = append(rows, row)
+				continue
+			}
+			amt = a
+		}
+		if opts.InvertAmount {
+			amt = -amt
 		}
 		row.Amount = amt // caller rescales to the account's fraction digits
 
@@ -215,6 +242,16 @@ func pow10(n int) int64 {
 		out *= 10
 	}
 	return out
+}
+
+// parseAmountOrZero parses a debit/credit cell at 6-digit precision, treating an
+// empty cell (or a lone dash placeholder) as zero.
+func parseAmountOrZero(s, decimalChar string) (int64, error) {
+	s = strings.TrimSpace(s)
+	if s == "" || s == "-" {
+		return 0, nil
+	}
+	return money.Parse(s, 6, decimalChar)
 }
 
 // parseAmountFlexible parses an amount whose decimal separator may be '.' or ','
