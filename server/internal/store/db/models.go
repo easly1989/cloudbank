@@ -30,6 +30,17 @@ type Account struct {
 	DefaultPaymentMode int64
 }
 
+type ApiToken struct {
+	ID         string
+	UserID     int64
+	Name       string
+	Scope      string
+	Prefix     string
+	CreatedAt  string
+	LastUsedAt sql.NullString
+	ExpiresAt  sql.NullString
+}
+
 type Assignment struct {
 	ID             int64
 	WalletID       int64

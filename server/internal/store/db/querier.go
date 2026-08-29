@@ -37,6 +37,7 @@ type Querier interface {
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateWallet(ctx context.Context, arg CreateWalletParams) (Wallet, error)
+	DeleteAPIToken(ctx context.Context, arg DeleteAPITokenParams) (int64, error)
 	DeleteAccount(ctx context.Context, id int64) error
 	DeleteAssignment(ctx context.Context, id int64) error
 	DeleteAttachment(ctx context.Context, id int64) error
@@ -60,6 +61,7 @@ type Querier interface {
 	DeleteVehicle(ctx context.Context, id int64) error
 	DeleteWallet(ctx context.Context, id int64) error
 	FindDuplicateTransactions(ctx context.Context, arg FindDuplicateTransactionsParams) ([]Transaction, error)
+	GetAPIToken(ctx context.Context, id string) (ApiToken, error)
 	GetAccount(ctx context.Context, id int64) (Account, error)
 	GetAssignment(ctx context.Context, id int64) (Assignment, error)
 	GetAttachment(ctx context.Context, id int64) (Attachment, error)
@@ -83,6 +85,7 @@ type Querier interface {
 	GetWallet(ctx context.Context, id int64) (Wallet, error)
 	GetWalletMembership(ctx context.Context, arg GetWalletMembershipParams) (string, error)
 	GoalSaved(ctx context.Context, goalID int64) (int64, error)
+	InsertAPIToken(ctx context.Context, arg InsertAPITokenParams) (ApiToken, error)
 	InsertAccount(ctx context.Context, arg InsertAccountParams) (Account, error)
 	InsertAssignment(ctx context.Context, arg InsertAssignmentParams) (Assignment, error)
 	InsertAttachment(ctx context.Context, arg InsertAttachmentParams) (Attachment, error)
@@ -100,6 +103,7 @@ type Querier interface {
 	InsertTransaction(ctx context.Context, arg InsertTransactionParams) (Transaction, error)
 	InsertTransfer(ctx context.Context, arg InsertTransferParams) (Transfer, error)
 	InsertVehicle(ctx context.Context, arg InsertVehicleParams) (Vehicle, error)
+	ListAPITokensForUser(ctx context.Context, userID int64) ([]ApiToken, error)
 	// The full account ledger ordered chronologically (date, then id) with a
 	// server-computed cumulative delta. The application adds the account's initial
 	// balance to produce each row's running balance.
@@ -176,6 +180,7 @@ type Querier interface {
 	SetTransactionPaymentMode(ctx context.Context, arg SetTransactionPaymentModeParams) error
 	SetTransactionTemplate(ctx context.Context, arg SetTransactionTemplateParams) error
 	SetUserDisabled(ctx context.Context, arg SetUserDisabledParams) error
+	TouchAPIToken(ctx context.Context, id string) error
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
 	UpdateAccountPosition(ctx context.Context, arg UpdateAccountPositionParams) error

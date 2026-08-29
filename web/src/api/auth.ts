@@ -75,6 +75,36 @@ export const getMe = () => api.get<User>("/api/v1/auth/me");
 export const updateMe = (body: { locale?: string; theme?: string; preferences?: Preferences }) =>
   api.patch<User>("/api/v1/auth/me", body);
 
+// --- Personal API tokens ---
+
+export type ApiTokenScope = "read" | "write";
+
+export interface ApiToken {
+  id: string;
+  name: string;
+  scope: ApiTokenScope;
+  prefix: string;
+  createdAt: string;
+  lastUsedAt?: string;
+  expiresAt?: string;
+}
+
+export interface ApiTokenCreated {
+  /** The plaintext token — returned once, never recoverable. */
+  token: string;
+  info: ApiToken;
+}
+
+export const listApiTokens = () => api.get<ApiToken[]>("/api/v1/auth/tokens");
+
+export const createApiToken = (body: {
+  name: string;
+  scope: ApiTokenScope;
+  expiresInDays?: number;
+}) => api.post<ApiTokenCreated>("/api/v1/auth/tokens", body);
+
+export const revokeApiToken = (id: string) => api.del<void>(`/api/v1/auth/tokens/${id}`);
+
 // --- Integrity & backup ---
 
 export interface IntegrityIssue {
