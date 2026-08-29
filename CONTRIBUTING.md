@@ -51,6 +51,14 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/): `type(scope
 - **Wallet isolation** is enforced in one place (membership middleware). Never query wallet-scoped data without the wallet guard.
 - Prefer plain SQL (via sqlc) over an ORM; keep aggregation in SQL.
 
+## Contributing a bank import plugin
+
+Adding support for a bank's statement export is a great first contribution — a
+plugin is just a parser, and the shared pipeline does the rest. See
+[docs/import-plugins.md](docs/import-plugins.md) for the `ImportPlugin`/`Row`
+contract, a worked example, and testing guidance. Please don't commit a real
+personal statement as a fixture — redact it to a couple of fabricated rows.
+
 ## Local development
 
 Prerequisites: **Go 1.25+**, **Node 22+**, and Docker (for the container build).
