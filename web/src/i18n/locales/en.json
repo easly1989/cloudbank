@@ -523,6 +523,13 @@
     "disabled": "Two-factor authentication disabled",
     "setupError": "Could not start setup. Please try again."
   },
+  "notif": {
+    "title": "Notifications",
+    "hint": "Get a push reminder on this device when bills are due soon or overdue.",
+    "denied": "Notifications are blocked — allow them in your browser to turn this on.",
+    "blocked": "Blocked in your browser settings.",
+    "unsupported": "This browser doesn't support push notifications."
+  },
   "setup": {
     "title": "Welcome to CloudBank",
     "subtitle": "Create the administrator account to get started.",
