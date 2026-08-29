@@ -55,7 +55,9 @@ function readAsBase64(file: File): Promise<string> {
   });
 }
 
-const REQUIRED_FIELDS = ["date", "amount"];
+// Only the date is strictly required; the amount may be a single signed column
+// or separate debit/credit columns (validated separately).
+const REQUIRED_FIELDS = ["date"];
 
 export function ImportWizard() {
   const { t } = useTranslation();
@@ -108,6 +110,7 @@ export function ImportWizard() {
   const [hasHeader, setHasHeader] = useState(true);
   const [dateFormat, setDateFormat] = useState<CSVDateFormat>("");
   const [decimalChar, setDecimalChar] = useState(".");
+  const [invertAmount, setInvertAmount] = useState(false);
   const [columns, setColumns] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Record<string, number>>({});
   const [rows, setRows] = useState<CSVPreviewRow[]>([]);
@@ -165,6 +168,7 @@ export function ImportWizard() {
       dateFormat,
       decimalChar: format === "generic" ? decimalChar : undefined,
       mapping: opts.withMapping ? mapping : undefined,
+      invertAmount: format === "generic" ? invertAmount : undefined,
       applyRules: opts.rules,
     });
   };
@@ -266,7 +270,11 @@ export function ImportWizard() {
     setError(null);
   };
 
-  const mappingValid = REQUIRED_FIELDS.every((f) => mapping[f] !== undefined);
+  // Date is always required; the amount can come from a single "amount" column
+  // or from separate debit/credit columns.
+  const hasAmount =
+    mapping.amount !== undefined || mapping.debit !== undefined || mapping.credit !== undefined;
+  const mappingValid = mapping.date !== undefined && hasAmount;
   const includeCount = rows.filter((r) => r.include && !r.error).length;
   const stepIndex = { source: 0, map: 1, review: showMapping ? 2 : 1, done: 3 }[phase];
 
@@ -399,6 +407,11 @@ export function ImportWizard() {
               <Select
                 key={field}
                 label={t(`importCsv.fields.${field}`)}
+                description={
+                  field === "debit" || field === "credit"
+                    ? t("importCsv.debitCreditHint")
+                    : undefined
+                }
                 required={REQUIRED_FIELDS.includes(field)}
                 clearable
                 data={columns.map((c, i) => ({ value: String(i), label: c }))}
@@ -413,6 +426,12 @@ export function ImportWizard() {
                 }
               />
             ))}
+            <Switch
+              label={t("importCsv.invertAmount")}
+              description={t("importCsv.invertAmountHint")}
+              checked={invertAmount}
+              onChange={(e) => setInvertAmount(e.currentTarget.checked)}
+            />
             <Group justify="space-between">
               <Button variant="default" onClick={() => setPhase("source")}>
                 {t("importCsv.back")}

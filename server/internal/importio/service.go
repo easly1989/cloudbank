@@ -37,15 +37,16 @@ func NewService(write *sql.DB, txn *transaction.Service, rules *assignment.Servi
 
 // PreviewRequest configures a preview.
 type PreviewRequest struct {
-	AccountID   int64
-	Content     string
-	Dialect     Dialect
-	Delimiter   string
-	HasHeader   bool
-	DateFormat  string
-	DecimalChar string
-	Mapping     map[string]int
-	ApplyRules  bool
+	AccountID    int64
+	Content      string
+	Dialect      Dialect
+	Delimiter    string
+	HasHeader    bool
+	DateFormat   string
+	DecimalChar  string
+	Mapping      map[string]int
+	InvertAmount bool
+	ApplyRules   bool
 }
 
 // PreviewRow is a parsed-and-resolved row shown in the wizard. Include defaults
@@ -125,6 +126,7 @@ func (s *Service) Preview(ctx context.Context, walletID int64, req PreviewReques
 	rows, err := Parse(req.Content, ParseOptions{
 		Dialect: req.Dialect, Delimiter: req.Delimiter, HasHeader: req.HasHeader,
 		DateFormat: req.DateFormat, DecimalChar: req.DecimalChar, Mapping: req.Mapping,
+		InvertAmount: req.InvertAmount,
 	})
 	if err != nil {
 		return Preview{}, err

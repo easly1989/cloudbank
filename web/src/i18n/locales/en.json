@@ -825,10 +825,12 @@
     "next": "Next",
     "back": "Back",
     "preview": "Preview",
-    "mapHint": "Match each transaction field to a column in your file. Date and amount are required.",
+    "mapHint": "Match each transaction field to a column in your file. Date is required, plus either Amount or Debit/Credit.",
     "fields": {
       "date": "Date",
       "amount": "Amount",
+      "debit": "Debit (out)",
+      "credit": "Credit (in)",
       "payee": "Payee",
       "memo": "Memo",
       "category": "Category",
@@ -836,6 +838,9 @@
       "paymode": "Payment mode",
       "tags": "Tags"
     },
+    "debitCreditHint": "Use instead of Amount when your file has separate money-out and money-in columns.",
+    "invertAmount": "Invert sign",
+    "invertAmountHint": "Turn on if your bank writes expenses as positive and income as negative.",
     "applyRules": "Apply import rules",
     "willImport": "{{count}} rows will be imported",
     "duplicate": "Duplicate",
