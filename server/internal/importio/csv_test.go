@@ -126,3 +126,57 @@ func TestFormatHomeBankRoundTrip(t *testing.T) {
 		t.Fatalf("round-trip row = %+v", p)
 	}
 }
+
+func TestParseDebitCreditColumns(t *testing.T) {
+	// Separate outflow/inflow columns; either cell may be blank.
+	content := "date,debit,credit,memo\n" +
+		"2026-01-10,50.00,,Rent\n" +
+		"2026-01-11,,1200.00,Salary\n" +
+		"2026-01-12,10.50,,Coffee\n"
+	m := map[string]int{FieldDate: 0, FieldDebit: 1, FieldCredit: 2, FieldMemo: 3}
+	rows, err := Parse(content, ParseOptions{
+		Dialect: DialectGeneric, HasHeader: true, DecimalChar: ".", Mapping: m,
+	})
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if len(rows) != 3 {
+		t.Fatalf("rows = %d, want 3", len(rows))
+	}
+	// debit → negative, credit → positive (6-digit precision).
+	if rows[0].Amount != -50_000000 {
+		t.Fatalf("rent amount = %d, want -50000000", rows[0].Amount)
+	}
+	if rows[1].Amount != 1200_000000 {
+		t.Fatalf("salary amount = %d, want 1200000000", rows[1].Amount)
+	}
+	if rows[2].Amount != -10_500000 {
+		t.Fatalf("coffee amount = %d, want -10500000", rows[2].Amount)
+	}
+
+	// InvertAmount flips every sign.
+	inv, err := Parse(content, ParseOptions{
+		Dialect: DialectGeneric, HasHeader: true, DecimalChar: ".", Mapping: m, InvertAmount: true,
+	})
+	if err != nil {
+		t.Fatalf("Parse(invert): %v", err)
+	}
+	if inv[0].Amount != 50_000000 || inv[1].Amount != -1200_000000 {
+		t.Fatalf("inverted = %d / %d, want 50000000 / -1200000000", inv[0].Amount, inv[1].Amount)
+	}
+}
+
+func TestParseInvertSingleAmount(t *testing.T) {
+	// A bank that writes expenses as positive: invert to CloudBank's convention.
+	content := "date,amount,memo\n2026-02-01,12.34,Shop\n"
+	rows, err := Parse(content, ParseOptions{
+		Dialect: DialectGeneric, HasHeader: true, DecimalChar: ".",
+		Mapping: map[string]int{FieldDate: 0, FieldAmount: 1, FieldMemo: 2}, InvertAmount: true,
+	})
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if rows[0].Amount != -12_340000 {
+		t.Fatalf("inverted amount = %d, want -12340000", rows[0].Amount)
+	}
+}
