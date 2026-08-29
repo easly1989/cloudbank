@@ -60,15 +60,16 @@ type authHandlers struct {
 // userResponse is the JSON shape returned for an account. It never contains the
 // password hash.
 type userResponse struct {
-	ID          int64           `json:"id"`
-	Username    string          `json:"username"`
-	Email       string          `json:"email"`
-	IsAdmin     bool            `json:"isAdmin"`
-	Locale      string          `json:"locale"`
-	Theme       string          `json:"theme"`
-	Preferences json.RawMessage `json:"preferences"`
-	Disabled    bool            `json:"disabled"`
-	CreatedAt   string          `json:"createdAt"`
+	ID               int64           `json:"id"`
+	Username         string          `json:"username"`
+	Email            string          `json:"email"`
+	IsAdmin          bool            `json:"isAdmin"`
+	Locale           string          `json:"locale"`
+	Theme            string          `json:"theme"`
+	Preferences      json.RawMessage `json:"preferences"`
+	Disabled         bool            `json:"disabled"`
+	TwoFactorEnabled bool            `json:"twoFactorEnabled"`
+	CreatedAt        string          `json:"createdAt"`
 }
 
 func toUserResponse(u auth.User) userResponse {
@@ -78,7 +79,8 @@ func toUserResponse(u auth.User) userResponse {
 	}
 	return userResponse{
 		ID: u.ID, Username: u.Username, Email: u.Email, IsAdmin: u.IsAdmin,
-		Locale: u.Locale, Theme: u.Theme, Preferences: prefs, Disabled: u.Disabled, CreatedAt: u.CreatedAt,
+		Locale: u.Locale, Theme: u.Theme, Preferences: prefs, Disabled: u.Disabled,
+		TwoFactorEnabled: u.TwoFactorEnabled, CreatedAt: u.CreatedAt,
 	}
 }
 
@@ -96,6 +98,7 @@ func (h *authHandlers) protectedRoutes(r chi.Router) {
 	r.Get("/auth/me", h.me)
 	r.Patch("/auth/me", h.updateMe)
 	h.tokenRoutes(r)
+	h.twoFactorRoutes(r)
 
 	r.Group(func(r chi.Router) {
 		r.Use(h.requireAdmin)
@@ -119,6 +122,7 @@ type credentials struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	TotpCode string `json:"totpCode"`
 }
 
 func (h *authHandlers) setup(w http.ResponseWriter, r *http.Request) {
@@ -148,10 +152,15 @@ func (h *authHandlers) login(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &in) {
 		return
 	}
-	u, token, err := h.svc.Login(r.Context(), clientIP(r), strings.TrimSpace(in.Username), in.Password, r.UserAgent())
+	u, token, err := h.svc.Login(r.Context(), clientIP(r), strings.TrimSpace(in.Username), in.Password, strings.TrimSpace(in.TotpCode), r.UserAgent())
 	switch {
 	case errors.Is(err, auth.ErrRateLimited):
 		writeError(w, http.StatusTooManyRequests, "rate_limited", "too many attempts, try again later")
+		return
+	case errors.Is(err, auth.ErrTOTPRequired):
+		// The password was correct; the client must supply the second factor and
+		// resubmit. No session is opened yet.
+		writeJSON(w, http.StatusOK, map[string]any{"totpRequired": true})
 		return
 	case errors.Is(err, auth.ErrInvalidCredentials):
 		writeError(w, http.StatusUnauthorized, "invalid_credentials", "invalid username or password")

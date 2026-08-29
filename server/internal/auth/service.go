@@ -17,6 +17,12 @@ var (
 	ErrRateLimited        = errors.New("auth: too many attempts")
 	ErrUnauthorized       = errors.New("auth: unauthorized")
 	ErrNotFound           = errors.New("auth: not found")
+	// ErrTOTPRequired means the password was correct but a second factor is
+	// needed to finish logging in.
+	ErrTOTPRequired = errors.New("auth: two-factor code required")
+	// ErrTOTPEnabled / ErrTOTPNotEnabled guard the enrollment transitions.
+	ErrTOTPEnabled    = errors.New("auth: two-factor already enabled")
+	ErrTOTPNotEnabled = errors.New("auth: two-factor not enabled")
 )
 
 // sessionTTL is the sliding lifetime of a session; each authenticated request
@@ -25,15 +31,16 @@ const sessionTTL = 7 * 24 * time.Hour
 
 // User is the public representation of an account — never includes the hash.
 type User struct {
-	ID          int64
-	Username    string
-	Email       string
-	IsAdmin     bool
-	Locale      string
-	Theme       string
-	Preferences string // opaque JSON blob of UI preferences
-	Disabled    bool
-	CreatedAt   string
+	ID               int64
+	Username         string
+	Email            string
+	IsAdmin          bool
+	Locale           string
+	Theme            string
+	Preferences      string // opaque JSON blob of UI preferences
+	Disabled         bool
+	TwoFactorEnabled bool
+	CreatedAt        string
 }
 
 func toUser(u db.User) User {
@@ -42,15 +49,16 @@ func toUser(u db.User) User {
 		prefs = "{}"
 	}
 	return User{
-		ID:          u.ID,
-		Username:    u.Username,
-		Email:       u.Email,
-		IsAdmin:     u.IsAdmin != 0,
-		Locale:      u.Locale,
-		Theme:       u.Theme,
-		Preferences: prefs,
-		Disabled:    u.Disabled != 0,
-		CreatedAt:   u.CreatedAt,
+		ID:               u.ID,
+		Username:         u.Username,
+		Email:            u.Email,
+		IsAdmin:          u.IsAdmin != 0,
+		Locale:           u.Locale,
+		Theme:            u.Theme,
+		Preferences:      prefs,
+		Disabled:         u.Disabled != 0,
+		TwoFactorEnabled: u.TotpEnabled != 0,
+		CreatedAt:        u.CreatedAt,
 	}
 }
 
@@ -118,7 +126,11 @@ func (s *Service) Setup(ctx context.Context, username, email, password, userAgen
 }
 
 // Login verifies credentials and opens a session. ip scopes the rate limiter.
-func (s *Service) Login(ctx context.Context, ip, username, password, userAgent string) (User, string, error) {
+// When the account has two-factor enabled, a valid totpCode (a TOTP code or a
+// one-time recovery code) is also required; an empty code yields
+// ErrTOTPRequired after the password is confirmed, so the caller can prompt for
+// the second factor.
+func (s *Service) Login(ctx context.Context, ip, username, password, totpCode, userAgent string) (User, string, error) {
 	key := ip + "|" + username
 	if !s.limiter.allow(key) {
 		return User{}, "", ErrRateLimited
@@ -143,12 +155,42 @@ func (s *Service) Login(ctx context.Context, ip, username, password, userAgent s
 		s.limiter.record(key)
 		return User{}, "", ErrInvalidCredentials
 	}
+	if u.TotpEnabled != 0 {
+		if totpCode == "" {
+			// Password is correct; the second factor is still needed. This does
+			// not consume a rate-limit attempt — the password check passed.
+			return User{}, "", ErrTOTPRequired
+		}
+		valid, err := s.checkSecondFactor(ctx, u, totpCode)
+		if err != nil {
+			return User{}, "", err
+		}
+		if !valid {
+			s.limiter.record(key)
+			return User{}, "", ErrInvalidCredentials
+		}
+	}
 	s.limiter.reset(key)
 	token, err := s.openSession(ctx, u.ID, userAgent)
 	if err != nil {
 		return User{}, "", err
 	}
 	return toUser(u), token, nil
+}
+
+// checkSecondFactor accepts either a current TOTP code or an unused recovery
+// code (which it consumes).
+func (s *Service) checkSecondFactor(ctx context.Context, u db.User, code string) (bool, error) {
+	if verifyTOTP(u.TotpSecret, code, s.now()) {
+		return true, nil
+	}
+	n, err := s.q.ConsumeRecoveryCode(ctx, db.ConsumeRecoveryCodeParams{
+		UserID: u.ID, CodeHash: hashToken(normalizeRecoveryCode(code)),
+	})
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
 }
 
 // Logout revokes the session identified by the given token (a no-op if unknown).
@@ -377,6 +419,90 @@ func (s *Service) AuthenticateToken(ctx context.Context, token string) (User, st
 	}
 	_ = s.q.TouchAPIToken(ctx, id)
 	return toUser(u), t.Scope, nil
+}
+
+// recoveryCodeCount is how many one-time recovery codes are issued at enrollment.
+const recoveryCodeCount = 10
+
+// Begin2FASetup generates a fresh TOTP secret (not yet persisted) and the
+// otpauth:// provisioning URI for the user to scan. Enable2FA confirms it.
+func (s *Service) Begin2FASetup(ctx context.Context, userID int64) (secret, uri string, err error) {
+	u, err := s.q.GetUserByID(ctx, userID)
+	if err != nil {
+		return "", "", err
+	}
+	if u.TotpEnabled != 0 {
+		return "", "", ErrTOTPEnabled
+	}
+	secret, err = generateTOTPSecret()
+	if err != nil {
+		return "", "", err
+	}
+	return secret, otpauthURI(u.Username, secret), nil
+}
+
+// Enable2FA confirms enrollment: it verifies a code against the pending secret,
+// persists the secret, turns 2FA on, and returns a fresh set of one-time
+// recovery codes (shown once). Any previous recovery codes are replaced.
+func (s *Service) Enable2FA(ctx context.Context, userID int64, secret, code string) ([]string, error) {
+	u, err := s.q.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if u.TotpEnabled != 0 {
+		return nil, ErrTOTPEnabled
+	}
+	if !verifyTOTP(secret, code, s.now()) {
+		return nil, ErrInvalidCredentials
+	}
+	if err := s.q.SetUserTOTP(ctx, db.SetUserTOTPParams{TotpSecret: secret, TotpEnabled: 1, ID: userID}); err != nil {
+		return nil, err
+	}
+	if err := s.q.DeleteRecoveryCodes(ctx, userID); err != nil {
+		return nil, err
+	}
+	codes := make([]string, 0, recoveryCodeCount)
+	for i := 0; i < recoveryCodeCount; i++ {
+		display, canonical, err := newRecoveryCode()
+		if err != nil {
+			return nil, err
+		}
+		if err := s.q.InsertRecoveryCode(ctx, db.InsertRecoveryCodeParams{
+			UserID: userID, CodeHash: hashToken(canonical),
+		}); err != nil {
+			return nil, err
+		}
+		codes = append(codes, display)
+	}
+	return codes, nil
+}
+
+// Disable2FA turns two-factor off after re-authenticating with the password,
+// clearing the secret and all recovery codes.
+func (s *Service) Disable2FA(ctx context.Context, userID int64, password string) error {
+	u, err := s.q.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if u.TotpEnabled == 0 {
+		return ErrTOTPNotEnabled
+	}
+	ok, err := Verify(u.PasswordHash, password)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return ErrInvalidCredentials
+	}
+	if err := s.q.ClearUserTOTP(ctx, userID); err != nil {
+		return err
+	}
+	return s.q.DeleteRecoveryCodes(ctx, userID)
+}
+
+// RecoveryCodesRemaining reports how many unused recovery codes the user has.
+func (s *Service) RecoveryCodesRemaining(ctx context.Context, userID int64) (int64, error) {
+	return s.q.CountUnusedRecoveryCodes(ctx, userID)
 }
 
 func (s *Service) openSession(ctx context.Context, userID int64, userAgent string) (string, error) {

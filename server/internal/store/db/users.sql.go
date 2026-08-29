@@ -23,7 +23,7 @@ func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (username, email, password_hash, is_admin, locale, theme)
 VALUES (?, ?, ?, ?, ?, ?)
-RETURNING id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences
+RETURNING id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences, totp_secret, totp_enabled
 `
 
 type CreateUserParams struct {
@@ -56,12 +56,14 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Disabled,
 		&i.CreatedAt,
 		&i.Preferences,
+		&i.TotpSecret,
+		&i.TotpEnabled,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences FROM users WHERE id = ? LIMIT 1
+SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences, totp_secret, totp_enabled FROM users WHERE id = ? LIMIT 1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
@@ -78,12 +80,14 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.Disabled,
 		&i.CreatedAt,
 		&i.Preferences,
+		&i.TotpSecret,
+		&i.TotpEnabled,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences FROM users WHERE username = ? LIMIT 1
+SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences, totp_secret, totp_enabled FROM users WHERE username = ? LIMIT 1
 `
 
 func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
@@ -100,12 +104,14 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.Disabled,
 		&i.CreatedAt,
 		&i.Preferences,
+		&i.TotpSecret,
+		&i.TotpEnabled,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences FROM users ORDER BY username
+SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences, totp_secret, totp_enabled FROM users ORDER BY username
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -128,6 +134,8 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.Disabled,
 			&i.CreatedAt,
 			&i.Preferences,
+			&i.TotpSecret,
+			&i.TotpEnabled,
 		); err != nil {
 			return nil, err
 		}

@@ -19,6 +19,7 @@ import { useTranslation } from "react-i18next";
 
 import { ApiError, listAccounts, updateMe, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
+import { TwoFactorCard } from "../components/TwoFactorCard";
 import { supportedLanguages } from "../i18n";
 import { useTour } from "../onboarding/tourContext";
 import { ACCENT_COLORS } from "../theme";
@@ -176,6 +177,7 @@ export function PreferencesPage() {
           </Group>
         </Stack>
       </Card>
+      <TwoFactorCard />
     </Stack>
   );
 }

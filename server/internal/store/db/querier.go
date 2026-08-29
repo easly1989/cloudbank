@@ -26,12 +26,15 @@ type Querier interface {
 	// Category amounts in a date range, from both plain transactions and split
 	// lines, with each row's account currency so the app can convert to base.
 	CategoryExpenseTotals(ctx context.Context, arg CategoryExpenseTotalsParams) ([]CategoryExpenseTotalsRow, error)
+	ClearUserTOTP(ctx context.Context, id int64) error
 	ClearWalletBase(ctx context.Context, walletID int64) error
+	ConsumeRecoveryCode(ctx context.Context, arg ConsumeRecoveryCodeParams) (int64, error)
 	CountPayeesWithCategory(ctx context.Context, defaultCategoryID sql.NullInt64) (int64, error)
 	CountSubcategories(ctx context.Context, parentID sql.NullInt64) (int64, error)
 	CountTransactionsForAccount(ctx context.Context, accountID int64) (int64, error)
 	CountTransactionsWithCategory(ctx context.Context, categoryID sql.NullInt64) (int64, error)
 	CountTransactionsWithPayee(ctx context.Context, payeeID sql.NullInt64) (int64, error)
+	CountUnusedRecoveryCodes(ctx context.Context, userID int64) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CountWalletCurrencies(ctx context.Context, walletID int64) (int64, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
@@ -48,6 +51,7 @@ type Querier interface {
 	DeleteExpiredSessions(ctx context.Context, expiresAt string) error
 	DeleteGoal(ctx context.Context, id int64) error
 	DeletePayee(ctx context.Context, id int64) error
+	DeleteRecoveryCodes(ctx context.Context, userID int64) error
 	DeleteSchedule(ctx context.Context, id int64) error
 	DeleteSession(ctx context.Context, id string) error
 	DeleteSplits(ctx context.Context, transactionID int64) error
@@ -95,6 +99,7 @@ type Querier interface {
 	InsertCurrency(ctx context.Context, arg InsertCurrencyParams) (Currency, error)
 	InsertGoal(ctx context.Context, arg InsertGoalParams) (Goal, error)
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
+	InsertRecoveryCode(ctx context.Context, arg InsertRecoveryCodeParams) error
 	InsertSchedule(ctx context.Context, arg InsertScheduleParams) (Schedule, error)
 	InsertSplit(ctx context.Context, arg InsertSplitParams) error
 	InsertTag(ctx context.Context, arg InsertTagParams) (Tag, error)
@@ -180,6 +185,7 @@ type Querier interface {
 	SetTransactionPaymentMode(ctx context.Context, arg SetTransactionPaymentModeParams) error
 	SetTransactionTemplate(ctx context.Context, arg SetTransactionTemplateParams) error
 	SetUserDisabled(ctx context.Context, arg SetUserDisabledParams) error
+	SetUserTOTP(ctx context.Context, arg SetUserTOTPParams) error
 	TouchAPIToken(ctx context.Context, id string) error
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
