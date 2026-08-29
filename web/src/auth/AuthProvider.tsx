@@ -4,6 +4,7 @@ import { createContext, useContext, type ReactNode } from "react";
 import {
   ApiError,
   getMe,
+  isTotpChallenge,
   login as apiLogin,
   logout as apiLogout,
   postSetup,
@@ -53,7 +54,11 @@ export function useLogin() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (creds: Credentials) => apiLogin(creds),
-    onSuccess: (user) => qc.setQueryData(["me"], user),
+    // A totp challenge is not a completed login — leave the user unset so the
+    // form can prompt for the second factor.
+    onSuccess: (result) => {
+      if (!isTotpChallenge(result)) qc.setQueryData(["me"], result);
+    },
   });
 }
 

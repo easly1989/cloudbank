@@ -131,6 +131,14 @@ type GoalContribution struct {
 	Note   string
 }
 
+type MfaRecoveryCode struct {
+	ID        int64
+	UserID    int64
+	CodeHash  string
+	UsedAt    sql.NullString
+	CreatedAt string
+}
+
 type Payee struct {
 	ID                 int64
 	WalletID           int64
@@ -248,6 +256,8 @@ type User struct {
 	Disabled     int64
 	CreatedAt    string
 	Preferences  string
+	TotpSecret   string
+	TotpEnabled  int64
 }
 
 type Vehicle struct {
