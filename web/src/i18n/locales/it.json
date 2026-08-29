@@ -523,6 +523,13 @@
     "disabled": "Autenticazione a due fattori disattivata",
     "setupError": "Impossibile avviare la configurazione. Riprova."
   },
+  "notif": {
+    "title": "Notifiche",
+    "hint": "Ricevi un promemoria push su questo dispositivo quando ci sono scadenze in arrivo o scadute.",
+    "denied": "Le notifiche sono bloccate — consentile nel browser per attivarle.",
+    "blocked": "Bloccate nelle impostazioni del browser.",
+    "unsupported": "Questo browser non supporta le notifiche push."
+  },
   "setup": {
     "title": "Benvenuto in CloudBank",
     "subtitle": "Crea l'account amministratore per iniziare.",
