@@ -51,6 +51,8 @@ type Querier interface {
 	DeleteExpiredSessions(ctx context.Context, expiresAt string) error
 	DeleteGoal(ctx context.Context, id int64) error
 	DeletePayee(ctx context.Context, id int64) error
+	DeletePushSubscription(ctx context.Context, arg DeletePushSubscriptionParams) error
+	DeletePushSubscriptionByEndpoint(ctx context.Context, endpoint string) error
 	DeleteRecoveryCodes(ctx context.Context, userID int64) error
 	DeleteSchedule(ctx context.Context, id int64) error
 	DeleteSession(ctx context.Context, id string) error
@@ -67,6 +69,7 @@ type Querier interface {
 	FindDuplicateTransactions(ctx context.Context, arg FindDuplicateTransactionsParams) ([]Transaction, error)
 	GetAPIToken(ctx context.Context, id string) (ApiToken, error)
 	GetAccount(ctx context.Context, id int64) (Account, error)
+	GetAppConfig(ctx context.Context, key string) (string, error)
 	GetAssignment(ctx context.Context, id int64) (Assignment, error)
 	GetAttachment(ctx context.Context, id int64) (Attachment, error)
 	GetBaseCurrency(ctx context.Context, walletID int64) (Currency, error)
@@ -100,6 +103,7 @@ type Querier interface {
 	InsertGoal(ctx context.Context, arg InsertGoalParams) (Goal, error)
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
 	InsertRecoveryCode(ctx context.Context, arg InsertRecoveryCodeParams) error
+	InsertReminderIfNew(ctx context.Context, arg InsertReminderIfNewParams) (int64, error)
 	InsertSchedule(ctx context.Context, arg InsertScheduleParams) (Schedule, error)
 	InsertSplit(ctx context.Context, arg InsertSplitParams) error
 	InsertTag(ctx context.Context, arg InsertTagParams) (Tag, error)
@@ -127,6 +131,8 @@ type Querier interface {
 	ListGoalsForWallet(ctx context.Context, walletID int64) ([]ListGoalsForWalletRow, error)
 	ListImportRefsForAccount(ctx context.Context, accountID int64) ([]string, error)
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
+	ListPushSubscriptionsForUser(ctx context.Context, userID int64) ([]ListPushSubscriptionsForUserRow, error)
+	ListPushUserIDs(ctx context.Context) ([]int64, error)
 	// Every schedule in the wallet with the template fields the Bills view needs:
 	// amount (signed), the target account and its currency (for base conversion),
 	// and the recurrence state used to enumerate occurrences and classify them.
@@ -176,6 +182,7 @@ type Querier interface {
 	// filters. Each row also carries the total match count (window) so the caller
 	// can paginate.
 	SearchTransactions(ctx context.Context, arg SearchTransactionsParams) ([]SearchTransactionsRow, error)
+	SetAppConfig(ctx context.Context, arg SetAppConfigParams) error
 	SetAssignmentPosition(ctx context.Context, arg SetAssignmentPositionParams) error
 	SetChildrenIncome(ctx context.Context, arg SetChildrenIncomeParams) error
 	SetCurrencyBase(ctx context.Context, id int64) error
@@ -206,6 +213,7 @@ type Querier interface {
 	UpdateWallet(ctx context.Context, arg UpdateWalletParams) error
 	UpdateWalletBaseCurrency(ctx context.Context, arg UpdateWalletBaseCurrencyParams) error
 	UpsertExchangeRate(ctx context.Context, arg UpsertExchangeRateParams) error
+	UpsertPushSubscription(ctx context.Context, arg UpsertPushSubscriptionParams) error
 }
 
 var _ Querier = (*Queries)(nil)
