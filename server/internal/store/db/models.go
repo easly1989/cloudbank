@@ -41,6 +41,11 @@ type ApiToken struct {
 	ExpiresAt  sql.NullString
 }
 
+type AppConfig struct {
+	Key   string
+	Value string
+}
+
 type Assignment struct {
 	ID             int64
 	WalletID       int64
@@ -145,6 +150,21 @@ type Payee struct {
 	Name               string
 	DefaultCategoryID  sql.NullInt64
 	DefaultPaymentMode sql.NullInt64
+}
+
+type PushReminder struct {
+	UserID int64
+	Ref    string
+	SentAt string
+}
+
+type PushSubscription struct {
+	ID        int64
+	UserID    int64
+	Endpoint  string
+	P256dh    string
+	Auth      string
+	CreatedAt string
 }
 
 type Schedule struct {

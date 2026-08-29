@@ -22,6 +22,10 @@ type Config struct {
 	// RateProviderURL overrides the online exchange-rate API root (default
 	// frankfurter.app). Useful for a self-hosted mirror or for testing.
 	RateProviderURL string
+	// VAPIDSubject is the Web Push contact (a mailto: or https: URL) sent in the
+	// VAPID JWT. Defaults to a placeholder; set it to a real contact in
+	// production so push services can reach the operator.
+	VAPIDSubject string
 }
 
 // Load reads the configuration from the environment, applying defaults.
@@ -32,6 +36,7 @@ func Load() Config {
 		LogLevel:        getenv("CB_LOG_LEVEL", "info"),
 		SecureCookies:   getBoolEnv("CB_SECURE_COOKIES", true),
 		RateProviderURL: getenv("CB_RATE_URL", ""),
+		VAPIDSubject:    getenv("CB_VAPID_SUBJECT", "mailto:cloudbank@localhost"),
 	}
 }
 

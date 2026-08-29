@@ -32,6 +32,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
 	"github.com/easly1989/cloudbank/server/internal/payee"
+	"github.com/easly1989/cloudbank/server/internal/push"
 	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
 	"github.com/easly1989/cloudbank/server/internal/store"
@@ -137,6 +138,16 @@ func run() error {
 	// Include attachment files in wallet backup/restore.
 	backupSvc.SetAttachments(attachmentSvc)
 
+	// Web Push: optional. A failure to prepare the VAPID keypair disables push
+	// but must not stop the server.
+	var pushSvc *push.Service
+	if ps, err := push.NewService(st.Read(), st.Write(), cfg.VAPIDSubject, logger); err != nil {
+		logger.Warn("web push disabled: could not prepare VAPID keys", "error", err)
+	} else {
+		ps.SetBills(billsSvc)
+		pushSvc = ps
+	}
+
 	handler := httpapi.New(httpapi.Options{
 		Logger:        logger,
 		Health:        st,
@@ -153,6 +164,7 @@ func run() error {
 		Transfers:     transferSvc,
 		Dashboard:     dashboardSvc,
 		Bills:         billsSvc,
+		Push:          pushSvc,
 		Templates:     templateSvc,
 		Schedules:     scheduleSvc,
 		Assignments:   assignmentSvc,
@@ -193,6 +205,11 @@ func run() error {
 
 	// Refresh online exchange rates at startup, then once a day.
 	go runRateRefresh(ctx, currencySvc, rateProvider, logger)
+
+	// Send bills reminders (Web Push) at startup, then once a day.
+	if pushSvc != nil {
+		go runBillsReminders(ctx, pushSvc, logger)
+	}
 
 	select {
 	case err := <-errCh:
@@ -256,6 +273,27 @@ func runRateRefresh(ctx context.Context, svc *currency.Service, provider currenc
 			return
 		case <-ticker.C:
 			refresh()
+		}
+	}
+}
+
+// runBillsReminders sends due-bill reminders at startup and then once a day.
+// Each bill occurrence is announced only once (deduped in the push service).
+func runBillsReminders(ctx context.Context, svc *push.Service, logger *slog.Logger) {
+	run := func() {
+		if err := svc.RunBillsReminders(ctx, time.Now().UTC()); err != nil {
+			logger.Error("bills reminders job failed", "error", err)
+		}
+	}
+	run()
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			run()
 		}
 	}
 }

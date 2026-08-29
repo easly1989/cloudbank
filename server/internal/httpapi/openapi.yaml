@@ -183,6 +183,38 @@ paths:
         "204": { description: Disabled. }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/push/publickey:
+    get:
+      operationId: getPushPublicKey
+      summary: The VAPID public key a browser subscribes with
+      responses:
+        "200": { description: The key., content: { application/json: { schema: { type: object, properties: { publicKey: { type: string } }, required: [publicKey] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/push/subscribe:
+    post:
+      operationId: pushSubscribe
+      summary: Register this browser's Web Push subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PushSubscription" }
+      responses:
+        "204": { description: Subscribed. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/push/unsubscribe:
+    post:
+      operationId: pushUnsubscribe
+      summary: Remove this browser's Web Push subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { endpoint: { type: string } }, required: [endpoint] }
+      responses:
+        "204": { description: Unsubscribed. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
   /api/v1/auth/tokens:
     get:
       operationId: listApiTokens
@@ -1867,6 +1899,18 @@ components:
         locale: { type: string }
         theme: { type: string }
         preferences: { type: object, additionalProperties: true }
+    PushSubscription:
+      type: object
+      description: The browser's PushSubscription (endpoint + keys).
+      properties:
+        endpoint: { type: string }
+        keys:
+          type: object
+          properties:
+            p256dh: { type: string }
+            auth: { type: string }
+          required: [p256dh, auth]
+      required: [endpoint, keys]
     TotpSetup:
       type: object
       properties:

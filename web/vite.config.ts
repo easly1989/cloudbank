@@ -45,6 +45,8 @@ export default defineConfig({
         // API and health checks must reach the network, never the SPA shell.
         navigateFallbackDenylist: [/^\/api/, /^\/healthz/],
         cleanupOutdatedCaches: true,
+        // Add the Web Push handlers to the generated service worker.
+        importScripts: ["push-sw.js"],
       },
     }),
   ],

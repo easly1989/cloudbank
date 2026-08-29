@@ -26,6 +26,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
 	"github.com/easly1989/cloudbank/server/internal/payee"
+	"github.com/easly1989/cloudbank/server/internal/push"
 	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
 	"github.com/easly1989/cloudbank/server/internal/tag"
@@ -78,6 +79,8 @@ type Options struct {
 	Dashboard *dashboard.Service
 	// Bills, if non-nil, mounts the Bills view endpoint (requires Wallets).
 	Bills *bills.Service
+	// Push, if non-nil, mounts the Web Push subscription endpoints.
+	Push *push.Service
 	// Templates, if non-nil, mounts the template endpoints (requires Wallets).
 	Templates *template.Service
 	// Schedules, if non-nil, mounts the schedule endpoints (requires Wallets).
@@ -161,6 +164,9 @@ func New(opts Options) http.Handler {
 				}
 				if opts.Backup != nil {
 					pr.Post("/backup/restore", (&backupHandlers{svc: opts.Backup}).restore)
+				}
+				if opts.Push != nil {
+					(&pushHandlers{svc: opts.Push}).routes(pr)
 				}
 				if opts.HotBackup != nil {
 					pr.With(ah.requireAdmin).Get("/admin/backup",
