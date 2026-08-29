@@ -133,6 +133,57 @@ export interface paths {
         patch: operations["updateMe"];
         trace?: never;
     };
+    "/api/v1/auth/2fa/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Begin TOTP enrollment — returns a secret and provisioning URI (session only) */
+        post: operations["setup2fa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/2fa/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm TOTP enrollment with a code — returns one-time recovery codes (session only) */
+        post: operations["enable2fa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/2fa/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disable TOTP after re-entering the password (session only) */
+        post: operations["disable2fa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/tokens": {
         parameters: {
             query?: never;
@@ -1828,6 +1879,7 @@ export interface components {
                 [key: string]: unknown;
             };
             disabled: boolean;
+            twoFactorEnabled?: boolean;
             createdAt: string;
         };
         UpdateMeRequest: {
@@ -1836,6 +1888,22 @@ export interface components {
             preferences?: {
                 [key: string]: unknown;
             };
+        };
+        TotpSetup: {
+            /** @description base32 secret to persist via enable2fa */
+            secret: string;
+            /** @description otpauth:// URI for the authenticator QR */
+            otpauthUri: string;
+        };
+        TotpEnableRequest: {
+            /** @description the secret from setup2fa */
+            secret: string;
+            /** @description a current TOTP code proving the authenticator is set up */
+            code: string;
+        };
+        TotpEnableResult: {
+            /** @description one-time recovery codes, shown once */
+            recoveryCodes: string[];
         };
         /** @description A personal API token's metadata — never the token itself. */
         ApiToken: {
@@ -1880,6 +1948,13 @@ export interface components {
             username: string;
             email?: string;
             password: string;
+            /** @description second factor (TOTP or a recovery code); required when the account has 2FA and login returned totpRequired */
+            totpCode?: string;
+        };
+        /** @description On success the logged-in User; when 2FA is on and no code was given, { totpRequired: true } (the password was accepted, resend with totpCode). */
+        LoginResult: components["schemas"]["User"] | {
+            /** @enum {boolean} */
+            totpRequired: true;
         };
         CreateUserRequest: {
             username: string;
@@ -3010,13 +3085,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Logged in. */
+            /** @description Logged in, or a two-factor code is required. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["User"];
+                    "application/json": components["schemas"]["LoginResult"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -3093,6 +3168,88 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    setup2fa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The pending secret. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TotpSetup"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Already enabled. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    enable2fa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TotpEnableRequest"];
+            };
+        };
+        responses: {
+            /** @description Enabled; recovery codes shown once. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TotpEnableResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    disable2fa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    password: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Disabled. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     listApiTokens: {

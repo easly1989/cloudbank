@@ -105,11 +105,11 @@ paths:
               $ref: "#/components/schemas/Credentials"
       responses:
         "200":
-          description: Logged in.
+          description: Logged in, or a two-factor code is required.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                $ref: "#/components/schemas/LoginResult"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "429":
           description: Too many attempts.
@@ -147,6 +147,42 @@ paths:
       responses:
         "200": { description: The updated user., content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/auth/2fa/setup:
+    post:
+      operationId: setup2fa
+      summary: Begin TOTP enrollment — returns a secret and provisioning URI (session only)
+      responses:
+        "200": { description: The pending secret., content: { application/json: { schema: { $ref: "#/components/schemas/TotpSetup" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Already enabled. }
+  /api/v1/auth/2fa/enable:
+    post:
+      operationId: enable2fa
+      summary: Confirm TOTP enrollment with a code — returns one-time recovery codes (session only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TotpEnableRequest" }
+      responses:
+        "200": { description: Enabled; recovery codes shown once., content: { application/json: { schema: { $ref: "#/components/schemas/TotpEnableResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/auth/2fa/disable:
+    post:
+      operationId: disable2fa
+      summary: Disable TOTP after re-entering the password (session only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { password: { type: string } }, required: [password] }
+      responses:
+        "204": { description: Disabled. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /api/v1/auth/tokens:
     get:
       operationId: listApiTokens
@@ -1822,6 +1858,7 @@ components:
         theme: { type: string }
         preferences: { type: object, additionalProperties: true, description: "opaque UI preferences blob" }
         disabled: { type: boolean }
+        twoFactorEnabled: { type: boolean }
         createdAt: { type: string }
       required: [id, username, email, isAdmin, locale, theme, disabled, createdAt]
     UpdateMeRequest:
@@ -1830,6 +1867,23 @@ components:
         locale: { type: string }
         theme: { type: string }
         preferences: { type: object, additionalProperties: true }
+    TotpSetup:
+      type: object
+      properties:
+        secret: { type: string, description: "base32 secret to persist via enable2fa" }
+        otpauthUri: { type: string, description: "otpauth:// URI for the authenticator QR" }
+      required: [secret, otpauthUri]
+    TotpEnableRequest:
+      type: object
+      properties:
+        secret: { type: string, description: "the secret from setup2fa" }
+        code: { type: string, description: "a current TOTP code proving the authenticator is set up" }
+      required: [secret, code]
+    TotpEnableResult:
+      type: object
+      properties:
+        recoveryCodes: { type: array, items: { type: string }, description: "one-time recovery codes, shown once" }
+      required: [recoveryCodes]
     ApiToken:
       type: object
       description: A personal API token's metadata — never the token itself.
@@ -1872,7 +1926,16 @@ components:
         username: { type: string }
         email: { type: string }
         password: { type: string, minLength: 8 }
+        totpCode: { type: string, description: "second factor (TOTP or a recovery code); required when the account has 2FA and login returned totpRequired" }
       required: [username, password]
+    LoginResult:
+      description: "On success the logged-in User; when 2FA is on and no code was given, { totpRequired: true } (the password was accepted, resend with totpCode)."
+      oneOf:
+        - $ref: "#/components/schemas/User"
+        - type: object
+          properties:
+            totpRequired: { type: boolean, enum: [true] }
+          required: [totpRequired]
     CreateUserRequest:
       type: object
       properties:

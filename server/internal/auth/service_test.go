@@ -56,10 +56,10 @@ func TestSetupThenLogin(t *testing.T) {
 	}
 
 	// Login with the right and wrong password.
-	if _, _, err := s.Login(ctx, "1.2.3.4", "admin", "wrong", ""); !errors.Is(err, ErrInvalidCredentials) {
+	if _, _, err := s.Login(ctx, "1.2.3.4", "admin", "wrong", "", ""); !errors.Is(err, ErrInvalidCredentials) {
 		t.Fatalf("login wrong password err = %v; want ErrInvalidCredentials", err)
 	}
-	_, tok2, err := s.Login(ctx, "1.2.3.4", "admin", "s3cret-pass", "")
+	_, tok2, err := s.Login(ctx, "1.2.3.4", "admin", "s3cret-pass", "", "")
 	if err != nil {
 		t.Fatalf("login good password: %v", err)
 	}
@@ -117,7 +117,7 @@ func TestDisabledUserCannotLoginOrStayAuthenticated(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateUser: %v", err)
 	}
-	_, bobToken, err := s.Login(ctx, "ip", "bob", "bobpassword", "")
+	_, bobToken, err := s.Login(ctx, "ip", "bob", "bobpassword", "", "")
 	if err != nil {
 		t.Fatalf("bob login: %v", err)
 	}
@@ -130,7 +130,7 @@ func TestDisabledUserCannotLoginOrStayAuthenticated(t *testing.T) {
 		t.Fatalf("disabled user still authenticated: %v", err)
 	}
 	// And cannot log in again.
-	if _, _, err := s.Login(ctx, "ip", "bob", "bobpassword", ""); !errors.Is(err, ErrInvalidCredentials) {
+	if _, _, err := s.Login(ctx, "ip", "bob", "bobpassword", "", ""); !errors.Is(err, ErrInvalidCredentials) {
 		t.Fatalf("disabled user login err = %v; want ErrInvalidCredentials", err)
 	}
 }
@@ -142,15 +142,15 @@ func TestLoginRateLimited(t *testing.T) {
 
 	// 10 wrong attempts are allowed (and counted), the 11th is rate-limited.
 	for i := 0; i < 10; i++ {
-		if _, _, err := s.Login(ctx, "9.9.9.9", "admin", "wrong", ""); !errors.Is(err, ErrInvalidCredentials) {
+		if _, _, err := s.Login(ctx, "9.9.9.9", "admin", "wrong", "", ""); !errors.Is(err, ErrInvalidCredentials) {
 			t.Fatalf("attempt %d err = %v; want ErrInvalidCredentials", i, err)
 		}
 	}
-	if _, _, err := s.Login(ctx, "9.9.9.9", "admin", "wrong", ""); !errors.Is(err, ErrRateLimited) {
+	if _, _, err := s.Login(ctx, "9.9.9.9", "admin", "wrong", "", ""); !errors.Is(err, ErrRateLimited) {
 		t.Fatalf("11th attempt err = %v; want ErrRateLimited", err)
 	}
 	// A different IP is unaffected.
-	if _, _, err := s.Login(ctx, "8.8.8.8", "admin", "wrong", ""); !errors.Is(err, ErrInvalidCredentials) {
+	if _, _, err := s.Login(ctx, "8.8.8.8", "admin", "wrong", "", ""); !errors.Is(err, ErrInvalidCredentials) {
 		t.Fatalf("other IP err = %v; want ErrInvalidCredentials", err)
 	}
 }
@@ -241,5 +241,72 @@ func TestAPITokens(t *testing.T) {
 	}
 	if _, _, err := s.AuthenticateToken(ctx, wplain); err != nil {
 		t.Fatalf("writer token should still be valid: %v", err)
+	}
+}
+
+func TestTwoFactorFlow(t *testing.T) {
+	s, _ := newTestService(t)
+	ctx := context.Background()
+	admin, _, _ := s.Setup(ctx, "admin", "", "password123", "")
+
+	// Begin setup: a secret + provisioning URI, nothing persisted yet.
+	secret, uri, err := s.Begin2FASetup(ctx, admin.ID)
+	if err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+	if secret == "" || !strings.Contains(uri, "otpauth://totp/") || !strings.Contains(uri, "issuer=CloudBank") {
+		t.Fatalf("setup secret=%q uri=%q", secret, uri)
+	}
+	// Before enabling, login needs no second factor.
+	if _, _, err := s.Login(ctx, "ip", "admin", "password123", "", ""); err != nil {
+		t.Fatalf("login before enable: %v", err)
+	}
+
+	// Enable: a wrong code is rejected; a correct code returns recovery codes.
+	if _, err := s.Enable2FA(ctx, admin.ID, secret, "000000"); !errors.Is(err, ErrInvalidCredentials) {
+		t.Fatalf("enable with bad code err = %v", err)
+	}
+	code, _ := totpCode(secret, time.Now())
+	recovery, err := s.Enable2FA(ctx, admin.ID, secret, code)
+	if err != nil {
+		t.Fatalf("enable: %v", err)
+	}
+	if len(recovery) != recoveryCodeCount {
+		t.Fatalf("recovery codes = %d, want %d", len(recovery), recoveryCodeCount)
+	}
+
+	// Login now demands the second factor.
+	if _, _, err := s.Login(ctx, "ip", "admin", "password123", "", ""); !errors.Is(err, ErrTOTPRequired) {
+		t.Fatalf("login without code err = %v, want ErrTOTPRequired", err)
+	}
+	if _, _, err := s.Login(ctx, "ip", "admin", "password123", "000000", ""); !errors.Is(err, ErrInvalidCredentials) {
+		t.Fatalf("login with wrong code err = %v", err)
+	}
+	code2, _ := totpCode(secret, time.Now())
+	if _, tok, err := s.Login(ctx, "ip", "admin", "password123", code2, ""); err != nil || tok == "" {
+		t.Fatalf("login with valid code: %v", err)
+	}
+
+	// A recovery code logs in once, then is spent.
+	rc := recovery[0]
+	if _, tok, err := s.Login(ctx, "ip", "admin", "password123", rc, ""); err != nil || tok == "" {
+		t.Fatalf("login with recovery code: %v", err)
+	}
+	if _, _, err := s.Login(ctx, "ip", "admin", "password123", rc, ""); !errors.Is(err, ErrInvalidCredentials) {
+		t.Fatalf("reused recovery code err = %v, want ErrInvalidCredentials", err)
+	}
+	if n, _ := s.RecoveryCodesRemaining(ctx, admin.ID); n != int64(recoveryCodeCount-1) {
+		t.Fatalf("remaining recovery codes = %d, want %d", n, recoveryCodeCount-1)
+	}
+
+	// Disable needs the right password; afterwards login needs no code.
+	if err := s.Disable2FA(ctx, admin.ID, "wrong"); !errors.Is(err, ErrInvalidCredentials) {
+		t.Fatalf("disable with wrong password err = %v", err)
+	}
+	if err := s.Disable2FA(ctx, admin.ID, "password123"); err != nil {
+		t.Fatalf("disable: %v", err)
+	}
+	if _, _, err := s.Login(ctx, "ip", "admin", "password123", "", ""); err != nil {
+		t.Fatalf("login after disable: %v", err)
 	}
 }
