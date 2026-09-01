@@ -17,6 +17,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/backup"
+	"github.com/easly1989/cloudbank/server/internal/banksync"
 	"github.com/easly1989/cloudbank/server/internal/bills"
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/category"
@@ -84,6 +85,8 @@ type Options struct {
 	Push *push.Service
 	// AI, if non-nil, mounts the opt-in AI settings + suggestion endpoints.
 	AI *ai.Service
+	// BankSync, if non-nil, mounts the automatic bank-sync endpoints (requires Wallets).
+	BankSync *banksync.Service
 	// Templates, if non-nil, mounts the template endpoints (requires Wallets).
 	Templates *template.Service
 	// Schedules, if non-nil, mounts the schedule endpoints (requires Wallets).
@@ -183,7 +186,7 @@ func New(opts Options) http.Handler {
 						svc: opts.Wallets, currencies: opts.Currencies, accounts: opts.Accounts,
 						categories: opts.Categories, payees: opts.Payees, transactions: opts.Transactions,
 						tags: opts.Tags, vehicles: opts.Vehicles, goals: opts.Goals,
-						transfers: opts.Transfers, dashboard: opts.Dashboard, bills: opts.Bills, ai: opts.AI, templates: opts.Templates,
+						transfers: opts.Transfers, dashboard: opts.Dashboard, bills: opts.Bills, ai: opts.AI, bankSync: opts.BankSync, templates: opts.Templates,
 						schedules: opts.Schedules, assignments: opts.Assignments, budgets: opts.Budgets,
 						reports: opts.Reports, csv: opts.CSV, rateProvider: opts.RateProvider,
 						integrity: opts.Integrity, backup: opts.Backup, attachments: opts.Attachments,

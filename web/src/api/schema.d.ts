@@ -291,6 +291,127 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/bank/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List the wallet's bank-sync connections (never the access URL) */
+        get: operations["listBankConnections"];
+        put?: never;
+        /** Connect a bank by claiming a SimpleFIN setup token */
+        post: operations["connectBank"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/bank/connections/{connId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a bank connection (its links cascade) */
+        delete: operations["removeBankConnection"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/bank/connections/{connId}/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        /** List a connection's provider accounts, with any CloudBank link */
+        get: operations["listBankRemoteAccounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/bank/connections/{connId}/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Link a provider account to a CloudBank account */
+        post: operations["linkBankAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/bank/connections/{connId}/links/{externalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+                externalId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a provider→CloudBank account link */
+        delete: operations["unlinkBankAccount"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/bank/connections/{connId}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fetch and import new transactions for linked accounts */
+        post: operations["syncBankConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/tokens": {
         parameters: {
             query?: never;
@@ -2018,6 +2139,35 @@ export interface components {
             /** @description human-formatted amount, for context */
             amount?: string;
         };
+        /** @description A bank-sync connection's metadata — never the access URL. */
+        BankConnection: {
+            /** Format: int64 */
+            id: number;
+            provider: string;
+            name: string;
+            createdAt: string;
+            lastSyncedAt?: string;
+        };
+        BankRemoteAccount: {
+            externalId: string;
+            name: string;
+            currency: string;
+            balance: string;
+            /** Format: int64 */
+            linkedAccountId?: number | null;
+        };
+        BankConnectResult: {
+            connection: components["schemas"]["BankConnection"];
+            accounts?: components["schemas"]["BankRemoteAccount"][];
+        };
+        BankSyncResult: {
+            /** @description new transactions created */
+            imported: number;
+            /** @description pending transactions settled */
+            reconciled: number;
+            /** @description linked accounts synced */
+            accounts: number;
+        };
         /** @description A natural-language description resolved into transaction fields. Category/payee ids are present only when a name matched a real wallet row. */
         ParsedEntry: {
             /** @description positive decimal string */
@@ -3602,6 +3752,203 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             /** @description The AI provider request failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listBankConnections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The connections. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankConnection"][];
+                };
+            };
+        };
+    };
+    connectBank: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    setupToken: string;
+                    name?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The connection and its remote accounts. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankConnectResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            /** @description The bank provider request failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    removeBankConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listBankRemoteAccounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The remote accounts. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankRemoteAccount"][];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description The bank provider request failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    linkBankAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    externalId: string;
+                    /** Format: int64 */
+                    accountId: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Linked. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    unlinkBankAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+                externalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unlinked. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    syncBankConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The sync result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankSyncResult"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description The bank provider request failed. */
             502: {
                 headers: {
                     [name: string]: unknown;

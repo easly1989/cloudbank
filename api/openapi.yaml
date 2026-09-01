@@ -267,6 +267,85 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
         "502": { description: The AI provider request failed. }
+  /api/v1/wallets/{walletId}/bank/connections:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listBankConnections
+      summary: List the wallet's bank-sync connections (never the access URL)
+      responses:
+        "200": { description: The connections., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/BankConnection" } } } } }
+    post:
+      operationId: connectBank
+      summary: Connect a bank by claiming a SimpleFIN setup token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { setupToken: { type: string }, name: { type: string } }, required: [setupToken] }
+      responses:
+        "201": { description: The connection and its remote accounts., content: { application/json: { schema: { $ref: "#/components/schemas/BankConnectResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "502": { description: The bank provider request failed. }
+  /api/v1/wallets/{walletId}/bank/connections/{connId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: connId, in: path, required: true, schema: { type: integer, format: int64 } }
+    delete:
+      operationId: removeBankConnection
+      summary: Remove a bank connection (its links cascade)
+      responses:
+        "204": { description: Removed. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/bank/connections/{connId}/accounts:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: connId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listBankRemoteAccounts
+      summary: List a connection's provider accounts, with any CloudBank link
+      responses:
+        "200": { description: The remote accounts., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/BankRemoteAccount" } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "502": { description: The bank provider request failed. }
+  /api/v1/wallets/{walletId}/bank/connections/{connId}/links:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: connId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: linkBankAccount
+      summary: Link a provider account to a CloudBank account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { externalId: { type: string }, accountId: { type: integer, format: int64 } }, required: [externalId, accountId] }
+      responses:
+        "204": { description: Linked. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/bank/connections/{connId}/links/{externalId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: connId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: externalId, in: path, required: true, schema: { type: string } }
+    delete:
+      operationId: unlinkBankAccount
+      summary: Remove a provider→CloudBank account link
+      responses:
+        "204": { description: Unlinked. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/bank/connections/{connId}/sync:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: connId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: syncBankConnection
+      summary: Fetch and import new transactions for linked accounts
+      responses:
+        "200": { description: The sync result., content: { application/json: { schema: { $ref: "#/components/schemas/BankSyncResult" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "502": { description: The bank provider request failed. }
   /api/v1/auth/tokens:
     get:
       operationId: listApiTokens
@@ -1974,6 +2053,38 @@ components:
         payee: { type: string }
         memo: { type: string }
         amount: { type: string, description: "human-formatted amount, for context" }
+    BankConnection:
+      type: object
+      description: A bank-sync connection's metadata — never the access URL.
+      properties:
+        id: { type: integer, format: int64 }
+        provider: { type: string }
+        name: { type: string }
+        createdAt: { type: string }
+        lastSyncedAt: { type: string }
+      required: [id, provider, name, createdAt]
+    BankRemoteAccount:
+      type: object
+      properties:
+        externalId: { type: string }
+        name: { type: string }
+        currency: { type: string }
+        balance: { type: string }
+        linkedAccountId: { type: integer, format: int64, nullable: true }
+      required: [externalId, name, currency, balance]
+    BankConnectResult:
+      type: object
+      properties:
+        connection: { $ref: "#/components/schemas/BankConnection" }
+        accounts: { type: array, items: { $ref: "#/components/schemas/BankRemoteAccount" } }
+      required: [connection]
+    BankSyncResult:
+      type: object
+      properties:
+        imported: { type: integer, description: "new transactions created" }
+        reconciled: { type: integer, description: "pending transactions settled" }
+        accounts: { type: integer, description: "linked accounts synced" }
+      required: [imported, reconciled, accounts]
     ParsedEntry:
       type: object
       description: A natural-language description resolved into transaction fields. Category/payee ids are present only when a name matched a real wallet row.
