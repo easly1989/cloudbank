@@ -544,7 +544,11 @@
     "save": "Save",
     "saved": "AI settings saved",
     "suggestCategory": "Suggest category",
-    "noSuggestion": "No category suggestion for this transaction."
+    "noSuggestion": "No category suggestion for this transaction.",
+    "quickEntry": "Quick entry",
+    "quickEntryPlaceholder": "e.g. 12.40 coffee at Bar Centrale yesterday",
+    "quickEntryRun": "Fill from description",
+    "noParse": "Could not read that description."
   },
   "setup": {
     "title": "Welcome to CloudBank",

@@ -3,6 +3,7 @@ package httpapi
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -20,9 +21,10 @@ func (h *aiHandlers) routes(r chi.Router) {
 	r.Put("/ai/settings", h.putSettings)
 }
 
-// walletRoutes mounts the wallet-scoped suggestion endpoint.
+// walletRoutes mounts the wallet-scoped suggestion endpoints.
 func (h *aiHandlers) walletRoutes(r chi.Router) {
 	r.Post("/ai/suggest-category", h.suggestCategory)
+	r.Post("/ai/parse-entry", h.parseEntry)
 }
 
 func (h *aiHandlers) getSettings(w http.ResponseWriter, r *http.Request) {
@@ -79,4 +81,26 @@ func (h *aiHandlers) suggestCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"category": cat})
+}
+
+func (h *aiHandlers) parseEntry(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	u := userFromContext(r.Context())
+	var body struct {
+		Text string `json:"text"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	today := time.Now().UTC().Format("2006-01-02")
+	entry, err := h.svc.ParseEntry(r.Context(), u.ID, wl.ID, body.Text, today)
+	if errors.Is(err, ai.ErrNotConfigured) {
+		writeError(w, http.StatusBadRequest, "ai_disabled", "AI is not enabled")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusBadGateway, "ai_error", "the AI provider request failed")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"entry": entry})
 }
