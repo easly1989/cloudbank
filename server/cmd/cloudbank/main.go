@@ -21,6 +21,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/backup"
+	"github.com/easly1989/cloudbank/server/internal/banksync"
 	"github.com/easly1989/cloudbank/server/internal/bills"
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/category"
@@ -131,6 +132,7 @@ func run() error {
 	reportSvc := report.NewService(st.Read())
 	importSvc := importer.NewService(st.Write())
 	csvSvc := importio.NewService(st.Write(), transactionSvc, assignmentSvc, accountSvc)
+	bankSyncSvc := banksync.NewService(st.Read(), st.Write(), csvSvc)
 	rateProvider := &currency.Frankfurter{BaseURL: cfg.RateProviderURL}
 	integritySvc := integrity.NewServiceWithRead(st.Read(), st.Write())
 	backupSvc := backup.NewService(st.Write())
@@ -168,6 +170,7 @@ func run() error {
 		Bills:         billsSvc,
 		Push:          pushSvc,
 		AI:            aiSvc,
+		BankSync:      bankSyncSvc,
 		Templates:     templateSvc,
 		Schedules:     scheduleSvc,
 		Assignments:   assignmentSvc,
