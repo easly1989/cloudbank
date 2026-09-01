@@ -30,6 +30,15 @@ type Account struct {
 	DefaultPaymentMode int64
 }
 
+type AiSetting struct {
+	UserID    int64
+	Enabled   int64
+	BaseUrl   string
+	Model     string
+	ApiKey    string
+	UpdatedAt string
+}
+
 type ApiToken struct {
 	ID         string
 	UserID     int64

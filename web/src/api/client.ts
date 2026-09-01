@@ -7,6 +7,7 @@ export * from "./ledger";
 export * from "./dashboard";
 export * from "./bills";
 export * from "./push";
+export * from "./ai";
 export * from "./automation";
 export * from "./finance";
 export * from "./imports";

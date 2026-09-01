@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/account"
+	"github.com/easly1989/cloudbank/server/internal/ai"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
 	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
@@ -122,6 +123,7 @@ func run() error {
 	// allows concurrent readers).
 	dashboardSvc := dashboard.NewService(st.Read())
 	billsSvc := bills.NewService(st.Read())
+	aiSvc := ai.NewService(st.Read(), st.Write())
 	templateSvc := template.NewServiceWithRead(st.Read(), st.Write())
 	scheduleSvc := schedule.NewServiceWithRead(st.Read(), st.Write(), transactionSvc, transferSvc, logger)
 	assignmentSvc := assignment.NewServiceWithRead(st.Read(), st.Write())
@@ -165,6 +167,7 @@ func run() error {
 		Dashboard:     dashboardSvc,
 		Bills:         billsSvc,
 		Push:          pushSvc,
+		AI:            aiSvc,
 		Templates:     templateSvc,
 		Schedules:     scheduleSvc,
 		Assignments:   assignmentSvc,
