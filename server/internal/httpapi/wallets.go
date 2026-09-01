@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/account"
+	"github.com/easly1989/cloudbank/server/internal/ai"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
 	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/backup"
@@ -49,6 +50,7 @@ type walletHandlers struct {
 	transfers    *transfer.Service
 	dashboard    *dashboard.Service
 	bills        *bills.Service
+	ai           *ai.Service
 	templates    *template.Service
 	schedules    *schedule.Service
 	assignments  *assignment.Service
@@ -119,6 +121,9 @@ func (h *walletHandlers) routes(r chi.Router) {
 		}
 		if h.bills != nil {
 			(&billsHandlers{svc: h.bills}).walletRoutes(r)
+		}
+		if h.ai != nil {
+			(&aiHandlers{svc: h.ai}).walletRoutes(r)
 		}
 		if h.templates != nil {
 			(&templateHandlers{svc: h.templates}).walletRoutes(r)
