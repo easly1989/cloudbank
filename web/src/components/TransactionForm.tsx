@@ -35,6 +35,7 @@ import {
   listPayees,
   listTags,
   listVehicles,
+  parseEntry,
   suggestAssignment,
   suggestCategory,
   updateTransaction,
@@ -117,6 +118,32 @@ export function TransactionForm({
     onSuccess: (res) => {
       if (res.category) setCategoryId(String(res.category.id));
       else notifications.show({ color: "gray", message: t("ai.noSuggestion") });
+    },
+    onError: (err: unknown) =>
+      notifications.show({
+        color: "red",
+        message: err instanceof ApiError ? err.message : String(err),
+      }),
+  });
+
+  // Natural-language quick entry: describe a transaction and let the model fill
+  // the fields. Only unmatched names are left blank — never invented.
+  const [quickText, setQuickText] = useState("");
+  const parse = useMutation({
+    mutationFn: () => parseEntry(walletId, quickText.trim()),
+    onSuccess: (res) => {
+      const e = res.entry;
+      if (!e) {
+        notifications.show({ color: "gray", message: t("ai.noParse") });
+        return;
+      }
+      if (e.amount) setAmount(e.amount);
+      setDirection(e.direction);
+      if (e.date) setDate(e.date);
+      if (e.memo) setMemo(e.memo);
+      if (e.categoryId != null) setCategoryId(String(e.categoryId));
+      if (e.payeeId != null) setPayeeId(String(e.payeeId));
+      setQuickText("");
     },
     onError: (err: unknown) =>
       notifications.show({
@@ -421,6 +448,33 @@ export function TransactionForm({
       title={editing ? t("transactions.editTitle") : t("transactions.addTitle")}
     >
       <Stack>
+        {/* Natural-language quick entry (only when AI is enabled). */}
+        {aiEnabled && !editing && (
+          <TextInput
+            label={t("ai.quickEntry")}
+            placeholder={t("ai.quickEntryPlaceholder")}
+            value={quickText}
+            onChange={(e) => setQuickText(e.currentTarget.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                if (quickText.trim()) parse.mutate();
+              }
+            }}
+            rightSection={
+              <ActionIcon
+                variant="subtle"
+                color="grape"
+                aria-label={t("ai.quickEntryRun")}
+                loading={parse.isPending}
+                disabled={!quickText.trim()}
+                onClick={() => parse.mutate()}
+              >
+                <IconSparkles size={16} />
+              </ActionIcon>
+            }
+          />
+        )}
         {/* Template picker + "Save as template" share the top row. */}
         {!editing && (
           <Group align="flex-end" gap="xs" wrap="nowrap">

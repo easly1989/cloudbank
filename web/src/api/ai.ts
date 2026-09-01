@@ -35,3 +35,17 @@ export const suggestCategory = (
     `/api/v1/wallets/${walletId}/ai/suggest-category`,
     body,
   );
+
+export interface ParsedEntry {
+  amount: string;
+  direction: "expense" | "income";
+  date: string;
+  memo: string;
+  payeeId?: number | null;
+  payeeName?: string;
+  categoryId?: number | null;
+  categoryName?: string;
+}
+
+export const parseEntry = (walletId: number, text: string) =>
+  api.post<{ entry: ParsedEntry | null }>(`/api/v1/wallets/${walletId}/ai/parse-entry`, { text });

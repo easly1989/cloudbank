@@ -250,6 +250,23 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
         "502": { description: The AI provider request failed. }
+  /api/v1/wallets/{walletId}/ai/parse-entry:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: parseEntry
+      summary: Parse a natural-language description into transaction fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { text: { type: string } }, required: [text] }
+      responses:
+        "200": { description: The parsed fields (entry may be null)., content: { application/json: { schema: { $ref: "#/components/schemas/ParseEntryResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "502": { description: The AI provider request failed. }
   /api/v1/auth/tokens:
     get:
       operationId: listApiTokens
@@ -1957,6 +1974,24 @@ components:
         payee: { type: string }
         memo: { type: string }
         amount: { type: string, description: "human-formatted amount, for context" }
+    ParsedEntry:
+      type: object
+      description: A natural-language description resolved into transaction fields. Category/payee ids are present only when a name matched a real wallet row.
+      properties:
+        amount: { type: string, description: "positive decimal string" }
+        direction: { type: string, enum: [expense, income] }
+        date: { type: string, description: "YYYY-MM-DD" }
+        memo: { type: string }
+        payeeId: { type: integer, format: int64, nullable: true }
+        payeeName: { type: string }
+        categoryId: { type: integer, format: int64, nullable: true }
+        categoryName: { type: string }
+      required: [amount, direction, date, memo]
+    ParseEntryResult:
+      type: object
+      properties:
+        entry: { $ref: "#/components/schemas/ParsedEntry", nullable: true }
+      required: [entry]
     SuggestCategoryResult:
       type: object
       properties:
