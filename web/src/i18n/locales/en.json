@@ -361,7 +361,7 @@
   },
   "banksync": {
     "title": "Bank sync",
-    "hint": "Automatically import transactions from your bank via SimpleFIN. You bring your own SimpleFIN Bridge subscription (about $15/year) and paste a setup token — CloudBank never sees your bank login.",
+    "hint": "Automatically import transactions from your bank. Pick a provider below — CloudBank stores your credentials server-side and never sees your bank login.",
     "connect": "Connect a bank",
     "connectTitle": "Connect a bank",
     "connectHint": "Get a setup token from your SimpleFIN Bridge account, then paste it here. CloudBank claims it once for a secure access URL.",
@@ -383,7 +383,45 @@
     "noRemote": "No accounts found for this connection.",
     "linked": "Linked",
     "notLinked": "Not linked",
-    "linkTo": "Link to account…"
+    "linkTo": "Link to account…",
+    "simplefin": {
+      "title": "SimpleFIN",
+      "hint": "Banks worldwide via SimpleFIN. Bring your own SimpleFIN Bridge subscription (about $15/year) and paste a setup token."
+    },
+    "connectedTitle": "Connected banks",
+    "eb": {
+      "title": "Enable Banking (EU)",
+      "hint": "EU/UK banks via PSD2 open banking. Bring your own Enable Banking application — a free sandbox to test, your own production app for real accounts.",
+      "configure": "Configure",
+      "configTitle": "Enable Banking credentials",
+      "configHint": "Register your own application in the Enable Banking Control Panel, then paste its Application ID and RSA private key. The private key is stored server-side and never leaves CloudBank.",
+      "redirectLabel": "Whitelist this redirect URL in your Enable Banking application:",
+      "copy": "Copy",
+      "appId": "Application ID",
+      "privateKey": "RSA private key (PEM)",
+      "environment": "Environment",
+      "save": "Save",
+      "saved": "Enable Banking configured.",
+      "edit": "Edit credentials",
+      "removeConfig": "Remove credentials",
+      "confirmRemoveConfig": "Remove the Enable Banking credentials? Existing connections will stop syncing.",
+      "connect": "Connect a bank",
+      "connectTitle": "Connect a bank via Enable Banking",
+      "connectHint": "Pick your bank; you will be redirected to authorize access. When you return, the connection appears below.",
+      "country": "Country",
+      "bank": "Bank",
+      "pickBank": "Pick a bank…",
+      "loadingBanks": "Loading banks…",
+      "noBanks": "No banks found.",
+      "banksError": "Could not load banks — check your credentials.",
+      "continue": "Continue to bank",
+      "callback": {
+        "connecting": "Finishing the bank connection…",
+        "success": "Bank connected. Redirecting…",
+        "error": "Could not complete the connection.",
+        "back": "Back to Bank sync"
+      }
+    }
   },
   "search": {
     "open": "Search transactions",

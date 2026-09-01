@@ -58,6 +58,7 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 - **Scheduled transactions** with automatic posting (optionally **pre-registering up to 3 months ahead**, HomeBank style), a **per-week/month/year income & expense summary**, the recurring **amount** shown in the schedules grid, **templates** (a dedicated management area, and offered when entering a transaction), and **assignment rules** for auto-categorization.
 - **Budgets** and a full suite of **reports** (Statistics, Trend Time, Balance, Budget, Vehicle cost) with interactive charts and CSV/PNG export.
 - **Import**: HomeBank `.xhb`, QIF, OFX/QFX, CSV — with an import assistant. **Export**: HomeBank `.xhb`, QIF, CSV.
+- **Automatic bank sync** — pull new transactions straight from your bank, de-duplicated and run through your assignment rules. Two providers, both **bring-your-own-credentials** so CloudBank never sees your bank login: **[SimpleFIN](https://www.simplefin.org/)** (worldwide; a ~$15/year SimpleFIN Bridge subscription) and **[Enable Banking](https://enablebanking.com/)** (EU/EEA + UK via PSD2 — a free sandbox to test, your own production application for real accounts).
 - **Multi-currency** with manual and online (ECB / frankfurter.app) exchange rates.
 - Multi-user (admin-managed), responsive UI, English and Italian.
 

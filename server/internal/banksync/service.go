@@ -25,6 +25,12 @@ const (
 	resyncOverlapDays     = 3
 )
 
+// Provider identifiers stored in bank_connections.provider.
+const (
+	providerSimpleFIN     = "simplefin"
+	providerEnableBanking = "enablebanking"
+)
+
 // Connection is the public view of a bank connection — never the access URL.
 type Connection struct {
 	ID           int64  `json:"id"`
@@ -32,6 +38,8 @@ type Connection struct {
 	Name         string `json:"name"`
 	CreatedAt    string `json:"createdAt"`
 	LastSyncedAt string `json:"lastSyncedAt,omitempty"`
+	Aspsp        string `json:"aspsp,omitempty"`
+	Country      string `json:"country,omitempty"`
 }
 
 // RemoteAccount is a provider account, with the linked CloudBank account if any.
@@ -65,7 +73,10 @@ func NewService(read, write *sql.DB, imp *importio.Service) *Service {
 }
 
 func toConnection(c db.BankConnection) Connection {
-	out := Connection{ID: c.ID, Provider: c.Provider, Name: c.Name, CreatedAt: c.CreatedAt}
+	out := Connection{
+		ID: c.ID, Provider: c.Provider, Name: c.Name, CreatedAt: c.CreatedAt,
+		Aspsp: c.AspspName, Country: c.AspspCountry,
+	}
 	if c.LastSyncedAt.Valid {
 		out.LastSyncedAt = c.LastSyncedAt.String
 	}
@@ -89,7 +100,7 @@ func (s *Service) Connect(ctx context.Context, walletID int64, setupToken, name 
 		return Connection{}, nil, err
 	}
 	row, err := s.q.InsertBankConnection(ctx, db.InsertBankConnectionParams{
-		WalletID: walletID, Provider: "simplefin", AccessUrl: accessURL, Name: name,
+		WalletID: walletID, Provider: providerSimpleFIN, AccessUrl: accessURL, Name: name,
 	})
 	if err != nil {
 		return Connection{}, nil, err
@@ -115,8 +126,14 @@ func (s *Service) ListConnections(ctx context.Context, walletID int64) ([]Connec
 	return out, nil
 }
 
-// RemoveConnection deletes a connection (its links cascade).
+// RemoveConnection deletes a connection (its links cascade). For Enable Banking it
+// also best-effort revokes the bank consent.
 func (s *Service) RemoveConnection(ctx context.Context, walletID, id int64) error {
+	if c, err := s.conn(ctx, walletID, id); err == nil && c.Provider == providerEnableBanking {
+		if cl, cerr := s.ebClientForConn(ctx, walletID); cerr == nil {
+			_ = cl.deleteSession(ctx, c.AccessUrl)
+		}
+	}
 	n, err := s.q.DeleteBankConnection(ctx, db.DeleteBankConnectionParams{ID: id, WalletID: walletID})
 	if err != nil {
 		return err
@@ -138,6 +155,13 @@ func (s *Service) RemoteAccounts(ctx context.Context, walletID, connID int64) ([
 }
 
 func (s *Service) remoteAccounts(ctx context.Context, c db.BankConnection) ([]RemoteAccount, error) {
+	if c.Provider == providerEnableBanking {
+		return s.ebRemoteAccounts(ctx, c)
+	}
+	return s.simplefinRemoteAccounts(ctx, c)
+}
+
+func (s *Service) simplefinRemoteAccounts(ctx context.Context, c db.BankConnection) ([]RemoteAccount, error) {
 	set, err := newSimplefinClient(s.hc).fetchAccounts(ctx, c.AccessUrl, 0)
 	if err != nil {
 		return nil, err
@@ -209,19 +233,27 @@ func (s *Service) Sync(ctx context.Context, walletID, connID int64) (SyncResult,
 			start = last.AddDate(0, 0, -resyncOverlapDays)
 		}
 	}
-	set, err := newSimplefinClient(s.hc).fetchAccounts(ctx, c.AccessUrl, start.Unix())
-	if err != nil {
-		return SyncResult{}, err
+
+	var (
+		byAccount map[string][]importio.Row
+		err2      error
+	)
+	if c.Provider == providerEnableBanking {
+		byAccount, err2 = s.ebFetchRows(ctx, c, linkByExt, start)
+	} else {
+		byAccount, err2 = s.simplefinFetchRows(ctx, c, start)
+	}
+	if err2 != nil {
+		return SyncResult{}, err2
 	}
 
 	var res SyncResult
-	for _, a := range set.Accounts {
-		accountID, ok := linkByExt[a.ID]
-		if !ok {
+	for ext, accountID := range linkByExt {
+		rows, present := byAccount[ext]
+		if !present {
 			continue
 		}
 		res.Accounts++
-		rows := rowsFromTxns(a.Transactions)
 		if len(rows) == 0 {
 			continue
 		}
@@ -236,6 +268,20 @@ func (s *Service) Sync(ctx context.Context, walletID, connID int64) (SyncResult,
 		return SyncResult{}, err
 	}
 	return res, nil
+}
+
+// simplefinFetchRows fetches all accounts once and maps each to import rows,
+// keyed by the provider account id.
+func (s *Service) simplefinFetchRows(ctx context.Context, c db.BankConnection, start time.Time) (map[string][]importio.Row, error) {
+	set, err := newSimplefinClient(s.hc).fetchAccounts(ctx, c.AccessUrl, start.Unix())
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string][]importio.Row, len(set.Accounts))
+	for _, a := range set.Accounts {
+		out[a.ID] = rowsFromTxns(a.Transactions)
+	}
+	return out, nil
 }
 
 // rowsFromTxns maps SimpleFIN transactions to import rows. Amounts are signed
