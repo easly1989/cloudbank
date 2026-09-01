@@ -50,6 +50,8 @@ type Querier interface {
 	DeleteCategoryBudget(ctx context.Context, arg DeleteCategoryBudgetParams) error
 	DeleteContribution(ctx context.Context, id int64) error
 	DeleteCurrency(ctx context.Context, id int64) error
+	DeleteEBankingAuth(ctx context.Context, state string) error
+	DeleteEBankingConfig(ctx context.Context, walletID int64) (int64, error)
 	DeleteExpiredSessions(ctx context.Context, expiresAt string) error
 	DeleteGoal(ctx context.Context, id int64) error
 	DeletePayee(ctx context.Context, id int64) error
@@ -80,6 +82,8 @@ type Querier interface {
 	GetCategory(ctx context.Context, id int64) (Category, error)
 	GetContribution(ctx context.Context, id int64) (GoalContribution, error)
 	GetCurrency(ctx context.Context, id int64) (Currency, error)
+	GetEBankingAuth(ctx context.Context, state string) (BankEbankingAuth, error)
+	GetEBankingConfig(ctx context.Context, walletID int64) (BankEbankingConfig, error)
 	GetGoal(ctx context.Context, id int64) (Goal, error)
 	GetPayee(ctx context.Context, id int64) (Payee, error)
 	GetSchedule(ctx context.Context, id int64) (Schedule, error)
@@ -105,6 +109,8 @@ type Querier interface {
 	InsertCategory(ctx context.Context, arg InsertCategoryParams) (Category, error)
 	InsertContribution(ctx context.Context, arg InsertContributionParams) (GoalContribution, error)
 	InsertCurrency(ctx context.Context, arg InsertCurrencyParams) (Currency, error)
+	InsertEBankingAuth(ctx context.Context, arg InsertEBankingAuthParams) error
+	InsertEBankingConnection(ctx context.Context, arg InsertEBankingConnectionParams) (BankConnection, error)
 	InsertGoal(ctx context.Context, arg InsertGoalParams) (Goal, error)
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
 	InsertRecoveryCode(ctx context.Context, arg InsertRecoveryCodeParams) error
@@ -222,6 +228,7 @@ type Querier interface {
 	UpdateWalletBaseCurrency(ctx context.Context, arg UpdateWalletBaseCurrencyParams) error
 	UpsertAISettings(ctx context.Context, arg UpsertAISettingsParams) error
 	UpsertBankLink(ctx context.Context, arg UpsertBankLinkParams) error
+	UpsertEBankingConfig(ctx context.Context, arg UpsertEBankingConfigParams) error
 	UpsertExchangeRate(ctx context.Context, arg UpsertExchangeRateParams) error
 	UpsertPushSubscription(ctx context.Context, arg UpsertPushSubscriptionParams) error
 }

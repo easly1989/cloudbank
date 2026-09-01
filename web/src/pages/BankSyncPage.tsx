@@ -4,17 +4,30 @@ import {
   Badge,
   Button,
   Card,
+  Code,
+  CopyButton,
   Group,
   Modal,
   Select,
+  SimpleGrid,
   Stack,
   Text,
+  Textarea,
   TextInput,
   Title,
   Tooltip,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconBuildingBank, IconPlus, IconRefreshDot, IconTrash } from "@tabler/icons-react";
+import {
+  IconBuildingBank,
+  IconCheck,
+  IconCopy,
+  IconExternalLink,
+  IconKey,
+  IconPlus,
+  IconRefreshDot,
+  IconTrash,
+} from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,16 +36,24 @@ import {
   ApiError,
   type BankConnection,
   connectBank,
+  deleteEnableBankingConfig,
+  getEnableBankingConfig,
   linkBankAccount,
   listAccounts,
   listBankConnections,
   listBankRemoteAccounts,
+  listEnableBankingBanks,
   removeBankConnection,
+  setEnableBankingConfig,
+  startEnableBankingAuth,
   syncBankConnection,
   unlinkBankAccount,
 } from "../api/client";
 import { useDateFormat } from "../dates";
 import { useWallet } from "../wallet/WalletProvider";
+
+// The Enable Banking redirect target — must be whitelisted in the user's app.
+const ebRedirectUrl = () => `${window.location.origin}/bank-sync/callback`;
 
 export function BankSyncPage() {
   const { t } = useTranslation();
@@ -51,18 +72,33 @@ export function BankSyncPage() {
 
   return (
     <Stack>
-      <Group justify="space-between" align="flex-start">
-        <div>
-          <Title order={2}>{t("banksync.title")}</Title>
-          <Text c="dimmed" size="sm" maw={680}>
-            {t("banksync.hint")}
-          </Text>
-        </div>
-        <Button leftSection={<IconPlus size={16} />} onClick={() => setAddOpen(true)}>
-          {t("banksync.connect")}
-        </Button>
-      </Group>
+      <div>
+        <Title order={2}>{t("banksync.title")}</Title>
+        <Text c="dimmed" size="sm" maw={680}>
+          {t("banksync.hint")}
+        </Text>
+      </div>
 
+      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+        <Card withBorder>
+          <Group gap="xs" mb="xs">
+            <IconBuildingBank size={18} />
+            <Text fw={600}>{t("banksync.simplefin.title")}</Text>
+          </Group>
+          <Text size="sm" c="dimmed" mb="sm">
+            {t("banksync.simplefin.hint")}
+          </Text>
+          <Button leftSection={<IconPlus size={16} />} onClick={() => setAddOpen(true)}>
+            {t("banksync.connect")}
+          </Button>
+        </Card>
+
+        <EnableBankingPanel walletId={walletId} />
+      </SimpleGrid>
+
+      <Title order={4} mt="sm">
+        {t("banksync.connectedTitle")}
+      </Title>
       {(connections.data ?? []).length === 0 ? (
         <Card withBorder>
           <Text c="dimmed">{t("banksync.empty")}</Text>
@@ -302,6 +338,281 @@ function ConnectModal({
             onClick={() => connect.mutate()}
           >
             {t("banksync.connect")}
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+}
+
+// --- Enable Banking (EU/PSD2) ---
+
+function EnableBankingPanel({ walletId }: { walletId: number }) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const [configOpen, setConfigOpen] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(false);
+
+  const cfg = useQuery({
+    queryKey: ["ebConfig", walletId],
+    queryFn: () => getEnableBankingConfig(walletId),
+    enabled: walletId > 0,
+  });
+  const onError = (err: unknown) =>
+    notifications.show({
+      color: "red",
+      message: err instanceof ApiError ? err.message : String(err),
+    });
+  const removeCfg = useMutation({
+    mutationFn: () => deleteEnableBankingConfig(walletId),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["ebConfig", walletId] }),
+    onError,
+  });
+
+  const configured = cfg.data?.configured ?? false;
+  const invalidateCfg = () => void qc.invalidateQueries({ queryKey: ["ebConfig", walletId] });
+
+  return (
+    <Card withBorder>
+      <Group gap="xs" mb="xs">
+        <IconBuildingBank size={18} />
+        <Text fw={600}>{t("banksync.eb.title")}</Text>
+        {configured && cfg.data?.environment && (
+          <Badge size="sm" variant="light" color="teal">
+            {cfg.data.environment}
+          </Badge>
+        )}
+      </Group>
+      <Text size="sm" c="dimmed" mb="sm">
+        {t("banksync.eb.hint")}
+      </Text>
+
+      {configured ? (
+        <Stack gap="xs">
+          <Text size="xs" c="dimmed">
+            {t("banksync.eb.appId")}: <Code>{cfg.data?.appId}</Code>
+          </Text>
+          <Group gap="xs">
+            <Button leftSection={<IconPlus size={16} />} onClick={() => setConnectOpen(true)}>
+              {t("banksync.eb.connect")}
+            </Button>
+            <Button variant="default" onClick={() => setConfigOpen(true)}>
+              {t("banksync.eb.edit")}
+            </Button>
+            <Button
+              variant="subtle"
+              color="red"
+              loading={removeCfg.isPending}
+              onClick={() => {
+                if (window.confirm(t("banksync.eb.confirmRemoveConfig"))) removeCfg.mutate();
+              }}
+            >
+              {t("banksync.eb.removeConfig")}
+            </Button>
+          </Group>
+        </Stack>
+      ) : (
+        <Button
+          variant="light"
+          leftSection={<IconKey size={16} />}
+          onClick={() => setConfigOpen(true)}
+        >
+          {t("banksync.eb.configure")}
+        </Button>
+      )}
+
+      <EnableBankingConfigModal
+        opened={configOpen}
+        onClose={() => setConfigOpen(false)}
+        walletId={walletId}
+        onDone={invalidateCfg}
+      />
+      <EnableBankingConnectModal
+        opened={connectOpen}
+        onClose={() => setConnectOpen(false)}
+        walletId={walletId}
+      />
+    </Card>
+  );
+}
+
+function EnableBankingConfigModal({
+  opened,
+  onClose,
+  walletId,
+  onDone,
+}: {
+  opened: boolean;
+  onClose: () => void;
+  walletId: number;
+  onDone: () => void;
+}) {
+  const { t } = useTranslation();
+  const [appId, setAppId] = useState("");
+  const [privateKey, setPrivateKey] = useState("");
+  const [environment, setEnvironment] = useState("sandbox");
+  const redirectUrl = ebRedirectUrl();
+
+  const save = useMutation({
+    mutationFn: () =>
+      setEnableBankingConfig(walletId, { appId: appId.trim(), privateKey, environment }),
+    onSuccess: () => {
+      notifications.show({ color: "teal", message: t("banksync.eb.saved") });
+      setPrivateKey("");
+      onDone();
+      onClose();
+    },
+    onError: (err: unknown) =>
+      notifications.show({
+        color: "red",
+        message: err instanceof ApiError ? err.message : String(err),
+      }),
+  });
+
+  return (
+    <Modal opened={opened} onClose={onClose} title={t("banksync.eb.configTitle")} size="lg">
+      <Stack>
+        <Text size="sm" c="dimmed">
+          {t("banksync.eb.configHint")}
+        </Text>
+        <Alert color="blue" variant="light">
+          <Text size="xs" mb={4}>
+            {t("banksync.eb.redirectLabel")}
+          </Text>
+          <Group gap="xs" wrap="nowrap">
+            <Code style={{ wordBreak: "break-all" }}>{redirectUrl}</Code>
+            <CopyButton value={redirectUrl}>
+              {({ copied, copy }) => (
+                <ActionIcon variant="subtle" onClick={copy} aria-label={t("banksync.eb.copy")}>
+                  {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                </ActionIcon>
+              )}
+            </CopyButton>
+          </Group>
+        </Alert>
+        <TextInput
+          data-autofocus
+          label={t("banksync.eb.appId")}
+          placeholder="00000000-0000-0000-0000-000000000000"
+          value={appId}
+          onChange={(e) => setAppId(e.currentTarget.value)}
+        />
+        <Textarea
+          label={t("banksync.eb.privateKey")}
+          placeholder="-----BEGIN PRIVATE KEY-----"
+          value={privateKey}
+          onChange={(e) => setPrivateKey(e.currentTarget.value)}
+          autosize
+          minRows={4}
+          maxRows={8}
+          styles={{ input: { fontFamily: "monospace", fontSize: 11 } }}
+        />
+        <Select
+          label={t("banksync.eb.environment")}
+          data={[
+            { value: "sandbox", label: "Sandbox" },
+            { value: "production", label: "Production" },
+          ]}
+          value={environment}
+          onChange={(v) => setEnvironment(v ?? "sandbox")}
+        />
+        <Group justify="flex-end">
+          <Button variant="default" onClick={onClose}>
+            {t("banksync.cancel")}
+          </Button>
+          <Button
+            disabled={!appId.trim() || !privateKey.trim()}
+            loading={save.isPending}
+            onClick={() => save.mutate()}
+          >
+            {t("banksync.eb.save")}
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+}
+
+function EnableBankingConnectModal({
+  opened,
+  onClose,
+  walletId,
+}: {
+  opened: boolean;
+  onClose: () => void;
+  walletId: number;
+}) {
+  const { t } = useTranslation();
+  const [country, setCountry] = useState("IT");
+  const [aspsp, setAspsp] = useState<string | null>(null);
+  const [name, setName] = useState("");
+
+  const banks = useQuery({
+    queryKey: ["ebBanks", walletId, country],
+    queryFn: () => listEnableBankingBanks(walletId, country),
+    enabled: opened && walletId > 0 && country.length >= 2,
+  });
+
+  const start = useMutation({
+    mutationFn: () =>
+      startEnableBankingAuth(walletId, {
+        aspspName: aspsp ?? "",
+        aspspCountry: country,
+        name: name.trim(),
+        redirectUrl: ebRedirectUrl(),
+      }),
+    onSuccess: (res) => {
+      window.location.href = res.url;
+    },
+    onError: (err: unknown) =>
+      notifications.show({
+        color: "red",
+        message: err instanceof ApiError ? err.message : String(err),
+      }),
+  });
+
+  const bankOptions = (banks.data ?? []).map((b) => ({ value: b.name, label: b.name }));
+
+  return (
+    <Modal opened={opened} onClose={onClose} title={t("banksync.eb.connectTitle")}>
+      <Stack>
+        <Text size="sm" c="dimmed">
+          {t("banksync.eb.connectHint")}
+        </Text>
+        <TextInput
+          label={t("banksync.eb.country")}
+          value={country}
+          onChange={(e) => setCountry(e.currentTarget.value.toUpperCase().slice(0, 2))}
+          maw={120}
+        />
+        <Select
+          label={t("banksync.eb.bank")}
+          placeholder={banks.isLoading ? t("banksync.eb.loadingBanks") : t("banksync.eb.pickBank")}
+          data={bankOptions}
+          value={aspsp}
+          onChange={setAspsp}
+          searchable
+          nothingFoundMessage={
+            banks.isError ? t("banksync.eb.banksError") : t("banksync.eb.noBanks")
+          }
+        />
+        <TextInput
+          label={t("banksync.name")}
+          placeholder={t("banksync.namePlaceholder")}
+          value={name}
+          onChange={(e) => setName(e.currentTarget.value)}
+        />
+        <Group justify="flex-end">
+          <Button variant="default" onClick={onClose}>
+            {t("banksync.cancel")}
+          </Button>
+          <Button
+            disabled={!aspsp}
+            loading={start.isPending}
+            rightSection={<IconExternalLink size={16} />}
+            onClick={() => start.mutate()}
+          >
+            {t("banksync.eb.continue")}
           </Button>
         </Group>
       </Stack>
