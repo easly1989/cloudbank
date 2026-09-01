@@ -235,6 +235,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The current user's AI configuration (never the API key) */
+        get: operations["getAISettings"];
+        /** Update AI configuration (omit apiKey to keep the stored key) */
+        put: operations["updateAISettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/ai/suggest-category": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask the configured model to suggest a category for a transaction */
+        post: operations["suggestCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/tokens": {
         parameters: {
             query?: never;
@@ -1940,6 +1977,36 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** @description A user's AI configuration. The API key is never returned; only hasKey. */
+        AISettings: {
+            enabled: boolean;
+            /** @description OpenAI-compatible base URL (cloud or local runtime) */
+            baseUrl: string;
+            model: string;
+            /** @description whether an API key is stored */
+            hasKey: boolean;
+        };
+        AISettingsInput: {
+            enabled: boolean;
+            baseUrl: string;
+            model: string;
+            /** @description omit to keep the stored key; empty string clears it */
+            apiKey?: string;
+        };
+        SuggestCategoryRequest: {
+            payee?: string;
+            memo?: string;
+            /** @description human-formatted amount, for context */
+            amount?: string;
+        };
+        SuggestCategoryResult: {
+            category: {
+                /** Format: int64 */
+                id: number;
+                /** @description full "Parent:Sub" category name */
+                name: string;
+            } | null;
+        };
         /** @description The browser's PushSubscription (endpoint + keys). */
         PushSubscription: {
             endpoint: string;
@@ -3383,6 +3450,88 @@ export interface operations {
                 content?: never;
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    getAISettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AISettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateAISettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AISettingsInput"];
+            };
+        };
+        responses: {
+            /** @description The updated settings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AISettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    suggestCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuggestCategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description The suggestion (category may be null). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestCategoryResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description The AI provider request failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     listApiTokens: {

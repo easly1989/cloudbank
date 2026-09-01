@@ -19,6 +19,7 @@ import { useTranslation } from "react-i18next";
 
 import { ApiError, listAccounts, updateMe, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
+import { AiSettingsCard } from "../components/AiSettingsCard";
 import { NotificationsCard } from "../components/NotificationsCard";
 import { TwoFactorCard } from "../components/TwoFactorCard";
 import { supportedLanguages } from "../i18n";
@@ -178,6 +179,7 @@ export function PreferencesPage() {
           </Group>
         </Stack>
       </Card>
+      <AiSettingsCard />
       <NotificationsCard />
       <TwoFactorCard />
     </Stack>
