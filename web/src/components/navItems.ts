@@ -1,5 +1,6 @@
 import {
   IconArrowsExchange,
+  IconBuildingBank,
   IconCalendarRepeat,
   IconCar,
   IconChartBar,
@@ -43,6 +44,13 @@ export const NAV_ITEMS: NavItemDef[] = [
     adminOnly: false,
   },
   { to: "/bills", labelKey: "nav.bills", icon: IconReceipt, end: false, adminOnly: false },
+  {
+    to: "/bank-sync",
+    labelKey: "nav.bankSync",
+    icon: IconBuildingBank,
+    end: false,
+    adminOnly: false,
+  },
   { to: "/templates", labelKey: "nav.templates", icon: IconTemplate, end: false, adminOnly: false },
   { to: "/tags", labelKey: "nav.tags", icon: IconTag, end: false, adminOnly: false },
   { to: "/vehicles", labelKey: "nav.vehicles", icon: IconCar, end: false, adminOnly: false },
