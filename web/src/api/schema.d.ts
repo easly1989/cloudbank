@@ -272,6 +272,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/ai/parse-entry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parse a natural-language description into transaction fields */
+        post: operations["parseEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/tokens": {
         parameters: {
             query?: never;
@@ -1999,6 +2018,25 @@ export interface components {
             /** @description human-formatted amount, for context */
             amount?: string;
         };
+        /** @description A natural-language description resolved into transaction fields. Category/payee ids are present only when a name matched a real wallet row. */
+        ParsedEntry: {
+            /** @description positive decimal string */
+            amount: string;
+            /** @enum {string} */
+            direction: "expense" | "income";
+            /** @description YYYY-MM-DD */
+            date: string;
+            memo: string;
+            /** Format: int64 */
+            payeeId?: number | null;
+            payeeName?: string;
+            /** Format: int64 */
+            categoryId?: number | null;
+            categoryName?: string;
+        };
+        ParseEntryResult: {
+            entry: components["schemas"]["ParsedEntry"];
+        };
         SuggestCategoryResult: {
             category: {
                 /** Format: int64 */
@@ -3520,6 +3558,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SuggestCategoryResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description The AI provider request failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    parseEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    text: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The parsed fields (entry may be null). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParseEntryResult"];
                 };
             };
             400: components["responses"]["BadRequest"];
