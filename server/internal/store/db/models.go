@@ -84,6 +84,23 @@ type Attachment struct {
 	CreatedAt     string
 }
 
+type BankConnection struct {
+	ID           int64
+	WalletID     int64
+	Provider     string
+	AccessUrl    string
+	Name         string
+	CreatedAt    string
+	LastSyncedAt sql.NullString
+}
+
+type BankLink struct {
+	ID           int64
+	ConnectionID int64
+	ExternalID   string
+	AccountID    int64
+}
+
 type Budget struct {
 	ID         int64
 	WalletID   int64

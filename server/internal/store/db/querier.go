@@ -44,6 +44,8 @@ type Querier interface {
 	DeleteAccount(ctx context.Context, id int64) error
 	DeleteAssignment(ctx context.Context, id int64) error
 	DeleteAttachment(ctx context.Context, id int64) error
+	DeleteBankConnection(ctx context.Context, arg DeleteBankConnectionParams) (int64, error)
+	DeleteBankLink(ctx context.Context, arg DeleteBankLinkParams) error
 	DeleteCategory(ctx context.Context, id int64) error
 	DeleteCategoryBudget(ctx context.Context, arg DeleteCategoryBudgetParams) error
 	DeleteContribution(ctx context.Context, id int64) error
@@ -73,6 +75,7 @@ type Querier interface {
 	GetAppConfig(ctx context.Context, key string) (string, error)
 	GetAssignment(ctx context.Context, id int64) (Assignment, error)
 	GetAttachment(ctx context.Context, id int64) (Attachment, error)
+	GetBankConnection(ctx context.Context, id int64) (BankConnection, error)
 	GetBaseCurrency(ctx context.Context, walletID int64) (Currency, error)
 	GetCategory(ctx context.Context, id int64) (Category, error)
 	GetContribution(ctx context.Context, id int64) (GoalContribution, error)
@@ -97,6 +100,7 @@ type Querier interface {
 	InsertAccount(ctx context.Context, arg InsertAccountParams) (Account, error)
 	InsertAssignment(ctx context.Context, arg InsertAssignmentParams) (Assignment, error)
 	InsertAttachment(ctx context.Context, arg InsertAttachmentParams) (Attachment, error)
+	InsertBankConnection(ctx context.Context, arg InsertBankConnectionParams) (BankConnection, error)
 	InsertBudget(ctx context.Context, arg InsertBudgetParams) error
 	InsertCategory(ctx context.Context, arg InsertCategoryParams) (Category, error)
 	InsertContribution(ctx context.Context, arg InsertContributionParams) (GoalContribution, error)
@@ -124,6 +128,8 @@ type Querier interface {
 	ListAssignmentsForWallet(ctx context.Context, walletID int64) ([]Assignment, error)
 	ListAttachmentsForTransaction(ctx context.Context, transactionID int64) ([]Attachment, error)
 	ListAttachmentsForWallet(ctx context.Context, walletID int64) ([]Attachment, error)
+	ListBankConnectionsForWallet(ctx context.Context, walletID int64) ([]BankConnection, error)
+	ListBankLinks(ctx context.Context, connectionID int64) ([]ListBankLinksRow, error)
 	ListBudgetsForWallet(ctx context.Context, walletID int64) ([]Budget, error)
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
 	ListContributionsForGoal(ctx context.Context, goalID int64) ([]GoalContribution, error)
@@ -195,6 +201,7 @@ type Querier interface {
 	SetUserDisabled(ctx context.Context, arg SetUserDisabledParams) error
 	SetUserTOTP(ctx context.Context, arg SetUserTOTPParams) error
 	TouchAPIToken(ctx context.Context, id string) error
+	TouchBankConnection(ctx context.Context, id int64) error
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
 	UpdateAccountPosition(ctx context.Context, arg UpdateAccountPositionParams) error
@@ -214,6 +221,7 @@ type Querier interface {
 	UpdateWallet(ctx context.Context, arg UpdateWalletParams) error
 	UpdateWalletBaseCurrency(ctx context.Context, arg UpdateWalletBaseCurrencyParams) error
 	UpsertAISettings(ctx context.Context, arg UpsertAISettingsParams) error
+	UpsertBankLink(ctx context.Context, arg UpsertBankLinkParams) error
 	UpsertExchangeRate(ctx context.Context, arg UpsertExchangeRateParams) error
 	UpsertPushSubscription(ctx context.Context, arg UpsertPushSubscriptionParams) error
 }

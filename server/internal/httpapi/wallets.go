@@ -14,6 +14,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/assignment"
 	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/backup"
+	"github.com/easly1989/cloudbank/server/internal/banksync"
 	"github.com/easly1989/cloudbank/server/internal/bills"
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/category"
@@ -51,6 +52,7 @@ type walletHandlers struct {
 	dashboard    *dashboard.Service
 	bills        *bills.Service
 	ai           *ai.Service
+	bankSync     *banksync.Service
 	templates    *template.Service
 	schedules    *schedule.Service
 	assignments  *assignment.Service
@@ -124,6 +126,9 @@ func (h *walletHandlers) routes(r chi.Router) {
 		}
 		if h.ai != nil {
 			(&aiHandlers{svc: h.ai}).walletRoutes(r)
+		}
+		if h.bankSync != nil {
+			(&bankSyncHandlers{svc: h.bankSync}).walletRoutes(r)
 		}
 		if h.templates != nil {
 			(&templateHandlers{svc: h.templates}).walletRoutes(r)
