@@ -15,7 +15,7 @@ import {
   TextInput,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconDeviceFloppy, IconTrash } from "@tabler/icons-react";
+import { IconDeviceFloppy, IconSparkles, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -30,11 +30,13 @@ import {
   createTemplate,
   createTransaction,
   findDuplicateTransactions,
+  getAISettings,
   listCategories,
   listPayees,
   listTags,
   listVehicles,
   suggestAssignment,
+  suggestCategory,
   updateTransaction,
 } from "../api/client";
 import { minorToInput } from "../money";
@@ -97,6 +99,31 @@ export function TransactionForm({
   const [tags, setTags] = useState<string[]>([]);
   const [isSplit, setIsSplit] = useState(false);
   const [splits, setSplits] = useState<{ categoryId: string | null; amount: string }[]>([]);
+
+  // Opt-in AI category suggestion, shown only when the user has enabled and
+  // keyed a provider. It fills the category from the current payee/memo/amount.
+  const aiSettings = useQuery({
+    queryKey: ["aiSettings"],
+    queryFn: getAISettings,
+    staleTime: 60_000,
+  });
+  const aiEnabled = !!(aiSettings.data?.enabled && aiSettings.data?.hasKey);
+  const payeeName = useMemo(
+    () => payeesQuery.data?.find((p) => String(p.id) === payeeId)?.name ?? "",
+    [payeesQuery.data, payeeId],
+  );
+  const suggest = useMutation({
+    mutationFn: () => suggestCategory(walletId, { payee: payeeName, memo, amount }),
+    onSuccess: (res) => {
+      if (res.category) setCategoryId(String(res.category.id));
+      else notifications.show({ color: "gray", message: t("ai.noSuggestion") });
+    },
+    onError: (err: unknown) =>
+      notifications.show({
+        color: "red",
+        message: err instanceof ApiError ? err.message : String(err),
+      }),
+  });
 
   // Save-mode support: modeRef carries the clicked button's intent into the
   // (async) mutation success; savingMode drives which button shows loading;
@@ -479,14 +506,29 @@ export function TransactionForm({
         />
         {!isSplit ? (
           <Group grow align="flex-start">
-            <Select
-              label={t("transactions.category")}
-              data={categoryOptions}
-              value={categoryId}
-              onChange={setCategoryId}
-              clearable
-              searchable
-            />
+            <div>
+              <Select
+                label={t("transactions.category")}
+                data={categoryOptions}
+                value={categoryId}
+                onChange={setCategoryId}
+                clearable
+                searchable
+              />
+              {aiEnabled && (
+                <Button
+                  variant="subtle"
+                  size="compact-xs"
+                  mt={4}
+                  leftSection={<IconSparkles size={14} />}
+                  loading={suggest.isPending}
+                  disabled={!payeeName && !memo}
+                  onClick={() => suggest.mutate()}
+                >
+                  {t("ai.suggestCategory")}
+                </Button>
+              )}
+            </div>
             <TagsInput
               label={t("transactions.tags")}
               data={tagsQuery.data ?? []}

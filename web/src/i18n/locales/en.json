@@ -530,6 +530,22 @@
     "blocked": "Blocked in your browser settings.",
     "unsupported": "This browser doesn't support push notifications."
   },
+  "ai": {
+    "title": "AI (bring your own key)",
+    "hint": "Optional. Connect an AI provider to get category suggestions. Works with OpenAI-compatible services, including a local runtime (Ollama, LM Studio) via its URL. Your key stays on the server and is used only for your requests.",
+    "enable": "Enable AI features",
+    "baseUrl": "Base URL",
+    "baseUrlHint": "OpenAI-compatible endpoint, e.g. https://api.openai.com/v1 or http://localhost:11434/v1",
+    "model": "Model",
+    "apiKey": "API key",
+    "apiKeyPlaceholder": "sk-…",
+    "keySet": "A key is stored. Type a new one to replace it.",
+    "keyNotSet": "No key stored yet.",
+    "save": "Save",
+    "saved": "AI settings saved",
+    "suggestCategory": "Suggest category",
+    "noSuggestion": "No category suggestion for this transaction."
+  },
   "setup": {
     "title": "Welcome to CloudBank",
     "subtitle": "Create the administrator account to get started.",

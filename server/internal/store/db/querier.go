@@ -67,6 +67,7 @@ type Querier interface {
 	DeleteVehicle(ctx context.Context, id int64) error
 	DeleteWallet(ctx context.Context, id int64) error
 	FindDuplicateTransactions(ctx context.Context, arg FindDuplicateTransactionsParams) ([]Transaction, error)
+	GetAISettings(ctx context.Context, userID int64) (GetAISettingsRow, error)
 	GetAPIToken(ctx context.Context, id string) (ApiToken, error)
 	GetAccount(ctx context.Context, id int64) (Account, error)
 	GetAppConfig(ctx context.Context, key string) (string, error)
@@ -212,6 +213,7 @@ type Querier interface {
 	UpdateVehicle(ctx context.Context, arg UpdateVehicleParams) error
 	UpdateWallet(ctx context.Context, arg UpdateWalletParams) error
 	UpdateWalletBaseCurrency(ctx context.Context, arg UpdateWalletBaseCurrencyParams) error
+	UpsertAISettings(ctx context.Context, arg UpsertAISettingsParams) error
 	UpsertExchangeRate(ctx context.Context, arg UpsertExchangeRateParams) error
 	UpsertPushSubscription(ctx context.Context, arg UpsertPushSubscriptionParams) error
 }
