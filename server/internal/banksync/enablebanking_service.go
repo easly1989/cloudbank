@@ -134,6 +134,30 @@ func (s *Service) EBankingBanks(ctx context.Context, walletID int64, country str
 func (s *Service) EBankingStartAuth(ctx context.Context, walletID int64, aspspName, aspspCountry, name, redirectURL string) (string, string, error) {
 	aspspName = strings.TrimSpace(aspspName)
 	aspspCountry = strings.TrimSpace(aspspCountry)
+	if aspspName == "" || aspspCountry == "" {
+		return "", "", ErrInvalid
+	}
+	return s.ebStartAuth(ctx, walletID, aspspName, aspspCountry, strings.TrimSpace(name), redirectURL, 0)
+}
+
+// EBankingStartReauth re-authorizes an existing connection's bank. When the
+// callback completes it refreshes that connection's session in place — keeping
+// its account links — instead of creating a new connection. Used to renew a
+// consent that is expiring or has expired.
+func (s *Service) EBankingStartReauth(ctx context.Context, walletID, connID int64, redirectURL string) (string, string, error) {
+	c, err := s.conn(ctx, walletID, connID)
+	if err != nil {
+		return "", "", err
+	}
+	if c.Provider != providerEnableBanking {
+		return "", "", ErrInvalid
+	}
+	return s.ebStartAuth(ctx, walletID, c.AspspName, c.AspspCountry, c.Name, redirectURL, connID)
+}
+
+// ebStartAuth begins an authorization and records a pending row. connectionID > 0
+// marks it as a re-authorization of that connection.
+func (s *Service) ebStartAuth(ctx context.Context, walletID int64, aspspName, aspspCountry, name, redirectURL string, connectionID int64) (string, string, error) {
 	redirectURL = strings.TrimSpace(redirectURL)
 	if aspspName == "" || aspspCountry == "" || redirectURL == "" {
 		return "", "", ErrInvalid
@@ -157,8 +181,8 @@ func (s *Service) EBankingStartAuth(ctx context.Context, walletID int64, aspspNa
 		return "", "", fmt.Errorf("banksync: enable banking returned no authorization url")
 	}
 	if err := s.q.InsertEBankingAuth(ctx, db.InsertEBankingAuthParams{
-		State: state, WalletID: walletID, AspspName: aspspName,
-		AspspCountry: aspspCountry, Name: strings.TrimSpace(name), RedirectUrl: redirectURL,
+		State: state, WalletID: walletID, AspspName: aspspName, AspspCountry: aspspCountry,
+		Name: name, RedirectUrl: redirectURL, ConnectionID: connectionID,
 	}); err != nil {
 		return "", "", err
 	}
@@ -200,6 +224,24 @@ func (s *Service) EBankingCompleteAuth(ctx context.Context, walletID int64, stat
 		accs = append(accs, ebStoredAccount{UID: a.UID, Name: a.label(), Currency: a.Currency, IBAN: a.AccountID.IBAN})
 	}
 	accountsJSON, _ := json.Marshal(accs)
+
+	// A re-authorization refreshes the existing connection's session in place,
+	// keeping its account links; a fresh authorization inserts a new connection.
+	if pend.ConnectionID > 0 {
+		row, err := s.q.RefreshEBankingConnectionSession(ctx, db.RefreshEBankingConnectionSessionParams{
+			AccessUrl: secrets.Seal(sess.SessionID), ValidUntil: sess.Access.ValidUntil,
+			AccountsJson: string(accountsJSON), ID: pend.ConnectionID, WalletID: walletID,
+		})
+		if errors.Is(err, sql.ErrNoRows) {
+			return Connection{}, ErrNotFound
+		}
+		if err != nil {
+			return Connection{}, err
+		}
+		_ = s.q.DeleteEBankingAuth(ctx, state)
+		return toConnection(row), nil
+	}
+
 	row, err := s.q.InsertEBankingConnection(ctx, db.InsertEBankingConnectionParams{
 		WalletID: walletID, AccessUrl: secrets.Seal(sess.SessionID), Name: name,
 		AspspName: pend.AspspName, AspspCountry: pend.AspspCountry,

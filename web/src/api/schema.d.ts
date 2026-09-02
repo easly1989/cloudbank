@@ -412,6 +412,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/bank/connections/{connId}/reauth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-authorize an Enable Banking connection (renew its consent, keep account links) */
+        post: operations["reauthEnableBankingConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/bank/enablebanking/config": {
         parameters: {
             query?: never;
@@ -2232,6 +2252,8 @@ export interface components {
             aspsp?: string;
             /** @description provider bank country (Enable Banking) */
             country?: string;
+            /** @description consent expiry (Enable Banking), RFC3339 */
+            validUntil?: string;
         };
         BankRemoteAccount: {
             externalId: string;
@@ -4052,6 +4074,40 @@ export interface operations {
                 };
                 content?: never;
             };
+        };
+    };
+    reauthEnableBankingConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    redirectUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The authorization URL and state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                        state: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
         };
     };
     getEnableBankingConfig: {

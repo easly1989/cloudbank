@@ -24,6 +24,7 @@ import {
   IconCopy,
   IconExternalLink,
   IconKey,
+  IconPlugConnected,
   IconPlus,
   IconRefreshDot,
   IconTrash,
@@ -43,6 +44,7 @@ import {
   listBankConnections,
   listBankRemoteAccounts,
   listEnableBankingBanks,
+  reauthEnableBankingConnection,
   removeBankConnection,
   setEnableBankingConfig,
   startEnableBankingAuth,
@@ -169,6 +171,34 @@ function ConnectionCard({
     onSuccess: refreshConns,
     onError,
   });
+  const reconnect = useMutation({
+    mutationFn: () => reauthEnableBankingConnection(walletId, connection.id, ebRedirectUrl()),
+    onSuccess: (res) => {
+      window.location.href = res.url;
+    },
+    onError,
+  });
+
+  // Enable Banking consent status from validUntil (~90-day PSD2 consent).
+  const consent = (() => {
+    if (connection.provider !== "enablebanking" || !connection.validUntil) return null;
+    const ms = new Date(connection.validUntil).getTime();
+    if (Number.isNaN(ms)) return null;
+    const days = Math.ceil((ms - Date.now()) / 86_400_000);
+    if (days < 0)
+      return { text: t("banksync.eb.consentExpired"), color: "red" as const, urgent: true };
+    if (days <= 7)
+      return {
+        text: t("banksync.eb.consentExpiresSoon", { days }),
+        color: "orange" as const,
+        urgent: true,
+      };
+    return {
+      text: t("banksync.eb.consentValid", { days }),
+      color: "dimmed" as const,
+      urgent: false,
+    };
+  })();
   const link = useMutation({
     mutationFn: (v: { externalId: string; accountId: number | null }) =>
       v.accountId
@@ -197,9 +227,25 @@ function ConnectionCard({
                 ? t("banksync.lastSynced", { date: fmtDate(connection.lastSyncedAt) })
                 : t("banksync.neverSynced")}
             </Text>
+            {consent && (
+              <Text size="xs" c={consent.color} fw={consent.urgent ? 600 : 400}>
+                {consent.text}
+              </Text>
+            )}
           </div>
         </Group>
         <Group gap="xs">
+          {connection.provider === "enablebanking" && (
+            <Button
+              variant={consent?.urgent ? "filled" : "light"}
+              color={consent?.urgent ? "orange" : "gray"}
+              leftSection={<IconPlugConnected size={16} />}
+              loading={reconnect.isPending}
+              onClick={() => reconnect.mutate()}
+            >
+              {t("banksync.eb.reconnect")}
+            </Button>
+          )}
           <Button
             variant="light"
             leftSection={<IconRefreshDot size={16} />}
