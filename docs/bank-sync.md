@@ -47,8 +47,14 @@ application; CloudBank uses it on your behalf.
 2. Choose an environment:
    - **Sandbox** — free, activated instantly, connects to mock/test banks (and
      some banks' sandboxes). Best for trying the whole flow.
-   - **Production** — real banks; requires Enable Banking's approval. This is the
-     part you arrange (and pay for, at scale) yourself.
+   - **Production** — real banks. A new production app starts **inactive**. For
+     **personal, non-commercial** use you can activate it with **"Activate by
+     linking accounts"** in the Control Panel: link your own bank account(s) and
+     authorize them — no commercial contract required (see Enable Banking's
+     [Linked accounts](https://enablebanking.com/docs/api/linked-accounts/) docs;
+     commercial / at-scale use needs an agreement, and their Terms of Service set
+     the exact limits). The API flow is the same as sandbox, so nothing changes in
+     CloudBank — just set the environment to **production**.
 3. Set the application's **redirect URL** to your CloudBank instance's callback,
    exactly:
 
