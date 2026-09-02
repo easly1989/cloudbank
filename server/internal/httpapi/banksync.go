@@ -25,6 +25,13 @@ func (h *bankSyncHandlers) walletRoutes(r chi.Router) {
 		r.Delete("/links/{externalId}", h.unlink)
 		r.Post("/sync", h.sync)
 	})
+	// Enable Banking (EU/PSD2), bring-your-own credentials.
+	r.Get("/bank/enablebanking/config", h.ebGetConfig)
+	r.Put("/bank/enablebanking/config", h.ebSetConfig)
+	r.Delete("/bank/enablebanking/config", h.ebDeleteConfig)
+	r.Get("/bank/enablebanking/aspsps", h.ebBanks)
+	r.Post("/bank/enablebanking/auth", h.ebStartAuth)
+	r.Post("/bank/enablebanking/callback", h.ebCallback)
 }
 
 func (h *bankSyncHandlers) connID(w http.ResponseWriter, r *http.Request) (int64, bool) {
@@ -44,9 +51,95 @@ func (h *bankSyncHandlers) writeErr(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "not_found", "not found")
 	case errors.Is(err, banksync.ErrInvalid):
 		writeError(w, http.StatusBadRequest, "invalid", "invalid input")
+	case errors.Is(err, banksync.ErrEBNotConfigured):
+		writeError(w, http.StatusBadRequest, "not_configured", "enable banking is not configured for this wallet")
+	case errors.Is(err, banksync.ErrEBConsentExpired):
+		writeError(w, http.StatusConflict, "consent_expired", "the bank consent has expired — reconnect the bank")
 	default:
 		writeError(w, http.StatusBadGateway, "provider_error", "the bank provider request failed")
 	}
+}
+
+func (h *bankSyncHandlers) ebGetConfig(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	cfg, err := h.svc.EBankingConfig(r.Context(), wl.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not load config")
+		return
+	}
+	writeJSON(w, http.StatusOK, cfg)
+}
+
+func (h *bankSyncHandlers) ebSetConfig(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body struct {
+		AppID       string `json:"appId"`
+		PrivateKey  string `json:"privateKey"`
+		Environment string `json:"environment"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if err := h.svc.SetEBankingConfig(r.Context(), wl.ID, body.AppID, body.PrivateKey, body.Environment); err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *bankSyncHandlers) ebDeleteConfig(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	if err := h.svc.DeleteEBankingConfig(r.Context(), wl.ID); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not delete config")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *bankSyncHandlers) ebBanks(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	banks, err := h.svc.EBankingBanks(r.Context(), wl.ID, r.URL.Query().Get("country"))
+	if err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, banks)
+}
+
+func (h *bankSyncHandlers) ebStartAuth(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body struct {
+		AspspName    string `json:"aspspName"`
+		AspspCountry string `json:"aspspCountry"`
+		Name         string `json:"name"`
+		RedirectURL  string `json:"redirectUrl"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	url, state, err := h.svc.EBankingStartAuth(r.Context(), wl.ID, body.AspspName, body.AspspCountry, body.Name, body.RedirectURL)
+	if err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"url": url, "state": state})
+}
+
+func (h *bankSyncHandlers) ebCallback(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body struct {
+		State string `json:"state"`
+		Code  string `json:"code"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	conn, err := h.svc.EBankingCompleteAuth(r.Context(), wl.ID, body.State, body.Code)
+	if err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"connection": conn})
 }
 
 func (h *bankSyncHandlers) list(w http.ResponseWriter, r *http.Request) {

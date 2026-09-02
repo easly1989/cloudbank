@@ -412,6 +412,87 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/bank/enablebanking/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Get the wallet's Enable Banking application config (never the private key) */
+        get: operations["getEnableBankingConfig"];
+        /** Store the wallet's Enable Banking application credentials (app id + RSA private key) */
+        put: operations["setEnableBankingConfig"];
+        post?: never;
+        /** Remove the wallet's Enable Banking credentials */
+        delete: operations["deleteEnableBankingConfig"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/bank/enablebanking/aspsps": {
+        parameters: {
+            query?: {
+                /** @description ISO country code filter (e.g. IT) */
+                country?: string;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** List the banks (ASPSPs) available to the wallet's application */
+        get: operations["listEnableBankingAspsps"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/bank/enablebanking/auth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Begin a bank authorization; returns the URL to redirect the user to their bank */
+        post: operations["startEnableBankingAuth"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/bank/enablebanking/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Exchange the bank redirect code for a session and create a connection */
+        post: operations["completeEnableBankingAuth"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/tokens": {
         parameters: {
             query?: never;
@@ -2147,6 +2228,10 @@ export interface components {
             name: string;
             createdAt: string;
             lastSyncedAt?: string;
+            /** @description provider bank name (Enable Banking) */
+            aspsp?: string;
+            /** @description provider bank country (Enable Banking) */
+            country?: string;
         };
         BankRemoteAccount: {
             externalId: string;
@@ -2167,6 +2252,18 @@ export interface components {
             reconciled: number;
             /** @description linked accounts synced */
             accounts: number;
+        };
+        /** @description A wallet's Enable Banking application config — never the private key. */
+        EnableBankingConfig: {
+            configured: boolean;
+            appId?: string;
+            /** @enum {string} */
+            environment?: "sandbox" | "production";
+        };
+        EnableBankingBank: {
+            name: string;
+            country: string;
+            logo?: string;
         };
         /** @description A natural-language description resolved into transaction fields. Category/payee ids are present only when a name matched a real wallet row. */
         ParsedEntry: {
@@ -3955,6 +4052,171 @@ export interface operations {
                 };
                 content?: never;
             };
+        };
+    };
+    getEnableBankingConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The config. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnableBankingConfig"];
+                };
+            };
+        };
+    };
+    setEnableBankingConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    appId: string;
+                    /** @description RSA private key, PEM */
+                    privateKey: string;
+                    /** @enum {string} */
+                    environment?: "sandbox" | "production";
+                };
+            };
+        };
+        responses: {
+            /** @description Saved. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    deleteEnableBankingConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listEnableBankingAspsps: {
+        parameters: {
+            query?: {
+                /** @description ISO country code filter (e.g. IT) */
+                country?: string;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The banks. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnableBankingBank"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    startEnableBankingAuth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    aspspName: string;
+                    aspspCountry: string;
+                    name?: string;
+                    redirectUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The authorization URL and state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                        state: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    completeEnableBankingAuth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    state: string;
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The created connection. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankConnectResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
         };
     };
     listApiTokens: {

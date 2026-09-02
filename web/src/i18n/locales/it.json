@@ -361,7 +361,7 @@
   },
   "banksync": {
     "title": "Sync bancario",
-    "hint": "Importa automaticamente le transazioni dalla tua banca via SimpleFIN. Porti il tuo abbonamento SimpleFIN Bridge (circa $15/anno) e incolli un setup token — CloudBank non vede mai le credenziali della banca.",
+    "hint": "Importa automaticamente le transazioni dalla tua banca. Scegli un provider qui sotto — CloudBank conserva le credenziali lato server e non vede mai il login della tua banca.",
     "connect": "Collega una banca",
     "connectTitle": "Collega una banca",
     "connectHint": "Ottieni un setup token dal tuo account SimpleFIN Bridge e incollalo qui. CloudBank lo riscatta una volta per ottenere un access URL sicuro.",
@@ -383,7 +383,45 @@
     "noRemote": "Nessun conto trovato per questa connessione.",
     "linked": "Collegato",
     "notLinked": "Non collegato",
-    "linkTo": "Collega a conto…"
+    "linkTo": "Collega a conto…",
+    "simplefin": {
+      "title": "SimpleFIN",
+      "hint": "Banche di tutto il mondo via SimpleFIN. Porti il tuo abbonamento SimpleFIN Bridge (circa $15/anno) e incolli un setup token."
+    },
+    "connectedTitle": "Banche collegate",
+    "eb": {
+      "title": "Enable Banking (EU)",
+      "hint": "Banche EU/UK via open banking PSD2. Porti la tua applicazione Enable Banking — sandbox gratuita per testare, la tua app di produzione per i conti reali.",
+      "configure": "Configura",
+      "configTitle": "Credenziali Enable Banking",
+      "configHint": "Registra la tua applicazione nel Control Panel di Enable Banking, poi incolla l'Application ID e la chiave privata RSA. La chiave privata è conservata lato server e non lascia mai CloudBank.",
+      "redirectLabel": "Autorizza questo redirect URL nella tua applicazione Enable Banking:",
+      "copy": "Copia",
+      "appId": "Application ID",
+      "privateKey": "Chiave privata RSA (PEM)",
+      "environment": "Ambiente",
+      "save": "Salva",
+      "saved": "Enable Banking configurato.",
+      "edit": "Modifica credenziali",
+      "removeConfig": "Rimuovi credenziali",
+      "confirmRemoveConfig": "Rimuovere le credenziali Enable Banking? Le connessioni esistenti smetteranno di sincronizzarsi.",
+      "connect": "Collega una banca",
+      "connectTitle": "Collega una banca via Enable Banking",
+      "connectHint": "Scegli la tua banca; verrai reindirizzato per autorizzare l'accesso. Al ritorno, la connessione appare qui sotto.",
+      "country": "Paese",
+      "bank": "Banca",
+      "pickBank": "Scegli una banca…",
+      "loadingBanks": "Caricamento banche…",
+      "noBanks": "Nessuna banca trovata.",
+      "banksError": "Impossibile caricare le banche — controlla le credenziali.",
+      "continue": "Continua alla banca",
+      "callback": {
+        "connecting": "Completamento della connessione bancaria…",
+        "success": "Banca collegata. Reindirizzamento…",
+        "error": "Impossibile completare la connessione.",
+        "back": "Torna a Sync bancario"
+      }
+    }
   },
   "search": {
     "open": "Cerca transazioni",
