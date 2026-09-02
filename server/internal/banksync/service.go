@@ -8,6 +8,7 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/money"
+	"github.com/easly1989/cloudbank/server/internal/secrets"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -103,7 +104,7 @@ func (s *Service) Connect(ctx context.Context, walletID int64, setupToken, name 
 		return Connection{}, nil, err
 	}
 	row, err := s.q.InsertBankConnection(ctx, db.InsertBankConnectionParams{
-		WalletID: walletID, Provider: providerSimpleFIN, AccessUrl: accessURL, Name: name,
+		WalletID: walletID, Provider: providerSimpleFIN, AccessUrl: secrets.Seal(accessURL), Name: name,
 	})
 	if err != nil {
 		return Connection{}, nil, err
@@ -134,7 +135,7 @@ func (s *Service) ListConnections(ctx context.Context, walletID int64) ([]Connec
 func (s *Service) RemoveConnection(ctx context.Context, walletID, id int64) error {
 	if c, err := s.conn(ctx, walletID, id); err == nil && c.Provider == providerEnableBanking {
 		if cl, cerr := s.ebClientForConn(ctx, walletID); cerr == nil {
-			_ = cl.deleteSession(ctx, c.AccessUrl)
+			_ = cl.deleteSession(ctx, secrets.Open(c.AccessUrl))
 		}
 	}
 	n, err := s.q.DeleteBankConnection(ctx, db.DeleteBankConnectionParams{ID: id, WalletID: walletID})
@@ -165,7 +166,7 @@ func (s *Service) remoteAccounts(ctx context.Context, c db.BankConnection) ([]Re
 }
 
 func (s *Service) simplefinRemoteAccounts(ctx context.Context, c db.BankConnection) ([]RemoteAccount, error) {
-	set, err := newSimplefinClient(s.hc).fetchAccounts(ctx, c.AccessUrl, 0)
+	set, err := newSimplefinClient(s.hc).fetchAccounts(ctx, secrets.Open(c.AccessUrl), 0)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +277,7 @@ func (s *Service) Sync(ctx context.Context, walletID, connID int64) (SyncResult,
 // simplefinFetchRows fetches all accounts once and maps each to import rows,
 // keyed by the provider account id.
 func (s *Service) simplefinFetchRows(ctx context.Context, c db.BankConnection, start time.Time) (map[string][]importio.Row, error) {
-	set, err := newSimplefinClient(s.hc).fetchAccounts(ctx, c.AccessUrl, start.Unix())
+	set, err := newSimplefinClient(s.hc).fetchAccounts(ctx, secrets.Open(c.AccessUrl), start.Unix())
 	if err != nil {
 		return nil, err
 	}
