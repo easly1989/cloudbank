@@ -61,6 +61,7 @@ type Querier interface {
 	DeleteSchedule(ctx context.Context, id int64) error
 	DeleteSession(ctx context.Context, id string) error
 	DeleteSplits(ctx context.Context, transactionID int64) error
+	DeleteStaleEBankingAuth(ctx context.Context, walletID int64) error
 	DeleteTag(ctx context.Context, id int64) error
 	DeleteTemplate(ctx context.Context, id int64) error
 	DeleteTemplateSplits(ctx context.Context, templateID int64) error

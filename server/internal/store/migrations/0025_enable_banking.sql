@@ -28,6 +28,9 @@ CREATE INDEX idx_ebanking_auth_wallet ON bank_ebanking_auth (wallet_id);
 
 -- Enable Banking connections reuse bank_connections (provider = 'enablebanking',
 -- access_url = the session id). These columns carry the provider/consent metadata.
+-- accounts_json holds the account list captured from the POST /sessions response
+-- (uid + name + currency + iban), since GET /sessions/{id} returns only uid strings.
 ALTER TABLE bank_connections ADD COLUMN aspsp_name    TEXT NOT NULL DEFAULT '';
 ALTER TABLE bank_connections ADD COLUMN aspsp_country TEXT NOT NULL DEFAULT '';
 ALTER TABLE bank_connections ADD COLUMN valid_until   TEXT NOT NULL DEFAULT '';
+ALTER TABLE bank_connections ADD COLUMN accounts_json TEXT NOT NULL DEFAULT '[]';

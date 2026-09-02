@@ -7,10 +7,42 @@ All notable changes to CloudBank are documented here. The format is based on
 ## [Unreleased]
 
 Post-1.0 work focused on **personalization**, deeper **HomeBank parity & interop**,
-and **onboarding/polish**.
+**onboarding/polish**, and a **post-parity feature roadmap** — bank sync, security,
+the phone, and opt-in AI.
 
 ### Added
 
+- **Automatic bank sync** — import transactions straight from your bank,
+  de-duplicated and run through your assignment rules, via two
+  **bring-your-own-credentials** providers: **SimpleFIN** (worldwide; a ~$15/year
+  SimpleFIN Bridge subscription) and **Enable Banking** (EU/EEA + UK via PSD2 — a
+  free sandbox to test, your own production application for real accounts).
+  Credentials (the SimpleFIN access URL, the Enable Banking application key) are
+  stored server-side and never returned to the client; CloudBank never sees your
+  bank login. See [docs/bank-sync.md](docs/bank-sync.md).
+- **Savings goals** — manual piggy-bank goals with contribute / withdraw, a
+  progress bar and an optional target date; included in wallet backup/restore.
+- **Bills view** — a "what's due" surface over scheduled transactions, with
+  upcoming / due / overdue state and one-click posting.
+- **Full-text register search** — search across memo, payee, category and info
+  from the register.
+- **Two-factor authentication (TOTP)** — optional per-user 2FA with authenticator
+  apps (QR enrolment + one-time recovery codes) and a two-step login.
+- **Personal API tokens** — scoped, revocable bearer tokens for programmatic
+  access (a `Bearer` request bypasses the session CSRF guard); the token secret is
+  shown once at creation.
+- **Installable PWA** — a web-app manifest, icons and an offline app shell, so
+  CloudBank installs to the home screen / desktop.
+- **Web push notifications** — opt-in browser push (VAPID; keys stored
+  server-side), used for schedule / bill due reminders.
+- **Opt-in AI category suggestions** — provider-agnostic, **bring-your-own-key**;
+  suggests a category for a transaction from its description. The API key is
+  write-only and never returned to the client.
+- **Opt-in AI natural-language entry** — type "coffee 3.50 yesterday" and get a
+  pre-filled transaction to review before saving (same BYO-key setup).
+- **Documented bank-import plugin contract** — a stable CSV/OFX/QIF import-plugin
+  contract ([docs/import-plugins.md](docs/import-plugins.md)) plus broader
+  debit/credit CSV column mapping.
 - **Fully customizable, free-form dashboard** — place and resize widgets anywhere
   on a snap grid (not just reorder); add **multiple instances of any widget** from
   an "Add widget" palette, each with its **own settings** (e.g. two spending

@@ -420,7 +420,8 @@
         "success": "Banca collegata. Reindirizzamento…",
         "error": "Impossibile completare la connessione.",
         "back": "Torna a Sync bancario"
-      }
+      },
+      "privateKeyKeep": "Lascia vuoto per mantenere la chiave attuale"
     }
   },
   "search": {
