@@ -3,6 +3,7 @@ package banksync
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -12,6 +13,25 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/money"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
+
+// ebStoredAccount is an Enable Banking account captured from the POST /sessions
+// response and persisted on the connection (GET /sessions/{id} returns only uid
+// strings, so the account details are not re-fetchable from the session alone).
+type ebStoredAccount struct {
+	UID      string `json:"uid"`
+	Name     string `json:"name"`
+	Currency string `json:"currency"`
+	IBAN     string `json:"iban,omitempty"`
+}
+
+func parseStoredAccounts(js string) []ebStoredAccount {
+	if strings.TrimSpace(js) == "" {
+		return nil
+	}
+	var out []ebStoredAccount
+	_ = json.Unmarshal([]byte(js), &out)
+	return out
+}
 
 // EBankingConfigView is the safe view of a wallet's Enable Banking config — it
 // never includes the private key.
@@ -44,10 +64,23 @@ func (s *Service) EBankingConfig(ctx context.Context, walletID int64) (EBankingC
 // The private key is validated (must parse) but otherwise kept opaque.
 func (s *Service) SetEBankingConfig(ctx context.Context, walletID int64, appID, privateKey, environment string) error {
 	appID = strings.TrimSpace(appID)
-	if appID == "" || strings.TrimSpace(privateKey) == "" {
+	if appID == "" {
 		return ErrInvalid
 	}
-	if _, err := parseRSAPrivateKey(privateKey); err != nil {
+	// An empty private key on an already-configured wallet keeps the stored key,
+	// so the environment or app id can be changed without re-pasting the key.
+	key := privateKey
+	if strings.TrimSpace(key) == "" {
+		existing, err := s.rq.GetEBankingConfig(ctx, walletID)
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrInvalid
+		}
+		if err != nil {
+			return err
+		}
+		key = existing.PrivateKey
+	}
+	if _, err := parseRSAPrivateKey(key); err != nil {
 		return ErrInvalid
 	}
 	env := strings.ToLower(strings.TrimSpace(environment))
@@ -55,7 +88,7 @@ func (s *Service) SetEBankingConfig(ctx context.Context, walletID int64, appID, 
 		env = "sandbox"
 	}
 	return s.q.UpsertEBankingConfig(ctx, db.UpsertEBankingConfigParams{
-		WalletID: walletID, AppID: appID, PrivateKey: privateKey, Environment: env,
+		WalletID: walletID, AppID: appID, PrivateKey: key, Environment: env,
 	})
 }
 
@@ -108,11 +141,13 @@ func (s *Service) EBankingStartAuth(ctx context.Context, walletID int64, aspspNa
 	if err != nil {
 		return "", "", err
 	}
+	// Opportunistically drop abandoned authorizations (started, never completed).
+	_ = s.q.DeleteStaleEBankingAuth(ctx, walletID)
 	state, err := randToken()
 	if err != nil {
 		return "", "", err
 	}
-	validUntil := time.Now().AddDate(0, 0, firstSyncLookbackDays)
+	validUntil := time.Now().AddDate(0, 0, consentValidityDays)
 	resp, err := cl.startAuth(ctx, aspspName, aspspCountry, redirectURL, state, validUntil)
 	if err != nil {
 		return "", "", err
@@ -157,9 +192,17 @@ func (s *Service) EBankingCompleteAuth(ctx context.Context, walletID int64, stat
 	if name == "" {
 		name = pend.AspspName
 	}
+	// Capture the account list now: the POST /sessions response has full account
+	// objects, but GET /sessions/{id} later returns only uid strings.
+	accs := make([]ebStoredAccount, 0, len(sess.Accounts))
+	for _, a := range sess.Accounts {
+		accs = append(accs, ebStoredAccount{UID: a.UID, Name: a.label(), Currency: a.Currency, IBAN: a.AccountID.IBAN})
+	}
+	accountsJSON, _ := json.Marshal(accs)
 	row, err := s.q.InsertEBankingConnection(ctx, db.InsertEBankingConnectionParams{
 		WalletID: walletID, AccessUrl: sess.SessionID, Name: name,
-		AspspName: pend.AspspName, AspspCountry: pend.AspspCountry, ValidUntil: "",
+		AspspName: pend.AspspName, AspspCountry: pend.AspspCountry,
+		ValidUntil: sess.Access.ValidUntil, AccountsJson: string(accountsJSON),
 	})
 	if err != nil {
 		return Connection{}, err
@@ -175,23 +218,27 @@ func (s *Service) ebRemoteAccounts(ctx context.Context, c db.BankConnection) ([]
 	if err != nil {
 		return nil, err
 	}
-	sess, err := cl.getSession(ctx, c.AccessUrl)
-	if err != nil {
-		return nil, err
-	}
 	linked := map[string]int64{}
 	if links, err := s.rq.ListBankLinks(ctx, c.ID); err == nil {
 		for _, l := range links {
 			linked[l.ExternalID] = l.AccountID
 		}
 	}
-	out := make([]RemoteAccount, 0, len(sess.Accounts))
-	for _, a := range sess.Accounts {
+	stored := parseStoredAccounts(c.AccountsJson)
+	out := make([]RemoteAccount, 0, len(stored))
+	for _, a := range stored {
 		bal, cur := cl.balance(ctx, a.UID)
 		if cur == "" {
 			cur = a.Currency
 		}
-		ra := RemoteAccount{ExternalID: a.UID, Name: a.label(), Currency: cur, Balance: bal}
+		name := a.Name
+		if name == "" {
+			name = a.IBAN
+		}
+		if name == "" {
+			name = a.UID
+		}
+		ra := RemoteAccount{ExternalID: a.UID, Name: name, Currency: cur, Balance: bal}
 		if id, ok := linked[a.UID]; ok {
 			ra.LinkedAccountID = &id
 		}
@@ -207,12 +254,8 @@ func (s *Service) ebFetchRows(ctx context.Context, c db.BankConnection, linkByEx
 	if err != nil {
 		return nil, err
 	}
-	sess, err := cl.getSession(ctx, c.AccessUrl)
-	if err != nil {
-		return nil, err
-	}
 	out := make(map[string][]importio.Row)
-	for _, a := range sess.Accounts {
+	for _, a := range parseStoredAccounts(c.AccountsJson) {
 		if _, linked := linkByExt[a.UID]; !linked {
 			continue
 		}

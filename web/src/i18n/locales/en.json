@@ -420,7 +420,8 @@
         "success": "Bank connected. Redirecting…",
         "error": "Could not complete the connection.",
         "back": "Back to Bank sync"
-      }
+      },
+      "privateKeyKeep": "Leave blank to keep the current key"
     }
   },
   "search": {

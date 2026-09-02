@@ -116,6 +116,7 @@ app? See [docs/migrate-from-homebank.md](docs/migrate-from-homebank.md).
   OpenAPI spec is at `/api/openapi.yaml`).
 - **Reverse proxy / HTTPS**: [docs/reverse-proxy.md](docs/reverse-proxy.md).
 - **Migrating from HomeBank**: [docs/migrate-from-homebank.md](docs/migrate-from-homebank.md).
+- **Automatic bank sync** (SimpleFIN & Enable Banking): [docs/bank-sync.md](docs/bank-sync.md).
 - **Writing a bank import plugin**: [docs/import-plugins.md](docs/import-plugins.md).
 - **Contributing / running from source**: [CONTRIBUTING.md](CONTRIBUTING.md).
 - **Landing site** (source): [`site/`](site/) — built with Astro and published to GitHub Pages.

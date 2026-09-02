@@ -29,7 +29,7 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -425,6 +425,9 @@ function EnableBankingPanel({ walletId }: { walletId: number }) {
         opened={configOpen}
         onClose={() => setConfigOpen(false)}
         walletId={walletId}
+        configured={configured}
+        currentAppId={cfg.data?.appId}
+        currentEnvironment={cfg.data?.environment}
         onDone={invalidateCfg}
       />
       <EnableBankingConnectModal
@@ -440,11 +443,17 @@ function EnableBankingConfigModal({
   opened,
   onClose,
   walletId,
+  configured,
+  currentAppId,
+  currentEnvironment,
   onDone,
 }: {
   opened: boolean;
   onClose: () => void;
   walletId: number;
+  configured: boolean;
+  currentAppId?: string;
+  currentEnvironment?: string;
   onDone: () => void;
 }) {
   const { t } = useTranslation();
@@ -452,6 +461,16 @@ function EnableBankingConfigModal({
   const [privateKey, setPrivateKey] = useState("");
   const [environment, setEnvironment] = useState("sandbox");
   const redirectUrl = ebRedirectUrl();
+
+  // Prefill the app id / environment when opening in edit mode; the private key
+  // is write-only and starts blank (blank = keep the stored key).
+  useEffect(() => {
+    if (opened) {
+      setAppId(currentAppId ?? "");
+      setEnvironment(currentEnvironment ?? "sandbox");
+      setPrivateKey("");
+    }
+  }, [opened, currentAppId, currentEnvironment]);
 
   const save = useMutation({
     mutationFn: () =>
@@ -499,7 +518,7 @@ function EnableBankingConfigModal({
         />
         <Textarea
           label={t("banksync.eb.privateKey")}
-          placeholder="-----BEGIN PRIVATE KEY-----"
+          placeholder={configured ? t("banksync.eb.privateKeyKeep") : "-----BEGIN PRIVATE KEY-----"}
           value={privateKey}
           onChange={(e) => setPrivateKey(e.currentTarget.value)}
           autosize
@@ -521,7 +540,7 @@ function EnableBankingConfigModal({
             {t("banksync.cancel")}
           </Button>
           <Button
-            disabled={!appId.trim() || !privateKey.trim()}
+            disabled={!appId.trim() || (!privateKey.trim() && !configured)}
             loading={save.isPending}
             onClick={() => save.mutate()}
           >
