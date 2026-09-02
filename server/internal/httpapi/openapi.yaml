@@ -362,6 +362,21 @@ paths:
         "200": { description: The authorization URL and state., content: { application/json: { schema: { type: object, properties: { url: { type: string }, state: { type: string } }, required: [url, state] } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/bank/connections/{connId}/auto-sync:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: connId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: setBankConnectionAutoSync
+      summary: Enable or disable background auto-sync for a connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { enabled: { type: boolean } }, required: [enabled] }
+      responses:
+        "204": { description: Updated. }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/bank/enablebanking/config:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -2144,6 +2159,7 @@ components:
         aspsp: { type: string, description: "provider bank name (Enable Banking)" }
         country: { type: string, description: "provider bank country (Enable Banking)" }
         validUntil: { type: string, description: "consent expiry (Enable Banking), RFC3339" }
+        autoSync: { type: boolean, description: "included in scheduled background sync" }
       required: [id, provider, name, createdAt]
     BankRemoteAccount:
       type: object

@@ -141,6 +141,7 @@ type Querier interface {
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
 	ListContributionsForGoal(ctx context.Context, goalID int64) ([]GoalContribution, error)
 	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)
+	ListDueBankConnections(ctx context.Context, lastSyncedAt sql.NullString) ([]ListDueBankConnectionsRow, error)
 	ListExchangeRates(ctx context.Context, currencyID int64) ([]ExchangeRate, error)
 	ListGoalsForWallet(ctx context.Context, walletID int64) ([]ListGoalsForWalletRow, error)
 	ListImportRefsForAccount(ctx context.Context, accountID int64) ([]string, error)
@@ -199,6 +200,7 @@ type Querier interface {
 	SearchTransactions(ctx context.Context, arg SearchTransactionsParams) ([]SearchTransactionsRow, error)
 	SetAppConfig(ctx context.Context, arg SetAppConfigParams) error
 	SetAssignmentPosition(ctx context.Context, arg SetAssignmentPositionParams) error
+	SetBankConnectionAutoSync(ctx context.Context, arg SetBankConnectionAutoSyncParams) (int64, error)
 	SetChildrenIncome(ctx context.Context, arg SetChildrenIncomeParams) error
 	SetCurrencyBase(ctx context.Context, id int64) error
 	SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error

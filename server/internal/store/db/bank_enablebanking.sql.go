@@ -109,7 +109,7 @@ func (q *Queries) InsertEBankingAuth(ctx context.Context, arg InsertEBankingAuth
 const insertEBankingConnection = `-- name: InsertEBankingConnection :one
 INSERT INTO bank_connections (wallet_id, provider, access_url, name, aspsp_name, aspsp_country, valid_until, accounts_json)
 VALUES (?, 'enablebanking', ?, ?, ?, ?, ?, ?)
-RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json
+RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync
 `
 
 type InsertEBankingConnectionParams struct {
@@ -145,6 +145,7 @@ func (q *Queries) InsertEBankingConnection(ctx context.Context, arg InsertEBanki
 		&i.AspspCountry,
 		&i.ValidUntil,
 		&i.AccountsJson,
+		&i.AutoSync,
 	)
 	return i, err
 }
@@ -153,7 +154,7 @@ const refreshEBankingConnectionSession = `-- name: RefreshEBankingConnectionSess
 UPDATE bank_connections
 SET access_url = ?, valid_until = ?, accounts_json = ?
 WHERE id = ? AND wallet_id = ? AND provider = 'enablebanking'
-RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json
+RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync
 `
 
 type RefreshEBankingConnectionSessionParams struct {
@@ -185,6 +186,7 @@ func (q *Queries) RefreshEBankingConnectionSession(ctx context.Context, arg Refr
 		&i.AspspCountry,
 		&i.ValidUntil,
 		&i.AccountsJson,
+		&i.AutoSync,
 	)
 	return i, err
 }

@@ -11,6 +11,7 @@ export interface BankConnection {
   aspsp?: string;
   country?: string;
   validUntil?: string;
+  autoSync?: boolean;
 }
 
 export interface BankRemoteAccount {
@@ -120,3 +121,6 @@ export const reauthEnableBankingConnection = (
     `/api/v1/wallets/${walletId}/bank/connections/${connId}/reauth`,
     { redirectUrl },
   );
+
+export const setBankConnectionAutoSync = (walletId: number, connId: number, enabled: boolean) =>
+  api.post<void>(`/api/v1/wallets/${walletId}/bank/connections/${connId}/auto-sync`, { enabled });
