@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Config holds the server's runtime configuration. All values come from
@@ -31,18 +32,23 @@ type Config struct {
 	// plaintext (the default). It must stay stable — losing it makes previously
 	// encrypted secrets unrecoverable.
 	SecretKey string
+	// BankSyncInterval is how stale an auto-sync bank connection may get before the
+	// background job re-syncs it. Zero disables background bank sync (manual "Sync
+	// now" still works).
+	BankSyncInterval time.Duration
 }
 
 // Load reads the configuration from the environment, applying defaults.
 func Load() Config {
 	return Config{
-		Addr:            getenv("CB_ADDR", ":8080"),
-		DataDir:         getenv("CB_DATA_DIR", "/data"),
-		LogLevel:        getenv("CB_LOG_LEVEL", "info"),
-		SecureCookies:   getBoolEnv("CB_SECURE_COOKIES", true),
-		RateProviderURL: getenv("CB_RATE_URL", ""),
-		VAPIDSubject:    getenv("CB_VAPID_SUBJECT", "mailto:cloudbank@localhost"),
-		SecretKey:       getenv("CB_SECRET_KEY", ""),
+		Addr:             getenv("CB_ADDR", ":8080"),
+		DataDir:          getenv("CB_DATA_DIR", "/data"),
+		LogLevel:         getenv("CB_LOG_LEVEL", "info"),
+		SecureCookies:    getBoolEnv("CB_SECURE_COOKIES", true),
+		RateProviderURL:  getenv("CB_RATE_URL", ""),
+		VAPIDSubject:     getenv("CB_VAPID_SUBJECT", "mailto:cloudbank@localhost"),
+		SecretKey:        getenv("CB_SECRET_KEY", ""),
+		BankSyncInterval: getDurationEnv("CB_BANK_SYNC_INTERVAL", 12*time.Hour),
 	}
 }
 
@@ -51,6 +57,24 @@ func getenv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// getDurationEnv parses a Go duration (e.g. "12h", "30m"). "0", "off", "false" or
+// "disabled" mean zero (feature disabled); an invalid value falls back.
+func getDurationEnv(key string, fallback time.Duration) time.Duration {
+	v, ok := os.LookupEnv(key)
+	if !ok || strings.TrimSpace(v) == "" {
+		return fallback
+	}
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "0", "off", "false", "disabled":
+		return 0
+	}
+	d, err := time.ParseDuration(strings.TrimSpace(v))
+	if err != nil || d < 0 {
+		return fallback
+	}
+	return d
 }
 
 func getBoolEnv(key string, fallback bool) bool {

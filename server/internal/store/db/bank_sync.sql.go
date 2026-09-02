@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const deleteBankConnection = `-- name: DeleteBankConnection :execrows
@@ -41,7 +42,7 @@ func (q *Queries) DeleteBankLink(ctx context.Context, arg DeleteBankLinkParams) 
 }
 
 const getBankConnection = `-- name: GetBankConnection :one
-SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json FROM bank_connections WHERE id = ? LIMIT 1
+SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync FROM bank_connections WHERE id = ? LIMIT 1
 `
 
 func (q *Queries) GetBankConnection(ctx context.Context, id int64) (BankConnection, error) {
@@ -59,6 +60,7 @@ func (q *Queries) GetBankConnection(ctx context.Context, id int64) (BankConnecti
 		&i.AspspCountry,
 		&i.ValidUntil,
 		&i.AccountsJson,
+		&i.AutoSync,
 	)
 	return i, err
 }
@@ -66,7 +68,7 @@ func (q *Queries) GetBankConnection(ctx context.Context, id int64) (BankConnecti
 const insertBankConnection = `-- name: InsertBankConnection :one
 INSERT INTO bank_connections (wallet_id, provider, access_url, name)
 VALUES (?, ?, ?, ?)
-RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json
+RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync
 `
 
 type InsertBankConnectionParams struct {
@@ -96,12 +98,13 @@ func (q *Queries) InsertBankConnection(ctx context.Context, arg InsertBankConnec
 		&i.AspspCountry,
 		&i.ValidUntil,
 		&i.AccountsJson,
+		&i.AutoSync,
 	)
 	return i, err
 }
 
 const listBankConnectionsForWallet = `-- name: ListBankConnectionsForWallet :many
-SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json FROM bank_connections WHERE wallet_id = ? ORDER BY created_at DESC, id
+SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync FROM bank_connections WHERE wallet_id = ? ORDER BY created_at DESC, id
 `
 
 func (q *Queries) ListBankConnectionsForWallet(ctx context.Context, walletID int64) ([]BankConnection, error) {
@@ -125,6 +128,7 @@ func (q *Queries) ListBankConnectionsForWallet(ctx context.Context, walletID int
 			&i.AspspCountry,
 			&i.ValidUntil,
 			&i.AccountsJson,
+			&i.AutoSync,
 		); err != nil {
 			return nil, err
 		}
@@ -169,6 +173,58 @@ func (q *Queries) ListBankLinks(ctx context.Context, connectionID int64) ([]List
 		return nil, err
 	}
 	return items, nil
+}
+
+const listDueBankConnections = `-- name: ListDueBankConnections :many
+SELECT id, wallet_id FROM bank_connections
+WHERE auto_sync = 1 AND (last_synced_at IS NULL OR last_synced_at < ?)
+ORDER BY last_synced_at IS NOT NULL, last_synced_at, id
+`
+
+type ListDueBankConnectionsRow struct {
+	ID       int64
+	WalletID int64
+}
+
+func (q *Queries) ListDueBankConnections(ctx context.Context, lastSyncedAt sql.NullString) ([]ListDueBankConnectionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listDueBankConnections, lastSyncedAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDueBankConnectionsRow{}
+	for rows.Next() {
+		var i ListDueBankConnectionsRow
+		if err := rows.Scan(&i.ID, &i.WalletID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const setBankConnectionAutoSync = `-- name: SetBankConnectionAutoSync :execrows
+UPDATE bank_connections SET auto_sync = ? WHERE id = ? AND wallet_id = ?
+`
+
+type SetBankConnectionAutoSyncParams struct {
+	AutoSync int64
+	ID       int64
+	WalletID int64
+}
+
+func (q *Queries) SetBankConnectionAutoSync(ctx context.Context, arg SetBankConnectionAutoSyncParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, setBankConnectionAutoSync, arg.AutoSync, arg.ID, arg.WalletID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const touchBankConnection = `-- name: TouchBankConnection :exec

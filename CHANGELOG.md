@@ -12,6 +12,12 @@ the phone, and opt-in AI.
 
 ### Added
 
+- **Scheduled background bank sync** — auto-sync connections are refreshed on a
+  timer (`CB_BANK_SYNC_INTERVAL`, default 12h), so transactions arrive without
+  clicking "Sync now". A per-connection toggle turns it off, and an Enable
+  Banking connection whose consent has expired is skipped (reconnect it to
+  resume). Enable Banking connections also show their consent expiry and a
+  one-click **Reconnect** that renews it while keeping the account links.
 - **Optional secret encryption at rest** — set `CB_SECRET_KEY` to encrypt
   CloudBank's reversible server-side secrets (bank credentials, AI API keys, 2FA
   secrets, the web-push signing key) with AES-256-GCM. Opt-in and backward

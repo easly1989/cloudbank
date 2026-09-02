@@ -426,7 +426,9 @@
       "consentExpired": "Consenso scaduto — riconnetti",
       "consentExpiresSoon": "Consenso scade tra {{days}}g",
       "consentValid": "Consenso valido {{days}}g"
-    }
+    },
+    "autoSync": "Sincronizzazione automatica",
+    "autoSyncHint": "Mantieni questa connessione aggiornata in background."
   },
   "search": {
     "open": "Cerca transazioni",

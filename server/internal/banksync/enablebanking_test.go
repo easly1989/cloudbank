@@ -146,6 +146,7 @@ func newEBFixture(t *testing.T) (*Service, *db.Queries, int64, int64, string) {
 	svc := NewService(st.Read(), st.Write(), imp)
 	key, pemStr := genTestKey(t)
 	svc.hc = &ebMockDoer{pub: &key.PublicKey, t: t}
+	svc.syncStagger = 0
 	return svc, q, w.ID, acc.ID, pemStr
 }
 

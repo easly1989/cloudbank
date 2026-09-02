@@ -45,6 +45,7 @@ type Connection struct {
 	Aspsp        string `json:"aspsp,omitempty"`
 	Country      string `json:"country,omitempty"`
 	ValidUntil   string `json:"validUntil,omitempty"`
+	AutoSync     bool   `json:"autoSync"`
 }
 
 // RemoteAccount is a provider account, with the linked CloudBank account if any.
@@ -70,17 +71,21 @@ type Service struct {
 	rq  *db.Queries
 	imp *importio.Service
 	hc  httpDoer // provider HTTP transport; nil = default. Injectable for tests.
+	// syncStagger is the pause between connections in a background batch, to avoid
+	// hammering providers. Tests set it to 0.
+	syncStagger time.Duration
 }
 
 // NewService builds a Service. imp is the import pipeline used to commit rows.
 func NewService(read, write *sql.DB, imp *importio.Service) *Service {
-	return &Service{q: db.New(write), rq: db.New(read), imp: imp}
+	return &Service{q: db.New(write), rq: db.New(read), imp: imp, syncStagger: 2 * time.Second}
 }
 
 func toConnection(c db.BankConnection) Connection {
 	out := Connection{
 		ID: c.ID, Provider: c.Provider, Name: c.Name, CreatedAt: c.CreatedAt,
 		Aspsp: c.AspspName, Country: c.AspspCountry, ValidUntil: c.ValidUntil,
+		AutoSync: c.AutoSync != 0,
 	}
 	if c.LastSyncedAt.Valid {
 		out.LastSyncedAt = c.LastSyncedAt.String
@@ -287,6 +292,66 @@ func (s *Service) simplefinFetchRows(ctx context.Context, c db.BankConnection, s
 		out[a.ID] = rowsFromTxns(a.Transactions)
 	}
 	return out, nil
+}
+
+// BatchSyncResult reports what a background sync run did across connections.
+type BatchSyncResult struct {
+	Connections int `json:"connections"` // connections successfully synced
+	Imported    int `json:"imported"`
+	Skipped     int `json:"skipped"` // e.g. expired Enable Banking consents
+	Errors      int `json:"errors"`
+}
+
+// SetAutoSync turns background auto-sync on or off for a connection.
+func (s *Service) SetAutoSync(ctx context.Context, walletID, connID int64, enabled bool) error {
+	var v int64
+	if enabled {
+		v = 1
+	}
+	n, err := s.q.SetBankConnectionAutoSync(ctx, db.SetBankConnectionAutoSyncParams{
+		AutoSync: v, ID: connID, WalletID: walletID,
+	})
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// SyncDue syncs every auto-sync connection whose last sync is older than
+// olderThan (or which never synced), across all wallets. Expired Enable Banking
+// consents are skipped (the user reconnects them); other per-connection errors
+// are counted but do not stop the batch. It pauses briefly between connections to
+// avoid hammering providers, and stops early if ctx is cancelled.
+func (s *Service) SyncDue(ctx context.Context, olderThan time.Duration) (BatchSyncResult, error) {
+	cutoff := time.Now().Add(-olderThan).UTC().Format("2006-01-02T15:04:05.000Z")
+	rows, err := s.rq.ListDueBankConnections(ctx, sql.NullString{String: cutoff, Valid: true})
+	if err != nil {
+		return BatchSyncResult{}, err
+	}
+	var res BatchSyncResult
+	for i, row := range rows {
+		if i > 0 && s.syncStagger > 0 {
+			select {
+			case <-time.After(s.syncStagger):
+			case <-ctx.Done():
+				return res, ctx.Err()
+			}
+		}
+		out, err := s.Sync(ctx, row.WalletID, row.ID)
+		switch {
+		case errors.Is(err, ErrEBConsentExpired):
+			res.Skipped++
+		case err != nil:
+			res.Errors++
+		default:
+			res.Connections++
+			res.Imported += out.Imported
+		}
+	}
+	return res, nil
 }
 
 // rowsFromTxns maps SimpleFIN transactions to import rows. Amounts are signed
