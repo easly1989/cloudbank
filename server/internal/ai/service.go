@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/easly1989/cloudbank/server/internal/secrets"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -62,7 +63,11 @@ func (s *Service) load(ctx context.Context, userID int64) (db.GetAISettingsRow, 
 	if errors.Is(err, sql.ErrNoRows) {
 		return db.GetAISettingsRow{}, nil
 	}
-	return row, err
+	if err != nil {
+		return db.GetAISettingsRow{}, err
+	}
+	row.ApiKey = secrets.Open(row.ApiKey) // decrypt for callers; UpdateSettings re-seals
+	return row, nil
 }
 
 // Settings returns the user's configuration without the key.
@@ -93,7 +98,7 @@ func (s *Service) UpdateSettings(ctx context.Context, userID int64, in SettingsI
 	}
 	if err := s.q.UpsertAISettings(ctx, db.UpsertAISettingsParams{
 		UserID: userID, Enabled: enabled, BaseUrl: strings.TrimSpace(in.BaseURL),
-		Model: strings.TrimSpace(in.Model), ApiKey: key,
+		Model: strings.TrimSpace(in.Model), ApiKey: secrets.Seal(key),
 	}); err != nil {
 		return Settings{}, err
 	}
