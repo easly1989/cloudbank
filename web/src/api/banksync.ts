@@ -8,6 +8,9 @@ export interface BankConnection {
   name: string;
   createdAt: string;
   lastSyncedAt?: string;
+  aspsp?: string;
+  country?: string;
+  validUntil?: string;
 }
 
 export interface BankRemoteAccount {
@@ -106,4 +109,14 @@ export const completeEnableBankingAuth = (
   api.post<{ connection: BankConnection }>(
     `/api/v1/wallets/${walletId}/bank/enablebanking/callback`,
     input,
+  );
+
+export const reauthEnableBankingConnection = (
+  walletId: number,
+  connId: number,
+  redirectUrl: string,
+) =>
+  api.post<{ url: string; state: string }>(
+    `/api/v1/wallets/${walletId}/bank/connections/${connId}/reauth`,
+    { redirectUrl },
   );

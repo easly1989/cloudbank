@@ -106,6 +106,7 @@ type BankEbankingAuth struct {
 	Name         string
 	RedirectUrl  string
 	CreatedAt    string
+	ConnectionID int64
 }
 
 type BankEbankingConfig struct {
