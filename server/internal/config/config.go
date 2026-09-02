@@ -26,6 +26,11 @@ type Config struct {
 	// VAPID JWT. Defaults to a placeholder; set it to a real contact in
 	// production so push services can reach the operator.
 	VAPIDSubject string
+	// SecretKey, when set, encrypts reversible secrets at rest (bank credentials,
+	// AI API keys, 2FA secrets, the VAPID key). Empty leaves them stored in
+	// plaintext (the default). It must stay stable — losing it makes previously
+	// encrypted secrets unrecoverable.
+	SecretKey string
 }
 
 // Load reads the configuration from the environment, applying defaults.
@@ -37,6 +42,7 @@ func Load() Config {
 		SecureCookies:   getBoolEnv("CB_SECURE_COOKIES", true),
 		RateProviderURL: getenv("CB_RATE_URL", ""),
 		VAPIDSubject:    getenv("CB_VAPID_SUBJECT", "mailto:cloudbank@localhost"),
+		SecretKey:       getenv("CB_SECRET_KEY", ""),
 	}
 }
 

@@ -130,6 +130,7 @@ app? See [docs/migrate-from-homebank.md](docs/migrate-from-homebank.md).
 | `CB_LOG_LEVEL`      | `info`              | `debug`, `info`, `warn`, or `error`.                        |
 | `CB_SECURE_COOKIES` | `true`              | Set `false` for plain-HTTP LAN installs (no TLS).           |
 | `CB_RATE_URL`       | _(frankfurter.app)_ | Override the online exchange-rate API root (e.g. a mirror). |
+| `CB_SECRET_KEY`     | _(none)_            | If set, encrypts secrets at rest (bank credentials, AI keys, 2FA & push keys). Keep it **stable** — losing it makes encrypted secrets unrecoverable. |
 
 ## Container images and tag convention
 

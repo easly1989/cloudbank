@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/easly1989/cloudbank/server/internal/secrets"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -181,7 +182,7 @@ func (s *Service) Login(ctx context.Context, ip, username, password, totpCode, u
 // checkSecondFactor accepts either a current TOTP code or an unused recovery
 // code (which it consumes).
 func (s *Service) checkSecondFactor(ctx context.Context, u db.User, code string) (bool, error) {
-	if verifyTOTP(u.TotpSecret, code, s.now()) {
+	if verifyTOTP(secrets.Open(u.TotpSecret), code, s.now()) {
 		return true, nil
 	}
 	n, err := s.q.ConsumeRecoveryCode(ctx, db.ConsumeRecoveryCodeParams{
@@ -455,7 +456,7 @@ func (s *Service) Enable2FA(ctx context.Context, userID int64, secret, code stri
 	if !verifyTOTP(secret, code, s.now()) {
 		return nil, ErrInvalidCredentials
 	}
-	if err := s.q.SetUserTOTP(ctx, db.SetUserTOTPParams{TotpSecret: secret, TotpEnabled: 1, ID: userID}); err != nil {
+	if err := s.q.SetUserTOTP(ctx, db.SetUserTOTPParams{TotpSecret: secrets.Seal(secret), TotpEnabled: 1, ID: userID}); err != nil {
 		return nil, err
 	}
 	if err := s.q.DeleteRecoveryCodes(ctx, userID); err != nil {

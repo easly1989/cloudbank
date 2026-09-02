@@ -20,6 +20,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
 	"github.com/easly1989/cloudbank/server/internal/importio"
+	"github.com/easly1989/cloudbank/server/internal/secrets"
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/transaction"
@@ -267,6 +268,51 @@ func TestEnableBankingConfigKeepKey(t *testing.T) {
 	svc2, _, wid2, _, _ := newEBFixture(t)
 	if err := svc2.SetEBankingConfig(ctx, wid2, "app", "", "sandbox"); err != ErrInvalid {
 		t.Fatalf("empty key without config: err = %v, want ErrInvalid", err)
+	}
+}
+
+func TestEnableBankingSecretsEncryptedAtRest(t *testing.T) {
+	c, err := secrets.New("test-encryption-key")
+	if err != nil {
+		t.Fatalf("secrets.New: %v", err)
+	}
+	secrets.Configure(c)
+	t.Cleanup(func() { secrets.Configure(nil) })
+
+	svc, q, wid, _, pemStr := newEBFixture(t)
+	ctx := context.Background()
+	if err := svc.SetEBankingConfig(ctx, wid, "app-1", pemStr, "sandbox"); err != nil {
+		t.Fatalf("SetEBankingConfig: %v", err)
+	}
+	// The stored private key is ciphertext, not the PEM.
+	raw, err := q.GetEBankingConfig(ctx, wid)
+	if err != nil {
+		t.Fatalf("GetEBankingConfig: %v", err)
+	}
+	if raw.PrivateKey == pemStr || strings.Contains(raw.PrivateKey, "PRIVATE KEY") {
+		t.Fatalf("private key stored in plaintext at rest: %.24q", raw.PrivateKey)
+	}
+	// It is still usable: the client decrypts it and authenticates.
+	if _, err := svc.EBankingBanks(ctx, wid, "IT"); err != nil {
+		t.Fatalf("EBankingBanks with encrypted key: %v", err)
+	}
+
+	// Connecting a bank stores the session id (access_url) encrypted too.
+	_, state, err := svc.EBankingStartAuth(ctx, wid, "IntesaSanpaolo", "IT", "x", "https://cb.example/bank-sync/callback")
+	if err != nil {
+		t.Fatalf("StartAuth: %v", err)
+	}
+	conn, err := svc.EBankingCompleteAuth(ctx, wid, state, "code")
+	if err != nil {
+		t.Fatalf("CompleteAuth: %v", err)
+	}
+	crow, err := q.GetBankConnection(ctx, conn.ID)
+	if err != nil || crow.AccessUrl == "sess-1" || strings.Contains(crow.AccessUrl, "sess-1") {
+		t.Fatalf("session id (access_url) not encrypted at rest: %q err=%v", crow.AccessUrl, err)
+	}
+	// Remote accounts still resolve (they read the persisted account list).
+	if rem, err := svc.RemoteAccounts(ctx, wid, conn.ID); err != nil || len(rem) != 2 {
+		t.Fatalf("RemoteAccounts after encrypted connect: n=%d err=%v", len(rem), err)
 	}
 }
 

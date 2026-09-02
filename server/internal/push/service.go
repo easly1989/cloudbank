@@ -17,6 +17,7 @@ import (
 	webpush "github.com/SherClockHolmes/webpush-go"
 
 	"github.com/easly1989/cloudbank/server/internal/bills"
+	"github.com/easly1989/cloudbank/server/internal/secrets"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -81,7 +82,7 @@ func ensureVAPID(ctx context.Context, q *db.Queries) (pub, priv string, err erro
 		priv, err = q.GetAppConfig(ctx, vapidPrivateKey)
 	}
 	if err == nil && pub != "" && priv != "" {
-		return pub, priv, nil
+		return pub, secrets.Open(priv), nil
 	}
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return "", "", err
@@ -93,7 +94,7 @@ func ensureVAPID(ctx context.Context, q *db.Queries) (pub, priv string, err erro
 	if err := q.SetAppConfig(ctx, db.SetAppConfigParams{Key: vapidPublicKey, Value: pub}); err != nil {
 		return "", "", err
 	}
-	if err := q.SetAppConfig(ctx, db.SetAppConfigParams{Key: vapidPrivateKey, Value: priv}); err != nil {
+	if err := q.SetAppConfig(ctx, db.SetAppConfigParams{Key: vapidPrivateKey, Value: secrets.Seal(priv)}); err != nil {
 		return "", "", err
 	}
 	return pub, priv, nil
