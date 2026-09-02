@@ -30,6 +30,16 @@ func (q *Queries) DeleteEBankingConfig(ctx context.Context, walletID int64) (int
 	return result.RowsAffected()
 }
 
+const deleteStaleEBankingAuth = `-- name: DeleteStaleEBankingAuth :exec
+DELETE FROM bank_ebanking_auth
+WHERE wallet_id = ? AND created_at < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 hour')
+`
+
+func (q *Queries) DeleteStaleEBankingAuth(ctx context.Context, walletID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteStaleEBankingAuth, walletID)
+	return err
+}
+
 const getEBankingAuth = `-- name: GetEBankingAuth :one
 SELECT state, wallet_id, aspsp_name, aspsp_country, name, redirect_url, created_at FROM bank_ebanking_auth WHERE state = ? LIMIT 1
 `
@@ -94,9 +104,9 @@ func (q *Queries) InsertEBankingAuth(ctx context.Context, arg InsertEBankingAuth
 }
 
 const insertEBankingConnection = `-- name: InsertEBankingConnection :one
-INSERT INTO bank_connections (wallet_id, provider, access_url, name, aspsp_name, aspsp_country, valid_until)
-VALUES (?, 'enablebanking', ?, ?, ?, ?, ?)
-RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until
+INSERT INTO bank_connections (wallet_id, provider, access_url, name, aspsp_name, aspsp_country, valid_until, accounts_json)
+VALUES (?, 'enablebanking', ?, ?, ?, ?, ?, ?)
+RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json
 `
 
 type InsertEBankingConnectionParams struct {
@@ -106,6 +116,7 @@ type InsertEBankingConnectionParams struct {
 	AspspName    string
 	AspspCountry string
 	ValidUntil   string
+	AccountsJson string
 }
 
 func (q *Queries) InsertEBankingConnection(ctx context.Context, arg InsertEBankingConnectionParams) (BankConnection, error) {
@@ -116,6 +127,7 @@ func (q *Queries) InsertEBankingConnection(ctx context.Context, arg InsertEBanki
 		arg.AspspName,
 		arg.AspspCountry,
 		arg.ValidUntil,
+		arg.AccountsJson,
 	)
 	var i BankConnection
 	err := row.Scan(
@@ -129,6 +141,7 @@ func (q *Queries) InsertEBankingConnection(ctx context.Context, arg InsertEBanki
 		&i.AspspName,
 		&i.AspspCountry,
 		&i.ValidUntil,
+		&i.AccountsJson,
 	)
 	return i, err
 }

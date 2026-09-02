@@ -18,6 +18,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -49,6 +50,10 @@ type enableBankingClient struct {
 	hc    httpDoer
 	appID string
 	key   *rsa.PrivateKey
+
+	mu          sync.Mutex
+	cachedToken string
+	tokenExp    time.Time
 }
 
 // newEnableBankingClient parses the PEM private key and builds a client. hc nil =
@@ -98,6 +103,24 @@ func randToken() (string, error) {
 	return base64URL(b), nil
 }
 
+// token returns a signed JWT, cached and reused until shortly before it expires
+// (the token is valid for an hour), so a multi-request sync signs once, not per call.
+func (c *enableBankingClient) token() (string, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.cachedToken != "" && time.Now().Before(c.tokenExp.Add(-5*time.Minute)) {
+		return c.cachedToken, nil
+	}
+	now := time.Now()
+	t, err := c.jwt(now)
+	if err != nil {
+		return "", err
+	}
+	c.cachedToken = t
+	c.tokenExp = now.Add(time.Hour)
+	return t, nil
+}
+
 // jwt builds and signs the bearer token Enable Banking expects.
 func (c *enableBankingClient) jwt(now time.Time) (string, error) {
 	header := map[string]string{"typ": "JWT", "alg": "RS256", "kid": c.appID}
@@ -118,11 +141,13 @@ func (c *enableBankingClient) jwt(now time.Time) (string, error) {
 	return signingInput + "." + base64URL(sig), nil
 }
 
-// do performs an authenticated request. out may be nil. A 401/403/422 on a
-// session-scoped call surfaces as ErrEBConsentExpired so the UI can prompt a
-// reconnect.
+// do performs an authenticated request. out may be nil. A 401/403/422 on an
+// account-data call (a live session/consent problem) surfaces as
+// ErrEBConsentExpired so the UI can prompt a reconnect; the same status on a
+// setup-time call (aspsps/auth/sessions) stays a generic error so a wrong
+// app id / key is not mislabelled as an expired consent.
 func (c *enableBankingClient) do(ctx context.Context, method, path string, body, out any) error {
-	tok, err := c.jwt(time.Now())
+	tok, err := c.token()
 	if err != nil {
 		return err
 	}
@@ -150,9 +175,13 @@ func (c *enableBankingClient) do(ctx context.Context, method, path string, body,
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+		accountData := strings.Contains(path, "/accounts/")
 		switch resp.StatusCode {
 		case http.StatusUnauthorized, http.StatusForbidden, http.StatusUnprocessableEntity:
-			return fmt.Errorf("%w (%d: %s)", ErrEBConsentExpired, resp.StatusCode, strings.TrimSpace(string(msg)))
+			if accountData {
+				return fmt.Errorf("%w (%d: %s)", ErrEBConsentExpired, resp.StatusCode, strings.TrimSpace(string(msg)))
+			}
+			return fmt.Errorf("banksync: enable banking rejected the request (%d: %s) — check the application id and key", resp.StatusCode, strings.TrimSpace(string(msg)))
 		default:
 			return fmt.Errorf("banksync: enable banking returned %d: %s", resp.StatusCode, strings.TrimSpace(string(msg)))
 		}
@@ -208,9 +237,17 @@ func (a ebAccount) label() string {
 	}
 }
 
+type ebAccess struct {
+	ValidUntil string `json:"valid_until,omitempty"`
+}
+
+// ebSession is the POST /sessions response, whose accounts are full objects.
+// (GET /sessions/{id} returns only uid strings, so its accounts are captured
+// here at connect time and persisted instead.)
 type ebSession struct {
 	SessionID string      `json:"session_id"`
 	Accounts  []ebAccount `json:"accounts"`
+	Access    ebAccess    `json:"access"`
 	Aspsp     ebASPSP     `json:"aspsp"`
 }
 
@@ -280,15 +317,6 @@ func (c *enableBankingClient) startAuth(ctx context.Context, aspspName, aspspCou
 func (c *enableBankingClient) createSession(ctx context.Context, code string) (ebSession, error) {
 	var out ebSession
 	if err := c.do(ctx, http.MethodPost, "/sessions", map[string]any{"code": code}, &out); err != nil {
-		return ebSession{}, err
-	}
-	return out, nil
-}
-
-// getSession re-reads a session (used to list its accounts).
-func (c *enableBankingClient) getSession(ctx context.Context, sessionID string) (ebSession, error) {
-	var out ebSession
-	if err := c.do(ctx, http.MethodGet, "/sessions/"+url.PathEscape(sessionID), nil, &out); err != nil {
 		return ebSession{}, err
 	}
 	return out, nil
@@ -366,7 +394,8 @@ func (t ebTxn) signedAmount() string {
 	return amt
 }
 
-// date returns the best available date (YYYY-MM-DD).
+// date returns the best available date for the ledger row (YYYY-MM-DD),
+// preferring the booking date.
 func (t ebTxn) date() string {
 	for _, d := range []string{t.BookingDate, t.ValueDate, t.TransactionDate} {
 		if len(d) >= 10 {
@@ -377,7 +406,9 @@ func (t ebTxn) date() string {
 }
 
 // dedupID is a stable per-transaction key. Enable Banking does not guarantee a
-// unique id across ASPSPs, so fall back to a hash of the stable fields.
+// unique id across ASPSPs, so fall back to a hash of stable fields. The hash uses
+// the value/transaction date (not the booking date, which changes when a pending
+// transaction later books) so a pending row and its booked form share a key.
 func (t ebTxn) dedupID() string {
 	if s := strings.TrimSpace(t.EntryReference); s != "" {
 		return s
@@ -385,7 +416,14 @@ func (t ebTxn) dedupID() string {
 	if s := strings.TrimSpace(t.TransactionID); s != "" {
 		return s
 	}
-	sum := sha256.Sum256([]byte(t.date() + "|" + t.signedAmount() + "|" + strings.Join(t.RemittanceInformation, " ")))
+	hashDate := ""
+	for _, d := range []string{t.ValueDate, t.TransactionDate, t.BookingDate} {
+		if len(d) >= 10 {
+			hashDate = d[:10]
+			break
+		}
+	}
+	sum := sha256.Sum256([]byte(hashDate + "|" + t.signedAmount() + "|" + strings.Join(t.RemittanceInformation, " ")))
 	return "h" + base64URL(sum[:12])
 }
 
