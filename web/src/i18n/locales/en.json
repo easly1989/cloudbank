@@ -421,7 +421,11 @@
         "error": "Could not complete the connection.",
         "back": "Back to Bank sync"
       },
-      "privateKeyKeep": "Leave blank to keep the current key"
+      "privateKeyKeep": "Leave blank to keep the current key",
+      "reconnect": "Reconnect",
+      "consentExpired": "Consent expired — reconnect",
+      "consentExpiresSoon": "Consent expires in {{days}}d",
+      "consentValid": "Consent valid {{days}}d"
     }
   },
   "search": {

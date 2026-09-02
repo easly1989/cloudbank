@@ -316,6 +316,56 @@ func TestEnableBankingSecretsEncryptedAtRest(t *testing.T) {
 	}
 }
 
+func TestEnableBankingReauthKeepsLinks(t *testing.T) {
+	svc, q, wid, acc, pemStr := newEBFixture(t)
+	ctx := context.Background()
+	if err := svc.SetEBankingConfig(ctx, wid, "app-1", pemStr, "sandbox"); err != nil {
+		t.Fatalf("config: %v", err)
+	}
+	_, state, err := svc.EBankingStartAuth(ctx, wid, "IntesaSanpaolo", "IT", "Intesa", "https://cb.example/bank-sync/callback")
+	if err != nil {
+		t.Fatalf("StartAuth: %v", err)
+	}
+	conn, err := svc.EBankingCompleteAuth(ctx, wid, state, "code")
+	if err != nil {
+		t.Fatalf("CompleteAuth: %v", err)
+	}
+	if err := svc.Link(ctx, wid, conn.ID, "acc-uid-1", acc); err != nil {
+		t.Fatalf("Link: %v", err)
+	}
+
+	// Reauthorize the same connection.
+	_, state2, err := svc.EBankingStartReauth(ctx, wid, conn.ID, "https://cb.example/bank-sync/callback")
+	if err != nil {
+		t.Fatalf("StartReauth: %v", err)
+	}
+	conn2, err := svc.EBankingCompleteAuth(ctx, wid, state2, "code2")
+	if err != nil {
+		t.Fatalf("CompleteAuth (reauth): %v", err)
+	}
+	// The connection is refreshed in place, not duplicated.
+	if conn2.ID != conn.ID {
+		t.Fatalf("reauth created a new connection %d (want %d)", conn2.ID, conn.ID)
+	}
+	if conns, _ := svc.ListConnections(ctx, wid); len(conns) != 1 {
+		t.Fatalf("want 1 connection after reauth, got %d", len(conns))
+	}
+	// The account link survived, and the consent expiry is set.
+	links, _ := q.ListBankLinks(ctx, conn.ID)
+	if len(links) != 1 || links[0].ExternalID != "acc-uid-1" {
+		t.Fatalf("link lost after reauth: %+v", links)
+	}
+	if conn2.ValidUntil == "" {
+		t.Fatalf("validUntil not populated after reauth")
+	}
+
+	// Another wallet cannot reauthorize this connection.
+	other, _ := q.CreateWallet(ctx, db.CreateWalletParams{Title: "Other"})
+	if _, _, err := svc.EBankingStartReauth(ctx, other.ID, conn.ID, "https://cb.example/bank-sync/callback"); err != ErrNotFound {
+		t.Fatalf("cross-wallet reauth err = %v, want ErrNotFound", err)
+	}
+}
+
 func TestEnableBankingWalletIsolation(t *testing.T) {
 	svc, q, wid, _, pemStr := newEBFixture(t)
 	ctx := context.Background()

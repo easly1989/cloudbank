@@ -41,7 +41,7 @@ func (q *Queries) DeleteStaleEBankingAuth(ctx context.Context, walletID int64) e
 }
 
 const getEBankingAuth = `-- name: GetEBankingAuth :one
-SELECT state, wallet_id, aspsp_name, aspsp_country, name, redirect_url, created_at FROM bank_ebanking_auth WHERE state = ? LIMIT 1
+SELECT state, wallet_id, aspsp_name, aspsp_country, name, redirect_url, created_at, connection_id FROM bank_ebanking_auth WHERE state = ? LIMIT 1
 `
 
 func (q *Queries) GetEBankingAuth(ctx context.Context, state string) (BankEbankingAuth, error) {
@@ -55,6 +55,7 @@ func (q *Queries) GetEBankingAuth(ctx context.Context, state string) (BankEbanki
 		&i.Name,
 		&i.RedirectUrl,
 		&i.CreatedAt,
+		&i.ConnectionID,
 	)
 	return i, err
 }
@@ -78,8 +79,8 @@ func (q *Queries) GetEBankingConfig(ctx context.Context, walletID int64) (BankEb
 }
 
 const insertEBankingAuth = `-- name: InsertEBankingAuth :exec
-INSERT INTO bank_ebanking_auth (state, wallet_id, aspsp_name, aspsp_country, name, redirect_url)
-VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO bank_ebanking_auth (state, wallet_id, aspsp_name, aspsp_country, name, redirect_url, connection_id)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertEBankingAuthParams struct {
@@ -89,6 +90,7 @@ type InsertEBankingAuthParams struct {
 	AspspCountry string
 	Name         string
 	RedirectUrl  string
+	ConnectionID int64
 }
 
 func (q *Queries) InsertEBankingAuth(ctx context.Context, arg InsertEBankingAuthParams) error {
@@ -99,6 +101,7 @@ func (q *Queries) InsertEBankingAuth(ctx context.Context, arg InsertEBankingAuth
 		arg.AspspCountry,
 		arg.Name,
 		arg.RedirectUrl,
+		arg.ConnectionID,
 	)
 	return err
 }
@@ -128,6 +131,46 @@ func (q *Queries) InsertEBankingConnection(ctx context.Context, arg InsertEBanki
 		arg.AspspCountry,
 		arg.ValidUntil,
 		arg.AccountsJson,
+	)
+	var i BankConnection
+	err := row.Scan(
+		&i.ID,
+		&i.WalletID,
+		&i.Provider,
+		&i.AccessUrl,
+		&i.Name,
+		&i.CreatedAt,
+		&i.LastSyncedAt,
+		&i.AspspName,
+		&i.AspspCountry,
+		&i.ValidUntil,
+		&i.AccountsJson,
+	)
+	return i, err
+}
+
+const refreshEBankingConnectionSession = `-- name: RefreshEBankingConnectionSession :one
+UPDATE bank_connections
+SET access_url = ?, valid_until = ?, accounts_json = ?
+WHERE id = ? AND wallet_id = ? AND provider = 'enablebanking'
+RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json
+`
+
+type RefreshEBankingConnectionSessionParams struct {
+	AccessUrl    string
+	ValidUntil   string
+	AccountsJson string
+	ID           int64
+	WalletID     int64
+}
+
+func (q *Queries) RefreshEBankingConnectionSession(ctx context.Context, arg RefreshEBankingConnectionSessionParams) (BankConnection, error) {
+	row := q.db.QueryRowContext(ctx, refreshEBankingConnectionSession,
+		arg.AccessUrl,
+		arg.ValidUntil,
+		arg.AccountsJson,
+		arg.ID,
+		arg.WalletID,
 	)
 	var i BankConnection
 	err := row.Scan(
