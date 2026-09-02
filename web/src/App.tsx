@@ -51,6 +51,9 @@ const BillsPage = lazy(() => import("./pages/BillsPage").then((m) => ({ default:
 const BankSyncPage = lazy(() =>
   import("./pages/BankSyncPage").then((m) => ({ default: m.BankSyncPage })),
 );
+const BankSyncCallback = lazy(() =>
+  import("./pages/BankSyncCallback").then((m) => ({ default: m.BankSyncCallback })),
+);
 const ReportsPage = lazy(() =>
   import("./pages/ReportsPage").then((m) => ({ default: m.ReportsPage })),
 );
@@ -147,6 +150,7 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
         <Route path="goals" element={<GoalsPage />} />
         <Route path="bills" element={<BillsPage />} />
         <Route path="bank-sync" element={<BankSyncPage />} />
+        <Route path="bank-sync/callback" element={<BankSyncCallback />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="wallet" element={<Navigate to="/settings?tab=wallet" replace />} />

@@ -346,6 +346,69 @@ paths:
         "200": { description: The sync result., content: { application/json: { schema: { $ref: "#/components/schemas/BankSyncResult" } } } }
         "404": { $ref: "#/components/responses/NotFound" }
         "502": { description: The bank provider request failed. }
+  /api/v1/wallets/{walletId}/bank/enablebanking/config:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getEnableBankingConfig
+      summary: Get the wallet's Enable Banking application config (never the private key)
+      responses:
+        "200": { description: The config., content: { application/json: { schema: { $ref: "#/components/schemas/EnableBankingConfig" } } } }
+    put:
+      operationId: setEnableBankingConfig
+      summary: Store the wallet's Enable Banking application credentials (app id + RSA private key)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { appId: { type: string }, privateKey: { type: string, description: "RSA private key, PEM" }, environment: { type: string, enum: [sandbox, production] } }, required: [appId, privateKey] }
+      responses:
+        "204": { description: Saved. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+    delete:
+      operationId: deleteEnableBankingConfig
+      summary: Remove the wallet's Enable Banking credentials
+      responses:
+        "204": { description: Removed. }
+  /api/v1/wallets/{walletId}/bank/enablebanking/aspsps:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: country, in: query, required: false, schema: { type: string }, description: ISO country code filter (e.g. IT) }
+    get:
+      operationId: listEnableBankingAspsps
+      summary: List the banks (ASPSPs) available to the wallet's application
+      responses:
+        "200": { description: The banks., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/EnableBankingBank" } } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/bank/enablebanking/auth:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: startEnableBankingAuth
+      summary: Begin a bank authorization; returns the URL to redirect the user to their bank
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { aspspName: { type: string }, aspspCountry: { type: string }, name: { type: string }, redirectUrl: { type: string } }, required: [aspspName, aspspCountry, redirectUrl] }
+      responses:
+        "200": { description: The authorization URL and state., content: { application/json: { schema: { type: object, properties: { url: { type: string }, state: { type: string } }, required: [url, state] } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/bank/enablebanking/callback:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: completeEnableBankingAuth
+      summary: Exchange the bank redirect code for a session and create a connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { state: { type: string }, code: { type: string } }, required: [state, code] }
+      responses:
+        "201": { description: The created connection., content: { application/json: { schema: { $ref: "#/components/schemas/BankConnectResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/auth/tokens:
     get:
       operationId: listApiTokens
@@ -2062,6 +2125,8 @@ components:
         name: { type: string }
         createdAt: { type: string }
         lastSyncedAt: { type: string }
+        aspsp: { type: string, description: "provider bank name (Enable Banking)" }
+        country: { type: string, description: "provider bank country (Enable Banking)" }
       required: [id, provider, name, createdAt]
     BankRemoteAccount:
       type: object
@@ -2085,6 +2150,21 @@ components:
         reconciled: { type: integer, description: "pending transactions settled" }
         accounts: { type: integer, description: "linked accounts synced" }
       required: [imported, reconciled, accounts]
+    EnableBankingConfig:
+      type: object
+      description: A wallet's Enable Banking application config — never the private key.
+      properties:
+        configured: { type: boolean }
+        appId: { type: string }
+        environment: { type: string, enum: [sandbox, production] }
+      required: [configured]
+    EnableBankingBank:
+      type: object
+      properties:
+        name: { type: string }
+        country: { type: string }
+        logo: { type: string }
+      required: [name, country]
     ParsedEntry:
       type: object
       description: A natural-language description resolved into transaction fields. Category/payee ids are present only when a name matched a real wallet row.

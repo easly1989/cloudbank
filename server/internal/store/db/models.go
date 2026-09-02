@@ -92,6 +92,28 @@ type BankConnection struct {
 	Name         string
 	CreatedAt    string
 	LastSyncedAt sql.NullString
+	AspspName    string
+	AspspCountry string
+	ValidUntil   string
+}
+
+type BankEbankingAuth struct {
+	State        string
+	WalletID     int64
+	AspspName    string
+	AspspCountry string
+	Name         string
+	RedirectUrl  string
+	CreatedAt    string
+}
+
+type BankEbankingConfig struct {
+	WalletID    int64
+	AppID       string
+	PrivateKey  string
+	Environment string
+	CreatedAt   string
+	UpdatedAt   string
 }
 
 type BankLink struct {

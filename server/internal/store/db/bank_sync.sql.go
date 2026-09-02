@@ -41,7 +41,7 @@ func (q *Queries) DeleteBankLink(ctx context.Context, arg DeleteBankLinkParams) 
 }
 
 const getBankConnection = `-- name: GetBankConnection :one
-SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at FROM bank_connections WHERE id = ? LIMIT 1
+SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until FROM bank_connections WHERE id = ? LIMIT 1
 `
 
 func (q *Queries) GetBankConnection(ctx context.Context, id int64) (BankConnection, error) {
@@ -55,6 +55,9 @@ func (q *Queries) GetBankConnection(ctx context.Context, id int64) (BankConnecti
 		&i.Name,
 		&i.CreatedAt,
 		&i.LastSyncedAt,
+		&i.AspspName,
+		&i.AspspCountry,
+		&i.ValidUntil,
 	)
 	return i, err
 }
@@ -62,7 +65,7 @@ func (q *Queries) GetBankConnection(ctx context.Context, id int64) (BankConnecti
 const insertBankConnection = `-- name: InsertBankConnection :one
 INSERT INTO bank_connections (wallet_id, provider, access_url, name)
 VALUES (?, ?, ?, ?)
-RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at
+RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until
 `
 
 type InsertBankConnectionParams struct {
@@ -88,12 +91,15 @@ func (q *Queries) InsertBankConnection(ctx context.Context, arg InsertBankConnec
 		&i.Name,
 		&i.CreatedAt,
 		&i.LastSyncedAt,
+		&i.AspspName,
+		&i.AspspCountry,
+		&i.ValidUntil,
 	)
 	return i, err
 }
 
 const listBankConnectionsForWallet = `-- name: ListBankConnectionsForWallet :many
-SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at FROM bank_connections WHERE wallet_id = ? ORDER BY created_at DESC, id
+SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until FROM bank_connections WHERE wallet_id = ? ORDER BY created_at DESC, id
 `
 
 func (q *Queries) ListBankConnectionsForWallet(ctx context.Context, walletID int64) ([]BankConnection, error) {
@@ -113,6 +119,9 @@ func (q *Queries) ListBankConnectionsForWallet(ctx context.Context, walletID int
 			&i.Name,
 			&i.CreatedAt,
 			&i.LastSyncedAt,
+			&i.AspspName,
+			&i.AspspCountry,
+			&i.ValidUntil,
 		); err != nil {
 			return nil, err
 		}
