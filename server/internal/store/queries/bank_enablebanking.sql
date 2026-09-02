@@ -23,7 +23,11 @@ SELECT * FROM bank_ebanking_auth WHERE state = ? LIMIT 1;
 -- name: DeleteEBankingAuth :exec
 DELETE FROM bank_ebanking_auth WHERE state = ?;
 
+-- name: DeleteStaleEBankingAuth :exec
+DELETE FROM bank_ebanking_auth
+WHERE wallet_id = ? AND created_at < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 hour');
+
 -- name: InsertEBankingConnection :one
-INSERT INTO bank_connections (wallet_id, provider, access_url, name, aspsp_name, aspsp_country, valid_until)
-VALUES (?, 'enablebanking', ?, ?, ?, ?, ?)
+INSERT INTO bank_connections (wallet_id, provider, access_url, name, aspsp_name, aspsp_country, valid_until, accounts_json)
+VALUES (?, 'enablebanking', ?, ?, ?, ?, ?, ?)
 RETURNING *;

@@ -95,6 +95,7 @@ type BankConnection struct {
 	AspspName    string
 	AspspCountry string
 	ValidUntil   string
+	AccountsJson string
 }
 
 type BankEbankingAuth struct {

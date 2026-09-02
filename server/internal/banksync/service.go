@@ -23,6 +23,9 @@ var (
 const (
 	firstSyncLookbackDays = 90
 	resyncOverlapDays     = 3
+	// consentValidityDays is how long an Enable Banking consent is requested for
+	// (independent of the transaction-history sync window above).
+	consentValidityDays = 90
 )
 
 // Provider identifiers stored in bank_connections.provider.

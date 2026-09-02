@@ -25,10 +25,15 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/transaction"
 )
 
-const ebSessionJSON = `{"session_id":"sess-1","accounts":[
+// ebSessionJSON is the POST /sessions response — full account objects + access.
+const ebSessionJSON = `{"session_id":"sess-1","access":{"valid_until":"2024-09-30T00:00:00.000000+00:00"},"accounts":[
   {"uid":"acc-uid-1","name":"Conto Corrente","currency":"EUR","account_id":{"iban":"IT60X0542811101000000123456"}},
   {"uid":"acc-uid-2","name":"Risparmio","currency":"EUR","account_id":{"iban":"IT99Y0000000000000000000000"}}
 ]}`
+
+// ebSessionGetJSON is the GET /sessions/{id} response — uid strings only (the
+// real Enable Banking shape). The code must not depend on this for account data.
+const ebSessionGetJSON = `{"session_id":"sess-1","accounts":["acc-uid-1","acc-uid-2"],"accounts_data":[{"uid":"acc-uid-1"},{"uid":"acc-uid-2"}]}`
 
 const ebTxnsJSON = `{"transactions":[
   {"entry_reference":"e1","transaction_amount":{"amount":"12.34","currency":"EUR"},"credit_debit_indicator":"DBIT","status":"BOOK","booking_date":"2024-06-10","remittance_information":["Grocery"]},
@@ -104,7 +109,7 @@ func (m *ebMockDoer) Do(r *http.Request) (*http.Response, error) {
 	case r.Method == http.MethodPost && strings.HasSuffix(p, "/sessions"):
 		return jsonResp(200, ebSessionJSON), nil
 	case r.Method == http.MethodGet && strings.Contains(p, "/sessions/"):
-		return jsonResp(200, ebSessionJSON), nil
+		return jsonResp(200, ebSessionGetJSON), nil
 	case r.Method == http.MethodDelete && strings.Contains(p, "/sessions/"):
 		return jsonResp(200, `{}`), nil
 	case strings.HasSuffix(p, "/transactions"):
@@ -193,6 +198,12 @@ func TestEnableBankingAuthSyncDedup(t *testing.T) {
 	if conn.Provider != providerEnableBanking || conn.Aspsp != "IntesaSanpaolo" || conn.Country != "IT" {
 		t.Fatalf("connection: %+v", conn)
 	}
+	// The accounts and consent expiry from POST /sessions are persisted on the
+	// connection (so listing/sync do not depend on GET /sessions/{id}).
+	row, err := q.GetBankConnection(ctx, conn.ID)
+	if err != nil || row.ValidUntil == "" || row.AccountsJson == "" || row.AccountsJson == "[]" {
+		t.Fatalf("connection not fully persisted: validUntil=%q accounts=%q err=%v", row.ValidUntil, row.AccountsJson, err)
+	}
 
 	remotes, err := svc.RemoteAccounts(ctx, wid, conn.ID)
 	if err != nil {
@@ -231,6 +242,31 @@ func TestEnableBankingAuthSyncDedup(t *testing.T) {
 	}
 	if res2.Imported != 0 {
 		t.Fatalf("re-sync imported %d, want 0 (deduped)", res2.Imported)
+	}
+}
+
+func TestEnableBankingConfigKeepKey(t *testing.T) {
+	svc, _, wid, _, pemStr := newEBFixture(t)
+	ctx := context.Background()
+	if err := svc.SetEBankingConfig(ctx, wid, "app-1", pemStr, "sandbox"); err != nil {
+		t.Fatalf("initial config: %v", err)
+	}
+	// An empty private key keeps the stored one; app id / environment still change.
+	if err := svc.SetEBankingConfig(ctx, wid, "app-2", "", "production"); err != nil {
+		t.Fatalf("keep-key update: %v", err)
+	}
+	cfg, _ := svc.EBankingConfig(ctx, wid)
+	if cfg.AppID != "app-2" || cfg.Environment != "production" {
+		t.Fatalf("config after keep-key update: %+v", cfg)
+	}
+	// The kept key still authenticates (client builds and signs a valid JWT).
+	if _, err := svc.EBankingBanks(ctx, wid, "IT"); err != nil {
+		t.Fatalf("banks with kept key: %v", err)
+	}
+	// An empty key with no existing config is rejected.
+	svc2, _, wid2, _, _ := newEBFixture(t)
+	if err := svc2.SetEBankingConfig(ctx, wid2, "app", "", "sandbox"); err != ErrInvalid {
+		t.Fatalf("empty key without config: err = %v, want ErrInvalid", err)
 	}
 }
 
