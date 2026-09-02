@@ -426,7 +426,9 @@
       "consentExpired": "Consent expired — reconnect",
       "consentExpiresSoon": "Consent expires in {{days}}d",
       "consentValid": "Consent valid {{days}}d"
-    }
+    },
+    "autoSync": "Automatic sync",
+    "autoSyncHint": "Keep this connection up to date in the background."
   },
   "search": {
     "open": "Search transactions",

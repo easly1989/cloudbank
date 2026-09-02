@@ -227,6 +227,11 @@ func run() error {
 		go runBillsReminders(ctx, pushSvc, logger)
 	}
 
+	// Background bank sync: keep auto-sync connections up to date on a schedule.
+	if cfg.BankSyncInterval > 0 {
+		go runBankSync(ctx, bankSyncSvc, cfg.BankSyncInterval, logger)
+	}
+
 	select {
 	case err := <-errCh:
 		return err
@@ -295,6 +300,41 @@ func runRateRefresh(ctx context.Context, svc *currency.Service, provider currenc
 
 // runBillsReminders sends due-bill reminders at startup and then once a day.
 // Each bill occurrence is announced only once (deduped in the push service).
+func runBankSync(ctx context.Context, svc *banksync.Service, interval time.Duration, logger *slog.Logger) {
+	// Check roughly hourly (or every interval, if shorter); SyncDue only re-syncs
+	// connections whose last sync is older than the interval, so most checks are
+	// cheap no-ops.
+	check := time.Hour
+	if interval < check {
+		check = interval
+	}
+	run := func() {
+		res, err := svc.SyncDue(ctx, interval)
+		if err != nil {
+			if ctx.Err() == nil {
+				logger.Error("bank sync job failed", "error", err)
+			}
+			return
+		}
+		if res.Connections > 0 || res.Skipped > 0 || res.Errors > 0 {
+			logger.Info("bank sync",
+				"connections", res.Connections, "imported", res.Imported,
+				"skipped", res.Skipped, "errors", res.Errors)
+		}
+	}
+	run()
+	ticker := time.NewTicker(check)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			run()
+		}
+	}
+}
+
 func runBillsReminders(ctx context.Context, svc *push.Service, logger *slog.Logger) {
 	run := func() {
 		if err := svc.RunBillsReminders(ctx, time.Now().UTC()); err != nil {

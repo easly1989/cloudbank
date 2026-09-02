@@ -11,6 +11,7 @@ import {
   Select,
   SimpleGrid,
   Stack,
+  Switch,
   Text,
   Textarea,
   TextInput,
@@ -46,6 +47,7 @@ import {
   listEnableBankingBanks,
   reauthEnableBankingConnection,
   removeBankConnection,
+  setBankConnectionAutoSync,
   setEnableBankingConfig,
   startEnableBankingAuth,
   syncBankConnection,
@@ -178,6 +180,11 @@ function ConnectionCard({
     },
     onError,
   });
+  const autoSync = useMutation({
+    mutationFn: (enabled: boolean) => setBankConnectionAutoSync(walletId, connection.id, enabled),
+    onSuccess: refreshConns,
+    onError,
+  });
 
   // Enable Banking consent status from validUntil (~90-day PSD2 consent).
   const consent = (() => {
@@ -270,6 +277,15 @@ function ConnectionCard({
           </Tooltip>
         </Group>
       </Group>
+
+      <Switch
+        mb="sm"
+        size="sm"
+        checked={connection.autoSync ?? true}
+        onChange={(e) => autoSync.mutate(e.currentTarget.checked)}
+        label={t("banksync.autoSync")}
+        description={t("banksync.autoSyncHint")}
+      />
 
       {remote.isError ? (
         <Alert color="red">{t("banksync.remoteError")}</Alert>
