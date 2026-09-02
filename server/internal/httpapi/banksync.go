@@ -24,6 +24,7 @@ func (h *bankSyncHandlers) walletRoutes(r chi.Router) {
 		r.Post("/links", h.link)
 		r.Delete("/links/{externalId}", h.unlink)
 		r.Post("/sync", h.sync)
+		r.Post("/reauth", h.ebReauth)
 	})
 	// Enable Banking (EU/PSD2), bring-your-own credentials.
 	r.Get("/bank/enablebanking/config", h.ebGetConfig)
@@ -118,6 +119,26 @@ func (h *bankSyncHandlers) ebStartAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	url, state, err := h.svc.EBankingStartAuth(r.Context(), wl.ID, body.AspspName, body.AspspCountry, body.Name, body.RedirectURL)
+	if err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"url": url, "state": state})
+}
+
+func (h *bankSyncHandlers) ebReauth(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := h.connID(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		RedirectURL string `json:"redirectUrl"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	url, state, err := h.svc.EBankingStartReauth(r.Context(), wl.ID, id, body.RedirectURL)
 	if err != nil {
 		h.writeErr(w, err)
 		return

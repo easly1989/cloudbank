@@ -346,6 +346,22 @@ paths:
         "200": { description: The sync result., content: { application/json: { schema: { $ref: "#/components/schemas/BankSyncResult" } } } }
         "404": { $ref: "#/components/responses/NotFound" }
         "502": { description: The bank provider request failed. }
+  /api/v1/wallets/{walletId}/bank/connections/{connId}/reauth:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: connId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: reauthEnableBankingConnection
+      summary: Re-authorize an Enable Banking connection (renew its consent, keep account links)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { redirectUrl: { type: string } }, required: [redirectUrl] }
+      responses:
+        "200": { description: The authorization URL and state., content: { application/json: { schema: { type: object, properties: { url: { type: string }, state: { type: string } }, required: [url, state] } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/bank/enablebanking/config:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -2127,6 +2143,7 @@ components:
         lastSyncedAt: { type: string }
         aspsp: { type: string, description: "provider bank name (Enable Banking)" }
         country: { type: string, description: "provider bank country (Enable Banking)" }
+        validUntil: { type: string, description: "consent expiry (Enable Banking), RFC3339" }
       required: [id, provider, name, createdAt]
     BankRemoteAccount:
       type: object

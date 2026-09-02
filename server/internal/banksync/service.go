@@ -44,6 +44,7 @@ type Connection struct {
 	LastSyncedAt string `json:"lastSyncedAt,omitempty"`
 	Aspsp        string `json:"aspsp,omitempty"`
 	Country      string `json:"country,omitempty"`
+	ValidUntil   string `json:"validUntil,omitempty"`
 }
 
 // RemoteAccount is a provider account, with the linked CloudBank account if any.
@@ -79,7 +80,7 @@ func NewService(read, write *sql.DB, imp *importio.Service) *Service {
 func toConnection(c db.BankConnection) Connection {
 	out := Connection{
 		ID: c.ID, Provider: c.Provider, Name: c.Name, CreatedAt: c.CreatedAt,
-		Aspsp: c.AspspName, Country: c.AspspCountry,
+		Aspsp: c.AspspName, Country: c.AspspCountry, ValidUntil: c.ValidUntil,
 	}
 	if c.LastSyncedAt.Valid {
 		out.LastSyncedAt = c.LastSyncedAt.String

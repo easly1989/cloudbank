@@ -421,7 +421,11 @@
         "error": "Impossibile completare la connessione.",
         "back": "Torna a Sync bancario"
       },
-      "privateKeyKeep": "Lascia vuoto per mantenere la chiave attuale"
+      "privateKeyKeep": "Lascia vuoto per mantenere la chiave attuale",
+      "reconnect": "Riconnetti",
+      "consentExpired": "Consenso scaduto — riconnetti",
+      "consentExpiresSoon": "Consenso scade tra {{days}}g",
+      "consentValid": "Consenso valido {{days}}g"
     }
   },
   "search": {
