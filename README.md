@@ -27,8 +27,9 @@
 
 **CloudBank** is a free, self-hosted, web-based personal finance manager — a from-scratch web port of the excellent [HomeBank](https://www.gethomebank.org/) desktop application. It aims for feature parity with HomeBank while being built for the browser and the cloud: a single Docker container you run yourself, with your data living in a SQLite database on a volume you control.
 
-> Status: **production-ready.** Shipped 1.0 and iterating on personalization and
-> HomeBank-parity polish — see the [CHANGELOG](CHANGELOG.md).
+> Status: **production-ready.** Shipped 1.0 and adding post-parity
+> capabilities — automatic bank sync, 2FA, an installable PWA, and opt-in AI —
+> see the [CHANGELOG](CHANGELOG.md).
 
 ## Why
 
@@ -54,9 +55,11 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 
 - **Accounts** of every HomeBank type (bank, cash, checking, savings, credit card, liability, asset, investment) with per-account currency, a **default payment mode**, and the full set of flags, showing both today's balance and a projected future balance.
 - **Transactions** with 12 payment types, the cleared/reconciled status lifecycle, category splits, free tags, internal transfers (including cross-currency), bulk edit and duplicate detection.
-- **Register** view with running balance, rich filtering (including a show/hide **future transactions** toggle), per-user column customization, a **selection total** (net + income/expense split of the currently selected rows), a reconciliation workflow, and double-click-to-edit.
+- **Register** view with running balance, rich filtering (including a show/hide **future transactions** toggle), per-user column customization, a **selection total** (net + income/expense split of the currently selected rows), a reconciliation workflow, double-click-to-edit, and **full-text search** across memo, payee, category and info.
 - **Scheduled transactions** with automatic posting (optionally **pre-registering up to 3 months ahead**, HomeBank style), a **per-week/month/year income & expense summary**, the recurring **amount** shown in the schedules grid, **templates** (a dedicated management area, and offered when entering a transaction), and **assignment rules** for auto-categorization.
 - **Budgets** and a full suite of **reports** (Statistics, Trend Time, Balance, Budget, Vehicle cost) with interactive charts and CSV/PNG export.
+- **Savings goals** — manual piggy-bank goals with contribute / withdraw, a progress bar and an optional target date (included in wallet backup/restore).
+- **Bills** — a "what's due" view over your scheduled transactions (upcoming / due / overdue) with one-click posting.
 - **Import**: HomeBank `.xhb`, QIF, OFX/QFX, CSV — with an import assistant. **Export**: HomeBank `.xhb`, QIF, CSV.
 - **Automatic bank sync** — pull new transactions straight from your bank, de-duplicated and run through your assignment rules. Two providers, both **bring-your-own-credentials** so CloudBank never sees your bank login: **[SimpleFIN](https://www.simplefin.org/)** (worldwide; a ~$15/year SimpleFIN Bridge subscription) and **[Enable Banking](https://enablebanking.com/)** (EU/EEA + UK via PSD2 — a free sandbox to test, your own production application for real accounts).
 - **Multi-currency** with manual and online (ECB / frankfurter.app) exchange rates.
@@ -70,6 +73,19 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 - **Smart amount entry** (HomeBank style) — type `12.40` or `12,40` and both are read as decimals (toggleable per user).
 - **Dates** rendered everywhere in your configured format.
 - A **first-login tutorial** that points out the essentials — dismissable, shown once, and restartable from Settings.
+
+### Secure & on every device
+
+- **Two-factor authentication (TOTP)** — optional per-user 2FA with authenticator apps (QR enrolment + one-time recovery codes) and a two-step login.
+- **Personal API tokens** — scoped, revocable bearer tokens for programmatic access.
+- **Installable PWA** — a web-app manifest, icons and an offline app shell, so CloudBank installs to your phone's home screen or your desktop.
+- **Web push notifications** — opt-in browser push for schedule / bill due reminders.
+- **Encrypted secrets at rest** — set `CB_SECRET_KEY` to encrypt bank credentials, AI keys and other secrets in the database (see [Configuration](#configuration)).
+
+### Optional AI (bring-your-own-key)
+
+- **Category suggestions** — provider-agnostic; suggests a category for a transaction from its description.
+- **Natural-language entry** — type "coffee 3.50 yesterday" and get a pre-filled transaction to review. Your API key is stored server-side, is write-only, and is never returned to the browser.
 
 ## Quick start
 
