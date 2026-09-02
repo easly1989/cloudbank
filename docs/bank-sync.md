@@ -107,9 +107,16 @@ expires, sync reports it and you reconnect the bank.
 
 Bank-sync secrets — the SimpleFIN access URL and the Enable Banking application
 private key — are stored **server-side** in the SQLite database and are **never
-returned to the browser**. Like CloudBank's other secrets (personal API tokens,
-2FA secrets, the web-push signing key), they are stored **unencrypted at rest**;
-protecting them is the same as protecting the rest of your financial data:
+returned to the browser**.
+
+Set **`CB_SECRET_KEY`** to encrypt them (and CloudBank's other reversible secrets
+— AI API keys, 2FA secrets, the web-push signing key) **at rest** with AES-256-GCM.
+It is optional and backward compatible: without it, secrets are stored in plaintext
+(existing behaviour); set it and each secret is encrypted on its next write. Keep
+the key **stable** — losing it makes the encrypted secrets unrecoverable.
+
+Whether or not encryption is enabled, protect the database itself as you would the
+rest of your financial data:
 
 - keep the `/data` volume on trusted, access-controlled storage,
 - store backups securely, and

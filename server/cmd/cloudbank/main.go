@@ -37,6 +37,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/push"
 	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
+	"github.com/easly1989/cloudbank/server/internal/secrets"
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/tag"
@@ -94,6 +95,15 @@ func run() error {
 	}))
 	slog.SetDefault(logger)
 	logger.Info("starting cloudbank", "version", version, "addr", cfg.Addr, "data_dir", cfg.DataDir)
+
+	// Configure at-rest encryption for reversible secrets. Empty CB_SECRET_KEY
+	// keeps secrets in plaintext (the default, backward compatible).
+	cipher, err := secrets.New(cfg.SecretKey)
+	if err != nil {
+		return err
+	}
+	secrets.Configure(cipher)
+	logger.Info("secret encryption", "at_rest", secrets.Enabled())
 
 	st, err := store.Open(cfg.DataDir)
 	if err != nil {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/money"
+	"github.com/easly1989/cloudbank/server/internal/secrets"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -78,7 +79,7 @@ func (s *Service) SetEBankingConfig(ctx context.Context, walletID int64, appID, 
 		if err != nil {
 			return err
 		}
-		key = existing.PrivateKey
+		key = secrets.Open(existing.PrivateKey) // decrypt the stored key to reuse it
 	}
 	if _, err := parseRSAPrivateKey(key); err != nil {
 		return ErrInvalid
@@ -88,7 +89,7 @@ func (s *Service) SetEBankingConfig(ctx context.Context, walletID int64, appID, 
 		env = "sandbox"
 	}
 	return s.q.UpsertEBankingConfig(ctx, db.UpsertEBankingConfigParams{
-		WalletID: walletID, AppID: appID, PrivateKey: key, Environment: env,
+		WalletID: walletID, AppID: appID, PrivateKey: secrets.Seal(key), Environment: env,
 	})
 }
 
@@ -107,7 +108,7 @@ func (s *Service) ebClientForConn(ctx context.Context, walletID int64) (*enableB
 	if err != nil {
 		return nil, err
 	}
-	return newEnableBankingClient(s.hc, cfg.AppID, cfg.PrivateKey)
+	return newEnableBankingClient(s.hc, cfg.AppID, secrets.Open(cfg.PrivateKey))
 }
 
 // EBankingBanks lists the ASPSPs available to the wallet's application, optionally
@@ -200,7 +201,7 @@ func (s *Service) EBankingCompleteAuth(ctx context.Context, walletID int64, stat
 	}
 	accountsJSON, _ := json.Marshal(accs)
 	row, err := s.q.InsertEBankingConnection(ctx, db.InsertEBankingConnectionParams{
-		WalletID: walletID, AccessUrl: sess.SessionID, Name: name,
+		WalletID: walletID, AccessUrl: secrets.Seal(sess.SessionID), Name: name,
 		AspspName: pend.AspspName, AspspCountry: pend.AspspCountry,
 		ValidUntil: sess.Access.ValidUntil, AccountsJson: string(accountsJSON),
 	})

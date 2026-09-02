@@ -12,6 +12,11 @@ the phone, and opt-in AI.
 
 ### Added
 
+- **Optional secret encryption at rest** — set `CB_SECRET_KEY` to encrypt
+  CloudBank's reversible server-side secrets (bank credentials, AI API keys, 2FA
+  secrets, the web-push signing key) with AES-256-GCM. Opt-in and backward
+  compatible: without it, secrets are stored in plaintext as before; set it and
+  each secret is encrypted on its next write.
 - **Automatic bank sync** — import transactions straight from your bank,
   de-duplicated and run through your assignment rules, via two
   **bring-your-own-credentials** providers: **SimpleFIN** (worldwide; a ~$15/year
