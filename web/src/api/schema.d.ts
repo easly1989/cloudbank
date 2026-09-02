@@ -432,6 +432,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/bank/connections/{connId}/auto-sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enable or disable background auto-sync for a connection */
+        post: operations["setBankConnectionAutoSync"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/bank/enablebanking/config": {
         parameters: {
             query?: never;
@@ -2254,6 +2274,8 @@ export interface components {
             country?: string;
             /** @description consent expiry (Enable Banking), RFC3339 */
             validUntil?: string;
+            /** @description included in scheduled background sync */
+            autoSync?: boolean;
         };
         BankRemoteAccount: {
             externalId: string;
@@ -4107,6 +4129,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setBankConnectionAutoSync: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    enabled: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             404: components["responses"]["NotFound"];
         };
     };

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
@@ -60,6 +61,7 @@ func newFixture(t *testing.T) (*Service, *db.Queries, int64, int64) {
 		assignment.NewService(st.Write()), account.NewServiceWithRead(st.Read(), st.Write()))
 	svc := NewService(st.Read(), st.Write(), imp)
 	svc.hc = &mockDoer{}
+	svc.syncStagger = 0
 	return svc, q, w.ID, acc.ID
 }
 
@@ -114,6 +116,58 @@ func TestConnectLinkSyncDedup(t *testing.T) {
 	}
 	if res2.Imported != 0 {
 		t.Fatalf("re-sync imported %d, want 0 (deduped)", res2.Imported)
+	}
+}
+
+func TestSyncDueRespectsAutoSyncAndRecency(t *testing.T) {
+	svc, q, wid, acc := newFixture(t)
+	ctx := context.Background()
+	setupToken := base64.StdEncoding.EncodeToString([]byte("https://example.test/claim/x"))
+	conn, _, err := svc.Connect(ctx, wid, setupToken, "Bank")
+	if err != nil {
+		t.Fatalf("Connect: %v", err)
+	}
+	if err := svc.Link(ctx, wid, conn.ID, "ACT-1", acc); err != nil {
+		t.Fatalf("Link: %v", err)
+	}
+
+	// Never synced → due → SyncDue imports its transactions.
+	r1, err := svc.SyncDue(ctx, time.Hour)
+	if err != nil {
+		t.Fatalf("SyncDue: %v", err)
+	}
+	if r1.Connections != 1 || r1.Imported != 2 {
+		t.Fatalf("first SyncDue = %+v, want connections 1 / imported 2", r1)
+	}
+
+	// Just synced → not due within the hour.
+	r2, _ := svc.SyncDue(ctx, time.Hour)
+	if r2.Connections != 0 {
+		t.Fatalf("second SyncDue synced %d, want 0 (not due)", r2.Connections)
+	}
+
+	// Auto-sync off excludes it even when otherwise due (negative age = force due).
+	if err := svc.SetAutoSync(ctx, wid, conn.ID, false); err != nil {
+		t.Fatalf("SetAutoSync off: %v", err)
+	}
+	r3, _ := svc.SyncDue(ctx, -time.Hour)
+	if r3.Connections != 0 {
+		t.Fatalf("auto-sync off still synced: %+v", r3)
+	}
+
+	// Re-enabled → due again → synced (imports nothing new, deduped).
+	if err := svc.SetAutoSync(ctx, wid, conn.ID, true); err != nil {
+		t.Fatalf("SetAutoSync on: %v", err)
+	}
+	r4, _ := svc.SyncDue(ctx, -time.Hour)
+	if r4.Connections != 1 || r4.Imported != 0 {
+		t.Fatalf("re-enabled SyncDue = %+v, want connections 1 / imported 0", r4)
+	}
+
+	// Cross-wallet toggle is rejected.
+	other, _ := q.CreateWallet(ctx, db.CreateWalletParams{Title: "Other"})
+	if err := svc.SetAutoSync(ctx, other.ID, conn.ID, false); err != ErrNotFound {
+		t.Fatalf("cross-wallet SetAutoSync err = %v, want ErrNotFound", err)
 	}
 }
 

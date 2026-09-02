@@ -122,10 +122,18 @@ rest of your financial data:
 - store backups securely, and
 - serve CloudBank over HTTPS (see [reverse-proxy.md](reverse-proxy.md)).
 
+## Automatic (background) sync
+
+Connections are refreshed automatically in the background, so you normally don't
+need to click **Sync now**. Each connection has an **Automatic sync** toggle (on
+by default); turn it off to sync that connection only on demand. The server
+refreshes auto-sync connections that are older than `CB_BANK_SYNC_INTERVAL`
+(default `12h`; set it to `0`/`off` to disable background sync entirely). An
+Enable Banking connection whose consent has expired is skipped until you
+**reconnect** it.
+
 ## Current limitations
 
-- **Sync is manual** (click **Sync now**); there is no scheduled/background sync
-  yet.
 - The Enable Banking account list is **captured when you connect**; if the bank
   later exposes a new account, reconnect to pick it up.
 - Balances shown for Enable Banking accounts are best-effort and may be omitted
