@@ -3,6 +3,7 @@ package bills
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
 
 	"github.com/easly1989/cloudbank/server/internal/store"
@@ -60,6 +61,39 @@ func (f fixture) addSchedule(t *testing.T, name string, amount int64, unit, next
 	return sc.ID
 }
 
+// addScheduleCat inserts a monthly auto-post outflow schedule whose template
+// carries the given category.
+func (f fixture) addScheduleCat(t *testing.T, name string, amount int64, nextDue string, categoryID int64) int64 {
+	t.Helper()
+	ctx := context.Background()
+	acc, _ := f.q.InsertAccount(ctx, db.InsertAccountParams{
+		WalletID: f.walletID, Name: name + " acct", Type: "checking", CurrencyID: f.eurID, Position: 1,
+	})
+	tpl, _ := f.q.InsertTemplate(ctx, db.InsertTemplateParams{
+		WalletID: f.walletID, Name: name, AccountID: sql.NullInt64{Int64: acc.ID, Valid: true},
+		Amount: amount, CategoryID: sql.NullInt64{Int64: categoryID, Valid: true},
+	})
+	sc, err := f.q.InsertSchedule(ctx, db.InsertScheduleParams{
+		WalletID: f.walletID, TemplateID: tpl.ID, Unit: "month", EveryN: 1,
+		NextDue: nextDue, WeekendMode: 0, Remaining: sql.NullInt64{}, PostAdvance: 0, AutoPost: 1,
+	})
+	if err != nil {
+		t.Fatalf("InsertSchedule(%s): %v", name, err)
+	}
+	return sc.ID
+}
+
+func setBillsCategory(t *testing.T, f fixture, categoryID int64) {
+	t.Helper()
+	w, _ := f.q.GetWallet(context.Background(), f.walletID)
+	if err := f.q.UpdateWallet(context.Background(), db.UpdateWalletParams{
+		Title: w.Title, OwnerName: w.OwnerName,
+		SettingsJson: fmt.Sprintf(`{"billsCategoryId":%d}`, categoryID), ID: f.walletID,
+	}); err != nil {
+		t.Fatalf("UpdateWallet: %v", err)
+	}
+}
+
 func byName(bills []Bill, name string) []Bill {
 	var out []Bill
 	for _, b := range bills {
@@ -78,8 +112,8 @@ func TestBillsClassification(t *testing.T) {
 	// Salary is income (positive) → excluded from the Bills view entirely.
 	f.addSchedule(t, "Salary", 250000, "month", "2026-06-25", 1, 0, nil)
 
-	today, from, to := "2026-06-15", "2026-06-01", "2026-07-31"
-	sum, err := svc.Bills(ctx, f.walletID, from, to, today)
+	today, from := "2026-06-15", "2026-06-01"
+	sum, err := svc.Bills(ctx, f.walletID, from, today)
 	if err != nil {
 		t.Fatalf("Bills: %v", err)
 	}
@@ -87,23 +121,19 @@ func TestBillsClassification(t *testing.T) {
 	if len(byName(sum.Bills, "Salary")) != 0 {
 		t.Fatalf("income schedule must be excluded, got %+v", sum.Bills)
 	}
+	// One row per bill: Rent's next-due (2026-06-01) is overdue as of today.
 	rent := byName(sum.Bills, "Rent")
-	if len(rent) != 2 {
-		t.Fatalf("Rent occurrences = %d, want 2 (%+v)", len(rent), rent)
+	if len(rent) != 1 {
+		t.Fatalf("Rent occurrences = %d, want 1 (next-due only) (%+v)", len(rent), rent)
 	}
-	// Sorted overdue-first, then due.
 	if rent[0].State != StateOverdue || rent[0].DueDate != "2026-06-01" {
-		t.Fatalf("first Rent = %+v, want overdue 2026-06-01", rent[0])
+		t.Fatalf("Rent = %+v, want overdue 2026-06-01", rent[0])
 	}
-	if rent[1].State != StateDue || rent[1].DueDate != "2026-07-01" {
-		t.Fatalf("second Rent = %+v, want due 2026-07-01", rent[1])
+	if sum.Overdue != 1 || sum.Due != 0 || sum.Paid != 0 {
+		t.Fatalf("counts = overdue %d due %d paid %d, want 1/0/0", sum.Overdue, sum.Due, sum.Paid)
 	}
-	if sum.Overdue != 1 || sum.Due != 1 || sum.Paid != 0 {
-		t.Fatalf("counts = overdue %d due %d paid %d, want 1/1/0", sum.Overdue, sum.Due, sum.Paid)
-	}
-	// Left to pay = both unpaid Rent occurrences, as a positive magnitude.
-	if sum.TotalDue != 200000 {
-		t.Fatalf("TotalDue = %d, want 200000", sum.TotalDue)
+	if sum.TotalDue != 100000 {
+		t.Fatalf("TotalDue = %d, want 100000", sum.TotalDue)
 	}
 }
 
@@ -123,8 +153,8 @@ func TestBillsPaidAndRemainingCap(t *testing.T) {
 	one := int64(1)
 	f.addSchedule(t, "OneTime", -9000, "month", "2026-06-10", 1, 0, &one)
 
-	today, from, to := "2026-06-15", "2026-06-01", "2026-07-31"
-	sum, err := svc.Bills(ctx, f.walletID, from, to, today)
+	today, from := "2026-06-15", "2026-06-01"
+	sum, err := svc.Bills(ctx, f.walletID, from, today)
 	if err != nil {
 		t.Fatalf("Bills: %v", err)
 	}
@@ -165,6 +195,66 @@ func TestBillsPaidAndRemainingCap(t *testing.T) {
 	}
 }
 
+func TestBillsFuturePrePostNotPaid(t *testing.T) {
+	svc, f := newFixture(t)
+	ctx := context.Background()
+	// An auto-post bill pre-registered ahead: last_posted and next_due are both in
+	// the future relative to today. The future post must NOT show as "paid" — the
+	// bill shows its real next-due as upcoming instead.
+	sc := f.addSchedule(t, "AutoBill", -5000, "month", "2026-09-05", 1, 0, nil)
+	if err := f.q.AdvanceSchedule(ctx, db.AdvanceScheduleParams{
+		NextDue: "2026-10-05", Remaining: sql.NullInt64{},
+		LastPosted: sql.NullString{String: "2026-09-05", Valid: true}, ID: sc,
+	}); err != nil {
+		t.Fatalf("AdvanceSchedule: %v", err)
+	}
+	sum, err := svc.Bills(ctx, f.walletID, "2026-08-01", "2026-08-15")
+	if err != nil {
+		t.Fatalf("Bills: %v", err)
+	}
+	b := byName(sum.Bills, "AutoBill")
+	if len(b) != 1 {
+		t.Fatalf("AutoBill rows = %d, want 1 (upcoming only) (%+v)", len(b), b)
+	}
+	if b[0].State != StateDue || b[0].DueDate != "2026-10-05" {
+		t.Fatalf("AutoBill = %+v, want due 2026-10-05", b[0])
+	}
+	if !b[0].AutoPost {
+		t.Fatalf("AutoBill should be flagged autoPost")
+	}
+	if sum.Paid != 0 {
+		t.Fatalf("Paid = %d, want 0 (a future pre-post is not paid)", sum.Paid)
+	}
+}
+
+func TestBillsCategoryFilter(t *testing.T) {
+	svc, f := newFixture(t)
+	ctx := context.Background()
+	billsCat, err := f.q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: f.walletID, Name: "Bills & Taxes"})
+	if err != nil {
+		t.Fatalf("InsertCategory: %v", err)
+	}
+	otherCat, _ := f.q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: f.walletID, Name: "Groceries"})
+	f.addScheduleCat(t, "Electricity", -6000, "2026-06-10", billsCat.ID)
+	f.addScheduleCat(t, "Supermarket", -3000, "2026-06-11", otherCat.ID)
+
+	// No category configured → every outflow is a bill.
+	sum, _ := svc.Bills(ctx, f.walletID, "2026-06-01", "2026-06-15")
+	if len(byName(sum.Bills, "Electricity")) != 1 || len(byName(sum.Bills, "Supermarket")) != 1 {
+		t.Fatalf("without a category filter both should appear: %+v", sum.Bills)
+	}
+
+	// Configure the bills category → only its schedules appear.
+	setBillsCategory(t, f, billsCat.ID)
+	sum2, _ := svc.Bills(ctx, f.walletID, "2026-06-01", "2026-06-15")
+	if len(byName(sum2.Bills, "Electricity")) != 1 {
+		t.Fatalf("Electricity (bills category) should appear: %+v", sum2.Bills)
+	}
+	if len(byName(sum2.Bills, "Supermarket")) != 0 {
+		t.Fatalf("Supermarket (other category) should be filtered out: %+v", sum2.Bills)
+	}
+}
+
 func TestBillsConvertsToBaseCurrency(t *testing.T) {
 	svc, f := newFixture(t)
 	ctx := context.Background()
@@ -175,8 +265,8 @@ func TestBillsConvertsToBaseCurrency(t *testing.T) {
 	})
 	f.addSchedule(t, "Hosting", -20000, "month", "2026-06-10", 1, usd.ID, nil)
 
-	today, from, to := "2026-06-15", "2026-06-01", "2026-06-30"
-	sum, err := svc.Bills(ctx, f.walletID, from, to, today)
+	today, from := "2026-06-15", "2026-06-01"
+	sum, err := svc.Bills(ctx, f.walletID, from, today)
 	if err != nil {
 		t.Fatalf("Bills: %v", err)
 	}

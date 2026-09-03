@@ -171,13 +171,14 @@ func (s *Service) RunBillsReminders(ctx context.Context, now time.Time) error {
 		}
 		var pending []bills.Bill
 		for _, w := range wallets {
-			sum, err := s.bills.Bills(ctx, w.ID, today, horizon, today)
+			sum, err := s.bills.Bills(ctx, w.ID, today, today)
 			if err != nil {
 				s.logger.Warn("push reminders: bills", "wallet", w.ID, "err", err)
 				continue
 			}
 			for _, b := range sum.Bills {
-				if b.State == bills.StatePaid {
+				// Remind only for unpaid bills overdue or due within the lead window.
+				if b.State == bills.StatePaid || b.DueDate > horizon {
 					continue
 				}
 				ref := fmt.Sprintf("bill:%d:%d:%s", w.ID, b.ScheduleID, b.DueDate)

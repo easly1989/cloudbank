@@ -73,13 +73,14 @@ type walletResponse struct {
 	Role               string `json:"role"`
 	CreatedAt          string `json:"createdAt"`
 	SchedulePostMonths int    `json:"schedulePostMonths"`
+	BillsCategoryID    *int64 `json:"billsCategoryId,omitempty"`
 }
 
 func toWalletResponse(w wallet.Wallet) walletResponse {
 	return walletResponse{
 		ID: w.ID, Title: w.Title, OwnerName: w.OwnerName,
 		BaseCurrencyID: w.BaseCurrencyID, Role: w.Role, CreatedAt: w.CreatedAt,
-		SchedulePostMonths: w.SchedulePostMonths,
+		SchedulePostMonths: w.SchedulePostMonths, BillsCategoryID: w.BillsCategoryID,
 	}
 }
 
@@ -179,6 +180,7 @@ type walletInput struct {
 	OwnerName          string `json:"ownerName"`
 	BaseCurrency       string `json:"baseCurrency"`
 	SchedulePostMonths int    `json:"schedulePostMonths"`
+	BillsCategoryID    *int64 `json:"billsCategoryId"`
 }
 
 func (h *walletHandlers) create(w http.ResponseWriter, r *http.Request) {
@@ -247,7 +249,8 @@ func (h *walletHandlers) update(w http.ResponseWriter, r *http.Request) {
 		months = wallet.MaxScheduleMonths
 	}
 	wl.SchedulePostMonths = months
-	if err := h.svc.Update(r.Context(), wl.ID, wl.Title, wl.OwnerName, months); err != nil {
+	wl.BillsCategoryID = in.BillsCategoryID
+	if err := h.svc.Update(r.Context(), wl.ID, wl.Title, wl.OwnerName, months, in.BillsCategoryID); err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not update wallet")
 		return
 	}

@@ -2326,6 +2326,7 @@ components:
         role: { type: string, enum: [owner, member] }
         createdAt: { type: string }
         schedulePostMonths: { type: integer, description: "auto-post scheduled transactions up to N months ahead (0..3)" }
+        billsCategoryId: { type: integer, format: int64, nullable: true, description: "when set, the Bills view lists only this category's schedules" }
       required: [id, title, ownerName, role, createdAt, schedulePostMonths]
     WalletInput:
       type: object
@@ -2334,6 +2335,7 @@ components:
         ownerName: { type: string }
         baseCurrency: { type: string, description: "ISO 4217 code for the base currency (create only)" }
         schedulePostMonths: { type: integer, description: "auto-post scheduled transactions up to N months ahead (0..3)" }
+        billsCategoryId: { type: integer, format: int64, nullable: true, description: "the wallet's Bills category (null clears it)" }
       required: [title]
     CatalogEntry:
       type: object
