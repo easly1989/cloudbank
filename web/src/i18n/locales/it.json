@@ -378,6 +378,7 @@
     "neverSynced": "mai sincronizzata",
     "syncNow": "Sincronizza ora",
     "synced": "Importate {{imported}}, riconciliate {{reconciled}}.",
+    "syncedPartial": "Importate {{imported}}, riconciliate {{reconciled}}. Alcuni conti non sono stati sincronizzati — {{warnings}}",
     "remove": "Rimuovi",
     "confirmRemove": "Rimuovere la connessione \"{{name}}\"? Le transazioni già importate restano.",
     "remoteError": "Impossibile raggiungere il provider bancario.",

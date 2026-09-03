@@ -2182,7 +2182,12 @@ components:
         imported: { type: integer, description: "new transactions created" }
         reconciled: { type: integer, description: "pending transactions settled" }
         accounts: { type: integer, description: "linked accounts synced" }
-      required: [imported, reconciled, accounts]
+        failed: { type: integer, description: "linked accounts whose transactions could not be fetched this run" }
+        warnings:
+          type: array
+          items: { type: string }
+          description: "a human message for each account that failed to sync"
+      required: [imported, reconciled, accounts, failed]
     EnableBankingConfig:
       type: object
       description: A wallet's Enable Banking application config — never the private key.

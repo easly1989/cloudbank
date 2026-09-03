@@ -26,6 +26,8 @@ export interface BankSyncResult {
   imported: number;
   reconciled: number;
   accounts: number;
+  failed?: number;
+  warnings?: string[];
 }
 
 export const listBankConnections = (walletId: number) =>

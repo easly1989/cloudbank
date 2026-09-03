@@ -291,24 +291,33 @@ func (s *Service) ebRemoteAccounts(ctx context.Context, c db.BankConnection) ([]
 }
 
 // ebFetchRows fetches import rows for each linked account of an Enable Banking
-// connection, keyed by the provider account uid.
-func (s *Service) ebFetchRows(ctx context.Context, c db.BankConnection, linkByExt map[string]int64, start time.Time) (map[string][]importio.Row, error) {
+// connection, keyed by the provider account uid. A failure fetching one account's
+// transactions (e.g. a card account the bank does not expose, or a transient
+// provider error) is returned as a non-fatal accountFetchError so the remaining
+// accounts still sync — only a client/setup failure aborts the whole run.
+func (s *Service) ebFetchRows(ctx context.Context, c db.BankConnection, linkByExt map[string]int64, start time.Time) (map[string][]importio.Row, []accountFetchError, error) {
 	cl, err := s.ebClientForConn(ctx, c.WalletID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	out := make(map[string][]importio.Row)
+	var failures []accountFetchError
 	for _, a := range parseStoredAccounts(c.AccountsJson) {
 		if _, linked := linkByExt[a.UID]; !linked {
 			continue
 		}
 		txns, err := cl.transactions(ctx, a.UID, start)
 		if err != nil {
-			return nil, err
+			name := a.Name
+			if strings.TrimSpace(name) == "" {
+				name = a.IBAN
+			}
+			failures = append(failures, accountFetchError{ExternalID: a.UID, Name: name, Err: err})
+			continue
 		}
 		out[a.UID] = ebRowsFromTxns(txns)
 	}
-	return out, nil
+	return out, failures, nil
 }
 
 // ebRowsFromTxns maps Enable Banking transactions to import rows. The dedup key is

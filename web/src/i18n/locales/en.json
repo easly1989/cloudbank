@@ -378,6 +378,7 @@
     "neverSynced": "never synced",
     "syncNow": "Sync now",
     "synced": "Imported {{imported}}, reconciled {{reconciled}}.",
+    "syncedPartial": "Imported {{imported}}, reconciled {{reconciled}}. Some accounts could not be synced — {{warnings}}",
     "remove": "Remove",
     "confirmRemove": "Remove the connection \"{{name}}\"? Already-imported transactions are kept.",
     "remoteError": "Could not reach the bank provider.",
