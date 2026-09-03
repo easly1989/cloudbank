@@ -221,7 +221,7 @@ func (s *Service) EBankingCompleteAuth(ctx context.Context, walletID int64, stat
 	// objects, but GET /sessions/{id} later returns only uid strings.
 	accs := make([]ebStoredAccount, 0, len(sess.Accounts))
 	for _, a := range sess.Accounts {
-		accs = append(accs, ebStoredAccount{UID: a.UID, Name: a.label(), Currency: a.Currency, IBAN: a.AccountID.IBAN})
+		accs = append(accs, ebStoredAccount{UID: a.UID, Name: a.label(), Currency: a.Currency, IBAN: a.identifier()})
 	}
 	accountsJSON, _ := json.Marshal(accs)
 
