@@ -12,12 +12,12 @@ import {
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconCoin, IconTags, IconUserDollar } from "@tabler/icons-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { ApiError, deleteWallet, updateWallet } from "../api/client";
+import { ApiError, deleteWallet, listCategories, updateWallet } from "../api/client";
 import { useWallet } from "../wallet/WalletProvider";
 import { BackupCard } from "./BackupCard";
 import { ImportExport } from "./ImportPage";
@@ -32,7 +32,22 @@ export function WalletSettingsPage() {
   const [title, setTitle] = useState(currentWallet?.title ?? "");
   const [ownerName, setOwnerName] = useState(currentWallet?.ownerName ?? "");
   const [postMonths, setPostMonths] = useState(String(currentWallet?.schedulePostMonths ?? 0));
+  const [billsCategory, setBillsCategory] = useState(
+    currentWallet?.billsCategoryId ? String(currentWallet.billsCategoryId) : "",
+  );
   const [confirm, setConfirm] = useState("");
+
+  const categoriesQuery = useQuery({
+    queryKey: ["categories", currentWallet?.id ?? 0],
+    queryFn: () => listCategories(currentWallet!.id),
+    enabled: !!currentWallet,
+  });
+  const categoryOptions = [
+    { value: "", label: t("wallet.billsCategoryNone") },
+    ...(categoriesQuery.data ?? [])
+      .filter((c) => !c.isIncome)
+      .map((c) => ({ value: String(c.id), label: c.name })),
+  ];
 
   const notifyError = (err: unknown) =>
     notifications.show({
@@ -42,7 +57,12 @@ export function WalletSettingsPage() {
 
   const rename = useMutation({
     mutationFn: () =>
-      updateWallet(currentWallet!.id, { title, ownerName, schedulePostMonths: Number(postMonths) }),
+      updateWallet(currentWallet!.id, {
+        title,
+        ownerName,
+        schedulePostMonths: Number(postMonths),
+        billsCategoryId: billsCategory ? Number(billsCategory) : null,
+      }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["wallets"] });
       notifications.show({ color: "green", message: t("wallet.saved") });
@@ -116,6 +136,15 @@ export function WalletSettingsPage() {
                 onChange={(v) => v && setPostMonths(v)}
                 disabled={!isOwner}
                 allowDeselect={false}
+              />
+              <Select
+                label={t("wallet.billsCategory")}
+                description={t("wallet.billsCategoryHint")}
+                data={categoryOptions}
+                value={billsCategory}
+                onChange={(v) => setBillsCategory(v ?? "")}
+                disabled={!isOwner}
+                searchable
               />
               <Group justify="flex-end">
                 <Button

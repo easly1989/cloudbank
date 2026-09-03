@@ -15,17 +15,13 @@ package bills
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"math"
 	"sort"
 
 	"github.com/easly1989/cloudbank/server/internal/schedule"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
-
-// occurrenceCap bounds how many upcoming occurrences a single schedule
-// contributes to one window, so a daily schedule over a long horizon cannot
-// flood the list.
-const occurrenceCap = 60
 
 // State is a bill occurrence's payment state.
 type State string
@@ -108,13 +104,34 @@ func convertToBase(amount int64, cur, base db.Currency) int64 {
 	return int64(math.Round(scaled))
 }
 
-// Bills classifies the wallet's scheduled outflows into overdue/due/paid
-// occurrences. Unpaid occurrences with a due date on or before `to` are
-// included (an overdue bill counts however far back it fell due); a recently
-// posted occurrence is shown as paid when its post date falls within [from, to]
-// for context. `today` splits due from overdue.
-func (s *Service) Bills(ctx context.Context, walletID int64, from, to, today string) (Summary, error) {
-	out := Summary{From: from, To: to, Bills: []Bill{}}
+// billsCategory reads the wallet's configured "bills" category id (nil = none,
+// so the view falls back to all outflow schedules).
+func (s *Service) billsCategory(ctx context.Context, walletID int64) *int64 {
+	w, err := s.rq.GetWallet(ctx, walletID)
+	if err != nil {
+		return nil
+	}
+	var st struct {
+		BillsCategoryID *int64 `json:"billsCategoryId"`
+	}
+	if w.SettingsJson != "" {
+		_ = json.Unmarshal([]byte(w.SettingsJson), &st)
+	}
+	if st.BillsCategoryID != nil && *st.BillsCategoryID <= 0 {
+		return nil
+	}
+	return st.BillsCategoryID
+}
+
+// Bills lists the wallet's bill schedules with their next due occurrence,
+// classified overdue/due, plus recently paid occurrences for context. It shows
+// one upcoming row per schedule — its real next-due date — regardless of how far
+// out it is, so a bill never vanishes when auto-post pre-registers it months
+// ahead. "Paid" means posted on or before `today`: a future-dated pre-registered
+// occurrence is upcoming, not paid. `from` bounds the recently-paid context, and
+// when a bills category is configured only that category's schedules are shown.
+func (s *Service) Bills(ctx context.Context, walletID int64, from, today string) (Summary, error) {
+	out := Summary{From: from, To: today, Bills: []Bill{}}
 
 	currencies, err := s.rq.ListCurrenciesForWallet(ctx, walletID)
 	if err != nil {
@@ -133,6 +150,8 @@ func (s *Service) Bills(ctx context.Context, walletID int64, from, to, today str
 		out.BaseCurrency = &bi
 	}
 
+	billsCat := s.billsCategory(ctx, walletID)
+
 	rows, err := s.rq.ListScheduleBills(ctx, walletID)
 	if err != nil {
 		return Summary{}, err
@@ -140,8 +159,11 @@ func (s *Service) Bills(ctx context.Context, walletID int64, from, to, today str
 
 	for _, r := range rows {
 		// Bills are outflows: expenses and transfers out (negative amount).
-		// Income schedules belong to the cashflow view, not here.
 		if r.TemplateAmount >= 0 {
+			continue
+		}
+		// When a bills category is set, only that category's schedules are bills.
+		if billsCat != nil && (!r.CategoryID.Valid || r.CategoryID.Int64 != *billsCat) {
 			continue
 		}
 
@@ -173,42 +195,33 @@ func (s *Service) Bills(ctx context.Context, walletID int64, from, to, today str
 			}
 		}
 
-		// Recently paid: the last posted occurrence, shown for context when it
-		// falls inside the window. last_posted is a real recorded value.
-		if r.LastPosted.Valid && r.LastPosted.String >= from && r.LastPosted.String <= to {
+		// Recently paid (context): the last posted occurrence, only when it is
+		// on or before today (a future pre-registered post is upcoming, not paid)
+		// and no older than `from`.
+		if r.LastPosted.Valid && r.LastPosted.String <= today && r.LastPosted.String >= from {
 			out.Bills = append(out.Bills, mk(r.LastPosted.String, StatePaid))
 			out.Paid++
 		}
 
-		// Upcoming unpaid occurrences: walk forward from next_due up to `to`,
-		// honouring a finite remaining count and the per-schedule cap.
+		// The next real occurrence: one upcoming row per schedule (its next-due),
+		// unless the schedule is exhausted. Always shown, however far out.
+		if r.Remaining.Valid && r.Remaining.Int64 <= 0 {
+			continue
+		}
 		next, err := schedule.ParseDate(r.NextDue)
 		if err != nil {
 			continue // skip a schedule with an unparseable next-due rather than fail the view
 		}
-		limit := occurrenceCap
-		if r.Remaining.Valid && int(r.Remaining.Int64) >= 0 && int(r.Remaining.Int64) < limit {
-			limit = int(r.Remaining.Int64)
+		d := schedule.FormatDate(next)
+		state := StateDue
+		if d < today {
+			state = StateOverdue
+			out.Overdue++
+		} else {
+			out.Due++
 		}
-		for i := 0; i < limit; i++ {
-			d := schedule.FormatDate(next)
-			if d > to {
-				break
-			}
-			state := StateDue
-			if d < today {
-				state = StateOverdue
-			}
-			out.Bills = append(out.Bills, mk(d, state))
-			if state == StateOverdue {
-				out.Overdue++
-			} else {
-				out.Due++
-			}
-			// Positive outflow magnitude added to the running "left to pay".
-			out.TotalDue += -toBase(r.TemplateAmount)
-			next = schedule.AddInterval(next, r.Unit, int(r.EveryN))
-		}
+		out.Bills = append(out.Bills, mk(d, state))
+		out.TotalDue += -toBase(r.TemplateAmount) // positive magnitude
 	}
 
 	sortBills(out.Bills)
