@@ -383,6 +383,7 @@
     "remoteError": "Impossibile raggiungere il provider bancario.",
     "accounts": "Conti",
     "noRemote": "Nessun conto trovato per questa connessione.",
+    "noRemoteHintEb": "Un'app Enable Banking personale (ad accesso ristretto) può sincronizzare solo i conti che le hai collegato. Apri la tua applicazione nel Control Panel di Enable Banking, usa \"Link accounts\" per autorizzare i conti, poi premi Reconnect qui.",
     "linked": "Collegato",
     "notLinked": "Non collegato",
     "linkTo": "Collega a conto…",

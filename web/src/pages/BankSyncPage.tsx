@@ -295,9 +295,16 @@ function ConnectionCard({
             {t("banksync.accounts")}
           </Text>
           {(remote.data ?? []).length === 0 ? (
-            <Text c="dimmed" size="sm">
-              {t("banksync.noRemote")}
-            </Text>
+            <Stack gap={6}>
+              <Text c="dimmed" size="sm">
+                {t("banksync.noRemote")}
+              </Text>
+              {connection.provider === "enablebanking" && (
+                <Alert color="yellow" variant="light" py="xs">
+                  <Text size="xs">{t("banksync.noRemoteHintEb")}</Text>
+                </Alert>
+              )}
+            </Stack>
           ) : (
             (remote.data ?? []).map((ra) => (
               <Group key={ra.externalId} justify="space-between" wrap="nowrap" gap="sm">
