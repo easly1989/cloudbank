@@ -175,6 +175,7 @@ export function TransactionsPage() {
 
   const [formOpened, form] = useDisclosure(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
+  const [duplicating, setDuplicating] = useState<Transaction | null>(null);
   const [transferOpened, transferForm] = useDisclosure(false);
   const [editingTransferId, setEditingTransferId] = useState<number | null>(null);
 
@@ -252,9 +253,17 @@ export function TransactionsPage() {
       setEditingTransferId(row.transferId);
       transferForm.open();
     } else {
+      setDuplicating(null);
       setEditing(row);
       form.open();
     }
+  };
+  // Duplicate: open the entry form pre-filled from the row as a NEW transaction.
+  const duplicateRow = (row: RegisterRow) => {
+    if (row.transferId != null) return; // transfers aren't duplicated here
+    setEditing(null);
+    setDuplicating(row);
+    form.open();
   };
   const deleteRow = (row: RegisterRow) => {
     if (row.status === RECONCILED && !window.confirm(t("reconcile.lockedDelete"))) return;
@@ -330,6 +339,7 @@ export function TransactionsPage() {
               leftSection={<IconPlus size={16} />}
               disabled={!account}
               onClick={() => {
+                setDuplicating(null);
                 setEditing(null);
                 form.open();
               }}
@@ -467,6 +477,7 @@ export function TransactionsPage() {
           onToggleSelect={toggleSelect}
           onToggleAll={toggleAll}
           onEdit={editRow}
+          onDuplicate={duplicateRow}
           onDelete={deleteRow}
           onToggleStatus={(row, status) => toggleStatus.mutate({ id: row.id, status })}
           onSaveTemplate={templateFromRow}
@@ -477,10 +488,14 @@ export function TransactionsPage() {
       {account && (
         <TransactionForm
           opened={formOpened}
-          onClose={form.close}
+          onClose={() => {
+            form.close();
+            setDuplicating(null);
+          }}
           walletId={walletId}
           account={account}
           editing={editing}
+          duplicate={duplicating}
           onSaved={invalidate}
           templates={templates.filter((tpl) => !tpl.isTransfer)}
           onTemplateSaved={invalidateTemplates}
