@@ -15,6 +15,7 @@ SELECT sch.id, sch.template_id, sch.unit, sch.every_n, sch.next_due,
        sch.weekend_mode, sch.remaining, sch.last_posted, sch.auto_post,
        tpl.name AS template_name, tpl.amount AS template_amount,
        tpl.is_transfer AS template_is_transfer, tpl.account_id AS account_id,
+       tpl.category_id AS category_id,
        acc.name AS account_name, acc.currency_id AS currency_id
 FROM schedules sch
 JOIN templates tpl ON tpl.id = sch.template_id
@@ -37,6 +38,7 @@ type ListScheduleBillsRow struct {
 	TemplateAmount     int64
 	TemplateIsTransfer int64
 	AccountID          sql.NullInt64
+	CategoryID         sql.NullInt64
 	AccountName        sql.NullString
 	CurrencyID         sql.NullInt64
 }
@@ -67,6 +69,7 @@ func (q *Queries) ListScheduleBills(ctx context.Context, walletID int64) ([]List
 			&i.TemplateAmount,
 			&i.TemplateIsTransfer,
 			&i.AccountID,
+			&i.CategoryID,
 			&i.AccountName,
 			&i.CurrencyID,
 		); err != nil {
