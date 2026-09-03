@@ -55,6 +55,7 @@ export function TransactionForm({
   walletId,
   account,
   editing,
+  duplicate,
   onSaved,
   templates,
   onTemplateSaved,
@@ -64,6 +65,8 @@ export function TransactionForm({
   walletId: number;
   account: Account;
   editing: Transaction | null;
+  /** Pre-fill a NEW transaction from this row (create, not update). */
+  duplicate?: Transaction | null;
   onSaved: () => void;
   templates: Template[];
   onTemplateSaved: () => void;
@@ -192,17 +195,19 @@ export function TransactionForm({
 
   useEffect(() => {
     if (!opened) return;
-    const e = editing;
+    // Edit an existing transaction, or pre-fill a new one from a duplicated row.
+    const e = editing ?? duplicate ?? null;
+    const isDup = !editing && duplicate != null;
     // Build the initial values once, so we can both seed the fields and remember
     // them for dirty detection. New transactions pre-fill the account's default
     // payment mode; editing keeps the stored one (a picked payee's default still
-    // overrides).
+    // overrides). A duplicate starts uncleared.
     const init = {
       date: e?.date ?? new Date().toISOString().slice(0, 10),
       direction: ((e?.amount ?? -1) < 0 ? "expense" : "income") as "expense" | "income",
       amount: e ? minorToInput(Math.abs(e.amount), fd, dc) : "",
       paymentMode: String(e?.paymentMode ?? account.defaultPaymentMode),
-      status: String(e?.status ?? 0),
+      status: String(isDup ? 0 : (e?.status ?? 0)),
       payeeId: e?.payeeId ? String(e.payeeId) : null,
       categoryId: e?.categoryId ? String(e.categoryId) : null,
       vehicleId: e?.vehicleId ? String(e.vehicleId) : null,
@@ -231,7 +236,7 @@ export function TransactionForm({
     setSplits(init.splits);
     initialRef.current = JSON.stringify(init);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, editing?.id]);
+  }, [opened, editing?.id, duplicate?.id]);
 
   const sign = direction === "expense" ? -1 : 1;
   const totalMinor = (parseAmount(amount, fd, dc) ?? 0) * sign;

@@ -2,7 +2,9 @@ import { ActionIcon, Badge, Box, Checkbox, Group, Menu, Text } from "@mantine/co
 import {
   IconAdjustmentsHorizontal,
   IconArrowsExchange,
+  IconCircleCheck,
   IconClock,
+  IconCopy,
   IconDeviceFloppy,
   IconLock,
   IconPaperclip,
@@ -68,6 +70,7 @@ export interface RegisterTableProps {
   onToggleSelect: (id: number) => void;
   onToggleAll: (ids: number[], on: boolean) => void;
   onEdit: (row: RegisterRow) => void;
+  onDuplicate: (row: RegisterRow) => void;
   onDelete: (row: RegisterRow) => void;
   onToggleStatus: (row: RegisterRow, status: number) => void;
   onSaveTemplate: (row: RegisterRow) => void;
@@ -91,6 +94,7 @@ export function RegisterTable({
   onToggleSelect,
   onToggleAll,
   onEdit,
+  onDuplicate,
   onDelete,
   onToggleStatus,
   onSaveTemplate,
@@ -102,6 +106,8 @@ export function RegisterTable({
   const { user } = useAuth();
   const parentRef = useRef<HTMLDivElement>(null);
   const [cursorId, setCursorId] = useState<number | null>(null);
+  // Right-click context menu, anchored at the cursor position.
+  const [menu, setMenu] = useState<{ x: number; y: number; row: RegisterRow } | null>(null);
 
   // Fill mode: size the scroll body so its bottom sits just above the footer,
   // recomputing whenever the block above (fillRef) changes size — e.g. an
@@ -434,6 +440,11 @@ export function RegisterTable({
                   key={row.id}
                   onClick={() => setCursorId(r.id)}
                   onDoubleClick={() => onEdit(r)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setCursorId(r.id);
+                    setMenu({ x: e.clientX, y: e.clientY, row: r });
+                  }}
                   style={{
                     position: "absolute",
                     top: 0,
@@ -516,6 +527,83 @@ export function RegisterTable({
           </div>
         </div>
       </Box>
+
+      {/* Right-click context menu, anchored at the cursor. */}
+      <Menu
+        opened={menu != null}
+        onClose={() => setMenu(null)}
+        position="bottom-start"
+        withinPortal
+        shadow="md"
+        width={210}
+      >
+        <Menu.Target>
+          <div
+            aria-hidden
+            style={{
+              position: "fixed",
+              left: menu?.x ?? 0,
+              top: menu?.y ?? 0,
+              width: 0,
+              height: 0,
+            }}
+          />
+        </Menu.Target>
+        <Menu.Dropdown>
+          {menu &&
+            (() => {
+              const r = menu.row;
+              const run = (fn: () => void) => () => {
+                setMenu(null);
+                fn();
+              };
+              return (
+                <>
+                  {r.payeeName ? <Menu.Label>{r.payeeName}</Menu.Label> : null}
+                  <Menu.Item leftSection={<IconPencil size={15} />} onClick={run(() => onEdit(r))}>
+                    {t("transactions.edit")}
+                  </Menu.Item>
+                  {r.transferId == null && (
+                    <Menu.Item
+                      leftSection={<IconCopy size={15} />}
+                      onClick={run(() => onDuplicate(r))}
+                    >
+                      {t("transactions.duplicate")}
+                    </Menu.Item>
+                  )}
+                  <Menu.Item
+                    leftSection={<IconCircleCheck size={15} />}
+                    onClick={run(() => onToggleStatus(r, r.status === 1 ? 0 : 1))}
+                  >
+                    {t("register.markCleared")}
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconLock size={15} />}
+                    onClick={run(() =>
+                      onToggleStatus(r, r.status === STATUS_RECONCILED ? 0 : STATUS_RECONCILED),
+                    )}
+                  >
+                    {t("register.markReconciled")}
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconDeviceFloppy size={15} />}
+                    onClick={run(() => onSaveTemplate(r))}
+                  >
+                    {t("templates.saveAs")}
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Item
+                    color="red"
+                    leftSection={<IconTrash size={15} />}
+                    onClick={run(() => onDelete(r))}
+                  >
+                    {t("transactions.delete")}
+                  </Menu.Item>
+                </>
+              );
+            })()}
+        </Menu.Dropdown>
+      </Menu>
     </Box>
   );
 }
