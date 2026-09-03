@@ -55,6 +55,25 @@ application; CloudBank uses it on your behalf.
      commercial / at-scale use needs an agreement, and their Terms of Service set
      the exact limits). The API flow is the same as sandbox, so nothing changes in
      CloudBank — just set the environment to **production**.
+
+   > **Important — a personal (restricted) app can only read _linked_ accounts.**
+   > When you activate "by linking accounts", the app stays **restricted**, and per
+   > Enable Banking *"you can only fetch data from accounts linked to the
+   > application."* The accounts you link are exactly the ones CloudBank can see, so
+   > **keep them linked**. You still connect them through CloudBank's **Connect a
+   > bank** (the normal PSD2 authorization, step 3) — that is the session CloudBank
+   > actually uses. Common gotchas:
+   >
+   > - **"No accounts found" / "Imported 0"** after connecting almost always means
+   >   **no accounts are linked** to the app. Open the application in the Control
+   >   Panel, click **Link accounts**, authorize your account(s), then **Reconnect**
+   >   the bank in CloudBank.
+   > - **"Could not complete the connection"** on a bank you linked *before*: a
+   >   stale link can block a fresh authorization. **Unlink and re-link** the
+   >   account (a clean link), then connect/reconnect in CloudBank.
+   > - Link the **same** bank profile your accounts live under — e.g. *Intesa
+   >   Sanpaolo Private Banking* vs *Intesa Sanpaolo* — otherwise the session comes
+   >   back with no accounts.
 3. Set the application's **redirect URL** to your CloudBank instance's callback,
    exactly:
 
@@ -97,6 +116,12 @@ leave the private-key field blank to keep the stored key.
    You are redirected to the bank to authorize access.
 2. On return, CloudBank exchanges the authorization for a session and creates the
    connection. **Link** each account to a CloudBank account and **Sync now**.
+
+If the connection is created but shows **"No accounts found"** (and Sync now
+imports 0), the bank returned an empty account list. On a **restricted**
+production app that means the accounts are not linked to your Enable Banking
+application — see the note in step 1: **Link accounts** in the Control Panel, then
+**Reconnect** here.
 
 A bank consent is time-limited (Enable Banking grants roughly 90 days). When it
 expires, sync reports it and you reconnect the bank.
