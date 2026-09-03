@@ -391,3 +391,32 @@ func TestEnableBankingWalletIsolation(t *testing.T) {
 		t.Fatalf("unconfigured EBankingBanks err = %v, want ErrEBNotConfigured", err)
 	}
 }
+
+// TestEBSessionDecodesOtherAccountID guards the POST /sessions decode against
+// non-IBAN accounts. Enable Banking returns account_id.other as an OBJECT (e.g. a
+// card CPAN), which previously crashed the decode — the field was typed as a
+// string — and surfaced to the user as a 502 "Could not complete the connection"
+// whenever a linked account was a card rather than an IBAN account.
+func TestEBSessionDecodesOtherAccountID(t *testing.T) {
+	const body = `{"session_id":"s1","access":{"valid_until":"2024-09-30T00:00:00+00:00"},"accounts":[
+	  {"uid":"acc-iban","name":"Conto","currency":"EUR","account_id":{"iban":"IT60X0542811101000000123456"}},
+	  {"uid":"acc-card","currency":"EUR","product":"Carta","account_id":{"other":{"identification":"5398********7465","scheme_name":"CPAN"}}}
+	]}`
+	var s ebSession
+	if err := json.Unmarshal([]byte(body), &s); err != nil {
+		t.Fatalf("decode /sessions with an 'other' (CPAN) account: %v", err)
+	}
+	if len(s.Accounts) != 2 {
+		t.Fatalf("accounts = %d, want 2", len(s.Accounts))
+	}
+	if got := s.Accounts[0].identifier(); got != "IT60X0542811101000000123456" {
+		t.Errorf("iban account identifier = %q", got)
+	}
+	card := s.Accounts[1]
+	if got := card.identifier(); got != "5398********7465" {
+		t.Errorf("card identifier = %q, want the CPAN", got)
+	}
+	if got := card.label(); got != "5398********7465" {
+		t.Errorf("card label = %q, want the CPAN (it has no name/iban)", got)
+	}
+}
