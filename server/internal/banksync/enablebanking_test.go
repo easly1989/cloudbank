@@ -92,6 +92,10 @@ type ebMockDoer struct {
 	pub        *rsa.PublicKey
 	t          *testing.T
 	txnFetches int
+	// failTxnAccount, when set, makes GET /accounts/<uid>/transactions return 500
+	// for that account (e.g. a card the bank does not expose), to exercise
+	// per-account sync resilience.
+	failTxnAccount string
 }
 
 func (m *ebMockDoer) Do(r *http.Request) (*http.Response, error) {
@@ -114,6 +118,9 @@ func (m *ebMockDoer) Do(r *http.Request) (*http.Response, error) {
 	case r.Method == http.MethodDelete && strings.Contains(p, "/sessions/"):
 		return jsonResp(200, `{}`), nil
 	case strings.HasSuffix(p, "/transactions"):
+		if m.failTxnAccount != "" && strings.Contains(p, "/accounts/"+m.failTxnAccount+"/") {
+			return jsonResp(http.StatusInternalServerError, `{"error":"transactions not available for this account"}`), nil
+		}
 		m.txnFetches++
 		return jsonResp(200, ebTxnsJSON), nil
 	case strings.HasSuffix(p, "/balances"):
@@ -389,6 +396,64 @@ func TestEnableBankingWalletIsolation(t *testing.T) {
 	}
 	if _, err := svc.EBankingBanks(ctx, other.ID, "IT"); err != ErrEBNotConfigured {
 		t.Fatalf("unconfigured EBankingBanks err = %v, want ErrEBNotConfigured", err)
+	}
+}
+
+// TestEnableBankingSyncResilientPerAccount checks that one linked account whose
+// transactions cannot be fetched (e.g. a card the bank does not expose) does not
+// fail the whole sync: the healthy account still imports, and the failure is
+// reported as a warning rather than a hard error (which was surfacing as a bare
+// 502 with no detail on "Sync now").
+func TestEnableBankingSyncResilientPerAccount(t *testing.T) {
+	svc, q, wid, acc, pemStr := newEBFixture(t)
+	svc.hc.(*ebMockDoer).failTxnAccount = "acc-uid-2"
+	ctx := context.Background()
+
+	if err := svc.SetEBankingConfig(ctx, wid, "app-123", pemStr, "sandbox"); err != nil {
+		t.Fatalf("SetEBankingConfig: %v", err)
+	}
+	_, state, err := svc.EBankingStartAuth(ctx, wid, "IntesaSanpaolo", "IT", "My Intesa", "https://cb.example/bank-sync/callback")
+	if err != nil {
+		t.Fatalf("StartAuth: %v", err)
+	}
+	conn, err := svc.EBankingCompleteAuth(ctx, wid, state, "the-code")
+	if err != nil {
+		t.Fatalf("CompleteAuth: %v", err)
+	}
+
+	// A second CloudBank account for the second (failing) remote account.
+	a1, err := q.GetAccount(ctx, acc)
+	if err != nil {
+		t.Fatalf("GetAccount: %v", err)
+	}
+	acc2, err := q.InsertAccount(ctx, db.InsertAccountParams{
+		WalletID: wid, Name: "Card", Type: "checking", CurrencyID: a1.CurrencyID, Position: 2,
+	})
+	if err != nil {
+		t.Fatalf("InsertAccount: %v", err)
+	}
+	if err := svc.Link(ctx, wid, conn.ID, "acc-uid-1", acc); err != nil {
+		t.Fatalf("Link 1: %v", err)
+	}
+	if err := svc.Link(ctx, wid, conn.ID, "acc-uid-2", acc2.ID); err != nil {
+		t.Fatalf("Link 2: %v", err)
+	}
+
+	res, err := svc.Sync(ctx, wid, conn.ID)
+	if err != nil {
+		t.Fatalf("Sync should not fail when one account errors: %v", err)
+	}
+	if res.Imported != 2 {
+		t.Fatalf("imported = %d, want 2 (from the healthy account)", res.Imported)
+	}
+	if res.Accounts != 1 {
+		t.Fatalf("accounts = %d, want 1 (only the healthy account fetched)", res.Accounts)
+	}
+	if res.Failed != 1 || len(res.Warnings) != 1 {
+		t.Fatalf("failed=%d warnings=%v, want 1 failure with a warning", res.Failed, res.Warnings)
+	}
+	if !strings.Contains(res.Warnings[0], "Risparmio") || !strings.Contains(res.Warnings[0], "500") {
+		t.Errorf("warning = %q, want it to name the account and the provider error", res.Warnings[0])
 	}
 }
 
