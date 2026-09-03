@@ -157,9 +157,18 @@ function ConnectionCard({
   const sync = useMutation({
     mutationFn: () => syncBankConnection(walletId, connection.id),
     onSuccess: (res) => {
+      const failed = res.failed ?? 0;
       notifications.show({
-        color: "teal",
-        message: t("banksync.synced", { imported: res.imported, reconciled: res.reconciled }),
+        color: failed > 0 ? "orange" : "teal",
+        message:
+          failed > 0
+            ? t("banksync.syncedPartial", {
+                imported: res.imported,
+                reconciled: res.reconciled,
+                warnings: (res.warnings ?? []).join("; "),
+              })
+            : t("banksync.synced", { imported: res.imported, reconciled: res.reconciled }),
+        autoClose: failed > 0 ? 8000 : undefined,
       });
       void qc.invalidateQueries({ queryKey: ["register", walletId] });
       void qc.invalidateQueries({ queryKey: ["accounts", walletId] });

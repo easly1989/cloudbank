@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/importio"
@@ -62,6 +65,19 @@ type SyncResult struct {
 	Imported   int `json:"imported"`
 	Reconciled int `json:"reconciled"`
 	Accounts   int `json:"accounts"`
+	// Failed counts linked accounts whose transactions could not be fetched this
+	// run; Warnings carries a human message for each. A per-account failure no
+	// longer fails the whole sync — the other accounts still import.
+	Failed   int      `json:"failed"`
+	Warnings []string `json:"warnings,omitempty"`
+}
+
+// accountFetchError is a non-fatal, per-account failure during a sync: one
+// account's transactions could not be fetched, but the others still can.
+type accountFetchError struct {
+	ExternalID string
+	Name       string
+	Err        error
 }
 
 // Service manages bank connections and imports their transactions through the
@@ -246,10 +262,11 @@ func (s *Service) Sync(ctx context.Context, walletID, connID int64) (SyncResult,
 
 	var (
 		byAccount map[string][]importio.Row
+		failures  []accountFetchError
 		err2      error
 	)
 	if c.Provider == providerEnableBanking {
-		byAccount, err2 = s.ebFetchRows(ctx, c, linkByExt, start)
+		byAccount, failures, err2 = s.ebFetchRows(ctx, c, linkByExt, start)
 	} else {
 		byAccount, err2 = s.simplefinFetchRows(ctx, c, start)
 	}
@@ -274,10 +291,27 @@ func (s *Service) Sync(ctx context.Context, walletID, connID int64) (SyncResult,
 		res.Imported += imported
 		res.Reconciled += reconciled
 	}
+	for _, f := range failures {
+		slog.Warn("bank sync: account fetch failed",
+			"connection", connID, "account", f.ExternalID, "error", f.Err)
+		res.Failed++
+		res.Warnings = append(res.Warnings, syncWarning(f))
+	}
 	if err := s.q.TouchBankConnection(ctx, connID); err != nil {
 		return SyncResult{}, err
 	}
 	return res, nil
+}
+
+// syncWarning renders a per-account fetch failure as a human message, using the
+// account's name when known and stripping the internal error prefix.
+func syncWarning(f accountFetchError) string {
+	name := f.Name
+	if strings.TrimSpace(name) == "" {
+		name = f.ExternalID
+	}
+	msg := strings.TrimPrefix(f.Err.Error(), "banksync: ")
+	return fmt.Sprintf("%s: %s", name, msg)
 }
 
 // simplefinFetchRows fetches all accounts once and maps each to import rows,

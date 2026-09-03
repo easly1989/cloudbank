@@ -2296,6 +2296,10 @@ export interface components {
             reconciled: number;
             /** @description linked accounts synced */
             accounts: number;
+            /** @description linked accounts whose transactions could not be fetched this run */
+            failed: number;
+            /** @description a human message for each account that failed to sync */
+            warnings?: string[];
         };
         /** @description A wallet's Enable Banking application config — never the private key. */
         EnableBankingConfig: {
