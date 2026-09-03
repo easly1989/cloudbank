@@ -357,7 +357,8 @@
       "overdue": "Overdue",
       "due": "Due",
       "paid": "Paid"
-    }
+    },
+    "auto": "auto"
   },
   "banksync": {
     "title": "Bank sync",
@@ -676,7 +677,10 @@
     "dangerZone": "Danger zone",
     "deleteWarning": "Deleting a wallet permanently removes all of its data. This cannot be undone.",
     "deleteConfirmLabel": "Type \"{{title}}\" to confirm deletion.",
-    "delete": "Delete wallet"
+    "delete": "Delete wallet",
+    "billsCategory": "Bills category",
+    "billsCategoryHint": "Only schedules in this category appear on the Bills page. Leave as All outflows to include every outflow schedule.",
+    "billsCategoryNone": "All outflows"
   },
   "accounts": {
     "title": "Accounts",

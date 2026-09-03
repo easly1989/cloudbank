@@ -42,6 +42,21 @@ func scheduleMonths(settingsJSON string) int {
 	return clampMonths(s.SchedulePostMonths)
 }
 
+// billsCategory reads the configured "bills" category id from a wallet's settings
+// JSON. nil = not set — the Bills view then falls back to all outflow schedules.
+func billsCategory(settingsJSON string) *int64 {
+	var s struct {
+		BillsCategoryID *int64 `json:"billsCategoryId"`
+	}
+	if settingsJSON != "" {
+		_ = json.Unmarshal([]byte(settingsJSON), &s)
+	}
+	if s.BillsCategoryID != nil && *s.BillsCategoryID <= 0 {
+		return nil
+	}
+	return s.BillsCategoryID
+}
+
 // ErrNotFound is returned when a wallet does not exist.
 var ErrNotFound = errors.New("wallet: not found")
 
@@ -54,7 +69,8 @@ type Wallet struct {
 	BaseCurrencyID     *int64
 	Role               string
 	CreatedAt          string
-	SchedulePostMonths int // auto-post scheduled transactions up to N months ahead (0..3)
+	SchedulePostMonths int    // auto-post scheduled transactions up to N months ahead (0..3)
+	BillsCategoryID    *int64 // when set, the Bills view lists only this category's schedules
 }
 
 func toWallet(w db.Wallet) Wallet {
@@ -64,6 +80,7 @@ func toWallet(w db.Wallet) Wallet {
 		OwnerName:          w.OwnerName,
 		CreatedAt:          w.CreatedAt,
 		SchedulePostMonths: scheduleMonths(w.SettingsJson),
+		BillsCategoryID:    billsCategory(w.SettingsJson),
 	}
 	if w.BaseCurrencyID.Valid {
 		id := w.BaseCurrencyID.Int64
@@ -144,9 +161,10 @@ func (s *Service) Get(ctx context.Context, walletID int64) (Wallet, error) {
 	return toWallet(w), nil
 }
 
-// Update changes a wallet's title, owner name and scheduling horizon. Other keys
-// already in the settings JSON are preserved.
-func (s *Service) Update(ctx context.Context, walletID int64, title, ownerName string, schedulePostMonths int) error {
+// Update changes a wallet's title, owner name, scheduling horizon and bills
+// category. Other keys already in the settings JSON are preserved. A nil (or
+// non-positive) billsCategoryID clears the bills-category filter.
+func (s *Service) Update(ctx context.Context, walletID int64, title, ownerName string, schedulePostMonths int, billsCategoryID *int64) error {
 	w, err := s.q.GetWallet(ctx, walletID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ErrNotFound
@@ -159,6 +177,11 @@ func (s *Service) Update(ctx context.Context, walletID int64, title, ownerName s
 		_ = json.Unmarshal([]byte(w.SettingsJson), &settings)
 	}
 	settings["schedulePostMonths"] = clampMonths(schedulePostMonths)
+	if billsCategoryID != nil && *billsCategoryID > 0 {
+		settings["billsCategoryId"] = *billsCategoryID
+	} else {
+		delete(settings, "billsCategoryId")
+	}
 	blob, err := json.Marshal(settings)
 	if err != nil {
 		return err

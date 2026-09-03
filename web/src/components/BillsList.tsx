@@ -84,7 +84,8 @@ export function BillsList({
   const stateLabel = (s: BillState) => t(`bills.state.${s}`);
 
   const row = (b: Bill) => {
-    const postable = postableKeys.has(`${b.scheduleId}:${b.dueDate}`);
+    // Auto-post bills post themselves, so they get no manual "mark paid".
+    const postable = postableKeys.has(`${b.scheduleId}:${b.dueDate}`) && !b.autoPost;
     return (
       <Group
         key={`${b.scheduleId}:${b.dueDate}:${b.state}`}
@@ -100,6 +101,11 @@ export function BillsList({
             <Badge size="xs" variant="light" color={STATE_COLOR[b.state]}>
               {stateLabel(b.state)}
             </Badge>
+            {b.autoPost && b.state !== "paid" && (
+              <Badge size="xs" variant="outline" color="gray">
+                {t("bills.auto")}
+              </Badge>
+            )}
           </Group>
           <Text size="xs" c="dimmed" truncate>
             {fmtDate(b.dueDate)}

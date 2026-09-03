@@ -11,6 +11,8 @@ export interface Wallet {
   createdAt: string;
   /** Auto-post scheduled transactions up to N months ahead (0..3). */
   schedulePostMonths: number;
+  /** When set, the Bills view lists only this category's schedules. */
+  billsCategoryId?: number | null;
 }
 
 export interface WalletInput {
@@ -18,6 +20,7 @@ export interface WalletInput {
   ownerName?: string;
   baseCurrency?: string;
   schedulePostMonths?: number;
+  billsCategoryId?: number | null;
 }
 
 export const listWallets = () => api.get<Wallet[]>("/api/v1/wallets");

@@ -105,7 +105,7 @@ func TestUpdatePersistsSchedulePostMonths(t *testing.T) {
 	if w.SchedulePostMonths != 0 {
 		t.Fatalf("new wallet months = %d, want 0", w.SchedulePostMonths)
 	}
-	if err := s.Update(ctx, w.ID, "Home", "Alice", 2); err != nil {
+	if err := s.Update(ctx, w.ID, "Home", "Alice", 2, nil); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
 	got, err := s.Get(ctx, w.ID)
@@ -116,7 +116,7 @@ func TestUpdatePersistsSchedulePostMonths(t *testing.T) {
 		t.Fatalf("after update months = %d, want 2", got.SchedulePostMonths)
 	}
 	// Out-of-range values are clamped to the HomeBank-parity max of 3.
-	if err := s.Update(ctx, w.ID, "Home", "Alice", 9); err != nil {
+	if err := s.Update(ctx, w.ID, "Home", "Alice", 9, nil); err != nil {
 		t.Fatalf("Update clamp: %v", err)
 	}
 	got, _ = s.Get(ctx, w.ID)

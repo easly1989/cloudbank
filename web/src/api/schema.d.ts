@@ -2429,6 +2429,11 @@ export interface components {
             createdAt: string;
             /** @description auto-post scheduled transactions up to N months ahead (0..3) */
             schedulePostMonths: number;
+            /**
+             * Format: int64
+             * @description when set, the Bills view lists only this category's schedules
+             */
+            billsCategoryId?: number | null;
         };
         WalletInput: {
             title: string;
@@ -2437,6 +2442,11 @@ export interface components {
             baseCurrency?: string;
             /** @description auto-post scheduled transactions up to N months ahead (0..3) */
             schedulePostMonths?: number;
+            /**
+             * Format: int64
+             * @description the wallet's Bills category (null clears it)
+             */
+            billsCategoryId?: number | null;
         };
         CatalogEntry: {
             code: string;

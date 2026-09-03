@@ -357,7 +357,8 @@
       "overdue": "In ritardo",
       "due": "In scadenza",
       "paid": "Pagata"
-    }
+    },
+    "auto": "auto"
   },
   "banksync": {
     "title": "Sync bancario",
@@ -676,7 +677,10 @@
     "dangerZone": "Zona pericolosa",
     "deleteWarning": "Eliminare un portafoglio rimuove definitivamente tutti i suoi dati. L'operazione è irreversibile.",
     "deleteConfirmLabel": "Digita \"{{title}}\" per confermare l'eliminazione.",
-    "delete": "Elimina portafoglio"
+    "delete": "Elimina portafoglio",
+    "billsCategory": "Categoria bollette",
+    "billsCategoryHint": "Nella pagina Bills appaiono solo le schedule di questa categoria. Lascia “Tutte le uscite” per includerle tutte.",
+    "billsCategoryNone": "Tutte le uscite"
   },
   "accounts": {
     "title": "Conti",
