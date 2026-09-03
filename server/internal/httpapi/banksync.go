@@ -2,8 +2,10 @@ package httpapi
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -58,7 +60,14 @@ func (h *bankSyncHandlers) writeErr(w http.ResponseWriter, err error) {
 	case errors.Is(err, banksync.ErrEBConsentExpired):
 		writeError(w, http.StatusConflict, "consent_expired", "the bank consent has expired — reconnect the bank")
 	default:
-		writeError(w, http.StatusBadGateway, "provider_error", "the bank provider request failed")
+		// Surface the provider's real error (and log it) so a failing bank
+		// connection can be diagnosed instead of showing a bare 502.
+		slog.Warn("bank sync: provider request failed", "error", err)
+		msg := strings.TrimPrefix(err.Error(), "banksync: ")
+		if msg == "" {
+			msg = "the bank provider request failed"
+		}
+		writeError(w, http.StatusBadGateway, "provider_error", msg)
 	}
 }
 
