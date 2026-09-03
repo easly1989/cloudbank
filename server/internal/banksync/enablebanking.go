@@ -209,10 +209,20 @@ type ebAuthResp struct {
 	AuthorizationID string `json:"authorization_id"`
 }
 
-// ebAccountID carries the account's human identifier (usually an IBAN).
+// ebOtherID is Enable Banking's non-IBAN account identifier — the "other" branch
+// of account_id, returned as an object (not a string). Card / non-IBAN accounts
+// (e.g. a CPAN) use this instead of an IBAN.
+type ebOtherID struct {
+	Identification string `json:"identification,omitempty"`
+	SchemeName     string `json:"scheme_name,omitempty"`
+	Issuer         string `json:"issuer,omitempty"`
+}
+
+// ebAccountID carries the account's human identifier: an IBAN, or an "other"
+// identification object for accounts without one.
 type ebAccountID struct {
-	IBAN  string `json:"iban,omitempty"`
-	Other string `json:"other,omitempty"`
+	IBAN  string    `json:"iban,omitempty"`
+	Other ebOtherID `json:"other,omitempty"`
 }
 
 type ebAccount struct {
@@ -223,13 +233,22 @@ type ebAccount struct {
 	AccountID ebAccountID `json:"account_id"`
 }
 
-// label is a human name for the account, falling back to the IBAN.
+// identifier returns the account's IBAN, or its "other" identification (e.g. a
+// masked card PAN) when there is no IBAN.
+func (a ebAccount) identifier() string {
+	if a.AccountID.IBAN != "" {
+		return a.AccountID.IBAN
+	}
+	return a.AccountID.Other.Identification
+}
+
+// label is a human name for the account, falling back to its identifier.
 func (a ebAccount) label() string {
 	switch {
 	case strings.TrimSpace(a.Name) != "":
 		return a.Name
-	case a.AccountID.IBAN != "":
-		return a.AccountID.IBAN
+	case a.identifier() != "":
+		return a.identifier()
 	case a.Product != "":
 		return a.Product
 	default:
