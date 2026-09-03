@@ -68,9 +68,11 @@ application; CloudBank uses it on your behalf.
    >   **no accounts are linked** to the app. Open the application in the Control
    >   Panel, click **Link accounts**, authorize your account(s), then **Reconnect**
    >   the bank in CloudBank.
-   > - **"Could not complete the connection"** on a bank you linked *before*: a
-   >   stale link can block a fresh authorization. **Unlink and re-link** the
-   >   account (a clean link), then connect/reconnect in CloudBank.
+   > - **"Could not complete the connection" (a 502 on return)**: make sure your
+   >   CloudBank is up to date — a card / non-IBAN linked account (e.g. a CPAN)
+   >   previously broke the connect step. The callback page now shows the real
+   >   Enable Banking error; a stale link from an earlier activation can also block
+   >   a fresh authorization, so unlinking and re-linking the account can help.
    > - Link the **same** bank profile your accounts live under — e.g. *Intesa
    >   Sanpaolo Private Banking* vs *Intesa Sanpaolo* — otherwise the session comes
    >   back with no accounts.
