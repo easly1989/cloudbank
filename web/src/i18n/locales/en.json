@@ -383,6 +383,7 @@
     "remoteError": "Could not reach the bank provider.",
     "accounts": "Accounts",
     "noRemote": "No accounts found for this connection.",
+    "noRemoteHintEb": "A personal (restricted) Enable Banking app can only sync accounts you've linked to it. Open your application in the Enable Banking Control Panel, use \"Link accounts\" to authorize your account(s), then click Reconnect here.",
     "linked": "Linked",
     "notLinked": "Not linked",
     "linkTo": "Link to account…",

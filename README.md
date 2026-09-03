@@ -61,7 +61,7 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 - **Savings goals** — manual piggy-bank goals with contribute / withdraw, a progress bar and an optional target date (included in wallet backup/restore).
 - **Bills** — a "what's due" view over your scheduled transactions (upcoming / due / overdue) with one-click posting.
 - **Import**: HomeBank `.xhb`, QIF, OFX/QFX, CSV — with an import assistant. **Export**: HomeBank `.xhb`, QIF, CSV.
-- **Automatic bank sync** — pull new transactions straight from your bank, de-duplicated and run through your assignment rules. Two providers, both **bring-your-own-credentials** so CloudBank never sees your bank login: **[SimpleFIN](https://www.simplefin.org/)** (worldwide; a ~$15/year SimpleFIN Bridge subscription) and **[Enable Banking](https://enablebanking.com/)** (EU/EEA + UK via PSD2 — a free sandbox to test, your own production application for real accounts).
+- **Automatic bank sync** — pull new transactions straight from your bank, de-duplicated and run through your assignment rules. Two providers, both **bring-your-own-credentials** so CloudBank never sees your bank login: **[SimpleFIN](https://www.simplefin.org/)** (worldwide; a ~$15/year SimpleFIN Bridge subscription) and **[Enable Banking](https://enablebanking.com/)** (EU/EEA + UK via PSD2 — a free sandbox to test, your own production application for real accounts). A **personal (restricted)** production app can only sync accounts you **link** to it in the Enable Banking panel — the [bank-sync guide](docs/bank-sync.md) walks through it.
 - **Multi-currency** with manual and online (ECB / frankfurter.app) exchange rates.
 - Multi-user (admin-managed), responsive UI, English and Italian.
 
