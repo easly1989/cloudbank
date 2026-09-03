@@ -69,7 +69,8 @@
     "savedNew": "Transaction saved — the form is cleared for a new one.",
     "saved": "Transaction saved",
     "discardConfirm": "Unsaved changes will be lost. Discard them?",
-    "duplicateWarning": "Found {{count}} similar transaction(s) — possible duplicate."
+    "duplicateWarning": "Found {{count}} similar transaction(s) — possible duplicate.",
+    "duplicate": "Duplicate"
   },
   "transfers": {
     "add": "Transfer",
@@ -479,7 +480,9 @@
     "cycleStatus": "Click to change status",
     "selectAll": "Select all",
     "selectRow": "Select row",
-    "columns": "Columns"
+    "columns": "Columns",
+    "markCleared": "Mark cleared",
+    "markReconciled": "Mark reconciled"
   },
   "filters": {
     "dateRange": "Date range",

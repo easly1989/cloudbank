@@ -69,7 +69,8 @@
     "savedNew": "Transazione salvata — il modulo è pronto per una nuova voce.",
     "saved": "Transazione salvata",
     "discardConfirm": "Le modifiche non salvate andranno perse. Scartarle?",
-    "duplicateWarning": "Trovate {{count}} transazioni simili — possibile duplicato."
+    "duplicateWarning": "Trovate {{count}} transazioni simili — possibile duplicato.",
+    "duplicate": "Duplica"
   },
   "transfers": {
     "add": "Trasferimento",
@@ -479,7 +480,9 @@
     "cycleStatus": "Clicca per cambiare stato",
     "selectAll": "Seleziona tutto",
     "selectRow": "Seleziona riga",
-    "columns": "Colonne"
+    "columns": "Colonne",
+    "markCleared": "Segna verificata",
+    "markReconciled": "Segna riconciliata"
   },
   "filters": {
     "dateRange": "Intervallo date",
