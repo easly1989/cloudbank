@@ -104,8 +104,10 @@ jobs:
           tags: cloudbank:ci
           build-args: |
             VERSION=ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Shared "app" scope so the e2e job reuses these layers instead of
+          # rebuilding the whole image from scratch.
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app
       - name: Smoke test the container
         run: |
           docker run -d --name cb -p 8080:8080 -e CB_SECURE_COOKIES=false cloudbank:ci
@@ -128,8 +130,21 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: e2e/package-lock.json
-      - name: Build and start the app via compose
-        run: docker compose -f e2e/docker-compose.ci.yml up -d --build
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the app image (shared layer cache)
+        # Reuses the "app" scope populated by the docker smoke job, so previously
+        # built Go/web layers are restored instead of a cold rebuild every run.
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: cloudbank:e2e
+          build-args: |
+            VERSION=e2e
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app
+      - name: Start the app via compose
+        run: docker compose -f e2e/docker-compose.ci.yml up -d
       - name: Wait for the app to be healthy
         run: |
           for i in $(seq 1 60); do

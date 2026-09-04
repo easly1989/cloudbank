@@ -2,10 +2,10 @@
 # Playwright e2e job. Not for production use (see ../docker-compose.yml).
 services:
   cloudbank:
-    build:
-      context: ..
-      args:
-        VERSION: e2e
+    # The image is built (with a shared layer cache) by the CI e2e job before
+    # `compose up`; see .github/workflows/ci.yml. Build locally with:
+    #   docker build -t cloudbank:e2e --build-arg VERSION=e2e ..
+    image: cloudbank:e2e
     ports:
       - "8080:8080"
     environment:
