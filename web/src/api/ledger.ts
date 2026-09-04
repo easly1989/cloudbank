@@ -239,3 +239,34 @@ export const bulkTagTransactions = (
     tags,
     replace,
   });
+
+// --- Bank-sync review (uncategorized imports + duplicate finder) ---
+
+export interface ReviewTxn {
+  id: number;
+  accountId: number;
+  date: string;
+  amount: number;
+  memo: string;
+  payeeId?: number | null;
+  categoryId?: number | null;
+  status: number;
+  importRef?: string;
+}
+export interface DuplicatePair {
+  a: ReviewTxn;
+  b: ReviewTxn;
+}
+export interface ReviewResult {
+  needsCategory: ReviewTxn[];
+  duplicates: DuplicatePair[];
+}
+
+export const getTransactionReview = (walletId: number) =>
+  api.get<ReviewResult>(`/api/v1/wallets/${walletId}/transactions/review`);
+
+export const dismissDuplicatePair = (walletId: number, aId: number, bId: number) =>
+  api.post<void>(`/api/v1/wallets/${walletId}/transactions/duplicates/dismiss`, { aId, bId });
+
+export const mergeTransactions = (walletId: number, keepId: number, dropId: number) =>
+  api.post<void>(`/api/v1/wallets/${walletId}/transactions/merge`, { keepId, dropId });
