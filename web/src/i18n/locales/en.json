@@ -545,11 +545,15 @@
     "deleted": "Deleted {{count}} transaction(s)",
     "clearSelection": "Clear",
     "done": "Updated {{count}} transaction(s)",
+    "tagsAdd": "Add",
+    "tagsReplace": "Replace",
+    "tagsPlaceholder": "Type a tag and press Enter",
     "fields": {
       "status": "Status",
       "category": "Category",
       "payee": "Payee",
-      "paymentMode": "Payment mode"
+      "paymentMode": "Payment mode",
+      "tags": "Tags"
     }
   },
   "reconcile": {

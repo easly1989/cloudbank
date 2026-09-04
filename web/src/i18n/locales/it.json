@@ -545,11 +545,15 @@
     "deleted": "Eliminate {{count}} transazioni",
     "clearSelection": "Deseleziona",
     "done": "Aggiornate {{count}} transazioni",
+    "tagsAdd": "Aggiungi",
+    "tagsReplace": "Sostituisci",
+    "tagsPlaceholder": "Scrivi un tag e premi Invio",
     "fields": {
       "status": "Stato",
       "category": "Categoria",
       "payee": "Beneficiario",
-      "paymentMode": "Modalità di pagamento"
+      "paymentMode": "Modalità di pagamento",
+      "tags": "Tag"
     }
   },
   "reconcile": {
