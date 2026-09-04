@@ -134,6 +134,23 @@ export function defaultLayout(order?: WidgetType[]): DashboardLayoutV2 {
   };
 }
 
+/**
+ * tidyLayout re-packs the given widgets into a clean, gap-free grid — preserving
+ * the widget set and their visual (top-to-bottom, left-to-right) order, but
+ * snapping every widget into the top-left flow so there are no gaps or overlaps.
+ * Widths are kept (clamped to the grid); heights are content-driven at render
+ * time, so h is preserved as the starting hint.
+ */
+export function tidyLayout(widgets: PlacedWidget[]): DashboardLayoutV2 {
+  const ordered = [...widgets].sort((a, b) => a.y - b.y || a.x - b.x);
+  const sizes = ordered.map((wgt) => ({ w: Math.min(wgt.w, COLUMNS), h: wgt.h }));
+  const pos = pack(sizes);
+  return {
+    version: 2,
+    widgets: ordered.map((wgt, i) => ({ ...wgt, w: sizes[i].w, x: pos[i].x, y: pos[i].y })),
+  };
+}
+
 type LegacyLayout = { order?: string[]; hidden?: string[]; spans?: Record<string, string> };
 
 /**
