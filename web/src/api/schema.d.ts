@@ -1248,6 +1248,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/transactions/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Bank-sync review — imported rows needing a category, and suspected duplicate pairs */
+        get: operations["getTransactionReview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/transactions/duplicates/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark two transactions as not a duplicate (won't be surfaced again) */
+        post: operations["dismissDuplicatePair"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/transactions/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge a duplicate pair — keep one row (inheriting the other's import ref), delete the other */
+        post: operations["mergeTransactions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/transactions/register": {
         parameters: {
             query?: never;
@@ -2998,6 +3055,33 @@ export interface components {
             state: "overdue" | "due";
             isTransfer: boolean;
             autoPost: boolean;
+        };
+        /** @description A lightweight transaction shown in the bank-sync review. */
+        ReviewTxn: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            accountId: number;
+            date: string;
+            /** Format: int64 */
+            amount: number;
+            memo: string;
+            /** Format: int64 */
+            payeeId?: number | null;
+            /** Format: int64 */
+            categoryId?: number | null;
+            status: number;
+            importRef?: string;
+        };
+        /** @description Two transactions that look like the same movement. */
+        DuplicatePair: {
+            a: components["schemas"]["ReviewTxn"];
+            b: components["schemas"]["ReviewTxn"];
+        };
+        /** @description Bank-sync review: imported rows missing a category, and suspected duplicate pairs. */
+        ReviewResult: {
+            needsCategory: components["schemas"]["ReviewTxn"][];
+            duplicates: components["schemas"]["DuplicatePair"][];
         };
         /** @description The Bills view: scheduled outflows classified over a date window. */
         BillsSummary: {
@@ -5826,6 +5910,90 @@ export interface operations {
                         updated: number;
                     };
                 };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getTransactionReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The review. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewResult"];
+                };
+            };
+        };
+    };
+    dismissDuplicatePair: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    aId: number;
+                    /** Format: int64 */
+                    bId: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Dismissed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    mergeTransactions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    keepId: number;
+                    /** Format: int64 */
+                    dropId: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Merged. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];

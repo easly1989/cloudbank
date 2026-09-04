@@ -160,6 +160,14 @@ type Currency struct {
 	RateUpdatedAt sql.NullString
 }
 
+type DuplicateDismissal struct {
+	ID        int64
+	WalletID  int64
+	TxnAID    int64
+	TxnBID    int64
+	CreatedAt string
+}
+
 type ExchangeRate struct {
 	ID         int64
 	CurrencyID int64

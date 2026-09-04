@@ -22,6 +22,9 @@ func (h *transactionHandlers) walletRoutes(r chi.Router) {
 	r.Post("/transactions/bulk", h.bulk)
 	r.Post("/transactions/bulk-delete", h.bulkDelete)
 	r.Post("/transactions/bulk-tags", h.bulkTags)
+	r.Get("/transactions/review", h.review)
+	r.Post("/transactions/duplicates/dismiss", h.dismissDuplicate)
+	r.Post("/transactions/merge", h.mergeTransactions)
 	r.Get("/transactions/register", h.register)
 	r.Get("/transactions/search", h.search)
 	r.Get("/transactions/duplicates", h.duplicates)
@@ -158,6 +161,64 @@ func (h *transactionHandlers) bulkTags(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found", "transaction not found")
 	default:
 		writeError(w, http.StatusInternalServerError, "internal", "could not update tags")
+	}
+}
+
+func (h *transactionHandlers) review(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	res, err := h.svc.Review(r.Context(), wl.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not build the review")
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
+}
+
+func (h *transactionHandlers) dismissDuplicate(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body struct {
+		AID int64 `json:"aId"`
+		BID int64 `json:"bId"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if body.AID == 0 || body.BID == 0 || body.AID == body.BID {
+		writeError(w, http.StatusBadRequest, "invalid", "two distinct transaction ids are required")
+		return
+	}
+	err := h.svc.DismissDuplicate(r.Context(), wl.ID, body.AID, body.BID)
+	switch {
+	case err == nil:
+		w.WriteHeader(http.StatusNoContent)
+	case errors.Is(err, transaction.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "transaction not found")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", "could not dismiss the pair")
+	}
+}
+
+func (h *transactionHandlers) mergeTransactions(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body struct {
+		KeepID int64 `json:"keepId"`
+		DropID int64 `json:"dropId"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if body.KeepID == 0 || body.DropID == 0 || body.KeepID == body.DropID {
+		writeError(w, http.StatusBadRequest, "invalid", "two distinct transaction ids are required")
+		return
+	}
+	err := h.svc.Merge(r.Context(), wl.ID, body.KeepID, body.DropID)
+	switch {
+	case err == nil:
+		w.WriteHeader(http.StatusNoContent)
+	case errors.Is(err, transaction.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "transaction not found")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", "could not merge")
 	}
 }
 

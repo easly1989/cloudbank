@@ -110,6 +110,7 @@ type Querier interface {
 	InsertCategory(ctx context.Context, arg InsertCategoryParams) (Category, error)
 	InsertContribution(ctx context.Context, arg InsertContributionParams) (GoalContribution, error)
 	InsertCurrency(ctx context.Context, arg InsertCurrencyParams) (Currency, error)
+	InsertDuplicateDismissal(ctx context.Context, arg InsertDuplicateDismissalParams) error
 	InsertEBankingAuth(ctx context.Context, arg InsertEBankingAuthParams) error
 	InsertEBankingConnection(ctx context.Context, arg InsertEBankingConnectionParams) (BankConnection, error)
 	InsertGoal(ctx context.Context, arg InsertGoalParams) (Goal, error)
@@ -142,11 +143,19 @@ type Querier interface {
 	ListContributionsForGoal(ctx context.Context, goalID int64) ([]GoalContribution, error)
 	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)
 	ListDueBankConnections(ctx context.Context, lastSyncedAt sql.NullString) ([]ListDueBankConnectionsRow, error)
+	ListDuplicateDismissals(ctx context.Context, walletID int64) ([]ListDuplicateDismissalsRow, error)
 	ListExchangeRates(ctx context.Context, currencyID int64) ([]ExchangeRate, error)
 	ListGoalsForWallet(ctx context.Context, walletID int64) ([]ListGoalsForWalletRow, error)
 	ListImportRefMetaForAccount(ctx context.Context, accountID int64) ([]ListImportRefMetaForAccountRow, error)
 	ListImportRefsForAccount(ctx context.Context, accountID int64) ([]string, error)
+	// Bank-imported transactions (they carry an import ref) that still have no
+	// category, so the review can prompt the user to complete them. Split
+	// transactions carry their categories on the splits, so they are excluded.
+	ListImportedUncategorized(ctx context.Context, walletID int64) ([]Transaction, error)
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
+	// Transactions that share account + amount with at least one other in the wallet.
+	// Pairing by date proximity and filtering out dismissed pairs is done in Go.
+	ListPotentialDuplicates(ctx context.Context, arg ListPotentialDuplicatesParams) ([]Transaction, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID int64) ([]ListPushSubscriptionsForUserRow, error)
 	ListPushUserIDs(ctx context.Context) ([]int64, error)
 	// Every schedule in the wallet with the template fields the Bills view needs:
@@ -205,6 +214,7 @@ type Querier interface {
 	SetChildrenIncome(ctx context.Context, arg SetChildrenIncomeParams) error
 	SetCurrencyBase(ctx context.Context, id int64) error
 	SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error
+	SetTransactionImportRef(ctx context.Context, arg SetTransactionImportRefParams) error
 	SetTransactionInfo(ctx context.Context, arg SetTransactionInfoParams) error
 	SetTransactionPayee(ctx context.Context, arg SetTransactionPayeeParams) error
 	SetTransactionPaymentMode(ctx context.Context, arg SetTransactionPaymentModeParams) error
