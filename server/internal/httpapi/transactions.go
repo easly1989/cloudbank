@@ -20,6 +20,7 @@ func (h *transactionHandlers) walletRoutes(r chi.Router) {
 	r.Get("/transactions", h.list)
 	r.Post("/transactions", h.create)
 	r.Post("/transactions/bulk", h.bulk)
+	r.Post("/transactions/bulk-delete", h.bulkDelete)
 	r.Get("/transactions/register", h.register)
 	r.Get("/transactions/search", h.search)
 	r.Get("/transactions/duplicates", h.duplicates)
@@ -108,6 +109,29 @@ func (h *transactionHandlers) bulk(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_payment_mode", "invalid payment mode")
 	default:
 		writeError(w, http.StatusInternalServerError, "internal", "could not apply bulk edit")
+	}
+}
+
+func (h *transactionHandlers) bulkDelete(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body struct {
+		IDs []int64 `json:"ids"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if len(body.IDs) == 0 {
+		writeError(w, http.StatusBadRequest, "invalid", "ids is required")
+		return
+	}
+	n, err := h.svc.BulkDelete(r.Context(), wl.ID, body.IDs)
+	switch {
+	case err == nil:
+		writeJSON(w, http.StatusOK, map[string]int{"deleted": n})
+	case errors.Is(err, transaction.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "transaction not found")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", "could not delete transactions")
 	}
 }
 
