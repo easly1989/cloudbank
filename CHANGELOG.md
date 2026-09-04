@@ -6,9 +6,9 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
-Post-1.0 work focused on **personalization**, deeper **HomeBank parity & interop**,
-**onboarding/polish**, and a **post-parity feature roadmap** — bank sync, security,
-the phone, and opt-in AI.
+Not yet in a tagged release: smarter **bank sync** (reconciliation against your
+existing entries and a review workflow), the **Bills** redesign, and register /
+dashboard polish.
 
 ### Added
 
@@ -36,6 +36,18 @@ the phone, and opt-in AI.
   clean, gap-free grid and **Reset** restores the default layout.
 - **CI & code review** — CodeQL static analysis runs on every pull request, and the
   end-to-end job builds the app image from a shared layer cache for faster runs.
+
+## [2.0.0 – 3.0.3] — Post-parity releases (2026-07 → 2026-09)
+
+Built on the 1.0 parity base across many point releases: the **2.x** line brought
+deep **personalization** and HomeBank **interop** with onboarding polish; the
+**3.x** line brought the post-parity push — **automatic bank sync**, security
+(**2FA**, scoped API tokens, encrypted secrets), the phone (installable **PWA** +
+web push), and **opt-in AI**. (Granular per-tag notes weren't kept; the entries
+below summarise the line.)
+
+### Added
+
 - **Scheduled background bank sync** — auto-sync connections are refreshed on a
   timer (`CB_BANK_SYNC_INTERVAL`, default 12h), so transactions arrive without
   clicking "Sync now". A per-connection toggle turns it off, and an Enable
@@ -201,5 +213,6 @@ HomeBank feature parity, shipped as a single Docker container.
 - CI (lint, race tests, build, Docker smoke, Playwright e2e) and automated GHCR
   publishing (`:latest` nightly, `:main` stable, `:vX.Y.Z` per release).
 
-[Unreleased]: https://github.com/easly1989/cloudbank/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.0.3...HEAD
+[2.0.0 – 3.0.3]: https://github.com/easly1989/cloudbank/compare/v1.0.0...v3.0.3
 [1.0.0]: https://github.com/easly1989/cloudbank/releases/tag/v1.0.0

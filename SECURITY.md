@@ -21,7 +21,7 @@ We aim to acknowledge reports within a few days and will keep you informed about
 
 ## Supported versions
 
-Until the `v1.0.0` release, only the latest commit on `main` is supported. After `v1.0.0`, the latest stable release (the `:main` container tag) receives security fixes.
+Security fixes target the **latest stable release** (the `:main` container tag) and the current `main` branch. Older tagged releases are not maintained — upgrade to the latest before reporting.
 
 ## Scope
 
