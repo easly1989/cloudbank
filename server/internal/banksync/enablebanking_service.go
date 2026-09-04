@@ -23,6 +23,10 @@ type ebStoredAccount struct {
 	Name     string `json:"name"`
 	Currency string `json:"currency"`
 	IBAN     string `json:"iban,omitempty"`
+	// Card is true for a non-IBAN account (e.g. a card identified by a CPAN); it
+	// drives the default payment mode for imported rows (credit card vs direct
+	// debit).
+	Card bool `json:"card,omitempty"`
 }
 
 func parseStoredAccounts(js string) []ebStoredAccount {
@@ -221,7 +225,10 @@ func (s *Service) EBankingCompleteAuth(ctx context.Context, walletID int64, stat
 	// objects, but GET /sessions/{id} later returns only uid strings.
 	accs := make([]ebStoredAccount, 0, len(sess.Accounts))
 	for _, a := range sess.Accounts {
-		accs = append(accs, ebStoredAccount{UID: a.UID, Name: a.label(), Currency: a.Currency, IBAN: a.identifier()})
+		accs = append(accs, ebStoredAccount{
+			UID: a.UID, Name: a.label(), Currency: a.Currency,
+			IBAN: a.identifier(), Card: a.AccountID.IBAN == "",
+		})
 	}
 	accountsJSON, _ := json.Marshal(accs)
 
@@ -315,14 +322,27 @@ func (s *Service) ebFetchRows(ctx context.Context, c db.BankConnection, linkByEx
 			failures = append(failures, accountFetchError{ExternalID: a.UID, Name: name, Err: err})
 			continue
 		}
-		out[a.UID] = ebRowsFromTxns(txns)
+		out[a.UID] = ebRowsFromTxns(txns, a.Card)
 	}
 	return out, failures, nil
 }
 
+// Default payment modes for imported rows, by account type (HomeBank codes):
+// a card account → credit card, an IBAN account → direct debit. Import rules
+// still override these when they match.
+const (
+	paymodeCreditCard  = 1
+	paymodeDirectDebit = 11
+)
+
 // ebRowsFromTxns maps Enable Banking transactions to import rows. The dedup key is
-// the provider entry reference (or a hash fallback).
-func ebRowsFromTxns(txns []ebTxn) []importio.Row {
+// the provider entry reference (or a hash fallback). card selects the default
+// payment mode (credit card for a card account, else direct debit).
+func ebRowsFromTxns(txns []ebTxn, card bool) []importio.Row {
+	paymode := paymodeDirectDebit
+	if card {
+		paymode = paymodeCreditCard
+	}
 	rows := make([]importio.Row, 0, len(txns))
 	for i, tx := range txns {
 		d := tx.date()
@@ -340,12 +360,13 @@ func ebRowsFromTxns(txns []ebTxn) []importio.Row {
 			status = 1 // pending → cleared
 		}
 		rows = append(rows, importio.Row{
-			Line:   i + 1,
-			Date:   d,
-			Amount: amt,
-			Memo:   tx.memo(),
-			Status: status,
-			FITID:  "enablebanking:" + tx.dedupID(),
+			Line:        i + 1,
+			Date:        d,
+			Amount:      amt,
+			Memo:        tx.memo(),
+			PaymentMode: paymode,
+			Status:      status,
+			FITID:       "enablebanking:" + tx.dedupID(),
 		})
 	}
 	return rows

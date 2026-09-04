@@ -399,6 +399,32 @@ func TestEnableBankingWalletIsolation(t *testing.T) {
 	}
 }
 
+// TestEBRowsFromTxnsPaymode checks the default payment mode by account type:
+// a card account → credit card (1), an IBAN account → direct debit (11).
+func TestEBRowsFromTxnsPaymode(t *testing.T) {
+	var page ebTxnPage
+	if err := json.Unmarshal([]byte(ebTxnsJSON), &page); err != nil {
+		t.Fatalf("decode txns: %v", err)
+	}
+	if len(page.Transactions) == 0 {
+		t.Fatal("no transactions in fixture")
+	}
+	for _, tc := range []struct {
+		card bool
+		want int
+	}{{true, 1}, {false, 11}} {
+		rows := ebRowsFromTxns(page.Transactions, tc.card)
+		if len(rows) == 0 {
+			t.Fatalf("card=%v: no rows", tc.card)
+		}
+		for _, r := range rows {
+			if r.PaymentMode != tc.want {
+				t.Errorf("card=%v: payment mode = %d, want %d", tc.card, r.PaymentMode, tc.want)
+			}
+		}
+	}
+}
+
 // TestEnableBankingSyncMergesExistingTransaction checks that a bank row matching
 // an existing manual / schedule-posted transaction (same amount, nearby date, no
 // import ref) is MERGED into it — not duplicated — attaching the bank ref,
@@ -468,6 +494,23 @@ func TestEnableBankingSyncMergesExistingTransaction(t *testing.T) {
 	}
 	if merged.Date != "2024-06-10" {
 		t.Errorf("date = %q, want the bank's date 2024-06-10 (corrected)", merged.Date)
+	}
+	if merged.PaymentMode != 3 {
+		t.Errorf("payment mode = %d, want 3 (the existing mode preserved on merge)", merged.PaymentMode)
+	}
+
+	// The new (non-merged) row on this IBAN account gets the direct-debit default.
+	var fresh *db.ListTransactionsForAccountRow
+	for i := range rows {
+		if rows[i].ID != manual.ID {
+			fresh = &rows[i]
+		}
+	}
+	if fresh == nil {
+		t.Fatalf("the new (non-merged) transaction is missing")
+	}
+	if fresh.PaymentMode != 11 {
+		t.Errorf("new import payment mode = %d, want 11 (direct debit, IBAN account)", fresh.PaymentMode)
 	}
 }
 
