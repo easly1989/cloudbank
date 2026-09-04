@@ -159,6 +159,39 @@ refreshes auto-sync connections that are older than `CB_BANK_SYNC_INTERVAL`
 Enable Banking connection whose consent has expired is skipped until you
 **reconnect** it.
 
+## How imported transactions are reconciled
+
+Bank rows aren't just dumped into the register — they go through the same import
+pipeline as a file import, with extra reconciliation:
+
+- **No duplicates of what you already have.** A bank row that matches an existing
+  **manual or scheduled** transaction (same amount, within a date window) is
+  **merged** into that transaction rather than added again — it inherits the bank
+  reference (so the next sync recognises it), its date is corrected to the bank's,
+  and its status is upgraded. Your meaningful memo from a schedule is replaced by
+  the bank's description on a reconciled row; category, tags and payee are kept.
+- **Right status.** A **booked** bank transaction is imported as **reconciled**, a
+  **pending** one as **cleared**; when a pending row later books, it is **settled
+  up** to reconciled instead of duplicated.
+- **A default payment mode** by account type: an **IBAN** account's rows default to
+  **direct debit**, a **card** account's to **credit card** (your import rules still
+  win when they match).
+- **Assignment rules** run on every imported row, so categories/payees you've set
+  up are applied automatically.
+
+## Reviewing imports
+
+Because imported rows arrive reconciled but the bank supplies no CloudBank
+category, the **Review** page (in the sidebar) helps you finish the job:
+
+- **Needs a category** lists imported transactions that still have none — pick one
+  inline.
+- **Possible duplicates** finds pairs that look like the same movement (same
+  account and amount, close dates) that reconciliation didn't catch — for example a
+  manual entry whose date was well off. For each pair you can **merge** (keep one,
+  carrying the bank reference over), **edit** or **delete** a row, or mark it **"not
+  a duplicate"** so it is never shown again.
+
 ## Current limitations
 
 - The Enable Banking account list is **captured when you connect**; if the bank
