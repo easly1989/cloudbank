@@ -171,7 +171,7 @@ func (s *Service) RunBillsReminders(ctx context.Context, now time.Time) error {
 		}
 		var pending []bills.Bill
 		for _, w := range wallets {
-			sum, err := s.bills.Bills(ctx, w.ID, today, today)
+			sum, err := s.bills.Bills(ctx, w.ID, today)
 			if err != nil {
 				s.logger.Warn("push reminders: bills", "wallet", w.ID, "err", err)
 				continue

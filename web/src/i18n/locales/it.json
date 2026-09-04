@@ -344,7 +344,7 @@
   },
   "bills": {
     "title": "Scadenze",
-    "hint": "Cosa c'è da pagare tra i pagamenti pianificati — in ritardo, in arrivo o già pagati. Segna una scadenza come pagata per registrarne la transazione pianificata.",
+    "hint": "Una riga per scadenza — l'ultimo pagamento e la prossima occorrenza. Segna una scadenza come pagata per registrarne la transazione pianificata, oppure aggiungine una nuova.",
     "toPay": "da pagare",
     "empty": "Nessuna scadenza al momento.",
     "markPaid": "Segna pagata",
@@ -354,6 +354,23 @@
     "overdueCount": "{{count}} in ritardo",
     "dueCount": "{{count}} in scadenza",
     "more": "+{{count}} altre",
+    "next": "Prossima",
+    "lastPaid": "Ultimo pagamento",
+    "add": "Aggiungi scadenza",
+    "addTitle": "Aggiungi una scadenza",
+    "added": "Scadenza aggiunta",
+    "cancel": "Annulla",
+    "form": {
+      "name": "Nome",
+      "amount": "Importo",
+      "amountHint": "L'importo dovuto ogni mese (numero positivo).",
+      "account": "Conto",
+      "dayOfMonth": "Giorno del mese",
+      "dayOfMonthHint": "Il giorno in cui scade (1–31).",
+      "autoPost": "Registra automaticamente",
+      "autoPostHint": "Registra il pagamento alla scadenza senza chiedere.",
+      "submit": "Aggiungi scadenza"
+    },
     "state": {
       "overdue": "In ritardo",
       "due": "In scadenza",

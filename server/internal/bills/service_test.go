@@ -112,8 +112,8 @@ func TestBillsClassification(t *testing.T) {
 	// Salary is income (positive) → excluded from the Bills view entirely.
 	f.addSchedule(t, "Salary", 250000, "month", "2026-06-25", 1, 0, nil)
 
-	today, from := "2026-06-15", "2026-06-01"
-	sum, err := svc.Bills(ctx, f.walletID, from, today)
+	today := "2026-06-15"
+	sum, err := svc.Bills(ctx, f.walletID, today)
 	if err != nil {
 		t.Fatalf("Bills: %v", err)
 	}
@@ -153,30 +153,20 @@ func TestBillsPaidAndRemainingCap(t *testing.T) {
 	one := int64(1)
 	f.addSchedule(t, "OneTime", -9000, "month", "2026-06-10", 1, 0, &one)
 
-	today, from := "2026-06-15", "2026-06-01"
-	sum, err := svc.Bills(ctx, f.walletID, from, today)
+	today := "2026-06-15"
+	sum, err := svc.Bills(ctx, f.walletID, today)
 	if err != nil {
 		t.Fatalf("Bills: %v", err)
 	}
 
+	// One row per bill: Gym's next occurrence (due) carrying its last payment.
 	gymBills := byName(sum.Bills, "Gym")
-	if len(gymBills) != 2 {
-		t.Fatalf("Gym bills = %d, want 2 (paid + due) (%+v)", len(gymBills), gymBills)
+	if len(gymBills) != 1 {
+		t.Fatalf("Gym bills = %d, want 1 (one row per bill) (%+v)", len(gymBills), gymBills)
 	}
-	var paid, due int
-	for _, b := range gymBills {
-		switch b.State {
-		case StatePaid:
-			paid++
-			if b.DueDate != "2026-06-05" {
-				t.Fatalf("paid Gym date = %s, want 2026-06-05", b.DueDate)
-			}
-		case StateDue:
-			due++
-		}
-	}
-	if paid != 1 || due != 1 {
-		t.Fatalf("Gym paid/due = %d/%d, want 1/1", paid, due)
+	gb := gymBills[0]
+	if gb.State != StateDue || gb.DueDate != "2026-07-05" || gb.LastPaid != "2026-06-05" {
+		t.Fatalf("Gym = %+v, want due 2026-07-05 with lastPaid 2026-06-05", gb)
 	}
 
 	oneTime := byName(sum.Bills, "OneTime")
@@ -208,7 +198,7 @@ func TestBillsFuturePrePostNotPaid(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("AdvanceSchedule: %v", err)
 	}
-	sum, err := svc.Bills(ctx, f.walletID, "2026-08-01", "2026-08-15")
+	sum, err := svc.Bills(ctx, f.walletID, "2026-08-15")
 	if err != nil {
 		t.Fatalf("Bills: %v", err)
 	}
@@ -239,14 +229,14 @@ func TestBillsCategoryFilter(t *testing.T) {
 	f.addScheduleCat(t, "Supermarket", -3000, "2026-06-11", otherCat.ID)
 
 	// No category configured → every outflow is a bill.
-	sum, _ := svc.Bills(ctx, f.walletID, "2026-06-01", "2026-06-15")
+	sum, _ := svc.Bills(ctx, f.walletID, "2026-06-15")
 	if len(byName(sum.Bills, "Electricity")) != 1 || len(byName(sum.Bills, "Supermarket")) != 1 {
 		t.Fatalf("without a category filter both should appear: %+v", sum.Bills)
 	}
 
 	// Configure the bills category → only its schedules appear.
 	setBillsCategory(t, f, billsCat.ID)
-	sum2, _ := svc.Bills(ctx, f.walletID, "2026-06-01", "2026-06-15")
+	sum2, _ := svc.Bills(ctx, f.walletID, "2026-06-15")
 	if len(byName(sum2.Bills, "Electricity")) != 1 {
 		t.Fatalf("Electricity (bills category) should appear: %+v", sum2.Bills)
 	}
@@ -265,8 +255,8 @@ func TestBillsConvertsToBaseCurrency(t *testing.T) {
 	})
 	f.addSchedule(t, "Hosting", -20000, "month", "2026-06-10", 1, usd.ID, nil)
 
-	today, from := "2026-06-15", "2026-06-01"
-	sum, err := svc.Bills(ctx, f.walletID, from, today)
+	today := "2026-06-15"
+	sum, err := svc.Bills(ctx, f.walletID, today)
 	if err != nil {
 		t.Fatalf("Bills: %v", err)
 	}

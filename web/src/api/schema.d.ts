@@ -2941,8 +2941,10 @@ export interface components {
             /** Format: int64 */
             accountId?: number | null;
             accountName?: string;
-            /** @description occurrence date (YYYY-MM-DD); for a paid bill, its post date */
+            /** @description the next occurrence's due date (YYYY-MM-DD) */
             dueDate: string;
+            /** @description the most recent occurrence posted on or before today (YYYY-MM-DD); empty if never paid */
+            lastPaid?: string;
             /**
              * Format: int64
              * @description signed minor units in the account's currency (negative outflow)
@@ -2955,7 +2957,7 @@ export interface components {
             baseAmount: number;
             currency: components["schemas"]["CurrencyInfo"];
             /** @enum {string} */
-            state: "overdue" | "due" | "paid";
+            state: "overdue" | "due";
             isTransfer: boolean;
             autoPost: boolean;
         };

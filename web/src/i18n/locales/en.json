@@ -344,7 +344,7 @@
   },
   "bills": {
     "title": "Bills",
-    "hint": "What's due over your scheduled payments — overdue, coming up, or already paid. Mark one paid to post its scheduled transaction.",
+    "hint": "One row per bill — its last payment and next occurrence. Mark one paid to post its scheduled transaction, or add a new bill.",
     "toPay": "to pay",
     "empty": "Nothing due right now.",
     "markPaid": "Mark paid",
@@ -354,6 +354,23 @@
     "overdueCount": "{{count}} overdue",
     "dueCount": "{{count}} due",
     "more": "+{{count}} more",
+    "next": "Next",
+    "lastPaid": "Last paid",
+    "add": "Add bill",
+    "addTitle": "Add a bill",
+    "added": "Bill added",
+    "cancel": "Cancel",
+    "form": {
+      "name": "Name",
+      "amount": "Amount",
+      "amountHint": "The amount due each month (a positive number).",
+      "account": "Account",
+      "dayOfMonth": "Day of month",
+      "dayOfMonthHint": "The day the bill is due (1–31).",
+      "autoPost": "Post automatically",
+      "autoPostHint": "Register the payment on its due date without asking.",
+      "submit": "Add bill"
+    },
     "state": {
       "overdue": "Overdue",
       "due": "Due",
