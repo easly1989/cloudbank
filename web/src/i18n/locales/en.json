@@ -14,6 +14,7 @@
     "schedules": "Schedules",
     "bills": "Bills",
     "bankSync": "Bank sync",
+    "review": "Review",
     "templates": "Templates",
     "tags": "Tags",
     "vehicles": "Vehicles",
@@ -377,6 +378,23 @@
       "paid": "Paid"
     },
     "auto": "auto"
+  },
+  "review": {
+    "title": "Bank sync review",
+    "hint": "Complete imported transactions that still need a category, and resolve possible duplicates.",
+    "error": "Could not load the review.",
+    "needsCategory": "Needs a category ({{count}})",
+    "needsCategoryEmpty": "Every imported transaction has a category.",
+    "duplicates": "Possible duplicates ({{count}})",
+    "duplicatesEmpty": "No possible duplicates found.",
+    "keepThis": "Keep this",
+    "notDuplicate": "Not a duplicate",
+    "merged": "Merged",
+    "edit": "Edit",
+    "delete": "Delete",
+    "fromBank": "From bank",
+    "manual": "Manual",
+    "noMemo": "(no description)"
   },
   "banksync": {
     "title": "Bank sync",
