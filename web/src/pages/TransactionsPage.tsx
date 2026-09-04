@@ -35,6 +35,7 @@ import {
   type Transaction,
   bulkDeleteTransactions,
   bulkEditTransactions,
+  bulkTagTransactions,
   createTemplateFromTransaction,
   deleteTransaction,
   deleteTransfer,
@@ -252,6 +253,18 @@ export function TransactionsPage() {
       invalidate();
       clearSelection();
       notifications.show({ color: "green", message: t("bulk.deleted", { count: res.deleted }) });
+    },
+    onError,
+  });
+  const bulkTags = useMutation({
+    mutationFn: (v: { ids: number[]; tags: string[]; replace: boolean }) =>
+      bulkTagTransactions(walletId, v.ids, v.tags, v.replace),
+    onSuccess: (res) => {
+      invalidate();
+      void qc.invalidateQueries({ queryKey: ["tags", walletId] });
+      clearSelection();
+      setBulkEditOpen(false);
+      notifications.show({ color: "green", message: t("bulk.done", { count: res.updated }) });
     },
     onError,
   });
@@ -508,8 +521,10 @@ export function TransactionsPage() {
         count={selected.size}
         payees={payeesQuery.data ?? []}
         categories={categoriesQuery.data ?? []}
-        loading={bulk.isPending}
+        tags={tagsQuery.data ?? []}
+        loading={bulk.isPending || bulkTags.isPending}
         onApply={(field, value) => bulk.mutate({ ids: [...selected], field, value })}
+        onApplyTags={(tags, replace) => bulkTags.mutate({ ids: [...selected], tags, replace })}
       />
 
       {account && (

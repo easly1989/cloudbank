@@ -690,6 +690,67 @@ func (s *Service) BulkDelete(ctx context.Context, walletID int64, ids []int64) (
 	return n, nil
 }
 
+// BulkSetTags applies tags to several transactions at once. When replace is true
+// each transaction's tags are set to exactly `tags` (existing ones cleared
+// first); otherwise `tags` are added to whatever is already there. Blank/dup tag
+// names are ignored, and unknown tags are created. Every id must belong to the
+// wallet, checked up front so a bad id rejects the whole batch.
+func (s *Service) BulkSetTags(ctx context.Context, walletID int64, ids []int64, tags []string, replace bool) (int, error) {
+	clean := make([]string, 0, len(tags))
+	seen := map[string]bool{}
+	for _, name := range tags {
+		name = strings.TrimSpace(name)
+		if name == "" || seen[name] {
+			continue
+		}
+		seen[name] = true
+		clean = append(clean, name)
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	qtx := s.q.WithTx(tx)
+
+	for _, id := range ids {
+		row, err := qtx.GetTransaction(ctx, id)
+		if errors.Is(err, sql.ErrNoRows) || (err == nil && row.WalletID != walletID) {
+			return 0, ErrNotFound
+		}
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	tagIDs := make([]int64, 0, len(clean))
+	for _, name := range clean {
+		tag, err := s.getOrCreateTag(ctx, qtx, walletID, name)
+		if err != nil {
+			return 0, err
+		}
+		tagIDs = append(tagIDs, tag.ID)
+	}
+
+	for _, id := range ids {
+		if replace {
+			if err := qtx.DeleteTransactionTags(ctx, id); err != nil {
+				return 0, err
+			}
+		}
+		for _, tid := range tagIDs {
+			if err := qtx.AddTransactionTag(ctx, db.AddTransactionTagParams{TransactionID: id, TagID: tid}); err != nil {
+				return 0, err
+			}
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return len(ids), nil
+}
+
 func (s *Service) validateTarget(ctx context.Context, qtx *db.Queries, walletID int64, field string, id int64) error {
 	if field == BulkFieldCategory {
 		cat, err := qtx.GetCategory(ctx, id)
