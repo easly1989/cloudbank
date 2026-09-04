@@ -224,3 +224,6 @@ export const bulkEditTransactions = (
     field,
     value,
   });
+
+export const bulkDeleteTransactions = (walletId: number, ids: number[]) =>
+  api.post<{ deleted: number }>(`/api/v1/wallets/${walletId}/transactions/bulk-delete`, { ids });

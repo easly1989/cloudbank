@@ -18,7 +18,9 @@ import {
   IconChecklist,
   IconFilterOff,
   IconInfoCircle,
+  IconPencil,
   IconPlus,
+  IconTrash,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -29,10 +31,9 @@ import {
   ApiError,
   type Account,
   type BulkField,
-  type Category,
-  type Payee,
   type RegisterRow,
   type Transaction,
+  bulkDeleteTransactions,
   bulkEditTransactions,
   createTemplateFromTransaction,
   deleteTransaction,
@@ -48,11 +49,11 @@ import {
 import { formatMinor, type MoneyFormat } from "../money";
 import { useAmountParser } from "../useAmountParser";
 import { useToday } from "../useToday";
+import { BulkEditModal } from "../components/BulkEditModal";
 import { CollapsibleSection } from "../components/CollapsibleSection";
 import { QuickAdd } from "../components/QuickAdd";
 import { TransactionForm } from "../components/TransactionForm";
 import { TransferForm } from "../components/TransferForm";
-import { PAYMENT_MODES, STATUSES } from "../transactionEnums";
 import { useWallet } from "../wallet/WalletProvider";
 import { RegisterFilters } from "./RegisterFilters";
 import { RegisterTable } from "./RegisterTable";
@@ -181,6 +182,7 @@ export function TransactionsPage() {
 
   // Selection (for multi-edit and reconcile) + reconcile mode.
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [reconcile, setReconcile] = useState(false);
   useEffect(() => {
     // Switching account resets transient selection/reconcile state.
@@ -239,10 +241,25 @@ export function TransactionsPage() {
     onSuccess: (res) => {
       invalidate();
       clearSelection();
+      setBulkEditOpen(false);
       notifications.show({ color: "green", message: t("bulk.done", { count: res.updated }) });
     },
     onError,
   });
+  const bulkDelete = useMutation({
+    mutationFn: (ids: number[]) => bulkDeleteTransactions(walletId, ids),
+    onSuccess: (res) => {
+      invalidate();
+      clearSelection();
+      notifications.show({ color: "green", message: t("bulk.deleted", { count: res.deleted }) });
+    },
+    onError,
+  });
+  const deleteSelected = () => {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    if (window.confirm(t("bulk.confirmDelete", { count: ids.length }))) bulkDelete.mutate(ids);
+  };
 
   // Reconciled rows are locked: editing or deleting one requires an explicit
   // unreconcile first.
@@ -457,10 +474,8 @@ export function TransactionsPage() {
             inflow={selectionTotals.inflow}
             outflow={selectionTotals.outflow}
             fmt={fmt}
-            payees={payeesQuery.data ?? []}
-            categories={categoriesQuery.data ?? []}
-            loading={bulk.isPending}
-            onApply={(field, value) => bulk.mutate({ ids: [...selected], field, value })}
+            onEdit={() => setBulkEditOpen(true)}
+            onDelete={deleteSelected}
             onClear={clearSelection}
           />
         )}
@@ -481,9 +496,21 @@ export function TransactionsPage() {
           onDelete={deleteRow}
           onToggleStatus={(row, status) => toggleStatus.mutate({ id: row.id, status })}
           onSaveTemplate={templateFromRow}
+          onBulkEdit={() => setBulkEditOpen(true)}
+          onBulkDelete={deleteSelected}
           fillRef={topRef}
         />
       )}
+
+      <BulkEditModal
+        opened={bulkEditOpen}
+        onClose={() => setBulkEditOpen(false)}
+        count={selected.size}
+        payees={payeesQuery.data ?? []}
+        categories={categoriesQuery.data ?? []}
+        loading={bulk.isPending}
+        onApply={(field, value) => bulk.mutate({ ids: [...selected], field, value })}
+      />
 
       {account && (
         <TransactionForm
@@ -546,18 +573,17 @@ function BalanceCard({
   );
 }
 
-// BulkBar applies one field to every selected transaction in a single atomic
-// request (all-or-nothing, server-side).
+// BulkBar summarises the current selection and opens the bulk editor or a bulk
+// delete for every selected transaction (the same actions are also on the
+// register's right-click menu).
 function BulkBar({
   count,
   total,
   inflow,
   outflow,
   fmt,
-  payees,
-  categories,
-  loading,
-  onApply,
+  onEdit,
+  onDelete,
   onClear,
 }: {
   count: number;
@@ -565,66 +591,14 @@ function BulkBar({
   inflow: number;
   outflow: number;
   fmt: MoneyFormat;
-  payees: Payee[];
-  categories: Category[];
-  loading: boolean;
-  onApply: (field: BulkField, value: number | null) => void;
+  onEdit: () => void;
+  onDelete: () => void;
   onClear: () => void;
 }) {
   const { t } = useTranslation();
-  const [field, setField] = useState<BulkField>("status");
-  const [value, setValue] = useState<string | null>(null);
-  useEffect(() => setValue(null), [field]);
-
-  const categoryOptions = categories.map((c) => ({
-    value: String(c.id),
-    label: c.parentId
-      ? `   ${categories.find((p) => p.id === c.parentId)?.name ?? ""} › ${c.name}`
-      : c.name,
-  }));
-  const valueProps = { value, onChange: setValue, w: 200, searchable: true } as const;
-  let valueControl;
-  if (field === "status") {
-    valueControl = (
-      <Select
-        {...valueProps}
-        placeholder={t("transactions.status")}
-        data={STATUSES.map((s) => ({ value: String(s), label: t(`status.${s}`) }))}
-      />
-    );
-  } else if (field === "paymentMode") {
-    valueControl = (
-      <Select
-        {...valueProps}
-        placeholder={t("transactions.paymentMode")}
-        data={PAYMENT_MODES.map((m) => ({ value: String(m), label: t(`paymentModes.${m}`) }))}
-      />
-    );
-  } else if (field === "category") {
-    valueControl = (
-      <Select
-        {...valueProps}
-        clearable
-        placeholder={t("transactions.category")}
-        data={categoryOptions}
-      />
-    );
-  } else {
-    valueControl = (
-      <Select
-        {...valueProps}
-        clearable
-        placeholder={t("transactions.payee")}
-        data={payees.map((p) => ({ value: String(p.id), label: p.name }))}
-      />
-    );
-  }
-  // status/paymentMode need a value; category/payee may be cleared (null).
-  const canApply = field === "category" || field === "payee" || value !== null;
-
   return (
     <Card withBorder padding="xs" bg="var(--mantine-color-blue-light)">
-      <Group gap="xs" align="flex-end">
+      <Group gap="xs" align="center" wrap="wrap">
         <Text fw={500}>{t("bulk.title", { count })}</Text>
         <Group gap={6} align="baseline" wrap="nowrap">
           <Text size="xs" c="dimmed" tt="uppercase">
@@ -640,28 +614,23 @@ function BulkBar({
             </Text>
           )}
         </Group>
-        <Select
-          label={t("bulk.field")}
-          data={(["status", "category", "payee", "paymentMode"] as BulkField[]).map((f) => ({
-            value: f,
-            label: t(`bulk.fields.${f}`),
-          }))}
-          value={field}
-          onChange={(v) => setField((v as BulkField) ?? "status")}
-          allowDeselect={false}
-          w={150}
-        />
-        {valueControl}
-        <Button
-          onClick={() => onApply(field, value === null ? null : Number(value))}
-          loading={loading}
-          disabled={!canApply}
-        >
-          {t("bulk.apply")}
-        </Button>
-        <Button variant="subtle" color="gray" onClick={onClear}>
-          {t("bulk.clearSelection")}
-        </Button>
+        <Group gap="xs" ml="auto" wrap="nowrap">
+          <Button size="xs" variant="light" leftSection={<IconPencil size={14} />} onClick={onEdit}>
+            {t("bulk.edit")}
+          </Button>
+          <Button
+            size="xs"
+            variant="light"
+            color="red"
+            leftSection={<IconTrash size={14} />}
+            onClick={onDelete}
+          >
+            {t("bulk.delete")}
+          </Button>
+          <Button size="xs" variant="subtle" color="gray" onClick={onClear}>
+            {t("bulk.clearSelection")}
+          </Button>
+        </Group>
       </Group>
     </Card>
   );

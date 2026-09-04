@@ -74,6 +74,10 @@ export interface RegisterTableProps {
   onDelete: (row: RegisterRow) => void;
   onToggleStatus: (row: RegisterRow, status: number) => void;
   onSaveTemplate: (row: RegisterRow) => void;
+  // Bulk actions on the current multi-selection (also on the selection bar);
+  // shown in the right-click menu when more than one row is selected.
+  onBulkEdit?: () => void;
+  onBulkDelete?: () => void;
   // When provided, the ledger body grows to fill the viewport down from the
   // bottom of this element (the block above the table); collapsing sections above
   // reclaims their space for the ledger. Without it, a fixed height is used.
@@ -98,6 +102,8 @@ export function RegisterTable({
   onDelete,
   onToggleStatus,
   onSaveTemplate,
+  onBulkEdit,
+  onBulkDelete,
   fillRef,
 }: RegisterTableProps) {
   const { t } = useTranslation();
@@ -108,6 +114,9 @@ export function RegisterTable({
   const [cursorId, setCursorId] = useState<number | null>(null);
   // Right-click context menu, anchored at the cursor position.
   const [menu, setMenu] = useState<{ x: number; y: number; row: RegisterRow } | null>(null);
+  // Anchor row index for shift+click range selection (the last row toggled
+  // without shift).
+  const selectAnchorRef = useRef<number | null>(null);
 
   // Fill mode: size the scroll body so its bottom sits just above the footer,
   // recomputing whenever the block above (fillRef) changes size — e.g. an
@@ -477,7 +486,22 @@ export function RegisterTable({
                     aria-label={t("register.selectRow")}
                     checked={selected.has(r.id)}
                     onChange={() => onToggleSelect(r.id)}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Shift+click selects the contiguous range from the anchor
+                      // row to this one (preventDefault stops the plain toggle).
+                      if (e.shiftKey && selectAnchorRef.current != null) {
+                        e.preventDefault();
+                        const from = Math.min(selectAnchorRef.current, vi.index);
+                        const to = Math.max(selectAnchorRef.current, vi.index);
+                        onToggleAll(
+                          tableRows.slice(from, to + 1).map((rr) => rr.original.id),
+                          true,
+                        );
+                      } else {
+                        selectAnchorRef.current = vi.index;
+                      }
+                    }}
                   />
                   {row.getVisibleCells().map((cell) => (
                     <Box key={cell.id} style={{ minWidth: 0 }}>
@@ -559,6 +583,26 @@ export function RegisterTable({
               };
               return (
                 <>
+                  {selected.size > 1 && (onBulkEdit || onBulkDelete) && (
+                    <>
+                      <Menu.Label>{t("bulk.title", { count: selected.size })}</Menu.Label>
+                      {onBulkEdit && (
+                        <Menu.Item leftSection={<IconPencil size={15} />} onClick={run(onBulkEdit)}>
+                          {t("bulk.edit")}
+                        </Menu.Item>
+                      )}
+                      {onBulkDelete && (
+                        <Menu.Item
+                          color="red"
+                          leftSection={<IconTrash size={15} />}
+                          onClick={run(onBulkDelete)}
+                        >
+                          {t("bulk.delete")}
+                        </Menu.Item>
+                      )}
+                      <Menu.Divider />
+                    </>
+                  )}
                   {r.payeeName ? <Menu.Label>{r.payeeName}</Menu.Label> : null}
                   <Menu.Item leftSection={<IconPencil size={15} />} onClick={run(() => onEdit(r))}>
                     {t("transactions.edit")}
