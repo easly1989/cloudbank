@@ -27,9 +27,10 @@
 
 **CloudBank** is a free, self-hosted, web-based personal finance manager — a from-scratch web port of the excellent [HomeBank](https://www.gethomebank.org/) desktop application. It aims for feature parity with HomeBank while being built for the browser and the cloud: a single Docker container you run yourself, with your data living in a SQLite database on a volume you control.
 
-> Status: **production-ready.** Shipped 1.0 and adding post-parity
-> capabilities — automatic bank sync, 2FA, an installable PWA, and opt-in AI —
-> see the [CHANGELOG](CHANGELOG.md).
+> Status: **production-ready.** 1.0 reached HomeBank parity; the **2.x** line added
+> deep personalization and interop, and the **3.x** line the post-parity
+> capabilities — automatic bank sync, 2FA, an installable PWA, and opt-in AI. See
+> the [CHANGELOG](CHANGELOG.md).
 
 ## Why
 
@@ -164,7 +165,7 @@ Images are published to **GHCR**: `ghcr.io/easly1989/cloudbank`.
 > | --------- | ---------------------------------------------------------------------- |
 > | `:main`   | **Latest stable release** — use this for a stable self-hosted install. |
 > | `:latest` | **Nightly build** from the `main` branch — bleeding edge, may break.    |
-> | `:vX.Y.Z` | A specific released version (e.g. `:v1.0.0`). Also `:vX.Y`.             |
+> | `:vX.Y.Z` | A specific released version (e.g. `:v3.0.3`). Also `:vX.Y`.             |
 >
 > In other words, `:latest` is the development nightly, and `:main` is the stable release. This is the opposite of the usual Docker convention, so pin deliberately.
 
