@@ -24,7 +24,9 @@ async function shoot(page, name) {
   console.log("captured", name);
 }
 
-const browser = await chromium.launch();
+// CB_CHROME lets a caller point at a preinstalled Chromium (e.g. a sandbox where
+// `playwright install` is unavailable); otherwise Playwright's own browser is used.
+const browser = await chromium.launch({ executablePath: process.env.CB_CHROME || undefined });
 const ctx = await browser.newContext({
   viewport: VIEWPORT,
   deviceScaleFactor: 1.5,
@@ -69,6 +71,56 @@ try {
   await page.getByRole("link", { name: "Transactions", exact: true }).click();
   await page.waitForTimeout(400);
   await shoot(page, "register");
+
+  // Register with a multi-selection so the bulk-action bar is visible.
+  try {
+    const boxes = page.locator('[aria-label="Select row"]');
+    const n = Math.min(await boxes.count(), 4);
+    for (let i = 0; i < n; i++) await boxes.nth(i).click();
+    await page.waitForTimeout(300);
+    await shoot(page, "register-bulk");
+    for (let i = 0; i < n; i++) await boxes.nth(i).click(); // clear selection
+  } catch {
+    /* selection is best-effort */
+  }
+
+  // Bills — one row per bill (last payment + next occurrence).
+  await page.goto(BASE + "/bills");
+  await page.waitForTimeout(500);
+  await shoot(page, "bills");
+
+  // Seed a look-alike pair so the Review page's duplicate finder has content.
+  await page.evaluate(async () => {
+    const hdr = { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" };
+    const wallets = await (
+      await fetch("/api/v1/wallets", { credentials: "same-origin" })
+    ).json();
+    let wid, acc;
+    for (const w of wallets) {
+      const as = await (
+        await fetch(`/api/v1/wallets/${w.id}/accounts`, { credentials: "same-origin" })
+      ).json();
+      if (as.length) {
+        wid = w.id;
+        acc = as[0].id;
+        break;
+      }
+    }
+    const post = (body) =>
+      fetch(`/api/v1/wallets/${wid}/transactions`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: hdr,
+        body: JSON.stringify({ accountId: acc, ...body }),
+      });
+    await post({ date: "2026-02-10", amount: -4200, memo: "Gym membership" });
+    await post({ date: "2026-02-13", amount: -4200, memo: "GYM CLUB MONTHLY" });
+  });
+
+  // Bank-sync review — uncategorized imports + duplicate finder.
+  await page.goto(BASE + "/review");
+  await page.waitForTimeout(700);
+  await shoot(page, "review");
 
   // Reports — Statistics.
   await page.getByRole("link", { name: "Reports", exact: true }).click();
