@@ -2741,11 +2741,12 @@ components:
         name: { type: string }
         accountId: { type: integer, format: int64, nullable: true }
         accountName: { type: string }
-        dueDate: { type: string, description: "occurrence date (YYYY-MM-DD); for a paid bill, its post date" }
+        dueDate: { type: string, description: "the next occurrence's due date (YYYY-MM-DD)" }
+        lastPaid: { type: string, description: "the most recent occurrence posted on or before today (YYYY-MM-DD); empty if never paid" }
         amount: { type: integer, format: int64, description: "signed minor units in the account's currency (negative outflow)" }
         baseAmount: { type: integer, format: int64, description: "amount converted to the wallet's base currency" }
         currency: { $ref: "#/components/schemas/CurrencyInfo" }
-        state: { type: string, enum: [overdue, due, paid] }
+        state: { type: string, enum: [overdue, due] }
         isTransfer: { type: boolean }
         autoPost: { type: boolean }
       required: [scheduleId, templateId, name, dueDate, amount, baseAmount, currency, state, isTransfer, autoPost]

@@ -3,7 +3,7 @@ import type { CurrencyInfo } from "./structure";
 
 // --- Bills (what's due, over scheduled outflows) ---
 
-export type BillState = "overdue" | "due" | "paid";
+export type BillState = "overdue" | "due";
 
 export interface Bill {
   scheduleId: number;
@@ -11,7 +11,10 @@ export interface Bill {
   name: string;
   accountId?: number | null;
   accountName?: string;
+  /** The next occurrence's due date (YYYY-MM-DD). */
   dueDate: string;
+  /** The most recent occurrence posted on or before today; empty if never paid. */
+  lastPaid?: string;
   /** Signed minor units in the account's currency (negative for an outflow). */
   amount: number;
   /** Amount converted to the wallet's base currency. */
@@ -34,10 +37,5 @@ export interface BillsSummary {
   paid: number;
 }
 
-export const getBills = (walletId: number, from?: string, to?: string) => {
-  const params = new URLSearchParams();
-  if (from) params.set("from", from);
-  if (to) params.set("to", to);
-  const q = params.toString();
-  return api.get<BillsSummary>(`/api/v1/wallets/${walletId}/bills${q ? `?${q}` : ""}`);
-};
+export const getBills = (walletId: number) =>
+  api.get<BillsSummary>(`/api/v1/wallets/${walletId}/bills`);
