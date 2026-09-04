@@ -20,6 +20,18 @@ var ErrNotFound = errors.New("importio: account not found in wallet")
 // pending import's date to be treated as the same movement.
 const reconcileWindowDays = 4
 
+// bankReconcileWindowDays bounds how far a bank-sync row's date may be from an
+// existing manual/schedule-posted transaction to be treated as the same movement.
+// Wider than reconcileWindowDays because hand-entered dates are often approximate.
+const bankReconcileWindowDays = 7
+
+// refInfo is an existing imported transaction's id and status, keyed by its
+// import ref, used to settle a still-pending bank import up to its booked form.
+type refInfo struct {
+	ID     int64
+	Status int
+}
+
 // Service previews and commits imports (CSV/QIF/OFX) and exports account data.
 type Service struct {
 	db    *sql.DB
@@ -132,7 +144,7 @@ func (s *Service) Preview(ctx context.Context, walletID int64, req PreviewReques
 		return Preview{}, err
 	}
 
-	out, err := s.processRows(ctx, walletID, req.AccountID, frac, rows, req.ApplyRules)
+	out, err := s.processRows(ctx, walletID, req.AccountID, frac, rows, req.ApplyRules, false)
 	if err != nil {
 		return Preview{}, err
 	}
@@ -141,7 +153,12 @@ func (s *Service) Preview(ctx context.Context, walletID int64, req PreviewReques
 
 // PreviewParsed runs the shared preview pipeline (rescale, duplicate flagging,
 // import-rule application) over rows produced by a non-CSV parser (QIF/OFX).
-func (s *Service) PreviewParsed(ctx context.Context, walletID, accountID int64, rows []Row, applyRules bool) (Preview, error) {
+// reconcileExisting enables bank-sync reconciliation: matching an incoming row
+// against an existing manual/schedule-posted transaction (by amount + date
+// window) and settling a previously-imported pending row up to its booked form,
+// instead of only the exact-ref / same-date duplicate check used for file
+// imports. File imports pass false so their behaviour is unchanged.
+func (s *Service) PreviewParsed(ctx context.Context, walletID, accountID int64, rows []Row, applyRules, reconcileExisting bool) (Preview, error) {
 	if ok, err := s.txn.AccountInWallet(ctx, walletID, accountID); err != nil {
 		return Preview{}, err
 	} else if !ok {
@@ -151,7 +168,7 @@ func (s *Service) PreviewParsed(ctx context.Context, walletID, accountID int64, 
 	if err != nil {
 		return Preview{}, err
 	}
-	out, err := s.processRows(ctx, walletID, accountID, acc.CurrencyFracDigits, rows, applyRules)
+	out, err := s.processRows(ctx, walletID, accountID, acc.CurrencyFracDigits, rows, applyRules, reconcileExisting)
 	if err != nil {
 		return Preview{}, err
 	}
@@ -163,7 +180,7 @@ func (s *Service) PreviewParsed(ctx context.Context, walletID, accountID int64, 
 // imported refs and earlier rows in this batch) when present, otherwise by
 // date+amount. Duplicates and parse errors are excluded by default but never
 // dropped.
-func (s *Service) processRows(ctx context.Context, walletID, accountID int64, frac int, rows []Row, applyRules bool) ([]PreviewRow, error) {
+func (s *Service) processRows(ctx context.Context, walletID, accountID int64, frac int, rows []Row, applyRules, reconcileExisting bool) ([]PreviewRow, error) {
 	var idToPayee, idToCat map[int64]string
 	var importRules []assignment.Rule
 	if applyRules {
@@ -179,15 +196,30 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 		}
 	}
 
-	existingRefs, err := s.q.ListImportRefsForAccount(ctx, accountID)
-	if err != nil {
-		return nil, err
+	// refSeen flags refs already imported (for exact-ref dedup); refMeta adds the
+	// existing transaction's id + status, used only when reconciling bank rows to
+	// settle a still-pending import up to its booked form.
+	refSeen := map[string]bool{}
+	refMeta := map[string]refInfo{}
+	if reconcileExisting {
+		metas, err := s.q.ListImportRefMetaForAccount(ctx, accountID)
+		if err != nil {
+			return nil, err
+		}
+		for _, m := range metas {
+			refSeen[m.ImportRef] = true
+			refMeta[m.ImportRef] = refInfo{ID: m.ID, Status: int(m.Status)}
+		}
+	} else {
+		existingRefs, err := s.q.ListImportRefsForAccount(ctx, accountID)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range existingRefs {
+			refSeen[r] = true
+		}
 	}
-	refSeen := make(map[string]bool, len(existingRefs))
-	for _, r := range existingRefs {
-		refSeen[r] = true
-	}
-	matchedIDs := map[int64]bool{} // pending txns already claimed by an earlier row this batch
+	matchedIDs := map[int64]bool{} // existing txns already claimed by an earlier row this batch
 
 	out := make([]PreviewRow, 0, len(rows))
 	for _, r := range rows {
@@ -225,9 +257,24 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 			}
 		}
 
-		// Exact re-import of the same row (by import ref) → already imported.
+		// Exact re-import of the same row (by import ref).
 		if r.FITID != "" {
 			if refSeen[r.FITID] {
+				// When reconciling bank rows, a still-pending import that now arrives
+				// booked is settled up to its booked form instead of being dropped as
+				// a duplicate.
+				if reconcileExisting {
+					if m, ok := refMeta[r.FITID]; ok &&
+						m.Status < transaction.StatusReconciled &&
+						pr.Status >= transaction.StatusReconciled && !matchedIDs[m.ID] {
+						pr.Match = "update"
+						pr.MatchID = m.ID
+						matchedIDs[m.ID] = true
+						pr.Include = true
+						out = append(out, pr)
+						continue
+					}
+				}
 				pr.Duplicate = true
 				pr.Match = "imported" // exact match (grey), vs the date+amount heuristic (yellow)
 			}
@@ -262,6 +309,50 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 			case len(pending) > 1:
 				pr.Match = "ambiguous"
 				for _, c := range pending {
+					pr.Candidates = append(pr.Candidates, MatchCandidate{ID: c.ID, Date: c.Date, Memo: c.Memo})
+				}
+			}
+			pr.Include = true
+			out = append(out, pr)
+			continue
+		}
+
+		// Bank-sync reconciliation: match this row against an existing manual or
+		// schedule-posted transaction (no import ref) by exact amount within a date
+		// window. A unique match merges into it — attaching the bank ref, upgrading
+		// its status, fixing its date and taking the bank's description as the memo;
+		// the user's info and payment mode are kept only when the bank supplies none
+		// (category/tags/payee are never touched). Several candidates are left
+		// ambiguous and imported as new for later review.
+		if reconcileExisting {
+			cands, err := s.txn.FindReconcileCandidates(ctx, accountID, pr.Date, pr.Amount, bankReconcileWindowDays)
+			if err != nil {
+				return nil, err
+			}
+			var refless []transaction.ReconcileCandidate
+			for _, c := range cands {
+				if c.ImportRef == "" && !matchedIDs[c.ID] {
+					refless = append(refless, c)
+				}
+			}
+			switch {
+			case len(refless) == 1:
+				c := refless[0]
+				pr.Match = "update"
+				pr.MatchID = c.ID
+				// pr.Memo stays the bank description (it replaces the old memo). Keep
+				// the existing info / payment mode only when the bank has none, so a
+				// user note or mode is not blanked.
+				if strings.TrimSpace(pr.Info) == "" {
+					pr.Info = c.Info
+				}
+				if pr.PaymentMode == 0 {
+					pr.PaymentMode = c.PaymentMode
+				}
+				matchedIDs[c.ID] = true
+			case len(refless) > 1:
+				pr.Match = "ambiguous"
+				for _, c := range refless {
 					pr.Candidates = append(pr.Candidates, MatchCandidate{ID: c.ID, Date: c.Date, Memo: c.Memo})
 				}
 			}

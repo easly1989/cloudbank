@@ -399,6 +399,78 @@ func TestEnableBankingWalletIsolation(t *testing.T) {
 	}
 }
 
+// TestEnableBankingSyncMergesExistingTransaction checks that a bank row matching
+// an existing manual / schedule-posted transaction (same amount, nearby date, no
+// import ref) is MERGED into it — not duplicated — attaching the bank ref,
+// upgrading the status to reconciled, correcting the date, and replacing the memo
+// with the bank's description.
+func TestEnableBankingSyncMergesExistingTransaction(t *testing.T) {
+	svc, q, wid, acc, pemStr := newEBFixture(t)
+	ctx := context.Background()
+
+	// A hand-entered (or schedule-posted) transaction: meaningful memo, matching the
+	// mock's DBIT row amount (-12.34 → -1234 at 2dp), a nearby but not identical
+	// date, and no import ref.
+	manual, err := q.InsertTransaction(ctx, db.InsertTransactionParams{
+		WalletID: wid, AccountID: acc, Date: "2024-06-08", Amount: -1234,
+		PaymentMode: 3, Status: 0, Memo: "Spesa supermercato", ImportRef: "",
+	})
+	if err != nil {
+		t.Fatalf("seed manual txn: %v", err)
+	}
+
+	if err := svc.SetEBankingConfig(ctx, wid, "app-123", pemStr, "sandbox"); err != nil {
+		t.Fatalf("SetEBankingConfig: %v", err)
+	}
+	_, state, err := svc.EBankingStartAuth(ctx, wid, "IntesaSanpaolo", "IT", "My Intesa", "https://cb.example/bank-sync/callback")
+	if err != nil {
+		t.Fatalf("StartAuth: %v", err)
+	}
+	conn, err := svc.EBankingCompleteAuth(ctx, wid, state, "the-code")
+	if err != nil {
+		t.Fatalf("CompleteAuth: %v", err)
+	}
+	if err := svc.Link(ctx, wid, conn.ID, "acc-uid-1", acc); err != nil {
+		t.Fatalf("Link: %v", err)
+	}
+
+	res, err := svc.Sync(ctx, wid, conn.ID)
+	if err != nil {
+		t.Fatalf("Sync: %v", err)
+	}
+	if res.Reconciled < 1 {
+		t.Errorf("reconciled = %d, want >= 1 (the merge)", res.Reconciled)
+	}
+
+	// The DBIT row merged into the manual entry (no duplicate); the CRDT row is new.
+	// So the account has 2 transactions, not 3.
+	rows, _ := q.ListTransactionsForAccount(ctx, db.ListTransactionsForAccountParams{AccountID: acc, Limit: 100})
+	if len(rows) != 2 {
+		t.Fatalf("account has %d transactions, want 2 (merge, not duplicate)", len(rows))
+	}
+	var merged *db.ListTransactionsForAccountRow
+	for i := range rows {
+		if rows[i].ID == manual.ID {
+			merged = &rows[i]
+		}
+	}
+	if merged == nil {
+		t.Fatalf("the manual transaction disappeared (it should have been merged into, not replaced)")
+	}
+	if merged.Memo != "Grocery" {
+		t.Errorf("memo = %q, want the bank description %q", merged.Memo, "Grocery")
+	}
+	if merged.Status != 2 {
+		t.Errorf("status = %d, want 2 (reconciled)", merged.Status)
+	}
+	if merged.ImportRef == "" {
+		t.Errorf("import_ref not attached to the merged transaction")
+	}
+	if merged.Date != "2024-06-10" {
+		t.Errorf("date = %q, want the bank's date 2024-06-10 (corrected)", merged.Date)
+	}
+}
+
 // TestEnableBankingSyncResilientPerAccount checks that one linked account whose
 // transactions cannot be fetched (e.g. a card the bank does not expose) does not
 // fail the whole sync: the healthy account still imports, and the failure is
