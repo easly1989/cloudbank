@@ -366,13 +366,35 @@ func (c *enableBankingClient) balance(ctx context.Context, accountUID string) (s
 	return out.Balances[0].BalanceAmount.Amount, out.Balances[0].BalanceAmount.Currency
 }
 
-// transactions fetches all transactions for an account since dateFrom, following
-// continuation keys.
+// transactions fetches an account's transactions since dateFrom. It fetches
+// booked transactions (the default) and then, best-effort, pending ones: many
+// ASPSPs return only booked unless a status filter is given, so pending rows are
+// requested explicitly and merged (a pending row later settles onto its booked
+// form via the stable dedup id). A failure fetching pending is ignored so it
+// never breaks the booked import.
 func (c *enableBankingClient) transactions(ctx context.Context, accountUID string, dateFrom time.Time) ([]ebTxn, error) {
+	booked, err := c.transactionsByStatus(ctx, accountUID, dateFrom, "")
+	if err != nil {
+		return nil, err
+	}
+	pending, perr := c.transactionsByStatus(ctx, accountUID, dateFrom, "PDNG")
+	if perr != nil {
+		return booked, nil // best-effort: many ASPSPs don't expose pending
+	}
+	return append(booked, pending...), nil
+}
+
+// transactionsByStatus fetches all transactions for an account since dateFrom,
+// following continuation keys. A non-empty status filters by that
+// transaction_status (e.g. "PDNG" for pending).
+func (c *enableBankingClient) transactionsByStatus(ctx context.Context, accountUID string, dateFrom time.Time, status string) ([]ebTxn, error) {
 	base := "/accounts/" + url.PathEscape(accountUID) + "/transactions"
 	q := url.Values{}
 	if !dateFrom.IsZero() {
 		q.Set("date_from", dateFrom.UTC().Format("2006-01-02"))
+	}
+	if status != "" {
+		q.Set("transaction_status", status)
 	}
 	var all []ebTxn
 	for page := 0; page < 100; page++ { // hard cap against a misbehaving provider

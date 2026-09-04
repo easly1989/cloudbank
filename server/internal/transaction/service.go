@@ -774,11 +774,14 @@ func (s *Service) FindDuplicates(ctx context.Context, accountID int64, date stri
 // ReconcileCandidate is an existing transaction that an incoming imported row
 // might be the settled ("contabilizzata") form of.
 type ReconcileCandidate struct {
-	ID        int64
-	Date      string
-	Amount    int64
-	Memo      string
-	ImportRef string
+	ID          int64
+	Date        string
+	Amount      int64
+	Memo        string
+	Info        string
+	PaymentMode int
+	Status      int
+	ImportRef   string
 }
 
 // FindReconcileCandidates returns transactions in the account with the exact
@@ -799,7 +802,10 @@ func (s *Service) FindReconcileCandidates(ctx context.Context, accountID int64, 
 	}
 	out := make([]ReconcileCandidate, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, ReconcileCandidate{ID: r.ID, Date: r.Date, Amount: r.Amount, Memo: r.Memo, ImportRef: r.ImportRef})
+		out = append(out, ReconcileCandidate{
+			ID: r.ID, Date: r.Date, Amount: r.Amount, Memo: r.Memo, Info: r.Info,
+			PaymentMode: int(r.PaymentMode), Status: int(r.Status), ImportRef: r.ImportRef,
+		})
 	}
 	return out, nil
 }

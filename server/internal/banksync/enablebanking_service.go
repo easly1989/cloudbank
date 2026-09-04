@@ -333,9 +333,11 @@ func ebRowsFromTxns(txns []ebTxn) []importio.Row {
 		if err != nil {
 			continue
 		}
-		status := 1 // booked
+		// Booked at the bank → reconciled (final); pending → cleared (provisional).
+		// A pending row later settles up to reconciled when its booked form arrives.
+		status := 2 // booked → reconciled
 		if strings.EqualFold(tx.Status, "PDNG") {
-			status = 0
+			status = 1 // pending → cleared
 		}
 		rows = append(rows, importio.Row{
 			Line:   i + 1,
