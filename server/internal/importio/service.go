@@ -341,12 +341,13 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 				pr.Match = "update"
 				pr.MatchID = c.ID
 				// pr.Memo stays the bank description (it replaces the old memo). Keep
-				// the existing info / payment mode only when the bank has none, so a
-				// user note or mode is not blanked.
+				// the existing info when the bank supplies none, and the existing
+				// payment mode when it has one, so a user's / schedule's note or mode
+				// is not overwritten by the import default.
 				if strings.TrimSpace(pr.Info) == "" {
 					pr.Info = c.Info
 				}
-				if pr.PaymentMode == 0 {
+				if c.PaymentMode != 0 {
 					pr.PaymentMode = c.PaymentMode
 				}
 				matchedIDs[c.ID] = true
