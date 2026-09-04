@@ -187,7 +187,7 @@ func TestIntesaReimportDedup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	pv, err := s.PreviewParsed(ctx, wid, acc, rows, false)
+	pv, err := s.PreviewParsed(ctx, wid, acc, rows, false, false)
 	if err != nil {
 		t.Fatalf("PreviewParsed: %v", err)
 	}
@@ -200,7 +200,7 @@ func TestIntesaReimportDedup(t *testing.T) {
 
 	// Second export/import a week later: same rows → all flagged duplicates, excluded.
 	rows2, _ := ParseIntesaXLSX(xlsx)
-	pv2, _ := s.PreviewParsed(ctx, wid, acc, rows2, false)
+	pv2, _ := s.PreviewParsed(ctx, wid, acc, rows2, false, false)
 	for _, r := range pv2.Rows {
 		if !r.Duplicate || r.Include {
 			t.Fatalf("re-import row should be a flagged, excluded duplicate: %+v", r)
@@ -223,7 +223,7 @@ func TestIntesaReconcilePendingToPosted(t *testing.T) {
 		{blank(), num(46216), str("PAGAMENTO EFFETTUATO SU POS ESTERO"), blank(), num(-11.26), str("Cino/AMZN Mktp IT")},
 	})
 	pr, _ := ParseIntesaXLSX(pending)
-	pv, err := s.PreviewParsed(ctx, wid, acc, pr, false)
+	pv, err := s.PreviewParsed(ctx, wid, acc, pr, false, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,7 +240,7 @@ func TestIntesaReconcilePendingToPosted(t *testing.T) {
 		{num(46219), num(46216), str("PAGAMENTO EFFETTUATO SU POS ESTERO"), blank(), num(-11.26), str("EFFETTUATO IL 13/07/2026 PRESSO AMZN Mktp IT")},
 	})
 	po, _ := ParseIntesaXLSX(posted)
-	pv2, err := s.PreviewParsed(ctx, wid, acc, po, false)
+	pv2, err := s.PreviewParsed(ctx, wid, acc, po, false, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -285,7 +285,7 @@ func TestIntesaReconcileAmbiguous(t *testing.T) {
 		{blank(), num(46216), str("PAGAMENTO POS"), blank(), num(-11.26), str("Cino/OTHER SHOP")},
 	})
 	pr, _ := ParseIntesaXLSX(pending)
-	pv, err := s.PreviewParsed(ctx, wid, acc, pr, false)
+	pv, err := s.PreviewParsed(ctx, wid, acc, pr, false, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -300,7 +300,7 @@ func TestIntesaReconcileAmbiguous(t *testing.T) {
 		{num(46219), num(46216), str("PAGAMENTO POS"), blank(), num(-11.26), str("EFFETTUATO IL 13/07/2026 PRESSO AMZN Mktp IT")},
 	})
 	po, _ := ParseIntesaXLSX(posted)
-	pv2, _ := s.PreviewParsed(ctx, wid, acc, po, false)
+	pv2, _ := s.PreviewParsed(ctx, wid, acc, po, false, false)
 	row := pv2.Rows[0]
 	if row.Match != "ambiguous" || len(row.Candidates) != 2 || !row.Include {
 		t.Fatalf("expected ambiguous with 2 candidates imported as new, got %+v", row)

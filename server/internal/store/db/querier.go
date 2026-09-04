@@ -144,6 +144,7 @@ type Querier interface {
 	ListDueBankConnections(ctx context.Context, lastSyncedAt sql.NullString) ([]ListDueBankConnectionsRow, error)
 	ListExchangeRates(ctx context.Context, currencyID int64) ([]ExchangeRate, error)
 	ListGoalsForWallet(ctx context.Context, walletID int64) ([]ListGoalsForWalletRow, error)
+	ListImportRefMetaForAccount(ctx context.Context, accountID int64) ([]ListImportRefMetaForAccountRow, error)
 	ListImportRefsForAccount(ctx context.Context, accountID int64) ([]string, error)
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID int64) ([]ListPushSubscriptionsForUserRow, error)

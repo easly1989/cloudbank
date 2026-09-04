@@ -27,7 +27,7 @@ func TestPreviewParsedQIF(t *testing.T) {
 	s, _, _, _, wid, acc := newTestService(t)
 	ctx := context.Background()
 	rows, _ := ParseQIF(sampleQIF, "")
-	pv, err := s.PreviewParsed(ctx, wid, acc, rows, false)
+	pv, err := s.PreviewParsed(ctx, wid, acc, rows, false, false)
 	if err != nil {
 		t.Fatalf("PreviewParsed: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestOFXFITIDDedupe(t *testing.T) {
 	ctx := context.Background()
 
 	rows, _ := ParseOFX(sampleOFXSGML)
-	pv, err := s.PreviewParsed(ctx, wid, acc, rows, false)
+	pv, err := s.PreviewParsed(ctx, wid, acc, rows, false, false)
 	if err != nil {
 		t.Fatalf("PreviewParsed: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestOFXFITIDDedupe(t *testing.T) {
 
 	// Re-importing the same file: every row is flagged a duplicate by FITID.
 	rows2, _ := ParseOFX(sampleOFXSGML)
-	pv2, _ := s.PreviewParsed(ctx, wid, acc, rows2, false)
+	pv2, _ := s.PreviewParsed(ctx, wid, acc, rows2, false, false)
 	for _, r := range pv2.Rows {
 		if !r.Duplicate || r.Include {
 			t.Fatalf("re-import row should be a flagged duplicate: %+v", r)
@@ -68,14 +68,14 @@ func TestOFXFITIDDedupe(t *testing.T) {
 	// FITID dedupe is independent of date+amount: a row with an already-seen
 	// FITID but a different date and amount is still a duplicate.
 	moved := []Row{{Line: 1, Date: "2026-09-09", Amount: -99999000, FITID: "ABC123"}}
-	pv3, _ := s.PreviewParsed(ctx, wid, acc, moved, false)
+	pv3, _ := s.PreviewParsed(ctx, wid, acc, moved, false, false)
 	if !pv3.Rows[0].Duplicate {
 		t.Fatalf("FITID-only duplicate not detected: %+v", pv3.Rows[0])
 	}
 
 	// A genuinely new FITID + new date/amount is not a duplicate.
 	fresh := []Row{{Line: 1, Date: "2026-09-10", Amount: -12300000, FITID: "NEW999"}}
-	pv4, _ := s.PreviewParsed(ctx, wid, acc, fresh, false)
+	pv4, _ := s.PreviewParsed(ctx, wid, acc, fresh, false, false)
 	if pv4.Rows[0].Duplicate {
 		t.Fatalf("new row wrongly flagged: %+v", pv4.Rows[0])
 	}

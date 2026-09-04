@@ -64,7 +64,7 @@ func (h *importDataHandlers) previewPlugin(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "invalid_file", "could not parse the file: "+err.Error())
 		return
 	}
-	res, err := h.svc.PreviewParsed(r.Context(), wl.ID, body.AccountID, rows, body.ApplyRules)
+	res, err := h.svc.PreviewParsed(r.Context(), wl.ID, body.AccountID, rows, body.ApplyRules, false)
 	if err != nil {
 		notFoundOr(w, err, "invalid_file", "could not import the file", http.StatusBadRequest)
 		return
@@ -152,7 +152,7 @@ func (h *importDataHandlers) previewParsed(
 		writeError(w, http.StatusBadRequest, "invalid_file", parseErr)
 		return
 	}
-	res, err := h.svc.PreviewParsed(r.Context(), wl.ID, body.AccountID, rows, body.ApplyRules)
+	res, err := h.svc.PreviewParsed(r.Context(), wl.ID, body.AccountID, rows, body.ApplyRules, false)
 	if err != nil {
 		notFoundOr(w, err, "invalid_file", parseErr, http.StatusBadRequest)
 		return

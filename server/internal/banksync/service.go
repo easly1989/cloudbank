@@ -424,7 +424,7 @@ func rowsFromTxns(txns []sfTxn) []importio.Row {
 // commitRows runs rows through the preview pipeline (dedup + rules) and commits
 // the non-duplicates, returning (created, reconciled).
 func (s *Service) commitRows(ctx context.Context, walletID, accountID int64, rows []importio.Row) (int, int, error) {
-	prev, err := s.imp.PreviewParsed(ctx, walletID, accountID, rows, true)
+	prev, err := s.imp.PreviewParsed(ctx, walletID, accountID, rows, true, true)
 	if err != nil {
 		return 0, 0, err
 	}

@@ -11,6 +11,11 @@ SELECT DISTINCT import_ref
 FROM transactions
 WHERE account_id = ? AND import_ref <> '';
 
+-- name: ListImportRefMetaForAccount :many
+SELECT id, import_ref, status
+FROM transactions
+WHERE account_id = ? AND import_ref <> '';
+
 -- name: GetTransaction :one
 SELECT * FROM transactions WHERE id = ? LIMIT 1;
 
