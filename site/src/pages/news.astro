@@ -6,11 +6,21 @@ const REPO = "https://github.com/easly1989/cloudbank";
 
 const releases = [
   {
-    version: "Latest — automatic bank sync",
+    version: "Latest — smarter bank sync, review & bulk actions",
     date: "Ongoing",
     items: [
+      "Bank imports are now reconciled against your existing manual and scheduled transactions — matched by amount and nearby date, a bank row is merged into what you already had instead of duplicated, imported with the right status (booked → reconciled, pending → cleared) and a default payment mode by account type.",
+      "A new Review page completes imported transactions still missing a category and finds possible duplicates to merge, edit, delete, or mark \"not a duplicate\" (remembered so they don't come back).",
+      "Bills redesigned to one row per bill — last payment and next occurrence — with a quick add-a-bill form; the register gains multi-select bulk edit/delete (category, payee, payment, status, tags) from the toolbar and right-click menu, with shift-click range selection.",
+      "Dashboard edit mode gains Tidy (re-pack with no gaps) and Reset (default layout); CI adds CodeQL code scanning.",
+    ],
+  },
+  {
+    version: "Automatic bank sync",
+    date: "Recent",
+    items: [
       "Import transactions straight from your bank via SimpleFIN (worldwide) or Enable Banking (EU/EEA + UK, PSD2 open banking) — bring-your-own-credentials, so CloudBank never sees your bank login.",
-      "New transactions are de-duplicated, auto-categorised by your rules, and refreshed automatically in the background; expiring EU consents surface a one-click reconnect.",
+      "New transactions are auto-categorised by your rules and refreshed automatically in the background; expiring EU consents surface a one-click reconnect.",
     ],
   },
   {
