@@ -272,6 +272,41 @@ func (q *Queries) ListAccountRegister(ctx context.Context, accountID int64) ([]L
 	return items, nil
 }
 
+const listImportRefMetaForAccount = `-- name: ListImportRefMetaForAccount :many
+SELECT id, import_ref, status
+FROM transactions
+WHERE account_id = ? AND import_ref <> ''
+`
+
+type ListImportRefMetaForAccountRow struct {
+	ID        int64
+	ImportRef string
+	Status    int64
+}
+
+func (q *Queries) ListImportRefMetaForAccount(ctx context.Context, accountID int64) ([]ListImportRefMetaForAccountRow, error) {
+	rows, err := q.db.QueryContext(ctx, listImportRefMetaForAccount, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListImportRefMetaForAccountRow{}
+	for rows.Next() {
+		var i ListImportRefMetaForAccountRow
+		if err := rows.Scan(&i.ID, &i.ImportRef, &i.Status); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listImportRefsForAccount = `-- name: ListImportRefsForAccount :many
 SELECT DISTINCT import_ref
 FROM transactions
