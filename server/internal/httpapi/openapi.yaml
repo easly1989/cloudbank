@@ -1185,6 +1185,33 @@ paths:
                 required: [updated]
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/bulk-delete:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: bulkDeleteTransactions
+      summary: Delete many transactions at once (each with its transfer leg)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids: { type: array, items: { type: integer, format: int64 } }
+              required: [ids]
+      responses:
+        "200":
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted: { type: integer }
+                required: [deleted]
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/transactions/register:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }

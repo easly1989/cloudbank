@@ -1210,6 +1210,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/transactions/bulk-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Delete many transactions at once (each with its transfer leg) */
+        post: operations["bulkDeleteTransactions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/transactions/register": {
         parameters: {
             query?: never;
@@ -5719,6 +5738,38 @@ export interface operations {
                 content: {
                     "application/json": {
                         updated: number;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    bulkDeleteTransactions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: number[];
+                };
+            };
+        };
+        responses: {
+            /** @description Deleted. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deleted: number;
                     };
                 };
             };

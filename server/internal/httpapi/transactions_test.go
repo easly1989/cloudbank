@@ -201,6 +201,41 @@ func TestTransactionBulkEdit(t *testing.T) {
 	}
 }
 
+func TestTransactionBulkDelete(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	txns := base + "/transactions"
+
+	a := int64(decodeTxn(t, c.do(http.MethodPost, txns, map[string]any{"accountId": acc, "date": "2026-02-01", "amount": -100}, true))["id"].(float64))
+	b := int64(decodeTxn(t, c.do(http.MethodPost, txns, map[string]any{"accountId": acc, "date": "2026-02-02", "amount": -200}, true))["id"].(float64))
+
+	resp := c.do(http.MethodPost, txns+"/bulk-delete", map[string]any{"ids": []int64{a, b}}, true)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("bulk-delete = %d, want 200", resp.StatusCode)
+	}
+	var out struct {
+		Deleted int `json:"deleted"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&out)
+	if out.Deleted != 2 {
+		t.Fatalf("deleted = %d, want 2", out.Deleted)
+	}
+	g := c.do(http.MethodGet, txns+"/"+strconv.FormatInt(a, 10), nil, false)
+	g.Body.Close()
+	if g.StatusCode != http.StatusNotFound {
+		t.Fatalf("after delete, GET = %d, want 404", g.StatusCode)
+	}
+
+	// Empty ids → 400.
+	bad := c.do(http.MethodPost, txns+"/bulk-delete", map[string]any{"ids": []int64{}}, true)
+	bad.Body.Close()
+	if bad.StatusCode != http.StatusBadRequest {
+		t.Fatalf("empty ids = %d, want 400", bad.StatusCode)
+	}
+}
+
 func TestTransactionCrossUserIsolation(t *testing.T) {
 	admin := newTestAPI(t)
 	wid, acc := makeAccount(t, admin)
