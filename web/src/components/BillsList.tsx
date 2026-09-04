@@ -2,7 +2,6 @@ import { ActionIcon, Badge, Box, Group, Stack, Text, Tooltip } from "@mantine/co
 import { notifications } from "@mantine/notifications";
 import { IconCheck } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ApiError, type Bill, type BillState, getBills, postScheduleNow } from "../api/client";
@@ -12,17 +11,15 @@ import { formatMinor } from "../money";
 const STATE_COLOR: Record<BillState, string> = {
   overdue: "red",
   due: "yellow",
-  paid: "green",
 };
 
-// BillsList renders the wallet's scheduled outflows classified as overdue / due
-// / paid, with a base-currency "left to pay" total and a one-click "mark paid"
-// (which posts the scheduled transaction). Both the dashboard widget and the
-// dedicated Bills page render this, differing only via `compact` (widget: hide
-// paid, cap the rows) and `limit`.
+// BillsList renders one row per bill (a scheduled outflow): its last successful
+// payment and its next occurrence, classified overdue / due, with a base-currency
+// "left to pay" total and a one-click "mark paid" (which posts the scheduled
+// transaction). Both the dashboard widget and the dedicated Bills page render
+// this, differing only via `compact` / `limit` (widget: cap the rows).
 export function BillsList({
   walletId,
-  compact = false,
   limit,
 }: {
   walletId: number;
@@ -40,26 +37,7 @@ export function BillsList({
   });
   const data = query.data;
   const base = data?.baseCurrency ?? undefined;
-
-  const bills = useMemo(() => {
-    const all = data?.bills ?? [];
-    return compact ? all.filter((b) => b.state !== "paid") : all;
-  }, [data, compact]);
-
-  // Only the earliest unpaid occurrence of a schedule maps to "post now" (the
-  // schedule's next-due). Later occurrences are previews, so they get no action.
-  const postableKeys = useMemo(() => {
-    const seen = new Set<number>();
-    const keys = new Set<string>();
-    for (const b of data?.bills ?? []) {
-      if (b.state === "paid") continue;
-      if (!seen.has(b.scheduleId)) {
-        seen.add(b.scheduleId);
-        keys.add(`${b.scheduleId}:${b.dueDate}`);
-      }
-    }
-    return keys;
-  }, [data]);
+  const bills = data?.bills ?? [];
 
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ["bills", walletId] });
@@ -85,14 +63,9 @@ export function BillsList({
 
   const row = (b: Bill) => {
     // Auto-post bills post themselves, so they get no manual "mark paid".
-    const postable = postableKeys.has(`${b.scheduleId}:${b.dueDate}`) && !b.autoPost;
+    const postable = !b.autoPost;
     return (
-      <Group
-        key={`${b.scheduleId}:${b.dueDate}:${b.state}`}
-        justify="space-between"
-        wrap="nowrap"
-        gap="xs"
-      >
+      <Group key={b.scheduleId} justify="space-between" wrap="nowrap" gap="xs">
         <Box style={{ minWidth: 0 }}>
           <Group gap={6} wrap="nowrap">
             <Text size="sm" truncate>
@@ -101,14 +74,15 @@ export function BillsList({
             <Badge size="xs" variant="light" color={STATE_COLOR[b.state]}>
               {stateLabel(b.state)}
             </Badge>
-            {b.autoPost && b.state !== "paid" && (
+            {b.autoPost && (
               <Badge size="xs" variant="outline" color="gray">
                 {t("bills.auto")}
               </Badge>
             )}
           </Group>
           <Text size="xs" c="dimmed" truncate>
-            {fmtDate(b.dueDate)}
+            {t("bills.next")}: {fmtDate(b.dueDate)}
+            {b.lastPaid ? ` · ${t("bills.lastPaid")}: ${fmtDate(b.lastPaid)}` : ""}
             {b.accountName ? ` · ${b.accountName}` : ""}
           </Text>
         </Box>

@@ -54,7 +54,8 @@ type Bill struct {
 	Name        string       `json:"name"`
 	AccountID   *int64       `json:"accountId,omitempty"`
 	AccountName string       `json:"accountName,omitempty"`
-	DueDate     string       `json:"dueDate"`
+	DueDate     string       `json:"dueDate"` // the next occurrence's due date
+	LastPaid    string       `json:"lastPaid,omitempty"`
 	Amount      int64        `json:"amount"`
 	BaseAmount  int64        `json:"baseAmount"`
 	Currency    CurrencyInfo `json:"currency"`
@@ -124,14 +125,14 @@ func (s *Service) billsCategory(ctx context.Context, walletID int64) *int64 {
 }
 
 // Bills lists the wallet's bill schedules with their next due occurrence,
-// classified overdue/due, plus recently paid occurrences for context. It shows
-// one upcoming row per schedule — its real next-due date — regardless of how far
-// out it is, so a bill never vanishes when auto-post pre-registers it months
-// ahead. "Paid" means posted on or before `today`: a future-dated pre-registered
-// occurrence is upcoming, not paid. `from` bounds the recently-paid context, and
-// when a bills category is configured only that category's schedules are shown.
-func (s *Service) Bills(ctx context.Context, walletID int64, from, today string) (Summary, error) {
-	out := Summary{From: from, To: today, Bills: []Bill{}}
+// classified overdue/due, each carrying its last successful payment. It shows
+// exactly one row per bill — its real next-due date — regardless of how far out
+// it is, so a bill never vanishes when auto-post pre-registers it months ahead.
+// LastPaid is the most recent occurrence posted on or before `today` (a
+// future-dated pre-registered post is upcoming, not paid). When a bills category
+// is configured only that category's schedules are shown.
+func (s *Service) Bills(ctx context.Context, walletID int64, today string) (Summary, error) {
+	out := Summary{From: today, To: today, Bills: []Bill{}}
 
 	currencies, err := s.rq.ListCurrenciesForWallet(ctx, walletID)
 	if err != nil {
@@ -186,25 +187,16 @@ func (s *Service) Bills(ctx context.Context, walletID int64, from, today string)
 			v := r.AccountID.Int64
 			accID = &v
 		}
-		mk := func(dueDate string, state State) Bill {
-			return Bill{
-				ScheduleID: r.ID, TemplateID: r.TemplateID, Name: r.TemplateName,
-				AccountID: accID, AccountName: r.AccountName.String, DueDate: dueDate,
-				Amount: r.TemplateAmount, BaseAmount: toBase(r.TemplateAmount), Currency: info,
-				State: state, IsTransfer: r.TemplateIsTransfer != 0, AutoPost: r.AutoPost != 0,
-			}
-		}
-
-		// Recently paid (context): the last posted occurrence, only when it is
-		// on or before today (a future pre-registered post is upcoming, not paid)
-		// and no older than `from`.
-		if r.LastPosted.Valid && r.LastPosted.String <= today && r.LastPosted.String >= from {
-			out.Bills = append(out.Bills, mk(r.LastPosted.String, StatePaid))
+		// The last successful payment: the most recent occurrence posted on or
+		// before today (a future pre-registered post is upcoming, not paid).
+		lastPaid := ""
+		if r.LastPosted.Valid && r.LastPosted.String <= today {
+			lastPaid = r.LastPosted.String
 			out.Paid++
 		}
 
-		// The next real occurrence: one upcoming row per schedule (its next-due),
-		// unless the schedule is exhausted. Always shown, however far out.
+		// One row per bill: its next real occurrence (unless the schedule is
+		// exhausted), always shown however far out, carrying its last payment.
 		if r.Remaining.Valid && r.Remaining.Int64 <= 0 {
 			continue
 		}
@@ -220,7 +212,12 @@ func (s *Service) Bills(ctx context.Context, walletID int64, from, today string)
 		} else {
 			out.Due++
 		}
-		out.Bills = append(out.Bills, mk(d, state))
+		out.Bills = append(out.Bills, Bill{
+			ScheduleID: r.ID, TemplateID: r.TemplateID, Name: r.TemplateName,
+			AccountID: accID, AccountName: r.AccountName.String, DueDate: d, LastPaid: lastPaid,
+			Amount: r.TemplateAmount, BaseAmount: toBase(r.TemplateAmount), Currency: info,
+			State: state, IsTransfer: r.TemplateIsTransfer != 0, AutoPost: r.AutoPost != 0,
+		})
 		out.TotalDue += -toBase(r.TemplateAmount) // positive magnitude
 	}
 
