@@ -39,35 +39,40 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 
 ## Screenshots
 
-|                    Dashboard                     |                  Customizable layout                  |
-| :----------------------------------------------: | :---------------------------------------------------: |
-|     ![Dashboard](docs/img/dashboard.png)         | ![Customize the dashboard](docs/img/dashboard-customize.png) |
+|                Dashboard                 |            Register — bulk actions on a selection            |
+| :--------------------------------------: | :---------------------------------------------------------: |
+| ![Dashboard](docs/img/dashboard.png)     | ![Bulk actions in the register](docs/img/register-bulk.png) |
 
-|                   Reports                    |                Preferences & themes                |
-| :------------------------------------------: | :------------------------------------------------: |
-|      ![Reports](docs/img/reports.png)        |       ![Settings](docs/img/settings.png)           |
+|          Bills — last payment & next occurrence          |        Bank-sync review — resolve possible duplicates        |
+| :------------------------------------------------------: | :---------------------------------------------------------: |
+| ![Bills](docs/img/bills.png)                             | ![Bank-sync review](docs/img/review.png)                    |
 
-|                 Templates                  |          HomeBank `.xhb` export & backup           |
-| :----------------------------------------: | :------------------------------------------------: |
-|    ![Templates](docs/img/templates.png)    |        ![Export](docs/img/export.png)              |
+|                 Interactive reports                 |            Preferences, themes & accent            |
+| :-------------------------------------------------: | :------------------------------------------------: |
+| ![Reports](docs/img/reports.png)                    | ![Settings](docs/img/settings.png)                 |
+
+|            Customizable, free-form dashboard             |          HomeBank `.xhb` export & backup           |
+| :------------------------------------------------------: | :------------------------------------------------: |
+| ![Customize the dashboard](docs/img/dashboard-customize.png) | ![Export](docs/img/export.png)                 |
 
 ## Features
 
 - **Accounts** of every HomeBank type (bank, cash, checking, savings, credit card, liability, asset, investment) with per-account currency, a **default payment mode**, and the full set of flags, showing both today's balance and a projected future balance.
-- **Transactions** with 12 payment types, the cleared/reconciled status lifecycle, category splits, free tags, internal transfers (including cross-currency), bulk edit and duplicate detection.
+- **Transactions** with 12 payment types, the cleared/reconciled status lifecycle, category splits, free tags, internal transfers (including cross-currency), a right-click context menu, and multi-selection **bulk actions** — set category / payee / payment mode / status / **tags** (add or replace) or **delete** across many rows at once, with **shift-click** range selection — plus duplicate detection.
 - **Register** view with running balance, rich filtering (including a show/hide **future transactions** toggle), per-user column customization, a **selection total** (net + income/expense split of the currently selected rows), a reconciliation workflow, double-click-to-edit, and **full-text search** across memo, payee, category and info.
 - **Scheduled transactions** with automatic posting (optionally **pre-registering up to 3 months ahead**, HomeBank style), a **per-week/month/year income & expense summary**, the recurring **amount** shown in the schedules grid, **templates** (a dedicated management area, and offered when entering a transaction), and **assignment rules** for auto-categorization.
 - **Budgets** and a full suite of **reports** (Statistics, Trend Time, Balance, Budget, Vehicle cost) with interactive charts and CSV/PNG export.
 - **Savings goals** — manual piggy-bank goals with contribute / withdraw, a progress bar and an optional target date (included in wallet backup/restore).
-- **Bills** — a "what's due" view over your scheduled transactions (upcoming / due / overdue) with one-click posting.
+- **Bills** — a focused "what's due" view showing **one row per bill** with its **last successful payment** and its **next occurrence** (due / overdue), one-click posting, and a **quick "add a bill" form** (name, amount, account, day of month → a monthly scheduled outflow).
 - **Import**: HomeBank `.xhb`, QIF, OFX/QFX, CSV — with an import assistant. **Export**: HomeBank `.xhb`, QIF, CSV.
-- **Automatic bank sync** — pull new transactions straight from your bank, de-duplicated and run through your assignment rules. Two providers, both **bring-your-own-credentials** so CloudBank never sees your bank login: **[SimpleFIN](https://www.simplefin.org/)** (worldwide; a ~$15/year SimpleFIN Bridge subscription) and **[Enable Banking](https://enablebanking.com/)** (EU/EEA + UK via PSD2 — a free sandbox to test, your own production application for real accounts). A **personal (restricted)** production app can only sync accounts you **link** to it in the Enable Banking panel — the [bank-sync guide](docs/bank-sync.md) walks through it.
+- **Automatic bank sync** — pull new transactions straight from your bank, run through your assignment rules and **reconciled against what you already have**: a bank row that matches an existing manual or scheduled transaction (amount + nearby date) is **merged** into it instead of duplicated, imported with the right status (booked → reconciled, pending → cleared) and a sensible default payment mode. Two providers, both **bring-your-own-credentials** so CloudBank never sees your bank login: **[SimpleFIN](https://www.simplefin.org/)** (worldwide; a ~$15/year SimpleFIN Bridge subscription) and **[Enable Banking](https://enablebanking.com/)** (EU/EEA + UK via PSD2 — a free sandbox to test, your own production application for real accounts). A **personal (restricted)** production app can only sync accounts you **link** to it in the Enable Banking panel — the [bank-sync guide](docs/bank-sync.md) walks through it.
+- **Bank-sync review** — a dedicated page that lists imported transactions still **needing a category** (set it inline) and finds **possible duplicates** that slipped through, with per-pair **merge**, edit, delete, or **"not a duplicate"** (remembered, so it isn't shown again).
 - **Multi-currency** with manual and online (ECB / frankfurter.app) exchange rates.
 - Multi-user (admin-managed), responsive UI, English and Italian.
 
 ### Make it yours
 
-- **Fully customizable, free-form dashboard** — place and resize widgets anywhere on a grid, and add **multiple instances of any widget** from a palette, each with its own settings. A varied widget library covers the standard cases (base-currency totals, quick-add, income/expense, accounts, spending donut, budget gauge, upcoming) plus building blocks for a custom layout (single **account balance**, **recent transactions**, a **key-figure** big-number, and free-text **notes**). Pick an account and **Add** opens the full entry modal; the Upcoming panel splits into **Recurring / Future / Reminders** with post / skip / edit. Existing dashboards migrate automatically, and the grid stacks to one column on phones.
+- **Fully customizable, free-form dashboard** — place and resize widgets anywhere on a grid, and add **multiple instances of any widget** from a palette, each with its own settings. A varied widget library covers the standard cases (base-currency totals, quick-add, income/expense, accounts, spending donut, budget gauge, upcoming) plus building blocks for a custom layout (single **account balance**, **recent transactions**, a **key-figure** big-number, and free-text **notes**). Pick an account and **Add** opens the full entry modal; the Upcoming panel splits into **Recurring / Future / Reminders** with post / skip / edit. In edit mode, **Tidy** re-packs the widgets with no gaps and **Reset** restores the default layout. Existing dashboards migrate automatically, and the grid stacks to one column on phones.
 - **Themes** — light / dark / auto plus an **accent-colour picker**; your choice persists per user across devices.
 - **Collapsible sidebar** and a **pinnable, reorderable navigation** ("More" group for the rest).
 - **Smart amount entry** (HomeBank style) — type `12.40` or `12,40` and both are read as decimals (toggleable per user).

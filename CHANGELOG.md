@@ -12,6 +12,30 @@ the phone, and opt-in AI.
 
 ### Added
 
+- **Bank-sync reconciliation** — imported transactions are now matched against
+  your existing **manual or scheduled** transactions (same amount within a date
+  window) and **merged** into them instead of duplicated (the bank reference is
+  carried over so future syncs recognise the row), imported with the right status
+  (booked → **reconciled**, pending → **cleared**, and a pending row settles up to
+  its booked form when it arrives), and given a **default payment mode** by account
+  type (IBAN → direct debit, card → credit card). Enable Banking pending
+  transactions are fetched explicitly, since many banks return only booked ones.
+- **Bank-sync review** — a dedicated page listing imported transactions that still
+  **need a category** (set it inline) and a **duplicate finder** for pairs that
+  slipped through, each with **merge**, edit, delete, or **"not a duplicate"** (a
+  dismissal that is remembered so the pair isn't surfaced again).
+- **Bills, redesigned** — the Bills view now shows **one row per bill** with its
+  **last successful payment** and its **next occurrence**, plus a **quick "add a
+  bill" form** (name, amount, account, day of month) that creates a monthly
+  scheduled outflow in your bills category.
+- **Transaction bulk actions** — multi-selection **bulk edit** now covers category,
+  payee, payment mode, status and **tags** (add or replace), plus **bulk delete**;
+  reachable from the selection bar **and** the right-click menu, with **shift-click**
+  range selection in the register.
+- **Dashboard Tidy / Reset** — in edit mode, **Tidy** re-packs the widgets into a
+  clean, gap-free grid and **Reset** restores the default layout.
+- **CI & code review** — CodeQL static analysis runs on every pull request, and the
+  end-to-end job builds the app image from a shared layer cache for faster runs.
 - **Scheduled background bank sync** — auto-sync connections are refreshed on a
   timer (`CB_BANK_SYNC_INTERVAL`, default 12h), so transactions arrive without
   clicking "Sync now". A per-connection toggle turns it off, and an Enable

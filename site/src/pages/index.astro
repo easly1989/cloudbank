@@ -15,7 +15,7 @@ const features = [
   {
     icon: "📒",
     title: "A powerful register",
-    body: "Running balances, rich filtering, 12 payment types, the cleared/reconciled lifecycle, category splits, tags, bulk edit with a running selection total, and duplicate detection.",
+    body: "Running balances, rich filtering, 12 payment types, the cleared/reconciled lifecycle, category splits, tags, a right-click menu and multi-select bulk actions (edit category / payee / payment / status / tags, or delete — with shift-click range select), a running selection total, and duplicate detection.",
   },
   {
     icon: "🔁",
@@ -35,12 +35,12 @@ const features = [
   {
     icon: "🔗",
     title: "Automatic bank sync",
-    body: "Pull new transactions automatically in the background — de-duplicated and auto-categorised by your rules. Bring your own credentials for SimpleFIN (worldwide) or Enable Banking (EU/PSD2); CloudBank never sees your bank login.",
+    body: "Pull new transactions automatically in the background — matched against what you already entered so nothing is duplicated, imported with the right status and auto-categorised by your rules, with a Review page to complete categories and resolve any stragglers. Bring your own credentials for SimpleFIN (worldwide) or Enable Banking (EU/PSD2); CloudBank never sees your bank login.",
   },
   {
     icon: "🎯",
     title: "Goals & bills",
-    body: "Savings-goal piggy banks with progress bars and targets, plus a Bills view that surfaces what's due — upcoming, due and overdue — over your schedules.",
+    body: "Savings-goal piggy banks with progress bars and targets, plus a Bills view — one row per bill with its last payment and next occurrence, one-click posting, and a quick add-a-bill form.",
   },
   {
     icon: "🔐",
@@ -83,7 +83,9 @@ const stats = [
 
 const shots = [
   { src: "shots/dashboard.png", cap: "A free-form, customisable dashboard" },
-  { src: "shots/transactions.png", cap: "A fast, filterable register" },
+  { src: "shots/transactions.png", cap: "Bulk actions across a selection" },
+  { src: "shots/bills.png", cap: "One row per bill — last paid & next due" },
+  { src: "shots/review.png", cap: "Bank-sync review resolves duplicates" },
   { src: "shots/reports.png", cap: "Interactive reports & charts" },
 ];
 ---
