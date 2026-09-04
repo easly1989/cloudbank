@@ -667,6 +667,29 @@ func (s *Service) BulkUpdate(ctx context.Context, walletID int64, ids []int64, f
 	return len(ids), nil
 }
 
+// BulkDelete removes several transactions at once (each with its transfer leg and
+// attachments, exactly like Delete). Every id must belong to the wallet, checked
+// up front so a bad id rejects the whole batch before anything is removed.
+func (s *Service) BulkDelete(ctx context.Context, walletID int64, ids []int64) (int, error) {
+	for _, id := range ids {
+		row, err := s.q.GetTransaction(ctx, id)
+		if errors.Is(err, sql.ErrNoRows) || (err == nil && row.WalletID != walletID) {
+			return 0, ErrNotFound
+		}
+		if err != nil {
+			return 0, err
+		}
+	}
+	n := 0
+	for _, id := range ids {
+		if err := s.Delete(ctx, id); err != nil {
+			return n, err
+		}
+		n++
+	}
+	return n, nil
+}
+
 func (s *Service) validateTarget(ctx context.Context, qtx *db.Queries, walletID int64, field string, id int64) error {
 	if field == BulkFieldCategory {
 		cat, err := qtx.GetCategory(ctx, id)

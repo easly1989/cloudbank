@@ -537,6 +537,12 @@
     "selectedOut": "uscite",
     "field": "Imposta campo",
     "apply": "Applica",
+    "cancel": "Annulla",
+    "edit": "Modifica…",
+    "delete": "Elimina",
+    "editTitle": "Modifica {{count}} transazioni",
+    "confirmDelete": "Eliminare {{count}} transazioni selezionate? L'operazione non è reversibile.",
+    "deleted": "Eliminate {{count}} transazioni",
     "clearSelection": "Deseleziona",
     "done": "Aggiornate {{count}} transazioni",
     "fields": {

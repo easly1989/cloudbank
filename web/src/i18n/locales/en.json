@@ -537,6 +537,12 @@
     "selectedOut": "out",
     "field": "Set field",
     "apply": "Apply",
+    "cancel": "Cancel",
+    "edit": "Edit…",
+    "delete": "Delete",
+    "editTitle": "Edit {{count}} transactions",
+    "confirmDelete": "Delete {{count}} selected transactions? This cannot be undone.",
+    "deleted": "Deleted {{count}} transaction(s)",
     "clearSelection": "Clear",
     "done": "Updated {{count}} transaction(s)",
     "fields": {
