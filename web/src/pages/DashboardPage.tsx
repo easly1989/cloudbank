@@ -1,9 +1,11 @@
 import { ActionIcon, Box, Button, Group, Menu, Stack, Text, Title } from "@mantine/core";
 import {
   IconAdjustmentsHorizontal,
+  IconArrowsMinimize,
   IconEyeOff,
   IconGripVertical,
   IconPlus,
+  IconRestore,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
@@ -18,8 +20,10 @@ import {
   WIDGET_SIZES,
   WIDGET_TYPES,
   type WidgetType,
+  defaultLayout,
   migrateLayout,
   newInstanceId,
+  tidyLayout,
 } from "../components/dashboard/layout";
 import { AccountBalanceCard } from "../components/dashboard/widgets/AccountBalanceCard";
 import { AccountsPanel } from "../components/dashboard/widgets/AccountsPanel";
@@ -78,6 +82,13 @@ export function DashboardPage() {
     saveTimer.current = setTimeout(() => persistLayout.mutate(next), 500);
   };
   useEffect(() => () => clearTimeout(saveTimer.current), []);
+
+  // Re-pack the current widgets into a clean, gap-free grid (non-destructive).
+  const tidy = () => commitLayout(tidyLayout(layoutRef.current.widgets));
+  // Restore the default widget set and arrangement (after a confirm).
+  const resetToDefault = () => {
+    if (window.confirm(t("dashboard.resetConfirm"))) commitLayout(defaultLayout());
+  };
 
   // Base dashboard query for the wallet-wide widgets (totals, accounts, base
   // currency), independent of any widget's period. The spending / income-expense
@@ -289,6 +300,27 @@ export function DashboardPage() {
                 ))}
               </Menu.Dropdown>
             </Menu>
+          )}
+          {editingLayout && (
+            <>
+              <Button
+                variant="default"
+                size="xs"
+                leftSection={<IconArrowsMinimize size={16} />}
+                onClick={tidy}
+              >
+                {t("dashboard.tidyLayout")}
+              </Button>
+              <Button
+                variant="default"
+                size="xs"
+                color="gray"
+                leftSection={<IconRestore size={16} />}
+                onClick={resetToDefault}
+              >
+                {t("dashboard.resetLayout")}
+              </Button>
+            </>
           )}
           <Button
             variant={editingLayout ? "light" : "subtle"}
