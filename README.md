@@ -132,6 +132,30 @@ Running behind HTTPS (recommended for anything beyond a trusted LAN)? See
 [docs/reverse-proxy.md](docs/reverse-proxy.md). Coming from the HomeBank desktop
 app? See [docs/migrate-from-homebank.md](docs/migrate-from-homebank.md).
 
+## Install as an app (PWA)
+
+CloudBank is an installable **Progressive Web App** — there is **nothing extra to
+build, generate or host**. The web-app manifest, the service worker (offline app
+shell) and the icons are produced automatically when the frontend is built and are
+baked into the same container image; the running app just serves them.
+
+To install, open your CloudBank URL in a browser and:
+
+- **Chrome / Edge (desktop)** — click the **install icon** in the address bar (or
+  menu → _Install CloudBank…_).
+- **Android (Chrome)** — menu → **Add to Home screen / Install app**.
+- **iOS/iPadOS (Safari)** — **Share** → **Add to Home Screen**.
+
+It then launches in its own window like a native app, and updates itself to the
+latest version on the next launch after you deploy a new image.
+
+> **Requires HTTPS.** Browsers only register a service worker and offer
+> installation over a **secure context** — i.e. HTTPS (plain `http://localhost` is
+> the only exception, for local testing). Put CloudBank behind TLS
+> ([docs/reverse-proxy.md](docs/reverse-proxy.md)) and keep `CB_SECURE_COOKIES`
+> at its default; over plain HTTP the browser won't offer "Install" and offline
+> support / push notifications won't work.
+
 ## Documentation
 
 - **API**: interactive Swagger UI is served by the app at **`/api/docs`** (the
