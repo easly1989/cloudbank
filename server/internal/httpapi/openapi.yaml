@@ -1243,6 +1243,58 @@ paths:
                 required: [updated]
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/review:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getTransactionReview
+      summary: Bank-sync review — imported rows needing a category, and suspected duplicate pairs
+      responses:
+        "200":
+          description: The review.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReviewResult" }
+  /api/v1/wallets/{walletId}/transactions/duplicates/dismiss:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: dismissDuplicatePair
+      summary: Mark two transactions as not a duplicate (won't be surfaced again)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                aId: { type: integer, format: int64 }
+                bId: { type: integer, format: int64 }
+              required: [aId, bId]
+      responses:
+        "204": { description: Dismissed. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/merge:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: mergeTransactions
+      summary: Merge a duplicate pair — keep one row (inheriting the other's import ref), delete the other
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                keepId: { type: integer, format: int64 }
+                dropId: { type: integer, format: int64 }
+              required: [keepId, dropId]
+      responses:
+        "204": { description: Merged. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/transactions/register:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -2808,6 +2860,38 @@ components:
         isTransfer: { type: boolean }
         autoPost: { type: boolean }
       required: [scheduleId, templateId, name, dueDate, amount, baseAmount, currency, state, isTransfer, autoPost]
+    ReviewTxn:
+      type: object
+      description: A lightweight transaction shown in the bank-sync review.
+      properties:
+        id: { type: integer, format: int64 }
+        accountId: { type: integer, format: int64 }
+        date: { type: string }
+        amount: { type: integer, format: int64 }
+        memo: { type: string }
+        payeeId: { type: integer, format: int64, nullable: true }
+        categoryId: { type: integer, format: int64, nullable: true }
+        status: { type: integer }
+        importRef: { type: string }
+      required: [id, accountId, date, amount, memo, status]
+    DuplicatePair:
+      type: object
+      description: Two transactions that look like the same movement.
+      properties:
+        a: { $ref: "#/components/schemas/ReviewTxn" }
+        b: { $ref: "#/components/schemas/ReviewTxn" }
+      required: [a, b]
+    ReviewResult:
+      type: object
+      description: "Bank-sync review: imported rows missing a category, and suspected duplicate pairs."
+      properties:
+        needsCategory:
+          type: array
+          items: { $ref: "#/components/schemas/ReviewTxn" }
+        duplicates:
+          type: array
+          items: { $ref: "#/components/schemas/DuplicatePair" }
+      required: [needsCategory, duplicates]
     BillsSummary:
       type: object
       description: "The Bills view: scheduled outflows classified over a date window."

@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/easly1989/cloudbank/server/internal/store"
@@ -487,5 +488,75 @@ func TestSearchPaginationTotal(t *testing.T) {
 	res2, _ := s.Search(ctx, wid, SearchQuery{Query: "subscription", Limit: 2, Offset: 4})
 	if len(res2.Rows) != 1 || res2.Total != 5 {
 		t.Fatalf("offset page = %d rows / total %d, want 1 / 5", len(res2.Rows), res2.Total)
+	}
+}
+
+func TestReviewAndDuplicates(t *testing.T) {
+	s, q, wid, acc := newTestService(t)
+	ctx := context.Background()
+
+	// A bank-imported transaction with no category → needs a category.
+	imported, err := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-04-10", Amount: -1000, ImportRef: "bank:1"})
+	if err != nil {
+		t.Fatalf("create imported: %v", err)
+	}
+	// A pair with the same account+amount a few days apart (d2 is the bank row).
+	d1, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-05-01", Amount: -2500, Memo: "coffee"})
+	d2, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-05-04", Amount: -2500, ImportRef: "bank:2"})
+
+	rev, err := s.Review(ctx, wid)
+	if err != nil {
+		t.Fatalf("review: %v", err)
+	}
+	has := func(list []ReviewTxn, id int64) bool {
+		for _, r := range list {
+			if r.ID == id {
+				return true
+			}
+		}
+		return false
+	}
+	if !has(rev.NeedsCategory, imported.ID) || !has(rev.NeedsCategory, d2.ID) {
+		t.Errorf("needsCategory missing an imported uncategorized row: %+v", rev.NeedsCategory)
+	}
+	if has(rev.NeedsCategory, d1.ID) {
+		t.Errorf("manual d1 (no import ref) should not be in needsCategory")
+	}
+	if len(rev.Duplicates) != 1 {
+		t.Fatalf("duplicates = %d, want 1", len(rev.Duplicates))
+	}
+	p := rev.Duplicates[0]
+	matched := (p.A.ID == d1.ID && p.B.ID == d2.ID) || (p.A.ID == d2.ID && p.B.ID == d1.ID)
+	if !matched {
+		t.Fatalf("unexpected pair: %+v", p)
+	}
+
+	// Dismiss → the pair no longer surfaces.
+	if err := s.DismissDuplicate(ctx, wid, d2.ID, d1.ID); err != nil {
+		t.Fatalf("dismiss: %v", err)
+	}
+	rev2, _ := s.Review(ctx, wid)
+	if len(rev2.Duplicates) != 0 {
+		t.Fatalf("after dismiss, duplicates = %d, want 0", len(rev2.Duplicates))
+	}
+
+	// Merge a fresh pair: keep the manual row, carry the bank ref, drop the bank row.
+	m1, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-06-01", Amount: -3000, Memo: "manual"})
+	m2, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-06-02", Amount: -3000, ImportRef: "bank:3"})
+	if err := s.Merge(ctx, wid, m1.ID, m2.ID); err != nil {
+		t.Fatalf("merge: %v", err)
+	}
+	if _, err := s.Get(ctx, m2.ID); !errors.Is(err, ErrNotFound) {
+		t.Errorf("dropped transaction should be gone, err=%v", err)
+	}
+	row, err := q.GetTransaction(ctx, m1.ID)
+	if err != nil {
+		t.Fatalf("get kept: %v", err)
+	}
+	if row.Memo != "manual" {
+		t.Errorf("kept memo = %q, want manual", row.Memo)
+	}
+	if row.ImportRef != "bank:3" {
+		t.Errorf("kept import_ref = %q, want bank:3 (carried from the merged row)", row.ImportRef)
 	}
 }
