@@ -236,6 +236,60 @@ func TestTransactionBulkDelete(t *testing.T) {
 	}
 }
 
+func TestTransactionBulkTags(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	txns := base + "/transactions"
+
+	a := int64(decodeTxn(t, c.do(http.MethodPost, txns, map[string]any{"accountId": acc, "date": "2026-03-01", "amount": -100}, true))["id"].(float64))
+	b := int64(decodeTxn(t, c.do(http.MethodPost, txns, map[string]any{"accountId": acc, "date": "2026-03-02", "amount": -200, "tags": []string{"old"}}, true))["id"].(float64))
+
+	// Add "shared" to both (b keeps its "old").
+	resp := c.do(http.MethodPost, txns+"/bulk-tags", map[string]any{"ids": []int64{a, b}, "tags": []string{"shared"}, "replace": false}, true)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("bulk-tags add = %d, want 200", resp.StatusCode)
+	}
+	gb := decodeTxn(t, c.do(http.MethodGet, txns+"/"+strconv.FormatInt(b, 10), nil, false))
+	tags := toStrings(gb["tags"])
+	if !contains(tags, "old") || !contains(tags, "shared") {
+		t.Fatalf("b tags = %v, want both old and shared", tags)
+	}
+
+	// Replace b's tags with just "only".
+	resp2 := c.do(http.MethodPost, txns+"/bulk-tags", map[string]any{"ids": []int64{b}, "tags": []string{"only"}, "replace": true}, true)
+	resp2.Body.Close()
+	if resp2.StatusCode != http.StatusOK {
+		t.Fatalf("bulk-tags replace = %d, want 200", resp2.StatusCode)
+	}
+	gb2 := decodeTxn(t, c.do(http.MethodGet, txns+"/"+strconv.FormatInt(b, 10), nil, false))
+	tags2 := toStrings(gb2["tags"])
+	if len(tags2) != 1 || tags2[0] != "only" {
+		t.Fatalf("b tags after replace = %v, want [only]", tags2)
+	}
+}
+
+func toStrings(v any) []string {
+	arr, _ := v.([]any)
+	out := make([]string, 0, len(arr))
+	for _, e := range arr {
+		if s, ok := e.(string); ok {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func contains(ss []string, want string) bool {
+	for _, s := range ss {
+		if s == want {
+			return true
+		}
+	}
+	return false
+}
+
 func TestTransactionCrossUserIsolation(t *testing.T) {
 	admin := newTestAPI(t)
 	wid, acc := makeAccount(t, admin)

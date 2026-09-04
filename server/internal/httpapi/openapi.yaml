@@ -1212,6 +1212,37 @@ paths:
                 required: [deleted]
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/bulk-tags:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: bulkTagTransactions
+      summary: Add or replace tags across many transactions (all-or-nothing)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids: { type: array, items: { type: integer, format: int64 } }
+                tags: { type: array, items: { type: string } }
+                replace:
+                  type: boolean
+                  description: "true replaces each transaction's tags with these; false adds them"
+              required: [ids, tags]
+      responses:
+        "200":
+          description: Applied.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated: { type: integer }
+                required: [updated]
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/transactions/register:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }

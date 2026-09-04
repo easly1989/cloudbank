@@ -21,6 +21,7 @@ func (h *transactionHandlers) walletRoutes(r chi.Router) {
 	r.Post("/transactions", h.create)
 	r.Post("/transactions/bulk", h.bulk)
 	r.Post("/transactions/bulk-delete", h.bulkDelete)
+	r.Post("/transactions/bulk-tags", h.bulkTags)
 	r.Get("/transactions/register", h.register)
 	r.Get("/transactions/search", h.search)
 	r.Get("/transactions/duplicates", h.duplicates)
@@ -132,6 +133,31 @@ func (h *transactionHandlers) bulkDelete(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, "not_found", "transaction not found")
 	default:
 		writeError(w, http.StatusInternalServerError, "internal", "could not delete transactions")
+	}
+}
+
+func (h *transactionHandlers) bulkTags(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body struct {
+		IDs     []int64  `json:"ids"`
+		Tags    []string `json:"tags"`
+		Replace bool     `json:"replace"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if len(body.IDs) == 0 {
+		writeError(w, http.StatusBadRequest, "invalid", "ids is required")
+		return
+	}
+	n, err := h.svc.BulkSetTags(r.Context(), wl.ID, body.IDs, body.Tags, body.Replace)
+	switch {
+	case err == nil:
+		writeJSON(w, http.StatusOK, map[string]int{"updated": n})
+	case errors.Is(err, transaction.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "transaction not found")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", "could not update tags")
 	}
 }
 
