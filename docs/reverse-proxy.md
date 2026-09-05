@@ -75,3 +75,10 @@ unauthenticated.
 - WebSocket upgrades are not required.
 - If you put it on a sub-domain, that's all CloudBank needs — it has no
   hard-coded base URL.
+- **Serving over HTTPS is what makes the installable PWA work.** The web manifest
+  and service worker are already inside the image, but browsers only register the
+  service worker (offline app shell, opt-in web-push reminders) and offer
+  **Install** in a **secure context** — i.e. HTTPS (plain `http://localhost` is the
+  only exception). Behind TLS as above it just works; over plain HTTP the browser
+  will not offer to install the app. Keep `CB_SECURE_COOKIES` at its default
+  (`true`) when there is TLS in front.
