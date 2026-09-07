@@ -202,6 +202,60 @@ func TestEnableBankingBalanceCaching(t *testing.T) {
 	}
 }
 
+func TestTxnStatusStats(t *testing.T) {
+	txns := []ebTxn{
+		{Status: "BOOK", BookingDate: "2024-06-10"},
+		{Status: "book", ValueDate: "2024-06-11"}, // case-insensitive
+		{Status: "PDNG", BookingDate: "2024-06-12"},
+		{Status: "PDNG"}, // pending with no usable date → droppable
+		{Status: "", TransactionDate: "2024-06-13"},
+	}
+	booked, pending, other, pendingDroppedNoDate := txnStatusStats(txns)
+	if booked != 2 || pending != 2 || other != 1 || pendingDroppedNoDate != 1 {
+		t.Fatalf("stats = booked %d / pending %d / other %d / pendingDroppedNoDate %d; want 2/2/1/1",
+			booked, pending, other, pendingDroppedNoDate)
+	}
+}
+
+func TestEnableBankingPendingProbe(t *testing.T) {
+	svc, _, wid, acc, pemStr := newEBFixture(t)
+	ctx := context.Background()
+	if err := svc.SetEBankingConfig(ctx, wid, "app-123", pemStr, "sandbox"); err != nil {
+		t.Fatalf("SetEBankingConfig: %v", err)
+	}
+	_, state, err := svc.EBankingStartAuth(ctx, wid, "IntesaSanpaolo", "IT", "My Intesa", "https://cb.example/bank-sync/callback")
+	if err != nil {
+		t.Fatalf("StartAuth: %v", err)
+	}
+	conn, err := svc.EBankingCompleteAuth(ctx, wid, state, "the-code")
+	if err != nil {
+		t.Fatalf("CompleteAuth: %v", err)
+	}
+	if err := svc.Link(ctx, wid, conn.ID, "acc-uid-1", acc); err != nil {
+		t.Fatalf("Link: %v", err)
+	}
+	mock := svc.hc.(*ebMockDoer)
+
+	// Probe off (default): a single transactions call for the linked account.
+	mock.txnFetches = 0
+	if _, err := svc.Sync(ctx, wid, conn.ID); err != nil {
+		t.Fatalf("Sync (probe off): %v", err)
+	}
+	if mock.txnFetches != 1 {
+		t.Fatalf("probe off made %d transactions calls, want 1", mock.txnFetches)
+	}
+
+	// Probe on: one extra PDNG call for the linked account.
+	t.Setenv("CB_BANK_SYNC_DEBUG_PENDING", "1")
+	mock.txnFetches = 0
+	if _, err := svc.Sync(ctx, wid, conn.ID); err != nil {
+		t.Fatalf("Sync (probe on): %v", err)
+	}
+	if mock.txnFetches != 2 {
+		t.Fatalf("probe on made %d transactions calls, want 2", mock.txnFetches)
+	}
+}
+
 func TestEnableBankingJWT(t *testing.T) {
 	key, pemStr := genTestKey(t)
 	cl, err := newEnableBankingClient(nil, "app-xyz", pemStr)

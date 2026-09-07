@@ -18,8 +18,9 @@ dashboard polish.
   carried over so future syncs recognise the row), imported with the right status
   (booked → **reconciled**, pending → **cleared**, and a pending row settles up to
   its booked form when it arrives), and given a **default payment mode** by account
-  type (IBAN → direct debit, card → credit card). Enable Banking pending
-  transactions are fetched explicitly, since many banks return only booked ones.
+  type (IBAN → direct debit, card → credit card). Whatever pending transactions a
+  bank exposes are imported from the same call; many banks' PSD2 interfaces return
+  only booked ones.
 - **Bank-sync review** — a dedicated page listing imported transactions that still
   **need a category** (set it inline) and a **duplicate finder** for pairs that
   slipped through, each with **merge**, edit, delete, or **"not a duplicate"** (a
@@ -36,6 +37,30 @@ dashboard polish.
   clean, gap-free grid and **Reset** restores the default layout.
 - **CI & code review** — CodeQL static analysis runs on every pull request, and the
   end-to-end job builds the app image from a shared layer cache for faster runs.
+- **Per-connection sync frequency & cached balances** — each bank connection now
+  has its own **auto-sync frequency** (once a day by default, or every 2–3 days /
+  weekly), and account balances on the Bank sync page are **cached** (refreshed at
+  most every 12h) instead of fetched on every visit. Both cut how often CloudBank
+  calls the bank, to stay within PSD2's small per-day access budget.
+- **Last-sync status** — each connection shows when it last synced and the outcome
+  (ok / partial / error) of that attempt, for both manual and background syncs.
+- **Bulk "not a duplicate"** — the duplicate finder can dismiss every surfaced pair
+  at once, for when a fresh import flags many look-alikes that are all legitimate.
+
+### Changed
+
+- The background bank-sync timer (`CB_BANK_SYNC_INTERVAL`, now default `1h`) only
+  controls how often the job **checks** for due connections; each connection's own
+  frequency decides when it actually syncs.
+
+### Fixed
+
+- **PSD2 rate limit (HTTP 429).** Bank sync made two transaction calls per account
+  (booked + an explicit pending call), doubling usage and tripping the ASPSP's
+  "consented multiplicity per day" limit so nothing imported. It now makes a single
+  call that already returns whatever pending the bank exposes. A new opt-in
+  `CB_BANK_SYNC_DEBUG_PENDING` flag logs a booked/pending breakdown (and, on
+  request, the exact provider response) to diagnose banks that return no pending.
 
 ## [2.0.0 – 3.0.3] — Post-parity releases (2026-07 → 2026-09)
 
