@@ -85,18 +85,22 @@ type Attachment struct {
 }
 
 type BankConnection struct {
-	ID           int64
-	WalletID     int64
-	Provider     string
-	AccessUrl    string
-	Name         string
-	CreatedAt    string
-	LastSyncedAt sql.NullString
-	AspspName    string
-	AspspCountry string
-	ValidUntil   string
-	AccountsJson string
-	AutoSync     int64
+	ID                int64
+	WalletID          int64
+	Provider          string
+	AccessUrl         string
+	Name              string
+	CreatedAt         string
+	LastSyncedAt      sql.NullString
+	AspspName         string
+	AspspCountry      string
+	ValidUntil        string
+	AccountsJson      string
+	AutoSync          int64
+	LastSyncAt        sql.NullString
+	LastSyncStatus    string
+	LastSyncMessage   string
+	SyncIntervalHours int64
 }
 
 type BankEbankingAuth struct {

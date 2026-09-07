@@ -26,6 +26,7 @@ import {
   type Transaction,
   bulkEditTransactions,
   deleteTransaction,
+  dismissAllDuplicatePairs,
   dismissDuplicatePair,
   getTransaction,
   getTransactionReview,
@@ -125,6 +126,18 @@ export function ReviewPage() {
   const dismiss = useMutation({
     mutationFn: (v: { aId: number; bId: number }) => dismissDuplicatePair(walletId, v.aId, v.bId),
     onSuccess: refresh,
+    onError,
+  });
+  const dismissAll = useMutation({
+    mutationFn: () => dismissAllDuplicatePairs(walletId),
+    onSuccess: (res) => {
+      refresh();
+      notifications.show({
+        color: "green",
+        message: t("review.dismissedAll", { count: res.dismissed }),
+        autoClose: 2000,
+      });
+    },
     onError,
   });
   const remove = useMutation({
@@ -264,7 +277,23 @@ export function ReviewPage() {
 
       <Card withBorder>
         <Stack gap="sm">
-          <Text fw={600}>{t("review.duplicates", { count: dups.length })}</Text>
+          <Group justify="space-between" wrap="nowrap">
+            <Text fw={600}>{t("review.duplicates", { count: dups.length })}</Text>
+            {dups.length > 0 && (
+              <Button
+                size="xs"
+                variant="light"
+                color="gray"
+                loading={dismissAll.isPending}
+                onClick={() => {
+                  if (window.confirm(t("review.dismissAllConfirm", { count: dups.length })))
+                    dismissAll.mutate();
+                }}
+              >
+                {t("review.dismissAll")}
+              </Button>
+            )}
+          </Group>
           {dups.length === 0 ? (
             <Text c="dimmed" size="sm">
               {t("review.duplicatesEmpty")}

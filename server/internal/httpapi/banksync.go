@@ -28,6 +28,7 @@ func (h *bankSyncHandlers) walletRoutes(r chi.Router) {
 		r.Post("/sync", h.sync)
 		r.Post("/reauth", h.ebReauth)
 		r.Post("/auto-sync", h.setAutoSync)
+		r.Post("/sync-interval", h.setSyncInterval)
 	})
 	// Enable Banking (EU/PSD2), bring-your-own credentials.
 	r.Get("/bank/enablebanking/config", h.ebGetConfig)
@@ -149,6 +150,25 @@ func (h *bankSyncHandlers) setAutoSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.SetAutoSync(r.Context(), wl.ID, id, body.Enabled); err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *bankSyncHandlers) setSyncInterval(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := h.connID(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Hours int `json:"hours"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if err := h.svc.SetSyncInterval(r.Context(), wl.ID, id, body.Hours); err != nil {
 		h.writeErr(w, err)
 		return
 	}

@@ -301,15 +301,15 @@ func runRateRefresh(ctx context.Context, svc *currency.Service, provider currenc
 // runBillsReminders sends due-bill reminders at startup and then once a day.
 // Each bill occurrence is announced only once (deduped in the push service).
 func runBankSync(ctx context.Context, svc *banksync.Service, interval time.Duration, logger *slog.Logger) {
-	// Check roughly hourly (or every interval, if shorter); SyncDue only re-syncs
-	// connections whose last sync is older than the interval, so most checks are
-	// cheap no-ops.
+	// Wake at most hourly (or every interval, if shorter); SyncDue only re-syncs
+	// connections whose last sync is older than their own configured interval, so
+	// most checks are cheap no-ops.
 	check := time.Hour
 	if interval < check {
 		check = interval
 	}
 	run := func() {
-		res, err := svc.SyncDue(ctx, interval)
+		res, err := svc.SyncDue(ctx)
 		if err != nil {
 			if ctx.Err() == nil {
 				logger.Error("bank sync job failed", "error", err)

@@ -142,7 +142,11 @@ type Querier interface {
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
 	ListContributionsForGoal(ctx context.Context, goalID int64) ([]GoalContribution, error)
 	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)
-	ListDueBankConnections(ctx context.Context, lastSyncedAt sql.NullString) ([]ListDueBankConnectionsRow, error)
+	// Auto-sync connections whose last successful sync is older than their own
+	// configured interval (or which never synced). Each connection's cadence is
+	// compared against its sync_interval_hours, so a daily connection and a weekly
+	// one are both picked up only when actually due.
+	ListDueBankConnections(ctx context.Context) ([]ListDueBankConnectionsRow, error)
 	ListDuplicateDismissals(ctx context.Context, walletID int64) ([]ListDuplicateDismissalsRow, error)
 	ListExchangeRates(ctx context.Context, currencyID int64) ([]ExchangeRate, error)
 	ListGoalsForWallet(ctx context.Context, walletID int64) ([]ListGoalsForWalletRow, error)
@@ -199,6 +203,7 @@ type Querier interface {
 	ReassignTag(ctx context.Context, arg ReassignTagParams) error
 	ReassignTransactionCategory(ctx context.Context, arg ReassignTransactionCategoryParams) error
 	ReassignTransactionPayee(ctx context.Context, arg ReassignTransactionPayeeParams) error
+	RecordBankSyncOutcome(ctx context.Context, arg RecordBankSyncOutcomeParams) error
 	RefreshEBankingConnectionSession(ctx context.Context, arg RefreshEBankingConnectionSessionParams) (BankConnection, error)
 	RenameTag(ctx context.Context, arg RenameTagParams) error
 	ReparentChildren(ctx context.Context, arg ReparentChildrenParams) error
@@ -211,6 +216,7 @@ type Querier interface {
 	SetAppConfig(ctx context.Context, arg SetAppConfigParams) error
 	SetAssignmentPosition(ctx context.Context, arg SetAssignmentPositionParams) error
 	SetBankConnectionAutoSync(ctx context.Context, arg SetBankConnectionAutoSyncParams) (int64, error)
+	SetBankConnectionSyncInterval(ctx context.Context, arg SetBankConnectionSyncIntervalParams) (int64, error)
 	SetChildrenIncome(ctx context.Context, arg SetChildrenIncomeParams) error
 	SetCurrencyBase(ctx context.Context, id int64) error
 	SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error
@@ -230,6 +236,9 @@ type Querier interface {
 	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) error
 	UpdateCurrencyFormat(ctx context.Context, arg UpdateCurrencyFormatParams) error
 	UpdateCurrencyRate(ctx context.Context, arg UpdateCurrencyRateParams) error
+	// Persist the stored account list (used to cache balances so the accounts page
+	// does not re-fetch them from the provider on every open).
+	UpdateEBankingAccounts(ctx context.Context, arg UpdateEBankingAccountsParams) error
 	UpdateGoal(ctx context.Context, arg UpdateGoalParams) error
 	UpdatePayee(ctx context.Context, arg UpdatePayeeParams) error
 	UpdateScheduleConfig(ctx context.Context, arg UpdateScheduleConfigParams) error

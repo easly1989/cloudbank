@@ -389,6 +389,9 @@
     "duplicatesEmpty": "No possible duplicates found.",
     "keepThis": "Keep this",
     "notDuplicate": "Not a duplicate",
+    "dismissAll": "Mark all as not duplicates",
+    "dismissAllConfirm": "Mark all {{count}} pairs as not duplicates? They won't be shown again (you can still find real duplicates by amount/date later).",
+    "dismissedAll": "Dismissed {{count}} pair(s)",
     "merged": "Merged",
     "edit": "Edit",
     "delete": "Delete",
@@ -411,6 +414,7 @@
     "unnamed": "Bank connection",
     "lastSynced": "last synced {{date}}",
     "neverSynced": "never synced",
+    "lastSync": "Last sync: {{when}}",
     "syncNow": "Sync now",
     "synced": "Imported {{imported}}, reconciled {{reconciled}}.",
     "syncedPartial": "Imported {{imported}}, reconciled {{reconciled}}. Some accounts could not be synced — {{warnings}}",
@@ -467,7 +471,14 @@
       "consentValid": "Consent valid {{days}}d"
     },
     "autoSync": "Automatic sync",
-    "autoSyncHint": "Keep this connection up to date in the background."
+    "autoSyncHint": "Keep this connection up to date in the background.",
+    "interval": {
+      "label": "Sync frequency",
+      "daily": "Once a day",
+      "every2days": "Every 2 days",
+      "every3days": "Every 3 days",
+      "weekly": "Once a week"
+    }
   },
   "search": {
     "open": "Search transactions",
