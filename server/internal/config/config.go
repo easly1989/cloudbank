@@ -32,9 +32,11 @@ type Config struct {
 	// plaintext (the default). It must stay stable — losing it makes previously
 	// encrypted secrets unrecoverable.
 	SecretKey string
-	// BankSyncInterval is how stale an auto-sync bank connection may get before the
-	// background job re-syncs it. Zero disables background bank sync (manual "Sync
-	// now" still works).
+	// BankSyncInterval is how often the background job wakes to check for bank
+	// connections that are due to sync. Each connection's own interval (default
+	// daily, configurable per connection) decides when it is actually re-synced,
+	// so this only bounds how promptly a due connection is picked up. Zero disables
+	// background bank sync entirely (manual "Sync now" still works).
 	BankSyncInterval time.Duration
 }
 
@@ -48,7 +50,7 @@ func Load() Config {
 		RateProviderURL:  getenv("CB_RATE_URL", ""),
 		VAPIDSubject:     getenv("CB_VAPID_SUBJECT", "mailto:cloudbank@localhost"),
 		SecretKey:        getenv("CB_SECRET_KEY", ""),
-		BankSyncInterval: getDurationEnv("CB_BANK_SYNC_INTERVAL", 12*time.Hour),
+		BankSyncInterval: getDurationEnv("CB_BANK_SYNC_INTERVAL", time.Hour),
 	}
 }
 

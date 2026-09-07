@@ -452,6 +452,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/bank/connections/{connId}/sync-interval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set how often background auto-sync runs for a connection (hours) */
+        post: operations["setBankConnectionSyncInterval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/bank/enablebanking/config": {
         parameters: {
             query?: never;
@@ -1280,6 +1300,25 @@ export interface paths {
         put?: never;
         /** Mark two transactions as not a duplicate (won't be surfaced again) */
         post: operations["dismissDuplicatePair"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/transactions/duplicates/dismiss-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark every currently-surfaced duplicate pair as not a duplicate */
+        post: operations["dismissAllDuplicatePairs"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2362,6 +2401,7 @@ export interface components {
             provider: string;
             name: string;
             createdAt: string;
+            /** @description last SUCCESSFUL sync (drives the fetch window) */
             lastSyncedAt?: string;
             /** @description provider bank name (Enable Banking) */
             aspsp?: string;
@@ -2371,6 +2411,17 @@ export interface components {
             validUntil?: string;
             /** @description included in scheduled background sync */
             autoSync?: boolean;
+            /** @description how often background auto-sync runs for this connection, in hours (default 24) */
+            syncIntervalHours?: number;
+            /** @description time of the last sync ATTEMPT (manual or background), RFC3339 */
+            lastSyncAt?: string;
+            /**
+             * @description outcome of the last attempt
+             * @enum {string}
+             */
+            lastSyncStatus?: "ok" | "partial" | "error";
+            /** @description human summary or error of the last attempt */
+            lastSyncMessage?: string;
         };
         BankRemoteAccount: {
             externalId: string;
@@ -4298,6 +4349,35 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    setBankConnectionSyncInterval: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Auto-sync interval in hours (clamped 1..720; default 24). */
+                    hours: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
     getEnableBankingConfig: {
         parameters: {
             query?: never;
@@ -5966,6 +6046,30 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    dismissAllDuplicatePairs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dismissed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        dismissed: number;
+                    };
+                };
+            };
         };
     };
     mergeTransactions: {

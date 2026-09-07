@@ -560,3 +560,38 @@ func TestReviewAndDuplicates(t *testing.T) {
 		t.Errorf("kept import_ref = %q, want bank:3 (carried from the merged row)", row.ImportRef)
 	}
 }
+
+func TestDismissAllDuplicates(t *testing.T) {
+	s, _, wid, acc := newTestService(t)
+	ctx := context.Background()
+
+	// Two independent look-alike pairs.
+	_, _ = s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-07-01", Amount: -2500, Memo: "a1"})
+	_, _ = s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-07-03", Amount: -2500, Memo: "a2"})
+	_, _ = s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-08-01", Amount: -3000, Memo: "b1"})
+	_, _ = s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-08-02", Amount: -3000, Memo: "b2"})
+
+	rev, err := s.Review(ctx, wid)
+	if err != nil {
+		t.Fatalf("review: %v", err)
+	}
+	if len(rev.Duplicates) != 2 {
+		t.Fatalf("duplicates = %d, want 2", len(rev.Duplicates))
+	}
+
+	n, err := s.DismissAllDuplicates(ctx, wid)
+	if err != nil {
+		t.Fatalf("dismiss all: %v", err)
+	}
+	if n != 2 {
+		t.Fatalf("dismissed = %d, want 2", n)
+	}
+	rev2, _ := s.Review(ctx, wid)
+	if len(rev2.Duplicates) != 0 {
+		t.Fatalf("after dismiss-all, duplicates = %d, want 0", len(rev2.Duplicates))
+	}
+	// Idempotent: a second run finds nothing to dismiss.
+	if n2, _ := s.DismissAllDuplicates(ctx, wid); n2 != 0 {
+		t.Fatalf("second dismiss-all = %d, want 0", n2)
+	}
+}

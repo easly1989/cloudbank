@@ -30,6 +30,12 @@ const (
 	// consentValidityDays is how long an Enable Banking consent is requested for
 	// (independent of the transaction-history sync window above).
 	consentValidityDays = 90
+	// Bounds for a connection's auto-sync interval (hours). The default is daily;
+	// the floor keeps a runaway UI from scheduling sub-hourly runs into the PSD2
+	// rate limit, and the ceiling is a month.
+	minSyncIntervalHours     = 1
+	maxSyncIntervalHours     = 24 * 30
+	defaultSyncIntervalHours = 24
 )
 
 // Provider identifiers stored in bank_connections.provider.
@@ -49,6 +55,15 @@ type Connection struct {
 	Country      string `json:"country,omitempty"`
 	ValidUntil   string `json:"validUntil,omitempty"`
 	AutoSync     bool   `json:"autoSync"`
+	// SyncIntervalHours is how often background auto-sync runs for this connection
+	// (default daily). PSD2 caps unattended access to a few calls per day, so a
+	// smaller value is rarely useful; the user can relax it further per connection.
+	SyncIntervalHours int `json:"syncIntervalHours"`
+	// The most recent sync attempt (manual or background): its time, a status of
+	// "ok" / "partial" / "error", and a human message.
+	LastSyncAt      string `json:"lastSyncAt,omitempty"`
+	LastSyncStatus  string `json:"lastSyncStatus,omitempty"`
+	LastSyncMessage string `json:"lastSyncMessage,omitempty"`
 }
 
 // RemoteAccount is a provider account, with the linked CloudBank account if any.
@@ -101,11 +116,16 @@ func toConnection(c db.BankConnection) Connection {
 	out := Connection{
 		ID: c.ID, Provider: c.Provider, Name: c.Name, CreatedAt: c.CreatedAt,
 		Aspsp: c.AspspName, Country: c.AspspCountry, ValidUntil: c.ValidUntil,
-		AutoSync: c.AutoSync != 0,
+		AutoSync: c.AutoSync != 0, SyncIntervalHours: int(c.SyncIntervalHours),
 	}
 	if c.LastSyncedAt.Valid {
 		out.LastSyncedAt = c.LastSyncedAt.String
 	}
+	if c.LastSyncAt.Valid {
+		out.LastSyncAt = c.LastSyncAt.String
+	}
+	out.LastSyncStatus = c.LastSyncStatus
+	out.LastSyncMessage = c.LastSyncMessage
 	return out
 }
 
@@ -237,9 +257,44 @@ func (s *Service) Unlink(ctx context.Context, walletID, connID int64, externalID
 	return s.q.DeleteBankLink(ctx, db.DeleteBankLinkParams{ConnectionID: connID, ExternalID: externalID})
 }
 
-// Sync fetches transactions for each linked account and imports the new ones
-// through the shared pipeline (dedup + rules). Re-syncing imports nothing new.
+// Sync runs one sync of a connection and records its outcome (time + status +
+// message) on the connection, so the UI can show when it last ran and whether it
+// worked — for manual and background syncs alike.
 func (s *Service) Sync(ctx context.Context, walletID, connID int64) (SyncResult, error) {
+	res, err := s.syncOnce(ctx, walletID, connID)
+	s.recordSyncOutcome(ctx, connID, res, err)
+	return res, err
+}
+
+// recordSyncOutcome stamps the connection with the result of the latest attempt.
+func (s *Service) recordSyncOutcome(ctx context.Context, connID int64, res SyncResult, err error) {
+	status := "ok"
+	var msg string
+	switch {
+	case err != nil:
+		status = "error"
+		msg = strings.TrimPrefix(err.Error(), "banksync: ")
+	case res.Failed > 0 && res.Accounts == 0:
+		status = "error" // every account failed (e.g. rate-limited)
+		msg = strings.Join(res.Warnings, "; ")
+	case res.Failed > 0:
+		status = "partial"
+		msg = fmt.Sprintf("Imported %d, reconciled %d — %s", res.Imported, res.Reconciled, strings.Join(res.Warnings, "; "))
+	default:
+		msg = fmt.Sprintf("Imported %d, reconciled %d", res.Imported, res.Reconciled)
+	}
+	if e := s.q.RecordBankSyncOutcome(ctx, db.RecordBankSyncOutcomeParams{
+		LastSyncStatus: status, LastSyncMessage: msg, ID: connID,
+	}); e != nil {
+		slog.Warn("bank sync: could not record outcome", "connection", connID, "error", e)
+	}
+}
+
+// syncOnce fetches each linked account's transactions and imports the new ones
+// through the shared pipeline (dedup + rules). last_synced_at (the fetch-window
+// anchor) is advanced only when at least one account was fetched, so a fully
+// failed run does not skip a window.
+func (s *Service) syncOnce(ctx context.Context, walletID, connID int64) (SyncResult, error) {
 	c, err := s.conn(ctx, walletID, connID)
 	if err != nil {
 		return SyncResult{}, err
@@ -297,8 +352,10 @@ func (s *Service) Sync(ctx context.Context, walletID, connID int64) (SyncResult,
 		res.Failed++
 		res.Warnings = append(res.Warnings, syncWarning(f))
 	}
-	if err := s.q.TouchBankConnection(ctx, connID); err != nil {
-		return SyncResult{}, err
+	if res.Accounts > 0 {
+		if err := s.q.TouchBankConnection(ctx, connID); err != nil {
+			return SyncResult{}, err
+		}
 	}
 	return res, nil
 }
@@ -354,14 +411,35 @@ func (s *Service) SetAutoSync(ctx context.Context, walletID, connID int64, enabl
 	return nil
 }
 
-// SyncDue syncs every auto-sync connection whose last sync is older than
-// olderThan (or which never synced), across all wallets. Expired Enable Banking
-// consents are skipped (the user reconnects them); other per-connection errors
-// are counted but do not stop the batch. It pauses briefly between connections to
-// avoid hammering providers, and stops early if ctx is cancelled.
-func (s *Service) SyncDue(ctx context.Context, olderThan time.Duration) (BatchSyncResult, error) {
-	cutoff := time.Now().Add(-olderThan).UTC().Format("2006-01-02T15:04:05.000Z")
-	rows, err := s.rq.ListDueBankConnections(ctx, sql.NullString{String: cutoff, Valid: true})
+// SetSyncInterval sets how often background auto-sync runs for a connection, in
+// hours. The value is clamped to a sane range (roughly hourly to monthly).
+func (s *Service) SetSyncInterval(ctx context.Context, walletID, connID int64, hours int) error {
+	if hours < minSyncIntervalHours {
+		hours = minSyncIntervalHours
+	}
+	if hours > maxSyncIntervalHours {
+		hours = maxSyncIntervalHours
+	}
+	n, err := s.q.SetBankConnectionSyncInterval(ctx, db.SetBankConnectionSyncIntervalParams{
+		SyncIntervalHours: int64(hours), ID: connID, WalletID: walletID,
+	})
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// SyncDue syncs every auto-sync connection that is due — its last successful sync
+// is older than the connection's own configured interval (or it never synced) —
+// across all wallets. Expired Enable Banking consents are skipped (the user
+// reconnects them); other per-connection errors are counted but do not stop the
+// batch. It pauses briefly between connections to avoid hammering providers, and
+// stops early if ctx is cancelled.
+func (s *Service) SyncDue(ctx context.Context) (BatchSyncResult, error) {
+	rows, err := s.rq.ListDueBankConnections(ctx)
 	if err != nil {
 		return BatchSyncResult{}, err
 	}

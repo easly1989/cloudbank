@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -27,7 +28,19 @@ type ebStoredAccount struct {
 	// drives the default payment mode for imported rows (credit card vs direct
 	// debit).
 	Card bool `json:"card,omitempty"`
+	// Balance / BalanceCurrency / BalanceAt cache the last balance fetched from the
+	// provider so the accounts page can render without a live call on every open.
+	// The provider caps unattended access per day (PSD2), so balances are refreshed
+	// at most once per balanceCacheTTL. BalanceAt is RFC3339 (empty = never fetched).
+	Balance         string `json:"balance,omitempty"`
+	BalanceCurrency string `json:"balanceCurrency,omitempty"`
+	BalanceAt       string `json:"balanceAt,omitempty"`
 }
+
+// balanceCacheTTL bounds how often account balances are re-fetched from the
+// provider for the accounts page — the PSD2 daily call budget is small, so
+// balances are cached between opens rather than fetched on every one.
+const balanceCacheTTL = 12 * time.Hour
 
 func parseStoredAccounts(js string) []ebStoredAccount {
 	if strings.TrimSpace(js) == "" {
@@ -262,12 +275,10 @@ func (s *Service) EBankingCompleteAuth(ctx context.Context, walletID int64, stat
 }
 
 // ebRemoteAccounts lists an Enable Banking connection's accounts (session accounts
-// + best-effort balances), annotated with any existing link.
+// + cached balances), annotated with any existing link. Balances are refreshed
+// from the provider at most once per balanceCacheTTL and cached on the connection,
+// so repeatedly opening the accounts page does not exhaust the PSD2 daily budget.
 func (s *Service) ebRemoteAccounts(ctx context.Context, c db.BankConnection) ([]RemoteAccount, error) {
-	cl, err := s.ebClientForConn(ctx, c.WalletID)
-	if err != nil {
-		return nil, err
-	}
 	linked := map[string]int64{}
 	if links, err := s.rq.ListBankLinks(ctx, c.ID); err == nil {
 		for _, l := range links {
@@ -275,9 +286,41 @@ func (s *Service) ebRemoteAccounts(ctx context.Context, c db.BankConnection) ([]
 		}
 	}
 	stored := parseStoredAccounts(c.AccountsJson)
+
+	// Refresh only the stale (or never-fetched) balances, building the client lazily
+	// so an all-cached open makes no provider call at all.
+	var cl *enableBankingClient
+	dirty := false
+	for i := range stored {
+		if balanceFresh(stored[i].BalanceAt) {
+			continue
+		}
+		if cl == nil {
+			client, err := s.ebClientForConn(ctx, c.WalletID)
+			if err != nil {
+				return nil, err
+			}
+			cl = client
+		}
+		bal, cur := cl.balance(ctx, stored[i].UID)
+		stored[i].Balance = bal
+		stored[i].BalanceCurrency = cur
+		stored[i].BalanceAt = time.Now().UTC().Format(time.RFC3339)
+		dirty = true
+	}
+	if dirty {
+		if js, err := json.Marshal(stored); err == nil {
+			if err := s.q.UpdateEBankingAccounts(ctx, db.UpdateEBankingAccountsParams{
+				AccountsJson: string(js), ID: c.ID,
+			}); err != nil {
+				slog.Warn("bank sync: could not cache balances", "connection", c.ID, "error", err)
+			}
+		}
+	}
+
 	out := make([]RemoteAccount, 0, len(stored))
 	for _, a := range stored {
-		bal, cur := cl.balance(ctx, a.UID)
+		cur := a.BalanceCurrency
 		if cur == "" {
 			cur = a.Currency
 		}
@@ -288,13 +331,26 @@ func (s *Service) ebRemoteAccounts(ctx context.Context, c db.BankConnection) ([]
 		if name == "" {
 			name = a.UID
 		}
-		ra := RemoteAccount{ExternalID: a.UID, Name: name, Currency: cur, Balance: bal}
+		ra := RemoteAccount{ExternalID: a.UID, Name: name, Currency: cur, Balance: a.Balance}
 		if id, ok := linked[a.UID]; ok {
 			ra.LinkedAccountID = &id
 		}
 		out = append(out, ra)
 	}
 	return out, nil
+}
+
+// balanceFresh reports whether a cached balance timestamp (RFC3339) is recent
+// enough to reuse without re-fetching from the provider.
+func balanceFresh(at string) bool {
+	if at == "" {
+		return false
+	}
+	t, err := time.Parse(time.RFC3339, at)
+	if err != nil {
+		return false
+	}
+	return time.Since(t) < balanceCacheTTL
 }
 
 // ebFetchRows fetches import rows for each linked account of an Enable Banking

@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 )
 
 const deleteBankConnection = `-- name: DeleteBankConnection :execrows
@@ -42,7 +41,7 @@ func (q *Queries) DeleteBankLink(ctx context.Context, arg DeleteBankLinkParams) 
 }
 
 const getBankConnection = `-- name: GetBankConnection :one
-SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync FROM bank_connections WHERE id = ? LIMIT 1
+SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync, last_sync_at, last_sync_status, last_sync_message, sync_interval_hours FROM bank_connections WHERE id = ? LIMIT 1
 `
 
 func (q *Queries) GetBankConnection(ctx context.Context, id int64) (BankConnection, error) {
@@ -61,6 +60,10 @@ func (q *Queries) GetBankConnection(ctx context.Context, id int64) (BankConnecti
 		&i.ValidUntil,
 		&i.AccountsJson,
 		&i.AutoSync,
+		&i.LastSyncAt,
+		&i.LastSyncStatus,
+		&i.LastSyncMessage,
+		&i.SyncIntervalHours,
 	)
 	return i, err
 }
@@ -68,7 +71,7 @@ func (q *Queries) GetBankConnection(ctx context.Context, id int64) (BankConnecti
 const insertBankConnection = `-- name: InsertBankConnection :one
 INSERT INTO bank_connections (wallet_id, provider, access_url, name)
 VALUES (?, ?, ?, ?)
-RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync
+RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync, last_sync_at, last_sync_status, last_sync_message, sync_interval_hours
 `
 
 type InsertBankConnectionParams struct {
@@ -99,12 +102,16 @@ func (q *Queries) InsertBankConnection(ctx context.Context, arg InsertBankConnec
 		&i.ValidUntil,
 		&i.AccountsJson,
 		&i.AutoSync,
+		&i.LastSyncAt,
+		&i.LastSyncStatus,
+		&i.LastSyncMessage,
+		&i.SyncIntervalHours,
 	)
 	return i, err
 }
 
 const listBankConnectionsForWallet = `-- name: ListBankConnectionsForWallet :many
-SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync FROM bank_connections WHERE wallet_id = ? ORDER BY created_at DESC, id
+SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync, last_sync_at, last_sync_status, last_sync_message, sync_interval_hours FROM bank_connections WHERE wallet_id = ? ORDER BY created_at DESC, id
 `
 
 func (q *Queries) ListBankConnectionsForWallet(ctx context.Context, walletID int64) ([]BankConnection, error) {
@@ -129,6 +136,10 @@ func (q *Queries) ListBankConnectionsForWallet(ctx context.Context, walletID int
 			&i.ValidUntil,
 			&i.AccountsJson,
 			&i.AutoSync,
+			&i.LastSyncAt,
+			&i.LastSyncStatus,
+			&i.LastSyncMessage,
+			&i.SyncIntervalHours,
 		); err != nil {
 			return nil, err
 		}
@@ -177,7 +188,9 @@ func (q *Queries) ListBankLinks(ctx context.Context, connectionID int64) ([]List
 
 const listDueBankConnections = `-- name: ListDueBankConnections :many
 SELECT id, wallet_id FROM bank_connections
-WHERE auto_sync = 1 AND (last_synced_at IS NULL OR last_synced_at < ?)
+WHERE auto_sync = 1
+  AND (last_synced_at IS NULL
+       OR last_synced_at < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-' || sync_interval_hours || ' hours'))
 ORDER BY last_synced_at IS NOT NULL, last_synced_at, id
 `
 
@@ -186,8 +199,12 @@ type ListDueBankConnectionsRow struct {
 	WalletID int64
 }
 
-func (q *Queries) ListDueBankConnections(ctx context.Context, lastSyncedAt sql.NullString) ([]ListDueBankConnectionsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listDueBankConnections, lastSyncedAt)
+// Auto-sync connections whose last successful sync is older than their own
+// configured interval (or which never synced). Each connection's cadence is
+// compared against its sync_interval_hours, so a daily connection and a weekly
+// one are both picked up only when actually due.
+func (q *Queries) ListDueBankConnections(ctx context.Context) ([]ListDueBankConnectionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listDueBankConnections)
 	if err != nil {
 		return nil, err
 	}
@@ -209,6 +226,24 @@ func (q *Queries) ListDueBankConnections(ctx context.Context, lastSyncedAt sql.N
 	return items, nil
 }
 
+const recordBankSyncOutcome = `-- name: RecordBankSyncOutcome :exec
+UPDATE bank_connections
+SET last_sync_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
+    last_sync_status = ?, last_sync_message = ?
+WHERE id = ?
+`
+
+type RecordBankSyncOutcomeParams struct {
+	LastSyncStatus  string
+	LastSyncMessage string
+	ID              int64
+}
+
+func (q *Queries) RecordBankSyncOutcome(ctx context.Context, arg RecordBankSyncOutcomeParams) error {
+	_, err := q.db.ExecContext(ctx, recordBankSyncOutcome, arg.LastSyncStatus, arg.LastSyncMessage, arg.ID)
+	return err
+}
+
 const setBankConnectionAutoSync = `-- name: SetBankConnectionAutoSync :execrows
 UPDATE bank_connections SET auto_sync = ? WHERE id = ? AND wallet_id = ?
 `
@@ -221,6 +256,24 @@ type SetBankConnectionAutoSyncParams struct {
 
 func (q *Queries) SetBankConnectionAutoSync(ctx context.Context, arg SetBankConnectionAutoSyncParams) (int64, error) {
 	result, err := q.db.ExecContext(ctx, setBankConnectionAutoSync, arg.AutoSync, arg.ID, arg.WalletID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const setBankConnectionSyncInterval = `-- name: SetBankConnectionSyncInterval :execrows
+UPDATE bank_connections SET sync_interval_hours = ? WHERE id = ? AND wallet_id = ?
+`
+
+type SetBankConnectionSyncIntervalParams struct {
+	SyncIntervalHours int64
+	ID                int64
+	WalletID          int64
+}
+
+func (q *Queries) SetBankConnectionSyncInterval(ctx context.Context, arg SetBankConnectionSyncIntervalParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, setBankConnectionSyncInterval, arg.SyncIntervalHours, arg.ID, arg.WalletID)
 	if err != nil {
 		return 0, err
 	}
