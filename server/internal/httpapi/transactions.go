@@ -24,6 +24,7 @@ func (h *transactionHandlers) walletRoutes(r chi.Router) {
 	r.Post("/transactions/bulk-tags", h.bulkTags)
 	r.Get("/transactions/review", h.review)
 	r.Post("/transactions/duplicates/dismiss", h.dismissDuplicate)
+	r.Post("/transactions/duplicates/dismiss-all", h.dismissAllDuplicates)
 	r.Post("/transactions/merge", h.mergeTransactions)
 	r.Get("/transactions/register", h.register)
 	r.Get("/transactions/search", h.search)
@@ -196,6 +197,16 @@ func (h *transactionHandlers) dismissDuplicate(w http.ResponseWriter, r *http.Re
 	default:
 		writeError(w, http.StatusInternalServerError, "internal", "could not dismiss the pair")
 	}
+}
+
+func (h *transactionHandlers) dismissAllDuplicates(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	n, err := h.svc.DismissAllDuplicates(r.Context(), wl.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not dismiss the pairs")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]int{"dismissed": n})
 }
 
 func (h *transactionHandlers) mergeTransactions(w http.ResponseWriter, r *http.Request) {

@@ -268,5 +268,11 @@ export const getTransactionReview = (walletId: number) =>
 export const dismissDuplicatePair = (walletId: number, aId: number, bId: number) =>
   api.post<void>(`/api/v1/wallets/${walletId}/transactions/duplicates/dismiss`, { aId, bId });
 
+export const dismissAllDuplicatePairs = (walletId: number) =>
+  api.post<{ dismissed: number }>(
+    `/api/v1/wallets/${walletId}/transactions/duplicates/dismiss-all`,
+    {},
+  );
+
 export const mergeTransactions = (walletId: number, keepId: number, dropId: number) =>
   api.post<void>(`/api/v1/wallets/${walletId}/transactions/merge`, { keepId, dropId });
