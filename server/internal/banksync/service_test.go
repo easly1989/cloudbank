@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
@@ -40,7 +39,7 @@ func (m *mockDoer) Do(r *http.Request) (*http.Response, error) {
 	return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body))}, nil
 }
 
-func newFixture(t *testing.T) (*Service, *db.Queries, int64, int64) {
+func newFixture(t *testing.T) (*Service, *db.Queries, *store.Store, int64, int64) {
 	t.Helper()
 	st, err := store.Open(t.TempDir())
 	if err != nil {
@@ -62,11 +61,11 @@ func newFixture(t *testing.T) (*Service, *db.Queries, int64, int64) {
 	svc := NewService(st.Read(), st.Write(), imp)
 	svc.hc = &mockDoer{}
 	svc.syncStagger = 0
-	return svc, q, w.ID, acc.ID
+	return svc, q, st, w.ID, acc.ID
 }
 
 func TestConnectLinkSyncDedup(t *testing.T) {
-	svc, q, wid, acc := newFixture(t)
+	svc, q, _, wid, acc := newFixture(t)
 	ctx := context.Background()
 	setupToken := base64.StdEncoding.EncodeToString([]byte("https://example.test/claim/x"))
 
@@ -119,8 +118,8 @@ func TestConnectLinkSyncDedup(t *testing.T) {
 	}
 }
 
-func TestSyncDueRespectsAutoSyncAndRecency(t *testing.T) {
-	svc, q, wid, acc := newFixture(t)
+func TestSyncDueRespectsAutoSyncAndInterval(t *testing.T) {
+	svc, q, st, wid, acc := newFixture(t)
 	ctx := context.Background()
 	setupToken := base64.StdEncoding.EncodeToString([]byte("https://example.test/claim/x"))
 	conn, _, err := svc.Connect(ctx, wid, setupToken, "Bank")
@@ -130,9 +129,18 @@ func TestSyncDueRespectsAutoSyncAndRecency(t *testing.T) {
 	if err := svc.Link(ctx, wid, conn.ID, "ACT-1", acc); err != nil {
 		t.Fatalf("Link: %v", err)
 	}
+	// backdate ages the last successful sync so the due check can be exercised
+	// without waiting real time.
+	backdate := func(hours int) {
+		if _, err := st.Write().ExecContext(ctx,
+			`UPDATE bank_connections SET last_synced_at = strftime('%Y-%m-%dT%H:%M:%fZ','now','-' || ? || ' hours') WHERE id = ?`,
+			hours, conn.ID); err != nil {
+			t.Fatalf("backdate: %v", err)
+		}
+	}
 
 	// Never synced → due → SyncDue imports its transactions.
-	r1, err := svc.SyncDue(ctx, time.Hour)
+	r1, err := svc.SyncDue(ctx)
 	if err != nil {
 		t.Fatalf("SyncDue: %v", err)
 	}
@@ -140,39 +148,57 @@ func TestSyncDueRespectsAutoSyncAndRecency(t *testing.T) {
 		t.Fatalf("first SyncDue = %+v, want connections 1 / imported 2", r1)
 	}
 
-	// Just synced → not due within the hour.
-	r2, _ := svc.SyncDue(ctx, time.Hour)
+	// Just synced → not due within the default daily interval.
+	r2, _ := svc.SyncDue(ctx)
 	if r2.Connections != 0 {
 		t.Fatalf("second SyncDue synced %d, want 0 (not due)", r2.Connections)
 	}
 
-	// Auto-sync off excludes it even when otherwise due (negative age = force due).
+	// Older than the interval but auto-sync off → excluded.
+	backdate(48)
 	if err := svc.SetAutoSync(ctx, wid, conn.ID, false); err != nil {
 		t.Fatalf("SetAutoSync off: %v", err)
 	}
-	r3, _ := svc.SyncDue(ctx, -time.Hour)
+	r3, _ := svc.SyncDue(ctx)
 	if r3.Connections != 0 {
 		t.Fatalf("auto-sync off still synced: %+v", r3)
 	}
 
-	// Re-enabled → due again → synced (imports nothing new, deduped).
+	// Re-enabled and still overdue → synced (imports nothing new, deduped).
 	if err := svc.SetAutoSync(ctx, wid, conn.ID, true); err != nil {
 		t.Fatalf("SetAutoSync on: %v", err)
 	}
-	r4, _ := svc.SyncDue(ctx, -time.Hour)
+	r4, _ := svc.SyncDue(ctx)
 	if r4.Connections != 1 || r4.Imported != 0 {
 		t.Fatalf("re-enabled SyncDue = %+v, want connections 1 / imported 0", r4)
 	}
 
-	// Cross-wallet toggle is rejected.
+	// A longer per-connection interval defers the next sync: 48h old with a 72h
+	// interval is not yet due, but 96h old is.
+	if err := svc.SetSyncInterval(ctx, wid, conn.ID, 72); err != nil {
+		t.Fatalf("SetSyncInterval: %v", err)
+	}
+	backdate(48)
+	if r5, _ := svc.SyncDue(ctx); r5.Connections != 0 {
+		t.Fatalf("72h interval synced at 48h: %+v", r5)
+	}
+	backdate(96)
+	if r6, _ := svc.SyncDue(ctx); r6.Connections != 1 {
+		t.Fatalf("72h interval not due at 96h: %+v", r6)
+	}
+
+	// Cross-wallet mutations are rejected.
 	other, _ := q.CreateWallet(ctx, db.CreateWalletParams{Title: "Other"})
 	if err := svc.SetAutoSync(ctx, other.ID, conn.ID, false); err != ErrNotFound {
 		t.Fatalf("cross-wallet SetAutoSync err = %v, want ErrNotFound", err)
 	}
+	if err := svc.SetSyncInterval(ctx, other.ID, conn.ID, 24); err != ErrNotFound {
+		t.Fatalf("cross-wallet SetSyncInterval err = %v, want ErrNotFound", err)
+	}
 }
 
 func TestConnectionWalletIsolation(t *testing.T) {
-	svc, q, wid, _ := newFixture(t)
+	svc, q, _, wid, _ := newFixture(t)
 	ctx := context.Background()
 	setupToken := base64.StdEncoding.EncodeToString([]byte("https://example.test/claim/x"))
 	conn, _, err := svc.Connect(ctx, wid, setupToken, "Mine")

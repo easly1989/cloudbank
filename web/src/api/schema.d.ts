@@ -452,6 +452,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/bank/connections/{connId}/sync-interval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set how often background auto-sync runs for a connection (hours) */
+        post: operations["setBankConnectionSyncInterval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/bank/enablebanking/config": {
         parameters: {
             query?: never;
@@ -2391,6 +2411,8 @@ export interface components {
             validUntil?: string;
             /** @description included in scheduled background sync */
             autoSync?: boolean;
+            /** @description how often background auto-sync runs for this connection, in hours (default 24) */
+            syncIntervalHours?: number;
             /** @description time of the last sync ATTEMPT (manual or background), RFC3339 */
             lastSyncAt?: string;
             /**
@@ -4313,6 +4335,35 @@ export interface operations {
             content: {
                 "application/json": {
                     enabled: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setBankConnectionSyncInterval: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Auto-sync interval in hours (clamped 1..720; default 24). */
+                    hours: number;
                 };
             };
         };

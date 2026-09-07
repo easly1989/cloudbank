@@ -48,6 +48,7 @@ import {
   reauthEnableBankingConnection,
   removeBankConnection,
   setBankConnectionAutoSync,
+  setBankConnectionSyncInterval,
   setEnableBankingConfig,
   startEnableBankingAuth,
   syncBankConnection,
@@ -194,6 +195,12 @@ function ConnectionCard({
     onSuccess: refreshConns,
     onError,
   });
+  const syncInterval = useMutation({
+    mutationFn: (hours: number) => setBankConnectionSyncInterval(walletId, connection.id, hours),
+    onSuccess: refreshConns,
+    onError,
+  });
+  const autoSyncOn = connection.autoSync ?? true;
 
   // Enable Banking consent status from validUntil (~90-day PSD2 consent).
   const consent = (() => {
@@ -306,14 +313,29 @@ function ConnectionCard({
         </Group>
       </Group>
 
-      <Switch
-        mb="sm"
-        size="sm"
-        checked={connection.autoSync ?? true}
-        onChange={(e) => autoSync.mutate(e.currentTarget.checked)}
-        label={t("banksync.autoSync")}
-        description={t("banksync.autoSyncHint")}
-      />
+      <Group mb="sm" align="flex-start" justify="space-between" wrap="nowrap" gap="md">
+        <Switch
+          size="sm"
+          checked={autoSyncOn}
+          onChange={(e) => autoSync.mutate(e.currentTarget.checked)}
+          label={t("banksync.autoSync")}
+          description={t("banksync.autoSyncHint")}
+        />
+        <Select
+          size="xs"
+          w={150}
+          aria-label={t("banksync.interval.label")}
+          disabled={!autoSyncOn || syncInterval.isPending}
+          value={String(connection.syncIntervalHours ?? 24)}
+          onChange={(v) => v && syncInterval.mutate(Number(v))}
+          data={[
+            { value: "24", label: t("banksync.interval.daily") },
+            { value: "48", label: t("banksync.interval.every2days") },
+            { value: "72", label: t("banksync.interval.every3days") },
+            { value: "168", label: t("banksync.interval.weekly") },
+          ]}
+        />
+      </Group>
 
       {remote.isError ? (
         <Alert color="red">{t("banksync.remoteError")}</Alert>

@@ -12,6 +12,8 @@ export interface BankConnection {
   country?: string;
   validUntil?: string;
   autoSync?: boolean;
+  /** How often background auto-sync runs for this connection, in hours (default 24). */
+  syncIntervalHours?: number;
   /** Time of the last sync attempt (manual or background), RFC3339. */
   lastSyncAt?: string;
   /** Outcome of the last attempt. */
@@ -131,3 +133,6 @@ export const reauthEnableBankingConnection = (
 
 export const setBankConnectionAutoSync = (walletId: number, connId: number, enabled: boolean) =>
   api.post<void>(`/api/v1/wallets/${walletId}/bank/connections/${connId}/auto-sync`, { enabled });
+
+export const setBankConnectionSyncInterval = (walletId: number, connId: number, hours: number) =>
+  api.post<void>(`/api/v1/wallets/${walletId}/bank/connections/${connId}/sync-interval`, { hours });
