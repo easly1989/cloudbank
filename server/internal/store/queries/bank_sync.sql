@@ -15,6 +15,12 @@ DELETE FROM bank_connections WHERE id = ? AND wallet_id = ?;
 -- name: TouchBankConnection :exec
 UPDATE bank_connections SET last_synced_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?;
 
+-- name: RecordBankSyncOutcome :exec
+UPDATE bank_connections
+SET last_sync_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
+    last_sync_status = ?, last_sync_message = ?
+WHERE id = ?;
+
 -- name: SetBankConnectionAutoSync :execrows
 UPDATE bank_connections SET auto_sync = ? WHERE id = ? AND wallet_id = ?;
 

@@ -366,22 +366,15 @@ func (c *enableBankingClient) balance(ctx context.Context, accountUID string) (s
 	return out.Balances[0].BalanceAmount.Amount, out.Balances[0].BalanceAmount.Currency
 }
 
-// transactions fetches an account's transactions since dateFrom. It fetches
-// booked transactions (the default) and then, best-effort, pending ones: many
-// ASPSPs return only booked unless a status filter is given, so pending rows are
-// requested explicitly and merged (a pending row later settles onto its booked
-// form via the stable dedup id). A failure fetching pending is ignored so it
-// never breaks the booked import.
+// transactions fetches an account's transactions since dateFrom in a SINGLE
+// request. We deliberately do not make a second, pending-only call: PSD2 limits
+// unattended access to a small "consented multiplicity per day" (often 4×/day per
+// account), so a second call per account per sync halves that budget and quickly
+// triggers the ASPSP rate limit (HTTP 429). Most banks (Intesa included) only
+// expose booked transactions over PSD2 anyway, so whatever pending the ASPSP does
+// return already comes back in this default call.
 func (c *enableBankingClient) transactions(ctx context.Context, accountUID string, dateFrom time.Time) ([]ebTxn, error) {
-	booked, err := c.transactionsByStatus(ctx, accountUID, dateFrom, "")
-	if err != nil {
-		return nil, err
-	}
-	pending, perr := c.transactionsByStatus(ctx, accountUID, dateFrom, "PDNG")
-	if perr != nil {
-		return booked, nil // best-effort: many ASPSPs don't expose pending
-	}
-	return append(booked, pending...), nil
+	return c.transactionsByStatus(ctx, accountUID, dateFrom, "")
 }
 
 // transactionsByStatus fetches all transactions for an account since dateFrom,

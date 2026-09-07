@@ -243,6 +243,25 @@ function ConnectionCard({
                 ? t("banksync.lastSynced", { date: fmtDate(connection.lastSyncedAt) })
                 : t("banksync.neverSynced")}
             </Text>
+            {connection.lastSyncAt && (
+              <Text
+                size="xs"
+                c={
+                  connection.lastSyncStatus === "error"
+                    ? "red"
+                    : connection.lastSyncStatus === "partial"
+                      ? "orange"
+                      : "dimmed"
+                }
+              >
+                {t("banksync.lastSync", {
+                  when: `${fmtDate(connection.lastSyncAt)} ${new Date(
+                    connection.lastSyncAt,
+                  ).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+                })}
+                {connection.lastSyncMessage ? ` — ${connection.lastSyncMessage}` : ""}
+              </Text>
+            )}
             {consent && (
               <Text size="xs" c={consent.color} fw={consent.urgent ? 600 : 400}>
                 {consent.text}

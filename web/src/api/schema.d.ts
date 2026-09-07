@@ -2381,6 +2381,7 @@ export interface components {
             provider: string;
             name: string;
             createdAt: string;
+            /** @description last SUCCESSFUL sync (drives the fetch window) */
             lastSyncedAt?: string;
             /** @description provider bank name (Enable Banking) */
             aspsp?: string;
@@ -2390,6 +2391,15 @@ export interface components {
             validUntil?: string;
             /** @description included in scheduled background sync */
             autoSync?: boolean;
+            /** @description time of the last sync ATTEMPT (manual or background), RFC3339 */
+            lastSyncAt?: string;
+            /**
+             * @description outcome of the last attempt
+             * @enum {string}
+             */
+            lastSyncStatus?: "ok" | "partial" | "error";
+            /** @description human summary or error of the last attempt */
+            lastSyncMessage?: string;
         };
         BankRemoteAccount: {
             externalId: string;

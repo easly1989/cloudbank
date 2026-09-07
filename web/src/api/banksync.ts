@@ -12,6 +12,11 @@ export interface BankConnection {
   country?: string;
   validUntil?: string;
   autoSync?: boolean;
+  /** Time of the last sync attempt (manual or background), RFC3339. */
+  lastSyncAt?: string;
+  /** Outcome of the last attempt. */
+  lastSyncStatus?: "ok" | "partial" | "error";
+  lastSyncMessage?: string;
 }
 
 export interface BankRemoteAccount {
