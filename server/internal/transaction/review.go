@@ -87,15 +87,26 @@ func (s *Service) Review(ctx context.Context, walletID int64) (ReviewResult, err
 		out.NeedsCategory = append(out.NeedsCategory, reviewTxn(r))
 	}
 
+	pairs, err := s.duplicatePairs(ctx, walletID)
+	if err != nil {
+		return ReviewResult{}, err
+	}
+	out.Duplicates = pairs
+	return out, nil
+}
+
+// duplicatePairs returns the current suspected-duplicate pairs (same account +
+// amount within the finder window), excluding any the user has dismissed.
+func (s *Service) duplicatePairs(ctx context.Context, walletID int64) ([]DuplicatePair, error) {
 	rows, err := s.rq.ListPotentialDuplicates(ctx, db.ListPotentialDuplicatesParams{
 		WalletID: walletID, WalletID_2: walletID,
 	})
 	if err != nil {
-		return ReviewResult{}, err
+		return nil, err
 	}
 	dismissed, err := s.rq.ListDuplicateDismissals(ctx, walletID)
 	if err != nil {
-		return ReviewResult{}, err
+		return nil, err
 	}
 	skip := make(map[[2]int64]bool, len(dismissed))
 	for _, d := range dismissed {
@@ -103,6 +114,7 @@ func (s *Service) Review(ctx context.Context, walletID int64) (ReviewResult, err
 		skip[[2]int64{a, b}] = true
 	}
 
+	pairs := []DuplicatePair{}
 	// rows are ordered by (account, amount, date). For each row pair within the
 	// same account+amount group and inside the date window, emit a suspected
 	// duplicate unless it was dismissed.
@@ -119,10 +131,42 @@ func (s *Service) Review(ctx context.Context, walletID int64) (ReviewResult, err
 			if skip[[2]int64{ka, kb}] {
 				continue
 			}
-			out.Duplicates = append(out.Duplicates, DuplicatePair{A: reviewTxn(a), B: reviewTxn(b)})
+			pairs = append(pairs, DuplicatePair{A: reviewTxn(a), B: reviewTxn(b)})
 		}
 	}
-	return out, nil
+	return pairs, nil
+}
+
+// DismissAllDuplicates marks every currently-surfaced duplicate pair as "not a
+// duplicate" in one shot — for when the finder is dominated by legitimate
+// look-alikes (e.g. many hand-entered expenses of the same amount). Returns the
+// number of pairs dismissed.
+func (s *Service) DismissAllDuplicates(ctx context.Context, walletID int64) (int, error) {
+	pairs, err := s.duplicatePairs(ctx, walletID)
+	if err != nil {
+		return 0, err
+	}
+	if len(pairs) == 0 {
+		return 0, nil
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	qtx := s.q.WithTx(tx)
+	for _, p := range pairs {
+		a, b := pairKey(p.A.ID, p.B.ID)
+		if err := qtx.InsertDuplicateDismissal(ctx, db.InsertDuplicateDismissalParams{
+			WalletID: walletID, TxnAID: a, TxnBID: b,
+		}); err != nil {
+			return 0, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return len(pairs), nil
 }
 
 // DismissDuplicate records that two transactions are not duplicates, so the review

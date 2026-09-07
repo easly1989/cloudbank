@@ -1275,6 +1275,22 @@ paths:
         "204": { description: Dismissed. }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/duplicates/dismiss-all:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: dismissAllDuplicatePairs
+      summary: Mark every currently-surfaced duplicate pair as not a duplicate
+      responses:
+        "200":
+          description: Dismissed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dismissed: { type: integer }
+                required: [dismissed]
   /api/v1/wallets/{walletId}/transactions/merge:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
