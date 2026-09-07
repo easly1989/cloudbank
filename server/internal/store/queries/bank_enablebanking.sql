@@ -37,3 +37,10 @@ UPDATE bank_connections
 SET access_url = ?, valid_until = ?, accounts_json = ?
 WHERE id = ? AND wallet_id = ? AND provider = 'enablebanking'
 RETURNING *;
+
+-- name: UpdateEBankingAccounts :exec
+-- Persist the stored account list (used to cache balances so the accounts page
+-- does not re-fetch them from the provider on every open).
+UPDATE bank_connections
+SET accounts_json = ?
+WHERE id = ? AND provider = 'enablebanking';

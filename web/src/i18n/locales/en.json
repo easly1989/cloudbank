@@ -471,7 +471,14 @@
       "consentValid": "Consent valid {{days}}d"
     },
     "autoSync": "Automatic sync",
-    "autoSyncHint": "Keep this connection up to date in the background."
+    "autoSyncHint": "Keep this connection up to date in the background.",
+    "interval": {
+      "label": "Sync frequency",
+      "daily": "Once a day",
+      "every2days": "Every 2 days",
+      "every3days": "Every 3 days",
+      "weekly": "Once a week"
+    }
   },
   "search": {
     "open": "Search transactions",

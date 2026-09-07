@@ -92,6 +92,7 @@ type ebMockDoer struct {
 	pub        *rsa.PublicKey
 	t          *testing.T
 	txnFetches int
+	balFetches int
 	// failTxnAccount, when set, makes GET /accounts/<uid>/transactions return 500
 	// for that account (e.g. a card the bank does not expose), to exercise
 	// per-account sync resilience.
@@ -124,6 +125,7 @@ func (m *ebMockDoer) Do(r *http.Request) (*http.Response, error) {
 		m.txnFetches++
 		return jsonResp(200, ebTxnsJSON), nil
 	case strings.HasSuffix(p, "/balances"):
+		m.balFetches++
 		return jsonResp(200, `{"balances":[{"balance_amount":{"amount":"500.00","currency":"EUR"},"balance_type":"CLBD"}]}`), nil
 	case r.Method == http.MethodGet && strings.HasSuffix(p, "/aspsps"):
 		return jsonResp(200, `{"aspsps":[{"name":"IntesaSanpaolo","country":"IT"}]}`), nil
@@ -155,6 +157,49 @@ func newEBFixture(t *testing.T) (*Service, *db.Queries, int64, int64, string) {
 	svc.hc = &ebMockDoer{pub: &key.PublicKey, t: t}
 	svc.syncStagger = 0
 	return svc, q, w.ID, acc.ID, pemStr
+}
+
+func TestEnableBankingBalanceCaching(t *testing.T) {
+	svc, _, wid, _, pemStr := newEBFixture(t)
+	ctx := context.Background()
+	if err := svc.SetEBankingConfig(ctx, wid, "app-123", pemStr, "sandbox"); err != nil {
+		t.Fatalf("SetEBankingConfig: %v", err)
+	}
+	_, state, err := svc.EBankingStartAuth(ctx, wid, "IntesaSanpaolo", "IT", "My Intesa", "https://cb.example/bank-sync/callback")
+	if err != nil {
+		t.Fatalf("StartAuth: %v", err)
+	}
+	conn, err := svc.EBankingCompleteAuth(ctx, wid, state, "the-code")
+	if err != nil {
+		t.Fatalf("CompleteAuth: %v", err)
+	}
+	mock := svc.hc.(*ebMockDoer)
+
+	// First open fetches each account's balance from the provider and caches it.
+	first, err := svc.RemoteAccounts(ctx, wid, conn.ID)
+	if err != nil {
+		t.Fatalf("RemoteAccounts: %v", err)
+	}
+	if len(first) != 2 || first[0].Balance != "500.00" {
+		t.Fatalf("first RemoteAccounts = %+v", first)
+	}
+	if mock.balFetches != len(first) {
+		t.Fatalf("first open made %d balance calls, want %d", mock.balFetches, len(first))
+	}
+
+	// A second open within the cache TTL serves balances from the cache: no new
+	// provider calls, same values.
+	before := mock.balFetches
+	second, err := svc.RemoteAccounts(ctx, wid, conn.ID)
+	if err != nil {
+		t.Fatalf("RemoteAccounts (cached): %v", err)
+	}
+	if mock.balFetches != before {
+		t.Fatalf("cached open made %d extra balance calls, want 0", mock.balFetches-before)
+	}
+	if len(second) != 2 || second[0].Balance != "500.00" {
+		t.Fatalf("cached RemoteAccounts = %+v", second)
+	}
 }
 
 func TestEnableBankingJWT(t *testing.T) {
