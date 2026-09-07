@@ -414,6 +414,7 @@
     "unnamed": "Bank connection",
     "lastSynced": "last synced {{date}}",
     "neverSynced": "never synced",
+    "lastSync": "Last sync: {{when}}",
     "syncNow": "Sync now",
     "synced": "Imported {{imported}}, reconciled {{reconciled}}.",
     "syncedPartial": "Imported {{imported}}, reconciled {{reconciled}}. Some accounts could not be synced — {{warnings}}",

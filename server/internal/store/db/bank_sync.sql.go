@@ -42,7 +42,7 @@ func (q *Queries) DeleteBankLink(ctx context.Context, arg DeleteBankLinkParams) 
 }
 
 const getBankConnection = `-- name: GetBankConnection :one
-SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync FROM bank_connections WHERE id = ? LIMIT 1
+SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync, last_sync_at, last_sync_status, last_sync_message FROM bank_connections WHERE id = ? LIMIT 1
 `
 
 func (q *Queries) GetBankConnection(ctx context.Context, id int64) (BankConnection, error) {
@@ -61,6 +61,9 @@ func (q *Queries) GetBankConnection(ctx context.Context, id int64) (BankConnecti
 		&i.ValidUntil,
 		&i.AccountsJson,
 		&i.AutoSync,
+		&i.LastSyncAt,
+		&i.LastSyncStatus,
+		&i.LastSyncMessage,
 	)
 	return i, err
 }
@@ -68,7 +71,7 @@ func (q *Queries) GetBankConnection(ctx context.Context, id int64) (BankConnecti
 const insertBankConnection = `-- name: InsertBankConnection :one
 INSERT INTO bank_connections (wallet_id, provider, access_url, name)
 VALUES (?, ?, ?, ?)
-RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync
+RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync, last_sync_at, last_sync_status, last_sync_message
 `
 
 type InsertBankConnectionParams struct {
@@ -99,12 +102,15 @@ func (q *Queries) InsertBankConnection(ctx context.Context, arg InsertBankConnec
 		&i.ValidUntil,
 		&i.AccountsJson,
 		&i.AutoSync,
+		&i.LastSyncAt,
+		&i.LastSyncStatus,
+		&i.LastSyncMessage,
 	)
 	return i, err
 }
 
 const listBankConnectionsForWallet = `-- name: ListBankConnectionsForWallet :many
-SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync FROM bank_connections WHERE wallet_id = ? ORDER BY created_at DESC, id
+SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync, last_sync_at, last_sync_status, last_sync_message FROM bank_connections WHERE wallet_id = ? ORDER BY created_at DESC, id
 `
 
 func (q *Queries) ListBankConnectionsForWallet(ctx context.Context, walletID int64) ([]BankConnection, error) {
@@ -129,6 +135,9 @@ func (q *Queries) ListBankConnectionsForWallet(ctx context.Context, walletID int
 			&i.ValidUntil,
 			&i.AccountsJson,
 			&i.AutoSync,
+			&i.LastSyncAt,
+			&i.LastSyncStatus,
+			&i.LastSyncMessage,
 		); err != nil {
 			return nil, err
 		}
@@ -207,6 +216,24 @@ func (q *Queries) ListDueBankConnections(ctx context.Context, lastSyncedAt sql.N
 		return nil, err
 	}
 	return items, nil
+}
+
+const recordBankSyncOutcome = `-- name: RecordBankSyncOutcome :exec
+UPDATE bank_connections
+SET last_sync_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
+    last_sync_status = ?, last_sync_message = ?
+WHERE id = ?
+`
+
+type RecordBankSyncOutcomeParams struct {
+	LastSyncStatus  string
+	LastSyncMessage string
+	ID              int64
+}
+
+func (q *Queries) RecordBankSyncOutcome(ctx context.Context, arg RecordBankSyncOutcomeParams) error {
+	_, err := q.db.ExecContext(ctx, recordBankSyncOutcome, arg.LastSyncStatus, arg.LastSyncMessage, arg.ID)
+	return err
 }
 
 const setBankConnectionAutoSync = `-- name: SetBankConnectionAutoSync :execrows

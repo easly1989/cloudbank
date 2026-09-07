@@ -199,6 +199,7 @@ type Querier interface {
 	ReassignTag(ctx context.Context, arg ReassignTagParams) error
 	ReassignTransactionCategory(ctx context.Context, arg ReassignTransactionCategoryParams) error
 	ReassignTransactionPayee(ctx context.Context, arg ReassignTransactionPayeeParams) error
+	RecordBankSyncOutcome(ctx context.Context, arg RecordBankSyncOutcomeParams) error
 	RefreshEBankingConnectionSession(ctx context.Context, arg RefreshEBankingConnectionSessionParams) (BankConnection, error)
 	RenameTag(ctx context.Context, arg RenameTagParams) error
 	ReparentChildren(ctx context.Context, arg ReparentChildrenParams) error

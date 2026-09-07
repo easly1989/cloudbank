@@ -2281,11 +2281,14 @@ components:
         provider: { type: string }
         name: { type: string }
         createdAt: { type: string }
-        lastSyncedAt: { type: string }
+        lastSyncedAt: { type: string, description: "last SUCCESSFUL sync (drives the fetch window)" }
         aspsp: { type: string, description: "provider bank name (Enable Banking)" }
         country: { type: string, description: "provider bank country (Enable Banking)" }
         validUntil: { type: string, description: "consent expiry (Enable Banking), RFC3339" }
         autoSync: { type: boolean, description: "included in scheduled background sync" }
+        lastSyncAt: { type: string, description: "time of the last sync ATTEMPT (manual or background), RFC3339" }
+        lastSyncStatus: { type: string, enum: [ok, partial, error], description: "outcome of the last attempt" }
+        lastSyncMessage: { type: string, description: "human summary or error of the last attempt" }
       required: [id, provider, name, createdAt]
     BankRemoteAccount:
       type: object

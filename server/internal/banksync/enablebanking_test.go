@@ -467,6 +467,10 @@ func TestEnableBankingSyncMergesExistingTransaction(t *testing.T) {
 	if res.Reconciled < 1 {
 		t.Errorf("reconciled = %d, want >= 1 (the merge)", res.Reconciled)
 	}
+	// The sync outcome is recorded on the connection (time + ok status).
+	if row, _ := q.GetBankConnection(ctx, conn.ID); row.LastSyncStatus != "ok" || !row.LastSyncAt.Valid {
+		t.Errorf("outcome not recorded: status=%q at.valid=%v", row.LastSyncStatus, row.LastSyncAt.Valid)
+	}
 
 	// The DBIT row merged into the manual entry (no duplicate); the CRDT row is new.
 	// So the account has 2 transactions, not 3.
