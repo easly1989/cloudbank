@@ -153,11 +153,18 @@ rest of your financial data:
 
 Connections are refreshed automatically in the background, so you normally don't
 need to click **Sync now**. Each connection has an **Automatic sync** toggle (on
-by default); turn it off to sync that connection only on demand. The server
-refreshes auto-sync connections that are older than `CB_BANK_SYNC_INTERVAL`
-(default `12h`; set it to `0`/`off` to disable background sync entirely). An
-Enable Banking connection whose consent has expired is skipped until you
-**reconnect** it.
+by default) and a **Sync frequency** — once a day (the default), every 2 or 3
+days, or weekly. There is no benefit to syncing more than daily: PSD2 caps
+unattended access to a few calls per account per day, so the default keeps you
+comfortably within budget. Turn the toggle off to sync a connection only on
+demand.
+
+The background job wakes every `CB_BANK_SYNC_INTERVAL` (default `1h`; set it to
+`0`/`off` to disable background sync entirely) and syncs each connection that is
+due per its own frequency. Account balances shown on the Bank sync page are
+cached and refreshed at most every 12h, so opening the page repeatedly does not
+spend the daily budget. An Enable Banking connection whose consent has expired is
+skipped until you **reconnect** it.
 
 ## How imported transactions are reconciled
 
@@ -196,5 +203,29 @@ category, the **Review** page (in the sidebar) helps you finish the job:
 
 - The Enable Banking account list is **captured when you connect**; if the bank
   later exposes a new account, reconnect to pick it up.
-- Balances shown for Enable Banking accounts are best-effort and may be omitted
-  if the bank does not return one.
+- Balances shown for Enable Banking accounts are best-effort (cached, refreshed
+  at most every 12h) and may be omitted if the bank does not return one.
+
+## Troubleshooting: pending (non-booked) transactions
+
+Many banks' PSD2 (open banking) interfaces expose **only booked** transactions —
+pending ones are frequently unavailable — so it's normal for an auto-sync to
+import only booked rows (as *reconciled*) even though you can see pending charges
+in the bank's own app. CloudBank's default transactions call already asks for
+everything the bank will return, so whatever pending the ASPSP exposes is
+imported (as *cleared*).
+
+If you expect pending rows and none arrive, you can find out **why** without
+guessing. Set `CB_BANK_SYNC_DEBUG_PENDING=1`, restart, run one **Sync now**, then
+look at the server log (`CB_LOG_LEVEL=info` is enough):
+
+- `bank sync: fetched account … booked=… pending=… other=… pendingDroppedNoDate=…`
+  — the breakdown of the normal call. `pending=0` means the bank returns no
+  pending in the default call; `pendingDroppedNoDate>0` means pending arrive but
+  lack a date and are skipped.
+- `bank sync: PDNG probe … count=…` or `bank sync: PDNG probe failed … error=…`
+  — the result of an explicit `transaction_status=PDNG` request (only made while
+  the flag is on), including the exact HTTP status and body on failure.
+
+Turn the flag back off afterwards: the probe makes an extra provider call per
+account, which eats into the small PSD2 daily budget.
