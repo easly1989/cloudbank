@@ -61,6 +61,9 @@ dashboard polish.
   call that already returns whatever pending the bank exposes. A new opt-in
   `CB_BANK_SYNC_DEBUG_PENDING` flag logs a booked/pending breakdown (and, on
   request, the exact provider response) to diagnose banks that return no pending.
+  Using it confirmed that **Intesa Sanpaolo exposes only booked transactions**
+  over PSD2 — pending charges are unavailable until they book — so the missing
+  rows are a bank limitation, not a sync bug. See [docs/bank-sync.md](docs/bank-sync.md).
 
 ## [2.0.0 – 3.0.3] — Post-parity releases (2026-07 → 2026-09)
 

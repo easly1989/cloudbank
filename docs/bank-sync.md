@@ -205,6 +205,10 @@ category, the **Review** page (in the sidebar) helps you finish the job:
   later exposes a new account, reconnect to pick it up.
 - Balances shown for Enable Banking accounts are best-effort (cached, refreshed
   at most every 12h) and may be omitted if the bank does not return one.
+- Some banks expose **only booked** transactions over PSD2. **Intesa Sanpaolo**
+  is confirmed to be one of them (see below): pending/non-booked charges are not
+  available until they book, so the register can trail the bank's own app by a
+  day or two.
 
 ## Troubleshooting: pending (non-booked) transactions
 
@@ -229,3 +233,10 @@ look at the server log (`CB_LOG_LEVEL=info` is enough):
 
 Turn the flag back off afterwards: the probe makes an extra provider call per
 account, which eats into the small PSD2 daily budget.
+
+**Confirmed for Intesa Sanpaolo (Sept 2026):** the default call returned only
+`booked` rows (`pending=0`) and the explicit probe returned `PDNG probe … count=0`
+(a successful call with nothing to give) — so Intesa does not expose pending
+transactions over PSD2 at all. There is no sync-side workaround; the charges
+import as *reconciled* once the bank books them. Until then, CloudBank's balance
+is higher than the bank's *available* balance by the sum of those pending charges.
