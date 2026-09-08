@@ -28,6 +28,12 @@ func New(key string) (*Cipher, error) {
 	if strings.TrimSpace(key) == "" {
 		return nil, nil
 	}
+	// CB_SECRET_KEY is a server-side operator secret (documented as required
+	// high-entropy — see README), not a user password, so folding it to a 256-bit
+	// AES key with SHA-256 is deliberate: a slow password KDF (scrypt/argon2) would
+	// add no meaningful protection for a high-entropy operator key, and changing the
+	// derivation would break decryption of every existing "enc.v1:" value at rest.
+	// Accepted as won't-fix; see issue #355 (CodeQL go/weak-sensitive-data-hashing).
 	sum := sha256.Sum256([]byte(key))
 	block, err := aes.NewCipher(sum[:])
 	if err != nil {
