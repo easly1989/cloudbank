@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 	"time"
 
@@ -365,22 +366,75 @@ func (s *Service) ebFetchRows(ctx context.Context, c db.BankConnection, linkByEx
 	}
 	out := make(map[string][]importio.Row)
 	var failures []accountFetchError
+	debugPending := bankSyncDebugPending()
 	for _, a := range parseStoredAccounts(c.AccountsJson) {
 		if _, linked := linkByExt[a.UID]; !linked {
 			continue
 		}
+		name := a.Name
+		if strings.TrimSpace(name) == "" {
+			name = a.IBAN
+		}
 		txns, err := cl.transactions(ctx, a.UID, start)
 		if err != nil {
-			name := a.Name
-			if strings.TrimSpace(name) == "" {
-				name = a.IBAN
-			}
 			failures = append(failures, accountFetchError{ExternalID: a.UID, Name: name, Err: err})
 			continue
 		}
-		out[a.UID] = ebRowsFromTxns(txns, a.Card)
+		rows := ebRowsFromTxns(txns, a.Card)
+		out[a.UID] = rows
+
+		// Diagnostics for #351: break down what the default (unfiltered) call
+		// returned. This costs no extra provider call. If pending == 0 the ASPSP
+		// does not expose pending in the default call; if pendingDroppedNoDate > 0
+		// pending arrive but are skipped for lack of a date.
+		booked, pending, other, pendingDroppedNoDate := txnStatusStats(txns)
+		slog.Info("bank sync: fetched account",
+			"connection", c.ID, "account", name,
+			"total", len(txns), "booked", booked, "pending", pending, "other", other,
+			"pendingDroppedNoDate", pendingDroppedNoDate, "rows", len(rows))
+
+		// Opt-in probe: fetch pending explicitly and log the provider's exact
+		// response. Off by default because the extra call spends the small PSD2
+		// daily budget; enable it for a single manual sync to diagnose.
+		if debugPending {
+			if pend, perr := cl.transactionsByStatus(ctx, a.UID, start, "PDNG"); perr != nil {
+				slog.Warn("bank sync: PDNG probe failed",
+					"connection", c.ID, "account", name, "error", perr)
+			} else {
+				slog.Info("bank sync: PDNG probe",
+					"connection", c.ID, "account", name, "count", len(pend))
+			}
+		}
 	}
 	return out, failures, nil
+}
+
+// txnStatusStats breaks a fetched transaction set down by status, and counts how
+// many pending rows would be dropped for lacking any usable date — the two facts
+// that explain whether pending transactions reach the ledger (#351).
+func txnStatusStats(txns []ebTxn) (booked, pending, other, pendingDroppedNoDate int) {
+	for _, t := range txns {
+		switch {
+		case strings.EqualFold(t.Status, "BOOK"):
+			booked++
+		case strings.EqualFold(t.Status, "PDNG"):
+			pending++
+			if t.date() == "" {
+				pendingDroppedNoDate++
+			}
+		default:
+			other++
+		}
+	}
+	return booked, pending, other, pendingDroppedNoDate
+}
+
+// bankSyncDebugPending reports whether the opt-in pending (PDNG) probe is enabled
+// via CB_BANK_SYNC_DEBUG_PENDING. It is off by default so ordinary syncs make a
+// single transactions call per account and stay within the PSD2 daily budget.
+func bankSyncDebugPending() bool {
+	v := strings.TrimSpace(os.Getenv("CB_BANK_SYNC_DEBUG_PENDING"))
+	return v != "" && v != "0" && !strings.EqualFold(v, "false")
 }
 
 // Default payment modes for imported rows, by account type (HomeBank codes):
