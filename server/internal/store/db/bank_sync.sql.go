@@ -110,6 +110,34 @@ func (q *Queries) InsertBankConnection(ctx context.Context, arg InsertBankConnec
 	return i, err
 }
 
+const insertBankSyncRun = `-- name: InsertBankSyncRun :exec
+INSERT INTO bank_sync_runs (connection_id, ran_at, triggered_by, status, imported, reconciled, message, accounts_json)
+VALUES (?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), ?, ?, ?, ?, ?, ?)
+`
+
+type InsertBankSyncRunParams struct {
+	ConnectionID int64
+	TriggeredBy  string
+	Status       string
+	Imported     int64
+	Reconciled   int64
+	Message      string
+	AccountsJson string
+}
+
+func (q *Queries) InsertBankSyncRun(ctx context.Context, arg InsertBankSyncRunParams) error {
+	_, err := q.db.ExecContext(ctx, insertBankSyncRun,
+		arg.ConnectionID,
+		arg.TriggeredBy,
+		arg.Status,
+		arg.Imported,
+		arg.Reconciled,
+		arg.Message,
+		arg.AccountsJson,
+	)
+	return err
+}
+
 const listBankConnectionsForWallet = `-- name: ListBankConnectionsForWallet :many
 SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync, last_sync_at, last_sync_status, last_sync_message, sync_interval_hours FROM bank_connections WHERE wallet_id = ? ORDER BY created_at DESC, id
 `
@@ -186,6 +214,48 @@ func (q *Queries) ListBankLinks(ctx context.Context, connectionID int64) ([]List
 	return items, nil
 }
 
+const listBankSyncRuns = `-- name: ListBankSyncRuns :many
+SELECT id, connection_id, ran_at, triggered_by, status, imported, reconciled, message, accounts_json FROM bank_sync_runs WHERE connection_id = ? ORDER BY id DESC LIMIT ?
+`
+
+type ListBankSyncRunsParams struct {
+	ConnectionID int64
+	Limit        int64
+}
+
+func (q *Queries) ListBankSyncRuns(ctx context.Context, arg ListBankSyncRunsParams) ([]BankSyncRun, error) {
+	rows, err := q.db.QueryContext(ctx, listBankSyncRuns, arg.ConnectionID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []BankSyncRun{}
+	for rows.Next() {
+		var i BankSyncRun
+		if err := rows.Scan(
+			&i.ID,
+			&i.ConnectionID,
+			&i.RanAt,
+			&i.TriggeredBy,
+			&i.Status,
+			&i.Imported,
+			&i.Reconciled,
+			&i.Message,
+			&i.AccountsJson,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDueBankConnections = `-- name: ListDueBankConnections :many
 SELECT id, wallet_id FROM bank_connections
 WHERE auto_sync = 1
@@ -224,6 +294,25 @@ func (q *Queries) ListDueBankConnections(ctx context.Context) ([]ListDueBankConn
 		return nil, err
 	}
 	return items, nil
+}
+
+const pruneBankSyncRuns = `-- name: PruneBankSyncRuns :exec
+DELETE FROM bank_sync_runs
+WHERE bank_sync_runs.connection_id = ?
+  AND bank_sync_runs.id NOT IN (
+    SELECT r.id FROM bank_sync_runs r WHERE r.connection_id = ? ORDER BY r.id DESC LIMIT ?
+  )
+`
+
+type PruneBankSyncRunsParams struct {
+	ConnectionID   int64
+	ConnectionID_2 int64
+	Limit          int64
+}
+
+func (q *Queries) PruneBankSyncRuns(ctx context.Context, arg PruneBankSyncRunsParams) error {
+	_, err := q.db.ExecContext(ctx, pruneBankSyncRuns, arg.ConnectionID, arg.ConnectionID_2, arg.Limit)
+	return err
 }
 
 const recordBankSyncOutcome = `-- name: RecordBankSyncOutcome :exec

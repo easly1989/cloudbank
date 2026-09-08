@@ -21,6 +21,26 @@ export interface BankConnection {
   lastSyncMessage?: string;
 }
 
+export interface BankSyncAccountResult {
+  externalId: string;
+  name?: string;
+  fetched: number;
+  imported: number;
+  reconciled: number;
+  error?: string;
+}
+
+export interface BankSyncRun {
+  id: number;
+  ranAt: string;
+  triggeredBy?: "manual" | "auto";
+  status: "ok" | "partial" | "error";
+  imported: number;
+  reconciled: number;
+  message?: string;
+  accounts: BankSyncAccountResult[];
+}
+
 export interface BankRemoteAccount {
   externalId: string;
   name: string;
@@ -130,6 +150,9 @@ export const reauthEnableBankingConnection = (
     `/api/v1/wallets/${walletId}/bank/connections/${connId}/reauth`,
     { redirectUrl },
   );
+
+export const listBankConnectionSyncRuns = (walletId: number, connId: number) =>
+  api.get<BankSyncRun[]>(`/api/v1/wallets/${walletId}/bank/connections/${connId}/history`);
 
 export const setBankConnectionAutoSync = (walletId: number, connId: number, enabled: boolean) =>
   api.post<void>(`/api/v1/wallets/${walletId}/bank/connections/${connId}/auto-sync`, { enabled });

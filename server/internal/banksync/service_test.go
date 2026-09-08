@@ -197,6 +197,69 @@ func TestSyncDueRespectsAutoSyncAndInterval(t *testing.T) {
 	}
 }
 
+func TestSyncHistory(t *testing.T) {
+	svc, q, _, wid, acc := newFixture(t)
+	ctx := context.Background()
+	setupToken := base64.StdEncoding.EncodeToString([]byte("https://example.test/claim/x"))
+	conn, _, err := svc.Connect(ctx, wid, setupToken, "Bank")
+	if err != nil {
+		t.Fatalf("Connect: %v", err)
+	}
+	if err := svc.Link(ctx, wid, conn.ID, "ACT-1", acc); err != nil {
+		t.Fatalf("Link: %v", err)
+	}
+
+	// First manual sync: a run with the per-account breakdown.
+	if _, err := svc.Sync(ctx, wid, conn.ID); err != nil {
+		t.Fatalf("Sync: %v", err)
+	}
+	runs, err := svc.History(ctx, wid, conn.ID)
+	if err != nil {
+		t.Fatalf("History: %v", err)
+	}
+	if len(runs) != 1 {
+		t.Fatalf("history len = %d, want 1", len(runs))
+	}
+	if r := runs[0]; r.TriggeredBy != "manual" || r.Status != "ok" || r.Imported != 2 {
+		t.Fatalf("run = %+v, want manual / ok / imported 2", r)
+	}
+	if len(runs[0].Accounts) != 1 {
+		t.Fatalf("run accounts = %d, want 1", len(runs[0].Accounts))
+	}
+	if a := runs[0].Accounts[0]; a.ExternalID != "ACT-1" || a.Name != "Checking" || a.Fetched != 2 || a.Imported != 2 {
+		t.Fatalf("account detail = %+v, want ACT-1 / Checking / fetched 2 / imported 2", a)
+	}
+
+	// A second sync dedups the same rows → imported 0, and adds a second run.
+	if _, err := svc.Sync(ctx, wid, conn.ID); err != nil {
+		t.Fatalf("Sync 2: %v", err)
+	}
+	runs, _ = svc.History(ctx, wid, conn.ID)
+	if len(runs) != 2 || runs[0].Imported != 0 {
+		t.Fatalf("after 2 syncs: len=%d run0.imported=%d, want 2 / 0", len(runs), runs[0].Imported)
+	}
+
+	// Retention: only the most recent syncRunHistoryLimit runs are kept.
+	for i := 0; i < syncRunHistoryLimit+3; i++ {
+		if _, err := svc.Sync(ctx, wid, conn.ID); err != nil {
+			t.Fatalf("Sync loop: %v", err)
+		}
+	}
+	runs, _ = svc.History(ctx, wid, conn.ID)
+	if len(runs) != syncRunHistoryLimit {
+		t.Fatalf("history len after many = %d, want %d", len(runs), syncRunHistoryLimit)
+	}
+	if runs[0].ID < runs[len(runs)-1].ID {
+		t.Fatalf("history not most-recent-first: %d then %d", runs[0].ID, runs[len(runs)-1].ID)
+	}
+
+	// Cross-wallet history is rejected.
+	other, _ := q.CreateWallet(ctx, db.CreateWalletParams{Title: "Other"})
+	if _, err := svc.History(ctx, other.ID, conn.ID); err != ErrNotFound {
+		t.Fatalf("cross-wallet History err = %v, want ErrNotFound", err)
+	}
+}
+
 func TestConnectionWalletIsolation(t *testing.T) {
 	svc, q, _, wid, _ := newFixture(t)
 	ctx := context.Background()

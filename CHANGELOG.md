@@ -44,6 +44,10 @@ dashboard polish.
   calls the bank, to stay within PSD2's small per-day access budget.
 - **Last-sync status** — each connection shows when it last synced and the outcome
   (ok / partial / error) of that attempt, for both manual and background syncs.
+- **Sync history** — each connection keeps a short, expandable history of its recent
+  runs on the Bank sync page: time, manual vs automatic, status, and a **per-linked-
+  account** breakdown (fetched / imported / reconciled, or the error) — so anyone can
+  see why a sync did what it did without reading server logs.
 - **Bulk "not a duplicate"** — the duplicate finder can dismiss every surfaced pair
   at once, for when a fresh import flags many look-alikes that are all legitimate.
 
