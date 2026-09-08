@@ -38,6 +38,20 @@ WHERE auto_sync = 1
        OR last_synced_at < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-' || sync_interval_hours || ' hours'))
 ORDER BY last_synced_at IS NOT NULL, last_synced_at, id;
 
+-- name: InsertBankSyncRun :exec
+INSERT INTO bank_sync_runs (connection_id, ran_at, triggered_by, status, imported, reconciled, message, accounts_json)
+VALUES (?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), ?, ?, ?, ?, ?, ?);
+
+-- name: ListBankSyncRuns :many
+SELECT * FROM bank_sync_runs WHERE connection_id = ? ORDER BY id DESC LIMIT ?;
+
+-- name: PruneBankSyncRuns :exec
+DELETE FROM bank_sync_runs
+WHERE bank_sync_runs.connection_id = ?
+  AND bank_sync_runs.id NOT IN (
+    SELECT r.id FROM bank_sync_runs r WHERE r.connection_id = ? ORDER BY r.id DESC LIMIT ?
+  );
+
 -- name: UpsertBankLink :exec
 INSERT INTO bank_links (connection_id, external_id, account_id)
 VALUES (?, ?, ?)
