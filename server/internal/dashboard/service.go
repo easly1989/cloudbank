@@ -189,6 +189,12 @@ func (s *Service) incomeExpense(ctx context.Context, walletID int64, today strin
 	if n <= 0 {
 		n = s.allIncomeExpenseMonths(ctx, walletID, today)
 	}
+	// Bound the window: ieMonths comes from a request query param, so an unclamped
+	// value would size the slice allocation (and month loop) in monthsWindow —
+	// cap it so a large ?ieMonths= can't force a huge allocation (DoS).
+	if n > maxIncomeExpenseMonths {
+		n = maxIncomeExpenseMonths
+	}
 	from, months := monthsWindow(today, n)
 	rows, err := s.q.MonthlyIncomeExpense(ctx, db.MonthlyIncomeExpenseParams{WalletID: walletID, FromDate: from, ToDate: today})
 	if err != nil {

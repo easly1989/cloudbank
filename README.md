@@ -176,7 +176,7 @@ latest version on the next launch after you deploy a new image.
 | `CB_LOG_LEVEL`      | `info`              | `debug`, `info`, `warn`, or `error`.                        |
 | `CB_SECURE_COOKIES` | `true`              | Set `false` for plain-HTTP LAN installs (no TLS).           |
 | `CB_RATE_URL`       | _(frankfurter.app)_ | Override the online exchange-rate API root (e.g. a mirror). |
-| `CB_SECRET_KEY`     | _(none)_            | If set, encrypts secrets at rest (bank credentials, AI keys, 2FA & push keys). Keep it **stable** — losing it makes encrypted secrets unrecoverable. |
+| `CB_SECRET_KEY`     | _(none)_            | If set, encrypts secrets at rest (bank credentials, AI keys, 2FA & push keys). Use a **strong, high-entropy** value — generate one with `openssl rand -base64 48` rather than a hand-picked passphrase. Keep it **stable** — losing it makes encrypted secrets unrecoverable. |
 | `CB_BANK_SYNC_INTERVAL` | `1h`            | How often the background job checks for connections due to sync. Each connection has its own interval (default daily, configurable per connection), so this only bounds how promptly a due one is picked up. Set `0`/`off` to disable background sync (manual "Sync now" still works). |
 | `CB_BANK_SYNC_DEBUG_PENDING` | _(off)_    | Diagnostics only. When set, each auto-sync makes one extra `transaction_status=PDNG` call per account and logs the provider's exact response, to investigate why an ASPSP returns no pending transactions. Leave off in normal use — the extra call spends the PSD2 daily budget. |
 
