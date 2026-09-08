@@ -16,7 +16,7 @@ COPY web/ ./
 RUN npm run gen:api && npm run build
 
 # --- Stage 2: build the Go binary (with the SPA embedded) ---
-FROM golang:1.25-bookworm AS build
+FROM golang:1.27-bookworm AS build
 WORKDIR /src/server
 COPY server/go.mod server/go.sum ./
 RUN go mod download
