@@ -69,6 +69,17 @@ dashboard polish.
   over PSD2 — pending charges are unavailable until they book — so the missing
   rows are a bank limitation, not a sync bug. See [docs/bank-sync.md](docs/bank-sync.md).
 
+### Security
+
+- **Bounded dashboard income/expense window.** The `ieMonths` query parameter was
+  clamped only to non-negative; a large value flowed into a slice allocation, so an
+  authenticated user could request an enormous window and exhaust server memory. It
+  is now capped at the existing 120-month maximum (fixes a CodeQL
+  `go/uncontrolled-allocation-size` finding).
+- **Dependency automation.** Added a `.github/dependabot.yml` (weekly, grouped
+  minor/patch PRs across Go, npm, Docker and GitHub Actions) and documented that
+  `CB_SECRET_KEY` should be a strong, high-entropy value.
+
 ## [2.0.0 – 3.0.3] — Post-parity releases (2026-07 → 2026-09)
 
 Built on the 1.0 parity base across many point releases: the **2.x** line brought
