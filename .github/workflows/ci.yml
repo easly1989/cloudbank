@@ -20,8 +20,8 @@ jobs:
       run:
         working-directory: server
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         id: setup-go
         with:
           go-version-file: server/go.mod
@@ -37,7 +37,7 @@ jobs:
       - name: Vet
         run: go vet ./...
       - name: Cache golangci-lint binary
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           # Cache the from-source build below. The key pins both the linter
           # version and the Go toolchain it was built with, so bumping either
@@ -67,8 +67,8 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -93,10 +93,10 @@ jobs:
     # Only on PRs: verify the image builds (single arch, no push).
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
       - name: Build image (no push)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: false
@@ -124,17 +124,17 @@ jobs:
     runs-on: ubuntu-latest
     # Build the real image, run it via compose, and drive it with Playwright.
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: e2e/package-lock.json
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       - name: Build the app image (shared layer cache)
         # Reuses the "app" scope populated by the docker smoke job, so previously
         # built Go/web layers are restored instead of a cold rebuild every run.
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           load: true
@@ -157,7 +157,7 @@ jobs:
         run: npm ci
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           # Keyed on the e2e lockfile so a @playwright/test bump re-downloads the
           # matching browser; unchanged deps reuse the cached Chromium.
@@ -184,7 +184,7 @@ jobs:
         run: docker compose -f e2e/docker-compose.ci.yml logs
       - name: Upload Playwright traces and screenshots
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-artifacts
           path: |
