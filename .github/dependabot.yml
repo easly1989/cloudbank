@@ -1,0 +1,63 @@
+# Dependabot version updates. Alerts + security updates are enabled separately in
+# the repo's Security settings (they need no config file). This file keeps regular
+# dependencies current with a low-noise cadence: weekly, with minor/patch updates
+# grouped into a single PR per ecosystem so majors still get individual review.
+# CloudBank is a public repo, so the CI these PRs trigger costs no Actions minutes.
+version: 2
+updates:
+  # Go backend
+  - package-ecosystem: "gomod"
+    directory: "/server"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      go:
+        update-types: ["minor", "patch"]
+
+  # React SPA
+  - package-ecosystem: "npm"
+    directory: "/web"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      web:
+        update-types: ["minor", "patch"]
+
+  # Astro marketing site
+  - package-ecosystem: "npm"
+    directory: "/site"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      site:
+        update-types: ["minor", "patch"]
+
+  # Container base image
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(deps)"
+
+  # GitHub Actions used by the workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns: ["*"]
