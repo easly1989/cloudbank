@@ -3,9 +3,11 @@ package banksync
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strings"
 	"time"
 
@@ -94,6 +96,34 @@ type accountFetchError struct {
 	Name       string
 	Err        error
 }
+
+// AccountSyncResult is one linked account's outcome within a sync run — what the
+// history panel shows per account.
+type AccountSyncResult struct {
+	ExternalID string `json:"externalId"`
+	Name       string `json:"name,omitempty"`
+	Fetched    int    `json:"fetched"`
+	Imported   int    `json:"imported"`
+	Reconciled int    `json:"reconciled"`
+	Error      string `json:"error,omitempty"`
+}
+
+// SyncRun is one recorded sync of a connection, with its per-account breakdown —
+// the unit of the Bank sync page's history.
+type SyncRun struct {
+	ID          int64               `json:"id"`
+	RanAt       string              `json:"ranAt"`
+	TriggeredBy string              `json:"triggeredBy,omitempty"` // "manual" | "auto"
+	Status      string              `json:"status"`                // "ok" | "partial" | "error"
+	Imported    int                 `json:"imported"`
+	Reconciled  int                 `json:"reconciled"`
+	Message     string              `json:"message,omitempty"`
+	Accounts    []AccountSyncResult `json:"accounts"`
+}
+
+// syncRunHistoryLimit caps how many recent runs are kept (and returned) per
+// connection, so the history stays a short audit trail.
+const syncRunHistoryLimit = 20
 
 // Service manages bank connections and imports their transactions through the
 // shared import pipeline (so duplicate flagging and import rules are reused).
@@ -261,15 +291,23 @@ func (s *Service) Unlink(ctx context.Context, walletID, connID int64, externalID
 // message) on the connection, so the UI can show when it last ran and whether it
 // worked — for manual and background syncs alike.
 func (s *Service) Sync(ctx context.Context, walletID, connID int64) (SyncResult, error) {
-	res, err := s.syncOnce(ctx, walletID, connID)
+	return s.syncAndRecord(ctx, walletID, connID, "manual")
+}
+
+// syncAndRecord runs one sync, stamps the connection with its outcome, and
+// appends a run to the connection's history. triggeredBy is "manual" (a user
+// "Sync now") or "auto" (the background job).
+func (s *Service) syncAndRecord(ctx context.Context, walletID, connID int64, triggeredBy string) (SyncResult, error) {
+	res, details, err := s.syncOnce(ctx, walletID, connID)
 	s.recordSyncOutcome(ctx, connID, res, err)
+	s.recordSyncRun(ctx, connID, triggeredBy, res, details, err)
 	return res, err
 }
 
-// recordSyncOutcome stamps the connection with the result of the latest attempt.
-func (s *Service) recordSyncOutcome(ctx context.Context, connID int64, res SyncResult, err error) {
-	status := "ok"
-	var msg string
+// syncStatusMessage derives the status ("ok"/"partial"/"error") and a human
+// summary for a sync attempt, shared by the connection stamp and the history run.
+func syncStatusMessage(res SyncResult, err error) (status, msg string) {
+	status = "ok"
 	switch {
 	case err != nil:
 		status = "error"
@@ -283,6 +321,12 @@ func (s *Service) recordSyncOutcome(ctx context.Context, connID int64, res SyncR
 	default:
 		msg = fmt.Sprintf("Imported %d, reconciled %d", res.Imported, res.Reconciled)
 	}
+	return status, msg
+}
+
+// recordSyncOutcome stamps the connection with the result of the latest attempt.
+func (s *Service) recordSyncOutcome(ctx context.Context, connID int64, res SyncResult, err error) {
+	status, msg := syncStatusMessage(res, err)
 	if e := s.q.RecordBankSyncOutcome(ctx, db.RecordBankSyncOutcomeParams{
 		LastSyncStatus: status, LastSyncMessage: msg, ID: connID,
 	}); e != nil {
@@ -290,18 +334,66 @@ func (s *Service) recordSyncOutcome(ctx context.Context, connID int64, res SyncR
 	}
 }
 
+// recordSyncRun appends this attempt (with its per-account breakdown) to the
+// connection's history and prunes it to the most recent syncRunHistoryLimit.
+func (s *Service) recordSyncRun(ctx context.Context, connID int64, triggeredBy string, res SyncResult, details []AccountSyncResult, err error) {
+	status, msg := syncStatusMessage(res, err)
+	if details == nil {
+		details = []AccountSyncResult{}
+	}
+	accountsJSON, _ := json.Marshal(details)
+	if e := s.q.InsertBankSyncRun(ctx, db.InsertBankSyncRunParams{
+		ConnectionID: connID, TriggeredBy: triggeredBy, Status: status,
+		Imported: int64(res.Imported), Reconciled: int64(res.Reconciled),
+		Message: msg, AccountsJson: string(accountsJSON),
+	}); e != nil {
+		slog.Warn("bank sync: could not record run", "connection", connID, "error", e)
+		return
+	}
+	if e := s.q.PruneBankSyncRuns(ctx, db.PruneBankSyncRunsParams{
+		ConnectionID: connID, ConnectionID_2: connID, Limit: syncRunHistoryLimit,
+	}); e != nil {
+		slog.Warn("bank sync: could not prune run history", "connection", connID, "error", e)
+	}
+}
+
+// History returns a connection's recent sync runs (most recent first), for the
+// Bank sync page's per-account detail panel.
+func (s *Service) History(ctx context.Context, walletID, connID int64) ([]SyncRun, error) {
+	if _, err := s.conn(ctx, walletID, connID); err != nil {
+		return nil, err
+	}
+	rows, err := s.rq.ListBankSyncRuns(ctx, db.ListBankSyncRunsParams{ConnectionID: connID, Limit: syncRunHistoryLimit})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]SyncRun, 0, len(rows))
+	for _, r := range rows {
+		run := SyncRun{
+			ID: r.ID, RanAt: r.RanAt, TriggeredBy: r.TriggeredBy, Status: r.Status,
+			Imported: int(r.Imported), Reconciled: int(r.Reconciled), Message: r.Message,
+			Accounts: []AccountSyncResult{},
+		}
+		if strings.TrimSpace(r.AccountsJson) != "" {
+			_ = json.Unmarshal([]byte(r.AccountsJson), &run.Accounts)
+		}
+		out = append(out, run)
+	}
+	return out, nil
+}
+
 // syncOnce fetches each linked account's transactions and imports the new ones
 // through the shared pipeline (dedup + rules). last_synced_at (the fetch-window
 // anchor) is advanced only when at least one account was fetched, so a fully
 // failed run does not skip a window.
-func (s *Service) syncOnce(ctx context.Context, walletID, connID int64) (SyncResult, error) {
+func (s *Service) syncOnce(ctx context.Context, walletID, connID int64) (SyncResult, []AccountSyncResult, error) {
 	c, err := s.conn(ctx, walletID, connID)
 	if err != nil {
-		return SyncResult{}, err
+		return SyncResult{}, nil, err
 	}
 	links, err := s.rq.ListBankLinks(ctx, connID)
 	if err != nil {
-		return SyncResult{}, err
+		return SyncResult{}, nil, err
 	}
 	linkByExt := make(map[string]int64, len(links))
 	for _, l := range links {
@@ -326,38 +418,64 @@ func (s *Service) syncOnce(ctx context.Context, walletID, connID int64) (SyncRes
 		byAccount, err2 = s.simplefinFetchRows(ctx, c, start)
 	}
 	if err2 != nil {
-		return SyncResult{}, err2
+		return SyncResult{}, nil, err2
 	}
 
 	var res SyncResult
+	var details []AccountSyncResult
 	for ext, accountID := range linkByExt {
 		rows, present := byAccount[ext]
 		if !present {
 			continue
 		}
 		res.Accounts++
-		if len(rows) == 0 {
-			continue
+		d := AccountSyncResult{ExternalID: ext, Name: s.accountName(ctx, accountID), Fetched: len(rows)}
+		if len(rows) > 0 {
+			imported, reconciled, err := s.commitRows(ctx, walletID, accountID, rows)
+			if err != nil {
+				return SyncResult{}, nil, err
+			}
+			res.Imported += imported
+			res.Reconciled += reconciled
+			d.Imported = imported
+			d.Reconciled = reconciled
 		}
-		imported, reconciled, err := s.commitRows(ctx, walletID, accountID, rows)
-		if err != nil {
-			return SyncResult{}, err
-		}
-		res.Imported += imported
-		res.Reconciled += reconciled
+		details = append(details, d)
 	}
 	for _, f := range failures {
 		slog.Warn("bank sync: account fetch failed",
 			"connection", connID, "account", f.ExternalID, "error", f.Err)
 		res.Failed++
 		res.Warnings = append(res.Warnings, syncWarning(f))
+		name := f.Name
+		if id, ok := linkByExt[f.ExternalID]; ok {
+			if n := s.accountName(ctx, id); n != "" {
+				name = n
+			}
+		}
+		details = append(details, AccountSyncResult{
+			ExternalID: f.ExternalID, Name: name,
+			Error: strings.TrimPrefix(f.Err.Error(), "banksync: "),
+		})
 	}
+	// Stable order so the history panel doesn't reshuffle between runs (map
+	// iteration above is random).
+	sort.Slice(details, func(i, j int) bool { return details[i].ExternalID < details[j].ExternalID })
 	if res.Accounts > 0 {
 		if err := s.q.TouchBankConnection(ctx, connID); err != nil {
-			return SyncResult{}, err
+			return SyncResult{}, nil, err
 		}
 	}
-	return res, nil
+	return res, details, nil
+}
+
+// accountName returns a linked CloudBank account's name for display in the sync
+// history, or "" if it can't be looked up.
+func (s *Service) accountName(ctx context.Context, accountID int64) string {
+	if a, err := s.rq.GetAccount(ctx, accountID); err == nil {
+		return a.Name
+	}
+	return ""
 }
 
 // syncWarning renders a per-account fetch failure as a human message, using the
@@ -452,7 +570,7 @@ func (s *Service) SyncDue(ctx context.Context) (BatchSyncResult, error) {
 				return res, ctx.Err()
 			}
 		}
-		out, err := s.Sync(ctx, row.WalletID, row.ID)
+		out, err := s.syncAndRecord(ctx, row.WalletID, row.ID, "auto")
 		switch {
 		case errors.Is(err, ErrEBConsentExpired):
 			res.Skipped++

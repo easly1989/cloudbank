@@ -1,4 +1,5 @@
 import {
+  Accordion,
   ActionIcon,
   Alert,
   Badge,
@@ -7,6 +8,7 @@ import {
   Code,
   CopyButton,
   Group,
+  Loader,
   Modal,
   Select,
   SimpleGrid,
@@ -24,6 +26,7 @@ import {
   IconCheck,
   IconCopy,
   IconExternalLink,
+  IconHistory,
   IconKey,
   IconPlugConnected,
   IconPlus,
@@ -43,6 +46,7 @@ import {
   linkBankAccount,
   listAccounts,
   listBankConnections,
+  listBankConnectionSyncRuns,
   listBankRemoteAccounts,
   listEnableBankingBanks,
   reauthEnableBankingConnection,
@@ -126,6 +130,12 @@ export function BankSyncPage() {
   );
 }
 
+function syncStatusColor(status: string): string {
+  if (status === "error") return "red";
+  if (status === "partial") return "orange";
+  return "teal";
+}
+
 function ConnectionCard({
   walletId,
   connection,
@@ -152,6 +162,12 @@ function ConnectionCard({
     queryFn: () => listBankRemoteAccounts(walletId, connection.id),
     enabled: walletId > 0,
   });
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const history = useQuery({
+    queryKey: ["bankHistory", walletId, connection.id],
+    queryFn: () => listBankConnectionSyncRuns(walletId, connection.id),
+    enabled: walletId > 0 && historyOpen,
+  });
 
   const refreshConns = () => void qc.invalidateQueries({ queryKey: ["bankConnections", walletId] });
 
@@ -174,6 +190,7 @@ function ConnectionCard({
       void qc.invalidateQueries({ queryKey: ["register", walletId] });
       void qc.invalidateQueries({ queryKey: ["accounts", walletId] });
       void qc.invalidateQueries({ queryKey: ["bankRemote", walletId, connection.id] });
+      void qc.invalidateQueries({ queryKey: ["bankHistory", walletId, connection.id] });
       refreshConns();
     },
     onError,
@@ -392,6 +409,86 @@ function ConnectionCard({
           )}
         </Stack>
       )}
+
+      <Accordion
+        variant="contained"
+        mt="sm"
+        value={historyOpen ? "history" : null}
+        onChange={(v) => setHistoryOpen(v === "history")}
+      >
+        <Accordion.Item value="history">
+          <Accordion.Control icon={<IconHistory size={16} />}>
+            <Text size="sm">{t("banksync.history.title")}</Text>
+          </Accordion.Control>
+          <Accordion.Panel>
+            {history.isLoading ? (
+              <Group justify="center" py="sm">
+                <Loader size="sm" />
+              </Group>
+            ) : (history.data ?? []).length === 0 ? (
+              <Text size="sm" c="dimmed">
+                {t("banksync.history.empty")}
+              </Text>
+            ) : (
+              <Stack gap="xs">
+                {(history.data ?? []).map((run) => (
+                  <Card key={run.id} withBorder padding="xs" radius="sm">
+                    <Group justify="space-between" wrap="nowrap" gap="xs">
+                      <Text size="xs" fw={500}>
+                        {fmtDate(run.ranAt)}{" "}
+                        {new Date(run.ranAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </Text>
+                      <Group gap={6} wrap="nowrap">
+                        {run.triggeredBy && (
+                          <Badge size="xs" variant="light" color="gray">
+                            {t(`banksync.history.trigger.${run.triggeredBy}`)}
+                          </Badge>
+                        )}
+                        <Badge size="xs" variant="light" color={syncStatusColor(run.status)}>
+                          {t(`banksync.history.status.${run.status}`)}
+                        </Badge>
+                      </Group>
+                    </Group>
+                    <Text size="xs" c="dimmed">
+                      {t("banksync.history.summary", {
+                        imported: run.imported,
+                        reconciled: run.reconciled,
+                      })}
+                    </Text>
+                    {run.accounts.map((a) => (
+                      <Text key={a.externalId} size="xs" mt={2}>
+                        <Text span fw={500}>
+                          {a.name || a.externalId}
+                        </Text>
+                        {": "}
+                        {a.error ? (
+                          <Text span c="red">
+                            {a.error}
+                          </Text>
+                        ) : (
+                          t("banksync.history.account", {
+                            fetched: a.fetched,
+                            imported: a.imported,
+                            reconciled: a.reconciled,
+                          })
+                        )}
+                      </Text>
+                    ))}
+                    {run.message && run.accounts.length === 0 && (
+                      <Text size="xs" c="dimmed">
+                        {run.message}
+                      </Text>
+                    )}
+                  </Card>
+                ))}
+              </Stack>
+            )}
+          </Accordion.Panel>
+        </Accordion.Item>
+      </Accordion>
     </Card>
   );
 }

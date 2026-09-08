@@ -130,6 +130,18 @@ type BankLink struct {
 	AccountID    int64
 }
 
+type BankSyncRun struct {
+	ID           int64
+	ConnectionID int64
+	RanAt        string
+	TriggeredBy  string
+	Status       string
+	Imported     int64
+	Reconciled   int64
+	Message      string
+	AccountsJson string
+}
+
 type Budget struct {
 	ID         int64
 	WalletID   int64

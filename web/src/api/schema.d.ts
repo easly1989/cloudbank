@@ -432,6 +432,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/bank/connections/{connId}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        /** Recent sync runs for a connection (most recent first), with per-account detail */
+        get: operations["listBankConnectionSyncRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/bank/connections/{connId}/auto-sync": {
         parameters: {
             query?: never;
@@ -2423,6 +2443,38 @@ export interface components {
             /** @description human summary or error of the last attempt */
             lastSyncMessage?: string;
         };
+        /** @description One linked account's outcome within a sync run. */
+        BankSyncAccountResult: {
+            externalId: string;
+            /** @description linked CloudBank account name */
+            name?: string;
+            /** @description transactions fetched from the provider */
+            fetched: number;
+            /** @description new transactions added */
+            imported: number;
+            /** @description matched into existing transactions */
+            reconciled: number;
+            /** @description per-account fetch error, if any */
+            error?: string;
+        };
+        /** @description One recorded sync of a connection, with its per-account breakdown. */
+        BankSyncRun: {
+            /** Format: int64 */
+            id: number;
+            /** @description when the run happened, RFC3339 */
+            ranAt: string;
+            /**
+             * @description who started it
+             * @enum {string}
+             */
+            triggeredBy?: "manual" | "auto";
+            /** @enum {string} */
+            status: "ok" | "partial" | "error";
+            imported: number;
+            reconciled: number;
+            message?: string;
+            accounts: components["schemas"]["BankSyncAccountResult"][];
+        };
         BankRemoteAccount: {
             externalId: string;
             name: string;
@@ -4318,6 +4370,30 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listBankConnectionSyncRuns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The recent sync runs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankSyncRun"][];
+                };
+            };
             404: components["responses"]["NotFound"];
         };
     };

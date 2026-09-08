@@ -44,6 +44,10 @@ dashboard polish.
   calls the bank, to stay within PSD2's small per-day access budget.
 - **Last-sync status** — each connection shows when it last synced and the outcome
   (ok / partial / error) of that attempt, for both manual and background syncs.
+- **Sync history** — each connection keeps a short, expandable history of its recent
+  runs on the Bank sync page: time, manual vs automatic, status, and a **per-linked-
+  account** breakdown (fetched / imported / reconciled, or the error) — so anyone can
+  see why a sync did what it did without reading server logs.
 - **Bulk "not a duplicate"** — the duplicate finder can dismiss every surfaced pair
   at once, for when a fresh import flags many look-alikes that are all legitimate.
 
@@ -61,6 +65,9 @@ dashboard polish.
   call that already returns whatever pending the bank exposes. A new opt-in
   `CB_BANK_SYNC_DEBUG_PENDING` flag logs a booked/pending breakdown (and, on
   request, the exact provider response) to diagnose banks that return no pending.
+  Using it confirmed that **Intesa Sanpaolo exposes only booked transactions**
+  over PSD2 — pending charges are unavailable until they book — so the missing
+  rows are a bank limitation, not a sync bug. See [docs/bank-sync.md](docs/bank-sync.md).
 
 ## [2.0.0 – 3.0.3] — Post-parity releases (2026-07 → 2026-09)
 

@@ -106,6 +106,7 @@ type Querier interface {
 	InsertAssignment(ctx context.Context, arg InsertAssignmentParams) (Assignment, error)
 	InsertAttachment(ctx context.Context, arg InsertAttachmentParams) (Attachment, error)
 	InsertBankConnection(ctx context.Context, arg InsertBankConnectionParams) (BankConnection, error)
+	InsertBankSyncRun(ctx context.Context, arg InsertBankSyncRunParams) error
 	InsertBudget(ctx context.Context, arg InsertBudgetParams) error
 	InsertCategory(ctx context.Context, arg InsertCategoryParams) (Category, error)
 	InsertContribution(ctx context.Context, arg InsertContributionParams) (GoalContribution, error)
@@ -138,6 +139,7 @@ type Querier interface {
 	ListAttachmentsForWallet(ctx context.Context, walletID int64) ([]Attachment, error)
 	ListBankConnectionsForWallet(ctx context.Context, walletID int64) ([]BankConnection, error)
 	ListBankLinks(ctx context.Context, connectionID int64) ([]ListBankLinksRow, error)
+	ListBankSyncRuns(ctx context.Context, arg ListBankSyncRunsParams) ([]BankSyncRun, error)
 	ListBudgetsForWallet(ctx context.Context, walletID int64) ([]Budget, error)
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
 	ListContributionsForGoal(ctx context.Context, goalID int64) ([]GoalContribution, error)
@@ -195,6 +197,7 @@ type Querier interface {
 	// transactions contribute via their parent's total amount; each row carries the
 	// account currency so the app can convert to base.
 	PayeeExpenseTotals(ctx context.Context, arg PayeeExpenseTotalsParams) ([]PayeeExpenseTotalsRow, error)
+	PruneBankSyncRuns(ctx context.Context, arg PruneBankSyncRunsParams) error
 	ReassignPayeeCategory(ctx context.Context, arg ReassignPayeeCategoryParams) error
 	ReassignSplitCategory(ctx context.Context, arg ReassignSplitCategoryParams) error
 	// Move tag references onto another tag; OR IGNORE skips rows where the target

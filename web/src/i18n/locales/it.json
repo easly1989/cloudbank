@@ -478,6 +478,14 @@
       "every2days": "Ogni 2 giorni",
       "every3days": "Ogni 3 giorni",
       "weekly": "Una volta a settimana"
+    },
+    "history": {
+      "title": "Cronologia sync",
+      "empty": "Nessun sync registrato.",
+      "summary": "{{imported}} importate · {{reconciled}} riconciliate",
+      "account": "{{fetched}} scaricate · {{imported}} importate · {{reconciled}} riconciliate",
+      "trigger": { "manual": "Manuale", "auto": "Automatico" },
+      "status": { "ok": "OK", "partial": "Parziale", "error": "Errore" }
     }
   },
   "search": {
