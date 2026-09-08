@@ -166,6 +166,12 @@ cached and refreshed at most every 12h, so opening the page repeatedly does not
 spend the daily budget. An Enable Banking connection whose consent has expired is
 skipped until you **reconnect** it.
 
+Each connection keeps a short **sync history**: expand it on the Bank sync page to
+see the recent runs — when each ran, whether it was manual or automatic, and, per
+linked account, how it went (fetched / imported / reconciled, or the error). It's
+the quickest way to answer "why didn't my last sync import anything?" without
+reading server logs.
+
 ## How imported transactions are reconciled
 
 Bank rows aren't just dumped into the register — they go through the same import
