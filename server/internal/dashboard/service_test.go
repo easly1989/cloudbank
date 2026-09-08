@@ -299,3 +299,17 @@ func TestDashboardIncomeExpenseWindow(t *testing.T) {
 		t.Fatalf("all-dates expense total = %d, want 3000", totalAll)
 	}
 }
+
+// A hostile ieMonths must not size an unbounded slice allocation: the window is
+// clamped to maxIncomeExpenseMonths (CodeQL go/uncontrolled-allocation-size).
+func TestDashboardIncomeExpenseWindowClamped(t *testing.T) {
+	ds, _, q, wid := newFixture(t)
+	_ = account(t, q, wid, eur(t, q, wid), 0, 0, "Main")
+	data, err := ds.Build(context.Background(), wid, "2026-01-01", "2026-01-31", GroupByCategory, 2_000_000_000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(data.IncomeExpense) != maxIncomeExpenseMonths {
+		t.Fatalf("ieMonths=2e9 → %d points, want it clamped to %d", len(data.IncomeExpense), maxIncomeExpenseMonths)
+	}
+}
