@@ -24,18 +24,15 @@ WHERE id = ?;
 -- name: SetBankConnectionAutoSync :execrows
 UPDATE bank_connections SET auto_sync = ? WHERE id = ? AND wallet_id = ?;
 
--- name: SetBankConnectionSyncInterval :execrows
-UPDATE bank_connections SET sync_interval_hours = ? WHERE id = ? AND wallet_id = ?;
+-- name: SetBankConnectionSchedule :execrows
+UPDATE bank_connections SET sync_hour = ?, sync_days = ? WHERE id = ? AND wallet_id = ?;
 
--- name: ListDueBankConnections :many
--- Auto-sync connections whose last successful sync is older than their own
--- configured interval (or which never synced). Each connection's cadence is
--- compared against its sync_interval_hours, so a daily connection and a weekly
--- one are both picked up only when actually due.
-SELECT id, wallet_id FROM bank_connections
+-- name: ListAutoSyncConnections :many
+-- Every connection with auto-sync on, plus its schedule (hour + weekday bitmask)
+-- and last successful sync. The caller decides which are due for the current time
+-- in Go, so the day/hour arithmetic stays testable and out of SQL.
+SELECT id, wallet_id, sync_hour, sync_days, last_synced_at FROM bank_connections
 WHERE auto_sync = 1
-  AND (last_synced_at IS NULL
-       OR last_synced_at < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-' || sync_interval_hours || ' hours'))
 ORDER BY last_synced_at IS NOT NULL, last_synced_at, id;
 
 -- name: InsertBankSyncRun :exec

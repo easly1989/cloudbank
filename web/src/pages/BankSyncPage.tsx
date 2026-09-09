@@ -5,6 +5,7 @@ import {
   Badge,
   Button,
   Card,
+  Chip,
   Code,
   CopyButton,
   Group,
@@ -52,17 +53,26 @@ import {
   reauthEnableBankingConnection,
   removeBankConnection,
   setBankConnectionAutoSync,
-  setBankConnectionSyncInterval,
+  setBankConnectionSchedule,
   setEnableBankingConfig,
   startEnableBankingAuth,
   syncBankConnection,
   unlinkBankAccount,
 } from "../api/client";
 import { useDateFormat } from "../dates";
+import { localScheduleToUtc, utcScheduleToLocal } from "../schedule";
 import { useWallet } from "../wallet/WalletProvider";
 
 // The Enable Banking redirect target — must be whitelisted in the user's app.
 const ebRedirectUrl = () => `${window.location.origin}/bank-sync/callback`;
+
+// Hours of day (local) for the auto-sync time picker, and weekdays in Mon-first
+// display order (values are 0=Sunday .. 6=Saturday to match the stored schedule).
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => ({
+  value: String(h),
+  label: `${String(h).padStart(2, "0")}:00`,
+}));
+const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
 export function BankSyncPage() {
   const { t } = useTranslation();
@@ -212,12 +222,18 @@ function ConnectionCard({
     onSuccess: refreshConns,
     onError,
   });
-  const syncInterval = useMutation({
-    mutationFn: (hours: number) => setBankConnectionSyncInterval(walletId, connection.id, hours),
+  const schedule = useMutation({
+    mutationFn: (s: { hour: number; days: number[] }) =>
+      setBankConnectionSchedule(walletId, connection.id, s),
     onSuccess: refreshConns,
     onError,
   });
   const autoSyncOn = connection.autoSync ?? true;
+  // The stored schedule is UTC; present and edit it in the user's local time.
+  const localSchedule = utcScheduleToLocal(
+    connection.syncHour ?? 3,
+    connection.syncDays ?? [0, 1, 2, 3, 4, 5, 6],
+  );
 
   // Enable Banking consent status from validUntil (~90-day PSD2 consent).
   const consent = (() => {
@@ -330,7 +346,7 @@ function ConnectionCard({
         </Group>
       </Group>
 
-      <Group mb="sm" align="flex-start" justify="space-between" wrap="nowrap" gap="md">
+      <Stack gap="xs" mb="sm">
         <Switch
           size="sm"
           checked={autoSyncOn}
@@ -338,21 +354,49 @@ function ConnectionCard({
           label={t("banksync.autoSync")}
           description={t("banksync.autoSyncHint")}
         />
-        <Select
-          size="xs"
-          w={150}
-          aria-label={t("banksync.interval.label")}
-          disabled={!autoSyncOn || syncInterval.isPending}
-          value={String(connection.syncIntervalHours ?? 24)}
-          onChange={(v) => v && syncInterval.mutate(Number(v))}
-          data={[
-            { value: "24", label: t("banksync.interval.daily") },
-            { value: "48", label: t("banksync.interval.every2days") },
-            { value: "72", label: t("banksync.interval.every3days") },
-            { value: "168", label: t("banksync.interval.weekly") },
-          ]}
-        />
-      </Group>
+        {autoSyncOn && (
+          <Group gap="lg" align="flex-end" wrap="wrap">
+            <Select
+              size="xs"
+              w={130}
+              label={t("banksync.schedule.time")}
+              disabled={schedule.isPending}
+              value={String(localSchedule.hour)}
+              onChange={(v) => {
+                if (v == null) return;
+                schedule.mutate(localScheduleToUtc(Number(v), localSchedule.days));
+              }}
+              data={HOUR_OPTIONS}
+              comboboxProps={{ withinPortal: true }}
+            />
+            <div>
+              <Text size="xs" fw={500} mb={4}>
+                {t("banksync.schedule.days")}
+              </Text>
+              <Chip.Group
+                multiple
+                value={localSchedule.days.map(String)}
+                onChange={(vals) =>
+                  schedule.mutate(
+                    localScheduleToUtc(
+                      localSchedule.hour,
+                      vals.map(Number).sort((a, b) => a - b),
+                    ),
+                  )
+                }
+              >
+                <Group gap={4}>
+                  {WEEKDAY_ORDER.map((d) => (
+                    <Chip key={d} value={String(d)} size="xs" variant="outline">
+                      {t(`banksync.schedule.weekday.${d}`)}
+                    </Chip>
+                  ))}
+                </Group>
+              </Chip.Group>
+            </div>
+          </Group>
+        )}
+      </Stack>
 
       {remote.isError ? (
         <Alert color="red">{t("banksync.remoteError")}</Alert>
