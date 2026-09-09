@@ -1,6 +1,13 @@
 /* App-global tweaks that can't live in a scoped CSS module (they target Mantine
    part classes applied via `classNames`). */
 
+/* Tabular figures everywhere: digits share one width, so amounts and balances
+   line up cleanly in columns (the register, every table, the dashboard tiles)
+   instead of jittering with a proportional font. */
+body {
+  font-variant-numeric: tabular-nums;
+}
+
 /* The transaction modal can be taller than the viewport; keep it scrollable but
    hide the scrollbar (it looked heavy over the dark panel). Both the scrolling
    container (inner) and the content are covered so it works regardless of which
