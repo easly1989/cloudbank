@@ -25,6 +25,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { EmptyState } from "../components/EmptyState";
 import { useSearchParams } from "react-router-dom";
 
 import {
@@ -379,7 +380,7 @@ export function TransactionsPage() {
           </Group>
         </Group>
 
-        {accounts.length === 0 && <Text c="dimmed">{t("transactions.noAccounts")}</Text>}
+        {accounts.length === 0 && <EmptyState message={t("transactions.noAccounts")} />}
 
         {account && registerQuery.data && (
           <CollapsibleSection
@@ -493,7 +494,7 @@ export function TransactionsPage() {
           />
         )}
 
-        {account && filteredRows.length === 0 && <Text c="dimmed">{t("transactions.empty")}</Text>}
+        {account && filteredRows.length === 0 && <EmptyState message={t("transactions.empty")} />}
       </Stack>
 
       {account && filteredRows.length > 0 && (
