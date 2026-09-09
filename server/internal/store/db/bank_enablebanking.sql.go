@@ -109,7 +109,7 @@ func (q *Queries) InsertEBankingAuth(ctx context.Context, arg InsertEBankingAuth
 const insertEBankingConnection = `-- name: InsertEBankingConnection :one
 INSERT INTO bank_connections (wallet_id, provider, access_url, name, aspsp_name, aspsp_country, valid_until, accounts_json)
 VALUES (?, 'enablebanking', ?, ?, ?, ?, ?, ?)
-RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync, last_sync_at, last_sync_status, last_sync_message, sync_interval_hours
+RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync, last_sync_at, last_sync_status, last_sync_message, sync_interval_hours, sync_hour, sync_days
 `
 
 type InsertEBankingConnectionParams struct {
@@ -150,6 +150,8 @@ func (q *Queries) InsertEBankingConnection(ctx context.Context, arg InsertEBanki
 		&i.LastSyncStatus,
 		&i.LastSyncMessage,
 		&i.SyncIntervalHours,
+		&i.SyncHour,
+		&i.SyncDays,
 	)
 	return i, err
 }
@@ -158,7 +160,7 @@ const refreshEBankingConnectionSession = `-- name: RefreshEBankingConnectionSess
 UPDATE bank_connections
 SET access_url = ?, valid_until = ?, accounts_json = ?
 WHERE id = ? AND wallet_id = ? AND provider = 'enablebanking'
-RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync, last_sync_at, last_sync_status, last_sync_message, sync_interval_hours
+RETURNING id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync, last_sync_at, last_sync_status, last_sync_message, sync_interval_hours, sync_hour, sync_days
 `
 
 type RefreshEBankingConnectionSessionParams struct {
@@ -195,6 +197,8 @@ func (q *Queries) RefreshEBankingConnectionSession(ctx context.Context, arg Refr
 		&i.LastSyncStatus,
 		&i.LastSyncMessage,
 		&i.SyncIntervalHours,
+		&i.SyncHour,
+		&i.SyncDays,
 	)
 	return i, err
 }

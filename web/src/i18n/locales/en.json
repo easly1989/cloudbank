@@ -472,12 +472,18 @@
     },
     "autoSync": "Automatic sync",
     "autoSyncHint": "Keep this connection up to date in the background.",
-    "interval": {
-      "label": "Sync frequency",
-      "daily": "Once a day",
-      "every2days": "Every 2 days",
-      "every3days": "Every 3 days",
-      "weekly": "Once a week"
+    "schedule": {
+      "time": "Sync time",
+      "days": "On days",
+      "weekday": {
+        "0": "Sun",
+        "1": "Mon",
+        "2": "Tue",
+        "3": "Wed",
+        "4": "Thu",
+        "5": "Fri",
+        "6": "Sat"
+      }
     },
     "history": {
       "title": "Sync history",
