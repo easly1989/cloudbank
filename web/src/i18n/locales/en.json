@@ -26,13 +26,14 @@
     "admin": "Users",
     "import": "Import",
     "toggleSidebar": "Toggle sidebar",
-    "more": "More",
-    "customize": "Customize menu",
-    "done": "Done",
-    "hidden": "Hidden",
-    "pin": "Pin",
-    "unpin": "Unpin",
-    "drag": "Drag to reorder"
+    "group": {
+      "money": "Money",
+      "planning": "Planning",
+      "banking": "Banking",
+      "insights": "Insights",
+      "settings": "Settings",
+      "other": "Other"
+    }
   },
   "transactions": {
     "title": "Transactions",
@@ -1109,7 +1110,7 @@
     },
     "nav": {
       "title": "Navigation",
-      "body": "Jump between your dashboard, accounts, transactions, schedules, budgets and reports. Pin, reorder or hide items to suit you."
+      "body": "Jump between your dashboard, accounts, transactions, schedules, budgets and reports, grouped into sections. Collapse a section you don't use."
     },
     "wallet": {
       "title": "Your wallets",
