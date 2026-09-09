@@ -8,7 +8,6 @@ import {
   Select,
   Stack,
   Table,
-  Text,
   TextInput,
   Title,
 } from "@mantine/core";
@@ -18,6 +17,7 @@ import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { EmptyState } from "../components/EmptyState";
 
 import {
   ApiError,
@@ -104,7 +104,7 @@ export function TemplatesPage() {
         </Button>
       </Group>
 
-      {templates.length === 0 && <Text c="dimmed">{t("templates.empty")}</Text>}
+      {templates.length === 0 && <EmptyState message={t("templates.empty")} />}
 
       {templates.length > 0 && (
         <Table>

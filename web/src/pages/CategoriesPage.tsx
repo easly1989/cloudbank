@@ -19,6 +19,7 @@ import { IconDots, IconPlus } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { EmptyState } from "../components/EmptyState";
 
 import {
   ApiError,
@@ -114,7 +115,7 @@ export function CategoriesPage() {
         </Button>
       </Group>
 
-      {tops.length === 0 && <Text c="dimmed">{t("categories.empty")}</Text>}
+      {tops.length === 0 && <EmptyState message={t("categories.empty")} />}
 
       {tops.map((top) => (
         <Card withBorder key={top.id} p="sm">
