@@ -45,6 +45,7 @@ export interface ParsedEntry {
   payeeName?: string;
   categoryId?: number | null;
   categoryName?: string;
+  tags?: string[];
 }
 
 export const parseEntry = (walletId: number, text: string) =>

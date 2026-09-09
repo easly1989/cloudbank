@@ -3,12 +3,25 @@ package httpapi
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/ai"
 )
+
+// aiErrorMessage renders an AI provider/parse error for the client. The user owns
+// the AI provider (bring-your-own-key), so surfacing the real reason (a provider
+// 429/5xx, a timeout, an unparseable reply) is far more useful than a fixed
+// string — matching how bank sync reports its failures.
+func aiErrorMessage(err error) string {
+	msg := strings.TrimPrefix(err.Error(), "ai: ")
+	if strings.TrimSpace(msg) == "" {
+		return "the AI provider request failed"
+	}
+	return msg
+}
 
 // aiHandlers serves the opt-in AI settings and category-suggestion endpoints.
 type aiHandlers struct {
@@ -77,7 +90,7 @@ func (h *aiHandlers) suggestCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusBadGateway, "ai_error", "the AI provider request failed")
+		writeError(w, http.StatusBadGateway, "ai_error", aiErrorMessage(err))
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"category": cat})
@@ -99,7 +112,7 @@ func (h *aiHandlers) parseEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusBadGateway, "ai_error", "the AI provider request failed")
+		writeError(w, http.StatusBadGateway, "ai_error", aiErrorMessage(err))
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"entry": entry})
