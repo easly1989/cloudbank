@@ -63,3 +63,23 @@ export const NAV_ITEMS: NavItemDef[] = [
   { to: "/settings", labelKey: "nav.settings", icon: IconSettings, end: false, adminOnly: false },
   { to: "/admin/users", labelKey: "nav.admin", icon: IconUsers, end: false, adminOnly: true },
 ];
+
+export interface NavGroupDef {
+  labelKey: string;
+  /** Destination paths in this group, in display order. */
+  items: string[];
+}
+
+// Destinations organized into sections. The dashboard ("/") is rendered on its
+// own above the groups. Any destination not listed here (e.g. a future one) falls
+// into an "Other" group so it can never disappear from the nav.
+export const NAV_GROUPS: NavGroupDef[] = [
+  {
+    labelKey: "nav.group.money",
+    items: ["/accounts", "/transactions", "/templates", "/tags", "/assignments"],
+  },
+  { labelKey: "nav.group.planning", items: ["/schedules", "/bills", "/budget", "/goals"] },
+  { labelKey: "nav.group.banking", items: ["/bank-sync", "/review"] },
+  { labelKey: "nav.group.insights", items: ["/reports", "/vehicles"] },
+  { labelKey: "nav.group.settings", items: ["/settings", "/admin/users"] },
+];
