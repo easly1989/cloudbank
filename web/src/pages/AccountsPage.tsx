@@ -20,6 +20,7 @@ import { IconPencil, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { EmptyState } from "../components/EmptyState";
 
 import {
   ApiError,
@@ -196,7 +197,7 @@ export function AccountsPage() {
         );
       })}
 
-      {accounts.length === 0 && <Text c="dimmed">{t("accounts.empty")}</Text>}
+      {accounts.length === 0 && <EmptyState message={t("accounts.empty")} />}
 
       <AccountModal
         opened={modalOpened}

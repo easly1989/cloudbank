@@ -15,6 +15,7 @@ import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { EmptyState } from "../components/EmptyState";
 
 import {
   ApiError,
@@ -346,7 +347,7 @@ function BudgetReportView({ walletId, fmt }: { walletId: number; fmt: MoneyForma
         <BudgetGauge budget={expense.budget} actual={expense.actual} base={fmt} />
       )}
 
-      {report && report.rows.length === 0 && <Text c="dimmed">{t("budget.empty")}</Text>}
+      {report && report.rows.length === 0 && <EmptyState message={t("budget.empty")} />}
 
       {report && report.rows.length > 0 && (
         <Table striped>
