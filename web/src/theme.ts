@@ -1,4 +1,4 @@
-import { createTheme } from "@mantine/core";
+import { createTheme, Table } from "@mantine/core";
 
 // The accent (Mantine primary) colours offered in Settings. All are built-in
 // Mantine palette names, so each works in both light and dark schemes.
@@ -28,6 +28,13 @@ export function buildTheme(accent?: string) {
     primaryColor,
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
     defaultRadius: "md",
+    components: {
+      // One consistent, scannable table baseline app-wide: compact rows and a
+      // quiet hover highlight so a row is easy to follow across its columns.
+      Table: Table.extend({
+        defaultProps: { verticalSpacing: "xs", horizontalSpacing: "md", highlightOnHover: true },
+      }),
+    },
   });
 }
 

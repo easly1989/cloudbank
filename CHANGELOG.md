@@ -12,6 +12,9 @@ dashboard polish.
 
 ### Added
 
+- **Scannable tables** — numbers now use tabular figures app-wide, so amounts and
+  balances line up cleanly in columns (the register, every table, the dashboard),
+  and tables share one compact, consistent density with a quiet row-hover highlight.
 - **Grouped sidebar navigation** — the left nav is now organized into collapsible
   sections (Money, Planning, Banking, Insights, Settings) with the dashboard on
   top, so it reads as an ordered, mature menu instead of a long flat list. Collapse
