@@ -472,7 +472,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/wallets/{walletId}/bank/connections/{connId}/sync-interval": {
+    "/api/v1/wallets/{walletId}/bank/connections/{connId}/schedule": {
         parameters: {
             query?: never;
             header?: never;
@@ -484,8 +484,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Set how often background auto-sync runs for a connection (hours) */
-        post: operations["setBankConnectionSyncInterval"];
+        /** Set a connection's background auto-sync schedule (hour of day + weekdays) */
+        post: operations["setBankConnectionSchedule"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2431,8 +2431,10 @@ export interface components {
             validUntil?: string;
             /** @description included in scheduled background sync */
             autoSync?: boolean;
-            /** @description how often background auto-sync runs for this connection, in hours (default 24) */
-            syncIntervalHours?: number;
+            /** @description hour of day background auto-sync runs, UTC (0-23) */
+            syncHour?: number;
+            /** @description weekdays background auto-sync may run on (0=Sunday .. 6=Saturday) */
+            syncDays?: number[];
             /** @description time of the last sync ATTEMPT (manual or background), RFC3339 */
             lastSyncAt?: string;
             /**
@@ -4427,7 +4429,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    setBankConnectionSyncInterval: {
+    setBankConnectionSchedule: {
         parameters: {
             query?: never;
             header?: never;
@@ -4440,8 +4442,10 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description Auto-sync interval in hours (clamped 1..720; default 24). */
-                    hours: number;
+                    /** @description hour of day to sync, UTC (0-23) */
+                    hour: number;
+                    /** @description weekdays it may run on (0=Sunday .. 6=Saturday); empty = every day */
+                    days: number[];
                 };
             };
         };

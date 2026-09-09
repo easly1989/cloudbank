@@ -37,11 +37,12 @@ dashboard polish.
   clean, gap-free grid and **Reset** restores the default layout.
 - **CI & code review** — CodeQL static analysis runs on every pull request, and the
   end-to-end job builds the app image from a shared layer cache for faster runs.
-- **Per-connection sync frequency & cached balances** — each bank connection now
-  has its own **auto-sync frequency** (once a day by default, or every 2–3 days /
-  weekly), and account balances on the Bank sync page are **cached** (refreshed at
-  most every 12h) instead of fetched on every visit. Both cut how often CloudBank
-  calls the bank, to stay within PSD2's small per-day access budget.
+- **Per-connection sync schedule & cached balances** — each bank connection has
+  its own auto-sync **schedule**: the **time of day** and the **weekdays** it runs
+  (in your local timezone), instead of a coarse interval. It syncs at most once per
+  scheduled day. Account balances on the Bank sync page are also **cached**
+  (refreshed at most every 12h) instead of fetched on every visit. Both keep
+  CloudBank within PSD2's small per-day access budget.
 - **Last-sync status** — each connection shows when it last synced and the outcome
   (ok / partial / error) of that attempt, for both manual and background syncs.
 - **Sync history** — each connection keeps a short, expandable history of its recent
