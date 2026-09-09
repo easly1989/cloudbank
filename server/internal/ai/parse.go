@@ -15,14 +15,15 @@ import (
 // Category and payee are resolved to real wallet ids only when a name matched;
 // an unmatched name is reported but never turned into an invented id.
 type ParsedEntry struct {
-	Amount       string `json:"amount"`    // decimal string, positive
-	Direction    string `json:"direction"` // "expense" | "income"
-	Date         string `json:"date"`      // YYYY-MM-DD
-	Memo         string `json:"memo"`
-	PayeeID      *int64 `json:"payeeId"`
-	PayeeName    string `json:"payeeName"`
-	CategoryID   *int64 `json:"categoryId"`
-	CategoryName string `json:"categoryName"`
+	Amount       string   `json:"amount"`    // decimal string, positive
+	Direction    string   `json:"direction"` // "expense" | "income"
+	Date         string   `json:"date"`      // YYYY-MM-DD
+	Memo         string   `json:"memo"`
+	PayeeID      *int64   `json:"payeeId"`
+	PayeeName    string   `json:"payeeName"`
+	CategoryID   *int64   `json:"categoryId"`
+	CategoryName string   `json:"categoryName"`
+	Tags         []string `json:"tags"`
 }
 
 // rawEntry is the JSON shape requested from the model.
@@ -32,6 +33,7 @@ type rawEntry struct {
 	Date      string `json:"date"`
 	Payee     string `json:"payee"`
 	Category  string `json:"category"`
+	Tags      any    `json:"tags"` // array of strings, or a comma-separated string
 	Memo      string `json:"memo"`
 }
 
@@ -62,14 +64,32 @@ func (s *Service) ParseEntry(ctx context.Context, userID, walletID int64, text, 
 		return nil, err
 	}
 	payeeNames, payeeByName := payeeIndex(payees)
+	tags, err := s.rq.ListTagsForWallet(ctx, walletID)
+	if err != nil {
+		return nil, err
+	}
+	tagNames, tagByName := tagIndex(tags)
 
-	system := "You convert a short natural-language expense or income description into JSON. " +
-		"Reply with ONLY a JSON object (no prose, no code fences) with keys: " +
-		"amount (a positive number), direction (\"expense\" or \"income\"), date (\"YYYY-MM-DD\"), " +
-		"payee (the merchant or person, or \"\"), category (the best match from the provided list, " +
-		"copied verbatim, or \"\"), memo (a short note, or \"\"). Resolve relative dates using today's " +
-		"date. If a field is unknown use \"\" (or 0 for amount)."
-	reply, err := newClient(cfg.BaseUrl, cfg.ApiKey, cfg.Model, s.hc).chat(ctx, system, entryPrompt(text, today, catNames, payeeNames))
+	system := "You extract structured fields from a short natural-language description of a single " +
+		"expense or income, and reply with ONLY a minified JSON object — no prose, no code fences. " +
+		"Keys: " +
+		"\"amount\" (a positive number), " +
+		"\"direction\" (\"expense\" or \"income\"), " +
+		"\"date\" (\"YYYY-MM-DD\"; resolve relative or short dates using today's date; if none is " +
+		"mentioned use today), " +
+		"\"payee\" (the merchant, shop or person, or \"\"), " +
+		"\"category\" (the single best-fitting category, copied verbatim from the provided Categories " +
+		"list, or \"\" — choose by meaning, e.g. a dinner, lunch, drinks or a night out maps to a " +
+		"dining/social category), " +
+		"\"tags\" (an array of 0-3 relevant tags, each copied verbatim from the provided Tags list when " +
+		"one fits), " +
+		"\"memo\" (a concise human description of what it was — e.g. the place or purpose, like " +
+		"\"Dinner at Mondrigo\" — never filler or test words; \"\" if nothing meaningful). " +
+		"Never invent an amount or a date. " +
+		"Example — input \"lunch with Anna 15\", today 2026-09-08, Categories include \"Dining\", Tags " +
+		"include \"friends\" → {\"amount\":15,\"direction\":\"expense\",\"date\":\"2026-09-08\"," +
+		"\"payee\":\"\",\"category\":\"Dining\",\"tags\":[\"friends\"],\"memo\":\"Lunch with Anna\"}"
+	reply, err := newClient(cfg.BaseUrl, cfg.ApiKey, cfg.Model, s.hc).chat(ctx, system, entryPrompt(text, today, catNames, payeeNames, tagNames))
 	if err != nil {
 		return nil, err
 	}
@@ -83,6 +103,7 @@ func (s *Service) ParseEntry(ctx context.Context, userID, walletID int64, text, 
 		Direction: "expense",
 		Date:      today,
 		Memo:      strings.TrimSpace(raw.Memo),
+		Tags:      resolveTags(raw.Tags, tagByName),
 	}
 	if strings.EqualFold(strings.TrimSpace(raw.Direction), "income") {
 		out.Direction = "income"
@@ -112,12 +133,18 @@ func payeeIndex(payees []db.Payee) ([]string, map[string]int64) {
 	return names, byName
 }
 
-func entryPrompt(text, today string, categories, payees []string) string {
+func entryPrompt(text, today string, categories, payees, tags []string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Today: %s\n", today)
 	if len(categories) > 0 {
 		b.WriteString("Categories:\n")
 		for _, n := range categories {
+			fmt.Fprintf(&b, "- %s\n", n)
+		}
+	}
+	if len(tags) > 0 {
+		b.WriteString("Tags:\n")
+		for _, n := range tags {
 			fmt.Fprintf(&b, "- %s\n", n)
 		}
 	}
@@ -129,6 +156,57 @@ func entryPrompt(text, today string, categories, payees []string) string {
 	}
 	fmt.Fprintf(&b, "\nDescription: %s", text)
 	return b.String()
+}
+
+func tagIndex(tags []db.Tag) ([]string, map[string]string) {
+	names := make([]string, 0, len(tags))
+	byName := make(map[string]string, len(tags))
+	for _, t := range tags {
+		names = append(names, t.Name)
+		byName[normalize(t.Name)] = t.Name
+	}
+	return names, byName
+}
+
+// resolveTags turns the model's tags value (a []string, a []any of strings, or a
+// comma-separated string) into a clean, de-duplicated list, capped at a few. A
+// tag that matches a known wallet tag adopts its canonical casing; an unmatched
+// one is kept as-is (a new tag), since tags are free-form strings.
+func resolveTags(v any, byName map[string]string) []string {
+	var raw []string
+	switch x := v.(type) {
+	case []any:
+		for _, it := range x {
+			if s, ok := it.(string); ok {
+				raw = append(raw, s)
+			}
+		}
+	case []string:
+		raw = x
+	case string:
+		raw = strings.Split(x, ",")
+	}
+	out := make([]string, 0, len(raw))
+	seen := map[string]bool{}
+	for _, t := range raw {
+		t = strings.TrimSpace(t)
+		if t == "" {
+			continue
+		}
+		norm := normalize(t)
+		if canon, ok := byName[norm]; ok {
+			t = canon
+		}
+		if seen[norm] {
+			continue
+		}
+		seen[norm] = true
+		out = append(out, t)
+		if len(out) >= 5 {
+			break
+		}
+	}
+	return out
 }
 
 // amountString normalizes the model's amount (a number or string) to a positive

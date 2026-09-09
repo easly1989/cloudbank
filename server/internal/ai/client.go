@@ -30,7 +30,11 @@ type client struct {
 
 func newClient(baseURL, apiKey, model string, hc httpDoer) *client {
 	if hc == nil {
-		hc = &http.Client{Timeout: 30 * time.Second}
+		// Free / self-hosted models can be slow to first token, so allow a generous
+		// timeout. (Callers on a reverse proxy should keep its read timeout at least
+		// this high, or a slow model surfaces as a proxy 5xx instead of a clean app
+		// error.)
+		hc = &http.Client{Timeout: 60 * time.Second}
 	}
 	return &client{baseURL: strings.TrimRight(baseURL, "/"), apiKey: apiKey, model: model, hc: hc}
 }
@@ -52,7 +56,9 @@ func (c *client) chat(ctx context.Context, system, user string) (string, error) 
 			{"role": "user", "content": user},
 		},
 		"temperature": 0,
-		"max_tokens":  64,
+		// Enough headroom for the full JSON object (amount, direction, date, payee,
+		// category, tags, memo) — 64 truncated it and broke JSON parsing.
+		"max_tokens": 300,
 	})
 	if err != nil {
 		return "", err

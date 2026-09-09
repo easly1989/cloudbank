@@ -2526,6 +2526,8 @@ export interface components {
             /** Format: int64 */
             categoryId?: number | null;
             categoryName?: string;
+            /** @description suggested tags (known tags adopt their canonical casing) */
+            tags?: string[];
         };
         ParseEntryResult: {
             entry: components["schemas"]["ParsedEntry"];
