@@ -153,15 +153,16 @@ rest of your financial data:
 
 Connections are refreshed automatically in the background, so you normally don't
 need to click **Sync now**. Each connection has an **Automatic sync** toggle (on
-by default) and a **Sync frequency** — once a day (the default), every 2 or 3
-days, or weekly. There is no benefit to syncing more than daily: PSD2 caps
-unattended access to a few calls per account per day, so the default keeps you
-comfortably within budget. Turn the toggle off to sync a connection only on
+by default) and a **schedule**: the **time** of day and the **days of the week**
+it runs — pick, say, 03:00 on weekdays. Times are shown and saved in your local
+timezone (converted to UTC under the hood). A connection syncs at most once per
+scheduled day: PSD2 caps unattended access to a few calls per account per day,
+so there is no benefit to more. Turn the toggle off to sync a connection only on
 demand.
 
 The background job wakes every `CB_BANK_SYNC_INTERVAL` (default `1h`; set it to
-`0`/`off` to disable background sync entirely) and syncs each connection that is
-due per its own frequency. Account balances shown on the Bank sync page are
+`0`/`off` to disable background sync entirely) and runs each connection that is
+due for its scheduled slot. Account balances shown on the Bank sync page are
 cached and refreshed at most every 12h, so opening the page repeatedly does not
 spend the daily budget. An Enable Banking connection whose consent has expired is
 skipped until you **reconnect** it.

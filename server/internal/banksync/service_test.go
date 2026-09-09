@@ -2,11 +2,13 @@ package banksync
 
 import (
 	"context"
+	"database/sql"
 	"encoding/base64"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
@@ -118,7 +120,7 @@ func TestConnectLinkSyncDedup(t *testing.T) {
 	}
 }
 
-func TestSyncDueRespectsAutoSyncAndInterval(t *testing.T) {
+func TestSyncDueRespectsScheduleAndAutoSync(t *testing.T) {
 	svc, q, st, wid, acc := newFixture(t)
 	ctx := context.Background()
 	setupToken := base64.StdEncoding.EncodeToString([]byte("https://example.test/claim/x"))
@@ -129,71 +131,90 @@ func TestSyncDueRespectsAutoSyncAndInterval(t *testing.T) {
 	if err := svc.Link(ctx, wid, conn.ID, "ACT-1", acc); err != nil {
 		t.Fatalf("Link: %v", err)
 	}
-	// backdate ages the last successful sync so the due check can be exercised
-	// without waiting real time.
-	backdate := func(hours int) {
+	// Schedule it every day at hour 0 (UTC) so "the scheduled hour has arrived" is
+	// always true and the test doesn't depend on the wall clock.
+	allDays := []int{0, 1, 2, 3, 4, 5, 6}
+	if err := svc.SetSchedule(ctx, wid, conn.ID, 0, allDays); err != nil {
+		t.Fatalf("SetSchedule: %v", err)
+	}
+	// setLastSyncedDaysAgo moves last_synced_at back by whole days, so it lands
+	// deterministically before (overdue) today's 00:00 slot.
+	setLastSyncedDaysAgo := func(days int) {
 		if _, err := st.Write().ExecContext(ctx,
-			`UPDATE bank_connections SET last_synced_at = strftime('%Y-%m-%dT%H:%M:%fZ','now','-' || ? || ' hours') WHERE id = ?`,
-			hours, conn.ID); err != nil {
-			t.Fatalf("backdate: %v", err)
+			`UPDATE bank_connections SET last_synced_at = strftime('%Y-%m-%dT%H:%M:%fZ','now','-' || ? || ' days') WHERE id = ?`,
+			days, conn.ID); err != nil {
+			t.Fatalf("setLastSynced: %v", err)
 		}
 	}
 
-	// Never synced → due → SyncDue imports its transactions.
-	r1, err := svc.SyncDue(ctx)
-	if err != nil {
-		t.Fatalf("SyncDue: %v", err)
+	// Never synced → due today → imports its transactions.
+	if r, err := svc.SyncDue(ctx); err != nil || r.Connections != 1 || r.Imported != 2 {
+		t.Fatalf("first SyncDue = %+v err=%v, want connections 1 / imported 2", r, err)
 	}
-	if r1.Connections != 1 || r1.Imported != 2 {
-		t.Fatalf("first SyncDue = %+v, want connections 1 / imported 2", r1)
+	// Just synced (in today's slot) → not due again today.
+	if r, _ := svc.SyncDue(ctx); r.Connections != 0 {
+		t.Fatalf("second SyncDue synced %d, want 0 (not due)", r.Connections)
+	}
+	// Last sync was yesterday → before today's slot → due (imports nothing, deduped).
+	setLastSyncedDaysAgo(1)
+	if r, _ := svc.SyncDue(ctx); r.Connections != 1 || r.Imported != 0 {
+		t.Fatalf("overdue SyncDue = %+v, want connections 1 / imported 0", r)
 	}
 
-	// Just synced → not due within the default daily interval.
-	r2, _ := svc.SyncDue(ctx)
-	if r2.Connections != 0 {
-		t.Fatalf("second SyncDue synced %d, want 0 (not due)", r2.Connections)
-	}
-
-	// Older than the interval but auto-sync off → excluded.
-	backdate(48)
+	// Auto-sync off → excluded even when overdue.
+	setLastSyncedDaysAgo(1)
 	if err := svc.SetAutoSync(ctx, wid, conn.ID, false); err != nil {
 		t.Fatalf("SetAutoSync off: %v", err)
 	}
-	r3, _ := svc.SyncDue(ctx)
-	if r3.Connections != 0 {
-		t.Fatalf("auto-sync off still synced: %+v", r3)
+	if r, _ := svc.SyncDue(ctx); r.Connections != 0 {
+		t.Fatalf("auto-sync off still synced: %+v", r)
 	}
-
-	// Re-enabled and still overdue → synced (imports nothing new, deduped).
 	if err := svc.SetAutoSync(ctx, wid, conn.ID, true); err != nil {
 		t.Fatalf("SetAutoSync on: %v", err)
 	}
-	r4, _ := svc.SyncDue(ctx)
-	if r4.Connections != 1 || r4.Imported != 0 {
-		t.Fatalf("re-enabled SyncDue = %+v, want connections 1 / imported 0", r4)
+
+	// A schedule that excludes today's weekday → not due, even overdue.
+	setLastSyncedDaysAgo(1)
+	today := int(time.Now().UTC().Weekday())
+	var notToday []int
+	for d := 0; d <= 6; d++ {
+		if d != today {
+			notToday = append(notToday, d)
+		}
+	}
+	if err := svc.SetSchedule(ctx, wid, conn.ID, 0, notToday); err != nil {
+		t.Fatalf("SetSchedule (exclude today): %v", err)
+	}
+	if r, _ := svc.SyncDue(ctx); r.Connections != 0 {
+		t.Fatalf("excluded weekday still synced: %+v", r)
 	}
 
-	// A longer per-connection interval defers the next sync: 48h old with a 72h
-	// interval is not yet due, but 96h old is.
-	if err := svc.SetSyncInterval(ctx, wid, conn.ID, 72); err != nil {
-		t.Fatalf("SetSyncInterval: %v", err)
-	}
-	backdate(48)
-	if r5, _ := svc.SyncDue(ctx); r5.Connections != 0 {
-		t.Fatalf("72h interval synced at 48h: %+v", r5)
-	}
-	backdate(96)
-	if r6, _ := svc.SyncDue(ctx); r6.Connections != 1 {
-		t.Fatalf("72h interval not due at 96h: %+v", r6)
-	}
-
-	// Cross-wallet mutations are rejected.
+	// Cross-wallet mutation is rejected.
 	other, _ := q.CreateWallet(ctx, db.CreateWalletParams{Title: "Other"})
-	if err := svc.SetAutoSync(ctx, other.ID, conn.ID, false); err != ErrNotFound {
-		t.Fatalf("cross-wallet SetAutoSync err = %v, want ErrNotFound", err)
+	if err := svc.SetSchedule(ctx, other.ID, conn.ID, 0, allDays); err != ErrNotFound {
+		t.Fatalf("cross-wallet SetSchedule err = %v, want ErrNotFound", err)
 	}
-	if err := svc.SetSyncInterval(ctx, other.ID, conn.ID, 24); err != ErrNotFound {
-		t.Fatalf("cross-wallet SetSyncInterval err = %v, want ErrNotFound", err)
+}
+
+func TestScheduleDue(t *testing.T) {
+	now := time.Date(2026, 9, 9, 10, 0, 0, 0, time.UTC) // Wednesday, 10:00 UTC
+	none := sql.NullString{}
+	if !scheduleDue(now, 3, allDaysMask, none) {
+		t.Fatal("day enabled, hour reached, never synced → due")
+	}
+	if scheduleDue(now, 11, allDaysMask, none) {
+		t.Fatal("hour not reached yet → not due")
+	}
+	if scheduleDue(now, 3, 1<<1 /* Monday only */, none) {
+		t.Fatal("weekday not enabled → not due")
+	}
+	inSlot := sql.NullString{String: "2026-09-09T09:00:00.000Z", Valid: true}
+	if scheduleDue(now, 3, allDaysMask, inSlot) {
+		t.Fatal("already synced after today's slot → not due")
+	}
+	yesterday := sql.NullString{String: "2026-09-08T09:00:00.000Z", Valid: true}
+	if !scheduleDue(now, 3, allDaysMask, yesterday) {
+		t.Fatal("last sync before today's slot → due")
 	}
 }
 

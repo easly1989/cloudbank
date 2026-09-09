@@ -137,6 +137,10 @@ type Querier interface {
 	ListAssignmentsForWallet(ctx context.Context, walletID int64) ([]Assignment, error)
 	ListAttachmentsForTransaction(ctx context.Context, transactionID int64) ([]Attachment, error)
 	ListAttachmentsForWallet(ctx context.Context, walletID int64) ([]Attachment, error)
+	// Every connection with auto-sync on, plus its schedule (hour + weekday bitmask)
+	// and last successful sync. The caller decides which are due for the current time
+	// in Go, so the day/hour arithmetic stays testable and out of SQL.
+	ListAutoSyncConnections(ctx context.Context) ([]ListAutoSyncConnectionsRow, error)
 	ListBankConnectionsForWallet(ctx context.Context, walletID int64) ([]BankConnection, error)
 	ListBankLinks(ctx context.Context, connectionID int64) ([]ListBankLinksRow, error)
 	ListBankSyncRuns(ctx context.Context, arg ListBankSyncRunsParams) ([]BankSyncRun, error)
@@ -144,11 +148,6 @@ type Querier interface {
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
 	ListContributionsForGoal(ctx context.Context, goalID int64) ([]GoalContribution, error)
 	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)
-	// Auto-sync connections whose last successful sync is older than their own
-	// configured interval (or which never synced). Each connection's cadence is
-	// compared against its sync_interval_hours, so a daily connection and a weekly
-	// one are both picked up only when actually due.
-	ListDueBankConnections(ctx context.Context) ([]ListDueBankConnectionsRow, error)
 	ListDuplicateDismissals(ctx context.Context, walletID int64) ([]ListDuplicateDismissalsRow, error)
 	ListExchangeRates(ctx context.Context, currencyID int64) ([]ExchangeRate, error)
 	ListGoalsForWallet(ctx context.Context, walletID int64) ([]ListGoalsForWalletRow, error)
@@ -219,7 +218,7 @@ type Querier interface {
 	SetAppConfig(ctx context.Context, arg SetAppConfigParams) error
 	SetAssignmentPosition(ctx context.Context, arg SetAssignmentPositionParams) error
 	SetBankConnectionAutoSync(ctx context.Context, arg SetBankConnectionAutoSyncParams) (int64, error)
-	SetBankConnectionSyncInterval(ctx context.Context, arg SetBankConnectionSyncIntervalParams) (int64, error)
+	SetBankConnectionSchedule(ctx context.Context, arg SetBankConnectionScheduleParams) (int64, error)
 	SetChildrenIncome(ctx context.Context, arg SetChildrenIncomeParams) error
 	SetCurrencyBase(ctx context.Context, id int64) error
 	SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error

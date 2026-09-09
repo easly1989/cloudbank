@@ -387,18 +387,23 @@ paths:
       responses:
         "204": { description: Updated. }
         "404": { $ref: "#/components/responses/NotFound" }
-  /api/v1/wallets/{walletId}/bank/connections/{connId}/sync-interval:
+  /api/v1/wallets/{walletId}/bank/connections/{connId}/schedule:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
       - { name: connId, in: path, required: true, schema: { type: integer, format: int64 } }
     post:
-      operationId: setBankConnectionSyncInterval
-      summary: Set how often background auto-sync runs for a connection (hours)
+      operationId: setBankConnectionSchedule
+      summary: Set a connection's background auto-sync schedule (hour of day + weekdays)
       requestBody:
         required: true
         content:
           application/json:
-            schema: { type: object, properties: { hours: { type: integer, description: "Auto-sync interval in hours (clamped 1..720; default 24)." } }, required: [hours] }
+            schema:
+              type: object
+              properties:
+                hour: { type: integer, description: "hour of day to sync, UTC (0-23)" }
+                days: { type: array, items: { type: integer }, description: "weekdays it may run on (0=Sunday .. 6=Saturday); empty = every day" }
+              required: [hour, days]
       responses:
         "204": { description: Updated. }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -2311,7 +2316,8 @@ components:
         country: { type: string, description: "provider bank country (Enable Banking)" }
         validUntil: { type: string, description: "consent expiry (Enable Banking), RFC3339" }
         autoSync: { type: boolean, description: "included in scheduled background sync" }
-        syncIntervalHours: { type: integer, description: "how often background auto-sync runs for this connection, in hours (default 24)" }
+        syncHour: { type: integer, description: "hour of day background auto-sync runs, UTC (0-23)" }
+        syncDays: { type: array, items: { type: integer }, description: "weekdays background auto-sync may run on (0=Sunday .. 6=Saturday)" }
         lastSyncAt: { type: string, description: "time of the last sync ATTEMPT (manual or background), RFC3339" }
         lastSyncStatus: { type: string, enum: [ok, partial, error], description: "outcome of the last attempt" }
         lastSyncMessage: { type: string, description: "human summary or error of the last attempt" }

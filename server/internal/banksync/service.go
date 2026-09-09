@@ -32,12 +32,11 @@ const (
 	// consentValidityDays is how long an Enable Banking consent is requested for
 	// (independent of the transaction-history sync window above).
 	consentValidityDays = 90
-	// Bounds for a connection's auto-sync interval (hours). The default is daily;
-	// the floor keeps a runaway UI from scheduling sub-hourly runs into the PSD2
-	// rate limit, and the ceiling is a month.
-	minSyncIntervalHours     = 1
-	maxSyncIntervalHours     = 24 * 30
-	defaultSyncIntervalHours = 24
+	// Auto-sync schedule defaults: run daily (every weekday) at 03:00 UTC. sync_days
+	// is a bitmask, bit i = weekday i (0=Sunday .. 6=Saturday); allDaysMask = every
+	// day.
+	defaultSyncHour = 3
+	allDaysMask     = 0b1111111
 )
 
 // Provider identifiers stored in bank_connections.provider.
@@ -57,10 +56,12 @@ type Connection struct {
 	Country      string `json:"country,omitempty"`
 	ValidUntil   string `json:"validUntil,omitempty"`
 	AutoSync     bool   `json:"autoSync"`
-	// SyncIntervalHours is how often background auto-sync runs for this connection
-	// (default daily). PSD2 caps unattended access to a few calls per day, so a
-	// smaller value is rarely useful; the user can relax it further per connection.
-	SyncIntervalHours int `json:"syncIntervalHours"`
+	// The background auto-sync schedule: SyncHour is the hour of day (UTC, 0-23) and
+	// SyncDays the weekdays it may run on (0=Sunday .. 6=Saturday). PSD2 caps
+	// unattended access to a few calls per day, so a connection syncs at most once
+	// per scheduled day.
+	SyncHour int   `json:"syncHour"`
+	SyncDays []int `json:"syncDays"`
 	// The most recent sync attempt (manual or background): its time, a status of
 	// "ok" / "partial" / "error", and a human message.
 	LastSyncAt      string `json:"lastSyncAt,omitempty"`
@@ -146,7 +147,7 @@ func toConnection(c db.BankConnection) Connection {
 	out := Connection{
 		ID: c.ID, Provider: c.Provider, Name: c.Name, CreatedAt: c.CreatedAt,
 		Aspsp: c.AspspName, Country: c.AspspCountry, ValidUntil: c.ValidUntil,
-		AutoSync: c.AutoSync != 0, SyncIntervalHours: int(c.SyncIntervalHours),
+		AutoSync: c.AutoSync != 0, SyncHour: int(c.SyncHour), SyncDays: daysFromMask(int(c.SyncDays)),
 	}
 	if c.LastSyncedAt.Valid {
 		out.LastSyncedAt = c.LastSyncedAt.String
@@ -529,17 +530,22 @@ func (s *Service) SetAutoSync(ctx context.Context, walletID, connID int64, enabl
 	return nil
 }
 
-// SetSyncInterval sets how often background auto-sync runs for a connection, in
-// hours. The value is clamped to a sane range (roughly hourly to monthly).
-func (s *Service) SetSyncInterval(ctx context.Context, walletID, connID int64, hours int) error {
-	if hours < minSyncIntervalHours {
-		hours = minSyncIntervalHours
+// SetSchedule sets a connection's auto-sync schedule: the hour of day (UTC, 0-23)
+// and the weekdays it may run on (0=Sunday .. 6=Saturday). Out-of-range values are
+// dropped; an empty day set falls back to every day.
+func (s *Service) SetSchedule(ctx context.Context, walletID, connID int64, hour int, days []int) error {
+	if hour < 0 {
+		hour = 0
 	}
-	if hours > maxSyncIntervalHours {
-		hours = maxSyncIntervalHours
+	if hour > 23 {
+		hour = 23
 	}
-	n, err := s.q.SetBankConnectionSyncInterval(ctx, db.SetBankConnectionSyncIntervalParams{
-		SyncIntervalHours: int64(hours), ID: connID, WalletID: walletID,
+	mask := maskFromDays(days)
+	if mask == 0 {
+		mask = allDaysMask
+	}
+	n, err := s.q.SetBankConnectionSchedule(ctx, db.SetBankConnectionScheduleParams{
+		SyncHour: int64(hour), SyncDays: int64(mask), ID: connID, WalletID: walletID,
 	})
 	if err != nil {
 		return err
@@ -550,26 +556,74 @@ func (s *Service) SetSyncInterval(ctx context.Context, walletID, connID int64, h
 	return nil
 }
 
-// SyncDue syncs every auto-sync connection that is due — its last successful sync
-// is older than the connection's own configured interval (or it never synced) —
-// across all wallets. Expired Enable Banking consents are skipped (the user
-// reconnects them); other per-connection errors are counted but do not stop the
-// batch. It pauses briefly between connections to avoid hammering providers, and
-// stops early if ctx is cancelled.
+// maskFromDays turns a list of weekday numbers (0-6) into a bitmask; out-of-range
+// entries are ignored.
+func maskFromDays(days []int) int {
+	mask := 0
+	for _, d := range days {
+		if d >= 0 && d <= 6 {
+			mask |= 1 << uint(d)
+		}
+	}
+	return mask
+}
+
+// daysFromMask turns a weekday bitmask into a sorted list of weekday numbers (0-6).
+func daysFromMask(mask int) []int {
+	days := make([]int, 0, 7)
+	for d := 0; d <= 6; d++ {
+		if mask&(1<<uint(d)) != 0 {
+			days = append(days, d)
+		}
+	}
+	return days
+}
+
+// scheduleDue reports whether a connection with the given schedule should sync at
+// now: now's weekday is enabled, now is at or past the scheduled hour, and it has
+// not already synced during today's scheduled slot.
+func scheduleDue(now time.Time, syncHour, syncDays int, lastSynced sql.NullString) bool {
+	if syncDays&(1<<uint(now.Weekday())) == 0 {
+		return false
+	}
+	if now.Hour() < syncHour {
+		return false
+	}
+	slot := time.Date(now.Year(), now.Month(), now.Day(), syncHour, 0, 0, 0, time.UTC)
+	if lastSynced.Valid {
+		if last, err := time.Parse(time.RFC3339, lastSynced.String); err == nil && !last.Before(slot) {
+			return false
+		}
+	}
+	return true
+}
+
+// SyncDue syncs every auto-sync connection whose schedule makes it due now — the
+// current weekday is enabled, the scheduled hour has arrived, and it has not
+// already run in today's slot — across all wallets. Expired Enable Banking
+// consents are skipped (the user reconnects them); other per-connection errors are
+// counted but do not stop the batch. It pauses briefly between connections to
+// avoid hammering providers, and stops early if ctx is cancelled.
 func (s *Service) SyncDue(ctx context.Context) (BatchSyncResult, error) {
-	rows, err := s.rq.ListDueBankConnections(ctx)
+	rows, err := s.rq.ListAutoSyncConnections(ctx)
 	if err != nil {
 		return BatchSyncResult{}, err
 	}
+	now := time.Now().UTC()
 	var res BatchSyncResult
-	for i, row := range rows {
-		if i > 0 && s.syncStagger > 0 {
+	synced := 0
+	for _, row := range rows {
+		if !scheduleDue(now, int(row.SyncHour), int(row.SyncDays), row.LastSyncedAt) {
+			continue
+		}
+		if synced > 0 && s.syncStagger > 0 {
 			select {
 			case <-time.After(s.syncStagger):
 			case <-ctx.Done():
 				return res, ctx.Err()
 			}
 		}
+		synced++
 		out, err := s.syncAndRecord(ctx, row.WalletID, row.ID, "auto")
 		switch {
 		case errors.Is(err, ErrEBConsentExpired):

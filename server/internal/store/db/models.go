@@ -101,6 +101,8 @@ type BankConnection struct {
 	LastSyncStatus    string
 	LastSyncMessage   string
 	SyncIntervalHours int64
+	SyncHour          int64
+	SyncDays          int64
 }
 
 type BankEbankingAuth struct {
