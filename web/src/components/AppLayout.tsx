@@ -9,6 +9,7 @@ import {
   Group,
   Loader,
   Menu,
+  ScrollArea,
   Text,
   UnstyledButton,
   useMantineColorScheme,
@@ -180,7 +181,11 @@ export function AppLayout() {
         </AppShell.Header>
 
         <AppShell.Navbar p="sm" data-tour="nav">
-          <SidebarNav railMode={railMode} onNavigate={close} />
+          {/* Scroll the nav so its lower items stay reachable when the grouped
+              sections are taller than a short viewport. */}
+          <ScrollArea h="100%" type="scroll">
+            <SidebarNav railMode={railMode} onNavigate={close} />
+          </ScrollArea>
         </AppShell.Navbar>
 
         <AppShell.Main>
