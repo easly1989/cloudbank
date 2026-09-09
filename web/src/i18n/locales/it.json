@@ -26,13 +26,14 @@
     "admin": "Utenti",
     "import": "Importa",
     "toggleSidebar": "Comprimi/espandi menu",
-    "more": "Altro",
-    "customize": "Personalizza menu",
-    "done": "Fatto",
-    "hidden": "Nascoste",
-    "pin": "Fissa",
-    "unpin": "Rimuovi",
-    "drag": "Trascina per riordinare"
+    "group": {
+      "money": "Denaro",
+      "planning": "Pianificazione",
+      "banking": "Banca",
+      "insights": "Analisi",
+      "settings": "Impostazioni",
+      "other": "Altro"
+    }
   },
   "transactions": {
     "title": "Transazioni",
@@ -1109,7 +1110,7 @@
     },
     "nav": {
       "title": "Navigazione",
-      "body": "Passa tra dashboard, conti, transazioni, pianificazioni, budget e report. Aggiungi ai preferiti, riordina o nascondi le voci come preferisci."
+      "body": "Passa tra dashboard, conti, transazioni, pianificazioni, budget e report, raggruppati in sezioni. Comprimi una sezione che non usi."
     },
     "wallet": {
       "title": "I tuoi portafogli",

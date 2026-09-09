@@ -12,6 +12,10 @@ dashboard polish.
 
 ### Added
 
+- **Grouped sidebar navigation** — the left nav is now organized into collapsible
+  sections (Money, Planning, Banking, Insights, Settings) with the dashboard on
+  top, so it reads as an ordered, mature menu instead of a long flat list. Collapse
+  the sections you don't use (remembered per device).
 - **Bank-sync reconciliation** — imported transactions are now matched against
   your existing **manual or scheduled** transactions (same amount within a date
   window) and **merged** into them instead of duplicated (the bank reference is
