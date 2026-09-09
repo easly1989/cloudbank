@@ -29,6 +29,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { EmptyState } from "../components/EmptyState";
 
 import {
   ApiError,
@@ -230,7 +231,7 @@ export function SchedulesPage() {
         </SimpleGrid>
       )}
 
-      {schedules.length === 0 && <Text c="dimmed">{t("schedules.empty")}</Text>}
+      {schedules.length === 0 && <EmptyState message={t("schedules.empty")} />}
 
       {schedules.length > 0 && (
         <Table striped highlightOnHover>

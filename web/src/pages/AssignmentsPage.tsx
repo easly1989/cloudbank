@@ -19,6 +19,7 @@ import { IconGripVertical, IconPencil, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { EmptyState } from "../components/EmptyState";
 
 import {
   ApiError,
@@ -151,7 +152,7 @@ export function AssignmentsPage() {
         {t("assignments.help")}
       </Text>
 
-      {order.length === 0 && <Text c="dimmed">{t("assignments.empty")}</Text>}
+      {order.length === 0 && <EmptyState message={t("assignments.empty")} />}
 
       {order.length > 0 && (
         <Table>

@@ -7,7 +7,6 @@ import {
   Select,
   Stack,
   Table,
-  Text,
   TextInput,
   Title,
 } from "@mantine/core";
@@ -17,6 +16,7 @@ import { IconDots, IconPlus } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { EmptyState } from "../components/EmptyState";
 
 import {
   ApiError,
@@ -86,7 +86,7 @@ export function PayeesPage() {
         </Button>
       </Group>
 
-      {payees.length === 0 && <Text c="dimmed">{t("payees.empty")}</Text>}
+      {payees.length === 0 && <EmptyState message={t("payees.empty")} />}
 
       {payees.length > 0 && (
         <Table striped highlightOnHover>
