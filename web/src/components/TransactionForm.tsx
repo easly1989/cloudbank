@@ -146,6 +146,7 @@ export function TransactionForm({
       if (e.memo) setMemo(e.memo);
       if (e.categoryId != null) setCategoryId(String(e.categoryId));
       if (e.payeeId != null) setPayeeId(String(e.payeeId));
+      if (e.tags && e.tags.length > 0) setTags(e.tags);
       setQuickText("");
     },
     onError: (err: unknown) =>

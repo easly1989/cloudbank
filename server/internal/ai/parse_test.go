@@ -16,6 +16,7 @@ func TestParseEntry(t *testing.T) {
 		WalletID: wid, Name: "Groceries", ParentID: nullID(food.ID),
 	})
 	bar, _ := q.InsertPayee(ctx, db.InsertPayeeParams{WalletID: wid, Name: "Bar Centrale"})
+	_, _ = q.InsertTag(ctx, db.InsertTagParams{WalletID: wid, Name: "Work"})
 
 	key := "k"
 	if _, err := svc.UpdateSettings(ctx, uid, SettingsInput{
@@ -27,13 +28,18 @@ func TestParseEntry(t *testing.T) {
 	// A well-formed reply (wrapped in a code fence, to test tolerance).
 	svc.hc = &mockDoer{reply: "```json\n{\"amount\": 12.4, \"direction\": \"expense\", " +
 		"\"date\": \"2026-06-14\", \"payee\": \"Bar Centrale\", \"category\": \"Food:Groceries\", " +
-		"\"memo\": \"coffee\"}\n```"}
+		"\"tags\": [\"work\", \"lunch\"], \"memo\": \"coffee\"}\n```"}
 	got, err := svc.ParseEntry(ctx, uid, wid, "12.40 coffee at Bar Centrale yesterday", "2026-06-15")
 	if err != nil {
 		t.Fatalf("ParseEntry: %v", err)
 	}
 	if got == nil || got.Amount != "12.4" || got.Direction != "expense" || got.Date != "2026-06-14" || got.Memo != "coffee" {
 		t.Fatalf("parsed = %+v", got)
+	}
+	// A known tag adopts its canonical casing ("work" → "Work"); an unknown one is
+	// kept as a new free-form tag.
+	if len(got.Tags) != 2 || got.Tags[0] != "Work" || got.Tags[1] != "lunch" {
+		t.Fatalf("tags = %+v, want [Work lunch]", got.Tags)
 	}
 	if got.CategoryID == nil || *got.CategoryID != groceries.ID || got.CategoryName != "Food:Groceries" {
 		t.Fatalf("category = %+v", got)

@@ -2394,6 +2394,7 @@ components:
         payeeName: { type: string }
         categoryId: { type: integer, format: int64, nullable: true }
         categoryName: { type: string }
+        tags: { type: array, items: { type: string }, description: "suggested tags (known tags adopt their canonical casing)" }
       required: [amount, direction, date, memo]
     ParseEntryResult:
       type: object

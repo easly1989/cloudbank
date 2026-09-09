@@ -23,12 +23,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    let message = res.statusText;
+    // statusText is empty over HTTP/2, and a proxy/CDN error (e.g. a 502 while a
+    // slow upstream request is in flight) has an HTML body, not our JSON — so fall
+    // back to a non-empty message rather than showing an empty error toast.
+    let message = res.statusText || `Request failed (HTTP ${res.status})`;
     try {
       const body = (await res.json()) as { error?: { message?: string } };
       if (body?.error?.message) message = body.error.message;
     } catch {
-      // non-JSON error body; keep statusText
+      // non-JSON error body; keep the fallback
     }
     throw new ApiError(res.status, message);
   }
