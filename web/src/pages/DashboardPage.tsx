@@ -1,9 +1,21 @@
-import { ActionIcon, Box, Button, Group, Menu, Stack, Text, Title } from "@mantine/core";
+import {
+  ActionIcon,
+  Alert,
+  Box,
+  Button,
+  Group,
+  Menu,
+  SegmentedControl,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
 import {
   IconAdjustmentsHorizontal,
   IconArrowsMinimize,
   IconEyeOff,
   IconGripVertical,
+  IconInfoCircle,
   IconPlus,
   IconRestore,
 } from "@tabler/icons-react";
@@ -13,8 +25,9 @@ import { useTranslation } from "react-i18next";
 
 import { type DashboardAccount, type User, getDashboard, updateMe } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
-import { GridDashboard } from "../components/dashboard/GridDashboard";
+import { GridDashboard, type GridDashboardHandle } from "../components/dashboard/GridDashboard";
 import {
+  COLUMNS,
   type DashboardLayoutV2,
   type PlacedWidget,
   WIDGET_SIZES,
@@ -69,6 +82,8 @@ export function DashboardPage() {
   const layoutRef = useRef(layout);
   layoutRef.current = layout;
   const [editingLayout, setEditingLayout] = useState(false);
+  // Imperative handle to the grid so the S/M/L preset buttons can resize a widget.
+  const gridApi = useRef<GridDashboardHandle>(null);
   const persistLayout = useMutation({
     mutationFn: (next: DashboardLayoutV2) =>
       updateMe({ preferences: { ...(user?.preferences ?? {}), dashboardLayout: next } }),
@@ -336,12 +351,13 @@ export function DashboardPage() {
       </Group>
 
       {editingLayout && (
-        <Text size="xs" c="dimmed">
+        <Alert variant="light" color="blue" icon={<IconInfoCircle size={16} />} py="xs">
           {t("dashboard.editHint")}
-        </Text>
+        </Alert>
       )}
 
       <GridDashboard
+        ref={gridApi}
         items={layout.widgets}
         editing={editingLayout}
         onChange={applyGridChange}
@@ -350,6 +366,9 @@ export function DashboardPage() {
           <WidgetFrame
             editing={editingLayout}
             label={labels[item.type]}
+            width={item.w}
+            presets={sizePresets(item.type)}
+            onResize={(w) => gridApi.current?.resizeWidget(item.id, w)}
             onRemove={() => removeWidget(item.id)}
           >
             {renderWidget(item)}
@@ -360,21 +379,41 @@ export function DashboardPage() {
   );
 }
 
+// The S/M/L quick-size presets, in grid columns: small ≈ third, medium ≈ half,
+// large = full width — each clamped up to the widget type's minimum width (and
+// never past the grid), so a preset always yields a valid size.
+type SizePresets = { s: number; m: number; l: number };
+function sizePresets(type: WidgetType): SizePresets {
+  const { minW } = WIDGET_SIZES[type];
+  const clamp = (w: number) => Math.min(Math.max(w, minW), COLUMNS);
+  return { s: clamp(4), m: clamp(6), l: COLUMNS };
+}
+
 // WidgetFrame wraps a widget at its natural height (the grid cell hugs the
 // content — see GridDashboard's resize observer). In edit mode it shows a header
-// bar (drag affordance + remove button); the remove button stops pointer events
-// from starting a gridstack drag.
+// bar (drag affordance + S/M/L quick-size buttons + remove button); the
+// interactive controls stop pointer events from starting a gridstack drag.
 function WidgetFrame({
   editing,
   label,
+  width,
+  presets,
+  onResize,
   onRemove,
   children,
 }: {
   editing: boolean;
   label: string;
+  width: number;
+  presets: SizePresets;
+  onResize: (w: number) => void;
   onRemove: () => void;
   children: ReactNode;
 }) {
+  // Highlight the preset the widget is currently at (none, if it's a custom width).
+  const active =
+    width === presets.l ? "l" : width === presets.m ? "m" : width === presets.s ? "s" : "";
+  const { t } = useTranslation();
   return (
     <Box style={{ display: "flex", flexDirection: "column" }}>
       {editing && (
@@ -395,16 +434,29 @@ function WidgetFrame({
               {label}
             </Text>
           </Group>
-          <ActionIcon
-            size="sm"
-            variant="subtle"
-            color="red"
-            aria-label={label}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={onRemove}
-          >
-            <IconEyeOff size={14} />
-          </ActionIcon>
+          <Group gap={4} wrap="nowrap">
+            <SegmentedControl
+              size="xs"
+              value={active}
+              onChange={(v) => onResize(presets[v as keyof SizePresets])}
+              onPointerDown={(e) => e.stopPropagation()}
+              data={[
+                { label: t("dashboard.size.small"), value: "s" },
+                { label: t("dashboard.size.medium"), value: "m" },
+                { label: t("dashboard.size.large"), value: "l" },
+              ]}
+            />
+            <ActionIcon
+              size="sm"
+              variant="subtle"
+              color="red"
+              aria-label={label}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={onRemove}
+            >
+              <IconEyeOff size={14} />
+            </ActionIcon>
+          </Group>
         </Group>
       )}
       <Box>{children}</Box>
