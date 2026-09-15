@@ -909,7 +909,12 @@
     "tidyLayout": "Ordina",
     "resetLayout": "Ripristina",
     "resetConfirm": "Ripristinare la dashboard ai widget e alla disposizione predefiniti? La disposizione attuale andrà persa.",
-    "editHint": "Trascina per spostare, trascina il bordo sinistro/destro per ridimensionare. \"Ordina\" ricompatta i widget senza spazi vuoti; \"Ripristina\" riporta alla disposizione predefinita. Le modifiche si salvano da sole.",
+    "editHint": "Trascina un widget per spostarlo; usa i pulsanti S/M/L o trascina il bordo sinistro/destro per ridimensionarlo. \"Ordina\" ricompatta tutto senza spazi vuoti; \"Ripristina\" riporta alla disposizione predefinita. Le modifiche si salvano da sole.",
+    "size": {
+      "small": "S",
+      "medium": "M",
+      "large": "L"
+    },
     "accountBalance": "Saldo conto",
     "recentTransactions": "Transazioni recenti",
     "kpi": "Indicatore",
