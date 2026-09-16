@@ -81,6 +81,7 @@ export function cumulate(values: number[]): number[] {
 // matching the server's bucket formats (see report/buckets.go) so the "today"
 // marker lands on the right category.
 export function todayBucketKey(bucket: ReportBucket, now = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
   const iso = toCivilDate;
   const y = now.getFullYear();
   const m = now.getMonth(); // 0-based
