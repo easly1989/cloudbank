@@ -27,6 +27,7 @@ func (h *bankSyncHandlers) walletRoutes(r chi.Router) {
 		r.Delete("/links/{externalId}", h.unlink)
 		r.Post("/sync", h.sync)
 		r.Get("/history", h.history)
+		r.Delete("/history", h.clearHistory)
 		r.Post("/reauth", h.ebReauth)
 		r.Post("/auto-sync", h.setAutoSync)
 		r.Post("/schedule", h.setSchedule)
@@ -327,4 +328,17 @@ func (h *bankSyncHandlers) history(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, runs)
+}
+
+func (h *bankSyncHandlers) clearHistory(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := h.connID(w, r)
+	if !ok {
+		return
+	}
+	if err := h.svc.ClearHistory(r.Context(), wl.ID, id); err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

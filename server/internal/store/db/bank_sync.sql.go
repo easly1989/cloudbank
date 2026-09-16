@@ -41,6 +41,15 @@ func (q *Queries) DeleteBankLink(ctx context.Context, arg DeleteBankLinkParams) 
 	return err
 }
 
+const deleteBankSyncRuns = `-- name: DeleteBankSyncRuns :exec
+DELETE FROM bank_sync_runs WHERE connection_id = ?
+`
+
+func (q *Queries) DeleteBankSyncRuns(ctx context.Context, connectionID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteBankSyncRuns, connectionID)
+	return err
+}
+
 const getBankConnection = `-- name: GetBankConnection :one
 SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync, last_sync_at, last_sync_status, last_sync_message, sync_interval_hours, sync_hour, sync_days FROM bank_connections WHERE id = ? LIMIT 1
 `

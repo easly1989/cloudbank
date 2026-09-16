@@ -156,6 +156,9 @@ export const reauthEnableBankingConnection = (
 export const listBankConnectionSyncRuns = (walletId: number, connId: number) =>
   api.get<BankSyncRun[]>(`/api/v1/wallets/${walletId}/bank/connections/${connId}/history`);
 
+export const clearBankConnectionSyncRuns = (walletId: number, connId: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/bank/connections/${connId}/history`);
+
 export const setBankConnectionAutoSync = (walletId: number, connId: number, enabled: boolean) =>
   api.post<void>(`/api/v1/wallets/${walletId}/bank/connections/${connId}/auto-sync`, { enabled });
 

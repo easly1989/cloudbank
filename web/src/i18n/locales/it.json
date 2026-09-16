@@ -490,9 +490,15 @@
       "title": "Cronologia sync",
       "empty": "Nessun sync registrato.",
       "summary": "{{imported}} importate · {{reconciled}} riconciliate",
-      "account": "{{fetched}} scaricate · {{imported}} importate · {{reconciled}} riconciliate",
+      "account": "{{imported}} importate · {{reconciled}} riconciliate",
+      "clear": "Pulisci cronologia",
+      "clearConfirm": "Eliminare tutti i sync registrati per questa connessione?",
       "trigger": { "manual": "Manuale", "auto": "Automatico" },
       "status": { "ok": "OK", "partial": "Parziale", "error": "Errore" }
+    },
+    "section": {
+      "autoSync": "Sync automatico",
+      "accounts": "Conti"
     }
   },
   "search": {
