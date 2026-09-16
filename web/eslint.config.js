@@ -19,6 +19,14 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // eslint-plugin-react-hooks v7 promoted several new checks to errors in its
+      // recommended set. Keep them visible as warnings for now: fixing the existing
+      // sites (mostly ~32 set-state-in-effect) is a separate, deliberate refactor
+      // (tracked as #339 follow-up), not part of adopting eslint 10.
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/refs": "warn",
+      "react-hooks/use-memo": "warn",
+      "react-hooks/purity": "warn",
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
     },
   },
