@@ -86,6 +86,18 @@ jobs:
         run: npm run build
       - name: Test
         run: npm run test
+      # Civil dates (YYYY-MM-DD) must follow the user's own calendar day. The
+      # suite once passed only because the runner is UTC, hiding an off-by-one
+      # in the register's date filters (#415). Re-run it either side of UTC so
+      # a local/UTC mix cannot slip back in unnoticed.
+      - name: Test (east of UTC)
+        run: npm run test
+        env:
+          TZ: Australia/Sydney
+      - name: Test (west of UTC)
+        run: npm run test
+        env:
+          TZ: America/Los_Angeles
 
   docker:
     name: Docker (smoke build)

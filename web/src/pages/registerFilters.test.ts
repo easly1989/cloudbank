@@ -126,6 +126,29 @@ describe("dateBounds", () => {
     );
     expect(b).toEqual({ from: "2026-01-01", to: "2026-03-31" });
   });
+
+  // These pin the timezone contract: bounds follow the user's *local* calendar
+  // day. The instants below fall on a different date in UTC than they do
+  // locally in most zones, which is where the old toISOString() path broke.
+  it("resolves month bounds from the local day, just after local midnight", () => {
+    const b = dateBounds({ ...emptyFilters, preset: "thisMonth" }, new Date(2026, 2, 1, 0, 30));
+    expect(b).toEqual({ from: "2026-03-01", to: "2026-03-31" });
+  });
+
+  it("resolves month bounds from the local day, just before local midnight", () => {
+    const b = dateBounds({ ...emptyFilters, preset: "thisMonth" }, new Date(2026, 2, 31, 23, 30));
+    expect(b).toEqual({ from: "2026-03-01", to: "2026-03-31" });
+  });
+
+  it("resolves year bounds across the new-year boundary", () => {
+    const b = dateBounds({ ...emptyFilters, preset: "thisYear" }, new Date(2026, 0, 1, 0, 30));
+    expect(b).toEqual({ from: "2026-01-01", to: "2026-12-31" });
+  });
+
+  it("ends a rolling window on the local today", () => {
+    const b = dateBounds({ ...emptyFilters, preset: "last30" }, new Date(2026, 2, 31, 23, 30));
+    expect(b).toEqual({ from: "2026-03-02", to: "2026-03-31" });
+  });
 });
 
 describe("URL round-trip", () => {

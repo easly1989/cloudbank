@@ -16,6 +16,7 @@ import {
 } from "../../../api/client";
 import { useDateFormat } from "../../../dates";
 import { formatMinor } from "../../../money";
+import { todayCivil } from "../../../civilDate";
 
 // UpcomingPanel lists scheduled transactions in three tabs — the next due
 // occurrences (with Post now / Skip), every active schedule, and the manual
@@ -32,7 +33,7 @@ export function UpcomingPanel({ walletId, base }: { walletId: number; base?: Cur
   });
   const schedules = useMemo(() => schedulesQuery.data ?? [], [schedulesQuery.data]);
 
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const today = useMemo(() => todayCivil(), []);
 
   const sortByDue = (a: Schedule, b: Schedule) => a.nextDue.localeCompare(b.nextDue);
   // Mirror HomeBank's bottom panel. remaining === 0 is exhausted and hidden

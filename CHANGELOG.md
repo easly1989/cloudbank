@@ -70,6 +70,16 @@ dashboard polish.
 
 ### Fixed
 
+- **Dates now follow your own calendar, not UTC.** The register's **This month /
+  This quarter / This year** filters were computed by converting a local date to
+  UTC, so east of UTC every preset covered the wrong window — the last day of the
+  period was excluded and one day of the previous period leaked in. The same
+  conversion decided what "today" meant everywhere else, so a transaction entered
+  in the evening west of UTC was pre-filled with **tomorrow's** date, and one
+  entered just after midnight east of UTC with **yesterday's**. Every civil date
+  is now derived from the local calendar, and the register's midnight roll-over
+  waits for *your* midnight rather than UTC's.
+
 - **PSD2 rate limit (HTTP 429).** Bank sync made two transaction calls per account
   (booked + an explicit pending call), doubling usage and tripping the ASPSP's
   "consented multiplicity per day" limit so nothing imported. It now makes a single

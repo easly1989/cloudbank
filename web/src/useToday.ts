@@ -7,8 +7,10 @@
 // the roll-over is picked up without an F5.
 import { useEffect, useState } from "react";
 
-/** Current civil date as ISO `YYYY-MM-DD` (UTC, matching the rest of the app). */
-export const todayISO = (): string => new Date().toISOString().slice(0, 10);
+import { msUntilLocalMidnight, todayCivil } from "./civilDate";
+
+/** Current civil date as ISO `YYYY-MM-DD`, in the user's own timezone. */
+export const todayISO = todayCivil;
 
 export function useToday(): string {
   const [today, setToday] = useState(todayISO);
@@ -23,20 +25,11 @@ export function useToday(): string {
       });
       schedule();
     };
-    // Re-arm a one-shot timer for just after the next UTC midnight (when the ISO
-    // date flips). Chained rather than a fixed interval so it never drifts.
+    // Re-arm a one-shot timer for just after the next *local* midnight (when the
+    // civil date flips). Chained rather than a fixed interval so it never drifts.
     const schedule = () => {
       clearTimeout(timer);
-      const now = new Date();
-      const nextMidnight = Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate() + 1,
-        0,
-        0,
-        1,
-      );
-      timer = setTimeout(sync, nextMidnight - now.getTime());
+      timer = setTimeout(sync, msUntilLocalMidnight());
     };
     const onVisible = () => {
       if (!document.hidden) sync();
