@@ -80,9 +80,9 @@ requests are same-origin with cookies and `X-Requested-With` (the server's CSRF 
 Vite builds **into `server/internal/webui/dist`** so `//go:embed` picks it up — a bare `go run`
 without a frontend build serves a placeholder page, which is expected.
 
-**Other top-level dirs**: `site/` is the Astro landing site published to GitHub Pages;
-`landing/` is a static one-pager; `e2e/` is Playwright against the real container; `docs/` holds
-user-facing guides.
+**Other top-level dirs**: `landing/` is the static one-pager deployed by hand to the separate
+`easly1989.github.io` repo (this repo has no Pages site of its own); `e2e/` is Playwright against
+the real container; `docs/` holds user-facing guides.
 
 ## Conventions that bite
 
