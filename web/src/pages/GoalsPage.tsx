@@ -47,6 +47,7 @@ import { useDateFormat } from "../dates";
 import { type MoneyFormat, formatMinor, minorToInput } from "../money";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
+import { todayCivil } from "../civilDate";
 
 const baseFmt = (currencies: Currency[]): MoneyFormat => {
   const base = currencies.find((c) => c.isBase);
@@ -481,7 +482,7 @@ function ContributionModal({
     if (!opened) return;
     setDirection(withdraw ? "withdraw" : "add");
     setAmount("");
-    setDate(new Date().toISOString().slice(0, 10));
+    setDate(todayCivil());
     setNote("");
   }, [opened, withdraw]);
 

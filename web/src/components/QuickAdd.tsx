@@ -16,6 +16,7 @@ import { formatMinor } from "../money";
 import { STATUSES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import classes from "../tagPills.module.css";
+import { todayCivil } from "../civilDate";
 
 // QuickAdd is a one-line transaction entry: pick a payee (its default category
 // and payment mode are applied automatically), type an amount, and add without
@@ -53,7 +54,7 @@ export function QuickAdd({
   const fd = account.currencyFracDigits;
   const dc = account.currencyDecimalChar;
 
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(todayCivil());
   const [payeeId, setPayeeId] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [amount, setAmount] = useState("");

@@ -58,6 +58,7 @@ import { rowEditProps, stopRowEdit } from "../rowEdit";
 import { PAYMENT_MODES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
+import { todayCivil } from "../civilDate";
 
 const UNITS: ScheduleUnit[] = ["day", "week", "month", "year"];
 const WEEKEND_MODES = [0, 1, 2, 3];
@@ -417,7 +418,7 @@ function ScheduleForm({
     const e = editing;
     setUnit(e?.unit ?? "month");
     setEveryN(e?.everyN ?? 1);
-    setNextDue(e?.nextDue ?? new Date().toISOString().slice(0, 10));
+    setNextDue(e?.nextDue ?? todayCivil());
     setWeekendMode(String(e?.weekendMode ?? 0));
     setLimited(e?.remaining != null);
     setRemaining(e?.remaining ?? 12);

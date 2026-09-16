@@ -2,6 +2,10 @@
 // client-side over the full account ledger so it is instant and combines (AND)
 // without affecting the server-computed running balance on each row.
 import type { Category, RegisterRow } from "../api/client";
+import { toCivilDate } from "../civilDate";
+
+// Civil date of a local calendar day — never via toISOString(), which is UTC.
+const iso = toCivilDate;
 
 export type DatePreset =
   "all" | "thisMonth" | "thisQuarter" | "thisYear" | "last30" | "last90" | "custom";
@@ -42,8 +46,6 @@ export const emptyFilters: Filters = {
   noFlags: false,
   uncategorised: false,
 };
-
-const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 // dateBounds resolves a preset (or custom range) to inclusive YYYY-MM-DD bounds.
 export function dateBounds(f: Filters, now = new Date()): { from?: string; to?: string } {

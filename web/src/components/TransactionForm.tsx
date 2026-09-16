@@ -44,6 +44,7 @@ import { minorToInput } from "../money";
 import { PAYMENT_MODES, STATUSES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import { AttachmentsField } from "./AttachmentsField";
+import { todayCivil } from "../civilDate";
 
 // How a save resolves: close the modal, keep the fields for a similar entry, or
 // clear the fields for a fresh one. Editing always uses "close".
@@ -204,7 +205,7 @@ export function TransactionForm({
     // payment mode; editing keeps the stored one (a picked payee's default still
     // overrides). A duplicate starts uncleared.
     const init = {
-      date: e?.date ?? new Date().toISOString().slice(0, 10),
+      date: e?.date ?? todayCivil(),
       direction: ((e?.amount ?? -1) < 0 ? "expense" : "income") as "expense" | "income",
       amount: e ? minorToInput(Math.abs(e.amount), fd, dc) : "",
       paymentMode: String(e?.paymentMode ?? account.defaultPaymentMode),
@@ -308,7 +309,7 @@ export function TransactionForm({
   // rebase the dirty snapshot so the just-cleared form isn't flagged as edited.
   const resetFields = () => {
     const init = {
-      date: new Date().toISOString().slice(0, 10),
+      date: todayCivil(),
       direction: "expense" as "expense" | "income",
       amount: "",
       paymentMode: String(account.defaultPaymentMode),
