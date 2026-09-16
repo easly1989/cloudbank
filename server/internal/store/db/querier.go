@@ -71,6 +71,7 @@ type Querier interface {
 	DeleteTransactionTags(ctx context.Context, transactionID int64) error
 	DeleteTransfer(ctx context.Context, id int64) error
 	DeleteUserSessions(ctx context.Context, userID int64) error
+	DeleteValuation(ctx context.Context, id int64) error
 	DeleteVehicle(ctx context.Context, id int64) error
 	DeleteWallet(ctx context.Context, id int64) error
 	FindDuplicateTransactions(ctx context.Context, arg FindDuplicateTransactionsParams) ([]Transaction, error)
@@ -101,6 +102,7 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	GetUserIDByOIDCIdentity(ctx context.Context, arg GetUserIDByOIDCIdentityParams) (int64, error)
+	GetValuation(ctx context.Context, id int64) (AssetValuation, error)
 	GetVehicle(ctx context.Context, id int64) (Vehicle, error)
 	GetWallet(ctx context.Context, id int64) (Wallet, error)
 	GetWalletMembership(ctx context.Context, arg GetWalletMembershipParams) (string, error)
@@ -129,7 +131,11 @@ type Querier interface {
 	InsertTemplateSplit(ctx context.Context, arg InsertTemplateSplitParams) error
 	InsertTransaction(ctx context.Context, arg InsertTransactionParams) (Transaction, error)
 	InsertTransfer(ctx context.Context, arg InsertTransferParams) (Transfer, error)
+	InsertValuation(ctx context.Context, arg InsertValuationParams) (AssetValuation, error)
 	InsertVehicle(ctx context.Context, arg InsertVehicleParams) (Vehicle, error)
+	// The most recent valuation (by date, then id) for each asset account in a wallet;
+	// used to fold recorded values into net-worth totals.
+	LatestValuationsForWallet(ctx context.Context, walletID int64) ([]LatestValuationsForWalletRow, error)
 	LinkOIDCIdentity(ctx context.Context, arg LinkOIDCIdentityParams) error
 	ListAPITokensForUser(ctx context.Context, userID int64) ([]ApiToken, error)
 	// The full account ledger ordered chronologically (date, then id) with a
@@ -183,6 +189,7 @@ type Querier interface {
 	ListTransfersForWallet(ctx context.Context, walletID int64) ([]Transfer, error)
 	ListUpcomingSchedules(ctx context.Context, arg ListUpcomingSchedulesParams) ([]ListUpcomingSchedulesRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
+	ListValuationsForAccount(ctx context.Context, accountID int64) ([]AssetValuation, error)
 	// Fuel transactions linked to a vehicle in a date range, with the account
 	// currency so costs can be converted to base. Ordered for sequential odometer
 	// processing.
@@ -254,6 +261,7 @@ type Querier interface {
 	UpdateTransactionStatus(ctx context.Context, arg UpdateTransactionStatusParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpdateUserSettings(ctx context.Context, arg UpdateUserSettingsParams) error
+	UpdateValuation(ctx context.Context, arg UpdateValuationParams) error
 	UpdateVehicle(ctx context.Context, arg UpdateVehicleParams) error
 	UpdateWallet(ctx context.Context, arg UpdateWalletParams) error
 	UpdateWalletBaseCurrency(ctx context.Context, arg UpdateWalletBaseCurrencyParams) error

@@ -1011,6 +1011,49 @@ export interface paths {
         patch: operations["updateAccount"];
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/accounts/{accountId}/valuations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                accountId: number;
+            };
+            cookie?: never;
+        };
+        /** List an asset account's recorded valuations (newest first) */
+        get: operations["listAssetValuations"];
+        put?: never;
+        /** Record a valuation for an asset account */
+        post: operations["addAssetValuation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/accounts/{accountId}/valuations/{valuationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                accountId: number;
+                valuationId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a valuation */
+        delete: operations["deleteAssetValuation"];
+        options?: never;
+        head?: never;
+        /** Update a valuation */
+        patch: operations["updateAssetValuation"];
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/categories": {
         parameters: {
             query?: never;
@@ -2743,6 +2786,11 @@ export interface components {
              * @description initial + all transactions incl. future-dated, minor units
              */
             futureBalance: number;
+            /**
+             * Format: int64
+             * @description latest recorded valuation (asset accounts only); replaces balance/futureBalance when present
+             */
+            value?: number;
             closed: boolean;
             noSummary?: boolean;
             noBudget?: boolean;
@@ -2993,6 +3041,30 @@ export interface components {
             amount: number;
             note?: string;
         };
+        AssetValuation: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            accountId: number;
+            /** @description YYYY-MM-DD */
+            date: string;
+            /**
+             * Format: int64
+             * @description minor units, account currency
+             */
+            value: number;
+            note: string;
+        };
+        AssetValuationInput: {
+            /** @description YYYY-MM-DD */
+            date: string;
+            /**
+             * Format: int64
+             * @description non-negative minor units
+             */
+            value: number;
+            note?: string;
+        };
         RegisterRow: components["schemas"]["Transaction"] & {
             /**
              * Format: int64
@@ -3115,6 +3187,11 @@ export interface components {
             currency: components["schemas"]["CurrencyInfo"];
             /** Format: int64 */
             currencyId: number;
+            /**
+             * Format: int64
+             * @description latest recorded valuation (asset accounts only); when present it replaces the transaction balance
+             */
+            value?: number;
         };
         CategorySlice: {
             /**
@@ -5534,6 +5611,112 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+        };
+    };
+    listAssetValuations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                accountId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The valuations. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetValuation"][];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    addAssetValuation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                accountId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetValuationInput"];
+            };
+        };
+        responses: {
+            /** @description The created valuation. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetValuation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteAssetValuation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                accountId: number;
+                valuationId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateAssetValuation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                accountId: number;
+                valuationId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetValuationInput"];
+            };
+        };
+        responses: {
+            /** @description Updated valuation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetValuation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
         };
     };
     listCategories: {

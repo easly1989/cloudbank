@@ -110,6 +110,8 @@ export interface Account {
   balance: number;
   /** Initial + all transactions, including future-dated. */
   futureBalance: number;
+  /** Latest recorded valuation (asset accounts only); replaces balance when present. */
+  value?: number;
   closed: boolean;
   noSummary: boolean;
   noBudget: boolean;
@@ -327,3 +329,40 @@ export const addGoalContribution = (
 
 export const deleteGoalContribution = (walletId: number, goalId: number, contribId: number) =>
   api.del<void>(`/api/v1/wallets/${walletId}/goals/${goalId}/contributions/${contribId}`);
+
+// --- Asset valuations (asset/investment accounts) ---
+
+export interface AssetValuation {
+  id: number;
+  accountId: number;
+  date: string;
+  /** Minor units, account currency. */
+  value: number;
+  note: string;
+}
+
+export interface AssetValuationInput {
+  date: string;
+  value: number;
+  note: string;
+}
+
+export const listAssetValuations = (walletId: number, accountId: number) =>
+  api.get<AssetValuation[]>(`/api/v1/wallets/${walletId}/accounts/${accountId}/valuations`);
+
+export const addAssetValuation = (walletId: number, accountId: number, body: AssetValuationInput) =>
+  api.post<AssetValuation>(`/api/v1/wallets/${walletId}/accounts/${accountId}/valuations`, body);
+
+export const updateAssetValuation = (
+  walletId: number,
+  accountId: number,
+  valuationId: number,
+  body: AssetValuationInput,
+) =>
+  api.patch<AssetValuation>(
+    `/api/v1/wallets/${walletId}/accounts/${accountId}/valuations/${valuationId}`,
+    body,
+  );
+
+export const deleteAssetValuation = (walletId: number, accountId: number, valuationId: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/accounts/${accountId}/valuations/${valuationId}`);

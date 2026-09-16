@@ -17,6 +17,7 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/ai"
+	"github.com/easly1989/cloudbank/server/internal/assetvaluation"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
 	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
@@ -139,6 +140,7 @@ func run() error {
 	walletSvc := wallet.NewService(st.Write())
 	currencySvc := currency.NewServiceWithRead(st.Read(), st.Write())
 	accountSvc := account.NewServiceWithRead(st.Read(), st.Write())
+	assetValuationSvc := assetvaluation.NewServiceWithRead(st.Read(), st.Write())
 	categorySvc := category.NewServiceWithRead(st.Read(), st.Write())
 	payeeSvc := payee.NewServiceWithRead(st.Read(), st.Write())
 	transactionSvc := transaction.NewServiceWithRead(st.Read(), st.Write())
@@ -187,6 +189,7 @@ func run() error {
 		Wallets:           walletSvc,
 		Currencies:        currencySvc,
 		Accounts:          accountSvc,
+		AssetValuations:   assetValuationSvc,
 		Categories:        categorySvc,
 		Payees:            payeeSvc,
 		Transactions:      transactionSvc,
