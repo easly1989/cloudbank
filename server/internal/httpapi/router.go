@@ -27,6 +27,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
+	"github.com/easly1989/cloudbank/server/internal/oidc"
 	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/push"
 	"github.com/easly1989/cloudbank/server/internal/report"
@@ -115,6 +116,12 @@ type Options struct {
 	CSV *importio.Service
 	// SecureCookies sets the Secure flag on the session cookie.
 	SecureCookies bool
+	// OIDC, if non-nil, enables OIDC/SSO login (a "Sign in with <provider>" button
+	// alongside local login). Nil leaves only local auth.
+	OIDC *oidc.Service
+	// OIDCAutoProvision creates a local account on first SSO login for an unknown
+	// identity (see config.OIDCAutoProvision).
+	OIDCAutoProvision bool
 	// Version is the running build version, surfaced at GET /api/v1/version.
 	Version string
 }
@@ -160,6 +167,12 @@ func New(opts Options) http.Handler {
 		if opts.Auth != nil {
 			ah := &authHandlers{svc: opts.Auth, secure: opts.SecureCookies}
 			ah.publicRoutes(r)
+			// OIDC/SSO login (public, pre-auth). /auth/config is always served so
+			// the login page can hide the button when SSO is off.
+			(&oidcHandlers{
+				svc: opts.OIDC, auth: opts.Auth, secure: opts.SecureCookies,
+				autoProvision: opts.OIDCAutoProvision,
+			}).routes(r)
 			// Authenticated API: one requireAuth group shared by auth-protected
 			// endpoints and the wallet endpoints.
 			r.Group(func(pr chi.Router) {

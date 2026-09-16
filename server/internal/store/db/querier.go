@@ -36,6 +36,7 @@ type Querier interface {
 	CountTransactionsWithPayee(ctx context.Context, payeeID sql.NullInt64) (int64, error)
 	CountUnusedRecoveryCodes(ctx context.Context, userID int64) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
+	CountUsersByEmail(ctx context.Context, email string) (int64, error)
 	CountWalletCurrencies(ctx context.Context, walletID int64) (int64, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
@@ -96,8 +97,10 @@ type Querier interface {
 	GetTransaction(ctx context.Context, id int64) (Transaction, error)
 	GetTransfer(ctx context.Context, id int64) (Transfer, error)
 	GetTransferByTransaction(ctx context.Context, arg GetTransferByTransactionParams) (Transfer, error)
+	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	GetUserIDByOIDCIdentity(ctx context.Context, arg GetUserIDByOIDCIdentityParams) (int64, error)
 	GetVehicle(ctx context.Context, id int64) (Vehicle, error)
 	GetWallet(ctx context.Context, id int64) (Wallet, error)
 	GetWalletMembership(ctx context.Context, arg GetWalletMembershipParams) (string, error)
@@ -127,6 +130,7 @@ type Querier interface {
 	InsertTransaction(ctx context.Context, arg InsertTransactionParams) (Transaction, error)
 	InsertTransfer(ctx context.Context, arg InsertTransferParams) (Transfer, error)
 	InsertVehicle(ctx context.Context, arg InsertVehicleParams) (Vehicle, error)
+	LinkOIDCIdentity(ctx context.Context, arg LinkOIDCIdentityParams) error
 	ListAPITokensForUser(ctx context.Context, userID int64) ([]ApiToken, error)
 	// The full account ledger ordered chronologically (date, then id) with a
 	// server-computed cumulative delta. The application adds the account's initial
