@@ -100,6 +100,7 @@ export const GridDashboard = forwardRef<
       },
       elRef.current,
     );
+    if (!grid) return; // gridstack 13 types init as nullable
     gridRef.current = grid;
     grid.on("change", () => {
       if (syncing.current) return;
@@ -139,7 +140,7 @@ export const GridDashboard = forwardRef<
         minW: min.minW,
         minH: min.minH,
       });
-      const content = el.querySelector<HTMLElement>(".grid-stack-item-content");
+      const content = el?.querySelector<HTMLElement>(".grid-stack-item-content");
       if (content) next.set(it.id, content);
     }
     syncing.current = false;
