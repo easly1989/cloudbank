@@ -16,6 +16,7 @@ import {
 } from "../api/client";
 import { type MoneyFormat, formatMinor, minorToInput } from "../money";
 import { useAmountParser } from "../useAmountParser";
+import { todayCivil } from "../civilDate";
 
 // AssetValuationsModal manages an asset account's dated valuation history: the
 // latest one stands in for the account balance in net worth. Add, edit and
@@ -43,7 +44,7 @@ export function AssetValuationsModal({
     symbol: account.currencySymbol,
     symbolPrefix: account.currencySymbolPrefix,
   };
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayCivil();
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [date, setDate] = useState(today);

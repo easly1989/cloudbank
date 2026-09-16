@@ -2,6 +2,7 @@
 // ReportsPage.tsx so each tab lives in its own file).
 import type { ReportBucket, ReportGroupBy, TrendBreakdown } from "../../api/client";
 import type { MoneyFormat } from "../../money";
+import { toCivilDate } from "../../civilDate";
 import { type Filters, dateBounds } from "../../pages/registerFilters";
 
 export const BUCKETS: ReportBucket[] = ["day", "week", "month", "quarter", "year"];
@@ -63,6 +64,10 @@ export function previousPeriod(from: string, to: string): { from: string; to: st
   const len = Math.round((t - f) / day) + 1; // inclusive day count
   const prevTo = f - day;
   const prevFrom = prevTo - (len - 1) * day;
+  // Deliberately UTC on both sides: the inputs were parsed as UTC midnight
+  // above, so this is pure arithmetic on civil days and never touches the
+  // local calendar. Do not "fix" it to toCivilDate — that would reintroduce
+  // a local/UTC mix.
   const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
   return { from: iso(prevFrom), to: iso(prevTo) };
 }
@@ -77,7 +82,7 @@ export function cumulate(values: number[]): number[] {
 // marker lands on the right category.
 export function todayBucketKey(bucket: ReportBucket, now = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, "0");
-  const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const iso = toCivilDate;
   const y = now.getFullYear();
   const m = now.getMonth(); // 0-based
   switch (bucket) {
