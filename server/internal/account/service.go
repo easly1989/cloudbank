@@ -40,17 +40,20 @@ func ValidType(t string) bool { return typeSet[t] }
 // Account is the public representation of an account, including its currency's
 // formatting metadata and current balance.
 type Account struct {
-	ID                 int64
-	WalletID           int64
-	Name               string
-	Type               string
-	CurrencyID         int64
-	Institution        string
-	Number             string
-	InitialBalance     int64
-	MinimumBalance     int64
-	Balance            int64 // today's balance: initial_balance + sum(transactions dated on/before today)
-	FutureBalance      int64 // initial_balance + sum(all transactions, including future-dated)
+	ID             int64
+	WalletID       int64
+	Name           string
+	Type           string
+	CurrencyID     int64
+	Institution    string
+	Number         string
+	InitialBalance int64
+	MinimumBalance int64
+	Balance        int64 // today's balance: initial_balance + sum(transactions dated on/before today)
+	FutureBalance  int64 // initial_balance + sum(all transactions, including future-dated)
+	// Value is the account's latest recorded valuation (asset accounts only). When
+	// set it replaces Balance/FutureBalance; nil for ordinary accounts.
+	Value              *int64
 	Closed             bool
 	NoSummary          bool
 	NoBudget           bool
@@ -134,10 +137,19 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]Account, error) {
 	for _, d := range deltas {
 		deltaByAccount[d.AccountID] = d
 	}
+	// Latest recorded valuation per asset account (overrides its balance).
+	valRows, err := s.rq.LatestValuationsForWallet(ctx, walletID)
+	if err != nil {
+		return nil, err
+	}
+	valuations := make(map[int64]int64, len(valRows))
+	for _, v := range valRows {
+		valuations[v.AccountID] = v.Value
+	}
 	out := make([]Account, 0, len(rows))
 	for _, r := range rows {
 		d := deltaByAccount[r.ID]
-		out = append(out, Account{
+		acc := Account{
 			ID: r.ID, WalletID: r.WalletID, Name: r.Name, Type: r.Type, CurrencyID: r.CurrencyID,
 			Institution: r.Institution, Number: r.Number,
 			InitialBalance: r.InitialBalance, MinimumBalance: r.MinimumBalance,
@@ -149,7 +161,12 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]Account, error) {
 			CurrencySymbolPrefix: r.CurrencySymbolPrefix != 0,
 			CurrencyDecimalChar:  r.CurrencyDecimalChar, CurrencyGroupChar: r.CurrencyGroupChar,
 			CurrencyFracDigits: int(r.CurrencyFracDigits),
-		})
+		}
+		if v, ok := valuations[r.ID]; ok && (r.Type == "asset" || r.Type == "investment") {
+			val := v
+			acc.Balance, acc.FutureBalance, acc.Value = val, val, &val
+		}
+		out = append(out, acc)
 	}
 	return out, nil
 }

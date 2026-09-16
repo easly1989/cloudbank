@@ -976,6 +976,43 @@ paths:
       responses:
         "204": { description: Deleted. }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/accounts/{accountId}/valuations:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: accountId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listAssetValuations
+      summary: List an asset account's recorded valuations (newest first)
+      responses:
+        "200": { description: The valuations., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/AssetValuation" } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: addAssetValuation
+      summary: Record a valuation for an asset account
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AssetValuationInput" } } } }
+      responses:
+        "201": { description: The created valuation., content: { application/json: { schema: { $ref: "#/components/schemas/AssetValuation" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/accounts/{accountId}/valuations/{valuationId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: accountId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: valuationId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: updateAssetValuation
+      summary: Update a valuation
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AssetValuationInput" } } } }
+      responses:
+        "200": { description: Updated valuation., content: { application/json: { schema: { $ref: "#/components/schemas/AssetValuation" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteAssetValuation
+      summary: Delete a valuation
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/categories:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -2616,6 +2653,7 @@ components:
         minimumBalance: { type: integer, format: int64, description: "minor units" }
         balance: { type: integer, format: int64, description: "today's balance (initial + transactions dated on/before today), minor units" }
         futureBalance: { type: integer, format: int64, description: "initial + all transactions incl. future-dated, minor units" }
+        value: { type: integer, format: int64, description: "latest recorded valuation (asset accounts only); replaces balance/futureBalance when present" }
         closed: { type: boolean }
         noSummary: { type: boolean }
         noBudget: { type: boolean }
@@ -2820,6 +2858,22 @@ components:
         amount: { type: integer, format: int64 }
         note: { type: string }
       required: [date, amount]
+    AssetValuation:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        accountId: { type: integer, format: int64 }
+        date: { type: string, description: "YYYY-MM-DD" }
+        value: { type: integer, format: int64, description: "minor units, account currency" }
+        note: { type: string }
+      required: [id, accountId, date, value, note]
+    AssetValuationInput:
+      type: object
+      properties:
+        date: { type: string, description: "YYYY-MM-DD" }
+        value: { type: integer, format: int64, description: "non-negative minor units" }
+        note: { type: string }
+      required: [date, value]
     RegisterRow:
       allOf:
         - $ref: "#/components/schemas/Transaction"
@@ -2918,6 +2972,7 @@ components:
         future: { type: integer, format: int64 }
         currency: { $ref: "#/components/schemas/CurrencyInfo" }
         currencyId: { type: integer, format: int64 }
+        value: { type: integer, format: int64, description: "latest recorded valuation (asset accounts only); when present it replaces the transaction balance" }
       required: [id, name, type, closed, noSummary, bank, today, future, currency, currencyId]
     CategorySlice:
       type: object

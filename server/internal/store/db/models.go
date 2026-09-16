@@ -55,6 +55,14 @@ type AppConfig struct {
 	Value string
 }
 
+type AssetValuation struct {
+	ID        int64
+	AccountID int64
+	Date      string
+	Value     int64
+	Note      string
+}
+
 type Assignment struct {
 	ID             int64
 	WalletID       int64

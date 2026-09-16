@@ -644,6 +644,21 @@
     "language": "Language",
     "toggleTheme": "Toggle color scheme"
   },
+  "valuations": {
+    "title": "Valuations — {{name}}",
+    "hint": "Record this asset's value over time. The most recent valuation is used for net worth.",
+    "manage": "Manage valuations",
+    "recorded": "recorded value",
+    "date": "Date",
+    "value": "Value",
+    "note": "Note",
+    "add": "Add",
+    "save": "Save",
+    "cancel": "Cancel",
+    "empty": "No valuations recorded yet.",
+    "editRow": "Edit valuation",
+    "deleteRow": "Delete valuation"
+  },
   "login": {
     "title": "Sign in to CloudBank",
     "username": "Username",
