@@ -357,6 +357,13 @@ type User struct {
 	TotpEnabled  int64
 }
 
+type UserOidcIdentity struct {
+	UserID    int64
+	Issuer    string
+	Subject   string
+	CreatedAt string
+}
+
 type Vehicle struct {
 	ID       int64
 	WalletID int64

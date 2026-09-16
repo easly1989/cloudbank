@@ -20,6 +20,17 @@ func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const countUsersByEmail = `-- name: CountUsersByEmail :one
+SELECT COUNT(*) FROM users WHERE email = ?
+`
+
+func (q *Queries) CountUsersByEmail(ctx context.Context, email string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countUsersByEmail, email)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (username, email, password_hash, is_admin, locale, theme)
 VALUES (?, ?, ?, ?, ?, ?)
@@ -44,6 +55,30 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Locale,
 		arg.Theme,
 	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.IsAdmin,
+		&i.Locale,
+		&i.Theme,
+		&i.Disabled,
+		&i.CreatedAt,
+		&i.Preferences,
+		&i.TotpSecret,
+		&i.TotpEnabled,
+	)
+	return i, err
+}
+
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences, totp_secret, totp_enabled FROM users WHERE email = ? LIMIT 1
+`
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
 	var i User
 	err := row.Scan(
 		&i.ID,

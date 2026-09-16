@@ -1,6 +1,12 @@
 -- name: GetUserByUsername :one
 SELECT * FROM users WHERE username = ? LIMIT 1;
 
+-- name: GetUserByEmail :one
+SELECT * FROM users WHERE email = ? LIMIT 1;
+
+-- name: CountUsersByEmail :one
+SELECT COUNT(*) FROM users WHERE email = ?;
+
 -- name: GetUserByID :one
 SELECT * FROM users WHERE id = ? LIMIT 1;
 

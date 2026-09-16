@@ -653,7 +653,10 @@
     "verify": "Verifica",
     "totpCode": "Codice di autenticazione",
     "totpHint": "Inserisci il codice a 6 cifre dalla tua app di autenticazione, oppure un codice di recupero.",
-    "invalidCode": "Codice non valido"
+    "invalidCode": "Codice non valido",
+    "or": "oppure",
+    "ssoSignIn": "Accedi con {{provider}}",
+    "ssoFailed": "Single sign-on non riuscito. Riprova oppure usa nome utente e password."
   },
   "twofa": {
     "title": "Autenticazione a due fattori",
