@@ -1,11 +1,22 @@
-import { Box, Collapse, Group, NavLink, Stack, Text, Tooltip, UnstyledButton } from "@mantine/core";
+import {
+  Box,
+  Collapse,
+  Divider,
+  Group,
+  NavLink,
+  Stack,
+  Text,
+  Tooltip,
+  UnstyledButton,
+} from "@mantine/core";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink as RouterNavLink } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthProvider";
-import { NAV_GROUPS, NAV_ITEMS, type NavItemDef } from "./navItems";
+import { NAV_ITEMS, type NavItemDef } from "./navItems";
+import { migrateNavLayout, PINNED_HOME, type NavGroupLayout } from "./navLayout";
 
 // Which nav sections the user has collapsed. This is a per-device UI convenience,
 // so it lives in localStorage rather than synced preferences.
@@ -28,8 +39,10 @@ function saveCollapsed(s: Set<string>) {
   }
 }
 
-// SidebarNav renders the navigation organized into sections (Money, Planning,
-// Banking, …), with the dashboard on top. Each section header collapses.
+// SidebarNav renders the navigation from the user's customizable layout: the
+// dashboard pinned on top, then each visible group (with its visible items and
+// separators). The same component drives desktop, the collapsed icon rail, and
+// the mobile drawer, so all three stay in sync with the saved layout.
 export function SidebarNav({
   railMode,
   onNavigate,
@@ -39,19 +52,36 @@ export function SidebarNav({
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const canSee = (i: NavItemDef) => !i.adminOnly || Boolean(user?.isAdmin);
+  const isAdmin = Boolean(user?.isAdmin);
 
-  const byTo = new Map(NAV_ITEMS.map((i) => [i.to, i]));
-  const home = NAV_ITEMS[0]; // "/" — the dashboard, rendered standalone above the groups
-  const groups = NAV_GROUPS.map((g) => ({
-    labelKey: g.labelKey,
-    items: g.items.map((to) => byTo.get(to)).filter((i): i is NavItemDef => i != null && canSee(i)),
-  })).filter((g) => g.items.length > 0);
+  const byTo = useMemo(() => new Map(NAV_ITEMS.map((i) => [i.to, i])), []);
+  const home = byTo.get(PINNED_HOME) ?? NAV_ITEMS[0];
+  const layout = useMemo(
+    () => migrateNavLayout(user?.preferences?.navLayout),
+    [user?.preferences?.navLayout],
+  );
 
-  // Safety net: any visible destination not in home or a group lands in "Other".
-  const placed = new Set<string>([home.to, ...NAV_GROUPS.flatMap((g) => g.items)]);
-  const leftovers = NAV_ITEMS.filter((i) => canSee(i) && !placed.has(i.to));
-  if (leftovers.length > 0) groups.push({ labelKey: "nav.group.other", items: leftovers });
+  const canSee = (i: NavItemDef) => !i.adminOnly || isAdmin;
+  const groupLabel = (g: NavGroupLayout) => g.label ?? (g.labelKey ? t(g.labelKey) : "");
+
+  // Resolve each visible group to its renderable items + separators. Groups with
+  // no visible item are dropped so an empty header never shows.
+  const groups = layout.groups
+    .filter((g) => !g.hidden)
+    .map((g) => {
+      const entries = g.entries
+        .map((e, idx) => {
+          if (e.kind === "separator") return { key: e.id, sep: true as const };
+          const item = byTo.get(e.to);
+          if (e.hidden || !item || !canSee(item)) return null;
+          return { key: `${g.id}:${e.to}:${idx}`, item };
+        })
+        .filter(
+          (e): e is { key: string; sep: true } | { key: string; item: NavItemDef } => e != null,
+        );
+      return { id: g.id, label: groupLabel(g), entries };
+    })
+    .filter((g) => g.entries.some((e) => "item" in e));
 
   const [collapsed, setCollapsed] = useState<Set<string>>(loadCollapsed);
   const toggle = (key: string) =>
@@ -69,10 +99,14 @@ export function SidebarNav({
       <Stack gap={4}>
         <RailIcon item={home} onNavigate={onNavigate} />
         {groups.map((g) => (
-          <Stack key={g.labelKey} gap={4} mt={6}>
-            {g.items.map((item) => (
-              <RailIcon key={item.to} item={item} onNavigate={onNavigate} />
-            ))}
+          <Stack key={g.id} gap={4} mt={6}>
+            {g.entries.map((e) =>
+              "sep" in e ? (
+                <Divider key={e.key} my={2} />
+              ) : (
+                <RailIcon key={e.key} item={e.item} onNavigate={onNavigate} />
+              ),
+            )}
           </Stack>
         ))}
       </Stack>
@@ -83,17 +117,17 @@ export function SidebarNav({
     <Stack gap={2}>
       <NavItemLink item={home} onNavigate={onNavigate} />
       {groups.map((g) => {
-        const isCollapsed = collapsed.has(g.labelKey);
+        const isCollapsed = collapsed.has(g.id);
         return (
-          <Box key={g.labelKey} mt="xs">
+          <Box key={g.id} mt="xs">
             <UnstyledButton
-              onClick={() => toggle(g.labelKey)}
+              onClick={() => toggle(g.id)}
               aria-expanded={!isCollapsed}
               style={{ width: "100%" }}
             >
               <Group gap={4} px="xs" py={4} justify="space-between" wrap="nowrap">
-                <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-                  {t(g.labelKey)}
+                <Text size="xs" c="dimmed" tt="uppercase" fw={600} truncate>
+                  {g.label}
                 </Text>
                 {isCollapsed ? (
                   <IconChevronRight size={14} opacity={0.5} />
@@ -104,9 +138,13 @@ export function SidebarNav({
             </UnstyledButton>
             <Collapse expanded={!isCollapsed}>
               <Stack gap={2}>
-                {g.items.map((item) => (
-                  <NavItemLink key={item.to} item={item} onNavigate={onNavigate} />
-                ))}
+                {g.entries.map((e) =>
+                  "sep" in e ? (
+                    <Divider key={e.key} my={4} />
+                  ) : (
+                    <NavItemLink key={e.key} item={e.item} onNavigate={onNavigate} />
+                  ),
+                )}
               </Stack>
             </Collapse>
           </Box>
