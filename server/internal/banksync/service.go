@@ -124,7 +124,7 @@ type SyncRun struct {
 
 // syncRunHistoryLimit caps how many recent runs are kept (and returned) per
 // connection, so the history stays a short audit trail.
-const syncRunHistoryLimit = 20
+const syncRunHistoryLimit = 30
 
 // Service manages bank connections and imports their transactions through the
 // shared import pipeline (so duplicate flagging and import rules are reused).
@@ -381,6 +381,15 @@ func (s *Service) History(ctx context.Context, walletID, connID int64) ([]SyncRu
 		out = append(out, run)
 	}
 	return out, nil
+}
+
+// ClearHistory removes all recorded sync runs for a connection, so a user can
+// wipe the audit trail from the Bank sync page.
+func (s *Service) ClearHistory(ctx context.Context, walletID, connID int64) error {
+	if _, err := s.conn(ctx, walletID, connID); err != nil {
+		return err
+	}
+	return s.q.DeleteBankSyncRuns(ctx, connID)
 }
 
 // syncOnce fetches each linked account's transactions and imports the new ones

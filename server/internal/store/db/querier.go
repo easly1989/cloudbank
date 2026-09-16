@@ -46,6 +46,7 @@ type Querier interface {
 	DeleteAttachment(ctx context.Context, id int64) error
 	DeleteBankConnection(ctx context.Context, arg DeleteBankConnectionParams) (int64, error)
 	DeleteBankLink(ctx context.Context, arg DeleteBankLinkParams) error
+	DeleteBankSyncRuns(ctx context.Context, connectionID int64) error
 	DeleteCategory(ctx context.Context, id int64) error
 	DeleteCategoryBudget(ctx context.Context, arg DeleteCategoryBudgetParams) error
 	DeleteContribution(ctx context.Context, id int64) error
