@@ -1057,12 +1057,30 @@
     "title": "Settings",
     "general": "General",
     "wallet": "Wallet",
+    "navigation": "Navigation",
     "apiTokens": "API tokens",
     "manage": "Manage data",
     "section": "Section",
     "sectionGeneral": "General",
     "sectionImport": "Import & export",
-    "sectionBackup": "Backup & integrity"
+    "sectionBackup": "Backup & integrity",
+    "nav": {
+      "hint": "Customize the sidebar: drag to reorder groups and items, drag an item to another group, show or hide entries, rename or add groups, and insert separators.",
+      "locked": "The dashboard is always pinned on top, and the Settings group (Settings and Users) can't be moved or changed.",
+      "addGroup": "New group",
+      "reset": "Reset",
+      "resetConfirm": "Reset the navigation menu to its default groups and order?",
+      "newGroupName": "New group",
+      "groupName": "Group name",
+      "drag": "Drag to reorder",
+      "show": "Show",
+      "hide": "Hide",
+      "deleteGroup": "Delete group",
+      "deleteBlocked": "Move or hide its items first",
+      "emptyGroup": "Empty — drag items here",
+      "addSeparator": "Add separator",
+      "separator": "Separator"
+    }
   },
   "apiTokens": {
     "title": "Personal API tokens",

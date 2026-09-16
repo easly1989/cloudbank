@@ -1057,12 +1057,30 @@
     "title": "Impostazioni",
     "general": "Generali",
     "wallet": "Portafoglio",
+    "navigation": "Navigazione",
     "apiTokens": "Token API",
     "manage": "Gestisci dati",
     "section": "Sezione",
     "sectionGeneral": "Generali",
     "sectionImport": "Importa ed esporta",
-    "sectionBackup": "Backup e integrità"
+    "sectionBackup": "Backup e integrità",
+    "nav": {
+      "hint": "Personalizza il menu laterale: trascina per riordinare gruppi e voci, trascina una voce in un altro gruppo, mostra o nascondi le voci, rinomina o aggiungi gruppi e inserisci separatori.",
+      "locked": "La Dashboard è sempre in cima e il gruppo Impostazioni (Impostazioni e Utenti) non può essere spostato o modificato.",
+      "addGroup": "Nuovo gruppo",
+      "reset": "Ripristina",
+      "resetConfirm": "Ripristinare il menu di navigazione ai gruppi e all'ordine predefiniti?",
+      "newGroupName": "Nuovo gruppo",
+      "groupName": "Nome gruppo",
+      "drag": "Trascina per riordinare",
+      "show": "Mostra",
+      "hide": "Nascondi",
+      "deleteGroup": "Elimina gruppo",
+      "deleteBlocked": "Prima sposta o nascondi le sue voci",
+      "emptyGroup": "Vuoto — trascina qui le voci",
+      "addSeparator": "Aggiungi separatore",
+      "separator": "Separatore"
+    }
   },
   "apiTokens": {
     "title": "Token API personali",
