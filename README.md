@@ -165,7 +165,6 @@ latest version on the next launch after you deploy a new image.
 - **Automatic bank sync** (SimpleFIN & Enable Banking): [docs/bank-sync.md](docs/bank-sync.md).
 - **Writing a bank import plugin**: [docs/import-plugins.md](docs/import-plugins.md).
 - **Contributing / running from source**: [CONTRIBUTING.md](CONTRIBUTING.md).
-- **Landing site** (source): [`site/`](site/) — built with Astro and published to GitHub Pages.
 
 ### Configuration
 
@@ -217,7 +216,7 @@ CloudBank is licensed under the **GNU Affero General Public License v3.0** — s
 
 CloudBank is an open-source labour of love. If it's useful to you, consider a
 donation — it genuinely helps and is much appreciated. ♥ Pick whichever suits
-you on the [**donation page**](https://easly1989.github.io/cloudbank/donate/):
+you on the [**donation page**](https://easly1989.github.io/donate.html):
 [PayPal](https://paypal.me/carloruggiero),
 [Liberapay](https://liberapay.com/amon2126/donate) or
 [GitHub Sponsors](https://github.com/sponsors/easly1989).
