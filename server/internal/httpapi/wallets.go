@@ -11,6 +11,7 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/ai"
+	"github.com/easly1989/cloudbank/server/internal/assetvaluation"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
 	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/backup"
@@ -42,6 +43,7 @@ type walletHandlers struct {
 	svc          *wallet.Service
 	currencies   *currency.Service
 	accounts     *account.Service
+	assetVals    *assetvaluation.Service
 	categories   *category.Service
 	payees       *payee.Service
 	transactions *transaction.Service
@@ -97,6 +99,9 @@ func (h *walletHandlers) routes(r chi.Router) {
 		}
 		if h.accounts != nil {
 			(&accountHandlers{svc: h.accounts}).walletRoutes(r)
+		}
+		if h.assetVals != nil {
+			(&assetValuationHandlers{svc: h.assetVals}).walletRoutes(r)
 		}
 		if h.categories != nil {
 			(&categoryHandlers{svc: h.categories}).walletRoutes(r)

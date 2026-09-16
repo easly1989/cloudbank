@@ -96,6 +96,15 @@ type Account struct {
 	GroupName      string `json:"groupName"`
 	Notes          string `json:"notes"`
 	Website        string `json:"website"`
+	// Valuations are the account's recorded asset valuations (asset accounts only).
+	Valuations []Valuation `json:"valuations,omitempty"`
+}
+
+// Valuation is one dated asset-account valuation.
+type Valuation struct {
+	Date  string `json:"date"`
+	Value int64  `json:"value"`
+	Note  string `json:"note"`
 }
 
 // Payee is a backed-up payee.
@@ -286,13 +295,21 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 		return nil, err
 	}
 	for _, a := range accts {
-		doc.Accounts = append(doc.Accounts, Account{
+		ad := Account{
 			ID: a.ID, Name: a.Name, Type: a.Type, CurrencyID: a.CurrencyID,
 			Institution: a.Institution, Number: a.Number, InitialBalance: a.InitialBalance,
 			MinimumBalance: a.MinimumBalance, Closed: a.Closed != 0, NoSummary: a.NoSummary != 0,
 			NoBudget: a.NoBudget != 0, NoReport: a.NoReport != 0, Position: a.Position,
 			GroupName: a.GroupName, Notes: a.Notes, Website: a.Website,
-		})
+		}
+		vals, err := q.ListValuationsForAccount(ctx, a.ID)
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range vals {
+			ad.Valuations = append(ad.Valuations, Valuation{Date: v.Date, Value: v.Value, Note: v.Note})
+		}
+		doc.Accounts = append(doc.Accounts, ad)
 	}
 
 	payees, err := q.ListPayeesForWallet(ctx, walletID)
@@ -540,6 +557,13 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 			return 0, err
 		}
 		accMap[a.ID] = row.ID
+		for _, v := range a.Valuations {
+			if _, err := q.InsertValuation(ctx, db.InsertValuationParams{
+				AccountID: row.ID, Date: v.Date, Value: v.Value, Note: v.Note,
+			}); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	// Categories: parents first so children resolve their parent.

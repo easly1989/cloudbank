@@ -16,10 +16,11 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconPencil, IconTrash } from "@tabler/icons-react";
+import { IconPencil, IconReportMoney, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AssetValuationsModal } from "../components/AssetValuationsModal";
 import { EmptyState } from "../components/EmptyState";
 
 import {
@@ -66,6 +67,7 @@ export function AccountsPage() {
   const [showClosed, setShowClosed] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
   const [modalOpened, modal] = useDisclosure(false);
+  const [valuationsFor, setValuationsFor] = useState<Account | null>(null);
 
   const accountsQuery = useQuery({
     queryKey: ["accounts", walletId],
@@ -156,6 +158,11 @@ export function AccountsPage() {
                       <Text fw={600} c={a.balance < a.minimumBalance ? "red" : undefined}>
                         {formatMinor(a.balance, acctFmt(a))}
                       </Text>
+                      {a.value != null && (
+                        <Text size="xs" c="dimmed">
+                          {t("valuations.recorded")}
+                        </Text>
+                      )}
                       {a.futureBalance !== a.balance && (
                         <Text size="xs" c="dimmed">
                           {t("register.future")}: {formatMinor(a.futureBalance, acctFmt(a))}
@@ -169,6 +176,16 @@ export function AccountsPage() {
                     </Table.Td>
                     <Table.Td ta="right" w={90} {...stopRowEdit}>
                       <Group gap={4} justify="flex-end" wrap="nowrap">
+                        {(a.type === "asset" || a.type === "investment") && (
+                          <ActionIcon
+                            variant="subtle"
+                            aria-label={t("valuations.manage")}
+                            title={t("valuations.manage")}
+                            onClick={() => setValuationsFor(a)}
+                          >
+                            <IconReportMoney size={16} />
+                          </ActionIcon>
+                        )}
                         <ActionIcon
                           variant="subtle"
                           aria-label={t("accounts.edit")}
@@ -206,6 +223,15 @@ export function AccountsPage() {
         account={editing}
         onSaved={invalidate}
       />
+
+      {valuationsFor && (
+        <AssetValuationsModal
+          opened
+          onClose={() => setValuationsFor(null)}
+          walletId={walletId}
+          account={valuationsFor}
+        />
+      )}
     </Stack>
   );
 }

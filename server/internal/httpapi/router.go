@@ -13,6 +13,7 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/ai"
+	"github.com/easly1989/cloudbank/server/internal/assetvaluation"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
 	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
@@ -64,6 +65,9 @@ type Options struct {
 	RateProvider currency.RateProvider
 	// Accounts, if non-nil, mounts the account endpoints (requires Wallets).
 	Accounts *account.Service
+	// AssetValuations, if non-nil, mounts asset-account valuation endpoints
+	// (requires Wallets).
+	AssetValuations *assetvaluation.Service
 	// Categories, if non-nil, mounts the category endpoints (requires Wallets).
 	Categories *category.Service
 	// Payees, if non-nil, mounts the payee endpoints (requires Wallets).
@@ -197,6 +201,7 @@ func New(opts Options) http.Handler {
 				if opts.Wallets != nil {
 					(&walletHandlers{
 						svc: opts.Wallets, currencies: opts.Currencies, accounts: opts.Accounts,
+						assetVals:  opts.AssetValuations,
 						categories: opts.Categories, payees: opts.Payees, transactions: opts.Transactions,
 						tags: opts.Tags, vehicles: opts.Vehicles, goals: opts.Goals,
 						transfers: opts.Transfers, dashboard: opts.Dashboard, bills: opts.Bills, ai: opts.AI, bankSync: opts.BankSync, templates: opts.Templates,
