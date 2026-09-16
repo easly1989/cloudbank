@@ -490,9 +490,15 @@
       "title": "Sync history",
       "empty": "No syncs recorded yet.",
       "summary": "{{imported}} imported · {{reconciled}} reconciled",
-      "account": "{{fetched}} fetched · {{imported}} imported · {{reconciled}} reconciled",
+      "account": "{{imported}} imported · {{reconciled}} reconciled",
+      "clear": "Clear history",
+      "clearConfirm": "Delete all recorded sync runs for this connection?",
       "trigger": { "manual": "Manual", "auto": "Automatic" },
       "status": { "ok": "OK", "partial": "Partial", "error": "Error" }
+    },
+    "section": {
+      "autoSync": "Automatic sync",
+      "accounts": "Accounts"
     }
   },
   "search": {

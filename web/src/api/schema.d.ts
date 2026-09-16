@@ -446,7 +446,8 @@ export interface paths {
         get: operations["listBankConnectionSyncRuns"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete all recorded sync runs for a connection */
+        delete: operations["clearBankConnectionSyncRuns"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4397,6 +4398,28 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["BankSyncRun"][];
                 };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    clearBankConnectionSyncRuns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                connId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description History cleared. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             404: components["responses"]["NotFound"];
         };

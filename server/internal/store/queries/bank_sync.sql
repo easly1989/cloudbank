@@ -49,6 +49,9 @@ WHERE bank_sync_runs.connection_id = ?
     SELECT r.id FROM bank_sync_runs r WHERE r.connection_id = ? ORDER BY r.id DESC LIMIT ?
   );
 
+-- name: DeleteBankSyncRuns :exec
+DELETE FROM bank_sync_runs WHERE connection_id = ?;
+
 -- name: UpsertBankLink :exec
 INSERT INTO bank_links (connection_id, external_id, account_id)
 VALUES (?, ?, ?)
