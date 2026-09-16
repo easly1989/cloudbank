@@ -1,10 +1,22 @@
 import { GridStack, type GridStackWidget } from "gridstack";
 import "gridstack/dist/gridstack.min.css";
 import "./dashboard.css";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 
 import { COLUMNS, type PlacedWidget } from "./layout";
+
+// Imperative handle so the page can size a specific widget (the S/M/L presets)
+// without rebuilding the grid — gridstack's change event then persists the
+// resulting layout, exactly like a manual resize.
+export type GridDashboardHandle = { resizeWidget: (id: string, w: number) => void };
 
 // A small cell height keeps the row-rounding waste tiny: every widget's height
 // is derived from its content (gridstack's resizeToContent, driven by the
@@ -32,19 +44,16 @@ const MOBILE_BREAKPOINT = 700;
  * the mobile single-column reflow we do NOT emit, so a phone edit can't clobber
  * the saved desktop layout.
  */
-export function GridDashboard({
-  items,
-  editing,
-  onChange,
-  render,
-  sizes,
-}: {
-  items: PlacedWidget[];
-  editing: boolean;
-  onChange: (widgets: { id: string; x: number; y: number; w: number; h: number }[]) => void;
-  render: (item: PlacedWidget) => ReactNode;
-  sizes: Record<string, { minW: number; minH: number }>;
-}) {
+export const GridDashboard = forwardRef<
+  GridDashboardHandle,
+  {
+    items: PlacedWidget[];
+    editing: boolean;
+    onChange: (widgets: { id: string; x: number; y: number; w: number; h: number }[]) => void;
+    render: (item: PlacedWidget) => ReactNode;
+    sizes: Record<string, { minW: number; minH: number }>;
+  }
+>(function GridDashboard({ items, editing, onChange, render, sizes }, ref) {
   const elRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<GridStack | null>(null);
   const [hosts, setHosts] = useState<Map<string, HTMLElement>>(new Map());
@@ -58,6 +67,15 @@ export function GridDashboard({
   sizesRef.current = sizes;
   // True while we mutate the grid programmatically, to ignore the resulting events.
   const syncing = useRef(false);
+
+  useImperativeHandle(ref, () => ({
+    resizeWidget(id, w) {
+      const grid = gridRef.current;
+      if (!grid) return;
+      const el = grid.getGridItems().find((e) => e.gridstackNode?.id === id);
+      if (el) grid.update(el, { w }); // fires "change" → onChange persists the reflow
+    },
+  }));
 
   // The signature of the placed-widget id set: rebuild only when it changes.
   const idSig = items
@@ -182,4 +200,4 @@ export function GridDashboard({
       })}
     </div>
   );
-}
+});
