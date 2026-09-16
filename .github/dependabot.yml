@@ -29,18 +29,6 @@ updates:
       web:
         update-types: ["minor", "patch"]
 
-  # Astro marketing site
-  - package-ecosystem: "npm"
-    directory: "/site"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: "chore(deps)"
-    groups:
-      site:
-        update-types: ["minor", "patch"]
-
   # Container base image
   - package-ecosystem: "docker"
     directory: "/"
