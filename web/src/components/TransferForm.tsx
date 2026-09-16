@@ -18,6 +18,7 @@ import {
 import { minorToInput } from "../money";
 import { STATUSES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
+import { todayCivil } from "../civilDate";
 
 export function TransferForm({
   opened,
@@ -78,7 +79,7 @@ export function TransferForm({
     } else {
       setFromId(accounts[0] ? String(accounts[0].id) : null);
       setToId(accounts[1] ? String(accounts[1].id) : null);
-      setDate(new Date().toISOString().slice(0, 10));
+      setDate(todayCivil());
       setFromAmount("");
       setToAmount("");
       setMemo("");
