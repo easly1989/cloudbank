@@ -1,8 +1,9 @@
 import { Stack, Tabs, Title } from "@mantine/core";
-import { IconKey, IconSettings, IconWallet } from "@tabler/icons-react";
+import { IconKey, IconMenu2, IconSettings, IconWallet } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
+import { NavLayoutEditor } from "../components/NavLayoutEditor";
 import { useWallet } from "../wallet/WalletProvider";
 import { ApiTokensPage } from "./ApiTokensPage";
 import { PreferencesPage } from "./PreferencesPage";
@@ -16,7 +17,7 @@ export function SettingsPage() {
   const { currentWallet } = useWallet();
   const [params, setParams] = useSearchParams();
   const raw = params.get("tab");
-  const tab = raw === "wallet" || raw === "tokens" ? raw : "general";
+  const tab = raw === "wallet" || raw === "tokens" || raw === "nav" ? raw : "general";
 
   return (
     <Stack>
@@ -32,6 +33,9 @@ export function SettingsPage() {
           <Tabs.Tab value="wallet" leftSection={<IconWallet size={16} />}>
             {currentWallet?.title ?? t("settings.wallet")}
           </Tabs.Tab>
+          <Tabs.Tab value="nav" leftSection={<IconMenu2 size={16} />}>
+            {t("settings.navigation")}
+          </Tabs.Tab>
           <Tabs.Tab value="tokens" leftSection={<IconKey size={16} />}>
             {t("settings.apiTokens")}
           </Tabs.Tab>
@@ -41,6 +45,9 @@ export function SettingsPage() {
         </Tabs.Panel>
         <Tabs.Panel value="wallet">
           <WalletSettingsPage />
+        </Tabs.Panel>
+        <Tabs.Panel value="nav">
+          <NavLayoutEditor />
         </Tabs.Panel>
         <Tabs.Panel value="tokens">
           <ApiTokensPage />

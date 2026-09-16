@@ -14,10 +14,29 @@ export interface Preferences {
   sidebarCollapsed?: boolean;
   /** Accent (Mantine primary) colour name, e.g. "teal", "blue". */
   themeAccent?: string;
-  /** Sidebar nav order, by route id (e.g. "/accounts"). */
+  /** Sidebar nav order, by route id (e.g. "/accounts"). Legacy, superseded by navLayout. */
   navOrder?: string[];
-  /** Pinned sidebar nav route ids; unpinned items fall into the "More" group. */
+  /** Pinned sidebar nav route ids. Legacy, superseded by navLayout. */
   navPinned?: string[];
+  /**
+   * Customizable sidebar navigation layout: ordered groups of items and
+   * separators, with hidden flags and user-created groups. Normalized on load
+   * (see components/navLayout.ts); the dashboard is pinned and the Settings
+   * group is locked.
+   */
+  navLayout?: {
+    version: number;
+    groups: {
+      id: string;
+      labelKey?: string;
+      label?: string;
+      hidden?: boolean;
+      locked?: boolean;
+      entries: (
+        { kind: "item"; to: string; hidden?: boolean } | { kind: "separator"; id: string }
+      )[];
+    }[];
+  };
   /**
    * Dashboard widget layout. Legacy shape ({ order, hidden, spans }) is migrated
    * on load into the free-form 2D model ({ version: 2, widgets: [...] }); see
