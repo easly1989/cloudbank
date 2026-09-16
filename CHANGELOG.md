@@ -80,6 +80,14 @@ dashboard polish.
   over PSD2 — pending charges are unavailable until they book — so the missing
   rows are a bank limitation, not a sync bug. See [docs/bank-sync.md](docs/bank-sync.md).
 
+### Removed
+
+- **The dedicated marketing site.** The Astro one-pager under `site/` and its
+  GitHub Pages workflow are gone; CloudBank is presented from
+  [easly1989.github.io](https://easly1989.github.io) instead. Nothing in the app
+  (server or web) depended on it, so this changes no behaviour — only the
+  donation links now point at the consolidated donation page.
+
 ### Security
 
 - **Bounded dashboard income/expense window.** The `ieMonths` query parameter was

@@ -4,7 +4,7 @@ A tiny, self-contained splash page for the **root** GitHub Pages domain
 `https://easly1989.github.io`, whose only jobs are:
 
 1. give that root URL real content (AdSense won't approve a 404), and
-2. send visitors to the app at `https://easly1989.github.io/cloudbank/`.
+2. send visitors to the project at `https://github.com/easly1989/cloudbank`.
 
 It's plain HTML/CSS/JS — **no build step**. Ads are **off by default** and load
 only when you fill in your AdSense id (see below), so the page makes zero
@@ -41,5 +41,5 @@ Also put your publisher id in **`ads.txt`** (`pub-XXXXXXXXXXXXXXXX`), then redep
   then submit the site for review. Create the ad unit and paste `ADSENSE_SLOT`
   once you're approved.
 
-The same `Ad` approach is mirrored on the CloudBank site (see issue #258) so both
-origins share one on/off switch pattern.
+The CloudBank repo no longer carries its own Astro site (removed in #404), so this
+page is the project's only Pages surface.

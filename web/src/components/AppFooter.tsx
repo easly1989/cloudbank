@@ -9,7 +9,7 @@ import { getVersion } from "../api/client";
 // donation link and a credit to HomeBank (the desktop app CloudBank ports).
 const SOURCE_URL = "https://github.com/easly1989/cloudbank";
 // The donation page lists every method (PayPal / Liberapay / GitHub Sponsors / …).
-const DONATE_URL = "https://easly1989.github.io/cloudbank/donate/";
+const DONATE_URL = "https://easly1989.github.io/donate.html";
 const HOMEBANK_URL = "http://homebank.free.fr";
 
 export function AppFooter() {
