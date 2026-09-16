@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 
 import classes from "./DonateButton.module.css";
 
-// Public donation page (the site's Donate page listing every method).
-const DONATE_URL = "https://easly1989.github.io/cloudbank/donate/";
+// Public donation page (lists every method).
+const DONATE_URL = "https://easly1989.github.io/donate.html";
 
 // A distinctive, animated donate pill for the app header — links out to the
 // project's donation page (PayPal / Liberapay / GitHub Sponsors / …).
