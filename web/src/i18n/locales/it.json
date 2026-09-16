@@ -644,6 +644,21 @@
     "language": "Lingua",
     "toggleTheme": "Cambia tema"
   },
+  "valuations": {
+    "title": "Valutazioni — {{name}}",
+    "hint": "Registra il valore di questo asset nel tempo. L'ultima valutazione viene usata per il patrimonio netto.",
+    "manage": "Gestisci valutazioni",
+    "recorded": "valore registrato",
+    "date": "Data",
+    "value": "Valore",
+    "note": "Nota",
+    "add": "Aggiungi",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "empty": "Nessuna valutazione registrata.",
+    "editRow": "Modifica valutazione",
+    "deleteRow": "Elimina valutazione"
+  },
   "login": {
     "title": "Accedi a CloudBank",
     "username": "Nome utente",

@@ -43,6 +43,10 @@ type AccountSummary struct {
 	Future     int64        `json:"future"`
 	Currency   CurrencyInfo `json:"currency"`
 	CurrencyID int64        `json:"currencyId"`
+	// Value is the account's latest recorded valuation (asset accounts only). When
+	// present it replaces the transaction balance for net-worth purposes, so
+	// Bank/Today/Future all equal it; nil for ordinary transaction accounts.
+	Value *int64 `json:"value,omitempty"`
 }
 
 // Totals are wallet-wide balances converted to the base currency (excludes
@@ -132,6 +136,17 @@ func (s *Service) Build(ctx context.Context, walletID int64, from, to, groupBy s
 		}
 	}
 
+	// Latest recorded valuation per asset account (overrides its transaction
+	// balance for net worth). Only asset/investment accounts can hold valuations.
+	valRows, err := s.q.LatestValuationsForWallet(ctx, walletID)
+	if err != nil {
+		return Data{}, err
+	}
+	valuations := make(map[int64]int64, len(valRows))
+	for _, v := range valRows {
+		valuations[v.AccountID] = v.Value
+	}
+
 	out := Data{From: from, To: to, Upcoming: []any{}, TopCategories: []CategorySlice{}, IncomeExpense: []MonthPoint{}}
 	var totals Totals
 	for _, a := range accounts {
@@ -146,6 +161,12 @@ func (s *Service) Build(ctx context.Context, walletID int64, from, to, groupBy s
 				Code: a.CurrencyCode, Symbol: a.CurrencySymbol, SymbolPrefix: a.CurrencySymbolPrefix != 0,
 				DecimalChar: a.CurrencyDecimalChar, GroupChar: a.CurrencyGroupChar, FracDigits: int(a.CurrencyFracDigits),
 			},
+		}
+		// An asset account with a recorded valuation reports that value as its
+		// balance everywhere (net worth uses the valuation, not its transactions).
+		if v, ok := valuations[a.ID]; ok && (a.Type == "asset" || a.Type == "investment") {
+			val := v
+			sum.Bank, sum.Today, sum.Future, sum.Value = val, val, val, &val
 		}
 		out.Accounts = append(out.Accounts, sum)
 		if base != nil && !sum.Closed && !sum.NoSummary {
