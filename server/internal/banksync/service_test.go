@@ -281,6 +281,44 @@ func TestSyncHistory(t *testing.T) {
 	}
 }
 
+func TestClearHistory(t *testing.T) {
+	svc, q, _, wid, acc := newFixture(t)
+	ctx := context.Background()
+	setupToken := base64.StdEncoding.EncodeToString([]byte("https://example.test/claim/x"))
+	conn, _, err := svc.Connect(ctx, wid, setupToken, "Bank")
+	if err != nil {
+		t.Fatalf("Connect: %v", err)
+	}
+	if err := svc.Link(ctx, wid, conn.ID, "ACT-1", acc); err != nil {
+		t.Fatalf("Link: %v", err)
+	}
+	for i := 0; i < 2; i++ {
+		if _, err := svc.Sync(ctx, wid, conn.ID); err != nil {
+			t.Fatalf("Sync %d: %v", i, err)
+		}
+	}
+	if runs, _ := svc.History(ctx, wid, conn.ID); len(runs) != 2 {
+		t.Fatalf("history before clear = %d, want 2", len(runs))
+	}
+
+	// Cross-wallet clear is rejected and leaves the history intact.
+	other, _ := q.CreateWallet(ctx, db.CreateWalletParams{Title: "Other"})
+	if err := svc.ClearHistory(ctx, other.ID, conn.ID); err != ErrNotFound {
+		t.Fatalf("cross-wallet ClearHistory err = %v, want ErrNotFound", err)
+	}
+	if runs, _ := svc.History(ctx, wid, conn.ID); len(runs) != 2 {
+		t.Fatalf("history after rejected clear = %d, want 2", len(runs))
+	}
+
+	// Clearing empties the connection's history.
+	if err := svc.ClearHistory(ctx, wid, conn.ID); err != nil {
+		t.Fatalf("ClearHistory: %v", err)
+	}
+	if runs, _ := svc.History(ctx, wid, conn.ID); len(runs) != 0 {
+		t.Fatalf("history after clear = %d, want 0", len(runs))
+	}
+}
+
 func TestConnectionWalletIsolation(t *testing.T) {
 	svc, q, _, wid, _ := newFixture(t)
 	ctx := context.Background()

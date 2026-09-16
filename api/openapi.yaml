@@ -372,6 +372,12 @@ paths:
       responses:
         "200": { description: The recent sync runs., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/BankSyncRun" } } } } }
         "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: clearBankConnectionSyncRuns
+      summary: Delete all recorded sync runs for a connection
+      responses:
+        "204": { description: History cleared. }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/bank/connections/{connId}/auto-sync:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }

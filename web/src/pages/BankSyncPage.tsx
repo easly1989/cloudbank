@@ -8,6 +8,7 @@ import {
   Chip,
   Code,
   CopyButton,
+  Divider,
   Group,
   Loader,
   Modal,
@@ -18,6 +19,7 @@ import {
   Text,
   Textarea,
   TextInput,
+  ThemeIcon,
   Title,
   Tooltip,
 } from "@mantine/core";
@@ -41,6 +43,7 @@ import { useTranslation } from "react-i18next";
 import {
   ApiError,
   type BankConnection,
+  clearBankConnectionSyncRuns,
   connectBank,
   deleteEnableBankingConfig,
   getEnableBankingConfig,
@@ -144,6 +147,13 @@ function syncStatusColor(status: string): string {
   if (status === "error") return "red";
   if (status === "partial") return "orange";
   return "teal";
+}
+
+// A human label for the provider id shown in the connection header badge.
+function providerLabel(provider: string): string {
+  if (provider === "simplefin") return "SimpleFIN";
+  if (provider === "enablebanking") return "Enable Banking";
+  return provider;
 }
 
 function ConnectionCard({
@@ -264,6 +274,12 @@ function ConnectionCard({
       void qc.invalidateQueries({ queryKey: ["bankRemote", walletId, connection.id] }),
     onError,
   });
+  const clearHistory = useMutation({
+    mutationFn: () => clearBankConnectionSyncRuns(walletId, connection.id),
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: ["bankHistory", walletId, connection.id] }),
+    onError,
+  });
 
   const accountOptions = (accountsQuery.data ?? []).map((a) => ({
     value: String(a.id),
@@ -272,44 +288,60 @@ function ConnectionCard({
 
   return (
     <Card withBorder>
-      <Group justify="space-between" align="flex-start" mb="sm">
-        <Group gap="xs">
-          <IconBuildingBank size={18} />
-          <div>
-            <Text fw={600}>{connection.name || t("banksync.unnamed")}</Text>
+      <Group justify="space-between" align="flex-start">
+        <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+          <ThemeIcon variant="light" color="gray" size={38} radius="md">
+            <IconBuildingBank size={20} />
+          </ThemeIcon>
+          <div style={{ minWidth: 0 }}>
+            <Group gap={6} wrap="nowrap">
+              <Text fw={600} truncate>
+                {connection.name || t("banksync.unnamed")}
+              </Text>
+              <Badge size="xs" variant="light" color="gray">
+                {providerLabel(connection.provider)}
+              </Badge>
+            </Group>
             <Text size="xs" c="dimmed">
-              {connection.provider} ·{" "}
               {connection.lastSyncedAt
                 ? t("banksync.lastSynced", { date: fmtDate(connection.lastSyncedAt) })
                 : t("banksync.neverSynced")}
             </Text>
-            {connection.lastSyncAt && (
-              <Text
-                size="xs"
-                c={
-                  connection.lastSyncStatus === "error"
-                    ? "red"
-                    : connection.lastSyncStatus === "partial"
-                      ? "orange"
-                      : "dimmed"
-                }
-              >
-                {t("banksync.lastSync", {
-                  when: `${fmtDate(connection.lastSyncAt)} ${new Date(
-                    connection.lastSyncAt,
-                  ).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
-                })}
-                {connection.lastSyncMessage ? ` — ${connection.lastSyncMessage}` : ""}
-              </Text>
-            )}
-            {consent && (
-              <Text size="xs" c={consent.color} fw={consent.urgent ? 600 : 400}>
-                {consent.text}
-              </Text>
+            {(connection.lastSyncAt || consent) && (
+              <Group gap={6} mt={4} wrap="wrap">
+                {connection.lastSyncAt && (
+                  <Tooltip
+                    withArrow
+                    multiline
+                    label={`${fmtDate(connection.lastSyncAt)} ${new Date(
+                      connection.lastSyncAt,
+                    ).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${
+                      connection.lastSyncMessage ? ` — ${connection.lastSyncMessage}` : ""
+                    }`}
+                  >
+                    <Badge
+                      size="xs"
+                      variant="light"
+                      color={syncStatusColor(connection.lastSyncStatus ?? "ok")}
+                    >
+                      {t(`banksync.history.status.${connection.lastSyncStatus ?? "ok"}`)}
+                    </Badge>
+                  </Tooltip>
+                )}
+                {consent && (
+                  <Badge
+                    size="xs"
+                    variant="light"
+                    color={consent.color === "dimmed" ? "gray" : consent.color}
+                  >
+                    {consent.text}
+                  </Badge>
+                )}
+              </Group>
             )}
           </div>
         </Group>
-        <Group gap="xs">
+        <Group gap="xs" wrap="nowrap">
           {connection.provider === "enablebanking" && (
             <Button
               variant={consent?.urgent ? "filled" : "light"}
@@ -346,7 +378,9 @@ function ConnectionCard({
         </Group>
       </Group>
 
-      <Stack gap="xs" mb="sm">
+      <Divider my="md" label={t("banksync.section.autoSync")} labelPosition="left" />
+
+      <Stack gap="xs">
         <Switch
           size="sm"
           checked={autoSyncOn}
@@ -398,13 +432,12 @@ function ConnectionCard({
         )}
       </Stack>
 
+      <Divider my="md" label={t("banksync.section.accounts")} labelPosition="left" />
+
       {remote.isError ? (
         <Alert color="red">{t("banksync.remoteError")}</Alert>
       ) : (
         <Stack gap="xs">
-          <Text size="sm" fw={500}>
-            {t("banksync.accounts")}
-          </Text>
           {(remote.data ?? []).length === 0 ? (
             <Stack gap={6}>
               <Text c="dimmed" size="sm">
@@ -475,6 +508,20 @@ function ConnectionCard({
               </Text>
             ) : (
               <Stack gap="xs">
+                <Group justify="flex-end">
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    color="red"
+                    leftSection={<IconTrash size={14} />}
+                    loading={clearHistory.isPending}
+                    onClick={() => {
+                      if (window.confirm(t("banksync.history.clearConfirm"))) clearHistory.mutate();
+                    }}
+                  >
+                    {t("banksync.history.clear")}
+                  </Button>
+                </Group>
                 {(history.data ?? []).map((run) => (
                   <Card key={run.id} withBorder padding="xs" radius="sm">
                     <Group justify="space-between" wrap="nowrap" gap="xs">
@@ -514,7 +561,6 @@ function ConnectionCard({
                           </Text>
                         ) : (
                           t("banksync.history.account", {
-                            fetched: a.fetched,
                             imported: a.imported,
                             reconciled: a.reconciled,
                           })
