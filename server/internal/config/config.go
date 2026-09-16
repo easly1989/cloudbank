@@ -38,6 +38,29 @@ type Config struct {
 	// so this only bounds how promptly a due connection is picked up. Zero disables
 	// background bank sync entirely (manual "Sync now" still works).
 	BankSyncInterval time.Duration
+
+	// OIDC/SSO login. When Issuer, ClientID, ClientSecret and RedirectURL are all
+	// set (see OIDCEnabled), a "Sign in with <OIDCName>" button is offered on the
+	// login page alongside the local username/password form.
+	OIDCIssuer       string
+	OIDCClientID     string
+	OIDCClientSecret string
+	// OIDCRedirectURL is the absolute callback URL registered with the provider,
+	// e.g. https://cloudbank.example.com/api/v1/auth/oidc/callback.
+	OIDCRedirectURL string
+	// OIDCScopes is the space-separated scope list (must include "openid").
+	OIDCScopes string
+	// OIDCName is the provider label shown on the sign-in button.
+	OIDCName string
+	// OIDCAutoProvision, when true, creates a local (non-admin) account on first
+	// SSO login for an unknown identity; otherwise the account must pre-exist
+	// (matched by verified email) or login is refused.
+	OIDCAutoProvision bool
+}
+
+// OIDCEnabled reports whether OIDC/SSO login is fully configured.
+func (c Config) OIDCEnabled() bool {
+	return c.OIDCIssuer != "" && c.OIDCClientID != "" && c.OIDCClientSecret != "" && c.OIDCRedirectURL != ""
 }
 
 // Load reads the configuration from the environment, applying defaults.
@@ -51,6 +74,14 @@ func Load() Config {
 		VAPIDSubject:     getenv("CB_VAPID_SUBJECT", "mailto:cloudbank@localhost"),
 		SecretKey:        getenv("CB_SECRET_KEY", ""),
 		BankSyncInterval: getDurationEnv("CB_BANK_SYNC_INTERVAL", time.Hour),
+
+		OIDCIssuer:        getenv("CB_OIDC_ISSUER", ""),
+		OIDCClientID:      getenv("CB_OIDC_CLIENT_ID", ""),
+		OIDCClientSecret:  getenv("CB_OIDC_CLIENT_SECRET", ""),
+		OIDCRedirectURL:   getenv("CB_OIDC_REDIRECT_URL", ""),
+		OIDCScopes:        getenv("CB_OIDC_SCOPES", "openid profile email"),
+		OIDCName:          getenv("CB_OIDC_NAME", "SSO"),
+		OIDCAutoProvision: getBoolEnv("CB_OIDC_AUTO_PROVISION", false),
 	}
 }
 

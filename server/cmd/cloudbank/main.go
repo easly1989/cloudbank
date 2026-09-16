@@ -33,6 +33,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
+	"github.com/easly1989/cloudbank/server/internal/oidc"
 	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/push"
 	"github.com/easly1989/cloudbank/server/internal/report"
@@ -118,6 +119,23 @@ func run() error {
 
 	// Writes (including auth and wallets) go through the single write connection.
 	authSvc := auth.NewService(db.New(st.Write()))
+
+	// OIDC/SSO login is optional; discovery reaches the provider at startup. A
+	// failure disables SSO (local login still works) rather than blocking boot.
+	var oidcSvc *oidc.Service
+	if cfg.OIDCEnabled() {
+		dctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		oidcSvc, err = oidc.New(dctx, cfg.OIDCIssuer, cfg.OIDCClientID, cfg.OIDCClientSecret,
+			cfg.OIDCRedirectURL, cfg.OIDCScopes, cfg.OIDCName)
+		cancel()
+		if err != nil {
+			logger.Error("oidc: disabled (discovery failed)", "issuer", cfg.OIDCIssuer, "error", err)
+			oidcSvc = nil
+		} else {
+			logger.Info("oidc: enabled", "issuer", cfg.OIDCIssuer, "provider", cfg.OIDCName,
+				"auto_provision", cfg.OIDCAutoProvision)
+		}
+	}
 	walletSvc := wallet.NewService(st.Write())
 	currencySvc := currency.NewServiceWithRead(st.Read(), st.Write())
 	accountSvc := account.NewServiceWithRead(st.Read(), st.Write())
@@ -163,39 +181,41 @@ func run() error {
 	}
 
 	handler := httpapi.New(httpapi.Options{
-		Logger:        logger,
-		Health:        st,
-		Auth:          authSvc,
-		Wallets:       walletSvc,
-		Currencies:    currencySvc,
-		Accounts:      accountSvc,
-		Categories:    categorySvc,
-		Payees:        payeeSvc,
-		Transactions:  transactionSvc,
-		Tags:          tagSvc,
-		Vehicles:      vehicleSvc,
-		Goals:         goalSvc,
-		Transfers:     transferSvc,
-		Dashboard:     dashboardSvc,
-		Bills:         billsSvc,
-		Push:          pushSvc,
-		AI:            aiSvc,
-		BankSync:      bankSyncSvc,
-		Templates:     templateSvc,
-		Schedules:     scheduleSvc,
-		Assignments:   assignmentSvc,
-		Budgets:       budgetSvc,
-		Reports:       reportSvc,
-		Import:        importSvc,
-		CSV:           csvSvc,
-		RateProvider:  rateProvider,
-		Integrity:     integritySvc,
-		Backup:        backupSvc,
-		Attachments:   attachmentSvc,
-		HotBackup:     st,
-		DataDir:       cfg.DataDir,
-		Version:       version,
-		SecureCookies: cfg.SecureCookies,
+		Logger:            logger,
+		Health:            st,
+		Auth:              authSvc,
+		Wallets:           walletSvc,
+		Currencies:        currencySvc,
+		Accounts:          accountSvc,
+		Categories:        categorySvc,
+		Payees:            payeeSvc,
+		Transactions:      transactionSvc,
+		Tags:              tagSvc,
+		Vehicles:          vehicleSvc,
+		Goals:             goalSvc,
+		Transfers:         transferSvc,
+		Dashboard:         dashboardSvc,
+		Bills:             billsSvc,
+		Push:              pushSvc,
+		AI:                aiSvc,
+		BankSync:          bankSyncSvc,
+		Templates:         templateSvc,
+		Schedules:         scheduleSvc,
+		Assignments:       assignmentSvc,
+		Budgets:           budgetSvc,
+		Reports:           reportSvc,
+		Import:            importSvc,
+		CSV:               csvSvc,
+		RateProvider:      rateProvider,
+		Integrity:         integritySvc,
+		Backup:            backupSvc,
+		Attachments:       attachmentSvc,
+		HotBackup:         st,
+		DataDir:           cfg.DataDir,
+		Version:           version,
+		SecureCookies:     cfg.SecureCookies,
+		OIDC:              oidcSvc,
+		OIDCAutoProvision: cfg.OIDCAutoProvision,
 	})
 
 	srv := &http.Server{

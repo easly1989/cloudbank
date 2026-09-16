@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/secrets"
@@ -303,6 +305,136 @@ func (s *Service) createUser(ctx context.Context, username, email, password stri
 		Locale:       "en",
 		Theme:        "auto",
 	})
+}
+
+// IssueSession creates a new session for the given user (the same path local
+// login uses) and returns its token. The OIDC callback calls this after mapping
+// a verified external identity to a local user.
+func (s *Service) IssueSession(ctx context.Context, userID int64, userAgent string) (string, error) {
+	return s.openSession(ctx, userID, userAgent)
+}
+
+// OIDCClaims is the subset of a verified OIDC ID token the identity mapping needs.
+type OIDCClaims struct {
+	Issuer        string
+	Subject       string
+	Email         string
+	EmailVerified bool
+	Name          string
+}
+
+// UpsertOIDCUser resolves a verified OIDC identity to a local user:
+//  1. an existing (issuer, subject) link → that user;
+//  2. else, when the email is verified and matches exactly one local account,
+//     link that account and use it;
+//  3. else, only when autoProvision is set, create a new non-admin account with a
+//     random (unusable) local password.
+//
+// A disabled account, or an ambiguous email (more than one match), is refused
+// with ErrUnauthorized rather than guessed.
+func (s *Service) UpsertOIDCUser(ctx context.Context, c OIDCClaims, autoProvision bool) (User, error) {
+	if c.Issuer == "" || c.Subject == "" {
+		return User{}, ErrUnauthorized
+	}
+	// 1. Existing identity link.
+	uid, err := s.q.GetUserIDByOIDCIdentity(ctx, db.GetUserIDByOIDCIdentityParams{Issuer: c.Issuer, Subject: c.Subject})
+	switch {
+	case err == nil:
+		return s.enabledUser(ctx, uid)
+	case !errors.Is(err, sql.ErrNoRows):
+		return User{}, err
+	}
+	// 2. Link an existing local account by verified email (only when unambiguous).
+	if c.Email != "" && c.EmailVerified {
+		n, err := s.q.CountUsersByEmail(ctx, c.Email)
+		if err != nil {
+			return User{}, err
+		}
+		if n > 1 {
+			return User{}, ErrUnauthorized
+		}
+		if n == 1 {
+			u, err := s.q.GetUserByEmail(ctx, c.Email)
+			if err != nil {
+				return User{}, err
+			}
+			if u.Disabled != 0 {
+				return User{}, ErrUnauthorized
+			}
+			if err := s.q.LinkOIDCIdentity(ctx, db.LinkOIDCIdentityParams{UserID: u.ID, Issuer: c.Issuer, Subject: c.Subject}); err != nil {
+				return User{}, err
+			}
+			return toUser(u), nil
+		}
+	}
+	// 3. Auto-provision a new account, if enabled.
+	if !autoProvision {
+		return User{}, ErrUnauthorized
+	}
+	username, err := s.uniqueUsername(ctx, c)
+	if err != nil {
+		return User{}, err
+	}
+	randomPw, _, err := newToken()
+	if err != nil {
+		return User{}, err
+	}
+	u, err := s.createUser(ctx, username, c.Email, randomPw, false)
+	if err != nil {
+		return User{}, err
+	}
+	if err := s.q.LinkOIDCIdentity(ctx, db.LinkOIDCIdentityParams{UserID: u.ID, Issuer: c.Issuer, Subject: c.Subject}); err != nil {
+		return User{}, err
+	}
+	return toUser(u), nil
+}
+
+func (s *Service) enabledUser(ctx context.Context, id int64) (User, error) {
+	u, err := s.q.GetUserByID(ctx, id)
+	if err != nil {
+		return User{}, err
+	}
+	if u.Disabled != 0 {
+		return User{}, ErrUnauthorized
+	}
+	return toUser(u), nil
+}
+
+// uniqueUsername derives a unique local username for an auto-provisioned SSO
+// account from its email local-part (or a generic base), appending a numeric
+// suffix on collision.
+func (s *Service) uniqueUsername(ctx context.Context, c OIDCClaims) (string, error) {
+	base := oidcUsernameBase(c)
+	name := base
+	for n := 2; ; n++ {
+		_, err := s.q.GetUserByUsername(ctx, name)
+		if errors.Is(err, sql.ErrNoRows) {
+			return name, nil
+		}
+		if err != nil {
+			return "", err
+		}
+		name = fmt.Sprintf("%s%d", base, n)
+	}
+}
+
+// oidcUsernameBase sanitizes the email local-part to a username base, falling
+// back to a generic "sso-user" when nothing usable remains.
+func oidcUsernameBase(c OIDCClaims) string {
+	src := c.Email
+	if i := strings.IndexByte(src, '@'); i > 0 {
+		src = src[:i]
+	}
+	var b strings.Builder
+	for _, r := range strings.ToLower(src) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '.' || r == '_' || r == '-' {
+			b.WriteRune(r)
+		}
+	}
+	if b.Len() == 0 {
+		return "sso-user"
+	}
+	return b.String()
 }
 
 // API-token scopes.

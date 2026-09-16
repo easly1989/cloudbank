@@ -66,6 +66,27 @@ paths:
                   needsSetup:
                     type: boolean
                 required: [needsSetup]
+  /api/v1/auth/config:
+    get:
+      operationId: getAuthConfig
+      summary: Public auth configuration (available login methods)
+      description: Tells the login page whether OIDC/SSO login is enabled and its button label.
+      security: []
+      responses:
+        "200":
+          description: Auth configuration.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  oidc:
+                    type: object
+                    properties:
+                      enabled: { type: boolean }
+                      name: { type: string }
+                    required: [enabled, name]
+                required: [oidc]
   /api/v1/setup:
     post:
       operationId: postSetup
