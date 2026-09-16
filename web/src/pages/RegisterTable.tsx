@@ -11,13 +11,19 @@ import {
   IconPencil,
   IconTrash,
 } from "@tabler/icons-react";
+import { flexRender } from "@tanstack/react-table";
 import {
-  createColumnHelper,
-  flexRender,
   getCoreRowModel,
-  useReactTable,
-  type VisibilityState,
-} from "@tanstack/react-table";
+  type LegacyColumnDef,
+  legacyCreateColumnHelper as createColumnHelper,
+  useLegacyTable as useReactTable,
+} from "@tanstack/react-table/legacy";
+
+// react-table v9 moved the v8 hook/column-helper API into its "/legacy"
+// compatibility layer (same behavior, so the register keeps working unchanged).
+// VisibilityState was the v8 name for the column-visibility map.
+type VisibilityState = Record<string, boolean>;
+type Column = LegacyColumnDef<RegisterRow>;
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -173,9 +179,11 @@ export function RegisterTable({
   );
   const allSelected = display.length > 0 && display.every((r) => selected.has(r.id));
 
-  const columns = useMemo(() => {
+  const columns = useMemo<Column[]>(() => {
     const col = createColumnHelper<RegisterRow>();
-    return [
+    // Heterogeneous column value types don't widen to the loose ColumnDef the
+    // table expects, so assemble then cast — the standard react-table pattern.
+    const defs = [
       col.accessor("date", {
         header: () => t("transactions.date"),
         cell: ({ getValue }) => {
@@ -283,6 +291,7 @@ export function RegisterTable({
         ),
       }),
     ];
+    return defs as unknown as Column[];
   }, [t, fmt, fmtDate, accountName, onToggleStatus, todayStr]);
 
   const table = useReactTable({
