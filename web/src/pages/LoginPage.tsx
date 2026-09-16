@@ -3,16 +3,19 @@ import {
   Button,
   Card,
   Center,
+  Divider,
   PasswordInput,
   Stack,
   Text,
   TextInput,
   Title,
 } from "@mantine/core";
+import { IconLogin2 } from "@tabler/icons-react";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ApiError, isTotpChallenge } from "../api/client";
+import { ApiError, getAuthConfig, isTotpChallenge } from "../api/client";
 import { useLogin } from "../auth/AuthProvider";
 import { ColorSchemeToggle } from "../components/ColorSchemeToggle";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
@@ -23,6 +26,16 @@ export function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [totpCode, setTotpCode] = useState("");
+
+  // Available login methods (whether OIDC/SSO is configured) and any SSO error
+  // handed back by the callback redirect (?sso_error=...).
+  const authConfig = useQuery({
+    queryKey: ["authConfig"],
+    queryFn: getAuthConfig,
+    staleTime: Infinity,
+  });
+  const sso = authConfig.data?.oidc;
+  const ssoError = new URLSearchParams(window.location.search).get("sso_error");
 
   // After a correct password, a 2FA account gets a totp challenge; the form then
   // asks for the second factor and resubmits with it.
@@ -47,6 +60,7 @@ export function LoginPage() {
         <Stack>
           <Title order={3}>{t("login.title")}</Title>
           {error && <Alert color="red">{error}</Alert>}
+          {ssoError && <Alert color="red">{t("login.ssoFailed")}</Alert>}
           <TextInput
             label={t("login.username")}
             required
@@ -84,6 +98,19 @@ export function LoginPage() {
           >
             {challenged ? t("login.verify") : t("login.submit")}
           </Button>
+          {sso?.enabled && !challenged && (
+            <>
+              <Divider label={t("login.or")} labelPosition="center" />
+              <Button
+                variant="default"
+                component="a"
+                href="/api/v1/auth/oidc/start"
+                leftSection={<IconLogin2 size={16} />}
+              >
+                {t("login.ssoSignIn", { provider: sso.name })}
+              </Button>
+            </>
+          )}
           <Stack gap="xs" align="center">
             <LanguageSwitcher />
             <ColorSchemeToggle />

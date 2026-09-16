@@ -179,6 +179,13 @@ latest version on the next launch after you deploy a new image.
 | `CB_SECRET_KEY`     | _(none)_            | If set, encrypts secrets at rest (bank credentials, AI keys, 2FA & push keys). Use a **strong, high-entropy** value — generate one with `openssl rand -base64 48` rather than a hand-picked passphrase. Keep it **stable** — losing it makes encrypted secrets unrecoverable. |
 | `CB_BANK_SYNC_INTERVAL` | `1h`            | How often the background job checks for connections due to sync. Each connection has its own interval (default daily, configurable per connection), so this only bounds how promptly a due one is picked up. Set `0`/`off` to disable background sync (manual "Sync now" still works). |
 | `CB_BANK_SYNC_DEBUG_PENDING` | _(off)_    | Diagnostics only. When set, each auto-sync makes one extra `transaction_status=PDNG` call per account and logs the provider's exact response, to investigate why an ASPSP returns no pending transactions. Leave off in normal use — the extra call spends the PSD2 daily budget. |
+| `CB_OIDC_ISSUER`    | _(none)_            | OIDC/SSO issuer URL (e.g. `https://auth.example.com/realms/main`). Setting issuer + client id + client secret + redirect URL enables a "Sign in with …" button alongside local login. |
+| `CB_OIDC_CLIENT_ID` | _(none)_            | OIDC client id registered with the provider.                |
+| `CB_OIDC_CLIENT_SECRET` | _(none)_        | OIDC client secret.                                         |
+| `CB_OIDC_REDIRECT_URL` | _(none)_         | Absolute callback URL registered with the provider: `https://<your-host>/api/v1/auth/oidc/callback`. |
+| `CB_OIDC_SCOPES`    | `openid profile email` | Space-separated scopes requested (must include `openid`). |
+| `CB_OIDC_NAME`      | `SSO`               | Label shown on the sign-in button ("Sign in with _\<name\>_"). |
+| `CB_OIDC_AUTO_PROVISION` | `false`        | When `true`, first SSO login for an unknown identity creates a local (non-admin) account; otherwise the account must already exist (matched by verified email) or login is refused. |
 
 ## Container images and tag convention
 

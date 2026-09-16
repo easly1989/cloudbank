@@ -92,6 +92,13 @@ export const isTotpChallenge = (r: LoginResult): r is { totpRequired: true } =>
 
 export const getSetupStatus = () => api.get<{ needsSetup: boolean }>("/api/v1/setup/status");
 
+/** Public auth configuration: which login methods the login page should offer. */
+export interface AuthConfig {
+  oidc: { enabled: boolean; name: string };
+}
+
+export const getAuthConfig = () => api.get<AuthConfig>("/api/v1/auth/config");
+
 export const postSetup = (body: Credentials) => api.post<User>("/api/v1/setup", body);
 
 export const login = (body: Credentials) => api.post<LoginResult>("/api/v1/auth/login", body);

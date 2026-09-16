@@ -348,12 +348,18 @@ func (h *authHandlers) requireAdmin(next http.Handler) http.Handler {
 }
 
 func (h *authHandlers) setSessionCookie(w http.ResponseWriter, token string) {
+	writeSessionCookie(w, token, h.secure)
+}
+
+// writeSessionCookie sets the session cookie; shared by local login and the OIDC
+// callback so both issue an identical cookie.
+func writeSessionCookie(w http.ResponseWriter, token string, secure bool) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookie,
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   h.secure,
+		Secure:   secure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   sessionMaxAge,
 	})
