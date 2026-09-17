@@ -1,0 +1,20 @@
+# Line endings are decided here, not by each contributor's git config.
+#
+# Without this file a Windows clone with the common core.autocrlf=true gets CRLF
+# in the working tree, and `prettier --check` — part of `npm run lint`, and a CI
+# gate — fails on files that were never touched. Normalizing to LF everywhere
+# keeps the checkout identical on every platform; Go, Node and the shell scripts
+# in this repo all read LF happily on Windows.
+* text=auto eol=lf
+
+# Binary assets must never be line-ending converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.xlsx binary
+*.zip binary

@@ -10,7 +10,7 @@ import {
   isActive,
   parseFilters,
   type Filters,
-} from "./registerFilters";
+} from "./registerFilterModel";
 
 function row(p: Partial<RegisterRow>): RegisterRow {
   return {
