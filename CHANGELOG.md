@@ -12,6 +12,20 @@ dashboard polish.
 
 ### Added
 
+- **A design system underneath the app.** The first step of the restyle: CloudBank
+  now has its own blue as the default accent, two bundled typefaces (Public Sans
+  for the interface, IBM Plex Mono for every figure, so a column of amounts lines
+  up on the decimal), a proper heading scale, and controls that ease between
+  colours instead of snapping. Nothing is fetched from a font CDN — the app is
+  self-hosted and installs offline.
+
+  The change underneath matters more than the paint: **colour now means one thing
+  at a time**. The accent means "you can act here" and nothing else, because you
+  can change it; income and expense have their own fixed pair that no longer moves
+  when you pick a different accent. Green and red are gone from the accent picker
+  for that reason, and a saved accent of green or red falls back to the new
+  default until you pick another.
+
 - **Bank sync via Pluggy (Latin America), experimental.** A third provider joins
   SimpleFIN and Enable Banking, on the same bring-your-own-credentials footing.
   Banks are linked in [Meu Pluggy](https://meu.pluggy.ai) — free for personal use

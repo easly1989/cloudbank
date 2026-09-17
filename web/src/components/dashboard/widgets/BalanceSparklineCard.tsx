@@ -8,6 +8,7 @@ import { getBalanceReport, listAccounts } from "../../../api/client";
 import { formatMinor } from "../../../money";
 import { Chart } from "../../Chart";
 import { trailingYearBounds } from "./shared";
+import { negativeOnlyColor } from "../../../amountTone";
 
 // BalanceSparklineCard shows a compact balance-over-time line for one chosen
 // account (last ~12 months), with the latest balance called out.
@@ -84,7 +85,7 @@ export function BalanceSparklineCard({
       </Group>
       {account && values.length > 0 ? (
         <>
-          <Text fw={700} size="lg" c={latest != null && latest < 0 ? "red" : undefined}>
+          <Text fw={700} size="lg" c={latest == null ? undefined : negativeOnlyColor(latest)}>
             {base && latest != null ? formatMinor(latest, base) : "—"}
           </Text>
           <Chart option={option} height={90} />

@@ -2,6 +2,7 @@ import { Group, Progress, Stack, Text } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 
 import { type MoneyFormat, formatMinor } from "../money";
+import { attentionColor } from "../amountTone";
 
 // BudgetGauge renders an over/under progress bar for a budget vs actual pair
 // (both positive magnitudes, in the base currency).
@@ -26,13 +27,13 @@ export function BudgetGauge({
             budget: formatMinor(budget, base),
           })}
         </Text>
-        <Text size="sm" fw={600} c={over ? "red" : "teal"}>
+        <Text size="sm" fw={600} c={over ? attentionColor : undefined}>
           {over
             ? t("budget.overBy", { amount: formatMinor(actual - budget, base) })
             : t("budget.remaining", { amount: formatMinor(budget - actual, base) })}
         </Text>
       </Group>
-      <Progress value={pct} color={over ? "red" : "teal"} size="lg" radius="sm" />
+      <Progress value={pct} color={over ? attentionColor : undefined} size="lg" radius="sm" />
     </Stack>
   );
 }

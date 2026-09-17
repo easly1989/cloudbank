@@ -19,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 import { type Account, type SearchRow, listAccounts, searchTransactions } from "../api/client";
 import { useDateFormat } from "../dates";
 import { type MoneyFormat, formatMinor } from "../money";
+import { amountColor } from "../amountTone";
 
 const MIN_CHARS = 2;
 
@@ -143,7 +144,7 @@ export function GlobalSearch({ walletId }: { walletId: number }) {
                               {secondaryText(r) ? ` · ${secondaryText(r)}` : ""}
                             </Text>
                           </div>
-                          <Text size="sm" fw={500} c={r.amount < 0 ? "red" : "teal"}>
+                          <Text size="sm" fw={500} c={amountColor(r.amount)}>
                             {fmt ? formatMinor(r.amount, fmt) : r.amount}
                           </Text>
                         </Group>

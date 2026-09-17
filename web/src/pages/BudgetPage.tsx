@@ -34,6 +34,7 @@ import { type MoneyFormat, formatMinor } from "../money";
 import { rowFocusProps } from "../rowEdit";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
+import { attentionColor } from "../amountTone";
 
 export function BudgetPage() {
   const { t } = useTranslation();
@@ -366,10 +367,10 @@ function BudgetReportView({ walletId, fmt }: { walletId: number; fmt: MoneyForma
                 <Table.Tr key={r.categoryId}>
                   <Table.Td>{r.name}</Table.Td>
                   <Table.Td ta="right">{formatMinor(r.budget, fmt)}</Table.Td>
-                  <Table.Td ta="right" c={over ? "red" : "teal"}>
+                  <Table.Td ta="right" c={over ? attentionColor : undefined}>
                     {formatMinor(r.actual, fmt)}
                   </Table.Td>
-                  <Table.Td ta="right" c={over ? "red" : "teal"}>
+                  <Table.Td ta="right" c={over ? attentionColor : undefined}>
                     {formatMinor(r.actual - r.budget, fmt)}
                   </Table.Td>
                 </Table.Tr>

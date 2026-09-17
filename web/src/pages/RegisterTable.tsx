@@ -35,6 +35,7 @@ import { useDateFormat } from "../dates";
 import { formatMinor, type MoneyFormat } from "../money";
 import { stopRowEdit } from "../rowEdit";
 import { useToday } from "../useToday";
+import { amountColor, negativeOnlyColor } from "../amountTone";
 
 const ROW_HEIGHT = 40;
 // Per-column grid widths (fixed so virtualized rows stay aligned). Status is
@@ -272,7 +273,7 @@ export function RegisterTable({
       col.accessor("amount", {
         header: () => <Box ta="right">{t("transactions.amount")}</Box>,
         cell: ({ row }) => (
-          <Text size="sm" ta="right" c={row.original.amount < 0 ? "red" : "teal"}>
+          <Text size="sm" ta="right" c={amountColor(row.original.amount)}>
             {formatMinor(row.original.amount, fmt)}
           </Text>
         ),
@@ -280,12 +281,7 @@ export function RegisterTable({
       col.accessor("runningBalance", {
         header: () => <Box ta="right">{t("register.balance")}</Box>,
         cell: ({ row }) => (
-          <Text
-            size="sm"
-            ta="right"
-            fw={500}
-            c={row.original.runningBalance < 0 ? "red" : undefined}
-          >
+          <Text size="sm" ta="right" fw={500} c={negativeOnlyColor(row.original.runningBalance)}>
             {formatMinor(row.original.runningBalance, fmt)}
           </Text>
         ),

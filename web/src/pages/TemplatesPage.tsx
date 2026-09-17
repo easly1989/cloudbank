@@ -37,6 +37,7 @@ import { rowEditProps, stopRowEdit } from "../rowEdit";
 import { PAYMENT_MODES, STATUSES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
+import { amountColor } from "../amountTone";
 
 const accountFormat = (a?: Account): MoneyFormat => ({
   fracDigits: a?.currencyFracDigits ?? 2,
@@ -123,7 +124,7 @@ export function TemplatesPage() {
                 <Table.Tr key={tpl.id} {...rowEditProps(() => openEdit(tpl))}>
                   <Table.Td>{tpl.name}</Table.Td>
                   <Table.Td>{acc?.name ?? "—"}</Table.Td>
-                  <Table.Td ta="right" c={tpl.amount < 0 ? "red" : "teal"}>
+                  <Table.Td ta="right" c={amountColor(tpl.amount)}>
                     {formatMinor(tpl.amount, accountFormat(acc))}
                   </Table.Td>
                   <Table.Td ta="right" {...stopRowEdit}>

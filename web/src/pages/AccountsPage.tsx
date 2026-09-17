@@ -39,6 +39,7 @@ import { rowEditProps, stopRowEdit } from "../rowEdit";
 import { PAYMENT_MODES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
+import { attentionColor } from "../amountTone";
 
 const acctFmt = (a: Account): MoneyFormat => ({
   fracDigits: a.currencyFracDigits,
@@ -155,7 +156,7 @@ export function AccountsPage() {
                       )}
                     </Table.Td>
                     <Table.Td ta="right">
-                      <Text fw={600} c={a.balance < a.minimumBalance ? "red" : undefined}>
+                      <Text fw={600} c={a.balance < a.minimumBalance ? attentionColor : undefined}>
                         {formatMinor(a.balance, acctFmt(a))}
                       </Text>
                       {a.value != null && (
