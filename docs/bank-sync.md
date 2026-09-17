@@ -159,11 +159,23 @@ Pluggy report that **linking a new bank in Meu Pluggy may require an active
 trial**, even though existing connections keep syncing. If you plan to add more
 banks later, confirm this on your own account rather than assuming.
 
-### Why it is marked experimental
+### Why it is marked experimental — and what would help
 
 The integration follows Pluggy's published API, but unlike the other two
 providers it has **not been exercised against a live Latin American bank** by the
-maintainers. Treat surprises as bugs worth reporting.
+maintainers.
+
+**If you use it, please report back.** An issue saying what worked is as useful
+as one saying what did not, and these are the things most worth a second pair of
+eyes:
+
+- Do **credit-card** amounts land the right way round — spending as an expense,
+  a bill payment as money in?
+- Do **pending** movements settle correctly once the bank books them, without
+  leaving a duplicate behind?
+- Does a second sync of an overlapping period import nothing new, as it should?
+- Does connecting a **new** bank in Meu Pluggy still work for you after the
+  15-day Dashboard trial?
 
 Two provider quirks it already accounts for, since both would be silent if wrong:
 
