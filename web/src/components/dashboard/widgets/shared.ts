@@ -3,7 +3,7 @@
 // their defaults live here (not in the widget files) so those files export only
 // components — keeping React Fast Refresh happy.
 import type { Account, DashboardGroupBy } from "../../../api/client";
-import { type DatePreset, dateBounds, emptyFilters } from "../../../pages/registerFilters";
+import { type DatePreset, dateBounds, emptyFilters } from "../../../pages/registerFilterModel";
 
 export type ChartType = "donut" | "bar";
 export type IEStyle = "bars" | "lines";

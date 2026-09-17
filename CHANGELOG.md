@@ -70,6 +70,15 @@ dashboard polish.
 
 ### Fixed
 
+- **CloudBank can be built on Windows.** Two source files whose paths differed
+  only in case (`registerFilters.ts` and `RegisterFilters.tsx`) collided on
+  case-insensitive filesystems, so imports resolved to the wrong module and the
+  web build failed before it started — invisible to Linux CI. The filter model is
+  now `registerFilterModel.ts`, line endings are pinned to LF by a
+  `.gitattributes`, `npm run typecheck` actually typechecks (it silently checked
+  nothing), and `CONTRIBUTING.md` lists the command behind each `make` target for
+  contributors without a POSIX shell.
+
 - **Dates now follow your own calendar, not UTC.** The register's **This month /
   This quarter / This year** filters were computed by converting a local date to
   UTC, so east of UTC every preset covered the wrong window — the last day of the
