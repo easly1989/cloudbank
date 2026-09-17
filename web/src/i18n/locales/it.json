@@ -471,6 +471,28 @@
       "consentExpiresSoon": "Consenso scade tra {{days}}g",
       "consentValid": "Consenso valido {{days}}g"
     },
+    "pluggy": {
+      "title": "Pluggy (America Latina)",
+      "experimental": "Sperimentale",
+      "hint": "Banche brasiliane e latinoamericane tramite open finance. Serve una tua applicazione Pluggy; le banche si collegano su Meu Pluggy, l'app di Pluggy, e CloudBank si limita a leggerle.",
+      "configure": "Configura",
+      "configTitle": "Credenziali Pluggy",
+      "configHint": "Crea un'applicazione nella Dashboard di Pluggy e incolla qui client id e secret. Vengono verificate su Pluggy prima del salvataggio, e il secret resta sul server senza mai essere restituito.",
+      "clientId": "Client ID",
+      "clientSecret": "Client secret",
+      "secretHint": "Solo scrittura: dopo il salvataggio non viene piu mostrato.",
+      "saved": "Pluggy configurato.",
+      "edit": "Modifica credenziali",
+      "removeConfig": "Rimuovi credenziali",
+      "confirmRemoveConfig": "Rimuovere le credenziali Pluggy? Le connessioni esistenti smetteranno di sincronizzarsi.",
+      "connect": "Collega un item",
+      "connectTitle": "Collega un item Pluggy",
+      "itemHint": "Collega prima le tue banche su meu.pluggy.ai, poi copia dalla Dashboard di Pluggy l'item id della connessione che vuoi. Un item corrisponde a un istituto.",
+      "itemId": "Item ID",
+      "name": "Nome",
+      "nameHint": "Facoltativo. Se vuoto viene usato il nome del primo conto.",
+      "connected": "Item collegato."
+    },
     "autoSync": "Sincronizzazione automatica",
     "autoSyncHint": "Mantieni questa connessione aggiornata in background.",
     "schedule": {
@@ -493,8 +515,15 @@
       "account": "{{imported}} importate · {{reconciled}} riconciliate",
       "clear": "Pulisci cronologia",
       "clearConfirm": "Eliminare tutti i sync registrati per questa connessione?",
-      "trigger": { "manual": "Manuale", "auto": "Automatico" },
-      "status": { "ok": "OK", "partial": "Parziale", "error": "Errore" }
+      "trigger": {
+        "manual": "Manuale",
+        "auto": "Automatico"
+      },
+      "status": {
+        "ok": "OK",
+        "partial": "Parziale",
+        "error": "Errore"
+      }
     },
     "section": {
       "autoSync": "Sync automatico",

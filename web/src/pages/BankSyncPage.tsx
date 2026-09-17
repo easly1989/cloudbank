@@ -12,6 +12,7 @@ import {
   Group,
   Loader,
   Modal,
+  PasswordInput,
   Select,
   SimpleGrid,
   Stack,
@@ -45,8 +46,11 @@ import {
   type BankConnection,
   clearBankConnectionSyncRuns,
   connectBank,
+  connectPluggy,
   deleteEnableBankingConfig,
+  deletePluggyConfig,
   getEnableBankingConfig,
+  getPluggyConfig,
   linkBankAccount,
   listAccounts,
   listBankConnections,
@@ -58,6 +62,7 @@ import {
   setBankConnectionAutoSync,
   setBankConnectionSchedule,
   setEnableBankingConfig,
+  setPluggyConfig,
   startEnableBankingAuth,
   syncBankConnection,
   unlinkBankAccount,
@@ -116,6 +121,7 @@ export function BankSyncPage() {
         </Card>
 
         <EnableBankingPanel walletId={walletId} />
+        <PluggyPanel walletId={walletId} />
       </SimpleGrid>
 
       <Title order={4} mt="sm">
@@ -153,6 +159,7 @@ function syncStatusColor(status: string): string {
 function providerLabel(provider: string): string {
   if (provider === "simplefin") return "SimpleFIN";
   if (provider === "enablebanking") return "Enable Banking";
+  if (provider === "pluggy") return "Pluggy";
   return provider;
 }
 
@@ -652,6 +659,276 @@ function ConnectModal({
 }
 
 // --- Enable Banking (EU/PSD2) ---
+
+// --- Pluggy (Latin America) ---
+//
+// Two steps, and the first happens outside CloudBank: the user links their banks
+// in Meu Pluggy (Pluggy's own consumer app) and copies the resulting item id.
+// There is no consent redirect to host, so this panel only needs the application
+// credentials and that id.
+
+function PluggyPanel({ walletId }: { walletId: number }) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const [configOpen, setConfigOpen] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(false);
+
+  const cfg = useQuery({
+    queryKey: ["pluggyConfig", walletId],
+    queryFn: () => getPluggyConfig(walletId),
+    enabled: walletId > 0,
+  });
+  const onError = (err: unknown) =>
+    notifications.show({
+      color: "red",
+      message: err instanceof ApiError ? err.message : String(err),
+    });
+  const removeCfg = useMutation({
+    mutationFn: () => deletePluggyConfig(walletId),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["pluggyConfig", walletId] }),
+    onError,
+  });
+
+  const configured = cfg.data?.configured ?? false;
+
+  return (
+    <Card withBorder>
+      <Group gap="xs" mb="xs">
+        <IconBuildingBank size={18} />
+        <Text fw={600}>{t("banksync.pluggy.title")}</Text>
+        <Badge size="sm" variant="light" color="gray">
+          {t("banksync.pluggy.experimental")}
+        </Badge>
+      </Group>
+      <Text size="sm" c="dimmed" mb="sm">
+        {t("banksync.pluggy.hint")}
+      </Text>
+
+      {configured ? (
+        <Stack gap="xs">
+          <Text size="xs" c="dimmed">
+            {t("banksync.pluggy.clientId")}: <Code>{cfg.data?.clientId}</Code>
+          </Text>
+          <Group gap="xs">
+            <Button leftSection={<IconPlus size={16} />} onClick={() => setConnectOpen(true)}>
+              {t("banksync.pluggy.connect")}
+            </Button>
+            <Button variant="default" onClick={() => setConfigOpen(true)}>
+              {t("banksync.pluggy.edit")}
+            </Button>
+            <Button
+              variant="subtle"
+              color="red"
+              loading={removeCfg.isPending}
+              onClick={() => {
+                if (window.confirm(t("banksync.pluggy.confirmRemoveConfig"))) removeCfg.mutate();
+              }}
+            >
+              {t("banksync.pluggy.removeConfig")}
+            </Button>
+          </Group>
+        </Stack>
+      ) : (
+        <Button
+          variant="light"
+          leftSection={<IconKey size={16} />}
+          onClick={() => setConfigOpen(true)}
+        >
+          {t("banksync.pluggy.configure")}
+        </Button>
+      )}
+
+      <PluggyConfigModal
+        opened={configOpen}
+        onClose={() => setConfigOpen(false)}
+        walletId={walletId}
+        currentClientId={cfg.data?.clientId}
+        onDone={() => void qc.invalidateQueries({ queryKey: ["pluggyConfig", walletId] })}
+      />
+      <PluggyConnectModal
+        opened={connectOpen}
+        onClose={() => setConnectOpen(false)}
+        walletId={walletId}
+        onDone={() => void qc.invalidateQueries({ queryKey: ["bankConnections", walletId] })}
+      />
+    </Card>
+  );
+}
+
+// Both modals mount their form only while open. That is what resets the fields
+// between openings — no effect writing state on mount, which is the pattern the
+// react-hooks rules flag, and one less thing to unpick later.
+
+function PluggyConfigModal({
+  opened,
+  onClose,
+  walletId,
+  currentClientId,
+  onDone,
+}: {
+  opened: boolean;
+  onClose: () => void;
+  walletId: number;
+  currentClientId?: string;
+  onDone: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Modal opened={opened} onClose={onClose} title={t("banksync.pluggy.configTitle")} size="lg">
+      {opened && (
+        <PluggyConfigForm
+          walletId={walletId}
+          currentClientId={currentClientId}
+          onClose={onClose}
+          onDone={onDone}
+        />
+      )}
+    </Modal>
+  );
+}
+
+function PluggyConfigForm({
+  walletId,
+  currentClientId,
+  onClose,
+  onDone,
+}: {
+  walletId: number;
+  currentClientId?: string;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const { t } = useTranslation();
+  const [clientId, setClientId] = useState(currentClientId ?? "");
+  // The secret is write-only, so editing starts blank rather than echoing back
+  // something the server never returns.
+  const [clientSecret, setClientSecret] = useState("");
+
+  const save = useMutation({
+    mutationFn: () =>
+      setPluggyConfig(walletId, { clientId: clientId.trim(), clientSecret: clientSecret.trim() }),
+    onSuccess: () => {
+      notifications.show({ color: "teal", message: t("banksync.pluggy.saved") });
+      onDone();
+      onClose();
+    },
+    onError: (err: unknown) =>
+      notifications.show({
+        color: "red",
+        message: err instanceof ApiError ? err.message : String(err),
+      }),
+  });
+
+  return (
+    <Stack>
+      <Text size="sm" c="dimmed">
+        {t("banksync.pluggy.configHint")}
+      </Text>
+      <TextInput
+        label={t("banksync.pluggy.clientId")}
+        value={clientId}
+        onChange={(e) => setClientId(e.currentTarget.value)}
+      />
+      <PasswordInput
+        label={t("banksync.pluggy.clientSecret")}
+        description={t("banksync.pluggy.secretHint")}
+        value={clientSecret}
+        onChange={(e) => setClientSecret(e.currentTarget.value)}
+      />
+      <Group justify="flex-end">
+        <Button variant="default" onClick={onClose}>
+          {t("common.cancel")}
+        </Button>
+        <Button
+          loading={save.isPending}
+          disabled={!clientId.trim() || !clientSecret.trim()}
+          onClick={() => save.mutate()}
+        >
+          {t("common.save")}
+        </Button>
+      </Group>
+    </Stack>
+  );
+}
+
+function PluggyConnectModal({
+  opened,
+  onClose,
+  walletId,
+  onDone,
+}: {
+  opened: boolean;
+  onClose: () => void;
+  walletId: number;
+  onDone: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Modal opened={opened} onClose={onClose} title={t("banksync.pluggy.connectTitle")} size="lg">
+      {opened && <PluggyConnectForm walletId={walletId} onClose={onClose} onDone={onDone} />}
+    </Modal>
+  );
+}
+
+function PluggyConnectForm({
+  walletId,
+  onClose,
+  onDone,
+}: {
+  walletId: number;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const { t } = useTranslation();
+  const [itemId, setItemId] = useState("");
+  const [name, setName] = useState("");
+
+  const connect = useMutation({
+    mutationFn: () => connectPluggy(walletId, { itemId: itemId.trim(), name: name.trim() }),
+    onSuccess: () => {
+      notifications.show({ color: "teal", message: t("banksync.pluggy.connected") });
+      onDone();
+      onClose();
+    },
+    onError: (err: unknown) =>
+      notifications.show({
+        color: "red",
+        message: err instanceof ApiError ? err.message : String(err),
+      }),
+  });
+
+  return (
+    <Stack>
+      <Alert color="blue" variant="light">
+        {t("banksync.pluggy.itemHint")}
+      </Alert>
+      <TextInput
+        label={t("banksync.pluggy.itemId")}
+        placeholder="00000000-0000-0000-0000-000000000000"
+        value={itemId}
+        onChange={(e) => setItemId(e.currentTarget.value)}
+      />
+      <TextInput
+        label={t("banksync.pluggy.name")}
+        description={t("banksync.pluggy.nameHint")}
+        value={name}
+        onChange={(e) => setName(e.currentTarget.value)}
+      />
+      <Group justify="flex-end">
+        <Button variant="default" onClick={onClose}>
+          {t("common.cancel")}
+        </Button>
+        <Button
+          loading={connect.isPending}
+          disabled={!itemId.trim()}
+          onClick={() => connect.mutate()}
+        >
+          {t("banksync.pluggy.connect")}
+        </Button>
+      </Group>
+    </Stack>
+  );
+}
 
 function EnableBankingPanel({ walletId }: { walletId: number }) {
   const { t } = useTranslation();

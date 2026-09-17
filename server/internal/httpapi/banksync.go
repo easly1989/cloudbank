@@ -39,6 +39,10 @@ func (h *bankSyncHandlers) walletRoutes(r chi.Router) {
 	r.Get("/bank/enablebanking/aspsps", h.ebBanks)
 	r.Post("/bank/enablebanking/auth", h.ebStartAuth)
 	r.Post("/bank/enablebanking/callback", h.ebCallback)
+	r.Get("/bank/pluggy/config", h.pluggyGetConfig)
+	r.Put("/bank/pluggy/config", h.pluggySetConfig)
+	r.Delete("/bank/pluggy/config", h.pluggyDeleteConfig)
+	r.Post("/bank/pluggy/connect", h.pluggyConnect)
 }
 
 func (h *bankSyncHandlers) connID(w http.ResponseWriter, r *http.Request) (int64, bool) {
@@ -60,6 +64,12 @@ func (h *bankSyncHandlers) writeErr(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusBadRequest, "invalid", "invalid input")
 	case errors.Is(err, banksync.ErrEBNotConfigured):
 		writeError(w, http.StatusBadRequest, "not_configured", "enable banking is not configured for this wallet")
+	case errors.Is(err, banksync.ErrPluggyNotConfigured):
+		writeError(w, http.StatusBadRequest, "not_configured", "pluggy is not configured for this wallet")
+	case errors.Is(err, banksync.ErrPluggyCredentials):
+		writeError(w, http.StatusBadRequest, "credentials_rejected", "pluggy rejected the client id or secret")
+	case errors.Is(err, banksync.ErrPluggyItemNotFound):
+		writeError(w, http.StatusNotFound, "item_not_found", "no Pluggy item with that id, or it has no accounts")
 	case errors.Is(err, banksync.ErrEBConsentExpired):
 		writeError(w, http.StatusConflict, "consent_expired", "the bank consent has expired — reconnect the bank")
 	default:
@@ -72,6 +82,65 @@ func (h *bankSyncHandlers) writeErr(w http.ResponseWriter, err error) {
 		}
 		writeError(w, http.StatusBadGateway, "provider_error", msg)
 	}
+}
+
+func (h *bankSyncHandlers) pluggyGetConfig(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	cfg, err := h.svc.PluggyConfig(r.Context(), wl.ID)
+	if errors.Is(err, banksync.ErrPluggyNotConfigured) {
+		// Not configured is the normal state, not an error: the client uses this
+		// to decide whether to show the setup form or the connection list.
+		writeJSON(w, http.StatusOK, banksync.PluggyConfig{})
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not load config")
+		return
+	}
+	writeJSON(w, http.StatusOK, cfg)
+}
+
+func (h *bankSyncHandlers) pluggySetConfig(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body struct {
+		ClientID     string `json:"clientId"`
+		ClientSecret string `json:"clientSecret"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if err := h.svc.SavePluggyConfig(r.Context(), wl.ID, body.ClientID, body.ClientSecret); err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *bankSyncHandlers) pluggyDeleteConfig(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	if err := h.svc.DeletePluggyConfig(r.Context(), wl.ID); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not delete config")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// pluggyConnect registers an item created by the user in Meu Pluggy.
+func (h *bankSyncHandlers) pluggyConnect(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body struct {
+		ItemID string `json:"itemId"`
+		Name   string `json:"name"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	conn, accounts, err := h.svc.ConnectPluggy(r.Context(), wl.ID, body.ItemID, body.Name)
+	if err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"connection": conn, "accounts": accounts})
 }
 
 func (h *bankSyncHandlers) ebGetConfig(w http.ResponseWriter, r *http.Request) {

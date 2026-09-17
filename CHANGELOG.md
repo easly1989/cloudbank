@@ -12,6 +12,16 @@ dashboard polish.
 
 ### Added
 
+- **Bank sync via Pluggy (Latin America), experimental.** A third provider joins
+  SimpleFIN and Enable Banking, on the same bring-your-own-credentials footing.
+  Banks are linked in [Meu Pluggy](https://meu.pluggy.ai) — free for personal use
+  — and CloudBank only reads them, so there is no consent redirect to set up:
+  paste your application's client id and secret, add an item id, link the
+  accounts. Credentials are verified when saved rather than at the first sync,
+  and a credit card's inverted sign convention is handled, so card spending lands
+  as an expense rather than income. Marked experimental: it follows Pluggy's
+  published API but has not been exercised against a live bank.
+
 - **Import ISO 20022 CAMT.053 statements.** The end-of-day statement most
   European banks offer as a download is now a first-class import format,
   alongside HomeBank `.xhb`, QIF, OFX/QFX and CSV: pick *CAMT.053* in the import

@@ -471,6 +471,28 @@
       "consentExpiresSoon": "Consent expires in {{days}}d",
       "consentValid": "Consent valid {{days}}d"
     },
+    "pluggy": {
+      "title": "Pluggy (Latin America)",
+      "experimental": "Experimental",
+      "hint": "Brazilian and Latin American banks via open finance. Bring your own Pluggy application; banks are linked in Meu Pluggy, Pluggy's own app, and CloudBank only reads them.",
+      "configure": "Configure",
+      "configTitle": "Pluggy credentials",
+      "configHint": "Create an application in the Pluggy Dashboard and paste its client id and secret. They are checked against Pluggy before being saved, and the secret is stored server-side and never returned.",
+      "clientId": "Client ID",
+      "clientSecret": "Client secret",
+      "secretHint": "Write-only: it is never shown again after saving.",
+      "saved": "Pluggy configured.",
+      "edit": "Edit credentials",
+      "removeConfig": "Remove credentials",
+      "confirmRemoveConfig": "Remove the Pluggy credentials? Existing connections will stop syncing.",
+      "connect": "Connect an item",
+      "connectTitle": "Connect a Pluggy item",
+      "itemHint": "Link your banks at meu.pluggy.ai first, then copy the item id of the connection you want from the Pluggy Dashboard. One item covers one institution.",
+      "itemId": "Item ID",
+      "name": "Name",
+      "nameHint": "Optional. Left blank, the first account's name is used.",
+      "connected": "Item connected."
+    },
     "autoSync": "Automatic sync",
     "autoSyncHint": "Keep this connection up to date in the background.",
     "schedule": {
@@ -493,8 +515,15 @@
       "account": "{{imported}} imported · {{reconciled}} reconciled",
       "clear": "Clear history",
       "clearConfirm": "Delete all recorded sync runs for this connection?",
-      "trigger": { "manual": "Manual", "auto": "Automatic" },
-      "status": { "ok": "OK", "partial": "Partial", "error": "Error" }
+      "trigger": {
+        "manual": "Manual",
+        "auto": "Automatic"
+      },
+      "status": {
+        "ok": "OK",
+        "partial": "Partial",
+        "error": "Error"
+      }
     },
     "section": {
       "autoSync": "Automatic sync",
