@@ -2147,6 +2147,21 @@ paths:
         "200": { description: The preview., content: { application/json: { schema: { $ref: "#/components/schemas/CSVPreview" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/import/camt/preview:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: previewCAMTImport
+      summary: Parse an ISO 20022 camt.053 statement, flag duplicates by bank reference and (optionally) apply import rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ParsedPreviewRequest" }
+      responses:
+        "200": { description: The preview., content: { application/json: { schema: { $ref: "#/components/schemas/CSVPreview" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/import/plugins:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }

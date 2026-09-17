@@ -1011,6 +1011,7 @@
       "generic": "Generic CSV",
       "qif": "QIF",
       "ofx": "OFX/QFX",
+      "camt": "CAMT.053 (ISO 20022)",
       "bank": "Bank"
     },
     "plugin": "Bank",
