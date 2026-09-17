@@ -48,6 +48,7 @@ import { type MoneyFormat, formatMinor, minorToInput } from "../money";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
 import { todayCivil } from "../civilDate";
+import { amountColor } from "../amountTone";
 
 const baseFmt = (currencies: Currency[]): MoneyFormat => {
   const base = currencies.find((c) => c.isBase);
@@ -297,7 +298,7 @@ function GoalCard({
                     )}
                   </Group>
                   <Group gap={4} wrap="nowrap">
-                    <Text size="xs" fw={500} c={c.amount < 0 ? "red" : "teal"}>
+                    <Text size="xs" fw={500} c={amountColor(c.amount)}>
                       {c.amount < 0 ? "−" : "+"}
                       {formatMinor(Math.abs(c.amount), fmt)}
                     </Text>

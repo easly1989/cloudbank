@@ -1,5 +1,17 @@
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
+
+// Typefaces are bundled, never fetched: CloudBank is self-hosted and installs as
+// an offline PWA, so a webfont CDN would be both a privacy leak and a blank page
+// on a plane. Latin subsets only, at the weights the design actually uses.
+import "@fontsource/public-sans/latin-400.css";
+import "@fontsource/public-sans/latin-500.css";
+import "@fontsource/public-sans/latin-600.css";
+import "@fontsource/public-sans/latin-700.css";
+import "@fontsource/ibm-plex-mono/latin-400.css";
+import "@fontsource/ibm-plex-mono/latin-500.css";
+import "@fontsource/ibm-plex-mono/latin-600.css";
+
 import "./app.css";
 
 import { Notifications } from "@mantine/notifications";

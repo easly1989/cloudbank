@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import type { CurrencyInfo } from "../../../api/client";
 import { formatMinor } from "../../../money";
+import { negativeOnlyColor } from "../../../amountTone";
 
 // TotalsWidget shows the wallet's reconciled / today / future base-currency
 // totals as three cards. Renders nothing until the base currency and totals are
@@ -64,7 +65,7 @@ function TotalCard({
           </Tooltip>
         )}
       </Group>
-      <Text size="xl" fw={700} c={value < 0 ? "red" : undefined}>
+      <Text size="xl" fw={700} c={negativeOnlyColor(value)}>
         {formatMinor(value, fmt)}
       </Text>
     </Card>

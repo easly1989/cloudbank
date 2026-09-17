@@ -67,6 +67,7 @@ import {
   isActive,
   parseFilters,
 } from "./registerFilterModel";
+import { amountColor, attentionColor, negativeOnlyColor } from "../amountTone";
 
 export function TransactionsPage() {
   const { t } = useTranslation();
@@ -582,7 +583,7 @@ function BalanceCard({
           </Tooltip>
         )}
       </Group>
-      <Text size="lg" fw={600} c={value < 0 ? "red" : undefined}>
+      <Text size="lg" fw={600} c={negativeOnlyColor(value)}>
         {formatMinor(value, fmt)}
       </Text>
     </Card>
@@ -620,7 +621,7 @@ function BulkBar({
           <Text size="xs" c="dimmed" tt="uppercase">
             {t("bulk.selectedTotal")}
           </Text>
-          <Text fw={700} c={total < 0 ? "red" : total > 0 ? "teal" : undefined}>
+          <Text fw={700} c={amountColor(total)}>
             {formatMinor(total, fmt)}
           </Text>
           {inflow > 0 && outflow < 0 && (
@@ -706,7 +707,10 @@ function ReconcilePanel({
             <Text size="xs" c="dimmed" tt="uppercase">
               {t("reconcile.difference")}
             </Text>
-            <Text fw={700} c={diff === null ? undefined : diff === 0 ? "teal" : "red"}>
+            <Text
+              fw={700}
+              c={diff === null ? undefined : diff === 0 ? "var(--cb-positive)" : attentionColor}
+            >
               {diff === null ? "—" : formatMinor(diff, fmt)}
             </Text>
           </div>
