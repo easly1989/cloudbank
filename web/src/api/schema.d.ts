@@ -513,6 +513,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/bank/pluggy/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** Get the wallet's Pluggy application config (never the client secret) */
+        get: operations["getPluggyConfig"];
+        /** Store the wallet's Pluggy application credentials; they are verified against the provider before being saved */
+        put: operations["setPluggyConfig"];
+        post?: never;
+        /** Remove the wallet's Pluggy credentials */
+        delete: operations["deletePluggyConfig"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/bank/pluggy/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register a Pluggy item (created by the user in Meu Pluggy) as a bank connection */
+        post: operations["connectPluggy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/bank/enablebanking/config": {
         parameters: {
             query?: never;
@@ -2584,6 +2624,13 @@ export interface components {
             /** @description a human message for each account that failed to sync */
             warnings?: string[];
         };
+        /** @description A wallet's Pluggy application config — never the client secret. */
+        PluggyConfig: {
+            configured: boolean;
+            clientId?: string;
+            /** @description When the credentials were last saved. */
+            configuredAt?: string;
+        };
         /** @description A wallet's Enable Banking application config — never the private key. */
         EnableBankingConfig: {
             configured: boolean;
@@ -4621,6 +4668,113 @@ export interface operations {
                 };
                 content?: never;
             };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getPluggyConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The config. An unconfigured wallet returns configured=false */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluggyConfig"];
+                };
+            };
+        };
+    };
+    setPluggyConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    clientId: string;
+                    /** @description Pluggy application secret; stored sealed and never returned. */
+                    clientSecret: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Saved. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    deletePluggyConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connectPluggy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Item id copied from Meu Pluggy. */
+                    itemId: string;
+                    /** @description Optional label; defaults to the first account's name. */
+                    name?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The connection and the item's accounts, ready to link. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        connection?: components["schemas"]["BankConnection"];
+                        accounts?: components["schemas"]["BankRemoteAccount"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
         };
     };

@@ -50,6 +50,15 @@ func (q *Queries) DeleteBankSyncRuns(ctx context.Context, connectionID int64) er
 	return err
 }
 
+const deletePluggyConfig = `-- name: DeletePluggyConfig :exec
+DELETE FROM bank_pluggy_config WHERE wallet_id = ?
+`
+
+func (q *Queries) DeletePluggyConfig(ctx context.Context, walletID int64) error {
+	_, err := q.db.ExecContext(ctx, deletePluggyConfig, walletID)
+	return err
+}
+
 const getBankConnection = `-- name: GetBankConnection :one
 SELECT id, wallet_id, provider, access_url, name, created_at, last_synced_at, aspsp_name, aspsp_country, valid_until, accounts_json, auto_sync, last_sync_at, last_sync_status, last_sync_message, sync_interval_hours, sync_hour, sync_days FROM bank_connections WHERE id = ? LIMIT 1
 `
@@ -76,6 +85,23 @@ func (q *Queries) GetBankConnection(ctx context.Context, id int64) (BankConnecti
 		&i.SyncIntervalHours,
 		&i.SyncHour,
 		&i.SyncDays,
+	)
+	return i, err
+}
+
+const getPluggyConfig = `-- name: GetPluggyConfig :one
+SELECT wallet_id, client_id, client_secret, created_at, updated_at FROM bank_pluggy_config WHERE wallet_id = ?
+`
+
+func (q *Queries) GetPluggyConfig(ctx context.Context, walletID int64) (BankPluggyConfig, error) {
+	row := q.db.QueryRowContext(ctx, getPluggyConfig, walletID)
+	var i BankPluggyConfig
+	err := row.Scan(
+		&i.WalletID,
+		&i.ClientID,
+		&i.ClientSecret,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -420,5 +446,25 @@ type UpsertBankLinkParams struct {
 
 func (q *Queries) UpsertBankLink(ctx context.Context, arg UpsertBankLinkParams) error {
 	_, err := q.db.ExecContext(ctx, upsertBankLink, arg.ConnectionID, arg.ExternalID, arg.AccountID)
+	return err
+}
+
+const upsertPluggyConfig = `-- name: UpsertPluggyConfig :exec
+INSERT INTO bank_pluggy_config (wallet_id, client_id, client_secret)
+VALUES (?, ?, ?)
+ON CONFLICT (wallet_id) DO UPDATE SET
+    client_id     = excluded.client_id,
+    client_secret = excluded.client_secret,
+    updated_at    = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+`
+
+type UpsertPluggyConfigParams struct {
+	WalletID     int64
+	ClientID     string
+	ClientSecret string
+}
+
+func (q *Queries) UpsertPluggyConfig(ctx context.Context, arg UpsertPluggyConfigParams) error {
+	_, err := q.db.ExecContext(ctx, upsertPluggyConfig, arg.WalletID, arg.ClientID, arg.ClientSecret)
 	return err
 }

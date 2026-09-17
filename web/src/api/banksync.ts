@@ -93,6 +93,35 @@ export const unlinkBankAccount = (walletId: number, connId: number, externalId: 
 export const syncBankConnection = (walletId: number, connId: number) =>
   api.post<BankSyncResult>(`/api/v1/wallets/${walletId}/bank/connections/${connId}/sync`);
 
+// --- Pluggy (Latin America, bring-your-own credentials) ---
+//
+// Banks are linked in Pluggy's own consumer app (Meu Pluggy), which yields an
+// "item" id per institution; CloudBank only reads it. So there is no consent
+// redirect here, unlike Enable Banking.
+
+export interface PluggyConfig {
+  configured: boolean;
+  clientId?: string;
+  configuredAt?: string;
+}
+
+export const getPluggyConfig = (walletId: number) =>
+  api.get<PluggyConfig>(`/api/v1/wallets/${walletId}/bank/pluggy/config`);
+
+export const setPluggyConfig = (
+  walletId: number,
+  input: { clientId: string; clientSecret: string },
+) => api.put<void>(`/api/v1/wallets/${walletId}/bank/pluggy/config`, input);
+
+export const deletePluggyConfig = (walletId: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/bank/pluggy/config`);
+
+export const connectPluggy = (walletId: number, input: { itemId: string; name?: string }) =>
+  api.post<{ connection: BankConnection; accounts?: BankRemoteAccount[] }>(
+    `/api/v1/wallets/${walletId}/bank/pluggy/connect`,
+    input,
+  );
+
 // --- Enable Banking (EU/PSD2, bring-your-own credentials) ---
 
 export interface EnableBankingConfig {

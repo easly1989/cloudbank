@@ -43,6 +43,7 @@ const (
 const (
 	providerSimpleFIN     = "simplefin"
 	providerEnableBanking = "enablebanking"
+	providerPluggy        = "pluggy"
 )
 
 // Connection is the public view of a bank connection — never the access URL.
@@ -133,6 +134,8 @@ type Service struct {
 	rq  *db.Queries
 	imp *importio.Service
 	hc  httpDoer // provider HTTP transport; nil = default. Injectable for tests.
+	// pluggyBase overrides the Pluggy API root; "" = production. Tests set it.
+	pluggyBase string
 	// syncStagger is the pause between connections in a background batch, to avoid
 	// hammering providers. Tests set it to 0.
 	syncStagger time.Duration
@@ -232,8 +235,11 @@ func (s *Service) RemoteAccounts(ctx context.Context, walletID, connID int64) ([
 }
 
 func (s *Service) remoteAccounts(ctx context.Context, c db.BankConnection) ([]RemoteAccount, error) {
-	if c.Provider == providerEnableBanking {
+	switch c.Provider {
+	case providerEnableBanking:
 		return s.ebRemoteAccounts(ctx, c)
+	case providerPluggy:
+		return s.pluggyRemoteAccounts(ctx, c)
 	}
 	return s.simplefinRemoteAccounts(ctx, c)
 }
@@ -422,9 +428,12 @@ func (s *Service) syncOnce(ctx context.Context, walletID, connID int64) (SyncRes
 		failures  []accountFetchError
 		err2      error
 	)
-	if c.Provider == providerEnableBanking {
+	switch c.Provider {
+	case providerEnableBanking:
 		byAccount, failures, err2 = s.ebFetchRows(ctx, c, linkByExt, start)
-	} else {
+	case providerPluggy:
+		byAccount, failures, err2 = s.pluggyFetchRows(ctx, c, linkByExt, start)
+	default:
 		byAccount, err2 = s.simplefinFetchRows(ctx, c, start)
 	}
 	if err2 != nil {

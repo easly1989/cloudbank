@@ -140,6 +140,14 @@ type BankLink struct {
 	AccountID    int64
 }
 
+type BankPluggyConfig struct {
+	WalletID     int64
+	ClientID     string
+	ClientSecret string
+	CreatedAt    string
+	UpdatedAt    string
+}
+
 type BankSyncRun struct {
 	ID           int64
 	ConnectionID int64
