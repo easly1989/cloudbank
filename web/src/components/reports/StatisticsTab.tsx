@@ -24,6 +24,7 @@ import { useWallet } from "../../wallet/WalletProvider";
 import { Chart, type ChartHandle } from "../Chart";
 import { SavedViews } from "./SavedViews";
 import { GROUPS, PALETTE, filterToParams, previousPeriod } from "./reportUtils";
+import { amountColor } from "../../amountTone";
 
 export function StatisticsTab() {
   const { t } = useTranslation();
@@ -277,7 +278,7 @@ export function StatisticsTab() {
                   onClick={() => drilldown.mutate(g.key)}
                 >
                   <Table.Td>{g.label}</Table.Td>
-                  <Table.Td ta="right" c={g.amount < 0 ? "red" : "teal"}>
+                  <Table.Td ta="right" c={amountColor(g.amount)}>
                     {formatMinor(g.amount, fmt)}
                   </Table.Td>
                   {showCompare && (
@@ -286,7 +287,7 @@ export function StatisticsTab() {
                     </Table.Td>
                   )}
                   {showCompare && (
-                    <Table.Td ta="right" c={delta < 0 ? "red" : "teal"}>
+                    <Table.Td ta="right" c={amountColor(delta)}>
                       {formatMinor(delta, fmt)}
                     </Table.Td>
                   )}
@@ -325,7 +326,7 @@ export function StatisticsTab() {
                 <Table.Td>{fmtDate(r.date)}</Table.Td>
                 <Table.Td>{r.payeeName}</Table.Td>
                 <Table.Td>{r.memo}</Table.Td>
-                <Table.Td ta="right" c={r.amount < 0 ? "red" : "teal"}>
+                <Table.Td ta="right" c={amountColor(r.amount)}>
                   {formatMinor(r.amount, fmt)}
                 </Table.Td>
               </Table.Tr>

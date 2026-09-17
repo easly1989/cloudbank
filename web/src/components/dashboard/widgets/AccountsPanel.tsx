@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import type { CurrencyInfo, DashboardAccount } from "../../../api/client";
 import { formatMinor } from "../../../money";
+import { negativeOnlyColor } from "../../../amountTone";
 
 // AccountsPanel groups the home-screen accounts by type with per-group subtotals
 // and a base-currency grand total.
@@ -43,7 +44,7 @@ export function AccountsPanel({
                     <Table.Td>{a.name}</Table.Td>
                     <Table.Td ta="right">{formatMinor(a.bank, a.currency)}</Table.Td>
                     <Table.Td ta="right">{formatMinor(a.today, a.currency)}</Table.Td>
-                    <Table.Td ta="right" c={a.future < 0 ? "red" : undefined}>
+                    <Table.Td ta="right" c={negativeOnlyColor(a.future)}>
                       {formatMinor(a.future, a.currency)}
                     </Table.Td>
                   </Table.Tr>
@@ -59,7 +60,7 @@ export function AccountsPanel({
             <Group gap="lg" wrap="nowrap">
               <Text fw={700}>{formatMinor(totals.bank, base)}</Text>
               <Text fw={700}>{formatMinor(totals.today, base)}</Text>
-              <Text fw={700} c={totals.future < 0 ? "red" : undefined}>
+              <Text fw={700} c={negativeOnlyColor(totals.future)}>
                 {formatMinor(totals.future, base)}
               </Text>
             </Group>
@@ -91,7 +92,7 @@ function GroupSubtotal({ accounts }: { accounts: DashboardAccount[] }) {
         <Table.Td ta="right" fw={600}>
           {formatMinor(today, cur)}
         </Table.Td>
-        <Table.Td ta="right" fw={600} c={future < 0 ? "red" : undefined}>
+        <Table.Td ta="right" fw={600} c={negativeOnlyColor(future)}>
           {formatMinor(future, cur)}
         </Table.Td>
       </Table.Tr>

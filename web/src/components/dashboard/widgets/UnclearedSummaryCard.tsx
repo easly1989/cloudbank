@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { getUnclearedReport } from "../../../api/client";
 import { formatMinor } from "../../../money";
+import { amountColor } from "../../../amountTone";
 
 // UnclearedSummaryCard lists the accounts that still have uncleared (status
 // None) transactions, with the count and net amount — the reconciliation
@@ -38,7 +39,7 @@ export function UnclearedSummaryCard({ walletId }: { walletId: number }) {
                   {t("dashboard.unclearedCount", { count: a.count })}
                 </Text>
               </div>
-              <Text size="sm" fw={600} c={a.amount < 0 ? "red" : "teal"}>
+              <Text size="sm" fw={600} c={amountColor(a.amount)}>
                 {formatMinor(a.amount, a.currency)}
               </Text>
             </Group>

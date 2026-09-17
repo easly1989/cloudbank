@@ -17,6 +17,7 @@ import {
 import { useDateFormat } from "../../../dates";
 import { formatMinor } from "../../../money";
 import { todayCivil } from "../../../civilDate";
+import { amountColor } from "../../../amountTone";
 
 // UpcomingPanel lists scheduled transactions in three tabs — the next due
 // occurrences (with Post now / Skip), every active schedule, and the manual
@@ -92,7 +93,7 @@ export function UpcomingPanel({ walletId, base }: { walletId: number; base?: Cur
       </Box>
       <Group gap={4} wrap="nowrap">
         {base && (
-          <Text size="sm" fw={500} c={s.templateAmount < 0 ? "red" : "teal"}>
+          <Text size="sm" fw={500} c={amountColor(s.templateAmount)}>
             {formatMinor(s.templateAmount, base)}
           </Text>
         )}

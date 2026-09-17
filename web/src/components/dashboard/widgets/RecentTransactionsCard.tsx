@@ -6,6 +6,7 @@ import { getRegister, listAccounts } from "../../../api/client";
 import { useDateFormat } from "../../../dates";
 import { formatMinor } from "../../../money";
 import { accountFmt } from "./shared";
+import { amountColor } from "../../../amountTone";
 
 // RecentTransactionsCard lists the latest transactions in a chosen account.
 export function RecentTransactionsCard({
@@ -60,7 +61,7 @@ export function RecentTransactionsCard({
                   {fmtDate(r.date)}
                 </Text>
               </div>
-              <Text size="sm" fw={600} c={r.amount < 0 ? "red" : "teal"}>
+              <Text size="sm" fw={600} c={amountColor(r.amount)}>
                 {formatMinor(r.amount, accountFmt(account))}
               </Text>
             </Group>

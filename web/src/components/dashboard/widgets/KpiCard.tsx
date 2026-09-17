@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { CurrencyInfo } from "../../../api/client";
 import { formatMinor } from "../../../money";
 import type { KpiConfig } from "./shared";
+import { negativeOnlyColor } from "../../../amountTone";
 
 // KpiCard shows one wallet-wide figure as a big number.
 export function KpiCard({
@@ -43,7 +44,7 @@ export function KpiCard({
           w={130}
         />
       </Group>
-      <Text fw={700} size="xl" c={m.value != null && m.value < 0 ? "red" : undefined}>
+      <Text fw={700} size="xl" c={m.value == null ? undefined : negativeOnlyColor(m.value)}>
         {base && m.value != null ? formatMinor(m.value, base) : "—"}
       </Text>
     </Card>

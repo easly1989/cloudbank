@@ -1,6 +1,40 @@
 /* App-global tweaks that can't live in a scoped CSS module (they target Mantine
    part classes applied via `classNames`). */
 
+/* Money has its own two colours, and they are not the accent.
+   The accent is user-selectable and means only "you can act here"; income and
+   expense must keep meaning the same thing whichever accent is chosen. Both are
+   darker and less saturated than any accent, so an amount reads as a fact
+   rather than an alarm. Read them through amountTone.ts, never inline. */
+:root {
+  --cb-positive: #10704e;
+  --cb-negative: #a33529;
+  --cb-attention: #9a6100;
+}
+
+/* Lifted for a dark ground, where the light-mode pair would fall under the
+   contrast floor. */
+[data-mantine-color-scheme="dark"] {
+  --cb-positive: #4fc095;
+  --cb-negative: #f08b7e;
+  --cb-attention: #e0a43c;
+}
+
+/* Controls ease between colours instead of snapping: long enough to read as an
+   answer to the pointer, too short to wait for. */
+.cb-transition {
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-transition {
+    transition: none;
+  }
+}
+
 /* Tabular figures everywhere: digits share one width, so amounts and balances
    line up cleanly in columns (the register, every table, the dashboard tiles)
    instead of jittering with a proportional font. */
