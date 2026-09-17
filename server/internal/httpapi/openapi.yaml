@@ -434,6 +434,53 @@ paths:
       responses:
         "204": { description: Updated. }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/bank/pluggy/config:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getPluggyConfig
+      summary: Get the wallet's Pluggy application config (never the client secret)
+      responses:
+        "200": { description: The config. An unconfigured wallet returns configured=false, not an error., content: { application/json: { schema: { $ref: "#/components/schemas/PluggyConfig" } } } }
+    put:
+      operationId: setPluggyConfig
+      summary: Store the wallet's Pluggy application credentials; they are verified against the provider before being saved
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { clientId: { type: string }, clientSecret: { type: string, description: "Pluggy application secret; stored sealed and never returned." } }, required: [clientId, clientSecret] }
+      responses:
+        "204": { description: Saved. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+    delete:
+      operationId: deletePluggyConfig
+      summary: Remove the wallet's Pluggy credentials
+      responses:
+        "204": { description: Deleted. }
+  /api/v1/wallets/{walletId}/bank/pluggy/connect:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: connectPluggy
+      summary: Register a Pluggy item (created by the user in Meu Pluggy) as a bank connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { itemId: { type: string, description: "Item id copied from Meu Pluggy." }, name: { type: string, description: "Optional label; defaults to the first account's name." } }, required: [itemId] }
+      responses:
+        "201":
+          description: The connection and the item's accounts, ready to link.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connection: { $ref: "#/components/schemas/BankConnection" }
+                  accounts: { type: array, items: { $ref: "#/components/schemas/BankRemoteAccount" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/bank/enablebanking/config:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -2452,6 +2499,14 @@ components:
           items: { type: string }
           description: "a human message for each account that failed to sync"
       required: [imported, reconciled, accounts, failed]
+    PluggyConfig:
+      type: object
+      description: A wallet's Pluggy application config — never the client secret.
+      properties:
+        configured: { type: boolean }
+        clientId: { type: string }
+        configuredAt: { type: string, description: "When the credentials were last saved." }
+      required: [configured]
     EnableBankingConfig:
       type: object
       description: A wallet's Enable Banking application config — never the private key.

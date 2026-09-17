@@ -130,10 +130,55 @@ expires, sync reports it and you reconnect the bank.
 
 ---
 
+## Pluggy (Latin America) — experimental
+
+Pluggy is open finance for Brazil and Latin America. It works differently from
+the other two: **banks are linked outside CloudBank**, in Pluggy's own consumer
+app, so there is no consent redirect to configure here.
+
+1. Sign up at **[Meu Pluggy](https://meu.pluggy.ai)** and connect your banks
+   there. Each connected institution becomes an **item**.
+2. Create an account on the **Pluggy Dashboard**, create an application, and note
+   its **Client ID** and **Client Secret**.
+3. In the Dashboard, open your application and copy the **item id** of each
+   connection you want CloudBank to read.
+4. In CloudBank: **Bank sync -> Pluggy -> Configure**, paste the client id and
+   secret. They are verified against Pluggy before being saved, so a typo is
+   caught immediately rather than at the first scheduled sync.
+5. **Connect an item**, paste the item id, then **link** each account to a
+   CloudBank account and **Sync now**.
+
+### Cost, and one thing to check
+
+Pluggy's commercial plans are priced for companies, but **Meu Pluggy is free for
+personal use** and Pluggy states that access continues after the 15-day Dashboard
+trial at no cost.
+
+One caveat worth knowing before you invest time: other projects integrating
+Pluggy report that **linking a new bank in Meu Pluggy may require an active
+trial**, even though existing connections keep syncing. If you plan to add more
+banks later, confirm this on your own account rather than assuming.
+
+### Why it is marked experimental
+
+The integration follows Pluggy's published API, but unlike the other two
+providers it has **not been exercised against a live Latin American bank** by the
+maintainers. Treat surprises as bugs worth reporting.
+
+Two provider quirks it already accounts for, since both would be silent if wrong:
+
+- **Credit cards invert the sign.** Pluggy reports a positive amount on a card as
+  a *new charge* — money you owe — so CloudBank flips it to a negative (expense)
+  entry. On a bank account the direction comes from the transaction type instead.
+- **Pending movements are not marked cleared**, because a pending row can still
+  change amount or disappear before it settles.
+
+---
+
 ## Where credentials are stored
 
-Bank-sync secrets — the SimpleFIN access URL and the Enable Banking application
-private key — are stored **server-side** in the SQLite database and are **never
+Bank-sync secrets — the SimpleFIN access URL, the Enable Banking application
+private key and the Pluggy client secret — are stored **server-side** in the SQLite database and are **never
 returned to the browser**.
 
 Set **`CB_SECRET_KEY`** to encrypt them (and CloudBank's other reversible secrets
