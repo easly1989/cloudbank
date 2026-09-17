@@ -18,7 +18,7 @@ import { useTranslation } from "react-i18next";
 
 import { type CurrencyInfo, type DashboardGroupBy, getDashboard } from "../../../api/client";
 import { formatMinor } from "../../../money";
-import type { DatePreset } from "../../../pages/registerFilters";
+import type { DatePreset } from "../../../pages/registerFilterModel";
 import { Chart } from "../../Chart";
 import { Donut } from "../../Donut";
 import {

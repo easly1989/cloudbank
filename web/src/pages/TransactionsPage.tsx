@@ -66,7 +66,7 @@ import {
   filtersToParams,
   isActive,
   parseFilters,
-} from "./registerFilters";
+} from "./registerFilterModel";
 
 export function TransactionsPage() {
   const { t } = useTranslation();

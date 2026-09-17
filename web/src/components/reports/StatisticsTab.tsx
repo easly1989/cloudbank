@@ -19,7 +19,7 @@ import {
 import { useDateFormat } from "../../dates";
 import { type MoneyFormat, formatMinor } from "../../money";
 import { RegisterFilters } from "../../pages/RegisterFilters";
-import { type Filters, dateBounds, emptyFilters } from "../../pages/registerFilters";
+import { type Filters, dateBounds, emptyFilters } from "../../pages/registerFilterModel";
 import { useWallet } from "../../wallet/WalletProvider";
 import { Chart, type ChartHandle } from "../Chart";
 import { SavedViews } from "./SavedViews";
