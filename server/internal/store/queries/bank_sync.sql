@@ -62,3 +62,17 @@ DELETE FROM bank_links WHERE connection_id = ? AND external_id = ?;
 
 -- name: ListBankLinks :many
 SELECT external_id, account_id FROM bank_links WHERE connection_id = ?;
+
+-- name: GetPluggyConfig :one
+SELECT * FROM bank_pluggy_config WHERE wallet_id = ?;
+
+-- name: UpsertPluggyConfig :exec
+INSERT INTO bank_pluggy_config (wallet_id, client_id, client_secret)
+VALUES (?, ?, ?)
+ON CONFLICT (wallet_id) DO UPDATE SET
+    client_id     = excluded.client_id,
+    client_secret = excluded.client_secret,
+    updated_at    = strftime('%Y-%m-%dT%H:%M:%fZ', 'now');
+
+-- name: DeletePluggyConfig :exec
+DELETE FROM bank_pluggy_config WHERE wallet_id = ?;

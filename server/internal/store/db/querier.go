@@ -57,6 +57,7 @@ type Querier interface {
 	DeleteExpiredSessions(ctx context.Context, expiresAt string) error
 	DeleteGoal(ctx context.Context, id int64) error
 	DeletePayee(ctx context.Context, id int64) error
+	DeletePluggyConfig(ctx context.Context, walletID int64) error
 	DeletePushSubscription(ctx context.Context, arg DeletePushSubscriptionParams) error
 	DeletePushSubscriptionByEndpoint(ctx context.Context, endpoint string) error
 	DeleteRecoveryCodes(ctx context.Context, userID int64) error
@@ -90,6 +91,7 @@ type Querier interface {
 	GetEBankingConfig(ctx context.Context, walletID int64) (BankEbankingConfig, error)
 	GetGoal(ctx context.Context, id int64) (Goal, error)
 	GetPayee(ctx context.Context, id int64) (Payee, error)
+	GetPluggyConfig(ctx context.Context, walletID int64) (BankPluggyConfig, error)
 	GetSchedule(ctx context.Context, id int64) (Schedule, error)
 	GetSession(ctx context.Context, id string) (Session, error)
 	GetTag(ctx context.Context, id int64) (Tag, error)
@@ -269,6 +271,7 @@ type Querier interface {
 	UpsertBankLink(ctx context.Context, arg UpsertBankLinkParams) error
 	UpsertEBankingConfig(ctx context.Context, arg UpsertEBankingConfigParams) error
 	UpsertExchangeRate(ctx context.Context, arg UpsertExchangeRateParams) error
+	UpsertPluggyConfig(ctx context.Context, arg UpsertPluggyConfigParams) error
 	UpsertPushSubscription(ctx context.Context, arg UpsertPushSubscriptionParams) error
 }
 
