@@ -24,6 +24,7 @@ func (h *importDataHandlers) walletRoutes(r chi.Router) {
 	r.Post("/import/csv/preview", h.previewCSV)
 	r.Post("/import/qif/preview", h.previewQIF)
 	r.Post("/import/ofx/preview", h.previewOFX)
+	r.Post("/import/camt/preview", h.previewCAMT)
 	r.Post("/import/commit", h.commit)
 	r.Get("/export/csv", h.exportCSV)
 	r.Get("/export/qif", h.exportQIF)
@@ -136,6 +137,12 @@ func (h *importDataHandlers) previewOFX(w http.ResponseWriter, r *http.Request) 
 	h.previewParsed(w, r, func(b parsedPreviewBody) ([]importio.Row, error) {
 		return importio.ParseOFX(b.Content)
 	}, "could not parse the OFX file")
+}
+
+func (h *importDataHandlers) previewCAMT(w http.ResponseWriter, r *http.Request) {
+	h.previewParsed(w, r, func(b parsedPreviewBody) ([]importio.Row, error) {
+		return importio.ParseCAMT053(b.Content)
+	}, "could not parse the CAMT.053 file")
 }
 
 func (h *importDataHandlers) previewParsed(
