@@ -111,6 +111,9 @@ export const previewQIF = (walletId: number, body: ParsedPreviewRequest) =>
 export const previewOFX = (walletId: number, body: ParsedPreviewRequest) =>
   api.post<CSVPreview>(`/api/v1/wallets/${walletId}/import/ofx/preview`, body);
 
+export const previewCAMT = (walletId: number, body: ParsedPreviewRequest) =>
+  api.post<CSVPreview>(`/api/v1/wallets/${walletId}/import/camt/preview`, body);
+
 export const listImportPlugins = (walletId: number) =>
   api.get<{ plugins: ImportPlugin[] }>(`/api/v1/wallets/${walletId}/import/plugins`);
 

@@ -58,7 +58,8 @@ latest save — re-export from HomeBank and import again into a fresh wallet.
 ## Other formats
 
 If you're coming from another tool, CloudBank also imports **CSV** (the HomeBank
-CSV dialect and generic mapped CSV), **QIF**, and **OFX/QFX** from the same
+CSV dialect and generic mapped CSV), **QIF**, **OFX/QFX** and **CAMT.053**
+(the ISO 20022 statement most European banks offer as a download) from the same
 **Settings → Wallet → Import** screen, with duplicate detection and optional rule
 application.
 

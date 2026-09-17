@@ -31,6 +31,7 @@ import {
   listImportPlugins,
   listTags,
   previewCSV,
+  previewCAMT,
   previewOFX,
   previewPlugin,
   previewQIF,
@@ -42,7 +43,7 @@ import {
 import { formatMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
 
-type Format = "homebank" | "generic" | "qif" | "ofx" | "plugin";
+type Format = "homebank" | "generic" | "qif" | "ofx" | "camt" | "plugin";
 type Phase = "source" | "map" | "review" | "done";
 
 // Read a (binary) file as base64 for plugin uploads.
@@ -129,7 +130,7 @@ export function ImportWizard() {
   const fileAccept =
     format === "plugin"
       ? (selectedPlugin?.accept.join(",") ?? ".xlsx")
-      : ".csv,.qif,.ofx,.qfx,text/csv,text/plain,application/x-ofx";
+      : ".csv,.qif,.ofx,.qfx,.xml,text/csv,text/plain,application/x-ofx,application/xml,text/xml";
 
   const fmtAmount = (minor: number) =>
     account
@@ -158,6 +159,9 @@ export function ImportWizard() {
     }
     if (format === "ofx") {
       return previewOFX(walletId, { accountId: acc, content, applyRules: opts.rules });
+    }
+    if (format === "camt") {
+      return previewCAMT(walletId, { accountId: acc, content, applyRules: opts.rules });
     }
     return previewCSV(walletId, {
       accountId: acc,
@@ -308,6 +312,7 @@ export function ImportWizard() {
                 { label: t("importCsv.format.generic"), value: "generic" },
                 { label: t("importCsv.format.qif"), value: "qif" },
                 { label: t("importCsv.format.ofx"), value: "ofx" },
+                { label: t("importCsv.format.camt"), value: "camt" },
                 ...(plugins.length > 0
                   ? [{ label: t("importCsv.format.bank"), value: "plugin" }]
                   : []),

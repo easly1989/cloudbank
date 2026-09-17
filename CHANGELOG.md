@@ -12,6 +12,15 @@ dashboard polish.
 
 ### Added
 
+- **Import ISO 20022 CAMT.053 statements.** The end-of-day statement most
+  European banks offer as a download is now a first-class import format,
+  alongside HomeBank `.xhb`, QIF, OFX/QFX and CSV: pick *CAMT.053* in the import
+  assistant and the file runs through the same preview, duplicate detection and
+  assignment rules as any other. The bank's own reference for each movement is
+  kept, so re-importing an overlapping statement flags the repeats instead of
+  duplicating them, and statements exported in ISO-8859-1 or windows-1252 are
+  read correctly rather than rejected.
+
 - **Scannable tables** — numbers now use tabular figures app-wide, so amounts and
   balances line up cleanly in columns (the register, every table, the dashboard),
   and tables share one compact, consistent density with a quiet row-hover highlight.
