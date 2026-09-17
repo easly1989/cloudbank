@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { getCashflowForecast, listAccounts } from "../../../api/client";
 import { formatMinor } from "../../../money";
 import { Chart } from "../../Chart";
+import { attentionColor } from "../../../amountTone";
 
 const HORIZONS = [30, 60, 90] as const;
 
@@ -106,7 +107,7 @@ export function CashflowForecastCard({
       </Group>
       {account && balances.length > 0 ? (
         <>
-          <Text fw={700} size="lg" c={breaches ? "red" : undefined}>
+          <Text fw={700} size="lg" c={breaches ? attentionColor : undefined}>
             {base && ending != null ? formatMinor(ending, base) : "—"}
           </Text>
           <Chart option={option} height={200} />

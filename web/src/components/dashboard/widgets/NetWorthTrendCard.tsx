@@ -8,6 +8,7 @@ import { getBalanceReport } from "../../../api/client";
 import { formatMinor } from "../../../money";
 import { Chart } from "../../Chart";
 import { trailingYearBounds } from "./shared";
+import { negativeOnlyColor } from "../../../amountTone";
 
 // NetWorthTrendCard plots total net worth (the sum of every account's balance,
 // so liabilities net out) over the last ~12 months, from the balance report.
@@ -54,7 +55,7 @@ export function NetWorthTrendCard({ walletId }: { walletId: number }) {
       <Group justify="space-between" mb="xs" wrap="nowrap" gap="xs">
         <Title order={4}>{t("dashboard.netWorth")}</Title>
         {base && latest != null && (
-          <Text size="sm" fw={700} c={latest < 0 ? "red" : undefined}>
+          <Text size="sm" fw={700} c={negativeOnlyColor(latest)}>
             {formatMinor(latest, base)}
           </Text>
         )}

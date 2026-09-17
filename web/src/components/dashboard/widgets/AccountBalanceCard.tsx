@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { listAccounts } from "../../../api/client";
 import { formatMinor } from "../../../money";
 import { accountFmt } from "./shared";
+import { negativeOnlyColor } from "../../../amountTone";
 
 // AccountBalanceCard shows a single account's today balance big, with the future
 // balance secondary. The account is chosen per instance (defaults to the first).
@@ -45,7 +46,7 @@ export function AccountBalanceCard({
       </Group>
       {account ? (
         <>
-          <Text fw={700} size="xl" c={account.balance < 0 ? "red" : undefined}>
+          <Text fw={700} size="xl" c={negativeOnlyColor(account.balance)}>
             {formatMinor(account.balance, accountFmt(account))}
           </Text>
           <Text size="xs" c="dimmed">

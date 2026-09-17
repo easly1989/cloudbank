@@ -39,6 +39,7 @@ import { TransactionForm } from "../components/TransactionForm";
 import { useDateFormat } from "../dates";
 import { formatMinor, type MoneyFormat } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
+import { amountColor } from "../amountTone";
 
 function fmtFor(acc?: Account): MoneyFormat {
   return {
@@ -172,7 +173,7 @@ export function ReviewPage() {
             <Text fw={600} size="sm">
               {fmtDate(tx.date)}
             </Text>
-            <Text fw={600} size="sm" c={tx.amount < 0 ? "red" : "teal"}>
+            <Text fw={600} size="sm" c={amountColor(tx.amount)}>
               {formatMinor(tx.amount, fmtFor(acc))}
             </Text>
           </Group>

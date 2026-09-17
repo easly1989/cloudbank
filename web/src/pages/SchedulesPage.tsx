@@ -59,6 +59,7 @@ import { PAYMENT_MODES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
 import { todayCivil } from "../civilDate";
+import { amountColor } from "../amountTone";
 
 const UNITS: ScheduleUnit[] = ["day", "week", "month", "year"];
 const WEEKEND_MODES = [0, 1, 2, 3];
@@ -222,7 +223,7 @@ export function SchedulesPage() {
                   <Text size="sm" fw={700}>
                     {t("schedules.net")}
                   </Text>
-                  <Text size="sm" fw={700} c={net < 0 ? "red" : net > 0 ? "teal" : undefined}>
+                  <Text size="sm" fw={700} c={amountColor(net)}>
                     {formatMinor(net, summaryFmt)}
                   </Text>
                 </Group>
@@ -257,7 +258,7 @@ export function SchedulesPage() {
                 })}
               >
                 <Table.Td>{s.templateName}</Table.Td>
-                <Table.Td ta="right" c={s.templateAmount < 0 ? "red" : "teal"}>
+                <Table.Td ta="right" c={amountColor(s.templateAmount)}>
                   {formatMinor(s.templateAmount, accountFormat(accountFor(s)))}
                 </Table.Td>
                 <Table.Td>

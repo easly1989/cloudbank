@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { ApiError, type Bill, type BillState, getBills, postScheduleNow } from "../api/client";
 import { useDateFormat } from "../dates";
 import { formatMinor } from "../money";
+import { amountColor } from "../amountTone";
 
 const STATE_COLOR: Record<BillState, string> = {
   overdue: "red",
@@ -87,7 +88,7 @@ export function BillsList({
           </Text>
         </Box>
         <Group gap={4} wrap="nowrap">
-          <Text size="sm" fw={500} c={b.amount < 0 ? "red" : "teal"}>
+          <Text size="sm" fw={500} c={amountColor(b.amount)}>
             {formatMinor(b.amount, b.currency)}
           </Text>
           {postable ? (
