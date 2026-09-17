@@ -30,12 +30,19 @@ Targeted runs:
 ```bash
 cd server && go test ./internal/httpapi -run TestAccountsCreate -race -count=1
 cd web && npx vitest run src/money.test.ts     # single file
-cd web && npm run typecheck                    # tsc --noEmit
+cd web && npm run typecheck                    # tsc -b --noEmit (plain --noEmit checks nothing: see below)
 cd web && npm run check:i18n                   # locale key parity (CI gate)
 cd e2e && npm test                             # Playwright; needs the app on E2E_BASE_URL
 ```
 
 Prerequisites: Go 1.26+, Node 22+, Docker. `golangci-lint` v2.1.6 runs in CI but not in `make lint`.
+
+`make` is not available on Windows by default — `CONTRIBUTING.md` lists the direct command behind
+each target. Two constraints keep a Windows checkout honest: `.gitattributes` pins line endings to
+LF, and **no two source files may differ only in case** (they collide on a case-insensitive
+filesystem and resolve to the wrong module, which Linux CI cannot see). `web/tsconfig.json` is a
+solution file with `"files": []`, so a bare `tsc --noEmit` against it typechecks *nothing* — build
+mode (`tsc -b`) is what actually checks `src/`.
 
 ## Generated code — never hand-edit
 

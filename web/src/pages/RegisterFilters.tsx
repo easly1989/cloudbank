@@ -7,7 +7,7 @@ import { type MoneyFormat } from "../money";
 import tagClasses from "../tagPills.module.css";
 import { STATUSES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
-import { type DatePreset, type Filters, type TransferFilter } from "./registerFilters";
+import { type DatePreset, type Filters, type TransferFilter } from "./registerFilterModel";
 
 const PRESETS: DatePreset[] = [
   "all",

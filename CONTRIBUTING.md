@@ -84,6 +84,41 @@ make build    # build the web app and the Go binary (embeds the SPA)
 make docker   # build the container image locally
 ```
 
+### Working on Windows
+
+Everything here works on Windows — the repo is developed on it — but `make` is
+**not** part of a default Windows install (not even alongside Git Bash), and the
+recipes use `cp`, `rm -rf` and `find`, which need a POSIX shell. Either install
+`make` plus Git Bash and use the targets above, or run the underlying commands
+directly. Each target is only a line or two:
+
+| Instead of | Run |
+| --- | --- |
+| `make dev` | `cd server && go run ./cmd/cloudbank` |
+| `make web-dev` | `cd web && npm run dev` |
+| `make lint` | `cd server && go vet ./...` then `cd web && npm run lint` |
+| `make test` | `cd server && go test ./... -race -count=1` then `cd web && npm run test` |
+| `make build` | `cd web && npm run build` then `cd server && go build ./cmd/cloudbank` |
+
+`make gen` is the one worth spelling out, because of the copy at the end:
+
+```powershell
+cd server; sqlc generate
+cd ..\web; npm run gen:api
+Copy-Item ..\api\openapi.yaml ..\server\internal\httpapi\openapi.yaml
+```
+
+Two things the repo does so a Windows checkout behaves like a Linux one:
+
+- **`.gitattributes` pins line endings to LF.** Without it, a clone with the
+  common `core.autocrlf=true` gets CRLF and `prettier --check` fails on files you
+  never touched. If you cloned before that file existed, run
+  `git add --renormalize .` once.
+- **No two source files may differ only in case.** On a case-insensitive
+  filesystem they collide and the build resolves imports to the wrong one, which
+  Linux CI cannot see. This is why the register's filter model is
+  `registerFilterModel.ts` rather than sharing a name with `RegisterFilters.tsx`.
+
 ## License of contributions
 
 By contributing you agree that your contributions are licensed under the project's [AGPL-3.0](LICENSE). Do **not** paste code from HomeBank or other GPL/incompatible sources — CloudBank is a clean-room reimplementation and must remain so.

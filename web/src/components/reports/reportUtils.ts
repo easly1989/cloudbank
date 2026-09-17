@@ -3,7 +3,7 @@
 import type { ReportBucket, ReportGroupBy, TrendBreakdown } from "../../api/client";
 import type { MoneyFormat } from "../../money";
 import { toCivilDate } from "../../civilDate";
-import { type Filters, dateBounds } from "../../pages/registerFilters";
+import { type Filters, dateBounds } from "../../pages/registerFilterModel";
 
 export const BUCKETS: ReportBucket[] = ["day", "week", "month", "quarter", "year"];
 export const BREAKDOWNS: TrendBreakdown[] = ["none", "account", "payee", "category"];
