@@ -106,16 +106,19 @@ export function CategoriesPage() {
     </span>
   );
 
+  // One button, shown in the header or in the empty state — never both.
+  const addButton = (
+    <Button leftSection={<IconPlus size={16} />} onClick={() => openAdd(null)}>
+      {t("categories.add")}
+    </Button>
+  );
+
   return (
     <Stack maw={720}>
       <PageHeader
         title={t("categories.title")}
         hint={t("categories.hint")}
-        actions={
-          <Button leftSection={<IconPlus size={16} />} onClick={() => openAdd(null)}>
-            {t("categories.add")}
-          </Button>
-        }
+        actions={tops.length > 0 ? addButton : undefined}
       />
 
       {tops.length === 0 && (
@@ -123,11 +126,7 @@ export function CategoriesPage() {
           icon={IconCategory}
           message={t("categories.empty")}
           hint={t("categories.emptyHint")}
-          action={
-            <Button leftSection={<IconPlus size={16} />} onClick={() => openAdd(null)}>
-              {t("categories.add")}
-            </Button>
-          }
+          action={addButton}
         />
       )}
 

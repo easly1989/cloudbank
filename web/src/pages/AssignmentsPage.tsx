@@ -124,6 +124,19 @@ export function AssignmentsPage() {
 
   if (!currentWallet) return null;
 
+  // The empty state offers the same button; the header drops it while the
+  // list is empty rather than showing it twice.
+  const addButton = (
+    <Button
+      onClick={() => {
+        setEditing(null);
+        form.open();
+      }}
+    >
+      {t("assignments.add")}
+    </Button>
+  );
+
   return (
     <Stack>
       <PageHeader
@@ -146,14 +159,7 @@ export function AssignmentsPage() {
             >
               {t("assignments.applyToExisting")}
             </Button>
-            <Button
-              onClick={() => {
-                setEditing(null);
-                form.open();
-              }}
-            >
-              {t("assignments.add")}
-            </Button>
+            {order.length > 0 && addButton}
           </>
         }
       />
@@ -163,16 +169,7 @@ export function AssignmentsPage() {
           icon={IconFilter}
           message={t("assignments.empty")}
           hint={t("assignments.emptyHint")}
-          action={
-            <Button
-              onClick={() => {
-                setEditing(null);
-                form.open();
-              }}
-            >
-              {t("assignments.add")}
-            </Button>
-          }
+          action={addButton}
         />
       )}
 

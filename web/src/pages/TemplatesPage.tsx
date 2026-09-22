@@ -98,16 +98,19 @@ export function TemplatesPage() {
   if (!currentWallet) return null;
   const templates = templatesQuery.data ?? [];
 
+  // One button, shown in the header or in the empty state — never both.
+  const addButton = (
+    <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
+      {t("templates.add")}
+    </Button>
+  );
+
   return (
     <Stack maw={760}>
       <PageHeader
         title={t("templates.title")}
         hint={t("templates.hint")}
-        actions={
-          <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
-            {t("templates.add")}
-          </Button>
-        }
+        actions={templates.length > 0 ? addButton : undefined}
       />
 
       {templates.length === 0 && (
@@ -115,11 +118,7 @@ export function TemplatesPage() {
           icon={IconFileText}
           message={t("templates.empty")}
           hint={t("templates.emptyHint")}
-          action={
-            <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
-              {t("templates.add")}
-            </Button>
-          }
+          action={addButton}
         />
       )}
 

@@ -182,22 +182,25 @@ export function SchedulesPage() {
 
   if (!currentWallet) return null;
 
+  // One button, shown in the header or in the empty state — never both.
+  const addButton = (
+    <Button
+      leftSection={<IconPlus size={16} />}
+      onClick={() => {
+        setEditing(null);
+        form.open();
+      }}
+    >
+      {t("schedules.add")}
+    </Button>
+  );
+
   return (
     <Stack>
       <PageHeader
         title={t("schedules.title")}
         hint={t("schedules.hint")}
-        actions={
-          <Button
-            leftSection={<IconPlus size={16} />}
-            onClick={() => {
-              setEditing(null);
-              form.open();
-            }}
-          >
-            {t("schedules.add")}
-          </Button>
-        }
+        actions={schedules.length > 0 ? addButton : undefined}
       />
 
       {schedules.length > 0 && (
@@ -244,17 +247,7 @@ export function SchedulesPage() {
           icon={IconCalendarRepeat}
           message={t("schedules.empty")}
           hint={t("schedules.emptyHint")}
-          action={
-            <Button
-              leftSection={<IconPlus size={16} />}
-              onClick={() => {
-                setEditing(null);
-                form.open();
-              }}
-            >
-              {t("schedules.add")}
-            </Button>
-          }
+          action={addButton}
         />
       )}
 

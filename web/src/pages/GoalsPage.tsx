@@ -106,27 +106,22 @@ export function GoalsPage() {
 
   if (!currentWallet) return null;
 
+  // One button, shown in the header or in the empty state — never both.
+  const addButton = (
+    <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
+      {t("goals.add")}
+    </Button>
+  );
+
   return (
     <Stack>
       <PageHeader
         title={t("goals.title")}
         hint={t("goals.hint")}
-        actions={
-          <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
-            {t("goals.add")}
-          </Button>
-        }
+        actions={goals.length > 0 ? addButton : undefined}
       />
       {goals.length === 0 ? (
-        <EmptyState
-          icon={IconPigMoney}
-          message={t("goals.empty")}
-          action={
-            <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
-              {t("goals.add")}
-            </Button>
-          }
-        />
+        <EmptyState icon={IconPigMoney} message={t("goals.empty")} action={addButton} />
       ) : (
         <SimpleGrid cols={{ base: 1, md: 2 }}>
           {goals.map((g) => (
