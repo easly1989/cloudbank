@@ -26,6 +26,7 @@ import { useTranslation } from "react-i18next";
 import { type DashboardAccount, type User, getDashboard, updateMe } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { GridDashboard, type GridDashboardHandle } from "../components/dashboard/GridDashboard";
+import { NeedsAttention } from "../components/dashboard/NeedsAttention";
 import {
   COLUMNS,
   type DashboardLayoutV2,
@@ -355,6 +356,11 @@ export function DashboardPage() {
           {t("dashboard.editHint")}
         </Alert>
       )}
+
+      {/* Above the grid and outside it: the widgets are the reader's to arrange,
+        but an overdue bill is not a preference. Something you can remove is
+        something the one person who removes it will then miss. */}
+      <NeedsAttention walletId={walletId} />
 
       <GridDashboard
         ref={gridApi}

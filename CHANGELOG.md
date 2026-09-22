@@ -42,6 +42,14 @@ dashboard polish.
 
 ### Added
 
+- **The overview opens with what needs doing.** Above the widgets, a short strip
+  lists the handful of things waiting — transactions with no category, overdue
+  bills, budgets gone past, pairs that look like duplicates — each with the one
+  link that fixes it. It disappears entirely when there is nothing to do, so
+  seeing it means something is genuinely waiting. It sits outside the widget
+  grid on purpose: widgets are yours to remove, and an overdue bill is not a
+  preference.
+
 - **Account balances in the sidebar, if you want them.** Off by default; pick up
   to three accounts in Settings and their balances sit at the foot of the
   sidebar. Only a negative balance is coloured, because colouring the healthy
