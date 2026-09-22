@@ -9,7 +9,6 @@ import {
   SegmentedControl,
   Stack,
   Text,
-  Title,
 } from "@mantine/core";
 import {
   IconAdjustmentsHorizontal,
@@ -29,6 +28,7 @@ import { type DashboardAccount, type User, getDashboard, updateMe } from "../api
 import { useAuth } from "../auth/AuthProvider";
 import type { DatePreset } from "./registerFilterModel";
 import { GridDashboard, type GridDashboardHandle } from "../components/dashboard/GridDashboard";
+import { PageHeader } from "../components/PageHeader";
 import { NeedsAttention } from "../components/dashboard/NeedsAttention";
 import {
   COLUMNS,
@@ -321,66 +321,68 @@ export function DashboardPage() {
 
   return (
     <Stack>
-      <Group justify="space-between">
-        <Title order={2}>{t("dashboard.title")}</Title>
-        <Group gap="xs">
-          <Select
-            aria-label={t("dashboard.period")}
-            data={PAGE_PERIODS.map((p) => ({ value: p, label: t(`filters.presets.${p}`) }))}
-            value={pagePeriod}
-            onChange={(v) => v && persistPeriod.mutate(v as DatePreset)}
-            allowDeselect={false}
-            w={150}
-          />
-          {editingLayout && (
-            <Menu position="bottom-end" withinPortal>
-              <Menu.Target>
-                <Button variant="default" size="xs" leftSection={<IconPlus size={16} />}>
-                  {t("dashboard.addWidget")}
+      <PageHeader
+        title={t("dashboard.title")}
+        actions={
+          <>
+            <Select
+              aria-label={t("dashboard.period")}
+              data={PAGE_PERIODS.map((p) => ({ value: p, label: t(`filters.presets.${p}`) }))}
+              value={pagePeriod}
+              onChange={(v) => v && persistPeriod.mutate(v as DatePreset)}
+              allowDeselect={false}
+              w={150}
+            />
+            {editingLayout && (
+              <Menu position="bottom-end" withinPortal>
+                <Menu.Target>
+                  <Button variant="default" size="xs" leftSection={<IconPlus size={16} />}>
+                    {t("dashboard.addWidget")}
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  {WIDGET_TYPES.map((type) => (
+                    <Menu.Item key={type} onClick={() => addWidget(type)}>
+                      {labels[type]}
+                    </Menu.Item>
+                  ))}
+                </Menu.Dropdown>
+              </Menu>
+            )}
+            {editingLayout && (
+              <>
+                <Button
+                  variant="default"
+                  size="xs"
+                  leftSection={<IconArrowsMinimize size={16} />}
+                  onClick={tidy}
+                >
+                  {t("dashboard.tidyLayout")}
                 </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                {WIDGET_TYPES.map((type) => (
-                  <Menu.Item key={type} onClick={() => addWidget(type)}>
-                    {labels[type]}
-                  </Menu.Item>
-                ))}
-              </Menu.Dropdown>
-            </Menu>
-          )}
-          {editingLayout && (
-            <>
-              <Button
-                variant="default"
-                size="xs"
-                leftSection={<IconArrowsMinimize size={16} />}
-                onClick={tidy}
-              >
-                {t("dashboard.tidyLayout")}
-              </Button>
-              <Button
-                variant="default"
-                size="xs"
-                color="gray"
-                leftSection={<IconRestore size={16} />}
-                onClick={resetToDefault}
-              >
-                {t("dashboard.resetLayout")}
-              </Button>
-            </>
-          )}
-          <Button
-            variant={editingLayout ? "light" : "subtle"}
-            color="gray"
-            size="xs"
-            leftSection={<IconAdjustmentsHorizontal size={16} />}
-            onClick={() => setEditingLayout((v) => !v)}
-            data-tour="customize"
-          >
-            {editingLayout ? t("dashboard.layoutDone") : t("dashboard.customize")}
-          </Button>
-        </Group>
-      </Group>
+                <Button
+                  variant="default"
+                  size="xs"
+                  color="gray"
+                  leftSection={<IconRestore size={16} />}
+                  onClick={resetToDefault}
+                >
+                  {t("dashboard.resetLayout")}
+                </Button>
+              </>
+            )}
+            <Button
+              variant={editingLayout ? "light" : "subtle"}
+              color="gray"
+              size="xs"
+              leftSection={<IconAdjustmentsHorizontal size={16} />}
+              onClick={() => setEditingLayout((v) => !v)}
+              data-tour="customize"
+            >
+              {editingLayout ? t("dashboard.layoutDone") : t("dashboard.customize")}
+            </Button>
+          </>
+        }
+      />
 
       {editingLayout && (
         <Alert variant="light" color="blue" icon={<IconInfoCircle size={16} />} py="xs">

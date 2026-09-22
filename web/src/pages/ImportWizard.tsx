@@ -545,22 +545,22 @@ export function ImportWizard() {
                             />
                           )}
                           {r.match === "imported" && (
-                            <Badge color="gray" size="sm" variant="light">
+                            <Badge color="gray" size="sm" variant="dot">
                               {t("importCsv.alreadyImported")}
                             </Badge>
                           )}
                           {r.duplicate && r.match !== "imported" && (
-                            <Badge color="yellow" size="sm">
+                            <Badge color="yellow" size="sm" variant="dot">
                               {t("importCsv.duplicate")}
                             </Badge>
                           )}
                           {r.ruleApplied && (
-                            <Badge color="blue" size="sm">
+                            <Badge color="blue" size="sm" variant="dot">
                               {t("importCsv.rule")}
                             </Badge>
                           )}
                           {r.error && (
-                            <Badge color="red" size="sm">
+                            <Badge color="red" size="sm" variant="dot">
                               {r.error}
                             </Badge>
                           )}

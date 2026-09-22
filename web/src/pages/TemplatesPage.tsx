@@ -9,16 +9,16 @@ import {
   Stack,
   Table,
   TextInput,
-  Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconFileText, IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/confirmContext";
 import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
 
 import {
   ApiError,
@@ -100,14 +100,28 @@ export function TemplatesPage() {
 
   return (
     <Stack maw={760}>
-      <Group justify="space-between">
-        <Title order={2}>{t("templates.title")}</Title>
-        <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
-          {t("templates.add")}
-        </Button>
-      </Group>
+      <PageHeader
+        title={t("templates.title")}
+        hint={t("templates.hint")}
+        actions={
+          <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
+            {t("templates.add")}
+          </Button>
+        }
+      />
 
-      {templates.length === 0 && <EmptyState message={t("templates.empty")} />}
+      {templates.length === 0 && (
+        <EmptyState
+          icon={IconFileText}
+          message={t("templates.empty")}
+          hint={t("templates.emptyHint")}
+          action={
+            <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
+              {t("templates.add")}
+            </Button>
+          }
+        />
+      )}
 
       {templates.length > 0 && (
         <Table>

@@ -15,7 +15,6 @@ import {
   Table,
   Text,
   TextInput,
-  Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -31,6 +30,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/confirmContext";
 import { EmptyState } from "../components/EmptyState";
+import { IconCalendarRepeat } from "@tabler/icons-react";
+import { PageHeader } from "../components/PageHeader";
 
 import {
   ApiError,
@@ -183,18 +184,21 @@ export function SchedulesPage() {
 
   return (
     <Stack>
-      <Group justify="space-between">
-        <Title order={2}>{t("schedules.title")}</Title>
-        <Button
-          leftSection={<IconPlus size={16} />}
-          onClick={() => {
-            setEditing(null);
-            form.open();
-          }}
-        >
-          {t("schedules.add")}
-        </Button>
-      </Group>
+      <PageHeader
+        title={t("schedules.title")}
+        hint={t("schedules.hint")}
+        actions={
+          <Button
+            leftSection={<IconPlus size={16} />}
+            onClick={() => {
+              setEditing(null);
+              form.open();
+            }}
+          >
+            {t("schedules.add")}
+          </Button>
+        }
+      />
 
       {schedules.length > 0 && (
         <SimpleGrid cols={{ base: 1, sm: 3 }}>
@@ -235,7 +239,24 @@ export function SchedulesPage() {
         </SimpleGrid>
       )}
 
-      {schedules.length === 0 && <EmptyState message={t("schedules.empty")} />}
+      {schedules.length === 0 && (
+        <EmptyState
+          icon={IconCalendarRepeat}
+          message={t("schedules.empty")}
+          hint={t("schedules.emptyHint")}
+          action={
+            <Button
+              leftSection={<IconPlus size={16} />}
+              onClick={() => {
+                setEditing(null);
+                form.open();
+              }}
+            >
+              {t("schedules.add")}
+            </Button>
+          }
+        />
+      )}
 
       {schedules.length > 0 && (
         <Table striped highlightOnHover>
@@ -269,7 +290,7 @@ export function SchedulesPage() {
                 <Table.Td>{fmtDate(s.nextDue)}</Table.Td>
                 <Table.Td>{s.remaining ?? "∞"}</Table.Td>
                 <Table.Td>
-                  <Badge variant="light" color={s.autoPost ? "teal" : "gray"}>
+                  <Badge variant="dot" color={s.autoPost ? "teal" : "gray"}>
                     {s.autoPost ? t("schedules.autoLabel") : t("schedules.remindLabel")}
                   </Badge>
                 </Table.Td>

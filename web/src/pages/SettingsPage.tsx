@@ -1,5 +1,6 @@
-import { Stack, Tabs, Title } from "@mantine/core";
+import { Stack, Tabs } from "@mantine/core";
 import { IconKey, IconMenu2, IconSettings, IconUsers, IconWallet } from "@tabler/icons-react";
+import { PageHeader } from "../components/PageHeader";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
@@ -28,7 +29,7 @@ export function SettingsPage() {
 
   return (
     <Stack>
-      <Title order={2}>{t("settings.title")}</Title>
+      <PageHeader title={t("settings.title")} />
       <Tabs
         value={tab}
         onChange={(v) => setParams(v && v !== "general" ? { tab: v } : {}, { replace: true })}
