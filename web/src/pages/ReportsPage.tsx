@@ -1,16 +1,17 @@
-import { Stack, Tabs, Title } from "@mantine/core";
+import { Stack, Tabs } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 
 import { BalanceTab } from "../components/reports/BalanceTab";
 import { StatisticsTab } from "../components/reports/StatisticsTab";
 import { TrendTab } from "../components/reports/TrendTab";
 import { VehicleTab } from "../components/reports/VehicleTab";
+import { PageHeader } from "../components/PageHeader";
 
 export function ReportsPage() {
   const { t } = useTranslation();
   return (
     <Stack>
-      <Title order={2}>{t("reports.title")}</Title>
+      <PageHeader title={t("reports.title")} hint={t("reports.hint")} />
       <Tabs defaultValue="statistics">
         <Tabs.List>
           <Tabs.Tab value="statistics">{t("reports.statistics")}</Tabs.Tab>

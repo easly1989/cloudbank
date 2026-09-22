@@ -18,7 +18,9 @@ export function EmptyState({
 }) {
   return (
     <Center py="xl">
-      <Stack align="center" gap="xs" maw={360} ta="center">
+      {/* Wide enough that a sentence explaining what the page is for reads as a
+          sentence, rather than stacking into four short centred lines. */}
+      <Stack align="center" gap="xs" maw={440} ta="center">
         <ThemeIcon variant="light" color="gray" size={48} radius="xl">
           <Icon size={26} />
         </ThemeIcon>

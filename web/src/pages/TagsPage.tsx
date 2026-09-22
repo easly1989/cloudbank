@@ -1,6 +1,8 @@
-import { ActionIcon, Group, Select, Stack, Table, Text, TextInput, Title } from "@mantine/core";
+import { ActionIcon, Group, Select, Stack, Table, TextInput } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconTrash } from "@tabler/icons-react";
+import { IconTags, IconTrash } from "@tabler/icons-react";
+import { PageHeader } from "../components/PageHeader";
+import { EmptyState } from "../components/EmptyState";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -38,9 +40,9 @@ export function TagsPage() {
 
   return (
     <Stack>
-      <Title order={2}>{t("tags.title")}</Title>
+      <PageHeader title={t("tags.title")} hint={t("tags.hint")} />
       {tags.length === 0 ? (
-        <Text c="dimmed">{t("tags.empty")}</Text>
+        <EmptyState icon={IconTags} message={t("tags.empty")} />
       ) : (
         <Table>
           <Table.Thead>

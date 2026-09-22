@@ -9,13 +9,14 @@ import {
   Tabs,
   Text,
   TextInput,
-  Title,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "../components/EmptyState";
+import { IconChartPie } from "@tabler/icons-react";
+import { PageHeader } from "../components/PageHeader";
 
 import {
   ApiError,
@@ -61,7 +62,7 @@ export function BudgetPage() {
 
   return (
     <Stack>
-      <Title order={2}>{t("budget.title")}</Title>
+      <PageHeader title={t("budget.title")} hint={t("budget.hint")} />
       <Tabs defaultValue="editor">
         <Tabs.List>
           <Tabs.Tab value="editor">{t("budget.editor")}</Tabs.Tab>
@@ -348,7 +349,9 @@ function BudgetReportView({ walletId, fmt }: { walletId: number; fmt: MoneyForma
         <BudgetGauge budget={expense.budget} actual={expense.actual} base={fmt} />
       )}
 
-      {report && report.rows.length === 0 && <EmptyState message={t("budget.empty")} />}
+      {report && report.rows.length === 0 && (
+        <EmptyState icon={IconChartPie} message={t("budget.empty")} />
+      )}
 
       {report && report.rows.length > 0 && (
         <Table striped>

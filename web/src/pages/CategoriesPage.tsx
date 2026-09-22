@@ -11,15 +11,15 @@ import {
   Stack,
   Text,
   TextInput,
-  Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconDots, IconPlus } from "@tabler/icons-react";
+import { IconCategory, IconDots, IconPlus } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
 
 import {
   ApiError,
@@ -106,16 +106,29 @@ export function CategoriesPage() {
     </span>
   );
 
+  // One button, shown in the header or in the empty state — never both.
+  const addButton = (
+    <Button leftSection={<IconPlus size={16} />} onClick={() => openAdd(null)}>
+      {t("categories.add")}
+    </Button>
+  );
+
   return (
     <Stack maw={720}>
-      <Group justify="space-between">
-        <Title order={2}>{t("categories.title")}</Title>
-        <Button leftSection={<IconPlus size={16} />} onClick={() => openAdd(null)}>
-          {t("categories.add")}
-        </Button>
-      </Group>
+      <PageHeader
+        title={t("categories.title")}
+        hint={t("categories.hint")}
+        actions={tops.length > 0 ? addButton : undefined}
+      />
 
-      {tops.length === 0 && <EmptyState message={t("categories.empty")} />}
+      {tops.length === 0 && (
+        <EmptyState
+          icon={IconCategory}
+          message={t("categories.empty")}
+          hint={t("categories.emptyHint")}
+          action={addButton}
+        />
+      )}
 
       {tops.map((top) => (
         <Card withBorder key={top.id} p="sm">
