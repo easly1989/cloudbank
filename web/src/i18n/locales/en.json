@@ -591,7 +591,9 @@
     "privacy": {
       "hide": "Hide names and amounts",
       "show": "Show names and amounts"
-    }
+    },
+    "moveColumnLeft": "Move this column left",
+    "moveColumnRight": "Move this column right"
   },
   "filters": {
     "dateRange": "Date range",
