@@ -71,7 +71,10 @@
     "saved": "Transaction saved",
     "discardConfirm": "Unsaved changes will be lost. Discard them?",
     "duplicateWarning": "Found {{count}} similar transaction(s) — possible duplicate.",
-    "duplicate": "Duplicate"
+    "duplicate": "Duplicate",
+    "confirmDeleteTitle": "Delete this transaction?",
+    "confirmDeleteBody": "It is gone for good, and the running balance of every later row changes.",
+    "confirmDeleteAction": "Delete"
   },
   "transfers": {
     "add": "Transfer",
@@ -83,7 +86,10 @@
     "fromAmount": "Amount sent",
     "toAmount": "Amount received",
     "sameAccount": "Source and destination accounts must differ.",
-    "confirmDelete": "Delete this transfer? Both legs will be removed."
+    "confirmDelete": "Delete this transfer? Both legs will be removed.",
+    "confirmDeleteTitle": "Delete this transfer?",
+    "confirmDeleteBody": "A transfer is two entries, one in each account. Both are removed.",
+    "confirmDeleteAction": "Delete both"
   },
   "reports": {
     "title": "Reports",
@@ -647,7 +653,13 @@
       "payee": "Payee",
       "paymentMode": "Payment mode",
       "tags": "Tags"
-    }
+    },
+    "confirmDeleteTitle_one": "Delete this transaction?",
+    "confirmDeleteTitle_other": "Delete these {{count}} transactions?",
+    "confirmDeleteBody": "They are gone for good, and the running balance of every later row changes.",
+    "confirmDeleteAction": "Delete",
+    "confirmDeleteKeep_one": "Keep it",
+    "confirmDeleteKeep_other": "Keep them"
   },
   "reconcile": {
     "start": "Reconcile",
@@ -658,7 +670,11 @@
     "cancel": "Cancel",
     "help": "Tick each transaction on your statement until the difference is zero, then finish to mark them reconciled.",
     "lockedEdit": "This transaction is reconciled. Edit it anyway (it will be unreconciled)?",
-    "lockedDelete": "This transaction is reconciled. Delete it anyway?"
+    "lockedDelete": "This transaction is reconciled. Delete it anyway?",
+    "lockedEditTitle": "Edit a reconciled transaction?",
+    "lockedEditAction": "Edit anyway",
+    "lockedDeleteTitle": "Delete a reconciled transaction?",
+    "lockedDeleteAction": "Delete anyway"
   },
   "paymentModes": {
     "0": "None",
@@ -1266,5 +1282,9 @@
     "duplicates_one": "pair looks like a duplicate",
     "duplicates_other": "pairs look like duplicates",
     "duplicatesAction": "Check them"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm"
   }
 }

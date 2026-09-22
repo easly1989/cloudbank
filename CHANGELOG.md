@@ -12,6 +12,19 @@ dashboard polish.
 
 ### Changed
 
+- **Entering a transaction happens beside the ledger, not on top of it.** The
+  entry form is now a panel that slides in from the right: the rows and the
+  running balance stay visible while you type, and adding several in a row no
+  longer blanks the page between each one.
+
+  Modals are kept for the one thing they are good at — stopping you before
+  something you cannot undo — and those now say what will actually happen
+  ("they are gone for good, and the running balance of every later row
+  changes") with buttons that name the action instead of "OK" and "Cancel".
+  Deleting a transfer says plainly that it removes both entries, which is the
+  part people do not expect. Dismissing one, however you dismiss it, counts as
+  "no".
+
 - **The register's columns are yours.** Move them into the order you want, drag
   the edge of a heading to widen one, click a heading to sort by it — both remembered per user, so the
   register you arranged is the one you get back on another device. Sorting never
