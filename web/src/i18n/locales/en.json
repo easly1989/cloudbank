@@ -1248,5 +1248,21 @@
     "adminLabel": "Administrator",
     "hotHint": "Full database snapshot (all wallets and users).",
     "hotDownload": "Download full database"
+  },
+  "attention": {
+    "title_one": "One thing wants your attention",
+    "title_other": "{{count}} things want your attention",
+    "needsCategory_one": "transaction has no category",
+    "needsCategory_other": "transactions have no category",
+    "needsCategoryAction": "Categorise them",
+    "overdueBills_one": "bill is overdue",
+    "overdueBills_other": "bills are overdue",
+    "overdueBillsAction": "Review bills",
+    "overBudget_one": "category is over budget this month",
+    "overBudget_other": "categories are over budget this month",
+    "overBudgetAction": "Open budget",
+    "duplicates_one": "pair looks like a duplicate",
+    "duplicates_other": "pairs look like duplicates",
+    "duplicatesAction": "Check them"
   }
 }
