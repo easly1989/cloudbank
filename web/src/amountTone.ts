@@ -33,3 +33,21 @@ export function negativeOnlyColor(minor: number): string | undefined {
 
 /** The colour for something that needs the user's attention: overdue, over budget. */
 export const attentionColor = "var(--cb-attention)";
+
+/**
+ * Money going out, where the figure is shown as a positive magnitude.
+ *
+ * A spending total is stored and displayed as "how much", not as "minus how
+ * much", so the sign cannot be what colours it. Using this instead of a bare
+ * red keeps such a total in step with every signed amount on the same screen.
+ */
+export const expenseColor = "var(--cb-negative)";
+
+/**
+ * Text reporting that something failed.
+ *
+ * Its own token, not the expense colour, although the two share a value today:
+ * "money out" and "this did not work" are different statements, and only one of
+ * them should change if the money palette is ever retuned.
+ */
+export const errorColor = "var(--cb-error)";

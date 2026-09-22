@@ -84,6 +84,25 @@ make build    # build the web app and the Go binary (embeds the SPA)
 make docker   # build the container image locally
 ```
 
+### Checking colour contrast
+
+The UI is meant to meet WCAG AA in **both** the light and the dark theme, which
+is not something you can settle by looking at it. `e2e/contrast-audit.mjs`
+measures it: it walks every page in both schemes, works out the colour actually
+painted behind each piece of text, and reports anything under 4.5:1 (3:1 for
+large text). Run it against a built binary, not the Vite dev server:
+
+```bash
+CB_BASE_URL=http://localhost:8080 node contrast-audit.mjs
+```
+
+It exits non-zero if anything fails, and lists separately the text sitting on a
+gradient — there is no single background colour to measure there, so those are
+checked by hand. Disabled controls are skipped: WCAG exempts them.
+
+Change a colour and it is worth a run, especially a token in `web/src/app.css`
+or anything passed as `c=` on a `Text`.
+
 ### Working on Windows
 
 Everything here works on Windows — the repo is developed on it — but `make` is

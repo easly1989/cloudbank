@@ -40,6 +40,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { errorColor } from "../amountTone";
 import { useConfirm } from "../components/confirmContext";
 
 import {
@@ -577,7 +578,7 @@ function ConnectionCard({
                         </Text>
                         {": "}
                         {a.error ? (
-                          <Text span c="red">
+                          <Text span c={errorColor}>
                             {a.error}
                           </Text>
                         ) : (
