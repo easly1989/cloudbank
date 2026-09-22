@@ -10,6 +10,14 @@
 </p>
 
 <p align="center">
+  <a href="https://p01--cloudbank--7dcjw6mlmtky.code.run/"><img src="https://img.shields.io/badge/Try_the_live_demo-2457D6?style=for-the-badge" alt="Try the live demo" height="34" /></a>
+</p>
+
+<p align="center">
+  <sub>A public instance to click around in — don't put anything real in it.</sub>
+</p>
+
+<p align="center">
   <a href="https://github.com/easly1989/cloudbank/actions/workflows/ci.yml"><img src="https://github.com/easly1989/cloudbank/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
   <a href="https://github.com/easly1989/cloudbank/issues"><img src="https://img.shields.io/github/issues/easly1989/cloudbank" alt="Open issues" /></a>
   <a href="https://github.com/easly1989/cloudbank/pkgs/container/cloudbank"><img src="https://img.shields.io/badge/ghcr.io-cloudbank-2496ED?logo=docker&logoColor=white" alt="Container image" /></a>
