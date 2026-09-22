@@ -467,14 +467,14 @@ export function TransactionsPage() {
                 tags={tagsQuery.data ?? []}
                 fmt={fmt}
               />
-              <QuickAdd
-                walletId={walletId}
-                account={account}
-                onAdded={invalidate}
-                onError={onError}
-              />
             </Stack>
           </CollapsibleSection>
+        )}
+
+        {/* Entry sits with the ledger, not inside the filter panel: folding
+          filters away must never fold away the way to add a transaction. */}
+        {account && !reconcile && (
+          <QuickAdd walletId={walletId} account={account} onAdded={invalidate} onError={onError} />
         )}
 
         {/* Selection actions stay outside the collapsible so they remain reachable
