@@ -2,6 +2,8 @@ import { ActionIcon, Badge, Box, Checkbox, Group, Menu, Text, UnstyledButton } f
 import {
   IconArrowDown,
   IconArrowUp,
+  IconChevronDown,
+  IconChevronUp,
   IconAdjustmentsHorizontal,
   IconArrowsExchange,
   IconCircleCheck,
@@ -51,6 +53,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useDateFormat } from "../dates";
 import { formatMinor, type MoneyFormat } from "../money";
 import { stopRowEdit } from "../rowEdit";
+import { moveColumn, normalizeColumnOrder } from "./registerColumns";
 import { isSortable, sortRegisterRows, type RegisterSort } from "./registerFilterModel";
 import { useToday } from "../useToday";
 import { amountColor, negativeOnlyColor } from "../amountTone";
@@ -186,6 +189,10 @@ export function RegisterTable({
   // Sorting and column widths are preferences too, so the register a user
   // arranged is the register they get back on another device.
   const sort = user?.preferences?.registerSort ?? null;
+  const columnOrder = useMemo(
+    () => normalizeColumnOrder(user?.preferences?.registerColumnOrder),
+    [user?.preferences?.registerColumnOrder],
+  );
   const savedWidths = user?.preferences?.registerColumnWidths;
   // Width being dragged right now: local, so a drag is not a PATCH per pixel.
   const [dragWidths, setDragWidths] = useState<Record<string, number> | null>(null);
@@ -342,7 +349,7 @@ export function RegisterTable({
   const table = useReactTable({
     data: display,
     columns,
-    state: { columnVisibility },
+    state: { columnVisibility, columnOrder },
     onColumnVisibilityChange: (updater) => {
       const next = typeof updater === "function" ? updater(columnVisibility) : updater;
       persistColumns.mutate(next);
@@ -486,16 +493,59 @@ export function RegisterTable({
               </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Label>{t("register.columns")}</Menu.Label>
-                {TOGGLEABLE.map((c) => (
-                  <Menu.Item key={c.id} onClick={() => table.getColumn(c.id)?.toggleVisibility()}>
-                    <Checkbox
-                      size="xs"
-                      readOnly
-                      checked={columnVisibility[c.id] ?? c.def}
-                      label={t(COL_LABEL[c.id])}
-                    />
-                  </Menu.Item>
-                ))}
+                {columnOrder.map((id, i) => {
+                  const toggleable = TOGGLEABLE.find((c) => c.id === id);
+                  return (
+                    <Menu.Item
+                      key={id}
+                      component="div"
+                      style={{ cursor: toggleable ? "pointer" : "default" }}
+                      onClick={() => toggleable && table.getColumn(id)?.toggleVisibility()}
+                    >
+                      <Group gap="xs" wrap="nowrap" justify="space-between">
+                        <Checkbox
+                          size="xs"
+                          readOnly
+                          // Date and amount cannot be hidden — a ledger without
+                          // them is not a ledger — but they can still be moved.
+                          disabled={!toggleable}
+                          checked={toggleable ? (columnVisibility[id] ?? toggleable.def) : true}
+                          label={t(COL_LABEL[id])}
+                        />
+                        <Group gap={2} wrap="nowrap" onClick={(e) => e.stopPropagation()}>
+                          <ActionIcon
+                            variant="subtle"
+                            size="sm"
+                            color="gray"
+                            disabled={i === 0}
+                            aria-label={t("register.moveColumnLeft")}
+                            onClick={() =>
+                              persistPrefs.mutate({
+                                registerColumnOrder: moveColumn(columnOrder, id, -1),
+                              })
+                            }
+                          >
+                            <IconChevronUp size={14} />
+                          </ActionIcon>
+                          <ActionIcon
+                            variant="subtle"
+                            size="sm"
+                            color="gray"
+                            disabled={i === columnOrder.length - 1}
+                            aria-label={t("register.moveColumnRight")}
+                            onClick={() =>
+                              persistPrefs.mutate({
+                                registerColumnOrder: moveColumn(columnOrder, id, 1),
+                              })
+                            }
+                          >
+                            <IconChevronDown size={14} />
+                          </ActionIcon>
+                        </Group>
+                      </Group>
+                    </Menu.Item>
+                  );
+                })}
               </Menu.Dropdown>
             </Menu>
           </Group>

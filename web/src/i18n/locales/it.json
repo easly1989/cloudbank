@@ -591,7 +591,9 @@
     "privacy": {
       "hide": "Nascondi nomi e importi",
       "show": "Mostra nomi e importi"
-    }
+    },
+    "moveColumnLeft": "Sposta la colonna a sinistra",
+    "moveColumnRight": "Sposta la colonna a destra"
   },
   "filters": {
     "dateRange": "Intervallo date",
