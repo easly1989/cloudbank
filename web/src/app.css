@@ -10,6 +10,13 @@
   --cb-positive: #10704e;
   --cb-negative: #a33529;
   --cb-attention: #9a6100;
+
+  /* Text saying something went wrong. Mantine's `c="red"` is #fa5252, which
+     reads at 3.28:1 on a white card — under the 4.5:1 floor for body text, so
+     the one message a reader must not miss was the hardest one to read. This is
+     an alias of the expense colour today; the two are free to diverge because
+     "money out" and "this failed" are not the same statement. */
+  --cb-error: #a33529;
 }
 
 /* Lifted for a dark ground, where the light-mode pair would fall under the
@@ -18,6 +25,28 @@
   --cb-positive: #4fc095;
   --cb-negative: #f08b7e;
   --cb-attention: #e0a43c;
+  --cb-error: #f08b7e;
+}
+
+/* Secondary text, dark enough to read.
+   `c="dimmed"` carries every page hint and every empty state, so it is not
+   decoration: it is the text that explains what a page is for. Mantine's own
+   value is gray.6 in light (#868e96 — 3.32:1 on white, 3.15:1 on a grey
+   surface) and dark.2 in dark (#828282 — 3.53:1 on a card), all under the
+   4.5:1 floor for body text. These read 5.04:1 / 4.78:1 and 4.83:1 / 5.52:1.
+
+   The selectors match Mantine's own — it sets the variable under
+   `:root[data-mantine-color-scheme=…]`, so a plain `:root` here loses on
+   specificity and silently does nothing. The bare `:root` rule is the fallback
+   for the moment before the scheme attribute is applied. */
+:root {
+  --mantine-color-dimmed: #66707a;
+}
+:root[data-mantine-color-scheme="light"] {
+  --mantine-color-dimmed: #66707a;
+}
+:root[data-mantine-color-scheme="dark"] {
+  --mantine-color-dimmed: #9a9a9a;
 }
 
 /* Hide sensitive figures for a screenshot.

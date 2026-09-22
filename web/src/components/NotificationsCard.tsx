@@ -3,6 +3,7 @@ import { notifications } from "@mantine/notifications";
 import { IconBell } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { errorColor } from "../amountTone";
 
 import { currentPushSubscription, disablePush, enablePush, pushSupported } from "../push";
 
@@ -56,7 +57,7 @@ export function NotificationsCard() {
             {t("notif.hint")}
           </Text>
           {denied && (
-            <Text size="xs" c="red" mt={4}>
+            <Text size="xs" c={errorColor} mt={4}>
               {t("notif.blocked")}
             </Text>
           )}
