@@ -28,6 +28,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../components/confirmContext";
 
 import {
   ApiError,
@@ -157,6 +158,7 @@ function GoalCard({
   onChanged: () => void;
 }) {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const qc = useQueryClient();
   const [historyOpen, history] = useDisclosure(false);
   const [contribOpened, contribModal] = useDisclosure(false);
@@ -216,8 +218,14 @@ function GoalCard({
               variant="subtle"
               color="red"
               aria-label={t("goals.delete")}
-              onClick={() => {
-                if (window.confirm(t("goals.confirmDelete", { name: goal.name }))) remove.mutate();
+              onClick={async () => {
+                const ok = await confirm({
+                  title: t("goals.confirmDeleteTitle", { name: goal.name }),
+                  body: t("goals.confirmDeleteBody"),
+                  confirmLabel: t("goals.delete"),
+                  danger: true,
+                });
+                if (ok) remove.mutate();
               }}
             >
               <IconTrash size={16} />

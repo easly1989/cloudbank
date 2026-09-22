@@ -17,6 +17,7 @@ import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../components/confirmContext";
 import { EmptyState } from "../components/EmptyState";
 
 import {
@@ -52,6 +53,7 @@ const accountFormat = (a?: Account): MoneyFormat => ({
 // adding a transaction (and backs scheduled transactions).
 export function TemplatesPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const qc = useQueryClient();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
@@ -140,9 +142,14 @@ export function TemplatesPage() {
                         variant="subtle"
                         color="red"
                         aria-label={t("templates.delete")}
-                        onClick={() => {
-                          if (window.confirm(t("templates.confirmDelete", { name: tpl.name })))
-                            remove.mutate(tpl.id);
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: t("templates.confirmDeleteTitle", { name: tpl.name }),
+                            body: t("templates.confirmDeleteBody"),
+                            confirmLabel: t("templates.delete"),
+                            danger: true,
+                          });
+                          if (ok) remove.mutate(tpl.id);
                         }}
                       >
                         <IconTrash size={16} />

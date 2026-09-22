@@ -4,6 +4,7 @@ import { IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../components/confirmContext";
 
 import {
   ApiError,
@@ -78,6 +79,7 @@ function TagRow({
   onChanged: () => void;
 }) {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const [name, setName] = useState(tag.name);
   useEffect(() => setName(tag.name), [tag.name]);
 
@@ -142,8 +144,14 @@ function TagRow({
             variant="subtle"
             color="red"
             aria-label={t("tags.delete")}
-            onClick={() => {
-              if (window.confirm(t("tags.confirmDelete", { name: tag.name }))) remove.mutate();
+            onClick={async () => {
+              const ok = await confirm({
+                title: t("tags.confirmDeleteTitle", { name: tag.name }),
+                body: t("tags.confirmDeleteBody"),
+                confirmLabel: t("tags.delete"),
+                danger: true,
+              });
+              if (ok) remove.mutate();
             }}
           >
             <IconTrash size={16} />

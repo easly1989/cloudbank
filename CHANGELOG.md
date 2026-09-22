@@ -25,6 +25,15 @@ dashboard polish.
   part people do not expect. Dismissing one, however you dismiss it, counts as
   "no".
 
+  The browser's own confirmation box is now gone from the whole app — accounts,
+  payees, tags, templates, schedules, rules, goals, vehicles, API tokens, bank
+  connections, the dashboard layout and the navigation menu. Each of those
+  questions now names its consequence rather than restating itself: deleting a
+  payee says the transactions stay but are left without one, deleting a tag says
+  it comes off every transaction that carries it, removing a bank connection
+  says the transactions already imported are kept. All of it is translated,
+  which the browser's box never was.
+
 - **The register's columns are yours.** Move them into the order you want, drag
   the edge of a heading to widen one, click a heading to sort by it — both remembered per user, so the
   register you arranged is the one you get back on another device. Sorting never

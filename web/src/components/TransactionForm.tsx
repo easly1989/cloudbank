@@ -19,6 +19,7 @@ import { IconDeviceFloppy, IconSparkles, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "./confirmContext";
 
 import {
   ApiError,
@@ -73,6 +74,7 @@ export function TransactionForm({
   onTemplateSaved: () => void;
 }) {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const parseAmount = useAmountParser();
   const payeesQuery = useQuery({
     queryKey: ["payees", walletId],
@@ -351,8 +353,18 @@ export function TransactionForm({
   const dirty = opened && snapshot() !== initialRef.current;
 
   // Close, warning first if there are unsaved edits (Cancel / ✕ / Escape).
-  const requestClose = () => {
-    if (dirty && !window.confirm(t("transactions.discardConfirm"))) return;
+  const requestClose = async () => {
+    if (
+      dirty &&
+      !(await confirm({
+        title: t("transactions.confirmDiscardTitle"),
+        body: t("transactions.confirmDiscardBody"),
+        confirmLabel: t("transactions.confirmDiscardAction"),
+        cancelLabel: t("transactions.confirmDiscardKeep"),
+        danger: true,
+      }))
+    )
+      return;
     onClose();
   };
 

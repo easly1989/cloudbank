@@ -18,6 +18,7 @@ import { IconGitMerge, IconPencil, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../components/confirmContext";
 
 import {
   ApiError,
@@ -56,6 +57,7 @@ function fmtFor(acc?: Account): MoneyFormat {
 // or mark "not a duplicate".
 export function ReviewPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const fmtDate = useDateFormat();
   const qc = useQueryClient();
   const { currentWallet } = useWallet();
@@ -216,8 +218,14 @@ export function ReviewPage() {
                 size="sm"
                 color="red"
                 aria-label={t("review.delete")}
-                onClick={() => {
-                  if (window.confirm(t("transactions.confirmDelete"))) remove.mutate(tx.id);
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: t("transactions.confirmDeleteTitle"),
+                    body: t("transactions.confirmDeleteBody"),
+                    confirmLabel: t("transactions.confirmDeleteAction"),
+                    danger: true,
+                  });
+                  if (ok) remove.mutate(tx.id);
                 }}
               >
                 <IconTrash size={15} />
@@ -286,9 +294,13 @@ export function ReviewPage() {
                 variant="light"
                 color="gray"
                 loading={dismissAll.isPending}
-                onClick={() => {
-                  if (window.confirm(t("review.dismissAllConfirm", { count: dups.length })))
-                    dismissAll.mutate();
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: t("review.confirmDismissAllTitle", { count: dups.length }),
+                    body: t("review.confirmDismissAllBody"),
+                    confirmLabel: t("review.dismissAll"),
+                  });
+                  if (ok) dismissAll.mutate();
                 }}
               >
                 {t("review.dismissAll")}

@@ -21,6 +21,7 @@ import { IconCheck, IconCopy, IconKey, IconPlus, IconTrash } from "@tabler/icons
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../components/confirmContext";
 
 import {
   ApiError,
@@ -37,6 +38,7 @@ import { useDateFormat } from "../dates";
 // never recoverable after creation, so the reveal is emphasised.
 export function ApiTokensPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const qc = useQueryClient();
   const fmtDate = useDateFormat();
 
@@ -76,8 +78,14 @@ export function ApiTokensPage() {
     onError,
   });
 
-  const onRevoke = (tk: ApiToken) => {
-    if (window.confirm(t("apiTokens.confirmRevoke", { name: tk.name }))) revoke.mutate(tk.id);
+  const onRevoke = async (tk: ApiToken) => {
+    const ok = await confirm({
+      title: t("apiTokens.confirmRevokeTitle", { name: tk.name }),
+      body: t("apiTokens.confirmRevokeBody"),
+      confirmLabel: t("apiTokens.revoke"),
+      danger: true,
+    });
+    if (ok) revoke.mutate(tk.id);
   };
 
   const scopeBadge = (s: ApiTokenScope) => (
