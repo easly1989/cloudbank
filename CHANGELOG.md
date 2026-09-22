@@ -12,6 +12,19 @@ dashboard polish.
 
 ### Changed
 
+- **The register's columns are yours.** Drag the edge of a heading to widen a
+  column, click a heading to sort by it — both remembered per user, so the
+  register you arranged is the one you get back on another device. Sorting never
+  recomputes the running balance: that figure belongs to its row, and a sorted
+  register is a way of *finding* a transaction rather than of reading balances
+  down the page.
+
+- **Hide names and amounts for a screenshot.** One button in the register blurs
+  payees, memos and figures while leaving dates, categories and the shape of the
+  page legible — so a screenshot still shows how CloudBank works without showing
+  what you earn. It is per-session on purpose: something you switch on for a
+  moment, not a mode to wake up in.
+
 - **The register puts the ledger first.** The three balances are a single line in
   the page header instead of three bordered cards in a block, and the filter
   panel starts closed — between them they were costing most of the screen above

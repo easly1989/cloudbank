@@ -20,6 +20,52 @@
   --cb-attention: #e0a43c;
 }
 
+/* Hide sensitive figures for a screenshot.
+   The toggle blurs names and amounts and leaves everything else alone: dates,
+   categories, status and the shape of the page stay legible, so a screenshot
+   still shows how CloudBank works without showing what you earn. Selection is
+   disabled too, otherwise the text could simply be copied out of the blur. */
+.cb-private [data-cb-sensitive] {
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* The drag handle that widens a register column. It stays invisible until the
+   pointer is near it: a row of permanent dividers would add noise to the one
+   place in the app that most needs to stay quiet. */
+.cb-col-grip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -6px;
+  width: 11px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.cb-col-grip::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 4px;
+  width: 2px;
+  border-radius: 1px;
+  background: transparent;
+  transition: background-color 130ms ease;
+}
+
+.cb-col-grip:hover::after {
+  background: var(--mantine-primary-color-filled);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-col-grip::after {
+    transition: none;
+  }
+}
+
 /* Controls ease between colours instead of snapping: long enough to read as an
    answer to the pointer, too short to wait for. */
 .cb-transition {
