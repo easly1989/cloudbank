@@ -1,94 +1,74 @@
-/* A small attention-grabbing donate pill for the app header. Warm gradient, a
-   glow that pulses on hover, and a heartbeat on the icon. Motion is disabled
-   under prefers-reduced-motion. */
+/* The support pill at the foot of the sidebar.
+ *
+ * Outlined rather than shouting, so it cannot be mistaken for a warning: a
+ * filled red pill next to a ledger reads as "something is wrong with your
+ * money", which is the one thing it must not say. It borrows the accent — the
+ * colour that already means "you can act here" — and stays quiet until you
+ * reach for it, when the heart fills and the pill tints.
+ *
+ * Motion is disabled under prefers-reduced-motion. */
 .donate {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 6px 14px;
+  min-height: 38px;
+  padding: 0 16px;
   border-radius: 999px;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1;
-  color: #fff;
   text-decoration: none;
   white-space: nowrap;
-  /* Deep enough that the white label clears 4.5:1 against every stop, not just
-     the darkest one. The original ramp (#f43f5e → #fb7185 → #f97316) measured
-     3.67, 2.69 and 2.80 — the button was at its least readable exactly where it
-     was brightest, and 14px semibold is not large text. This ramp reads 6.29,
-     6.47 and 7.31, and a deeper warm still stands out against a white header. */
-  background: linear-gradient(135deg, #be123c, #b91c1c 45%, #9a3412);
-  background-size: 180% 180%;
-  background-position: 0% 50%;
-  box-shadow: 0 2px 8px -2px rgba(190, 18, 60, 0.5);
+  color: var(--cb-support-fg);
+  background: var(--cb-support-bg);
+  border: 1px solid var(--cb-support-border);
   transition:
-    transform 0.2s ease,
-    box-shadow 0.3s ease,
-    background-position 0.6s ease;
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
 }
+
+.fullWidth {
+  display: flex;
+  width: 100%;
+}
+
 .donate:hover,
 .donate:focus-visible {
-  transform: translateY(-1px);
-  background-position: 100% 50%;
+  background: var(--cb-support-bg-hover);
+  border-color: var(--cb-support-fg);
   outline: none;
-  animation: donate-glow 1.4s ease-in-out infinite;
 }
-.donate:hover .heart,
-.donate:focus-visible .heart {
-  animation: donate-beat 0.7s ease-in-out infinite;
+
+.donate:focus-visible {
+  outline: 2px solid var(--cb-support-fg);
+  outline-offset: 2px;
+}
+
+/* Pressed: the pill takes a ring rather than moving, so a click in a fixed
+   sidebar foot does not nudge the row of controls next to it. */
+.donate:active {
+  box-shadow: 0 0 0 3px var(--cb-support-ring);
 }
 
 .heart {
   display: inline-flex;
+  transition: transform 140ms ease;
 }
 
-@keyframes donate-glow {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 3px rgba(190, 18, 60, 0.18),
-      0 6px 18px -6px rgba(190, 18, 60, 0.6);
-  }
-  50% {
-    box-shadow:
-      0 0 0 5px rgba(190, 18, 60, 0.1),
-      0 8px 26px -4px rgba(154, 52, 18, 0.75);
-  }
-}
-@keyframes donate-beat {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  25% {
-    transform: scale(1.25);
-  }
-  40% {
-    transform: scale(0.95);
-  }
-  60% {
-    transform: scale(1.15);
-  }
-}
-
-/* On very small screens the label collapses to just the heart. */
-@media (max-width: 30em) {
-  .label {
-    display: none;
-  }
-  .donate {
-    padding: 6px 9px;
-  }
+/* The heart swells on hover — the one flourish this button gets. */
+.donate:hover .heart,
+.donate:focus-visible .heart {
+  transform: scale(1.18);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .donate,
-  .donate:hover,
-  .donate:focus-visible,
+  .donate .heart,
   .donate:hover .heart,
   .donate:focus-visible .heart {
-    animation: none;
     transition: none;
+    transform: none;
   }
 }

@@ -1,7 +1,6 @@
 import {
   ActionIcon,
   AppShell,
-  Avatar,
   Box,
   Burger,
   Button,
@@ -10,8 +9,8 @@ import {
   Loader,
   Menu,
   ScrollArea,
+  Stack,
   Text,
-  UnstyledButton,
   useMantineColorScheme,
 } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
@@ -21,7 +20,6 @@ import {
   IconChevronDown,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
-  IconLogout,
   IconPlus,
   IconWallet,
 } from "@tabler/icons-react";
@@ -29,15 +27,15 @@ import { useTranslation } from "react-i18next";
 import { Outlet, useNavigate } from "react-router-dom";
 
 import { updateMe, type User } from "../api/client";
-import { useAuth, useLogout } from "../auth/AuthProvider";
+import { useAuth } from "../auth/AuthProvider";
 import { OnboardingTourProvider } from "../onboarding/TourProvider";
 import { useWallet } from "../wallet/WalletProvider";
 import { AppFooter } from "./AppFooter";
 import { ColorSchemeToggle } from "./ColorSchemeToggle";
-import { DonateButton } from "./DonateButton";
 import { GlobalSearch } from "./GlobalSearch";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Logo } from "./Logo";
+import { SidebarFoot } from "./SidebarFoot";
 import { SidebarNav } from "./SidebarNav";
 
 function WalletSwitcher() {
@@ -85,7 +83,6 @@ export function AppLayout() {
   const { currentWallet } = useWallet();
   const qc = useQueryClient();
   const { setColorScheme } = useMantineColorScheme();
-  const logout = useLogout();
 
   // Desktop sidebar collapse to an icon-only rail, remembered per user. The rail
   // only applies on desktop; the mobile drawer always shows full labels.
@@ -149,46 +146,30 @@ export function AppLayout() {
               </Group>
               <WalletSwitcher />
             </Group>
+            {/* Support and the signed-in user moved to the foot of the
+                sidebar, where the style tile put them: the header is for
+                getting somewhere, not for who you are or for asking. */}
             <Group wrap="nowrap" gap="xs">
               {currentWallet && <GlobalSearch walletId={currentWallet.id} />}
-              <DonateButton />
               {/* Language lives in Preferences too; hide the header picker on phones. */}
               <Box visibleFrom="sm">
                 <LanguageSwitcher />
               </Box>
               <ColorSchemeToggle />
-              <Menu position="bottom-end" withinPortal>
-                <Menu.Target>
-                  <UnstyledButton aria-label={user?.username}>
-                    <Group gap="xs">
-                      {/* Filled, not the default tint: teal.9 on teal.1 reads
-                          4.33:1, and initials are the only name on a phone,
-                          where the username beside them is hidden. */}
-                      <Avatar radius="xl" size={32} color="teal.9" variant="filled">
-                        {user?.username.slice(0, 2).toUpperCase()}
-                      </Avatar>
-                      <Text size="sm" visibleFrom="sm">
-                        {user?.username}
-                      </Text>
-                    </Group>
-                  </UnstyledButton>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  <Menu.Item leftSection={<IconLogout size={16} />} onClick={() => logout.mutate()}>
-                    {t("actions.signOut")}
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
             </Group>
           </Group>
         </AppShell.Header>
 
         <AppShell.Navbar p="sm" data-tour="nav">
-          {/* Scroll the nav so its lower items stay reachable when the grouped
-              sections are taller than a short viewport. */}
-          <ScrollArea h="100%" type="scroll">
-            <SidebarNav railMode={railMode} onNavigate={close} />
-          </ScrollArea>
+          {/* The nav scrolls; the foot does not. Settings is the one
+              destination reachable from anywhere, so it must not depend on how
+              far down a long list of pages the reader has scrolled. */}
+          <Stack h="100%" gap="xs" justify="space-between">
+            <ScrollArea style={{ flex: 1, minHeight: 0 }} type="scroll">
+              <SidebarNav railMode={railMode} onNavigate={close} />
+            </ScrollArea>
+            <SidebarFoot railMode={railMode} onNavigate={close} />
+          </Stack>
         </AppShell.Navbar>
 
         <AppShell.Main>

@@ -35,6 +35,15 @@ export function negativeOnlyColor(minor: number): string | undefined {
 export const attentionColor = "var(--cb-attention)";
 
 /**
+ * Money coming in, where the figure is shown as a positive magnitude.
+ *
+ * The counterpart to expenseColor: a scheduled income total is "how much", so
+ * its sign cannot colour it. Using this instead of a bare teal also keeps it
+ * clear of the accent, which each user can change.
+ */
+export const incomeColor = "var(--cb-positive)";
+
+/**
  * Money going out, where the figure is shown as a positive magnitude.
  *
  * A spending total is stored and displayed as "how much", not as "minus how
