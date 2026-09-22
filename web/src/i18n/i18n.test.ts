@@ -21,3 +21,23 @@ describe("i18n locales", () => {
     }
   });
 });
+
+// The register's "hidden newer rows" notice is the first string in the app to
+// use i18next plurals, so pin that it actually resolves: a missing _one form
+// silently renders the key itself, which the key-parity test above would not
+// catch.
+describe("plurals", () => {
+  it("picks the singular and the plural form in every language", async () => {
+    const i18n = (await import("./index")).default;
+    for (const lng of supportedLanguages) {
+      await i18n.changeLanguage(lng);
+      const one = i18n.t("register.hiddenNewer.title", { count: 1 });
+      const many = i18n.t("register.hiddenNewer.title", { count: 3 });
+      expect(one, `${lng} singular`).toContain("1");
+      expect(many, `${lng} plural`).toContain("3");
+      expect(one, `${lng} forms differ`).not.toEqual(many);
+      expect(one).not.toContain("hiddenNewer");
+    }
+    await i18n.changeLanguage("en");
+  });
+});

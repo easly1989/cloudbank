@@ -1,10 +1,10 @@
 import {
+  Alert,
   Badge,
   Button,
   Card,
   Group,
   Select,
-  SimpleGrid,
   Stack,
   Text,
   TextInput,
@@ -14,6 +14,7 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
+  IconArrowUp,
   IconArrowsExchange,
   IconChecklist,
   IconFilterOff,
@@ -62,6 +63,7 @@ import { RegisterTable } from "./RegisterTable";
 import {
   activeFilterCount,
   applyFilters,
+  hiddenNewerCount,
   emptyFilters,
   filtersToParams,
   isActive,
@@ -209,6 +211,11 @@ export function TransactionsPage() {
 
   // Sum of the selected register rows (net, plus inflow/outflow split) so the
   // bulk bar can show a subtotal of the current selection (HomeBank-style).
+  // What the current filter is keeping off the top of the ledger. See
+  // hiddenNewerCount: a filtered register whose newest line is weeks old looks
+  // like the balance has drifted, and it hasn't.
+  const hiddenNewer = useMemo(() => hiddenNewerCount(rows, filteredRows), [rows, filteredRows]);
+
   const selectionTotals = useMemo(() => {
     let total = 0;
     let inflow = 0;
@@ -384,38 +391,27 @@ export function TransactionsPage() {
         {accounts.length === 0 && <EmptyState message={t("transactions.noAccounts")} />}
 
         {account && registerQuery.data && (
-          <CollapsibleSection
-            title={t("register.balances")}
-            storageKey="cb.reg.balances"
-            summary={
-              <Text size="xs" truncate>
-                {t("register.bank")} {formatMinor(registerQuery.data.summary.bank, fmt)} ·{" "}
-                {t("register.today")} {formatMinor(registerQuery.data.summary.today, fmt)} ·{" "}
-                {t("register.future")} {formatMinor(registerQuery.data.summary.future, fmt)}
-              </Text>
-            }
-          >
-            <SimpleGrid cols={{ base: 1, sm: 3 }}>
-              <BalanceCard
-                label={t("register.bank")}
-                help={t("register.bankHelp")}
-                value={registerQuery.data.summary.bank}
-                fmt={fmt}
-              />
-              <BalanceCard
-                label={t("register.today")}
-                help={t("register.todayHelp")}
-                value={registerQuery.data.summary.today}
-                fmt={fmt}
-              />
-              <BalanceCard
-                label={t("register.future")}
-                help={t("register.futureHelp")}
-                value={registerQuery.data.summary.future}
-                fmt={fmt}
-              />
-            </SimpleGrid>
-          </CollapsibleSection>
+          <Group gap="xl" align="flex-end" wrap="wrap">
+            <BalanceFigure
+              label={t("register.today")}
+              help={t("register.todayHelp")}
+              value={registerQuery.data.summary.today}
+              fmt={fmt}
+              lead
+            />
+            <BalanceFigure
+              label={t("register.bank")}
+              help={t("register.bankHelp")}
+              value={registerQuery.data.summary.bank}
+              fmt={fmt}
+            />
+            <BalanceFigure
+              label={t("register.future")}
+              help={t("register.futureHelp")}
+              value={registerQuery.data.summary.future}
+              fmt={fmt}
+            />
+          </Group>
         )}
 
         {account && reconcile && (
@@ -440,6 +436,7 @@ export function TransactionsPage() {
           <CollapsibleSection
             title={t("filters.section")}
             storageKey="cb.reg.tools"
+            defaultOpen={false}
             summary={
               activeFilterCount(filters) > 0 ? (
                 <Badge size="sm" variant="light" aria-label={t("filters.activeCount")}>
@@ -470,14 +467,14 @@ export function TransactionsPage() {
                 tags={tagsQuery.data ?? []}
                 fmt={fmt}
               />
-              <QuickAdd
-                walletId={walletId}
-                account={account}
-                onAdded={invalidate}
-                onError={onError}
-              />
             </Stack>
           </CollapsibleSection>
+        )}
+
+        {/* Entry sits with the ledger, not inside the filter panel: folding
+          filters away must never fold away the way to add a transaction. */}
+        {account && !reconcile && (
+          <QuickAdd walletId={walletId} account={account} onAdded={invalidate} onError={onError} />
         )}
 
         {/* Selection actions stay outside the collapsible so they remain reachable
@@ -497,6 +494,22 @@ export function TransactionsPage() {
 
         {account && filteredRows.length === 0 && <EmptyState message={t("transactions.empty")} />}
       </Stack>
+
+      {account && hiddenNewer > 0 && (
+        <Alert
+          variant="light"
+          color="gray"
+          icon={<IconArrowUp size={16} />}
+          title={t("register.hiddenNewer.title", { count: hiddenNewer })}
+        >
+          <Group justify="space-between" align="center" gap="sm" wrap="wrap">
+            <Text size="sm">{t("register.hiddenNewer.body")}</Text>
+            <Button size="xs" variant="default" onClick={() => setFilters(emptyFilters)}>
+              {t("register.hiddenNewer.action")}
+            </Button>
+          </Group>
+        </Alert>
+      )}
 
       {account && filteredRows.length > 0 && (
         <RegisterTable
@@ -560,21 +573,31 @@ export function TransactionsPage() {
   );
 }
 
-function BalanceCard({
+/**
+ * One of the register's three balances, read as a line rather than a tile.
+ *
+ * Today's balance leads at full size because it answers the question people
+ * actually open the register with; the other two sit beside it in a smaller
+ * size. They used to be three bordered cards in a collapsible block, which cost
+ * a third of the screen above the ledger to say three numbers.
+ */
+function BalanceFigure({
   label,
   value,
   fmt,
   help,
+  lead = false,
 }: {
   label: string;
   value: number;
   fmt: MoneyFormat;
   help?: string;
+  lead?: boolean;
 }) {
   return (
-    <Card withBorder padding="sm">
+    <Stack gap={2}>
       <Group gap={4} wrap="nowrap">
-        <Text size="xs" c="dimmed" tt="uppercase">
+        <Text size="xs" c="dimmed">
           {label}
         </Text>
         {help && (
@@ -583,10 +606,10 @@ function BalanceCard({
           </Tooltip>
         )}
       </Group>
-      <Text size="lg" fw={600} c={negativeOnlyColor(value)}>
+      <Text ff="monospace" fw={lead ? 600 : 500} fz={lead ? 26 : 17} c={negativeOnlyColor(value)}>
         {formatMinor(value, fmt)}
       </Text>
-    </Card>
+    </Stack>
   );
 }
 
