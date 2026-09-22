@@ -1248,5 +1248,21 @@
     "adminLabel": "Amministratore",
     "hotHint": "Snapshot completo del database (tutti i portafogli e utenti).",
     "hotDownload": "Scarica database completo"
+  },
+  "attention": {
+    "title_one": "Una cosa richiede la tua attenzione",
+    "title_other": "{{count}} cose richiedono la tua attenzione",
+    "needsCategory_one": "transazione non ha categoria",
+    "needsCategory_other": "transazioni non hanno categoria",
+    "needsCategoryAction": "Categorizzale",
+    "overdueBills_one": "bolletta è scaduta",
+    "overdueBills_other": "bollette sono scadute",
+    "overdueBillsAction": "Vai alle bollette",
+    "overBudget_one": "categoria ha sforato il budget questo mese",
+    "overBudget_other": "categorie hanno sforato il budget questo mese",
+    "overBudgetAction": "Apri il budget",
+    "duplicates_one": "coppia sembra un duplicato",
+    "duplicates_other": "coppie sembrano duplicati",
+    "duplicatesAction": "Controllale"
   }
 }
