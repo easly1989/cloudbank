@@ -138,6 +138,29 @@ export function applyFilters(
   });
 }
 
+/**
+ * How many rows newer than the top visible one the current filter is hiding.
+ *
+ * Filtering a register is quietly confusing: ask for everything unreconciled and
+ * the newest line on screen can be weeks old, which looks like the balance has
+ * stopped matching the account. It hasn't — the newer rows are simply reconciled
+ * and filtered out, and today's balance still counts them. The register says so
+ * rather than leaving the reader to work it out.
+ *
+ * Zero when nothing is filtered away, and zero when nothing is visible at all:
+ * an empty result is its own message, not this one.
+ */
+export function hiddenNewerCount(all: RegisterRow[], visible: RegisterRow[]): number {
+  if (visible.length === 0 || all.length === 0) return 0;
+  const shown = new Set(visible.map((r) => r.id));
+  // Dates are civil `YYYY-MM-DD`, so a string comparison is a date comparison.
+  let newestShown = visible[0].date;
+  for (const r of visible) if (r.date > newestShown) newestShown = r.date;
+  let n = 0;
+  for (const r of all) if (r.date > newestShown && !shown.has(r.id)) n++;
+  return n;
+}
+
 // --- URL (de)serialization: only non-default keys are written. ---
 
 export function parseFilters(p: URLSearchParams): Filters {
