@@ -1,18 +1,9 @@
-import {
-  ActionIcon,
-  Button,
-  Group,
-  Modal,
-  Stack,
-  Table,
-  Text,
-  TextInput,
-  Textarea,
-  Title,
-} from "@mantine/core";
+import { ActionIcon, Button, Group, Modal, Stack, Table, TextInput, Textarea } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconPencil, IconTrash } from "@tabler/icons-react";
+import { IconCar, IconPencil, IconTrash } from "@tabler/icons-react";
+import { PageHeader } from "../components/PageHeader";
+import { EmptyState } from "../components/EmptyState";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -69,15 +60,17 @@ export function VehiclesPage() {
 
   return (
     <Stack>
-      <Group justify="space-between">
-        <Title order={2}>{t("vehicles.title")}</Title>
-        <Button onClick={openCreate}>{t("vehicles.add")}</Button>
-      </Group>
-      <Text size="sm" c="dimmed">
-        {t("vehicles.hint")}
-      </Text>
+      <PageHeader
+        title={t("vehicles.title")}
+        hint={t("vehicles.hint")}
+        actions={<Button onClick={openCreate}>{t("vehicles.add")}</Button>}
+      />
       {vehicles.length === 0 ? (
-        <Text c="dimmed">{t("vehicles.empty")}</Text>
+        <EmptyState
+          icon={IconCar}
+          message={t("vehicles.empty")}
+          action={<Button onClick={openCreate}>{t("vehicles.add")}</Button>}
+        />
       ) : (
         <Table verticalSpacing="xs">
           <Table.Thead>

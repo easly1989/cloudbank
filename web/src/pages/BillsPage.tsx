@@ -1,4 +1,4 @@
-import { Button, Card, Group, Stack, Text, Title } from "@mantine/core";
+import { Button, Card, Stack } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconPlus } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { BillQuickAddModal } from "../components/BillQuickAddModal";
 import { BillsList } from "../components/BillsList";
 import { useWallet } from "../wallet/WalletProvider";
+import { PageHeader } from "../components/PageHeader";
 
 // BillsPage is the dedicated "what's due" surface: one row per bill (its last
 // payment and next occurrence, classified overdue / due), with a base-currency
@@ -22,21 +23,15 @@ export function BillsPage() {
 
   return (
     <Stack>
-      <Group justify="space-between" align="flex-start" wrap="nowrap">
-        <div>
-          <Title order={2}>{t("bills.title")}</Title>
-          <Text c="dimmed" size="sm">
-            {t("bills.hint")}
-          </Text>
-        </div>
-        <Button
-          leftSection={<IconPlus size={16} />}
-          onClick={addModal.open}
-          style={{ flexShrink: 0 }}
-        >
-          {t("bills.add")}
-        </Button>
-      </Group>
+      <PageHeader
+        title={t("bills.title")}
+        hint={t("bills.hint")}
+        actions={
+          <Button leftSection={<IconPlus size={16} />} onClick={addModal.open}>
+            {t("bills.add")}
+          </Button>
+        }
+      />
       <Card withBorder>
         <BillsList walletId={walletId} />
       </Card>

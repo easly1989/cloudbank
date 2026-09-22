@@ -34,6 +34,22 @@ dashboard polish.
   says the transactions already imported are kept. All of it is translated,
   which the browser's box never was.
 
+- **Every page opens the same way.** One header across the whole app: the name
+  of the page, a line saying what the page is actually for, and its actions on
+  the right — instead of the hint floating above the buttons on one page, below
+  them on the next, and missing on a third. On a phone the buttons drop under
+  the title rather than squeezing it.
+
+  A page with nothing on it yet now says what it is for and offers the first
+  step, instead of a grey line reading "No rules yet.": rules explain that they
+  read the text your bank sends so you stop retyping the same thing every month,
+  and there is a button right there to write one.
+
+  Statuses are words again. Mantine sets badges in capitals, which made
+  "OVERDUE" and "PAID" the loudest thing on a row of figures you actually came
+  to read; a status is now a word with a small coloured dot, and the colour
+  still carries the meaning.
+
 - **The register's columns are yours.** Move them into the order you want, drag
   the edge of a heading to widen one, click a heading to sort by it — both remembered per user, so the
   register you arranged is the one you get back on another device. Sorting never

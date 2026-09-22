@@ -76,7 +76,8 @@
     "confirmDiscardTitle": "Discard your changes?",
     "confirmDiscardBody": "What you have typed here is lost and the transaction is not saved.",
     "confirmDiscardAction": "Discard",
-    "confirmDiscardKeep": "Keep editing"
+    "confirmDiscardKeep": "Keep editing",
+    "noAccountsHint": "Transactions belong to an account, so that is the place to start."
   },
   "transfers": {
     "add": "Transfer",
@@ -154,7 +155,8 @@
       "account": "Account",
       "payee": "Payee",
       "category": "Category"
-    }
+    },
+    "hint": "Where the money went, over whatever span you ask for."
   },
   "budget": {
     "title": "Budget",
@@ -195,7 +197,8 @@
       "9": "Oct",
       "10": "Nov",
       "11": "Dec"
-    }
+    },
+    "hint": "What you planned to spend, next to what you actually spent."
   },
   "assignments": {
     "title": "Assignment rules",
@@ -242,7 +245,8 @@
     "confirmApplyTitle": "Apply all rules to existing transactions?",
     "confirmApplyBody": "Only empty fields are filled in — nothing you have already set is overwritten.",
     "confirmDeleteTitle": "Delete this rule?",
-    "confirmDeleteBody": "Transactions it has already filled in keep their values; only what you enter from now on changes."
+    "confirmDeleteBody": "Transactions it has already filled in keep their values; only what you enter from now on changes.",
+    "emptyHint": "A rule reads the text your bank sends and fills in the category, payee or tags, so you stop typing the same thing every month."
   },
   "schedules": {
     "title": "Scheduled transactions",
@@ -297,7 +301,9 @@
     "transferNote": "This is a transfer; only the amount, memo and schedule can be changed here.",
     "untitled": "Scheduled",
     "confirmDeleteTitle": "Delete this schedule?",
-    "confirmDeleteBody": "Transactions it has already posted stay; nothing further is scheduled."
+    "confirmDeleteBody": "Transactions it has already posted stay; nothing further is scheduled.",
+    "hint": "Transactions CloudBank posts for you on the day they come due.",
+    "emptyHint": "Rent, a subscription, a salary — anything that comes round on its own."
   },
   "tags": {
     "title": "Tags",
@@ -307,7 +313,8 @@
     "mergeInto": "Merge into…",
     "delete": "Delete tag",
     "confirmDeleteTitle": "Delete \"{{name}}\"?",
-    "confirmDeleteBody": "The tag is removed from every transaction that carries it. The transactions themselves stay."
+    "confirmDeleteBody": "The tag is removed from every transaction that carries it. The transactions themselves stay.",
+    "hint": "Free-form labels you put on a transaction. One transaction can carry several."
   },
   "vehicles": {
     "title": "Vehicles",
@@ -546,7 +553,8 @@
       "accounts": "Accounts"
     },
     "confirmRemoveTitle": "Remove \"{{name}}\"?",
-    "confirmRemoveBody": "Transactions already imported are kept. Nothing further is fetched from this bank."
+    "confirmRemoveBody": "Transactions already imported are kept. Nothing further is fetched from this bank.",
+    "emptyHint": "Pick a provider above to connect one."
   },
   "search": {
     "open": "Search transactions",
@@ -581,7 +589,9 @@
     "create": "New template",
     "complexNote": "This template has splits or is a transfer; edit its details from a transaction. You can still rename it here.",
     "confirmDeleteTitle": "Delete \"{{name}}\"?",
-    "confirmDeleteBody": "Transactions already created from it are unaffected."
+    "confirmDeleteBody": "Transactions already created from it are unaffected.",
+    "hint": "Transactions you enter more than once: fill one in, then reuse it.",
+    "emptyHint": "The weekly shop, the monthly transfer: the transactions you would otherwise retype."
   },
   "register": {
     "bank": "Reconciled",
@@ -867,7 +877,7 @@
     "delete": "Delete",
     "cancel": "Cancel",
     "save": "Save",
-    "empty": "No accounts yet. Add your first account to get started.",
+    "empty": "No accounts yet.",
     "name": "Account name",
     "type": "Type",
     "currency": "Currency",
@@ -890,7 +900,8 @@
     },
     "confirmDeleteTitle": "Delete \"{{name}}\"?",
     "confirmDeleteBody": "Every transaction in the account goes with it. This cannot be undone.",
-    "confirmDeleteAction": "Delete account"
+    "confirmDeleteAction": "Delete account",
+    "emptyHint": "An account is where transactions live — a bank account, the cash in your pocket, a credit card."
   },
   "categories": {
     "title": "Categories",
@@ -918,7 +929,9 @@
     "reassignTo": "Reassign subcategories to",
     "reassignHint": "This category has subcategories. Choose where to move them.",
     "deleteHint": "Delete \"{{name}}\"?",
-    "mergeHint": "Move everything from \"{{name}}\" into:"
+    "mergeHint": "Move everything from \"{{name}}\" into:",
+    "hint": "How your spending is grouped. Categories are what every report is built from.",
+    "emptyHint": "Group your spending the way you think about it, not the way the bank does."
   },
   "payees": {
     "title": "Payees",
@@ -936,7 +949,9 @@
     "defaultCategory": "Default category",
     "empty": "No payees yet.",
     "confirmDeleteTitle": "Delete \"{{name}}\"?",
-    "confirmDeleteBody": "Transactions that used this payee stay, but they are left without one."
+    "confirmDeleteBody": "Transactions that used this payee stay, but they are left without one.",
+    "hint": "Who you pay and who pays you. Give one a default category and its transactions arrive sorted.",
+    "emptyHint": "Payees build up as you enter transactions, or you can add the ones you already know."
   },
   "currencies": {
     "title": "Currencies",
@@ -956,7 +971,8 @@
     "providerDownHint": "The online rate service could not be reached or does not support this base currency. Your manual rates are unchanged.",
     "notOnEcb": "manual",
     "notOnEcbHint": "Not published by the ECB; this rate stays manual.",
-    "updatedAt": "updated {{date}}"
+    "updatedAt": "updated {{date}}",
+    "hint": "The currencies this wallet can use, and the rates it converts them at."
   },
   "dashboard": {
     "title": "Dashboard",

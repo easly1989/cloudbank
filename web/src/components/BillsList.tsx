@@ -1,6 +1,7 @@
 import { ActionIcon, Badge, Box, Group, Stack, Text, Tooltip } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconCheck } from "@tabler/icons-react";
+import { IconCheck, IconFileInvoice } from "@tabler/icons-react";
+import { EmptyState } from "./EmptyState";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
@@ -72,7 +73,7 @@ export function BillsList({
             <Text size="sm" truncate>
               {b.name}
             </Text>
-            <Badge size="xs" variant="light" color={STATE_COLOR[b.state]}>
+            <Badge size="xs" variant="dot" color={STATE_COLOR[b.state]}>
               {stateLabel(b.state)}
             </Badge>
             {b.autoPost && (
@@ -139,7 +140,7 @@ export function BillsList({
       </Group>
 
       {shown.length === 0 ? (
-        <Text c="dimmed">{t("bills.empty")}</Text>
+        <EmptyState icon={IconFileInvoice} message={t("bills.empty")} />
       ) : (
         <Stack gap={8}>{shown.map((b) => row(b))}</Stack>
       )}

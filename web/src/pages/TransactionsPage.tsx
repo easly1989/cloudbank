@@ -9,7 +9,6 @@ import {
   Stack,
   Text,
   TextInput,
-  Title,
   Tooltip,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
@@ -24,13 +23,15 @@ import {
   IconInfoCircle,
   IconPencil,
   IconPlus,
+  IconWallet,
   IconTrash,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "../components/EmptyState";
-import { useSearchParams } from "react-router-dom";
+import { PageHeader } from "../components/PageHeader";
+import { Link, useSearchParams } from "react-router-dom";
 
 import {
   ApiError,
@@ -387,65 +388,78 @@ export function TransactionsPage() {
   return (
     <Stack className={privacy ? "cb-private" : undefined}>
       <Stack ref={topRef} gap="md">
-        <Group justify="space-between">
-          <Title order={2}>{t("transactions.title")}</Title>
-          <Group>
-            <Select
-              aria-label={t("transactions.account")}
-              data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
-              value={accountId}
-              onChange={setAccountId}
-              allowDeselect={false}
-              w={220}
-            />
-            <Tooltip label={t(privacy ? "register.privacy.show" : "register.privacy.hide")}>
-              <ActionIcon
-                variant={privacy ? "filled" : "default"}
-                size={36}
-                aria-label={t(privacy ? "register.privacy.show" : "register.privacy.hide")}
-                aria-pressed={privacy}
-                onClick={() => setPrivacy((v) => !v)}
+        <PageHeader
+          title={t("transactions.title")}
+          actions={
+            <>
+              <Select
+                aria-label={t("transactions.account")}
+                data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
+                value={accountId}
+                onChange={setAccountId}
+                allowDeselect={false}
+                w={220}
+              />
+              <Tooltip label={t(privacy ? "register.privacy.show" : "register.privacy.hide")}>
+                <ActionIcon
+                  variant={privacy ? "filled" : "default"}
+                  size={36}
+                  aria-label={t(privacy ? "register.privacy.show" : "register.privacy.hide")}
+                  aria-pressed={privacy}
+                  onClick={() => setPrivacy((v) => !v)}
+                >
+                  {privacy ? <IconEyeOff size={17} /> : <IconEye size={17} />}
+                </ActionIcon>
+              </Tooltip>
+              <Button
+                variant={reconcile ? "filled" : "default"}
+                leftSection={<IconChecklist size={16} />}
+                disabled={!account}
+                onClick={() => {
+                  clearSelection();
+                  setReconcile((v) => !v);
+                }}
               >
-                {privacy ? <IconEyeOff size={17} /> : <IconEye size={17} />}
-              </ActionIcon>
-            </Tooltip>
-            <Button
-              variant={reconcile ? "filled" : "default"}
-              leftSection={<IconChecklist size={16} />}
-              disabled={!account}
-              onClick={() => {
-                clearSelection();
-                setReconcile((v) => !v);
-              }}
-            >
-              {t("reconcile.start")}
-            </Button>
-            <Button
-              variant="default"
-              leftSection={<IconArrowsExchange size={16} />}
-              disabled={accounts.length < 2}
-              onClick={() => {
-                setEditingTransferId(null);
-                transferForm.open();
-              }}
-            >
-              {t("transfers.add")}
-            </Button>
-            <Button
-              leftSection={<IconPlus size={16} />}
-              disabled={!account}
-              onClick={() => {
-                setDuplicating(null);
-                setEditing(null);
-                form.open();
-              }}
-            >
-              {t("transactions.add")}
-            </Button>
-          </Group>
-        </Group>
+                {t("reconcile.start")}
+              </Button>
+              <Button
+                variant="default"
+                leftSection={<IconArrowsExchange size={16} />}
+                disabled={accounts.length < 2}
+                onClick={() => {
+                  setEditingTransferId(null);
+                  transferForm.open();
+                }}
+              >
+                {t("transfers.add")}
+              </Button>
+              <Button
+                leftSection={<IconPlus size={16} />}
+                disabled={!account}
+                onClick={() => {
+                  setDuplicating(null);
+                  setEditing(null);
+                  form.open();
+                }}
+              >
+                {t("transactions.add")}
+              </Button>
+            </>
+          }
+        />
 
-        {accounts.length === 0 && <EmptyState message={t("transactions.noAccounts")} />}
+        {accounts.length === 0 && (
+          <EmptyState
+            icon={IconWallet}
+            message={t("transactions.noAccounts")}
+            hint={t("transactions.noAccountsHint")}
+            action={
+              <Button component={Link} to="/accounts">
+                {t("accounts.add")}
+              </Button>
+            }
+          />
+        )}
 
         {account && registerQuery.data && (
           <Group gap="xl" align="flex-end" wrap="wrap">

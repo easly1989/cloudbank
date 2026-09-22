@@ -16,13 +16,14 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconPencil, IconReportMoney, IconTrash } from "@tabler/icons-react";
+import { IconPencil, IconReportMoney, IconTrash, IconWallet } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/confirmContext";
 import { AssetValuationsModal } from "../components/AssetValuationsModal";
 import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
 
 import {
   ApiError,
@@ -118,17 +119,19 @@ export function AccountsPage() {
 
   return (
     <Stack>
-      <Group justify="space-between">
-        <Title order={2}>{t("accounts.title")}</Title>
-        <Group>
-          <Switch
-            label={t("accounts.showClosed")}
-            checked={showClosed}
-            onChange={(e) => setShowClosed(e.currentTarget.checked)}
-          />
-          <Button onClick={openCreate}>{t("accounts.add")}</Button>
-        </Group>
-      </Group>
+      <PageHeader
+        title={t("accounts.title")}
+        actions={
+          <>
+            <Switch
+              label={t("accounts.showClosed")}
+              checked={showClosed}
+              onChange={(e) => setShowClosed(e.currentTarget.checked)}
+            />
+            <Button onClick={openCreate}>{t("accounts.add")}</Button>
+          </>
+        }
+      />
 
       {ACCOUNT_TYPES.map((type) => {
         const group = accounts.filter((a) => a.type === type);
@@ -222,7 +225,14 @@ export function AccountsPage() {
         );
       })}
 
-      {accounts.length === 0 && <EmptyState message={t("accounts.empty")} />}
+      {accounts.length === 0 && (
+        <EmptyState
+          icon={IconWallet}
+          message={t("accounts.empty")}
+          hint={t("accounts.emptyHint")}
+          action={<Button onClick={openCreate}>{t("accounts.add")}</Button>}
+        />
+      )}
 
       <AccountModal
         opened={modalOpened}
