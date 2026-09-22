@@ -864,7 +864,8 @@
     "delete": "Elimina portafoglio",
     "billsCategory": "Categoria bollette",
     "billsCategoryHint": "Nella pagina Bills appaiono solo le schedule di questa categoria. Lascia “Tutte le uscite” per includerle tutte.",
-    "billsCategoryNone": "Tutte le uscite"
+    "billsCategoryNone": "Tutte le uscite",
+    "label": "Portafoglio"
   },
   "accounts": {
     "title": "Conti",

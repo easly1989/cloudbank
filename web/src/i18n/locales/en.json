@@ -864,7 +864,8 @@
     "delete": "Delete wallet",
     "billsCategory": "Bills category",
     "billsCategoryHint": "Only schedules in this category appear on the Bills page. Leave as All outflows to include every outflow schedule.",
-    "billsCategoryNone": "All outflows"
+    "billsCategoryNone": "All outflows",
+    "label": "Wallet"
   },
   "accounts": {
     "title": "Accounts",

@@ -27,7 +27,9 @@ test("full journey: setup → wallet → account → transaction → import → 
     await expect(page.getByRole("heading", { name: "Create your first wallet" })).toBeVisible();
     await page.getByLabel("Wallet name").fill("Test Wallet");
     await page.getByRole("button", { name: "Create wallet" }).click();
-    await expect(page.getByRole("button", { name: "Test Wallet" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Switch wallet" })).toContainText(
+      "Test Wallet",
+    );
   });
 
   await test.step("dismiss the first-login tour", async () => {
@@ -85,7 +87,7 @@ test("full journey: setup → wallet → account → transaction → import → 
 
   await test.step("the import switched to the new wallet", async () => {
     // ImportPage selects the freshly created wallet automatically.
-    await expect(page.getByRole("button", { name: "My Money" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Switch wallet" })).toContainText("My Money");
   });
 
   await test.step("a report renders", async () => {
