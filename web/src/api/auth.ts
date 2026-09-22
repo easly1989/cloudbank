@@ -61,6 +61,11 @@ export interface Preferences {
         version: 2;
         widgets: { id: string; type: string; x: number; y: number; w: number; h: number }[];
       };
+  /**
+   * How far back the overview looks: a date preset, or absent for all time.
+   * Widgets follow it unless they pin a period of their own.
+   */
+  dashboardPeriod?: string;
   /** Whether the first-login onboarding tour has been seen (so it runs only once). */
   tutorialSeen?: boolean;
   /** Saved report configurations (Statistics/Trend), scoped per wallet + tab. */

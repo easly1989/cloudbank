@@ -8,7 +8,7 @@ import { toCivilDate } from "../civilDate";
 const iso = toCivilDate;
 
 export type DatePreset =
-  "all" | "thisMonth" | "thisQuarter" | "thisYear" | "last30" | "last90" | "custom";
+  "all" | "thisMonth" | "thisQuarter" | "thisHalf" | "thisYear" | "last30" | "last90" | "custom";
 
 // Quick filter for transfer legs: show everything, only transfers, or hide them.
 export type TransferFilter = "all" | "only" | "none";
@@ -57,6 +57,11 @@ export function dateBounds(f: Filters, now = new Date()): { from?: string; to?: 
     case "thisQuarter": {
       const q = Math.floor(m / 3) * 3;
       return { from: iso(new Date(y, q, 1)), to: iso(new Date(y, q + 3, 0)) };
+    }
+    case "thisHalf": {
+      // Calendar halves: January to June, July to December.
+      const h = m < 6 ? 0 : 6;
+      return { from: iso(new Date(y, h, 1)), to: iso(new Date(y, h + 6, 0)) };
     }
     case "thisYear":
       return { from: iso(new Date(y, 0, 1)), to: iso(new Date(y, 11, 31)) };
