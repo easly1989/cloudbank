@@ -1,0 +1,76 @@
+import { Button, Group, Modal, Stack, Text } from "@mantine/core";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
+
+import { ConfirmContext, type Ask, type ConfirmOptions } from "./confirmContext";
+import { useTranslation } from "react-i18next";
+
+// Asking before something irreversible.
+//
+// This is the one job a modal is good at: stopping you to decide something you
+// cannot undo. Everything else — entering a transaction, editing one, importing
+// — is work you do beside the ledger, and that belongs in a side sheet where the
+// rows stay visible.
+//
+// The hook keeps call sites as short as the `window.confirm` they replace:
+//
+//   if (await confirm({ title, body, confirmLabel, danger: true })) remove();
+//
+// but the result is a real dialog: focus-trapped, escapable, translated, and
+// able to say what will actually happen rather than showing a browser chrome
+// string nobody can style or translate.
+
+interface Pending extends ConfirmOptions {
+  resolve: (ok: boolean) => void;
+}
+
+export function ConfirmProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  const [pending, setPending] = useState<Pending | null>(null);
+
+  const ask = useCallback<Ask>(
+    (options) =>
+      new Promise<boolean>((resolve) => {
+        setPending({ ...options, resolve });
+      }),
+    [],
+  );
+
+  // Closing by any route — the button, Escape, the overlay — is a "no". A
+  // dialog that treats dismissal as consent is how people delete things they
+  // did not mean to.
+  const settle = (ok: boolean) => {
+    pending?.resolve(ok);
+    setPending(null);
+  };
+
+  const value = useMemo(() => ask, [ask]);
+
+  return (
+    <ConfirmContext.Provider value={value}>
+      {children}
+      <Modal
+        opened={pending !== null}
+        onClose={() => settle(false)}
+        title={pending?.title}
+        centered
+        size="sm"
+      >
+        <Stack>
+          {pending?.body && <Text size="sm">{pending.body}</Text>}
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => settle(false)}>
+              {pending?.cancelLabel ?? t("common.cancel")}
+            </Button>
+            <Button
+              color={pending?.danger ? "red" : undefined}
+              onClick={() => settle(true)}
+              data-autofocus
+            >
+              {pending?.confirmLabel ?? t("common.confirm")}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </ConfirmContext.Provider>
+  );
+}

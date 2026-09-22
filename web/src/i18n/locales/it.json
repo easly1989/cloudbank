@@ -71,7 +71,10 @@
     "saved": "Transazione salvata",
     "discardConfirm": "Le modifiche non salvate andranno perse. Scartarle?",
     "duplicateWarning": "Trovate {{count}} transazioni simili — possibile duplicato.",
-    "duplicate": "Duplica"
+    "duplicate": "Duplica",
+    "confirmDeleteTitle": "Eliminare questa transazione?",
+    "confirmDeleteBody": "Sparisce per sempre, e il saldo progressivo di ogni riga successiva cambia.",
+    "confirmDeleteAction": "Elimina"
   },
   "transfers": {
     "add": "Trasferimento",
@@ -83,7 +86,10 @@
     "fromAmount": "Importo inviato",
     "toAmount": "Importo ricevuto",
     "sameAccount": "Il conto di origine e di destinazione devono essere diversi.",
-    "confirmDelete": "Eliminare questo trasferimento? Verranno rimosse entrambe le righe."
+    "confirmDelete": "Eliminare questo trasferimento? Verranno rimosse entrambe le righe.",
+    "confirmDeleteTitle": "Eliminare questo trasferimento?",
+    "confirmDeleteBody": "Un trasferimento è composto da due movimenti, uno per conto. Vengono rimossi entrambi.",
+    "confirmDeleteAction": "Elimina entrambi"
   },
   "reports": {
     "title": "Report",
@@ -647,7 +653,13 @@
       "payee": "Beneficiario",
       "paymentMode": "Modalità di pagamento",
       "tags": "Tag"
-    }
+    },
+    "confirmDeleteTitle_one": "Eliminare questa transazione?",
+    "confirmDeleteTitle_other": "Eliminare queste {{count}} transazioni?",
+    "confirmDeleteBody": "Spariscono per sempre, e il saldo progressivo di ogni riga successiva cambia.",
+    "confirmDeleteAction": "Elimina",
+    "confirmDeleteKeep_one": "Tienila",
+    "confirmDeleteKeep_other": "Tienile"
   },
   "reconcile": {
     "start": "Riconcilia",
@@ -658,7 +670,11 @@
     "cancel": "Annulla",
     "help": "Spunta ogni transazione presente sull'estratto conto finché la differenza è zero, poi termina per contrassegnarle come riconciliate.",
     "lockedEdit": "Questa transazione è riconciliata. Modificarla comunque (verrà annullata la riconciliazione)?",
-    "lockedDelete": "Questa transazione è riconciliata. Eliminarla comunque?"
+    "lockedDelete": "Questa transazione è riconciliata. Eliminarla comunque?",
+    "lockedEditTitle": "Modificare una transazione riconciliata?",
+    "lockedEditAction": "Modifica comunque",
+    "lockedDeleteTitle": "Eliminare una transazione riconciliata?",
+    "lockedDeleteAction": "Elimina comunque"
   },
   "paymentModes": {
     "0": "Nessuna",
@@ -1266,5 +1282,9 @@
     "duplicates_one": "coppia sembra un duplicato",
     "duplicates_other": "coppie sembrano duplicati",
     "duplicatesAction": "Controllale"
+  },
+  "common": {
+    "cancel": "Annulla",
+    "confirm": "Conferma"
   }
 }
