@@ -9,8 +9,10 @@ import type { ReactNode } from "react";
 // the title alone on a third — and a reader moving between pages pays for every
 // one of those differences without ever being told why.
 //
-// The actions wrap underneath on a narrow screen rather than squeezing the
-// title, which is what keeps the phone layout readable.
+// On a narrow screen the whole action block drops under the title, and the
+// buttons inside it wrap among themselves. Both are needed: the register's
+// header carries an account picker and five buttons, and a block that only
+// moved down as one piece would still be 400px wider than a phone.
 export function PageHeader({
   title,
   hint,
@@ -23,8 +25,8 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <Group justify="space-between" align="flex-start" gap="md">
-      <Stack gap={2} style={{ minWidth: 0 }}>
+    <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
+      <Stack gap={2} style={{ minWidth: 0, flex: "1 1 auto" }}>
         <Title order={2}>{title}</Title>
         {hint && (
           <Text c="dimmed" size="sm" maw={680}>
@@ -33,7 +35,7 @@ export function PageHeader({
         )}
       </Stack>
       {actions && (
-        <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
+        <Group gap="xs" wrap="wrap" justify="flex-end" style={{ minWidth: 0 }}>
           {actions}
         </Group>
       )}

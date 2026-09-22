@@ -117,6 +117,10 @@ export function AccountsPage() {
     return Math.round((Math.abs(a.balance) / total) * 100);
   };
 
+  // The empty state below offers this same button, and one screen does not
+  // need it twice.
+  const addButton = <Button onClick={openCreate}>{t("accounts.add")}</Button>;
+
   return (
     <Stack>
       <PageHeader
@@ -128,7 +132,7 @@ export function AccountsPage() {
               checked={showClosed}
               onChange={(e) => setShowClosed(e.currentTarget.checked)}
             />
-            <Button onClick={openCreate}>{t("accounts.add")}</Button>
+            {accounts.length > 0 && addButton}
           </>
         }
       />
@@ -230,7 +234,7 @@ export function AccountsPage() {
           icon={IconWallet}
           message={t("accounts.empty")}
           hint={t("accounts.emptyHint")}
-          action={<Button onClick={openCreate}>{t("accounts.add")}</Button>}
+          action={addButton}
         />
       )}
 

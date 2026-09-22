@@ -58,19 +58,18 @@ export function VehiclesPage() {
 
   if (!currentWallet) return null;
 
+  // One button, shown in the header or in the empty state — never both.
+  const addButton = <Button onClick={openCreate}>{t("vehicles.add")}</Button>;
+
   return (
     <Stack>
       <PageHeader
         title={t("vehicles.title")}
         hint={t("vehicles.hint")}
-        actions={<Button onClick={openCreate}>{t("vehicles.add")}</Button>}
+        actions={vehicles.length > 0 ? addButton : undefined}
       />
       {vehicles.length === 0 ? (
-        <EmptyState
-          icon={IconCar}
-          message={t("vehicles.empty")}
-          action={<Button onClick={openCreate}>{t("vehicles.add")}</Button>}
-        />
+        <EmptyState icon={IconCar} message={t("vehicles.empty")} action={addButton} />
       ) : (
         <Table verticalSpacing="xs">
           <Table.Thead>

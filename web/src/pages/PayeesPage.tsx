@@ -73,22 +73,25 @@ export function PayeesPage() {
   if (!currentWallet) return null;
   const payees = payeesQuery.data ?? [];
 
+  // One button, shown in the header or in the empty state — never both.
+  const addButton = (
+    <Button
+      leftSection={<IconPlus size={16} />}
+      onClick={() => {
+        setEditing(null);
+        form.open();
+      }}
+    >
+      {t("payees.add")}
+    </Button>
+  );
+
   return (
     <Stack maw={720}>
       <PageHeader
         title={t("payees.title")}
         hint={t("payees.hint")}
-        actions={
-          <Button
-            leftSection={<IconPlus size={16} />}
-            onClick={() => {
-              setEditing(null);
-              form.open();
-            }}
-          >
-            {t("payees.add")}
-          </Button>
-        }
+        actions={payees.length > 0 ? addButton : undefined}
       />
 
       {payees.length === 0 && (
@@ -96,17 +99,7 @@ export function PayeesPage() {
           icon={IconUsers}
           message={t("payees.empty")}
           hint={t("payees.emptyHint")}
-          action={
-            <Button
-              leftSection={<IconPlus size={16} />}
-              onClick={() => {
-                setEditing(null);
-                form.open();
-              }}
-            >
-              {t("payees.add")}
-            </Button>
-          }
+          action={addButton}
         />
       )}
 
