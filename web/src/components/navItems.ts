@@ -12,7 +12,6 @@ import {
   IconSettings,
   IconTag,
   IconTemplate,
-  IconUsers,
   IconWallet,
   IconWand,
 } from "@tabler/icons-react";
@@ -61,7 +60,6 @@ export const NAV_ITEMS: NavItemDef[] = [
   { to: "/goals", labelKey: "nav.goals", icon: IconPigMoney, end: false, adminOnly: false },
   { to: "/reports", labelKey: "nav.reports", icon: IconChartBar, end: false, adminOnly: false },
   { to: "/settings", labelKey: "nav.settings", icon: IconSettings, end: false, adminOnly: false },
-  { to: "/admin/users", labelKey: "nav.admin", icon: IconUsers, end: false, adminOnly: true },
 ];
 
 export interface NavGroupDef {
@@ -81,5 +79,5 @@ export const NAV_GROUPS: NavGroupDef[] = [
   { labelKey: "nav.group.planning", items: ["/schedules", "/bills", "/budget", "/goals"] },
   { labelKey: "nav.group.banking", items: ["/bank-sync", "/review"] },
   { labelKey: "nav.group.insights", items: ["/reports", "/vehicles"] },
-  { labelKey: "nav.group.settings", items: ["/settings", "/admin/users"] },
+  { labelKey: "nav.group.settings", items: ["/settings"] },
 ];
