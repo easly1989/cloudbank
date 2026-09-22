@@ -29,6 +29,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../components/confirmContext";
 import { EmptyState } from "../components/EmptyState";
 
 import {
@@ -76,6 +77,7 @@ const accountFormat = (a?: Account): MoneyFormat => ({
 
 export function SchedulesPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const fmtDate = useDateFormat();
   const qc = useQueryClient();
   const { currentWallet } = useWallet();
@@ -303,8 +305,14 @@ export function SchedulesPage() {
                       variant="subtle"
                       color="red"
                       aria-label={t("schedules.delete")}
-                      onClick={() => {
-                        if (window.confirm(t("schedules.confirmDelete"))) remove.mutate(s.id);
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: t("schedules.confirmDeleteTitle"),
+                          body: t("schedules.confirmDeleteBody"),
+                          confirmLabel: t("schedules.delete"),
+                          danger: true,
+                        });
+                        if (ok) remove.mutate(s.id);
                       }}
                     >
                       <IconTrash size={16} />

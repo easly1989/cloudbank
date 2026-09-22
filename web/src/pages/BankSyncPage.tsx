@@ -40,6 +40,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../components/confirmContext";
 
 import {
   ApiError,
@@ -171,6 +172,7 @@ function ConnectionCard({
   connection: BankConnection;
 }) {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const fmtDate = useDateFormat();
   const qc = useQueryClient();
   const onError = (err: unknown) =>
@@ -374,9 +376,14 @@ function ConnectionCard({
               color="red"
               aria-label={t("banksync.remove")}
               loading={remove.isPending}
-              onClick={() => {
-                if (window.confirm(t("banksync.confirmRemove", { name: connection.name })))
-                  remove.mutate();
+              onClick={async () => {
+                const ok = await confirm({
+                  title: t("banksync.confirmRemoveTitle", { name: connection.name }),
+                  body: t("banksync.confirmRemoveBody"),
+                  confirmLabel: t("banksync.remove"),
+                  danger: true,
+                });
+                if (ok) remove.mutate();
               }}
             >
               <IconTrash size={16} />
@@ -522,8 +529,14 @@ function ConnectionCard({
                     color="red"
                     leftSection={<IconTrash size={14} />}
                     loading={clearHistory.isPending}
-                    onClick={() => {
-                      if (window.confirm(t("banksync.history.clearConfirm"))) clearHistory.mutate();
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: t("banksync.history.confirmClearTitle"),
+                        body: t("banksync.history.confirmClearBody"),
+                        confirmLabel: t("banksync.history.clear"),
+                        danger: true,
+                      });
+                      if (ok) clearHistory.mutate();
                     }}
                   >
                     {t("banksync.history.clear")}
@@ -669,6 +682,7 @@ function ConnectModal({
 
 function PluggyPanel({ walletId }: { walletId: number }) {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const qc = useQueryClient();
   const [configOpen, setConfigOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
@@ -720,8 +734,14 @@ function PluggyPanel({ walletId }: { walletId: number }) {
               variant="subtle"
               color="red"
               loading={removeCfg.isPending}
-              onClick={() => {
-                if (window.confirm(t("banksync.pluggy.confirmRemoveConfig"))) removeCfg.mutate();
+              onClick={async () => {
+                const ok = await confirm({
+                  title: t("banksync.pluggy.confirmRemoveConfigTitle"),
+                  body: t("banksync.pluggy.confirmRemoveConfigBody"),
+                  confirmLabel: t("banksync.pluggy.removeConfig"),
+                  danger: true,
+                });
+                if (ok) removeCfg.mutate();
               }}
             >
               {t("banksync.pluggy.removeConfig")}
@@ -932,6 +952,7 @@ function PluggyConnectForm({
 
 function EnableBankingPanel({ walletId }: { walletId: number }) {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const qc = useQueryClient();
   const [configOpen, setConfigOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
@@ -986,8 +1007,14 @@ function EnableBankingPanel({ walletId }: { walletId: number }) {
               variant="subtle"
               color="red"
               loading={removeCfg.isPending}
-              onClick={() => {
-                if (window.confirm(t("banksync.eb.confirmRemoveConfig"))) removeCfg.mutate();
+              onClick={async () => {
+                const ok = await confirm({
+                  title: t("banksync.eb.confirmRemoveConfigTitle"),
+                  body: t("banksync.eb.confirmRemoveConfigBody"),
+                  confirmLabel: t("banksync.eb.removeConfig"),
+                  danger: true,
+                });
+                if (ok) removeCfg.mutate();
               }}
             >
               {t("banksync.eb.removeConfig")}

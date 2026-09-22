@@ -23,6 +23,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../components/confirmContext";
 
 import { type DashboardAccount, type User, getDashboard, updateMe } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
@@ -73,6 +74,7 @@ import { useWallet } from "../wallet/WalletProvider";
 
 export function DashboardPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const { currentWallet } = useWallet();
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -115,8 +117,14 @@ export function DashboardPage() {
   // Re-pack the current widgets into a clean, gap-free grid (non-destructive).
   const tidy = () => commitLayout(tidyLayout(layoutRef.current.widgets));
   // Restore the default widget set and arrangement (after a confirm).
-  const resetToDefault = () => {
-    if (window.confirm(t("dashboard.resetConfirm"))) commitLayout(defaultLayout());
+  const resetToDefault = async () => {
+    const ok = await confirm({
+      title: t("dashboard.confirmResetTitle"),
+      body: t("dashboard.confirmResetBody"),
+      confirmLabel: t("dashboard.confirmResetAction"),
+      danger: true,
+    });
+    if (ok) commitLayout(defaultLayout());
   };
 
   // Base dashboard query for the wallet-wide widgets (totals, accounts, base

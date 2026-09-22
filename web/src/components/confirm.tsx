@@ -30,7 +30,15 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   const ask = useCallback<Ask>(
     (options) =>
       new Promise<boolean>((resolve) => {
-        setPending({ ...options, resolve });
+        // A second question arriving while one is open replaces it, and the one
+        // being replaced answers "no" on its way out. Without that its caller
+        // waits forever on a promise nothing will ever settle — which, for a
+        // form asking whether to discard your edits, means a panel that can no
+        // longer be closed.
+        setPending((prev) => {
+          prev?.resolve(false);
+          return { ...options, resolve };
+        });
       }),
     [],
   );
