@@ -2,16 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import { defaultNavLayout, migrateNavLayout, SETTINGS_GROUP_ID } from "./navLayout";
 
-const lastGroup = (l: ReturnType<typeof migrateNavLayout>) => l.groups[l.groups.length - 1];
-
 describe("navLayout", () => {
-  it("default layout ends with the locked Settings group", () => {
+  // Settings reaches the reader through the gear at the foot of the sidebar. A
+  // second copy in the list of pages would be the same destination twice.
+  it("keeps Settings out of the navigation entirely", () => {
     const d = defaultNavLayout();
-    const settings = lastGroup(d);
-    expect(settings.id).toBe(SETTINGS_GROUP_ID);
-    expect(settings.locked).toBe(true);
-    // People management moved inside the Settings page, so Settings is alone here.
-    expect(settings.entries.map((e) => (e.kind === "item" ? e.to : "sep"))).toEqual(["/settings"]);
+    expect(d.groups.some((g) => g.id === SETTINGS_GROUP_ID)).toBe(false);
+    expect(
+      d.groups.some((g) => g.entries.some((e) => e.kind === "item" && e.to === "/settings")),
+    ).toBe(false);
   });
 
   it("returns the default for an absent/invalid saved layout", () => {
@@ -63,27 +62,25 @@ describe("navLayout", () => {
     expect(money?.entries.some((e) => e.kind === "item" && e.to === "/transactions")).toBe(true);
   });
 
-  it("always rebuilds the canonical locked Settings group, ignoring tampering", () => {
+  // A layout saved before the gear moved still carries the old Settings group.
+  it("drops the Settings group a saved layout still carries", () => {
     const m = migrateNavLayout({
       version: 1,
       groups: [
         {
           id: "settings",
           labelKey: "nav.group.settings",
-          locked: false,
-          label: "Hacked",
-          entries: [{ kind: "item", to: "/accounts" }],
+          locked: true,
+          entries: [{ kind: "item", to: "/settings" }],
         },
         { id: "money", labelKey: "nav.group.money", entries: [{ kind: "item", to: "/accounts" }] },
       ],
     });
-    const settings = lastGroup(m);
-    expect(settings.id).toBe(SETTINGS_GROUP_ID);
-    expect(settings.locked).toBe(true);
-    expect(settings.label).toBeUndefined();
-    // People management moved inside the Settings page, so Settings is alone here.
-    expect(settings.entries.map((e) => (e.kind === "item" ? e.to : "sep"))).toEqual(["/settings"]);
-    // /accounts stays in the money group (its copy in the tampered settings group is ignored).
+    expect(m.groups.some((g) => g.id === SETTINGS_GROUP_ID)).toBe(false);
+    expect(
+      m.groups.some((g) => g.entries.some((e) => e.kind === "item" && e.to === "/settings")),
+    ).toBe(false);
+    // /accounts keeps its place rather than being swept up with the removal.
     expect(
       m.groups
         .find((g) => g.id === "money")

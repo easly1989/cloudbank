@@ -154,3 +154,32 @@ body {
 .cb-search-hit:hover {
   background: var(--mantine-color-default-hover);
 }
+
+/* The wallet card and the search row at the head of the sidebar.
+   Both are buttons that must not look like buttons: they are the frame the
+   pages sit in, so they stay quiet until the pointer is on them. */
+.cb-wallet-card,
+.cb-search-row {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mantine-color-default-border);
+  background: var(--mantine-color-body);
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+.cb-wallet-card:hover,
+.cb-search-row:hover {
+  background: var(--mantine-color-default-hover);
+}
+.cb-search-row {
+  padding: 6px 10px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cb-wallet-card,
+  .cb-search-row {
+    transition: none;
+  }
+}
