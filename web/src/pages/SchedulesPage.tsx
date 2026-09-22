@@ -61,7 +61,7 @@ import { PAYMENT_MODES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
 import { todayCivil } from "../civilDate";
-import { amountColor, errorColor } from "../amountTone";
+import { amountColor, expenseColor, incomeColor } from "../amountTone";
 
 const UNITS: ScheduleUnit[] = ["day", "week", "month", "year"];
 const WEEKEND_MODES = [0, 1, 2, 3];
@@ -213,18 +213,18 @@ export function SchedulesPage() {
                   {t(`schedules.per.${p}`)}
                 </Text>
                 <Group justify="space-between" gap="xs" mt={4}>
-                  <Text size="sm" c="teal">
+                  <Text size="sm" c={incomeColor}>
                     {t("schedules.income")}
                   </Text>
-                  <Text size="sm" c="teal">
+                  <Text size="sm" c={incomeColor}>
                     {formatMinor(summary[p].in, summaryFmt)}
                   </Text>
                 </Group>
                 <Group justify="space-between" gap="xs">
-                  <Text size="sm" c={errorColor}>
+                  <Text size="sm" c={expenseColor}>
                     {t("schedules.expense")}
                   </Text>
-                  <Text size="sm" c={errorColor}>
+                  <Text size="sm" c={expenseColor}>
                     {formatMinor(summary[p].out, summaryFmt)}
                   </Text>
                 </Group>

@@ -5,7 +5,8 @@
     "sourceCode": "Source code",
     "apiDocs": "API docs",
     "donate": "Donate",
-    "basedOn": "a web port of HomeBank"
+    "basedOn": "a web port of HomeBank",
+    "support": "Support CloudBank"
   },
   "nav": {
     "dashboard": "Dashboard",

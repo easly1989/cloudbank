@@ -100,6 +100,11 @@ It exits non-zero if anything fails, and lists separately the text sitting on a
 gradient — there is no single background colour to measure there, so those are
 checked by hand. Disabled controls are skipped: WCAG exempts them.
 
+**Point it at an instance with data in it.** It can only measure what renders,
+and an empty wallet hides every badge, amount and row — a bare instance will
+report clean while a seeded one finds real failures. Importing
+`e2e/fixtures/sample.xhb` first is enough.
+
 Change a colour and it is worth a run, especially a token in `web/src/app.css`
 or anything passed as `c=` on a `Text`.
 

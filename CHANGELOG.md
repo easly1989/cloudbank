@@ -50,6 +50,18 @@ dashboard polish.
   to read; a status is now a word with a small coloured dot, and the colour
   still carries the meaning.
 
+- **The gear is where it was drawn.** The style tile put it at the foot of the
+  sidebar, beside your name; it had shipped as an entry at the end of the
+  navigation list, which on a 1280x720 laptop sits 126px below the fold. The
+  foot no longer scrolls with the pages, so the one destination you reach from
+  anywhere is always on screen. Your name and the sign-out moved down there with
+  it, which is also where the tile had them.
+
+  Asking for support moved out of the header and stopped shouting. It was a
+  filled red pill beside the ledger, which is the one place a red pill should
+  never be — it reads as an alarm about your own money. It is now an outlined
+  accent pill at the foot of the sidebar, quiet until you reach for it.
+
 - **The text you were meant to read is now readable.** The whole app was
   measured against WCAG AA in both themes rather than eyeballed, and it was not
   passing. The "dimmed" grey that carries every page hint and every empty state

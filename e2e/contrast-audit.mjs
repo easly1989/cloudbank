@@ -19,6 +19,11 @@
 //     compare against, so those are listed separately and checked by hand —
 //     the donate pill is the one case in this app.
 //
+// Run it against an instance that HAS DATA. The audit can only measure what is
+// on screen, so an empty wallet hides every badge, every amount and every row:
+// the first run of this script reported clean on a bare instance and found five
+// failures the moment the same build was pointed at a seeded one.
+//
 // The run is self-contained: it sets up the admin and a wallet through the API
 // on a fresh instance, or logs in if one already exists.
 import { chromium } from "@playwright/test";

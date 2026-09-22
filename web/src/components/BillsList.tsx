@@ -77,7 +77,7 @@ export function BillsList({
               {stateLabel(b.state)}
             </Badge>
             {b.autoPost && (
-              <Badge size="xs" variant="outline" color="gray">
+              <Badge size="xs" variant="default">
                 {t("bills.auto")}
               </Badge>
             )}
@@ -127,12 +127,12 @@ export function BillsList({
         </Text>
         <Group gap={6} wrap="nowrap">
           {(data?.overdue ?? 0) > 0 && (
-            <Badge size="sm" color="red" variant="light">
+            <Badge size="sm" color="red" variant="dot">
               {t("bills.overdueCount", { count: data?.overdue ?? 0 })}
             </Badge>
           )}
           {(data?.due ?? 0) > 0 && (
-            <Badge size="sm" color="yellow" variant="light">
+            <Badge size="sm" color="yellow" variant="dot">
               {t("bills.dueCount", { count: data?.due ?? 0 })}
             </Badge>
           )}
