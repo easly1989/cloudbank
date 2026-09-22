@@ -4,6 +4,7 @@ import { IconDeviceFloppy } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { errorColor } from "../amountTone";
 
 import {
   ApiError,
@@ -211,7 +212,7 @@ export function TransferForm({
           />
         </Group>
         {fromId != null && fromId === toId && (
-          <Text size="sm" c="red">
+          <Text size="sm" c={errorColor}>
             {t("transfers.sameAccount")}
           </Text>
         )}

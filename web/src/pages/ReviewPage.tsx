@@ -40,7 +40,7 @@ import { useDateFormat } from "../dates";
 import { formatMinor, type MoneyFormat } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
 import { PageHeader } from "../components/PageHeader";
-import { amountColor } from "../amountTone";
+import { amountColor, errorColor } from "../amountTone";
 
 function fmtFor(acc?: Account): MoneyFormat {
   return {
@@ -241,7 +241,7 @@ export function ReviewPage() {
     <Stack>
       <PageHeader title={t("review.title")} hint={t("review.hint")} />
 
-      {review.isError && <Text c="red">{t("review.error")}</Text>}
+      {review.isError && <Text c={errorColor}>{t("review.error")}</Text>}
 
       <Card withBorder>
         <Stack gap="sm">

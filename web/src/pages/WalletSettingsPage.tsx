@@ -15,6 +15,7 @@ import { IconCoin, IconTags, IconUserDollar } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { errorColor } from "../amountTone";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { ApiError, deleteWallet, listCategories, updateWallet } from "../api/client";
@@ -202,7 +203,7 @@ export function WalletSettingsPage() {
         <Card withBorder maw={560}>
           <Stack>
             <div>
-              <Title order={4} c="red">
+              <Title order={4} c={errorColor}>
                 {t("wallet.dangerZone")}
               </Title>
               <Text size="sm" c="dimmed">

@@ -61,7 +61,7 @@ import { PAYMENT_MODES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
 import { todayCivil } from "../civilDate";
-import { amountColor } from "../amountTone";
+import { amountColor, errorColor } from "../amountTone";
 
 const UNITS: ScheduleUnit[] = ["day", "week", "month", "year"];
 const WEEKEND_MODES = [0, 1, 2, 3];
@@ -221,10 +221,10 @@ export function SchedulesPage() {
                   </Text>
                 </Group>
                 <Group justify="space-between" gap="xs">
-                  <Text size="sm" c="red">
+                  <Text size="sm" c={errorColor}>
                     {t("schedules.expense")}
                   </Text>
-                  <Text size="sm" c="red">
+                  <Text size="sm" c={errorColor}>
                     {formatMinor(summary[p].out, summaryFmt)}
                   </Text>
                 </Group>

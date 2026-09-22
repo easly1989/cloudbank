@@ -19,6 +19,7 @@ import { IconDeviceFloppy, IconSparkles, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { errorColor } from "../amountTone";
 import { useConfirm } from "./confirmContext";
 
 import {
@@ -654,7 +655,7 @@ export function TransactionForm({
                 {t("transactions.addSplit")}
               </Button>
               {splitMismatch && (
-                <Text size="sm" c="red">
+                <Text size="sm" c={errorColor}>
                   {t("transactions.splitMismatch")} (
                   <NumberFormatter
                     value={splitSumMinor / Math.pow(10, fd)}

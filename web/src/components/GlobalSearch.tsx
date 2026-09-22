@@ -19,7 +19,7 @@ import { useNavigate } from "react-router-dom";
 import { type Account, type SearchRow, listAccounts, searchTransactions } from "../api/client";
 import { useDateFormat } from "../dates";
 import { type MoneyFormat, formatMinor } from "../money";
-import { amountColor } from "../amountTone";
+import { amountColor, errorColor } from "../amountTone";
 
 const MIN_CHARS = 2;
 
@@ -105,7 +105,7 @@ export function GlobalSearch({ walletId }: { walletId: number }) {
               {t("search.hint", { n: MIN_CHARS })}
             </Text>
           ) : searchQuery.isError ? (
-            <Text c="red" size="sm">
+            <Text c={errorColor} size="sm">
               {t("search.error")}
             </Text>
           ) : result && result.rows.length === 0 ? (
