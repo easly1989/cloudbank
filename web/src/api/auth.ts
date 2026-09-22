@@ -8,6 +8,10 @@ export interface Preferences {
   defaultAccountId?: number;
   /** Register column visibility, keyed by column id (payee/category/note/status/runningBalance). */
   registerColumns?: Record<string, boolean>;
+  /** Register column widths in pixels, keyed by column id. Absent = the default width. */
+  registerColumnWidths?: Record<string, number>;
+  /** Which register column is sorted, and how. Absent = the ledger’s own chronological order. */
+  registerSort?: { id: string; desc: boolean };
   /** HomeBank-style lenient amount entry (accept "." or "," as decimal). Default on. */
   smartAmountInput?: boolean;
   /** Collapse the desktop sidebar to an icon-only rail. */

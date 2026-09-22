@@ -585,6 +585,12 @@
       "title_other": "{{count}} newer transactions are hidden by this filter",
       "body": "The top line below is not the account's latest movement. Today's balance still counts the hidden ones.",
       "action": "Clear the filter"
+    },
+    "sortBy": "Sort by this column",
+    "resizeColumn": "Drag to change this column's width",
+    "privacy": {
+      "hide": "Hide names and amounts",
+      "show": "Show names and amounts"
     }
   },
   "filters": {
