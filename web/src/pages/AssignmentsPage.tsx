@@ -11,16 +11,16 @@ import {
   Table,
   Text,
   TextInput,
-  Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconGripVertical, IconPencil, IconTrash } from "@tabler/icons-react";
+import { IconFilter, IconGripVertical, IconPencil, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/confirmContext";
 import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
 
 import {
   ApiError,
@@ -124,42 +124,54 @@ export function AssignmentsPage() {
 
   if (!currentWallet) return null;
 
+  // The empty state offers the same button; the header drops it while the
+  // list is empty rather than showing it twice.
+  const addButton = (
+    <Button
+      onClick={() => {
+        setEditing(null);
+        form.open();
+      }}
+    >
+      {t("assignments.add")}
+    </Button>
+  );
+
   return (
     <Stack>
-      <Group justify="space-between">
-        <Title order={2}>{t("assignments.title")}</Title>
-        <Group>
-          <Button
-            variant="default"
-            onClick={async () => {
-              const ok = await confirm({
-                title: t("assignments.confirmApplyTitle"),
-                body: t("assignments.confirmApplyBody"),
-                confirmLabel: t("assignments.applyToExisting"),
-              });
-              if (ok) apply.mutate(true);
-            }}
-            loading={apply.isPending}
-            disabled={order.length === 0}
-          >
-            {t("assignments.applyToExisting")}
-          </Button>
-          <Button
-            onClick={() => {
-              setEditing(null);
-              form.open();
-            }}
-          >
-            {t("assignments.add")}
-          </Button>
-        </Group>
-      </Group>
+      <PageHeader
+        title={t("assignments.title")}
+        hint={t("assignments.help")}
+        actions={
+          <>
+            <Button
+              variant="default"
+              onClick={async () => {
+                const ok = await confirm({
+                  title: t("assignments.confirmApplyTitle"),
+                  body: t("assignments.confirmApplyBody"),
+                  confirmLabel: t("assignments.applyToExisting"),
+                });
+                if (ok) apply.mutate(true);
+              }}
+              loading={apply.isPending}
+              disabled={order.length === 0}
+            >
+              {t("assignments.applyToExisting")}
+            </Button>
+            {order.length > 0 && addButton}
+          </>
+        }
+      />
 
-      <Text size="sm" c="dimmed">
-        {t("assignments.help")}
-      </Text>
-
-      {order.length === 0 && <EmptyState message={t("assignments.empty")} />}
+      {order.length === 0 && (
+        <EmptyState
+          icon={IconFilter}
+          message={t("assignments.empty")}
+          hint={t("assignments.emptyHint")}
+          action={addButton}
+        />
+      )}
 
       {order.length > 0 && (
         <Table>

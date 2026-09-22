@@ -76,7 +76,8 @@
     "confirmDiscardTitle": "Scartare le modifiche?",
     "confirmDiscardBody": "Quello che hai scritto qui va perso e la transazione non viene salvata.",
     "confirmDiscardAction": "Scarta",
-    "confirmDiscardKeep": "Continua a modificare"
+    "confirmDiscardKeep": "Continua a modificare",
+    "noAccountsHint": "Le transazioni stanno dentro un conto, quindi si parte da lì."
   },
   "transfers": {
     "add": "Trasferimento",
@@ -154,7 +155,8 @@
       "account": "Conto",
       "payee": "Beneficiario",
       "category": "Categoria"
-    }
+    },
+    "hint": "Dove sono finiti i soldi, sull'arco di tempo che scegli."
   },
   "budget": {
     "title": "Budget",
@@ -195,7 +197,8 @@
       "9": "Ott",
       "10": "Nov",
       "11": "Dic"
-    }
+    },
+    "hint": "Quanto avevi previsto di spendere, accanto a quanto hai speso davvero."
   },
   "assignments": {
     "title": "Regole di assegnazione",
@@ -242,7 +245,8 @@
     "confirmApplyTitle": "Applicare tutte le regole alle transazioni esistenti?",
     "confirmApplyBody": "Vengono riempiti solo i campi vuoti — nulla di già impostato viene sovrascritto.",
     "confirmDeleteTitle": "Eliminare questa regola?",
-    "confirmDeleteBody": "Le transazioni già compilate mantengono i loro valori; cambia solo quello che inserirai da ora in poi."
+    "confirmDeleteBody": "Le transazioni già compilate mantengono i loro valori; cambia solo quello che inserirai da ora in poi.",
+    "emptyHint": "Una regola legge il testo che manda la banca e compila categoria, beneficiario o tag, così smetti di riscrivere le stesse cose ogni mese."
   },
   "schedules": {
     "title": "Transazioni pianificate",
@@ -297,7 +301,9 @@
     "transferNote": "È un trasferimento; qui puoi cambiare solo importo, note e pianificazione.",
     "untitled": "Pianificata",
     "confirmDeleteTitle": "Eliminare questa pianificazione?",
-    "confirmDeleteBody": "Le transazioni già registrate restano; non ne verranno pianificate altre."
+    "confirmDeleteBody": "Le transazioni già registrate restano; non ne verranno pianificate altre.",
+    "hint": "Transazioni che CloudBank registra per te il giorno in cui scadono.",
+    "emptyHint": "Affitto, abbonamenti, stipendio — tutto ciò che torna da solo."
   },
   "tags": {
     "title": "Tag",
@@ -307,7 +313,8 @@
     "mergeInto": "Unisci a…",
     "delete": "Elimina tag",
     "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
-    "confirmDeleteBody": "Il tag viene rimosso da tutte le transazioni che lo portano. Le transazioni restano."
+    "confirmDeleteBody": "Il tag viene rimosso da tutte le transazioni che lo portano. Le transazioni restano.",
+    "hint": "Etichette libere da mettere su una transazione. Una transazione può portarne più di una."
   },
   "vehicles": {
     "title": "Veicoli",
@@ -546,7 +553,8 @@
       "accounts": "Conti"
     },
     "confirmRemoveTitle": "Rimuovere \"{{name}}\"?",
-    "confirmRemoveBody": "Le transazioni già importate restano. Da questa banca non verrà più scaricato nulla."
+    "confirmRemoveBody": "Le transazioni già importate restano. Da questa banca non verrà più scaricato nulla.",
+    "emptyHint": "Scegli qui sopra un provider per collegarne una."
   },
   "search": {
     "open": "Cerca transazioni",
@@ -581,7 +589,9 @@
     "create": "Nuovo modello",
     "complexNote": "Questo modello ha suddivisioni o è un trasferimento; modifica i dettagli da una transazione. Puoi comunque rinominarlo qui.",
     "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
-    "confirmDeleteBody": "Le transazioni già create da questo modello non vengono toccate."
+    "confirmDeleteBody": "Le transazioni già create da questo modello non vengono toccate.",
+    "hint": "Transazioni che inserisci più di una volta: compilane una e poi riusala.",
+    "emptyHint": "La spesa settimanale, il bonifico mensile: le transazioni che altrimenti riscriveresti."
   },
   "register": {
     "bank": "Riconciliato",
@@ -867,7 +877,7 @@
     "delete": "Elimina",
     "cancel": "Annulla",
     "save": "Salva",
-    "empty": "Nessun conto. Aggiungi il primo conto per iniziare.",
+    "empty": "Ancora nessun conto.",
     "name": "Nome del conto",
     "type": "Tipo",
     "currency": "Valuta",
@@ -890,7 +900,8 @@
     },
     "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
     "confirmDeleteBody": "Tutte le transazioni del conto vengono eliminate con lui. L'operazione non è reversibile.",
-    "confirmDeleteAction": "Elimina conto"
+    "confirmDeleteAction": "Elimina conto",
+    "emptyHint": "Un conto è dove vivono le transazioni — un conto in banca, i contanti che hai in tasca, una carta di credito."
   },
   "categories": {
     "title": "Categorie",
@@ -918,7 +929,9 @@
     "reassignTo": "Riassegna le sottocategorie a",
     "reassignHint": "Questa categoria ha delle sottocategorie. Scegli dove spostarle.",
     "deleteHint": "Eliminare \"{{name}}\"?",
-    "mergeHint": "Sposta tutto da \"{{name}}\" in:"
+    "mergeHint": "Sposta tutto da \"{{name}}\" in:",
+    "hint": "Come sono raggruppate le tue spese. Le categorie sono la base di ogni report.",
+    "emptyHint": "Raggruppa le spese come le pensi tu, non come le vede la banca."
   },
   "payees": {
     "title": "Beneficiari",
@@ -936,7 +949,9 @@
     "defaultCategory": "Categoria predefinita",
     "empty": "Nessun beneficiario.",
     "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
-    "confirmDeleteBody": "Le transazioni che usavano questo beneficiario restano, ma rimangono senza."
+    "confirmDeleteBody": "Le transazioni che usavano questo beneficiario restano, ma rimangono senza.",
+    "hint": "Chi paghi e chi ti paga. Assegna una categoria predefinita e le loro transazioni arrivano già in ordine.",
+    "emptyHint": "I beneficiari si accumulano mentre inserisci le transazioni, ma puoi aggiungere subito quelli che già conosci."
   },
   "currencies": {
     "title": "Valute",
@@ -956,7 +971,8 @@
     "providerDownHint": "Il servizio online dei tassi non è raggiungibile o non supporta questa valuta di base. I tassi manuali restano invariati.",
     "notOnEcb": "manuale",
     "notOnEcbHint": "Non pubblicato dalla BCE; questo tasso resta manuale.",
-    "updatedAt": "agg. {{date}}"
+    "updatedAt": "agg. {{date}}",
+    "hint": "Le valute che questo portafoglio può usare, e i cambi con cui le converte."
   },
   "dashboard": {
     "title": "Cruscotto",

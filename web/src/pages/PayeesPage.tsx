@@ -8,16 +8,16 @@ import {
   Stack,
   Table,
   TextInput,
-  Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconDots, IconPlus } from "@tabler/icons-react";
+import { IconDots, IconPlus, IconUsers } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/confirmContext";
 import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
 
 import {
   ApiError,
@@ -73,22 +73,35 @@ export function PayeesPage() {
   if (!currentWallet) return null;
   const payees = payeesQuery.data ?? [];
 
+  // One button, shown in the header or in the empty state — never both.
+  const addButton = (
+    <Button
+      leftSection={<IconPlus size={16} />}
+      onClick={() => {
+        setEditing(null);
+        form.open();
+      }}
+    >
+      {t("payees.add")}
+    </Button>
+  );
+
   return (
     <Stack maw={720}>
-      <Group justify="space-between">
-        <Title order={2}>{t("payees.title")}</Title>
-        <Button
-          leftSection={<IconPlus size={16} />}
-          onClick={() => {
-            setEditing(null);
-            form.open();
-          }}
-        >
-          {t("payees.add")}
-        </Button>
-      </Group>
+      <PageHeader
+        title={t("payees.title")}
+        hint={t("payees.hint")}
+        actions={payees.length > 0 ? addButton : undefined}
+      />
 
-      {payees.length === 0 && <EmptyState message={t("payees.empty")} />}
+      {payees.length === 0 && (
+        <EmptyState
+          icon={IconUsers}
+          message={t("payees.empty")}
+          hint={t("payees.emptyHint")}
+          action={addButton}
+        />
+      )}
 
       {payees.length > 0 && (
         <Table striped highlightOnHover>

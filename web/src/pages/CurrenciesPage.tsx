@@ -9,7 +9,6 @@ import {
   Stack,
   Table,
   Text,
-  Title,
   Tooltip,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
@@ -32,6 +31,7 @@ import {
 import { useDateFormat } from "../dates";
 import { rowFocusProps } from "../rowEdit";
 import { useWallet } from "../wallet/WalletProvider";
+import { PageHeader } from "../components/PageHeader";
 
 export function CurrenciesPage() {
   const { t } = useTranslation();
@@ -103,7 +103,7 @@ export function CurrenciesPage() {
 
   return (
     <Stack maw={720}>
-      <Title order={2}>{t("currencies.title")}</Title>
+      <PageHeader title={t("currencies.title")} hint={t("currencies.hint")} />
 
       <Card withBorder>
         <Group align="flex-end">

@@ -1,4 +1,4 @@
-import { Button, createTheme, Modal, Table, type MantineColorsTuple } from "@mantine/core";
+import { Badge, Button, createTheme, Modal, Table, type MantineColorsTuple } from "@mantine/core";
 
 // CloudBank's own blue, as a Mantine tuple. Shade 6 (#2457D6) is the accent the
 // app ships with; the rest ramp either side of it for hovers, tints and dark
@@ -73,6 +73,13 @@ export function buildTheme(accent?: string) {
       Button: Button.extend({
         defaultProps: { radius: "md" },
         classNames: { root: "cb-transition" },
+      }),
+      // A status is a word, not a shout. Mantine sets badges in caps by
+      // default, which turns "overdue" and "paid" into the loudest thing on a
+      // row that is mostly numbers you actually came to read. The colour still
+      // carries the meaning; the typography no longer competes for it.
+      Badge: Badge.extend({
+        styles: { label: { textTransform: "none", letterSpacing: "normal" } },
       }),
       // Modals are for decisions you cannot undo, so they are deliberately
       // plain: centred, no scroll-jump, and never used for entering data (that

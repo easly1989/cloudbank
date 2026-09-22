@@ -71,6 +71,8 @@ import {
 import { useDateFormat } from "../dates";
 import { localScheduleToUtc, utcScheduleToLocal } from "../schedule";
 import { useWallet } from "../wallet/WalletProvider";
+import { PageHeader } from "../components/PageHeader";
+import { EmptyState } from "../components/EmptyState";
 
 // The Enable Banking redirect target — must be whitelisted in the user's app.
 const ebRedirectUrl = () => `${window.location.origin}/bank-sync/callback`;
@@ -100,12 +102,7 @@ export function BankSyncPage() {
 
   return (
     <Stack>
-      <div>
-        <Title order={2}>{t("banksync.title")}</Title>
-        <Text c="dimmed" size="sm" maw={680}>
-          {t("banksync.hint")}
-        </Text>
-      </div>
+      <PageHeader title={t("banksync.title")} hint={t("banksync.hint")} />
 
       <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
         <Card withBorder>
@@ -130,7 +127,11 @@ export function BankSyncPage() {
       </Title>
       {(connections.data ?? []).length === 0 ? (
         <Card withBorder>
-          <Text c="dimmed">{t("banksync.empty")}</Text>
+          <EmptyState
+            icon={IconBuildingBank}
+            message={t("banksync.empty")}
+            hint={t("banksync.emptyHint")}
+          />
         </Card>
       ) : (
         <Stack>
@@ -476,11 +477,11 @@ function ConnectionCard({
                 </div>
                 <Group gap="xs" wrap="nowrap">
                   {ra.linkedAccountId ? (
-                    <Badge size="sm" color="teal" variant="light">
+                    <Badge size="sm" color="teal" variant="dot">
                       {t("banksync.linked")}
                     </Badge>
                   ) : (
-                    <Badge size="sm" color="gray" variant="light">
+                    <Badge size="sm" color="gray" variant="dot">
                       {t("banksync.notLinked")}
                     </Badge>
                   )}
@@ -558,7 +559,7 @@ function ConnectionCard({
                             {t(`banksync.history.trigger.${run.triggeredBy}`)}
                           </Badge>
                         )}
-                        <Badge size="xs" variant="light" color={syncStatusColor(run.status)}>
+                        <Badge size="xs" variant="dot" color={syncStatusColor(run.status)}>
                           {t(`banksync.history.status.${run.status}`)}
                         </Badge>
                       </Group>

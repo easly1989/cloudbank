@@ -9,7 +9,6 @@ import {
   Stack,
   Select,
   Text,
-  Title,
   Tooltip,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
@@ -40,6 +39,7 @@ import { TransactionForm } from "../components/TransactionForm";
 import { useDateFormat } from "../dates";
 import { formatMinor, type MoneyFormat } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
+import { PageHeader } from "../components/PageHeader";
 import { amountColor } from "../amountTone";
 
 function fmtFor(acc?: Account): MoneyFormat {
@@ -184,11 +184,11 @@ export function ReviewPage() {
             {acc ? ` · ${acc.name}` : ""}
           </Text>
           {tx.importRef ? (
-            <Badge size="xs" variant="light" color="blue">
+            <Badge size="xs" variant="dot" color="blue">
               {t("review.fromBank")}
             </Badge>
           ) : (
-            <Badge size="xs" variant="light" color="gray">
+            <Badge size="xs" variant="dot" color="gray">
               {t("review.manual")}
             </Badge>
           )}
@@ -239,12 +239,7 @@ export function ReviewPage() {
 
   return (
     <Stack>
-      <div>
-        <Title order={2}>{t("review.title")}</Title>
-        <Text c="dimmed" size="sm">
-          {t("review.hint")}
-        </Text>
-      </div>
+      <PageHeader title={t("review.title")} hint={t("review.hint")} />
 
       {review.isError && <Text c="red">{t("review.error")}</Text>}
 

@@ -13,7 +13,6 @@ import {
   Text,
   TextInput,
   Textarea,
-  Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -48,6 +47,8 @@ import { useDateFormat } from "../dates";
 import { type MoneyFormat, formatMinor, minorToInput } from "../money";
 import { useAmountParser } from "../useAmountParser";
 import { useWallet } from "../wallet/WalletProvider";
+import { PageHeader } from "../components/PageHeader";
+import { EmptyState } from "../components/EmptyState";
 import { todayCivil } from "../civilDate";
 import { amountColor } from "../amountTone";
 
@@ -105,19 +106,22 @@ export function GoalsPage() {
 
   if (!currentWallet) return null;
 
+  // One button, shown in the header or in the empty state — never both.
+  const addButton = (
+    <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
+      {t("goals.add")}
+    </Button>
+  );
+
   return (
     <Stack>
-      <Group justify="space-between">
-        <Title order={2}>{t("goals.title")}</Title>
-        <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
-          {t("goals.add")}
-        </Button>
-      </Group>
-      <Text size="sm" c="dimmed">
-        {t("goals.hint")}
-      </Text>
+      <PageHeader
+        title={t("goals.title")}
+        hint={t("goals.hint")}
+        actions={goals.length > 0 ? addButton : undefined}
+      />
       {goals.length === 0 ? (
-        <Text c="dimmed">{t("goals.empty")}</Text>
+        <EmptyState icon={IconPigMoney} message={t("goals.empty")} action={addButton} />
       ) : (
         <SimpleGrid cols={{ base: 1, md: 2 }}>
           {goals.map((g) => (
