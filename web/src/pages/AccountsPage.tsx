@@ -20,6 +20,7 @@ import { IconPencil, IconReportMoney, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../components/confirmContext";
 import { AssetValuationsModal } from "../components/AssetValuationsModal";
 import { EmptyState } from "../components/EmptyState";
 
@@ -62,6 +63,7 @@ const ACCOUNT_TYPES: AccountType[] = [
 
 export function AccountsPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const qc = useQueryClient();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
@@ -198,9 +200,14 @@ export function AccountsPage() {
                           variant="subtle"
                           color="red"
                           aria-label={t("accounts.delete")}
-                          onClick={() => {
-                            if (window.confirm(t("accounts.confirmDelete", { name: a.name })))
-                              remove.mutate(a.id);
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: t("accounts.confirmDeleteTitle", { name: a.name }),
+                              body: t("accounts.confirmDeleteBody"),
+                              confirmLabel: t("accounts.confirmDeleteAction"),
+                              danger: true,
+                            });
+                            if (ok) remove.mutate(a.id);
                           }}
                         >
                           <IconTrash size={16} />

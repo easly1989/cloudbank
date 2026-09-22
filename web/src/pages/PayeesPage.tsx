@@ -16,6 +16,7 @@ import { IconDots, IconPlus } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../components/confirmContext";
 import { EmptyState } from "../components/EmptyState";
 
 import {
@@ -34,6 +35,7 @@ import { MergeModal } from "./CategoriesPage";
 
 export function PayeesPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const qc = useQueryClient();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
@@ -127,9 +129,14 @@ export function PayeesPage() {
                       <Menu.Item onClick={() => setMergeFrom(p)}>{t("payees.merge")}</Menu.Item>
                       <Menu.Item
                         color="red"
-                        onClick={() => {
-                          if (window.confirm(t("payees.confirmDelete", { name: p.name })))
-                            remove.mutate(p.id);
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: t("payees.confirmDeleteTitle", { name: p.name }),
+                            body: t("payees.confirmDeleteBody"),
+                            confirmLabel: t("payees.delete"),
+                            danger: true,
+                          });
+                          if (ok) remove.mutate(p.id);
                         }}
                       >
                         {t("payees.delete")}

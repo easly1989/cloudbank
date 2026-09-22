@@ -16,6 +16,7 @@ import { IconPencil, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../components/confirmContext";
 
 import {
   ApiError,
@@ -30,6 +31,7 @@ import { useWallet } from "../wallet/WalletProvider";
 
 export function VehiclesPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const qc = useQueryClient();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
@@ -105,9 +107,14 @@ export function VehiclesPage() {
                       variant="subtle"
                       color="red"
                       aria-label={t("vehicles.delete")}
-                      onClick={() => {
-                        if (window.confirm(t("vehicles.confirmDelete", { name: v.name })))
-                          remove.mutate(v.id);
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: t("vehicles.confirmDeleteTitle", { name: v.name }),
+                          body: t("vehicles.confirmDeleteBody"),
+                          confirmLabel: t("vehicles.delete"),
+                          danger: true,
+                        });
+                        if (ok) remove.mutate(v.id);
                       }}
                     >
                       <IconTrash size={16} />
