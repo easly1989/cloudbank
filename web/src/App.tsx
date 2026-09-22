@@ -69,9 +69,6 @@ const CurrenciesPage = lazy(() =>
 const CreateWalletPage = lazy(() =>
   import("./pages/CreateWalletPage").then((m) => ({ default: m.CreateWalletPage })),
 );
-const UsersPage = lazy(() =>
-  import("./pages/admin/UsersPage").then((m) => ({ default: m.UsersPage })),
-);
 
 function FullScreenLoader() {
   return (
@@ -115,12 +112,12 @@ export function App() {
   // Authenticated: wallet context decides the rest.
   return (
     <WalletProvider>
-      <AuthenticatedApp isAdmin={user.isAdmin} />
+      <AuthenticatedApp />
     </WalletProvider>
   );
 }
 
-function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
+function AuthenticatedApp() {
   const { wallets, isLoading } = useWallet();
 
   if (isLoading) return <FullScreenLoader />;
@@ -158,13 +155,13 @@ function AuthenticatedApp({ isAdmin }: { isAdmin: boolean }) {
         <Route path="reports" element={<ReportsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="wallet" element={<Navigate to="/settings?tab=wallet" replace />} />
+        <Route path="admin/users" element={<Navigate to="/settings?tab=people" replace />} />
         <Route path="wallet/new" element={<CreateWalletPage />} />
         <Route
           path="import"
           element={<Navigate to="/settings?tab=wallet&section=import" replace />}
         />
         <Route path="currencies" element={<CurrenciesPage />} />
-        {isAdmin && <Route path="admin/users" element={<UsersPage />} />}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

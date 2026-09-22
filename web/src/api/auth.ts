@@ -12,8 +12,15 @@ export interface Preferences {
   smartAmountInput?: boolean;
   /** Collapse the desktop sidebar to an icon-only rail. */
   sidebarCollapsed?: boolean;
-  /** Accent (Mantine primary) colour name, e.g. "teal", "blue". */
+  /** Accent (Mantine primary) colour name, e.g. "cloudbank", "teal". */
   themeAccent?: string;
+  /**
+   * Account ids whose balance is shown at the foot of the sidebar. Empty or
+   * absent means the strip is off, which is the default: it is a glance, not a
+   * second account list, so it is opt-in and capped at three (see
+   * SIDEBAR_ACCOUNTS_MAX).
+   */
+  sidebarAccountIds?: number[];
   /** Sidebar nav order, by route id (e.g. "/accounts"). Legacy, superseded by navLayout. */
   navOrder?: string[];
   /** Pinned sidebar nav route ids. Legacy, superseded by navLayout. */
