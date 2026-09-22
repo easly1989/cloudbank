@@ -88,10 +88,10 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* The transaction modal can be taller than the viewport; keep it scrollable but
+/* The transaction sheet can be taller than the viewport; keep it scrollable but
    hide the scrollbar (it looked heavy over the dark panel). Both the scrolling
-   container (inner) and the content are covered so it works regardless of which
-   element Mantine scrolls. */
+   body and the content are covered so it works regardless of which element
+   Mantine scrolls. */
 .txnFormInner,
 .txnFormContent {
   scrollbar-width: none; /* Firefox */

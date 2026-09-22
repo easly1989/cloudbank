@@ -55,6 +55,7 @@ import {
 import { formatMinor, type MoneyFormat } from "../money";
 import { useAmountParser } from "../useAmountParser";
 import { useToday } from "../useToday";
+import { useConfirm } from "../components/confirmContext";
 import { BulkEditModal } from "../components/BulkEditModal";
 import { CollapsibleSection } from "../components/CollapsibleSection";
 import { QuickAdd } from "../components/QuickAdd";
@@ -76,6 +77,7 @@ import { amountColor, attentionColor, negativeOnlyColor } from "../amountTone";
 
 export function TransactionsPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const qc = useQueryClient();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
@@ -283,17 +285,32 @@ export function TransactionsPage() {
     },
     onError,
   });
-  const deleteSelected = () => {
+  const deleteSelected = async () => {
     const ids = [...selected];
     if (ids.length === 0) return;
-    if (window.confirm(t("bulk.confirmDelete", { count: ids.length }))) bulkDelete.mutate(ids);
+    const ok = await confirm({
+      title: t("bulk.confirmDeleteTitle", { count: ids.length }),
+      body: t("bulk.confirmDeleteBody"),
+      confirmLabel: t("bulk.confirmDeleteAction"),
+      cancelLabel: t("bulk.confirmDeleteKeep", { count: ids.length }),
+      danger: true,
+    });
+    if (ok) bulkDelete.mutate(ids);
   };
 
   // Reconciled rows are locked: editing or deleting one requires an explicit
   // unreconcile first.
   const RECONCILED = 2;
-  const editRow = (row: RegisterRow) => {
-    if (row.status === RECONCILED && !window.confirm(t("reconcile.lockedEdit"))) return;
+  const editRow = async (row: RegisterRow) => {
+    if (
+      row.status === RECONCILED &&
+      !(await confirm({
+        title: t("reconcile.lockedEditTitle"),
+        body: t("reconcile.lockedEdit"),
+        confirmLabel: t("reconcile.lockedEditAction"),
+      }))
+    )
+      return;
     if (row.transferId != null) {
       setEditingTransferId(row.transferId);
       transferForm.open();
@@ -310,13 +327,36 @@ export function TransactionsPage() {
     setDuplicating(row);
     form.open();
   };
-  const deleteRow = (row: RegisterRow) => {
-    if (row.status === RECONCILED && !window.confirm(t("reconcile.lockedDelete"))) return;
+  const deleteRow = async (row: RegisterRow) => {
+    if (
+      row.status === RECONCILED &&
+      !(await confirm({
+        title: t("reconcile.lockedDeleteTitle"),
+        body: t("reconcile.lockedDelete"),
+        confirmLabel: t("reconcile.lockedDeleteAction"),
+        danger: true,
+      }))
+    )
+      return;
     if (row.transferId != null) {
-      if (window.confirm(t("transfers.confirmDelete"))) removeTransfer.mutate(row.transferId);
-    } else if (window.confirm(t("transactions.confirmDelete"))) {
-      remove.mutate(row.id);
+      const ok = await confirm({
+        title: t("transfers.confirmDeleteTitle"),
+        // A transfer is two rows; deleting it removes both, which is the part
+        // people do not expect.
+        body: t("transfers.confirmDeleteBody"),
+        confirmLabel: t("transfers.confirmDeleteAction"),
+        danger: true,
+      });
+      if (ok) removeTransfer.mutate(row.transferId);
+      return;
     }
+    const ok = await confirm({
+      title: t("transactions.confirmDeleteTitle"),
+      body: t("transactions.confirmDeleteBody"),
+      confirmLabel: t("transactions.confirmDeleteAction"),
+      danger: true,
+    });
+    if (ok) remove.mutate(row.id);
   };
 
   const saveTemplateFromRow = useMutation({

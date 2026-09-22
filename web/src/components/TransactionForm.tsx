@@ -4,7 +4,7 @@ import {
   Button,
   Group,
   Input,
-  Modal,
+  Drawer,
   NumberFormatter,
   SegmentedControl,
   Select,
@@ -447,11 +447,16 @@ export function TransactionForm({
   };
 
   return (
-    <Modal
+    // A sheet rather than a modal: entering a transaction is work you do beside
+    // the ledger, not instead of it. The rows and the running balance stay
+    // visible while you type, and "save and add another" does not blank the
+    // page between entries. Modals are kept for decisions you cannot undo.
+    <Drawer
       opened={opened}
       onClose={requestClose}
+      position="right"
       size="lg"
-      classNames={{ content: "txnFormContent", inner: "txnFormInner" }}
+      classNames={{ content: "txnFormContent", body: "txnFormInner" }}
       title={editing ? t("transactions.editTitle") : t("transactions.addTitle")}
     >
       <Stack>
@@ -735,6 +740,6 @@ export function TransactionForm({
           {savedMsg}
         </Text>
       </Stack>
-    </Modal>
+    </Drawer>
   );
 }

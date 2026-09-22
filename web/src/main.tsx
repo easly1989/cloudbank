@@ -23,6 +23,7 @@ import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { ThemedMantineProvider } from "./ThemedMantineProvider";
 import { AuthProvider } from "./auth/AuthProvider";
+import { ConfirmProvider } from "./components/confirm";
 import "./i18n";
 
 const queryClient = new QueryClient({
@@ -37,10 +38,12 @@ createRoot(rootElement).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemedMantineProvider>
-          <Notifications />
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
+          <ConfirmProvider>
+            <Notifications />
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </ConfirmProvider>
         </ThemedMantineProvider>
       </AuthProvider>
     </QueryClientProvider>
