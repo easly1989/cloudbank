@@ -585,6 +585,12 @@
       "title_other": "{{count}} transazioni più recenti sono nascoste da questo filtro",
       "body": "La prima riga qui sotto non è l'ultimo movimento del conto. Il saldo di oggi le conta comunque.",
       "action": "Azzera il filtro"
+    },
+    "sortBy": "Ordina per questa colonna",
+    "resizeColumn": "Trascina per cambiare la larghezza della colonna",
+    "privacy": {
+      "hide": "Nascondi nomi e importi",
+      "show": "Mostra nomi e importi"
     }
   },
   "filters": {

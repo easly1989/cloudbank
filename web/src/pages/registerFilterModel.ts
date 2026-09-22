@@ -138,6 +138,53 @@ export function applyFilters(
   });
 }
 
+/** Which column the register is sorted by, and in which direction. */
+export interface RegisterSort {
+  id: string;
+  desc: boolean;
+}
+
+/** The columns that can be sorted, and what each one actually compares. */
+const SORT_VALUE: Record<string, (r: RegisterRow) => string | number> = {
+  date: (r) => r.date,
+  payee: (r) => r.payeeName ?? "",
+  category: (r) => r.categoryName ?? "",
+  note: (r) => r.memo ?? "",
+  status: (r) => r.status,
+  amount: (r) => r.amount,
+  runningBalance: (r) => r.runningBalance,
+};
+
+export const isSortable = (columnId: string): boolean => columnId in SORT_VALUE;
+
+/**
+ * Sort the register by a column, or leave it in its natural order.
+ *
+ * The natural order is chronological, which is what a ledger is: the running
+ * balance on each row only makes sense read down the page. Sorting by anything
+ * else is a way of *finding* a row, not of reading balances, so the running
+ * balance stays attached to its own row rather than being recomputed.
+ *
+ * Rows with equal values keep their relative order (the sort is stable), so
+ * sorting by payee still reads chronologically within each payee.
+ */
+export function sortRegisterRows(rows: RegisterRow[], sort: RegisterSort | null): RegisterRow[] {
+  const value = sort && SORT_VALUE[sort.id];
+  if (!sort || !value) return rows;
+  const dir = sort.desc ? -1 : 1;
+  return [...rows].sort((a, b) => {
+    const va = value(a);
+    const vb = value(b);
+    if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
+    // Locale-aware so accented payee names sort where a reader expects, and
+    // empty values sink to the bottom whichever way the column is pointing.
+    const sa = String(va);
+    const sb = String(vb);
+    if (sa === "" || sb === "") return sa === sb ? 0 : sa === "" ? 1 : -1;
+    return sa.localeCompare(sb) * dir;
+  });
+}
+
 /**
  * How many rows newer than the top visible one the current filter is hiding.
  *

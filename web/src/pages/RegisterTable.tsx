@@ -1,5 +1,7 @@
-import { ActionIcon, Badge, Box, Checkbox, Group, Menu, Text } from "@mantine/core";
+import { ActionIcon, Badge, Box, Checkbox, Group, Menu, Text, UnstyledButton } from "@mantine/core";
 import {
+  IconArrowDown,
+  IconArrowUp,
   IconAdjustmentsHorizontal,
   IconArrowsExchange,
   IconCircleCheck,
@@ -26,14 +28,30 @@ type VisibilityState = Record<string, boolean>;
 type Column = LegacyColumnDef<RegisterRow>;
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 import { useTranslation } from "react-i18next";
 
-import { updateMe, type Account, type RegisterRow, type User } from "../api/client";
+import {
+  type Preferences,
+  updateMe,
+  type Account,
+  type RegisterRow,
+  type User,
+} from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { useDateFormat } from "../dates";
 import { formatMinor, type MoneyFormat } from "../money";
 import { stopRowEdit } from "../rowEdit";
+import { isSortable, sortRegisterRows, type RegisterSort } from "./registerFilterModel";
 import { useToday } from "../useToday";
 import { amountColor, negativeOnlyColor } from "../amountTone";
 
@@ -49,6 +67,14 @@ const COL_WIDTH: Record<string, string> = {
   amount: "116px",
   runningBalance: "124px",
 };
+// Columns the privacy toggle blurs. Dates and status stay legible: they say
+// nothing about you, and keeping the shape of the page readable is the point of
+// the toggle — a screenshot should still show how CloudBank works.
+// Narrower than this and a column stops being readable, so the drag stops.
+const MIN_COL_WIDTH = 64;
+
+const SENSITIVE_COLUMNS = new Set(["payee", "note", "amount", "runningBalance"]);
+
 // Columns the user can show/hide, with their default visibility.
 const TOGGLEABLE: { id: string; def: boolean }[] = [
   { id: "payee", def: true },
@@ -157,6 +183,27 @@ export function RegisterTable({
     return v;
   }, [savedColumns]);
 
+  // Sorting and column widths are preferences too, so the register a user
+  // arranged is the register they get back on another device.
+  const sort = user?.preferences?.registerSort ?? null;
+  const savedWidths = user?.preferences?.registerColumnWidths;
+  // Width being dragged right now: local, so a drag is not a PATCH per pixel.
+  const [dragWidths, setDragWidths] = useState<Record<string, number> | null>(null);
+  const widths = dragWidths ?? savedWidths ?? {};
+
+  const persistPrefs = useMutation({
+    mutationFn: (patch: Partial<Preferences>) =>
+      updateMe({ preferences: { ...(user?.preferences ?? {}), ...patch } }),
+    onSuccess: (updated: User) => qc.setQueryData(["me"], updated),
+  });
+
+  const toggleSort = (id: string) => {
+    if (!isSortable(id)) return;
+    // Click cycles ascending, descending, then back to the ledger's own order.
+    const next = sort?.id !== id ? { id, desc: false } : sort.desc ? null : { id, desc: true };
+    persistPrefs.mutate({ registerSort: next ?? undefined });
+  };
+
   const persistColumns = useMutation({
     mutationFn: (next: VisibilityState) =>
       updateMe({
@@ -169,7 +216,9 @@ export function RegisterTable({
   });
 
   // Newest-first display; each row keeps its chronological running balance.
-  const display = useMemo(() => [...rows].reverse(), [rows]);
+  // A chosen sort replaces that order, but never recomputes the balances: see
+  // sortRegisterRows.
+  const display = useMemo(() => sortRegisterRows([...rows].reverse(), sort), [rows, sort]);
   // Today's civil date (YYYY-MM-DD) for distinguishing future (scheduled) rows.
   // Reactive so a page left open past midnight stops mislabelling the new day's
   // rows as future without a manual reload.
@@ -306,7 +355,9 @@ export function RegisterTable({
   // visible data columns + actions), so hidden columns reclaim their space.
   const gridTemplate = [
     "36px",
-    ...table.getVisibleLeafColumns().map((c) => COL_WIDTH[c.id] ?? "minmax(100px, 1fr)"),
+    ...table
+      .getVisibleLeafColumns()
+      .map((c) => (widths[c.id] ? `${widths[c.id]}px` : (COL_WIDTH[c.id] ?? "minmax(100px, 1fr)"))),
     "92px",
   ].join(" ");
 
@@ -407,7 +458,19 @@ export function RegisterTable({
             }
           />
           {table.getHeaderGroups()[0].headers.map((h) => (
-            <Box key={h.id}>{flexRender(h.column.columnDef.header, h.getContext())}</Box>
+            <ColumnHeader
+              key={h.id}
+              id={h.id}
+              sort={sort}
+              onSort={toggleSort}
+              onResize={(width) => setDragWidths({ ...widths, [h.id]: width })}
+              onResizeEnd={() => {
+                if (dragWidths) persistPrefs.mutate({ registerColumnWidths: dragWidths });
+                setDragWidths(null);
+              }}
+            >
+              {flexRender(h.column.columnDef.header, h.getContext())}
+            </ColumnHeader>
           ))}
           <Group justify="flex-end">
             <Menu position="bottom-end" withinPortal closeOnItemClick={false}>
@@ -509,7 +572,11 @@ export function RegisterTable({
                     }}
                   />
                   {row.getVisibleCells().map((cell) => (
-                    <Box key={cell.id} style={{ minWidth: 0 }}>
+                    <Box
+                      key={cell.id}
+                      style={{ minWidth: 0 }}
+                      data-cb-sensitive={SENSITIVE_COLUMNS.has(cell.column.id) || undefined}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </Box>
                   ))}
@@ -653,6 +720,78 @@ export function RegisterTable({
             })()}
         </Menu.Dropdown>
       </Menu>
+    </Box>
+  );
+}
+
+/**
+ * A column heading: click to sort, drag its right edge to widen the column.
+ *
+ * The grip is a plain pointer drag rather than a library: the table is a CSS
+ * grid, so a width is one number in the template, and the drag only has to
+ * report it.
+ */
+function ColumnHeader({
+  id,
+  sort,
+  onSort,
+  onResize,
+  onResizeEnd,
+  children,
+}: {
+  id: string;
+  sort: RegisterSort | null;
+  onSort: (id: string) => void;
+  onResize: (width: number) => void;
+  onResizeEnd: () => void;
+  children: ReactNode;
+}) {
+  const { t } = useTranslation();
+  const ref = useRef<HTMLDivElement>(null);
+  const sortable = isSortable(id);
+  const active = sort?.id === id;
+
+  const startResize = (e: ReactPointerEvent<HTMLSpanElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startWidth = ref.current?.getBoundingClientRect().width ?? 120;
+    const move = (ev: PointerEvent) =>
+      onResize(Math.max(MIN_COL_WIDTH, Math.round(startWidth + ev.clientX - startX)));
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      onResizeEnd();
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  return (
+    <Box ref={ref} style={{ position: "relative", minWidth: 0 }}>
+      {sortable ? (
+        <UnstyledButton
+          onClick={() => onSort(id)}
+          aria-label={t("register.sortBy")}
+          style={{ display: "flex", alignItems: "center", gap: 4, width: "100%", minWidth: 0 }}
+        >
+          <Box style={{ minWidth: 0, overflow: "hidden" }}>{children}</Box>
+          {active &&
+            (sort.desc ? (
+              <IconArrowDown size={13} stroke={2.5} />
+            ) : (
+              <IconArrowUp size={13} stroke={2.5} />
+            ))}
+        </UnstyledButton>
+      ) : (
+        children
+      )}
+      <span
+        role="separator"
+        aria-label={t("register.resizeColumn")}
+        onPointerDown={startResize}
+        className="cb-col-grip"
+      />
     </Box>
   );
 }
