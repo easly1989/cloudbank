@@ -619,7 +619,8 @@
       "thisYear": "Quest'anno",
       "last30": "Ultimi 30 giorni",
       "last90": "Ultimi 90 giorni",
-      "custom": "Intervallo personalizzato"
+      "custom": "Intervallo personalizzato",
+      "thisHalf": "Questo semestre"
     }
   },
   "bulk": {
@@ -1010,7 +1011,8 @@
     "hideWidget": "Nascondi widget",
     "widgets": {
       "totals": "Totali"
-    }
+    },
+    "followPage": "Periodo della pagina"
   },
   "import": {
     "title": "Importa",

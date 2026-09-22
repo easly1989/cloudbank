@@ -24,7 +24,10 @@ import { Donut } from "../../Donut";
 import {
   type ChartType,
   DONUT_PALETTE,
+  effectivePeriod,
+  FOLLOW_PAGE,
   PERIODS,
+  type WidgetPeriod,
   type SpendingConfig,
   resolveBounds,
 } from "./shared";
@@ -36,14 +39,16 @@ export function SpendingCard({
   base,
   config,
   onConfig,
+  pagePeriod,
 }: {
   walletId: number;
   base?: CurrencyInfo;
   config: SpendingConfig;
   onConfig: (c: SpendingConfig) => void;
+  pagePeriod: DatePreset;
 }) {
   const { t } = useTranslation();
-  const { from, to } = resolveBounds(config.period);
+  const { from, to } = resolveBounds(effectivePeriod(config.period, pagePeriod));
   const q = useQuery({
     queryKey: ["dashboard", walletId, from, to, config.groupBy, 12],
     queryFn: () => getDashboard(walletId, from, to, config.groupBy, 12),
@@ -57,9 +62,12 @@ export function SpendingCard({
         <Group gap="xs" wrap="nowrap">
           <Select
             aria-label={t("dashboard.period")}
-            data={PERIODS.map((p) => ({ value: p, label: t(`filters.presets.${p}`) }))}
+            data={[
+              { value: FOLLOW_PAGE, label: t("dashboard.followPage") },
+              ...PERIODS.map((p) => ({ value: p, label: t(`filters.presets.${p}`) })),
+            ]}
             value={config.period}
-            onChange={(v) => v && onConfig({ ...config, period: v as DatePreset })}
+            onChange={(v) => v && onConfig({ ...config, period: v as WidgetPeriod })}
             allowDeselect={false}
             w={150}
           />

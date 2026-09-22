@@ -42,6 +42,15 @@ dashboard polish.
 
 ### Added
 
+- **Choose how far back the overview looks.** A period control in the header —
+  this month, quarter, half-year, year, or all time, which is the default. The
+  widgets that cover a span of time follow it, and any one of them can still pin
+  a period of its own: a dashboard you already arranged keeps exactly the
+  periods you gave it, because a widget you configured is an explicit choice and
+  stays that way. Balances are untouched by it, since a balance is not a period
+  quantity — it is simply what you have now. The register gained a half-year
+  preset along the way.
+
 - **The overview opens with what needs doing.** Above the widgets, a short strip
   lists the handful of things waiting — transactions with no category, overdue
   bills, budgets gone past, pairs that look like duplicates — each with the one

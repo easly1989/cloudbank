@@ -143,6 +143,23 @@ describe("dateBounds", () => {
     expect(b).toEqual({ from: "2026-03-01", to: "2026-03-31" });
   });
 
+  it("splits the year into calendar halves", () => {
+    const first = dateBounds({ ...emptyFilters, preset: "thisHalf" }, new Date(2026, 2, 15));
+    expect(first).toEqual({ from: "2026-01-01", to: "2026-06-30" });
+    const second = dateBounds({ ...emptyFilters, preset: "thisHalf" }, new Date(2026, 8, 15));
+    expect(second).toEqual({ from: "2026-07-01", to: "2026-12-31" });
+  });
+
+  it("puts the turn of the half on the right side of the line", () => {
+    // 30 June is the last day of the first half; 1 July the first of the second.
+    expect(dateBounds({ ...emptyFilters, preset: "thisHalf" }, new Date(2026, 5, 30)).to).toBe(
+      "2026-06-30",
+    );
+    expect(dateBounds({ ...emptyFilters, preset: "thisHalf" }, new Date(2026, 6, 1)).from).toBe(
+      "2026-07-01",
+    );
+  });
+
   it("resolves year bounds across the new-year boundary", () => {
     const b = dateBounds({ ...emptyFilters, preset: "thisYear" }, new Date(2026, 0, 1, 0, 30));
     expect(b).toEqual({ from: "2026-01-01", to: "2026-12-31" });
