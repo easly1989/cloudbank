@@ -5,24 +5,81 @@
 import type { Account, DashboardGroupBy } from "../../../api/client";
 import { type DatePreset, dateBounds, emptyFilters } from "../../../pages/registerFilterModel";
 
+// The periods the overview itself offers. Deliberately shorter than PERIODS:
+// this is a coarse "how far back am I looking", not the register's filter.
+export const PAGE_PERIODS: DatePreset[] = [
+  "thisMonth",
+  "thisQuarter",
+  "thisHalf",
+  "thisYear",
+  "all",
+];
+
+/**
+ * A widget period of "follow" means "whatever the page is showing".
+ *
+ * It is the default for a widget the reader has never configured, which is how
+ * the page control can mean something without changing a dashboard somebody
+ * already arranged: a saved config is an explicit choice and stays pinned.
+ */
+export const FOLLOW_PAGE = "follow" as const;
+export type WidgetPeriod = DatePreset | typeof FOLLOW_PAGE;
+
+/** Resolve a widget's period against the page's. */
+export function effectivePeriod(widget: WidgetPeriod, page: DatePreset): DatePreset {
+  return widget === FOLLOW_PAGE ? page : widget;
+}
+
+/**
+ * The trailing window, in months, that matches a period.
+ *
+ * The income/expense chart counts months rather than taking a range, so a
+ * following instance has to translate. Zero means "all dates", which is what
+ * that widget already uses for its own "all" option.
+ */
+export function periodToMonths(period: DatePreset): number {
+  switch (period) {
+    case "thisMonth":
+      return 1;
+    case "thisQuarter":
+    case "last90":
+      return 3;
+    case "thisHalf":
+      return 6;
+    case "thisYear":
+      return 12;
+    case "last30":
+      return 1;
+    default:
+      return 0;
+  }
+}
+
 export type ChartType = "donut" | "bar";
 export type IEStyle = "bars" | "lines";
 
 // Per-instance config for the spending widget.
 export type SpendingConfig = {
-  period: DatePreset;
+  period: WidgetPeriod;
   chartType: ChartType;
   groupBy: DashboardGroupBy;
 };
 export const DEFAULT_SPENDING: SpendingConfig = {
-  period: "thisMonth",
+  // A widget nobody has configured follows the page.
+  period: FOLLOW_PAGE,
   chartType: "donut",
   groupBy: "category",
 };
 
 // Per-instance config for the income/expense widget.
-export type IEConfig = { months: number; style: IEStyle; net: boolean; cumulative: boolean };
-export const DEFAULT_IE: IEConfig = { months: 12, style: "bars", net: false, cumulative: false };
+// `months: null` means the instance follows the page period.
+export type IEConfig = {
+  months: number | null;
+  style: IEStyle;
+  net: boolean;
+  cumulative: boolean;
+};
+export const DEFAULT_IE: IEConfig = { months: null, style: "bars", net: false, cumulative: false };
 
 // Per-instance config for the KPI widget.
 export type KpiConfig = { metric: "today" | "future" | "bank" };
@@ -50,6 +107,7 @@ export const IE_MONTHS: number[] = [6, 12, 24, 36, 0];
 export const PERIODS: DatePreset[] = [
   "thisMonth",
   "thisQuarter",
+  "thisHalf",
   "thisYear",
   "last30",
   "last90",

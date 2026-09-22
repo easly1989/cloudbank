@@ -619,7 +619,8 @@
       "thisYear": "This year",
       "last30": "Last 30 days",
       "last90": "Last 90 days",
-      "custom": "Custom range"
+      "custom": "Custom range",
+      "thisHalf": "This half-year"
     }
   },
   "bulk": {
@@ -1010,7 +1011,8 @@
     "hideWidget": "Hide widget",
     "widgets": {
       "totals": "Totals"
-    }
+    },
+    "followPage": "Page period"
   },
   "import": {
     "title": "Import",
