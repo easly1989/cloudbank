@@ -23,7 +23,6 @@
     "goals": "Goals",
     "reports": "Reports",
     "settings": "Settings",
-    "admin": "Users",
     "import": "Import",
     "toggleSidebar": "Toggle sidebar",
     "group": {
@@ -1128,7 +1127,8 @@
       "emptyGroup": "Empty — drag items here",
       "addSeparator": "Add separator",
       "separator": "Separator"
-    }
+    },
+    "people": "People"
   },
   "apiTokens": {
     "title": "Personal API tokens",
@@ -1174,7 +1174,9 @@
     "smartAmountHint": "Type 12.40 or 12,40 — both are read as decimals (HomeBank style)",
     "save": "Save",
     "saved": "Preferences saved",
-    "restartTour": "Restart tutorial"
+    "restartTour": "Restart tutorial",
+    "sidebarAccounts": "Account balances in the sidebar",
+    "sidebarAccountsHint": "Off by default. Pick up to {{max}} — it should stay a glance, not a second account list."
   },
   "tour": {
     "skip": "Skip",

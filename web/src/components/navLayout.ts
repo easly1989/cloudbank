@@ -3,8 +3,9 @@
 // reordered, hidden, renamed, split with separators, and new groups created —
 // all persisted per user (synced preferences) so the layout is identical on
 // desktop and mobile. The dashboard ("/") stays pinned above the groups, and
-// the Settings group (Settings + Users) is locked: it can't be moved, renamed,
-// hidden, or have other items dropped into it.
+// the Settings group is locked: it can't be moved, renamed,
+// hidden, or have other items dropped into it. People management lives inside
+// the Settings page rather than as its own destination.
 
 import { NAV_GROUPS, NAV_ITEMS } from "./navItems";
 
@@ -13,7 +14,7 @@ export const NAV_LAYOUT_VERSION = 1;
 // The Settings group and its members are locked (never movable/hideable).
 export const SETTINGS_GROUP_LABELKEY = "nav.group.settings";
 export const SETTINGS_GROUP_ID = "settings";
-export const LOCKED_ITEMS = new Set(["/settings", "/admin/users"]);
+export const LOCKED_ITEMS = new Set(["/settings"]);
 // The dashboard is pinned above the groups, so it is never part of the layout.
 export const PINNED_HOME = "/";
 
@@ -50,16 +51,13 @@ const DEFAULT_GROUP_OF = new Map<string, string>();
 for (const g of NAV_GROUPS)
   for (const to of g.items) DEFAULT_GROUP_OF.set(to, groupIdFromLabelKey(g.labelKey));
 
-/** The Settings group, always the same: locked, Settings + Users, no separators. */
+/** The Settings group, always the same: locked, Settings alone, no separators. */
 function settingsGroup(): NavGroupLayout {
   return {
     id: SETTINGS_GROUP_ID,
     labelKey: SETTINGS_GROUP_LABELKEY,
     locked: true,
-    entries: [
-      { kind: "item", to: "/settings" },
-      { kind: "item", to: "/admin/users" },
-    ],
+    entries: [{ kind: "item", to: "/settings" }],
   };
 }
 

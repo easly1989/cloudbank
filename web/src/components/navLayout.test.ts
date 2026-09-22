@@ -10,10 +10,8 @@ describe("navLayout", () => {
     const settings = lastGroup(d);
     expect(settings.id).toBe(SETTINGS_GROUP_ID);
     expect(settings.locked).toBe(true);
-    expect(settings.entries.map((e) => (e.kind === "item" ? e.to : "sep"))).toEqual([
-      "/settings",
-      "/admin/users",
-    ]);
+    // People management moved inside the Settings page, so Settings is alone here.
+    expect(settings.entries.map((e) => (e.kind === "item" ? e.to : "sep"))).toEqual(["/settings"]);
   });
 
   it("returns the default for an absent/invalid saved layout", () => {
@@ -83,10 +81,8 @@ describe("navLayout", () => {
     expect(settings.id).toBe(SETTINGS_GROUP_ID);
     expect(settings.locked).toBe(true);
     expect(settings.label).toBeUndefined();
-    expect(settings.entries.map((e) => (e.kind === "item" ? e.to : "sep"))).toEqual([
-      "/settings",
-      "/admin/users",
-    ]);
+    // People management moved inside the Settings page, so Settings is alone here.
+    expect(settings.entries.map((e) => (e.kind === "item" ? e.to : "sep"))).toEqual(["/settings"]);
     // /accounts stays in the money group (its copy in the tampered settings group is ignored).
     expect(
       m.groups
