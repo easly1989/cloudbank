@@ -579,7 +579,13 @@
     "selectRow": "Select row",
     "columns": "Columns",
     "markCleared": "Mark cleared",
-    "markReconciled": "Mark reconciled"
+    "markReconciled": "Mark reconciled",
+    "hiddenNewer": {
+      "title_one": "{{count}} newer transaction is hidden by this filter",
+      "title_other": "{{count}} newer transactions are hidden by this filter",
+      "body": "The top line below is not the account's latest movement. Today's balance still counts the hidden ones.",
+      "action": "Clear the filter"
+    }
   },
   "filters": {
     "dateRange": "Date range",
