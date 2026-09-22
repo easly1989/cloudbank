@@ -49,7 +49,6 @@
     "amount": "Importo",
     "edit": "Modifica",
     "delete": "Elimina",
-    "confirmDelete": "Eliminare questa transazione?",
     "split": "Suddivisa",
     "type": "Tipo",
     "expense": "Uscita",
@@ -69,12 +68,15 @@
     "savedKeepOpen": "Transazione salvata — il modulo resta aperto per la prossima.",
     "savedNew": "Transazione salvata — il modulo è pronto per una nuova voce.",
     "saved": "Transazione salvata",
-    "discardConfirm": "Le modifiche non salvate andranno perse. Scartarle?",
     "duplicateWarning": "Trovate {{count}} transazioni simili — possibile duplicato.",
     "duplicate": "Duplica",
     "confirmDeleteTitle": "Eliminare questa transazione?",
     "confirmDeleteBody": "Sparisce per sempre, e il saldo progressivo di ogni riga successiva cambia.",
-    "confirmDeleteAction": "Elimina"
+    "confirmDeleteAction": "Elimina",
+    "confirmDiscardTitle": "Scartare le modifiche?",
+    "confirmDiscardBody": "Quello che hai scritto qui va perso e la transazione non viene salvata.",
+    "confirmDiscardAction": "Scarta",
+    "confirmDiscardKeep": "Continua a modificare"
   },
   "transfers": {
     "add": "Trasferimento",
@@ -222,11 +224,9 @@
     "test": "Prova regola",
     "testResult": "{{count}} transazioni corrisponderebbero",
     "applyToExisting": "Applica alle esistenti",
-    "confirmApply": "Applicare tutte le regole alle transazioni esistenti (solo campi vuoti)?",
     "applied": "Aggiornate {{count}} transazioni",
     "edit": "Modifica",
     "delete": "Elimina",
-    "confirmDelete": "Eliminare questa regola?",
     "save": "Salva",
     "cancel": "Annulla",
     "fields": {
@@ -238,7 +238,11 @@
       "exact": "uguale a",
       "contains": "contiene",
       "regex": "regex"
-    }
+    },
+    "confirmApplyTitle": "Applicare tutte le regole alle transazioni esistenti?",
+    "confirmApplyBody": "Vengono riempiti solo i campi vuoti — nulla di già impostato viene sovrascritto.",
+    "confirmDeleteTitle": "Eliminare questa regola?",
+    "confirmDeleteBody": "Le transazioni già compilate mantengono i loro valori; cambia solo quello che inserirai da ora in poi."
   },
   "schedules": {
     "title": "Transazioni pianificate",
@@ -273,7 +277,6 @@
     "skip": "Salta",
     "edit": "Modifica",
     "delete": "Elimina",
-    "confirmDelete": "Eliminare questa pianificazione?",
     "save": "Salva",
     "cancel": "Annulla",
     "units": {
@@ -292,7 +295,9 @@
     "fromTemplate": "Precompila da un modello salvato",
     "fromTemplatePlaceholder": "Facoltativo",
     "transferNote": "È un trasferimento; qui puoi cambiare solo importo, note e pianificazione.",
-    "untitled": "Pianificata"
+    "untitled": "Pianificata",
+    "confirmDeleteTitle": "Eliminare questa pianificazione?",
+    "confirmDeleteBody": "Le transazioni già registrate restano; non ne verranno pianificate altre."
   },
   "tags": {
     "title": "Tag",
@@ -301,7 +306,8 @@
     "count": "Usato",
     "mergeInto": "Unisci a…",
     "delete": "Elimina tag",
-    "confirmDelete": "Eliminare il tag \"{{name}}\"? Verrà rimosso da tutte le transazioni."
+    "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
+    "confirmDeleteBody": "Il tag viene rimosso da tutte le transazioni che lo portano. Le transazioni restano."
   },
   "vehicles": {
     "title": "Veicoli",
@@ -315,9 +321,10 @@
     "notes": "Note",
     "edit": "Modifica veicolo",
     "delete": "Elimina veicolo",
-    "confirmDelete": "Eliminare il veicolo \"{{name}}\"? Verrà scollegato dalle sue transazioni.",
     "cancel": "Annulla",
-    "save": "Salva"
+    "save": "Salva",
+    "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
+    "confirmDeleteBody": "I rifornimenti restano nel registro, ma non sono più collegati a un veicolo."
   },
   "goals": {
     "title": "Obiettivi di risparmio",
@@ -345,9 +352,10 @@
     "edit": "Modifica obiettivo",
     "delete": "Elimina obiettivo",
     "deleteContribution": "Elimina versamento",
-    "confirmDelete": "Eliminare l'obiettivo \"{{name}}\" e i suoi versamenti?",
     "cancel": "Annulla",
-    "save": "Salva"
+    "save": "Salva",
+    "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
+    "confirmDeleteBody": "L'obiettivo e i versamenti registrati su di esso vengono rimossi. Le tue transazioni restano."
   },
   "bills": {
     "title": "Scadenze",
@@ -396,14 +404,15 @@
     "keepThis": "Tieni questa",
     "notDuplicate": "Non è un duplicato",
     "dismissAll": "Segna tutte come non duplicati",
-    "dismissAllConfirm": "Segnare tutte le {{count}} coppie come non duplicati? Non verranno più mostrate (potrai comunque ritrovare i veri duplicati per importo/data in seguito).",
     "dismissedAll": "Ignorate {{count}} coppie",
     "merged": "Unite",
     "edit": "Modifica",
     "delete": "Elimina",
     "fromBank": "Dalla banca",
     "manual": "Manuale",
-    "noMemo": "(nessuna descrizione)"
+    "noMemo": "(nessuna descrizione)",
+    "confirmDismissAllTitle": "Segnare tutte le {{count}} coppie come non duplicati?",
+    "confirmDismissAllBody": "Non verranno più mostrate qui. I veri duplicati restano comunque trovabili per importo e data."
   },
   "banksync": {
     "title": "Sync bancario",
@@ -425,7 +434,6 @@
     "synced": "Importate {{imported}}, riconciliate {{reconciled}}.",
     "syncedPartial": "Importate {{imported}}, riconciliate {{reconciled}}. Alcuni conti non sono stati sincronizzati — {{warnings}}",
     "remove": "Rimuovi",
-    "confirmRemove": "Rimuovere la connessione \"{{name}}\"? Le transazioni già importate restano.",
     "remoteError": "Impossibile raggiungere il provider bancario.",
     "accounts": "Conti",
     "noRemote": "Nessun conto trovato per questa connessione.",
@@ -453,7 +461,6 @@
       "saved": "Enable Banking configurato.",
       "edit": "Modifica credenziali",
       "removeConfig": "Rimuovi credenziali",
-      "confirmRemoveConfig": "Rimuovere le credenziali Enable Banking? Le connessioni esistenti smetteranno di sincronizzarsi.",
       "connect": "Collega una banca",
       "connectTitle": "Collega una banca via Enable Banking",
       "connectHint": "Scegli la tua banca; verrai reindirizzato per autorizzare l'accesso. Al ritorno, la connessione appare qui sotto.",
@@ -474,7 +481,9 @@
       "reconnect": "Riconnetti",
       "consentExpired": "Consenso scaduto — riconnetti",
       "consentExpiresSoon": "Consenso scade tra {{days}}g",
-      "consentValid": "Consenso valido {{days}}g"
+      "consentValid": "Consenso valido {{days}}g",
+      "confirmRemoveConfigTitle": "Rimuovere le credenziali Enable Banking?",
+      "confirmRemoveConfigBody": "Le connessioni esistenti smettono di sincronizzarsi finché non salvi nuove credenziali."
     },
     "pluggy": {
       "title": "Pluggy (America Latina)",
@@ -489,14 +498,15 @@
       "saved": "Pluggy configurato.",
       "edit": "Modifica credenziali",
       "removeConfig": "Rimuovi credenziali",
-      "confirmRemoveConfig": "Rimuovere le credenziali Pluggy? Le connessioni esistenti smetteranno di sincronizzarsi.",
       "connect": "Collega un item",
       "connectTitle": "Collega un item Pluggy",
       "itemHint": "Collega prima le tue banche su meu.pluggy.ai, poi copia dalla Dashboard di Pluggy l'item id della connessione che vuoi. Un item corrisponde a un istituto.",
       "itemId": "Item ID",
       "name": "Nome",
       "nameHint": "Facoltativo. Se vuoto viene usato il nome del primo conto.",
-      "connected": "Item collegato."
+      "connected": "Item collegato.",
+      "confirmRemoveConfigTitle": "Rimuovere le credenziali Pluggy?",
+      "confirmRemoveConfigBody": "Le connessioni esistenti smettono di sincronizzarsi finché non salvi nuove credenziali."
     },
     "autoSync": "Sincronizzazione automatica",
     "autoSyncHint": "Mantieni questa connessione aggiornata in background.",
@@ -519,7 +529,6 @@
       "summary": "{{imported}} importate · {{reconciled}} riconciliate",
       "account": "{{imported}} importate · {{reconciled}} riconciliate",
       "clear": "Pulisci cronologia",
-      "clearConfirm": "Eliminare tutti i sync registrati per questa connessione?",
       "trigger": {
         "manual": "Manuale",
         "auto": "Automatico"
@@ -528,12 +537,16 @@
         "ok": "OK",
         "partial": "Parziale",
         "error": "Errore"
-      }
+      },
+      "confirmClearTitle": "Cancellare lo storico delle sincronizzazioni?",
+      "confirmClearBody": "Viene eliminato il registro delle esecuzioni passate. Le transazioni che hanno importato restano intatte."
     },
     "section": {
       "autoSync": "Sync automatico",
       "accounts": "Conti"
-    }
+    },
+    "confirmRemoveTitle": "Rimuovere \"{{name}}\"?",
+    "confirmRemoveBody": "Le transazioni già importate restano. Da questa banca non verrà più scaricato nulla."
   },
   "search": {
     "open": "Cerca transazioni",
@@ -566,8 +579,9 @@
     "edit": "Modifica modello",
     "delete": "Elimina modello",
     "create": "Nuovo modello",
-    "confirmDelete": "Eliminare il modello \"{{name}}\"?",
-    "complexNote": "Questo modello ha suddivisioni o è un trasferimento; modifica i dettagli da una transazione. Puoi comunque rinominarlo qui."
+    "complexNote": "Questo modello ha suddivisioni o è un trasferimento; modifica i dettagli da una transazione. Puoi comunque rinominarlo qui.",
+    "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
+    "confirmDeleteBody": "Le transazioni già create da questo modello non vengono toccate."
   },
   "register": {
     "bank": "Riconciliato",
@@ -854,7 +868,6 @@
     "cancel": "Annulla",
     "save": "Salva",
     "empty": "Nessun conto. Aggiungi il primo conto per iniziare.",
-    "confirmDelete": "Eliminare il conto \"{{name}}\" e tutti i suoi dati?",
     "name": "Nome del conto",
     "type": "Tipo",
     "currency": "Valuta",
@@ -874,7 +887,10 @@
       "liability": "Passività",
       "asset": "Attività",
       "investment": "Investimento"
-    }
+    },
+    "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
+    "confirmDeleteBody": "Tutte le transazioni del conto vengono eliminate con lui. L'operazione non è reversibile.",
+    "confirmDeleteAction": "Elimina conto"
   },
   "categories": {
     "title": "Categorie",
@@ -919,7 +935,8 @@
     "name": "Nome",
     "defaultCategory": "Categoria predefinita",
     "empty": "Nessun beneficiario.",
-    "confirmDelete": "Eliminare il beneficiario \"{{name}}\"?"
+    "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
+    "confirmDeleteBody": "Le transazioni che usavano questo beneficiario restano, ma rimangono senza."
   },
   "currencies": {
     "title": "Valute",
@@ -991,7 +1008,6 @@
     "addWidget": "Aggiungi widget",
     "tidyLayout": "Ordina",
     "resetLayout": "Ripristina",
-    "resetConfirm": "Ripristinare la dashboard ai widget e alla disposizione predefiniti? La disposizione attuale andrà persa.",
     "editHint": "Trascina un widget per spostarlo; usa i pulsanti S/M/L o trascina il bordo sinistro/destro per ridimensionarlo. \"Ordina\" ricompatta tutto senza spazi vuoti; \"Ripristina\" riporta alla disposizione predefinita. Le modifiche si salvano da sole.",
     "size": {
       "small": "S",
@@ -1028,7 +1044,10 @@
     "widgets": {
       "totals": "Totali"
     },
-    "followPage": "Periodo della pagina"
+    "followPage": "Periodo della pagina",
+    "confirmResetTitle": "Ripristinare la dashboard?",
+    "confirmResetBody": "I widget e la loro disposizione tornano ai valori predefiniti. La disposizione attuale va persa.",
+    "confirmResetAction": "Ripristina disposizione"
   },
   "import": {
     "title": "Importa",
@@ -1148,7 +1167,6 @@
       "locked": "La Dashboard è sempre in cima e il gruppo Impostazioni (Impostazioni e Utenti) non può essere spostato o modificato.",
       "addGroup": "Nuovo gruppo",
       "reset": "Ripristina",
-      "resetConfirm": "Ripristinare il menu di navigazione ai gruppi e all'ordine predefiniti?",
       "newGroupName": "Nuovo gruppo",
       "groupName": "Nome gruppo",
       "drag": "Trascina per riordinare",
@@ -1158,7 +1176,9 @@
       "deleteBlocked": "Prima sposta o nascondi le sue voci",
       "emptyGroup": "Vuoto — trascina qui le voci",
       "addSeparator": "Aggiungi separatore",
-      "separator": "Separatore"
+      "separator": "Separatore",
+      "confirmResetTitle": "Ripristinare il menu di navigazione?",
+      "confirmResetBody": "I tuoi gruppi e il loro ordine vengono sostituiti da quelli predefiniti."
     },
     "people": "Persone"
   },
@@ -1168,7 +1188,6 @@
     "create": "Crea token",
     "cancel": "Annulla",
     "revoke": "Revoca",
-    "confirmRevoke": "Revocare il token \"{{name}}\"? Tutto ciò che lo usa smetterà di funzionare subito.",
     "name": "Nome",
     "namePlaceholder": "es. Script budget",
     "tokenScope": "Accesso",
@@ -1187,7 +1206,9 @@
     "revealTitle": "Copia ora il nuovo token",
     "revealWarning": "Questa è l'unica volta in cui il token viene mostrato. Conservalo in un posto sicuro — non potrai più rivederlo.",
     "copy": "Copia",
-    "copied": "Copiato"
+    "copied": "Copiato",
+    "confirmRevokeTitle": "Revocare \"{{name}}\"?",
+    "confirmRevokeBody": "Tutto ciò che usa questo token smette di funzionare subito."
   },
   "preferences": {
     "title": "Preferenze",

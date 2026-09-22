@@ -49,7 +49,6 @@
     "amount": "Amount",
     "edit": "Edit",
     "delete": "Delete",
-    "confirmDelete": "Delete this transaction?",
     "split": "Split",
     "type": "Type",
     "expense": "Expense",
@@ -69,12 +68,15 @@
     "savedKeepOpen": "Transaction saved — the form stays open for the next one.",
     "savedNew": "Transaction saved — the form is cleared for a new one.",
     "saved": "Transaction saved",
-    "discardConfirm": "Unsaved changes will be lost. Discard them?",
     "duplicateWarning": "Found {{count}} similar transaction(s) — possible duplicate.",
     "duplicate": "Duplicate",
     "confirmDeleteTitle": "Delete this transaction?",
     "confirmDeleteBody": "It is gone for good, and the running balance of every later row changes.",
-    "confirmDeleteAction": "Delete"
+    "confirmDeleteAction": "Delete",
+    "confirmDiscardTitle": "Discard your changes?",
+    "confirmDiscardBody": "What you have typed here is lost and the transaction is not saved.",
+    "confirmDiscardAction": "Discard",
+    "confirmDiscardKeep": "Keep editing"
   },
   "transfers": {
     "add": "Transfer",
@@ -222,11 +224,9 @@
     "test": "Test rule",
     "testResult": "{{count}} transaction(s) would match",
     "applyToExisting": "Apply to existing",
-    "confirmApply": "Apply all rules to existing transactions (only filling empty fields)?",
     "applied": "Updated {{count}} transaction(s)",
     "edit": "Edit",
     "delete": "Delete",
-    "confirmDelete": "Delete this rule?",
     "save": "Save",
     "cancel": "Cancel",
     "fields": {
@@ -238,7 +238,11 @@
       "exact": "equals",
       "contains": "contains",
       "regex": "regex"
-    }
+    },
+    "confirmApplyTitle": "Apply all rules to existing transactions?",
+    "confirmApplyBody": "Only empty fields are filled in — nothing you have already set is overwritten.",
+    "confirmDeleteTitle": "Delete this rule?",
+    "confirmDeleteBody": "Transactions it has already filled in keep their values; only what you enter from now on changes."
   },
   "schedules": {
     "title": "Scheduled transactions",
@@ -273,7 +277,6 @@
     "skip": "Skip",
     "edit": "Edit",
     "delete": "Delete",
-    "confirmDelete": "Delete this schedule?",
     "save": "Save",
     "cancel": "Cancel",
     "units": {
@@ -292,7 +295,9 @@
     "fromTemplate": "Prefill from a saved template",
     "fromTemplatePlaceholder": "Optional",
     "transferNote": "This is a transfer; only the amount, memo and schedule can be changed here.",
-    "untitled": "Scheduled"
+    "untitled": "Scheduled",
+    "confirmDeleteTitle": "Delete this schedule?",
+    "confirmDeleteBody": "Transactions it has already posted stay; nothing further is scheduled."
   },
   "tags": {
     "title": "Tags",
@@ -301,7 +306,8 @@
     "count": "Used",
     "mergeInto": "Merge into…",
     "delete": "Delete tag",
-    "confirmDelete": "Delete the tag \"{{name}}\"? It will be removed from every transaction."
+    "confirmDeleteTitle": "Delete \"{{name}}\"?",
+    "confirmDeleteBody": "The tag is removed from every transaction that carries it. The transactions themselves stay."
   },
   "vehicles": {
     "title": "Vehicles",
@@ -315,9 +321,10 @@
     "notes": "Notes",
     "edit": "Edit vehicle",
     "delete": "Delete vehicle",
-    "confirmDelete": "Delete the vehicle \"{{name}}\"? It will be unlinked from its transactions.",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "confirmDeleteTitle": "Delete \"{{name}}\"?",
+    "confirmDeleteBody": "Its fuel-ups stay in the ledger, but they are no longer linked to a vehicle."
   },
   "goals": {
     "title": "Savings goals",
@@ -345,9 +352,10 @@
     "edit": "Edit goal",
     "delete": "Delete goal",
     "deleteContribution": "Delete contribution",
-    "confirmDelete": "Delete the goal \"{{name}}\" and its contributions?",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "confirmDeleteTitle": "Delete \"{{name}}\"?",
+    "confirmDeleteBody": "The goal and the contributions recorded against it are removed. Your transactions stay."
   },
   "bills": {
     "title": "Bills",
@@ -396,14 +404,15 @@
     "keepThis": "Keep this",
     "notDuplicate": "Not a duplicate",
     "dismissAll": "Mark all as not duplicates",
-    "dismissAllConfirm": "Mark all {{count}} pairs as not duplicates? They won't be shown again (you can still find real duplicates by amount/date later).",
     "dismissedAll": "Dismissed {{count}} pair(s)",
     "merged": "Merged",
     "edit": "Edit",
     "delete": "Delete",
     "fromBank": "From bank",
     "manual": "Manual",
-    "noMemo": "(no description)"
+    "noMemo": "(no description)",
+    "confirmDismissAllTitle": "Mark all {{count}} pairs as not duplicates?",
+    "confirmDismissAllBody": "They will not be shown here again. Real duplicates can still be found by amount and date."
   },
   "banksync": {
     "title": "Bank sync",
@@ -425,7 +434,6 @@
     "synced": "Imported {{imported}}, reconciled {{reconciled}}.",
     "syncedPartial": "Imported {{imported}}, reconciled {{reconciled}}. Some accounts could not be synced — {{warnings}}",
     "remove": "Remove",
-    "confirmRemove": "Remove the connection \"{{name}}\"? Already-imported transactions are kept.",
     "remoteError": "Could not reach the bank provider.",
     "accounts": "Accounts",
     "noRemote": "No accounts found for this connection.",
@@ -453,7 +461,6 @@
       "saved": "Enable Banking configured.",
       "edit": "Edit credentials",
       "removeConfig": "Remove credentials",
-      "confirmRemoveConfig": "Remove the Enable Banking credentials? Existing connections will stop syncing.",
       "connect": "Connect a bank",
       "connectTitle": "Connect a bank via Enable Banking",
       "connectHint": "Pick your bank; you will be redirected to authorize access. When you return, the connection appears below.",
@@ -474,7 +481,9 @@
       "reconnect": "Reconnect",
       "consentExpired": "Consent expired — reconnect",
       "consentExpiresSoon": "Consent expires in {{days}}d",
-      "consentValid": "Consent valid {{days}}d"
+      "consentValid": "Consent valid {{days}}d",
+      "confirmRemoveConfigTitle": "Remove the Enable Banking credentials?",
+      "confirmRemoveConfigBody": "Existing connections stop syncing until new credentials are saved."
     },
     "pluggy": {
       "title": "Pluggy (Latin America)",
@@ -489,14 +498,15 @@
       "saved": "Pluggy configured.",
       "edit": "Edit credentials",
       "removeConfig": "Remove credentials",
-      "confirmRemoveConfig": "Remove the Pluggy credentials? Existing connections will stop syncing.",
       "connect": "Connect an item",
       "connectTitle": "Connect a Pluggy item",
       "itemHint": "Link your banks at meu.pluggy.ai first, then copy the item id of the connection you want from the Pluggy Dashboard. One item covers one institution.",
       "itemId": "Item ID",
       "name": "Name",
       "nameHint": "Optional. Left blank, the first account's name is used.",
-      "connected": "Item connected."
+      "connected": "Item connected.",
+      "confirmRemoveConfigTitle": "Remove the Pluggy credentials?",
+      "confirmRemoveConfigBody": "Existing connections stop syncing until new credentials are saved."
     },
     "autoSync": "Automatic sync",
     "autoSyncHint": "Keep this connection up to date in the background.",
@@ -519,7 +529,6 @@
       "summary": "{{imported}} imported · {{reconciled}} reconciled",
       "account": "{{imported}} imported · {{reconciled}} reconciled",
       "clear": "Clear history",
-      "clearConfirm": "Delete all recorded sync runs for this connection?",
       "trigger": {
         "manual": "Manual",
         "auto": "Automatic"
@@ -528,12 +537,16 @@
         "ok": "OK",
         "partial": "Partial",
         "error": "Error"
-      }
+      },
+      "confirmClearTitle": "Clear the sync history?",
+      "confirmClearBody": "The record of past runs is deleted. The transactions they imported are untouched."
     },
     "section": {
       "autoSync": "Automatic sync",
       "accounts": "Accounts"
-    }
+    },
+    "confirmRemoveTitle": "Remove \"{{name}}\"?",
+    "confirmRemoveBody": "Transactions already imported are kept. Nothing further is fetched from this bank."
   },
   "search": {
     "open": "Search transactions",
@@ -566,8 +579,9 @@
     "edit": "Edit template",
     "delete": "Delete template",
     "create": "New template",
-    "confirmDelete": "Delete template \"{{name}}\"?",
-    "complexNote": "This template has splits or is a transfer; edit its details from a transaction. You can still rename it here."
+    "complexNote": "This template has splits or is a transfer; edit its details from a transaction. You can still rename it here.",
+    "confirmDeleteTitle": "Delete \"{{name}}\"?",
+    "confirmDeleteBody": "Transactions already created from it are unaffected."
   },
   "register": {
     "bank": "Reconciled",
@@ -854,7 +868,6 @@
     "cancel": "Cancel",
     "save": "Save",
     "empty": "No accounts yet. Add your first account to get started.",
-    "confirmDelete": "Delete the account \"{{name}}\" and all its data?",
     "name": "Account name",
     "type": "Type",
     "currency": "Currency",
@@ -874,7 +887,10 @@
       "liability": "Liability",
       "asset": "Asset",
       "investment": "Investment"
-    }
+    },
+    "confirmDeleteTitle": "Delete \"{{name}}\"?",
+    "confirmDeleteBody": "Every transaction in the account goes with it. This cannot be undone.",
+    "confirmDeleteAction": "Delete account"
   },
   "categories": {
     "title": "Categories",
@@ -919,7 +935,8 @@
     "name": "Name",
     "defaultCategory": "Default category",
     "empty": "No payees yet.",
-    "confirmDelete": "Delete the payee \"{{name}}\"?"
+    "confirmDeleteTitle": "Delete \"{{name}}\"?",
+    "confirmDeleteBody": "Transactions that used this payee stay, but they are left without one."
   },
   "currencies": {
     "title": "Currencies",
@@ -991,7 +1008,6 @@
     "addWidget": "Add widget",
     "tidyLayout": "Tidy",
     "resetLayout": "Reset",
-    "resetConfirm": "Reset the dashboard to the default widgets and layout? Your current arrangement will be lost.",
     "editHint": "Drag a widget to move it; use its S/M/L buttons or drag a left/right edge to resize. Tidy re-packs everything with no gaps; Reset restores the default layout. Changes save automatically.",
     "size": {
       "small": "S",
@@ -1028,7 +1044,10 @@
     "widgets": {
       "totals": "Totals"
     },
-    "followPage": "Page period"
+    "followPage": "Page period",
+    "confirmResetTitle": "Reset the dashboard?",
+    "confirmResetBody": "The widgets and their arrangement go back to the defaults. Your current layout is lost.",
+    "confirmResetAction": "Reset layout"
   },
   "import": {
     "title": "Import",
@@ -1148,7 +1167,6 @@
       "locked": "The dashboard is always pinned on top, and the Settings group (Settings and Users) can't be moved or changed.",
       "addGroup": "New group",
       "reset": "Reset",
-      "resetConfirm": "Reset the navigation menu to its default groups and order?",
       "newGroupName": "New group",
       "groupName": "Group name",
       "drag": "Drag to reorder",
@@ -1158,7 +1176,9 @@
       "deleteBlocked": "Move or hide its items first",
       "emptyGroup": "Empty — drag items here",
       "addSeparator": "Add separator",
-      "separator": "Separator"
+      "separator": "Separator",
+      "confirmResetTitle": "Reset the navigation menu?",
+      "confirmResetBody": "Your groups and their order are replaced by the defaults."
     },
     "people": "People"
   },
@@ -1168,7 +1188,6 @@
     "create": "Create token",
     "cancel": "Cancel",
     "revoke": "Revoke",
-    "confirmRevoke": "Revoke the token \"{{name}}\"? Anything using it will stop working immediately.",
     "name": "Name",
     "namePlaceholder": "e.g. Budget script",
     "tokenScope": "Access",
@@ -1187,7 +1206,9 @@
     "revealTitle": "Copy your new token now",
     "revealWarning": "This is the only time the token is shown. Store it somewhere safe — you won't be able to see it again.",
     "copy": "Copy",
-    "copied": "Copied"
+    "copied": "Copied",
+    "confirmRevokeTitle": "Revoke \"{{name}}\"?",
+    "confirmRevokeBody": "Anything using this token stops working immediately."
   },
   "preferences": {
     "title": "Preferences",

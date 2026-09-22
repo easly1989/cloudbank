@@ -47,6 +47,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "./confirmContext";
 
 import { ApiError, updateMe, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
@@ -75,6 +76,7 @@ const entryDndId = (e: NavEntry) => (e.kind === "item" ? `I:${e.to}` : `S:${e.id
 // neither is editable here.
 export function NavLayoutEditor() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const qc = useQueryClient();
   const { user } = useAuth();
   const isAdmin = Boolean(user?.isAdmin);
@@ -153,8 +155,14 @@ export function NavLayoutEditor() {
       movable.filter((g) => g.id !== id),
       { save: true },
     );
-  const reset = () => {
-    if (window.confirm(t("settings.nav.resetConfirm"))) apply(defaultNavLayout(), { save: true });
+  const reset = async () => {
+    const ok = await confirm({
+      title: t("settings.nav.confirmResetTitle"),
+      body: t("settings.nav.confirmResetBody"),
+      confirmLabel: t("settings.nav.reset"),
+      danger: true,
+    });
+    if (ok) apply(defaultNavLayout(), { save: true });
   };
   const renameGroup = (id: string, label: string) =>
     mapMovable(id, (g) => ({ ...g, label, labelKey: undefined }));

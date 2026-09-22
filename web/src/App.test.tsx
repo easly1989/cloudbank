@@ -6,6 +6,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { App } from "./App";
 import { AuthProvider } from "./auth/AuthProvider";
+import { ConfirmProvider } from "./components/confirm";
 import "./i18n";
 
 type Routes = Record<string, { status?: number; body: unknown }>;
@@ -44,9 +45,12 @@ function renderApp(route = "/") {
     <MantineProvider>
       <QueryClientProvider client={client}>
         <AuthProvider>
-          <MemoryRouter initialEntries={[route]}>
-            <App />
-          </MemoryRouter>
+          {/* Mirrors main.tsx: pages call useConfirm, which throws without it. */}
+          <ConfirmProvider>
+            <MemoryRouter initialEntries={[route]}>
+              <App />
+            </MemoryRouter>
+          </ConfirmProvider>
         </AuthProvider>
       </QueryClientProvider>
     </MantineProvider>,

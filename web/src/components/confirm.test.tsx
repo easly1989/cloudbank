@@ -1,6 +1,6 @@
-import { MantineProvider } from "@mantine/core";
+import { Drawer, MantineProvider } from "@mantine/core";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { ConfirmProvider } from "./confirm";
 import { useConfirm } from "./confirmContext";
@@ -79,6 +79,67 @@ describe("useConfirm", () => {
     await screen.findByText("Delete 2 transactions?");
     fireEvent.keyDown(document.body, { key: "Escape" });
     await waitFor(() => expect(results).toEqual([false]));
+  });
+
+  // A second question replacing a first one must not strand the first caller on
+  // a promise that never settles: the form waiting on it would never close.
+  it("answers no for a question that a second one replaces", async () => {
+    const results: boolean[] = [];
+    function Two() {
+      const confirm = useConfirm();
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            void confirm({ title: "First?" }).then((ok) => results.push(ok));
+            void confirm({ title: "Second?" }).then((ok) => results.push(ok));
+          }}
+        >
+          ask twice
+        </button>
+      );
+    }
+    render(
+      <MantineProvider>
+        <ConfirmProvider>
+          <Two />
+        </ConfirmProvider>
+      </MantineProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "ask twice" }));
+    await waitFor(() => expect(results).toEqual([false]));
+    expect(await screen.findByText("Second?")).toBeInTheDocument();
+  });
+
+  // The transaction form is a side sheet that asks before discarding edits, so
+  // the dialog opens on top of an open Drawer. Escape must answer the question
+  // it is looking at, and must not take the sheet down with it.
+  it("takes Escape for itself when it sits on top of a drawer", async () => {
+    const onClose = vi.fn();
+    function Sheet() {
+      const confirm = useConfirm();
+      return (
+        <Drawer opened onClose={() => void confirm({ title: "Discard?" }).then(onClose)}>
+          <button type="button">inside the sheet</button>
+        </Drawer>
+      );
+    }
+    render(
+      <MantineProvider>
+        <ConfirmProvider>
+          <Sheet />
+        </ConfirmProvider>
+      </MantineProvider>,
+    );
+
+    // Escape on the sheet asks the question rather than closing outright.
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(await screen.findByText("Discard?")).toBeInTheDocument();
+
+    // Escape again answers it — with a "no" — and asks nothing further.
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    await waitFor(() => expect(onClose).toHaveBeenCalledWith(false));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("closes after answering, so the next question starts clean", async () => {
