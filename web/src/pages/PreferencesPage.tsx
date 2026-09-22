@@ -1,6 +1,7 @@
 import {
   Button,
   Card,
+  Chip,
   ColorSwatch,
   Group,
   Input,
@@ -9,6 +10,7 @@ import {
   SimpleGrid,
   Stack,
   Switch,
+  Text,
   useMantineColorScheme,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
@@ -24,6 +26,7 @@ import { NotificationsCard } from "../components/NotificationsCard";
 import { TwoFactorCard } from "../components/TwoFactorCard";
 import { supportedLanguages } from "../i18n";
 import { useTour } from "../onboarding/tourContext";
+import { SIDEBAR_ACCOUNTS_MAX } from "../components/sidebarAccounts";
 import { ACCENT_COLORS } from "../theme";
 import { useWallet } from "../wallet/WalletProvider";
 
@@ -54,7 +57,17 @@ export function PreferencesPage() {
     prefs.defaultAccountId ? String(prefs.defaultAccountId) : null,
   );
   const [smartAmount, setSmartAmount] = useState(prefs.smartAmountInput ?? true);
-  const [accent, setAccent] = useState(prefs.themeAccent ?? "teal");
+  const [accent, setAccent] = useState(prefs.themeAccent ?? "cloudbank");
+  const [sidebarAccountIds, setSidebarAccountIds] = useState<number[]>(
+    prefs.sidebarAccountIds ?? [],
+  );
+
+  // Picking a fourth drops the oldest rather than refusing the click: the cap
+  // is there to keep the strip a glance, not to scold anyone.
+  const toggleSidebarAccount = (id: number) =>
+    setSidebarAccountIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id].slice(-SIDEBAR_ACCOUNTS_MAX),
+    );
 
   const save = useMutation({
     mutationFn: () =>
@@ -70,6 +83,7 @@ export function PreferencesPage() {
           defaultAccountId: defaultAccount ? Number(defaultAccount) : undefined,
           smartAmountInput: smartAmount,
           themeAccent: accent,
+          sidebarAccountIds,
         },
       }),
     onSuccess: (updated: User) => {
@@ -169,6 +183,33 @@ export function PreferencesPage() {
               onChange={(e) => setSmartAmount(e.currentTarget.checked)}
             />
           </SimpleGrid>
+
+          <Input.Wrapper
+            label={t("preferences.sidebarAccounts")}
+            description={t("preferences.sidebarAccountsHint", { max: SIDEBAR_ACCOUNTS_MAX })}
+          >
+            <Group gap="xs" mt={6}>
+              {accounts.map((a) => {
+                const on = sidebarAccountIds.includes(a.id);
+                return (
+                  <Chip
+                    key={a.id}
+                    checked={on}
+                    onChange={() => toggleSidebarAccount(a.id)}
+                    variant={on ? "filled" : "outline"}
+                  >
+                    {a.name}
+                  </Chip>
+                );
+              })}
+              {accounts.length > 0 && (
+                <Text size="xs" c="dimmed">
+                  {sidebarAccountIds.length} / {SIDEBAR_ACCOUNTS_MAX}
+                </Text>
+              )}
+            </Group>
+          </Input.Wrapper>
+
           <Group justify="space-between">
             <Button variant="default" onClick={() => tour.start()}>
               {t("preferences.restartTour")}

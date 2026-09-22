@@ -10,13 +10,19 @@ import {
   UnstyledButton,
 } from "@mantine/core";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink as RouterNavLink } from "react-router-dom";
 
+import { listAccounts } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
+import { formatMinor } from "../money";
+import { negativeOnlyColor } from "../amountTone";
+import { useWallet } from "../wallet/WalletProvider";
 import { NAV_ITEMS, type NavItemDef } from "./navItems";
 import { migrateNavLayout, PINNED_HOME, type NavGroupLayout } from "./navLayout";
+import { pickSidebarAccounts } from "./sidebarAccounts";
 
 // Which nav sections the user has collapsed. This is a per-device UI convenience,
 // so it lives in localStorage rather than synced preferences.
@@ -126,7 +132,7 @@ export function SidebarNav({
               style={{ width: "100%" }}
             >
               <Group gap={4} px="xs" py={4} justify="space-between" wrap="nowrap">
-                <Text size="xs" c="dimmed" tt="uppercase" fw={600} truncate>
+                <Text size="xs" c="dimmed" fw={600} truncate>
                   {g.label}
                 </Text>
                 {isCollapsed ? (
@@ -150,7 +156,55 @@ export function SidebarNav({
           </Box>
         );
       })}
+      <SidebarBalances />
     </Stack>
+  );
+}
+
+/**
+ * The optional glance at a few account balances, at the foot of the sidebar.
+ *
+ * Off unless the user picks accounts in Settings, and capped at three there: it
+ * answers "how much have I got?" without turning into a second Accounts page.
+ * Only a negative balance is coloured — colouring the healthy ones too would
+ * make the sidebar a traffic light.
+ */
+function SidebarBalances() {
+  const { user } = useAuth();
+  const { currentWallet } = useWallet();
+  const walletId = currentWallet?.id ?? 0;
+  const ids = user?.preferences?.sidebarAccountIds;
+
+  const accountsQuery = useQuery({
+    queryKey: ["accounts", walletId],
+    queryFn: () => listAccounts(walletId),
+    enabled: walletId > 0 && Boolean(ids?.length),
+  });
+
+  const shown = pickSidebarAccounts(accountsQuery.data ?? [], ids);
+  if (shown.length === 0) return null;
+
+  return (
+    <Box mt="md" pt="xs" style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}>
+      <Stack gap={4} px="xs">
+        {shown.map((a) => (
+          <Group key={a.id} justify="space-between" gap="xs" wrap="nowrap">
+            <Text size="sm" c="dimmed" truncate>
+              {a.name}
+            </Text>
+            <Text size="sm" ff="monospace" c={negativeOnlyColor(a.balance)}>
+              {formatMinor(a.balance, {
+                fracDigits: a.currencyFracDigits,
+                decimalChar: a.currencyDecimalChar,
+                groupChar: a.currencyGroupChar,
+                symbol: "",
+                symbolPrefix: false,
+              })}
+            </Text>
+          </Group>
+        ))}
+      </Stack>
+    </Box>
   );
 }
 

@@ -10,7 +10,21 @@ Not yet in a tagged release: smarter **bank sync** (reconciliation against your
 existing entries and a review workflow), the **Bills** redesign, and register /
 dashboard polish.
 
+### Changed
+
+- **Managing people moved into Settings.** Inviting someone or resetting a
+  password is something you do twice a year, so it no longer holds a permanent
+  row in the main menu: it is a *People* tab inside Settings, shown to admins.
+  Existing `/admin/users` links still work — they land on that tab. Sidebar
+  group headings also dropped their tracked-out capitals for sentence case,
+  which is easier to scan.
+
 ### Added
+
+- **Account balances in the sidebar, if you want them.** Off by default; pick up
+  to three accounts in Settings and their balances sit at the foot of the
+  sidebar. Only a negative balance is coloured, because colouring the healthy
+  ones too would turn the sidebar into a traffic light.
 
 - **A design system underneath the app.** The first step of the restyle: CloudBank
   now has its own blue as the default accent, two bundled typefaces (Public Sans

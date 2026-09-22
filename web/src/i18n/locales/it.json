@@ -23,7 +23,6 @@
     "goals": "Obiettivi",
     "reports": "Report",
     "settings": "Impostazioni",
-    "admin": "Utenti",
     "import": "Importa",
     "toggleSidebar": "Comprimi/espandi menu",
     "group": {
@@ -1128,7 +1127,8 @@
       "emptyGroup": "Vuoto — trascina qui le voci",
       "addSeparator": "Aggiungi separatore",
       "separator": "Separatore"
-    }
+    },
+    "people": "Persone"
   },
   "apiTokens": {
     "title": "Token API personali",
@@ -1174,7 +1174,9 @@
     "smartAmountHint": "Digita 12.40 o 12,40 — entrambi letti come decimali (stile HomeBank)",
     "save": "Salva",
     "saved": "Preferenze salvate",
-    "restartTour": "Riavvia il tutorial"
+    "restartTour": "Riavvia il tutorial",
+    "sidebarAccounts": "Saldi dei conti nella barra laterale",
+    "sidebarAccountsHint": "Disattivati di default. Scegline al massimo {{max}}: devono restare un colpo d'occhio, non un secondo elenco dei conti."
   },
   "tour": {
     "skip": "Salta",

@@ -1,23 +1,30 @@
 import { Stack, Tabs, Title } from "@mantine/core";
-import { IconKey, IconMenu2, IconSettings, IconWallet } from "@tabler/icons-react";
+import { IconKey, IconMenu2, IconSettings, IconUsers, IconWallet } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
 import { NavLayoutEditor } from "../components/NavLayoutEditor";
+import { useAuth } from "../auth/AuthProvider";
 import { useWallet } from "../wallet/WalletProvider";
+import { UsersPage } from "./admin/UsersPage";
 import { ApiTokensPage } from "./ApiTokensPage";
 import { PreferencesPage } from "./PreferencesPage";
 import { WalletSettingsPage } from "./WalletSettingsPage";
 
-// SettingsPage is the single Settings hub: a "General" tab for user preferences
-// and a "Wallet" tab for the current wallet's settings and data management. The
-// active tab round-trips through the ?tab= query so it is deep-linkable.
+// SettingsPage is the single Settings hub: user preferences, the current
+// wallet's settings, the navigation layout, API tokens, and — for an admin —
+// the people who can sign in. The active tab round-trips through the ?tab=
+// query so it is deep-linkable, and /admin/users redirects to ?tab=people so
+// older bookmarks still land somewhere sensible.
 export function SettingsPage() {
   const { t } = useTranslation();
   const { currentWallet } = useWallet();
+  const { user } = useAuth();
+  const isAdmin = Boolean(user?.isAdmin);
   const [params, setParams] = useSearchParams();
   const raw = params.get("tab");
-  const tab = raw === "wallet" || raw === "tokens" || raw === "nav" ? raw : "general";
+  const known = raw === "wallet" || raw === "tokens" || raw === "nav";
+  const tab = known ? raw : raw === "people" && isAdmin ? "people" : "general";
 
   return (
     <Stack>
@@ -39,6 +46,11 @@ export function SettingsPage() {
           <Tabs.Tab value="tokens" leftSection={<IconKey size={16} />}>
             {t("settings.apiTokens")}
           </Tabs.Tab>
+          {isAdmin && (
+            <Tabs.Tab value="people" leftSection={<IconUsers size={16} />}>
+              {t("settings.people")}
+            </Tabs.Tab>
+          )}
         </Tabs.List>
         <Tabs.Panel value="general">
           <PreferencesPage />
@@ -52,6 +64,11 @@ export function SettingsPage() {
         <Tabs.Panel value="tokens">
           <ApiTokensPage />
         </Tabs.Panel>
+        {isAdmin && (
+          <Tabs.Panel value="people">
+            <UsersPage />
+          </Tabs.Panel>
+        )}
       </Tabs>
     </Stack>
   );
