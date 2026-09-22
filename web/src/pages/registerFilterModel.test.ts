@@ -7,6 +7,8 @@ import {
   dateBounds,
   emptyFilters,
   hiddenNewerCount,
+  isSortable,
+  sortRegisterRows,
   filtersToParams,
   isActive,
   parseFilters,
@@ -231,5 +233,64 @@ describe("hiddenNewerCount", () => {
   it("counts a same-day row as newer only when it is strictly later", () => {
     const sameDay = [at(9, "2026-03-10"), at(2, "2026-03-10")];
     expect(hiddenNewerCount(sameDay, [at(2, "2026-03-10")])).toBe(0);
+  });
+});
+
+describe("sortRegisterRows", () => {
+  const r = (id: number, over: Partial<RegisterRow>) => row({ id, ...over });
+  const rows = [
+    r(1, { date: "2026-03-01", amount: -500, payeeName: "Zeta" }),
+    r(2, { date: "2026-03-03", amount: 1200, payeeName: "alfa" }),
+    r(3, { date: "2026-03-02", amount: -50, payeeName: undefined }),
+  ];
+
+  it("leaves the ledger alone when nothing is sorted", () => {
+    expect(sortRegisterRows(rows, null)).toBe(rows);
+    expect(sortRegisterRows(rows, { id: "nonsense", desc: false })).toBe(rows);
+  });
+
+  it("sorts numerically, not as text", () => {
+    // As strings "-500" would come before "-50"; as numbers it is the other way.
+    expect(sortRegisterRows(rows, { id: "amount", desc: false }).map((x) => x.amount)).toEqual([
+      -500, -50, 1200,
+    ]);
+    expect(sortRegisterRows(rows, { id: "amount", desc: true }).map((x) => x.amount)).toEqual([
+      1200, -50, -500,
+    ]);
+  });
+
+  it("compares names the way a reader expects, not by character code", () => {
+    // A plain sort would put "Zeta" before "alfa" because of the capital.
+    expect(sortRegisterRows(rows, { id: "payee", desc: false }).map((x) => x.payeeName)).toEqual([
+      "alfa",
+      "Zeta",
+      undefined,
+    ]);
+  });
+
+  it("keeps blanks at the bottom whichever way the column points", () => {
+    for (const desc of [false, true]) {
+      const last = sortRegisterRows(rows, { id: "payee", desc }).at(-1);
+      expect(last?.payeeName, `desc=${desc}`).toBeUndefined();
+    }
+  });
+
+  it("is stable, so rows with the same value stay in date order", () => {
+    const tied = [
+      r(1, { date: "2026-03-01", amount: 100 }),
+      r(2, { date: "2026-03-02", amount: 100 }),
+    ];
+    expect(sortRegisterRows(tied, { id: "amount", desc: false }).map((x) => x.id)).toEqual([1, 2]);
+  });
+
+  it("does not mutate the rows it was given", () => {
+    const before = rows.map((x) => x.id);
+    sortRegisterRows(rows, { id: "amount", desc: true });
+    expect(rows.map((x) => x.id)).toEqual(before);
+  });
+
+  it("knows which columns can be sorted", () => {
+    expect(isSortable("amount")).toBe(true);
+    expect(isSortable("actions")).toBe(false);
   });
 });

@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Alert,
   Badge,
   Button,
@@ -14,6 +15,8 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
+  IconEye,
+  IconEyeOff,
   IconArrowUp,
   IconArrowsExchange,
   IconChecklist,
@@ -188,6 +191,9 @@ export function TransactionsPage() {
   // Selection (for multi-edit and reconcile) + reconcile mode.
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  // Deliberately not a saved preference: hiding figures is something you turn on
+  // for a moment to take a screenshot, not a mode to wake up in.
+  const [privacy, setPrivacy] = useState(false);
   const [reconcile, setReconcile] = useState(false);
   useEffect(() => {
     // Switching account resets transient selection/reconcile state.
@@ -339,7 +345,7 @@ export function TransactionsPage() {
     : { fracDigits: 2, decimalChar: ".", groupChar: ",", symbol: "", symbolPrefix: false };
 
   return (
-    <Stack>
+    <Stack className={privacy ? "cb-private" : undefined}>
       <Stack ref={topRef} gap="md">
         <Group justify="space-between">
           <Title order={2}>{t("transactions.title")}</Title>
@@ -352,6 +358,17 @@ export function TransactionsPage() {
               allowDeselect={false}
               w={220}
             />
+            <Tooltip label={t(privacy ? "register.privacy.show" : "register.privacy.hide")}>
+              <ActionIcon
+                variant={privacy ? "filled" : "default"}
+                size={36}
+                aria-label={t(privacy ? "register.privacy.show" : "register.privacy.hide")}
+                aria-pressed={privacy}
+                onClick={() => setPrivacy((v) => !v)}
+              >
+                {privacy ? <IconEyeOff size={17} /> : <IconEye size={17} />}
+              </ActionIcon>
+            </Tooltip>
             <Button
               variant={reconcile ? "filled" : "default"}
               leftSection={<IconChecklist size={16} />}
