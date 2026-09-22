@@ -579,7 +579,13 @@
     "selectRow": "Seleziona riga",
     "columns": "Colonne",
     "markCleared": "Segna verificata",
-    "markReconciled": "Segna riconciliata"
+    "markReconciled": "Segna riconciliata",
+    "hiddenNewer": {
+      "title_one": "{{count}} transazione più recente è nascosta da questo filtro",
+      "title_other": "{{count}} transazioni più recenti sono nascoste da questo filtro",
+      "body": "La prima riga qui sotto non è l'ultimo movimento del conto. Il saldo di oggi le conta comunque.",
+      "action": "Azzera il filtro"
+    }
   },
   "filters": {
     "dateRange": "Intervallo date",

@@ -6,6 +6,7 @@ import {
   applyFilters,
   dateBounds,
   emptyFilters,
+  hiddenNewerCount,
   filtersToParams,
   isActive,
   parseFilters,
@@ -200,5 +201,35 @@ describe("activeFilterCount / isActive", () => {
   it("ignores whitespace-only search text", () => {
     expect(activeFilterCount({ ...emptyFilters, text: "   " })).toBe(0);
     expect(activeFilterCount({ ...emptyFilters, text: "rent" })).toBe(1);
+  });
+});
+
+describe("hiddenNewerCount", () => {
+  const at = (id: number, date: string) => ({ id, date }) as RegisterRow;
+  const all = [at(4, "2026-03-20"), at(3, "2026-03-15"), at(2, "2026-03-10"), at(1, "2026-03-01")];
+
+  it("counts what the filter hides above the top visible line", () => {
+    // Filtered to the two older rows: two newer ones are hidden.
+    expect(hiddenNewerCount(all, [at(2, "2026-03-10"), at(1, "2026-03-01")])).toBe(2);
+  });
+
+  it("is zero when the newest row is on screen", () => {
+    expect(hiddenNewerCount(all, all)).toBe(0);
+    expect(hiddenNewerCount(all, [at(4, "2026-03-20"), at(1, "2026-03-01")])).toBe(0);
+  });
+
+  it("says nothing when there is nothing to show: an empty result speaks for itself", () => {
+    expect(hiddenNewerCount(all, [])).toBe(0);
+    expect(hiddenNewerCount([], [])).toBe(0);
+  });
+
+  it("does not count a hidden row that is older than the top line", () => {
+    // Row 2 is missing from the visible set but sits below the newest shown.
+    expect(hiddenNewerCount(all, [at(4, "2026-03-20"), at(1, "2026-03-01")])).toBe(0);
+  });
+
+  it("counts a same-day row as newer only when it is strictly later", () => {
+    const sameDay = [at(9, "2026-03-10"), at(2, "2026-03-10")];
+    expect(hiddenNewerCount(sameDay, [at(2, "2026-03-10")])).toBe(0);
   });
 });

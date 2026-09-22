@@ -12,6 +12,14 @@ dashboard polish.
 
 ### Changed
 
+- **The register puts the ledger first.** The three balances are a single line in
+  the page header instead of three bordered cards in a block, and the filter
+  panel starts closed — between them they were costing most of the screen above
+  the transactions, which are what the page is for. A filtered register now also
+  says when it is hiding newer rows: ask for everything unreconciled and the top
+  line can be weeks old, which looks like the balance has drifted when it hasn't,
+  so the register explains itself rather than leaving you to work it out.
+
 - **Managing people moved into Settings.** Inviting someone or resetting a
   password is something you do twice a year, so it no longer holds a permanent
   row in the main menu: it is a *People* tab inside Settings, shown to admins.
