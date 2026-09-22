@@ -1,4 +1,5 @@
 import {
+  Select,
   ActionIcon,
   Alert,
   Box,
@@ -25,6 +26,7 @@ import { useTranslation } from "react-i18next";
 
 import { type DashboardAccount, type User, getDashboard, updateMe } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
+import type { DatePreset } from "./registerFilterModel";
 import { GridDashboard, type GridDashboardHandle } from "../components/dashboard/GridDashboard";
 import { NeedsAttention } from "../components/dashboard/NeedsAttention";
 import {
@@ -59,6 +61,7 @@ import {
   DEFAULT_IE,
   DEFAULT_KPI,
   DEFAULT_SPENDING,
+  PAGE_PERIODS,
   type IEConfig,
   type KpiConfig,
   type SpendingConfig,
@@ -85,6 +88,16 @@ export function DashboardPage() {
   const [editingLayout, setEditingLayout] = useState(false);
   // Imperative handle to the grid so the S/M/L preset buttons can resize a widget.
   const gridApi = useRef<GridDashboardHandle>(null);
+  // How far back the overview is looking. Balances are always current — a
+  // balance is not a period quantity — so this drives only the widgets that
+  // actually cover a span of time, and each of those can pin its own.
+  const pagePeriod = (user?.preferences?.dashboardPeriod ?? "all") as DatePreset;
+  const persistPeriod = useMutation({
+    mutationFn: (period: DatePreset) =>
+      updateMe({ preferences: { ...(user?.preferences ?? {}), dashboardPeriod: period } }),
+    onSuccess: (u: User) => qc.setQueryData(["me"], u),
+  });
+
   const persistLayout = useMutation({
     mutationFn: (next: DashboardLayoutV2) =>
       updateMe({ preferences: { ...(user?.preferences ?? {}), dashboardLayout: next } }),
@@ -145,6 +158,7 @@ export function DashboardPage() {
             base={base}
             config={{ ...DEFAULT_IE, ...(item.config as Partial<IEConfig>) }}
             onConfig={(c) => setConfig(item.id, c)}
+            pagePeriod={pagePeriod}
           />
         );
       case "accounts":
@@ -156,6 +170,7 @@ export function DashboardPage() {
             base={base}
             config={{ ...DEFAULT_SPENDING, ...(item.config as Partial<SpendingConfig>) }}
             onConfig={(c) => setConfig(item.id, c)}
+            pagePeriod={pagePeriod}
           />
         );
       case "budget":
@@ -301,6 +316,14 @@ export function DashboardPage() {
       <Group justify="space-between">
         <Title order={2}>{t("dashboard.title")}</Title>
         <Group gap="xs">
+          <Select
+            aria-label={t("dashboard.period")}
+            data={PAGE_PERIODS.map((p) => ({ value: p, label: t(`filters.presets.${p}`) }))}
+            value={pagePeriod}
+            onChange={(v) => v && persistPeriod.mutate(v as DatePreset)}
+            allowDeselect={false}
+            w={150}
+          />
           {editingLayout && (
             <Menu position="bottom-end" withinPortal>
               <Menu.Target>

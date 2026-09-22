@@ -18,8 +18,9 @@ import { useTranslation } from "react-i18next";
 
 import { type CurrencyInfo, type MonthPoint, getDashboard } from "../../../api/client";
 import { formatMinor } from "../../../money";
+import type { DatePreset } from "../../../pages/registerFilterModel";
 import { Chart } from "../../Chart";
-import { type IEConfig, type IEStyle, IE_MONTHS } from "./shared";
+import { FOLLOW_PAGE, IE_MONTHS, periodToMonths, type IEConfig, type IEStyle } from "./shared";
 
 // IncomeExpenseCard is the income/expense-over-time widget: a HomeBank-style
 // diverging chart (income up, expense down) with a period dropdown and a gear to
@@ -30,18 +31,23 @@ export function IncomeExpenseCard({
   base,
   config,
   onConfig,
+  pagePeriod,
 }: {
   walletId: number;
   base?: CurrencyInfo;
   config: IEConfig;
   onConfig: (c: IEConfig) => void;
+  pagePeriod: DatePreset;
 }) {
   const { t } = useTranslation();
+  // A null window means "follow the page"; the chart counts months, so the
+  // page's period is translated into one.
+  const months = config.months ?? periodToMonths(pagePeriod);
   // The income/expense series depends only on the trailing-month window, so the
   // range is left wide (it drives topCategories, unused here).
   const q = useQuery({
-    queryKey: ["dashboard", walletId, "0001-01-01", "9999-12-31", "category", config.months],
-    queryFn: () => getDashboard(walletId, "0001-01-01", "9999-12-31", "category", config.months),
+    queryKey: ["dashboard", walletId, "0001-01-01", "9999-12-31", "category", months],
+    queryFn: () => getDashboard(walletId, "0001-01-01", "9999-12-31", "category", months),
     enabled: walletId > 0,
   });
   const points = q.data?.incomeExpense ?? [];
@@ -52,12 +58,17 @@ export function IncomeExpenseCard({
         <Group gap="xs" wrap="nowrap">
           <Select
             aria-label={t("dashboard.period")}
-            data={IE_MONTHS.map((m) => ({
-              value: String(m),
-              label: m === 0 ? t("filters.presets.all") : t("dashboard.lastMonths", { count: m }),
-            }))}
-            value={String(config.months)}
-            onChange={(v) => v != null && onConfig({ ...config, months: Number(v) })}
+            data={[
+              { value: FOLLOW_PAGE, label: t("dashboard.followPage") },
+              ...IE_MONTHS.map((m) => ({
+                value: String(m),
+                label: m === 0 ? t("filters.presets.all") : t("dashboard.lastMonths", { count: m }),
+              })),
+            ]}
+            value={config.months === null ? FOLLOW_PAGE : String(config.months)}
+            onChange={(v) =>
+              v != null && onConfig({ ...config, months: v === FOLLOW_PAGE ? null : Number(v) })
+            }
             allowDeselect={false}
             w={160}
           />
