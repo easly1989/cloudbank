@@ -12,8 +12,8 @@ dashboard polish.
 
 ### Changed
 
-- **The register's columns are yours.** Drag the edge of a heading to widen a
-  column, click a heading to sort by it — both remembered per user, so the
+- **The register's columns are yours.** Move them into the order you want, drag
+  the edge of a heading to widen one, click a heading to sort by it — both remembered per user, so the
   register you arranged is the one you get back on another device. Sorting never
   recomputes the running balance: that figure belongs to its row, and a sorted
   register is a way of *finding* a transaction rather than of reading balances

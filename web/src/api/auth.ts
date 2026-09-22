@@ -8,6 +8,8 @@ export interface Preferences {
   defaultAccountId?: number;
   /** Register column visibility, keyed by column id (payee/category/note/status/runningBalance). */
   registerColumns?: Record<string, boolean>;
+  /** Register column order, by column id. Stale or missing ids are normalized on load. */
+  registerColumnOrder?: string[];
   /** Register column widths in pixels, keyed by column id. Absent = the default width. */
   registerColumnWidths?: Record<string, number>;
   /** Which register column is sorted, and how. Absent = the ledger’s own chronological order. */
