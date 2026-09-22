@@ -3,6 +3,7 @@ import { IconCalendarDot, IconChevronLeft, IconChevronRight } from "@tabler/icon
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { expenseColor } from "../../../amountTone";
 
 import { getTrend } from "../../../api/client";
 import { useDateFormat } from "../../../dates";
@@ -136,7 +137,7 @@ export function SpendingHeatmapCard({ walletId }: { walletId: number }) {
           )}
         </Group>
         {base && total > 0 && (
-          <Text size="sm" fw={700} c="red" style={{ whiteSpace: "nowrap" }}>
+          <Text size="sm" fw={700} c={expenseColor} style={{ whiteSpace: "nowrap" }}>
             {formatMinor(total, base)}
           </Text>
         )}

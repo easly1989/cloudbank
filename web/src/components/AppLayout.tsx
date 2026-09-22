@@ -161,7 +161,10 @@ export function AppLayout() {
                 <Menu.Target>
                   <UnstyledButton aria-label={user?.username}>
                     <Group gap="xs">
-                      <Avatar radius="xl" size={32} color="teal">
+                      {/* Filled, not the default tint: teal.9 on teal.1 reads
+                          4.33:1, and initials are the only name on a phone,
+                          where the username beside them is hidden. */}
+                      <Avatar radius="xl" size={32} color="teal.9" variant="filled">
                         {user?.username.slice(0, 2).toUpperCase()}
                       </Avatar>
                       <Text size="sm" visibleFrom="sm">

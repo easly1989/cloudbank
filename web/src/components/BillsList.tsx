@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { ApiError, type Bill, type BillState, getBills, postScheduleNow } from "../api/client";
 import { useDateFormat } from "../dates";
 import { formatMinor } from "../money";
-import { amountColor } from "../amountTone";
+import { amountColor, errorColor } from "../amountTone";
 
 const STATE_COLOR: Record<BillState, string> = {
   overdue: "red",
@@ -114,7 +114,7 @@ export function BillsList({
     );
   };
 
-  if (query.isError) return <Text c="red">{t("bills.error")}</Text>;
+  if (query.isError) return <Text c={errorColor}>{t("bills.error")}</Text>;
 
   const shown = limit != null ? bills.slice(0, limit) : bills;
   const hiddenCount = bills.length - shown.length;

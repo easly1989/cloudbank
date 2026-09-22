@@ -1,6 +1,7 @@
 import { Button, Card, Center, Loader, Stack, Text } from "@mantine/core";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { errorColor } from "../amountTone";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { ApiError, completeEnableBankingAuth } from "../api/client";
@@ -66,7 +67,7 @@ export function BankSyncCallback() {
           {status === "done" && <Text c="teal">{t("banksync.eb.callback.success")}</Text>}
           {status === "error" && (
             <>
-              <Text c="red" ta="center">
+              <Text c={errorColor} ta="center">
                 {message || t("banksync.eb.callback.error")}
               </Text>
               <Button onClick={() => nav("/bank-sync")}>{t("banksync.eb.callback.back")}</Button>

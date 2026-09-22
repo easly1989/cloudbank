@@ -50,6 +50,20 @@ dashboard polish.
   to read; a status is now a word with a small coloured dot, and the colour
   still carries the meaning.
 
+- **The text you were meant to read is now readable.** The whole app was
+  measured against WCAG AA in both themes rather than eyeballed, and it was not
+  passing. The "dimmed" grey that carries every page hint and every empty state
+  sat at 3.3:1 in light and 3.5:1 in dark, under the 4.5:1 floor — the text
+  explaining what a page is for was the hardest text on it. Error messages used
+  a red that read at 3.3:1 on a white card, so the one message you must not miss
+  was the faintest. And the donate pill put white on a gradient that fell to
+  2.7:1 at its brightest point: it was least readable exactly where it was
+  loudest.
+
+  All three are fixed, along with the avatar initials, and `e2e/contrast-audit.mjs`
+  keeps them fixed — it walks every page in both schemes and fails if anything
+  drops under the floor.
+
 - **The register's columns are yours.** Move them into the order you want, drag
   the edge of a heading to widen one, click a heading to sort by it — both remembered per user, so the
   register you arranged is the one you get back on another device. Sorting never
