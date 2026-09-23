@@ -195,8 +195,18 @@ body {
   padding: 0;
 }
 .cb-widget {
-  padding: 4px 0 16px;
-  border-bottom: 1px solid var(--mantine-color-default-border);
+  padding: 0;
+}
+/* A widget's own heading. The tile sets it at 15/600 — quieter than a page
+   title and quieter than the figures it sits under, because a heading here
+   names a section rather than announcing one. */
+.cb-widget-body .mantine-Title-root {
+  font-size: 15px;
+  font-weight: 600;
+}
+.cb-widget-body > .mantine-Card-root > .mantine-Stack-root,
+.cb-widget-body > .mantine-Stack-root {
+  gap: 16px;
 }
 
 /* The first line of the ledger: where the next transaction will land.
@@ -258,6 +268,8 @@ body {
   --cb-accent-text: #1c46ae;
   --cb-nav-active: var(--cb-accent-text);
   --cb-nav-active-bg: #eaf0fe;
+  --cb-track-bg: #f1f4f9;
+  --cb-attention-border: #e6c98f;
 }
 :root[data-mantine-color-scheme="dark"] {
   --cb-shell-bg: #11161d;
@@ -268,6 +280,8 @@ body {
   --cb-accent-text: #7aa2ff;
   --cb-nav-active: var(--cb-accent-text);
   --cb-nav-active-bg: #182440;
+  --cb-track-bg: #1a212b;
+  --cb-attention-border: #5c4726;
 }
 
 .cb-sidebar {
@@ -306,4 +320,39 @@ body {
   font-weight: 600;
   color: var(--cb-nav-label);
   padding: 0 8px 6px;
+}
+
+/* The period switch at the head of the overview: a track with one pill lit.
+   Mantine's default is a hair tighter than the tile everywhere, and the
+   difference shows because this control sits directly under the page title
+   with nothing else on its line. */
+.cb-period-switch {
+  --sc-padding: 4px;
+  background: var(--cb-track-bg);
+  border-radius: 9px;
+  padding: 4px;
+  height: 44px;
+}
+.cb-period-switch .mantine-SegmentedControl-label {
+  padding: 8px 13px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 7px;
+  color: var(--cb-nav-item);
+}
+.cb-period-switch .mantine-SegmentedControl-label[data-active] {
+  font-weight: 600;
+  color: var(--mantine-color-text);
+}
+.cb-period-switch .mantine-SegmentedControl-indicator {
+  border-radius: 7px;
+}
+
+/* The card that lists what wants doing: outlined in the attention colour, and
+   nothing else. A filled panel here reads as an error state, and most of what
+   it lists is simply unfinished rather than wrong. */
+.cb-attention {
+  border: 1px solid var(--cb-attention-border);
+  border-radius: 10px;
+  padding: 16px 20px;
 }
