@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { activeFilters, activeFilterCount, emptyFilters, type Filters } from "./registerFilterModel";
+import {
+  activeFilters,
+  activeFilterCount,
+  emptyFilters,
+  type Filters,
+} from "./registerFilterModel";
 
 const withFilters = (patch: Partial<Filters>): Filters => ({ ...emptyFilters, ...patch });
 
