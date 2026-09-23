@@ -8,10 +8,24 @@
 // See docs/design/register.json and docs/design/dark.json for the source, and
 // docs/design/README.md for why a screenshot is not enough.
 
-/** Grid template of a ledger row, before the checkbox column is prepended. */
+/**
+ * Grid template of a ledger row, before the checkbox column is prepended.
+ *
+ * One number here is not the tile's. The board writes its dates as `17/09` and
+ * gives the column 96px, which is right for five characters and wrong for the
+ * ten of `2026-01-04` — the app's default format, which wrapped onto a second
+ * line and made every row in the register taller than it should be. The column
+ * is sized for the widest format a reader can actually choose instead.
+ */
 export const ROW_COLUMNS: Record<string, string> = {
-  date: "96px",
-  payee: "240px",
+  date: "112px",
+  // The one column that flexes. Every other width here is the tile's, and they
+  // add up to more than the register gets on a laptop once the checkbox column
+  // the app has and the board does not is added — which clipped the running
+  // balance, the column people scan. The slack is taken from the lead text
+  // column because that is the one whose content has no natural width, and it
+  // grows past the tile's 240 when there is room.
+  payee: "minmax(120px, 1fr)",
   note: "240px",
   category: "156px",
   status: "140px",

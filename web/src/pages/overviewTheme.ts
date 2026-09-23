@@ -6,9 +6,9 @@
 //
 // One number is deliberately not here. The board sets its page title at 30/700,
 // while the secondary-pages board sets its own at 26/700 and the register board
-// at 24/700 — three boards, three sizes. The app is at 26/700, which matches
-// two of them, so the title stays where it is rather than making this one page
-// an exception; see #449.
+// at 24/700 — three boards, three sizes. The app is at 26/700, which matches two
+// of them, and that is the size we settled on: every page keeps one title size
+// rather than this one becoming an exception. Decided on #449, not an oversight.
 
 /** The period switch: a track with one pill lit. */
 export const PERIOD_SWITCH = {

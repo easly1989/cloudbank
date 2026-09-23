@@ -31,6 +31,10 @@ const ctx = await browser.newContext({
   viewport: VIEWPORT,
   deviceScaleFactor: 1.5,
   colorScheme: "light",
+  // The docs are in English, and CloudBank follows the browser before anyone
+  // has signed in — run this on an Italian machine without saying so and the
+  // whole set comes out in Italian, and every selector below misses.
+  locale: "en-US",
 });
 const page = await ctx.newPage();
 
@@ -52,13 +56,15 @@ try {
   await page.getByRole("button", { name: "Skip" }).click();
 
   // Import now lives under Settings → wallet tab → "Import & export" section.
-  await page.goto(BASE + "/settings?tab=wallet&section=import");
+  await page.goto(BASE + "/settings/data");
   await page.setInputFiles('input[type="file"]', FIXTURE);
   await page.getByRole("button", { name: "Import", exact: true }).click();
   await page.getByText("Import complete").waitFor();
 
-  // Dashboard (imported wallet is now active).
-  await page.getByRole("link", { name: "Dashboard", exact: true }).click();
+  // Dashboard (imported wallet is now active). Settings is its own screen with
+  // no app sidebar, so leave it rather than looking for a nav link that is not
+  // on this page.
+  await page.goto(BASE + "/");
   await page.getByRole("heading", { name: "Dashboard" }).waitFor();
   await shoot(page, "dashboard");
 
@@ -134,13 +140,13 @@ try {
   await shoot(page, "templates");
 
   // Settings — preferences (theme + accent picker).
-  await page.getByRole("link", { name: "Settings", exact: true }).click();
+  await page.goto(BASE + "/settings/general");
   await page.waitForTimeout(300);
   await shoot(page, "settings");
 
   // Wallet settings — backup / .xhb export. The wallet tab is titled after the
   // active wallet, so deep-link to its backup section instead of clicking a tab.
-  await page.goto(BASE + "/settings?tab=wallet&section=backup");
+  await page.goto(BASE + "/settings/data");
   await page.waitForTimeout(400);
   await shoot(page, "export");
 
