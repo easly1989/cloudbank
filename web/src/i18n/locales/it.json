@@ -625,7 +625,10 @@
       "show": "Mostra nomi e importi"
     },
     "moveColumnLeft": "Sposta la colonna a sinistra",
-    "moveColumnRight": "Sposta la colonna a destra"
+    "moveColumnRight": "Sposta la colonna a destra",
+    "import": "Importa",
+    "moreActions": "Altre azioni",
+    "search": "Cerca nel registro"
   },
   "filters": {
     "dateRange": "Intervallo date",
@@ -653,6 +656,23 @@
       "last90": "Ultimi 90 giorni",
       "custom": "Intervallo personalizzato",
       "thisHalf": "Questo semestre"
+    },
+    "chip": {
+      "text": "Testo",
+      "status": "Stato",
+      "payee": "Beneficiario",
+      "category": "Categoria",
+      "tags": "Tag",
+      "amountMin": "Importo minimo",
+      "amountMax": "Importo massimo",
+      "hideFuture": "Da oggi indietro",
+      "transfers": {
+        "only": "Solo trasferimenti",
+        "none": "Senza trasferimenti"
+      },
+      "noFlags": "Senza contrassegno",
+      "uncategorised": "Senza categoria",
+      "remove": "Togli il filtro {{name}}"
     }
   },
   "bulk": {

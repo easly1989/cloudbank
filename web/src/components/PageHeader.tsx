@@ -18,7 +18,9 @@ export function PageHeader({
   hint,
   actions,
 }: {
-  title: string;
+  /** Usually the page's name; the register passes a control, because there the
+      name of the account *is* the title and switching it is one click. */
+  title: ReactNode;
   /** One line on what the page is for. Skip it when the title already says. */
   hint?: ReactNode;
   /** Buttons, switches, anything that acts on the page as a whole. */

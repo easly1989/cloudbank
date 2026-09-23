@@ -81,7 +81,9 @@ export function CollapsibleSection({
                 flexShrink: 0,
               }}
             />
-            <Text fw={600} size="sm" tt="uppercase" style={{ flexShrink: 0 }}>
+            {/* Sentence case. Tracked-out capitals were the loudest type on a
+                page whose subject is a column of figures. */}
+            <Text fw={600} size="sm" style={{ flexShrink: 0 }}>
               {title}
             </Text>
             {!open && summary != null && (

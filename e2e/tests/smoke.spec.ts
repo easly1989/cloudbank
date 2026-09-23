@@ -71,7 +71,10 @@ test("full journey: setup → wallet → account → transaction → import → 
   });
 
   await test.step("enter and cancel the reconcile workflow", async () => {
-    await page.getByRole("button", { name: "Reconcile" }).click();
+    // Reconciling is a workflow, not one of the register's two headline
+    // actions, so it lives in the header's overflow menu.
+    await page.getByRole("button", { name: "More actions" }).click();
+    await page.getByRole("menuitem", { name: "Reconcile" }).click();
     await expect(page.getByLabel("Statement balance")).toBeVisible();
     await page.getByRole("button", { name: "Cancel" }).click();
   });
