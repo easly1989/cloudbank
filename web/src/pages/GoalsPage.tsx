@@ -25,7 +25,7 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/confirmContext";
 
@@ -136,14 +136,18 @@ export function GoalsPage() {
           ))}
         </SimpleGrid>
       )}
-      <GoalModal
-        opened={opened}
-        onClose={modal.close}
-        walletId={walletId}
-        goal={editing}
-        fmt={fmt}
-        onSaved={invalidate}
-      />
+      {/* Keyed so each opening mounts a fresh form. */}
+      {opened && (
+        <GoalModal
+          key={editing?.id ?? "new"}
+          opened
+          onClose={modal.close}
+          walletId={walletId}
+          goal={editing}
+          fmt={fmt}
+          onSaved={invalidate}
+        />
+      )}
     </Stack>
   );
 }
@@ -331,15 +335,20 @@ function GoalCard({
         </Collapse>
       </Stack>
 
-      <ContributionModal
-        opened={contribOpened}
-        onClose={contribModal.close}
-        walletId={walletId}
-        goalId={goal.id}
-        withdraw={withdraw}
-        fmt={fmt}
-        onSaved={afterContribChange}
-      />
+      {/* Keyed on the direction too: adding and withdrawing start from
+          different defaults, and they are different openings. */}
+      {contribOpened && (
+        <ContributionModal
+          key={withdraw ? "withdraw" : "add"}
+          opened
+          onClose={contribModal.close}
+          walletId={walletId}
+          goalId={goal.id}
+          withdraw={withdraw}
+          fmt={fmt}
+          onSaved={afterContribChange}
+        />
+      )}
     </Card>
   );
 }
@@ -372,20 +381,16 @@ function GoalModal({
     enabled: walletId > 0 && opened,
   });
 
-  const [name, setName] = useState("");
-  const [target, setTarget] = useState("");
-  const [targetDate, setTargetDate] = useState("");
-  const [accountId, setAccountId] = useState<string | null>(null);
-  const [note, setNote] = useState("");
-
-  useEffect(() => {
-    if (!opened) return;
-    setName(goal?.name ?? "");
-    setTarget(goal ? minorToInput(goal.targetAmount, fmt.fracDigits, fmt.decimalChar) : "");
-    setTargetDate(goal?.targetDate ?? "");
-    setAccountId(goal?.accountId != null ? String(goal.accountId) : null);
-    setNote(goal?.note ?? "");
-  }, [opened, goal, fmt.fracDigits, fmt.decimalChar]);
+  // The form starts where the goal is; the modal is mounted per opening.
+  const [name, setName] = useState(goal?.name ?? "");
+  const [target, setTarget] = useState(() =>
+    goal ? minorToInput(goal.targetAmount, fmt.fracDigits, fmt.decimalChar) : "",
+  );
+  const [targetDate, setTargetDate] = useState(goal?.targetDate ?? "");
+  const [accountId, setAccountId] = useState<string | null>(
+    goal?.accountId != null ? String(goal.accountId) : null,
+  );
+  const [note, setNote] = useState(goal?.note ?? "");
 
   const targetMinor = parseAmount(target, fmt.fracDigits, fmt.decimalChar) ?? 0;
 
@@ -486,18 +491,12 @@ function ContributionModal({
 }) {
   const { t } = useTranslation();
   const parseAmount = useAmountParser();
-  const [direction, setDirection] = useState<"add" | "withdraw">("add");
+  // Mounted per opening, so today's date and the direction are simply the
+  // starting values rather than something an effect has to put back.
+  const [direction, setDirection] = useState<"add" | "withdraw">(withdraw ? "withdraw" : "add");
   const [amount, setAmount] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(todayCivil);
   const [note, setNote] = useState("");
-
-  useEffect(() => {
-    if (!opened) return;
-    setDirection(withdraw ? "withdraw" : "add");
-    setAmount("");
-    setDate(todayCivil());
-    setNote("");
-  }, [opened, withdraw]);
 
   const magnitude = parseAmount(amount, fmt.fracDigits, fmt.decimalChar) ?? 0;
 
