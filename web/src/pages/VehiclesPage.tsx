@@ -5,7 +5,7 @@ import { IconCar, IconPencil, IconTrash } from "@tabler/icons-react";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/confirmContext";
 
@@ -118,13 +118,17 @@ export function VehiclesPage() {
           </Table.Tbody>
         </Table>
       )}
-      <VehicleModal
-        opened={opened}
-        onClose={modal.close}
-        walletId={walletId}
-        vehicle={editing}
-        onSaved={invalidate}
-      />
+      {/* Keyed so each opening mounts a fresh form. */}
+      {opened && (
+        <VehicleModal
+          key={editing?.id ?? "new"}
+          opened
+          onClose={modal.close}
+          walletId={walletId}
+          vehicle={editing}
+          onSaved={invalidate}
+        />
+      )}
     </Stack>
   );
 }
@@ -143,16 +147,10 @@ function VehicleModal({
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
-  const [name, setName] = useState("");
-  const [plate, setPlate] = useState("");
-  const [notes, setNotes] = useState("");
-
-  useEffect(() => {
-    if (!opened) return;
-    setName(vehicle?.name ?? "");
-    setPlate(vehicle?.plate ?? "");
-    setNotes(vehicle?.notes ?? "");
-  }, [opened, vehicle]);
+  // The form starts where the vehicle is; the modal is mounted per opening.
+  const [name, setName] = useState(vehicle?.name ?? "");
+  const [plate, setPlate] = useState(vehicle?.plate ?? "");
+  const [notes, setNotes] = useState(vehicle?.notes ?? "");
 
   const save = useMutation({
     mutationFn: () => {

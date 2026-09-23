@@ -13,7 +13,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconDots, IconPlus, IconUsers } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/confirmContext";
 import { EmptyState } from "../components/EmptyState";
@@ -163,14 +163,19 @@ export function PayeesPage() {
         </Table>
       )}
 
-      <PayeeFormModal
-        opened={formOpened}
-        onClose={form.close}
-        walletId={walletId}
-        editing={editing}
-        categoryOptions={categories.map((c) => ({ value: String(c.id), label: c.name }))}
-        onSaved={invalidate}
-      />
+      {/* Keyed so each opening mounts a fresh form: the reset was an effect
+          that ran after the first render, showing empty fields for a frame. */}
+      {formOpened && (
+        <PayeeFormModal
+          key={editing?.id ?? "new"}
+          opened
+          onClose={form.close}
+          walletId={walletId}
+          editing={editing}
+          categoryOptions={categories.map((c) => ({ value: String(c.id), label: c.name }))}
+          onSaved={invalidate}
+        />
+      )}
       <MergeModal
         title={t("payees.mergeTitle")}
         source={mergeFrom}
@@ -207,15 +212,12 @@ function PayeeFormModal({
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
-  const [name, setName] = useState("");
-  const [defaultCategory, setDefaultCategory] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!opened) return;
-    setName(editing?.name ?? "");
-    setDefaultCategory(editing?.defaultCategoryId ? String(editing.defaultCategoryId) : null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, editing?.id]);
+  // The form starts where the payee is; the modal is mounted per opening, so
+  // there is nothing to reset afterwards.
+  const [name, setName] = useState(editing?.name ?? "");
+  const [defaultCategory, setDefaultCategory] = useState<string | null>(
+    editing?.defaultCategoryId ? String(editing.defaultCategoryId) : null,
+  );
 
   const save = useMutation({
     mutationFn: () =>

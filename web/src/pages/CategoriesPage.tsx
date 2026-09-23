@@ -16,7 +16,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconCategory, IconDots, IconPlus } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
@@ -156,16 +156,21 @@ export function CategoriesPage() {
         </Card>
       ))}
 
-      <CategoryFormModal
-        opened={formOpened}
-        onClose={form.close}
-        walletId={walletId}
-        editing={editing}
-        presetParent={presetParent}
-        topLevel={tops}
-        onSaved={invalidate}
-      />
+      {/* Keyed so each opening mounts a fresh form. */}
+      {formOpened && (
+        <CategoryFormModal
+          key={`${editing?.id ?? "new"}-${presetParent?.id ?? ""}`}
+          opened
+          onClose={form.close}
+          walletId={walletId}
+          editing={editing}
+          presetParent={presetParent}
+          topLevel={tops}
+          onSaved={invalidate}
+        />
+      )}
       <MergeModal
+        key={`merge-${mergeFrom?.id ?? "none"}`}
         title={t("categories.mergeTitle")}
         source={mergeFrom}
         options={categories
@@ -182,6 +187,7 @@ export function CategoriesPage() {
         }
       />
       <DeleteCategoryModal
+        key={`delete-${deleteTarget?.id ?? "none"}`}
         category={deleteTarget}
         hasChildren={deleteTarget ? childrenOf(deleteTarget.id).length > 0 : false}
         topLevelTargets={tops
@@ -213,29 +219,20 @@ function CategoryFormModal({
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
-  const [name, setName] = useState("");
-  const [isIncome, setIsIncome] = useState(false);
-  const [noBudget, setNoBudget] = useState(false);
-  const [noReport, setNoReport] = useState(false);
-  const [parentId, setParentId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!opened) return;
-    setName(editing?.name ?? "");
-    setIsIncome(editing?.isIncome ?? presetParent?.isIncome ?? false);
-    setNoBudget(editing?.noBudget ?? false);
-    setNoReport(editing?.noReport ?? false);
-    setParentId(
-      editing
-        ? editing.parentId
-          ? String(editing.parentId)
-          : null
-        : presetParent
-          ? String(presetParent.id)
-          : null,
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, editing?.id, presetParent?.id]);
+  // The form starts where the category is; the modal is mounted per opening.
+  const [name, setName] = useState(editing?.name ?? "");
+  const [isIncome, setIsIncome] = useState(editing?.isIncome ?? presetParent?.isIncome ?? false);
+  const [noBudget, setNoBudget] = useState(editing?.noBudget ?? false);
+  const [noReport, setNoReport] = useState(editing?.noReport ?? false);
+  const [parentId, setParentId] = useState<string | null>(
+    editing
+      ? editing.parentId
+        ? String(editing.parentId)
+        : null
+      : presetParent
+        ? String(presetParent.id)
+        : null,
+  );
 
   const isSub = parentId != null;
   const save = useMutation({
@@ -327,8 +324,9 @@ export function MergeModal({
   onMerge: (targetId: number) => void;
 }) {
   const { t } = useTranslation();
+  // Mounted per source (see the key at the call site), so the choice starts
+  // empty for each merge without an effect to clear it.
   const [target, setTarget] = useState<string | null>(null);
-  useEffect(() => setTarget(null), [source?.id]);
 
   return (
     <Modal opened={source !== null} onClose={onClose} title={title}>
@@ -368,8 +366,8 @@ function DeleteCategoryModal({
   pending: boolean;
 }) {
   const { t } = useTranslation();
+  // Mounted per category (see the key at the call site).
   const [reassignTo, setReassignTo] = useState<string | null>(null);
-  useEffect(() => setReassignTo(null), [category?.id]);
 
   return (
     <Modal opened={category !== null} onClose={onClose} title={t("categories.deleteTitle")}>
