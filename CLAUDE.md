@@ -106,6 +106,26 @@ the real container; `docs/` holds user-facing guides.
   `internal/secrets` when `CB_SECRET_KEY` is set. Configuration is `CB_*` env vars, parsed in
   `internal/config`.
 
+## The design spec is the target
+
+The UI is built against a design artefact — the **"CloudBank restyle — style tile"** Artifact,
+whose boards cover foundations, dark, the register, the overview, settings, the secondary pages
+and the entry sheet. `docs/design/` holds the measured extraction of each board: every element
+with its text, position, size, weight, colour and spacing.
+
+**Build to those numbers and verify by measuring the result.** Do not approximate the design from
+a screenshot, and do not nudge an existing page "towards" it one increment at a time — that
+produces something that looks vaguely right and is wrong everywhere. If a page cannot reach the
+design by editing, rebuild it.
+
+Two things that are easy to miss:
+
+- **Read the artefact, not an export of it.** The canvas notes — the yellow stickies — carry the
+  reasoning, and the HTML export drops them. The note that says where the settings gear goes
+  exists only in the artefact's `canvas.json`.
+- **When the app has something the design does not**, say so and ask. Quietly keeping it because
+  removing it feels risky is how the two drift apart.
+
 ## Workflow
 
 One issue → one branch → one PR targeting `main`. Branch prefixes `feat/ chore/ ci/ fix/ test/`;
