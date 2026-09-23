@@ -20,6 +20,13 @@ import { useAuth } from "../auth/AuthProvider";
 import { OnboardingTourProvider } from "../onboarding/TourProvider";
 import { useWallet } from "../wallet/WalletProvider";
 import { AppFooter } from "./AppFooter";
+import {
+  SIDEBAR_BLOCK_GAP,
+  SIDEBAR_PAD_X,
+  SIDEBAR_PAD_Y,
+  SIDEBAR_RAIL_WIDTH,
+  SIDEBAR_WIDTH,
+} from "./shellTheme";
 import { Logo } from "./Logo";
 import { SidebarFoot } from "./SidebarFoot";
 import { SidebarHead } from "./SidebarHead";
@@ -69,7 +76,11 @@ export function AppLayout() {
         // its header. A phone still needs somewhere to open the drawer from, so
         // the bar survives there and only there.
         header={{ height: 48, collapsed: !!isDesktop }}
-        navbar={{ width: railMode ? 64 : 240, breakpoint: "sm", collapsed: { mobile: !opened } }}
+        navbar={{
+          width: railMode ? SIDEBAR_RAIL_WIDTH : SIDEBAR_WIDTH,
+          breakpoint: "sm",
+          collapsed: { mobile: !opened },
+        }}
         footer={{ height: 36 }}
         padding="md"
       >
@@ -88,11 +99,15 @@ export function AppLayout() {
           </Group>
         </AppShell.Header>
 
-        <AppShell.Navbar p="sm" data-tour="nav">
+        <AppShell.Navbar
+          className="cb-sidebar"
+          data-tour="nav"
+          style={{ padding: `${SIDEBAR_PAD_Y}px ${SIDEBAR_PAD_X}px` }}
+        >
           {/* The nav scrolls; the foot does not. Settings is the one
               destination reachable from anywhere, so it must not depend on how
               far down a long list of pages the reader has scrolled. */}
-          <Stack h="100%" gap="xs" justify="space-between">
+          <Stack h="100%" gap={SIDEBAR_BLOCK_GAP} justify="space-between">
             <SidebarHead
               railMode={railMode}
               onToggleCollapse={toggleCollapsed}

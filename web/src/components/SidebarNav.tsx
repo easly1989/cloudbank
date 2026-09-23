@@ -15,6 +15,8 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink as RouterNavLink } from "react-router-dom";
 
+import { NAV } from "./shellTheme";
+
 import { listAccounts } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { formatMinor } from "../money";
@@ -120,19 +122,22 @@ export function SidebarNav({
   }
 
   return (
-    <Stack gap={2}>
+    // A group break is sixteen pixels; between siblings there is one. That gap
+    // is the whole of the grouping — no rules, no boxes — so the two have to be
+    // clearly different sizes or the list reads as one undifferentiated column.
+    <Stack gap={NAV.groupGap}>
       <NavItemLink item={home} onNavigate={onNavigate} />
       {groups.map((g) => {
         const isCollapsed = collapsed.has(g.id);
         return (
-          <Box key={g.id} mt="xs">
+          <Box key={g.id}>
             <UnstyledButton
               onClick={() => toggle(g.id)}
               aria-expanded={!isCollapsed}
               style={{ width: "100%" }}
             >
-              <Group gap={4} px="xs" py={4} justify="space-between" wrap="nowrap">
-                <Text size="xs" c="dimmed" fw={600} truncate>
+              <Group gap={4} justify="space-between" wrap="nowrap" className="cb-nav-group-label">
+                <Text inherit truncate>
                   {g.label}
                 </Text>
                 {isCollapsed ? (
@@ -143,7 +148,7 @@ export function SidebarNav({
               </Group>
             </UnstyledButton>
             <Collapse expanded={!isCollapsed}>
-              <Stack gap={2}>
+              <Stack gap={NAV.itemGap}>
                 {g.entries.map((e) =>
                   "sep" in e ? (
                     <Divider key={e.key} my={4} />

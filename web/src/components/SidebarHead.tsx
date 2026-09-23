@@ -1,4 +1,4 @@
-import { ActionIcon, Box, Group, Menu, Stack, Text, Tooltip, UnstyledButton } from "@mantine/core";
+import { ActionIcon, Group, Menu, Stack, Text, Tooltip, UnstyledButton } from "@mantine/core";
 import {
   IconLayoutSidebarLeftExpand,
   IconPlus,
@@ -14,6 +14,7 @@ import { formatMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
 import { GlobalSearch } from "./GlobalSearch";
 import { Logo } from "./Logo";
+import { BRAND, WALLET_CARD } from "./shellTheme";
 
 // The head of the sidebar: the product, the wallet you are in, and the way to
 // find something in it.
@@ -69,14 +70,14 @@ export function SidebarHead({
   }
 
   return (
-    <Stack gap="xs" mb="xs">
+    <Stack gap="xs">
       {/* Nothing shares this row. The tile gives the product a 22px mark, a
           16px/700 name and nine pixels between them, and it reads as roomy
           precisely because nothing else competes for the width — the collapse
           control lives at the foot of the sidebar with the other chrome. */}
-      <Group gap={9} wrap="nowrap" style={{ minWidth: 0 }} pt={6} pb={2}>
-        <Logo size={24} />
-        <Text fw={700} size="md" truncate>
+      <Group gap={BRAND.gap} wrap="nowrap" h={BRAND.mark} px={BRAND.inset} style={{ minWidth: 0 }}>
+        <Logo size={BRAND.mark} />
+        <Text fz={BRAND.fz} fw={BRAND.fw} truncate>
           {t("app.name")}
         </Text>
       </Group>
@@ -88,25 +89,32 @@ export function SidebarHead({
               aria-label={t("wallet.switch")}
               className="cb-wallet-card"
               data-tour="wallet"
+              h={WALLET_CARD.height}
             >
-              <Group justify="space-between" wrap="nowrap" gap="xs" align="flex-end">
-                <Box style={{ minWidth: 0 }}>
-                  <Text size="xs" c="dimmed" lh={1.2}>
-                    {t("wallet.label")}
-                  </Text>
-                  <Group gap={4} wrap="nowrap">
-                    <Text size="sm" fw={600} truncate>
+              <Stack gap={WALLET_CARD.gap}>
+                <Text fz={WALLET_CARD.label.fz} c="dimmed" lh={1.2}>
+                  {t("wallet.label")}
+                </Text>
+                <Group justify="space-between" wrap="nowrap" gap="xs" align="baseline">
+                  <Group gap={4} wrap="nowrap" style={{ minWidth: 0 }}>
+                    <Text fz={WALLET_CARD.name.fz} fw={WALLET_CARD.name.fw} lh={1.2} truncate>
                       {currentWallet.title}
                     </Text>
                     <IconSelector size={14} opacity={0.6} />
                   </Group>
-                </Box>
-                {base && balance != null && (
-                  <Text size="xs" c="dimmed" ff="monospace" style={{ whiteSpace: "nowrap" }}>
-                    {formatMinor(balance, base)}
-                  </Text>
-                )}
-              </Group>
+                  {base && balance != null && (
+                    <Text
+                      fz={WALLET_CARD.balance.fz}
+                      c="dimmed"
+                      lh={1.2}
+                      ff="monospace"
+                      style={{ whiteSpace: "nowrap" }}
+                    >
+                      {formatMinor(balance, base)}
+                    </Text>
+                  )}
+                </Group>
+              </Stack>
             </UnstyledButton>
           </Menu.Target>
           <Menu.Dropdown>

@@ -2,9 +2,9 @@ import {
   ActionIcon,
   Avatar,
   Box,
-  Divider,
   Group,
   Menu,
+  Stack,
   Text,
   Tooltip,
   UnstyledButton,
@@ -15,6 +15,7 @@ import { Link } from "react-router-dom";
 
 import { useAuth, useLogout } from "../auth/AuthProvider";
 import { DonateButton } from "./DonateButton";
+import { FOOT } from "./shellTheme";
 
 // The foot of the sidebar: support, and who you are signed in as.
 //
@@ -44,8 +45,7 @@ export function SidebarFoot({
 
   if (railMode) {
     return (
-      <Box>
-        <Divider mb="xs" />
+      <Box pt={FOOT.padTop}>
         <Group justify="center" gap={6}>
           <Tooltip label={gearLabel} position="right" withinPortal>
             <ActionIcon
@@ -67,18 +67,21 @@ export function SidebarFoot({
   }
 
   return (
-    <Box>
-      <Divider mb="xs" />
+    <Stack gap={FOOT.gap} pt={FOOT.padTop}>
       <DonateButton fullWidth />
-      <Group justify="space-between" wrap="nowrap" gap="xs" mt="xs">
+      <Group justify="space-between" wrap="nowrap" gap="xs" h={FOOT.user.height}>
         <Menu position="top-start" withinPortal>
           <Menu.Target>
-            <UnstyledButton aria-label={user?.username} style={{ minWidth: 0 }}>
-              <Group gap="xs" wrap="nowrap">
-                <Avatar radius="xl" size={28} color="teal.9" variant="filled">
+            <UnstyledButton
+              aria-label={user?.username}
+              style={{ minWidth: 0 }}
+              px={FOOT.user.inset}
+            >
+              <Group gap={FOOT.user.gap} wrap="nowrap">
+                <Avatar radius="xl" size={24} color="teal.9" variant="filled">
                   {initials}
                 </Avatar>
-                <Text size="sm" truncate>
+                <Text fz={FOOT.user.fz} truncate>
                   {user?.username}
                 </Text>
               </Group>
@@ -121,6 +124,6 @@ export function SidebarFoot({
           </Tooltip>
         </Group>
       </Group>
-    </Box>
+    </Stack>
   );
 }

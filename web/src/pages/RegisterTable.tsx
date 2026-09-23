@@ -665,12 +665,7 @@ export function RegisterTable({
               {/* The date is in the accent, because this line is an invitation
                   rather than a record: it is the only date on the page that has
                   not happened yet. */}
-              <Text
-                ff="monospace"
-                c="var(--mantine-primary-color-filled)"
-                fz={ROW_TYPE.date.fz}
-                fw={500}
-              >
+              <Text ff="monospace" c="var(--cb-accent-text)" fz={ROW_TYPE.date.fz} fw={500}>
                 {fmtDate(todayCivil())}
               </Text>
               <Text fz={ROW_TYPE.newEntry.fz} c="dimmed" truncate style={{ gridColumn: "span 2" }}>
