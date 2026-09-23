@@ -22,7 +22,7 @@ export function BalanceSparklineCard({
   onConfig: (c: { accountId?: number }) => void;
 }) {
   const { t } = useTranslation();
-  const { from, to } = useMemo(trailingYearBounds, []);
+  const { from, to } = useMemo(() => trailingYearBounds(), []);
   const accountsQ = useQuery({
     queryKey: ["accounts", walletId],
     queryFn: () => listAccounts(walletId),
@@ -36,9 +36,13 @@ export function BalanceSparklineCard({
     queryFn: () => getBalanceReport(walletId, "month", [account!.id], from, to),
     enabled: walletId > 0 && !!account,
   });
-  const buckets = q.data?.buckets ?? [];
-  const values = q.data?.series?.[0]?.values ?? [];
-  const base = q.data?.currency ?? undefined;
+  // `?? []` hands back a new array each render, so the chart option below was
+  // rebuilt every time and its useMemo did nothing. Memoised here, where the
+  // fallback is created, rather than in each reader.
+  const data = q.data;
+  const buckets = useMemo(() => data?.buckets ?? [], [data]);
+  const values = useMemo(() => data?.series?.[0]?.values ?? [], [data]);
+  const base = data?.currency ?? undefined;
 
   const option: EChartsOption = useMemo(
     () => ({
