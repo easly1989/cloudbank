@@ -162,9 +162,9 @@ body {
 .cb-search-row {
   display: block;
   width: 100%;
-  padding: 8px 10px;
-  border-radius: var(--mantine-radius-md);
-  border: 1px solid var(--mantine-color-default-border);
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--cb-shell-card-border);
   background: var(--mantine-color-body);
   transition:
     background-color 140ms ease,
@@ -175,7 +175,7 @@ body {
   background: var(--mantine-color-default-hover);
 }
 .cb-search-row {
-  padding: 6px 10px;
+  padding: 7px 12px;
 }
 @media (prefers-reduced-motion: reduce) {
   .cb-wallet-card,
@@ -240,4 +240,70 @@ body {
   --cb-band-new: #1b2330;
   --cb-band-divider: #1a212b;
   --cb-band-bulk: #18243c;
+}
+
+/* The sidebar is the whole of the chrome, so it is a surface of its own: a
+   recessed rail the pages sit beside, not a panel floating on them. The tile
+   gives it #f6f7f9 against white; dark keeps the same relation, one step below
+   the card surface rather than above it. */
+:root {
+  --cb-shell-bg: #f6f7f9;
+  --cb-shell-border: #e2e6ec;
+  --cb-shell-card-border: #cbd2dc;
+  --cb-nav-label: #67707e;
+  --cb-nav-item: #4a5462;
+  /* The accent as text. Mantine's filled primary is a button background and is
+     far too dark to read on a dark surface, so anything that writes in the
+     accent uses this instead. */
+  --cb-accent-text: #1c46ae;
+  --cb-nav-active: var(--cb-accent-text);
+  --cb-nav-active-bg: #eaf0fe;
+}
+:root[data-mantine-color-scheme="dark"] {
+  --cb-shell-bg: #11161d;
+  --cb-shell-border: #232b37;
+  --cb-shell-card-border: #2e3847;
+  --cb-nav-label: #a6b0bf;
+  --cb-nav-item: #a6b0bf;
+  --cb-accent-text: #7aa2ff;
+  --cb-nav-active: var(--cb-accent-text);
+  --cb-nav-active-bg: #182440;
+}
+
+.cb-sidebar {
+  background: var(--cb-shell-bg);
+  border-right: 1px solid var(--cb-shell-border);
+}
+
+/* Navigation items: 32 high on a 33px pitch, so a group break (16) reads as a
+   break and the single pixel between siblings does not. */
+.cb-sidebar .mantine-NavLink-root {
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 7px;
+  color: var(--cb-nav-item);
+  font-size: 14px;
+}
+.cb-sidebar .mantine-NavLink-section {
+  margin-inline-end: 10px;
+}
+.cb-sidebar .mantine-NavLink-label {
+  font-size: 14px;
+}
+/* The current page. React Router marks it with aria-current, which is also the
+   honest hook: the highlight and the thing a screen reader announces are then
+   the same fact, rather than two that can drift. */
+.cb-sidebar .mantine-NavLink-root[aria-current="page"] {
+  background: var(--cb-nav-active-bg);
+  color: var(--cb-nav-active);
+  font-weight: 600;
+}
+.cb-sidebar .mantine-NavLink-root[aria-current="page"] .mantine-NavLink-label {
+  font-weight: 600;
+}
+.cb-nav-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cb-nav-label);
+  padding: 0 8px 6px;
 }
