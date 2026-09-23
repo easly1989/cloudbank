@@ -14,7 +14,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconFileText, IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/confirmContext";
 import { EmptyState } from "../components/EmptyState";
@@ -176,30 +176,33 @@ export function TemplatesPage() {
         </Table>
       )}
 
-      <TemplateFormModal
-        opened={formOpened}
-        onClose={form.close}
-        walletId={walletId}
-        editing={editing}
-        accounts={accounts}
-        onSaved={() => {
-          invalidate();
-          form.close();
-        }}
-      />
+      {/* Mounted per opening: the key gives every template — and the new-template
+          form — its own instance, so the fields start where the template is
+          instead of being reset back to it by an effect. */}
+      {formOpened && (
+        <TemplateFormModal
+          key={editing?.id ?? "new"}
+          onClose={form.close}
+          walletId={walletId}
+          editing={editing}
+          accounts={accounts}
+          onSaved={() => {
+            invalidate();
+            form.close();
+          }}
+        />
+      )}
     </Stack>
   );
 }
 
 function TemplateFormModal({
-  opened,
   onClose,
   walletId,
   editing,
   accounts,
   onSaved,
 }: {
-  opened: boolean;
   onClose: () => void;
   walletId: number;
   editing: Template | null;
@@ -219,45 +222,40 @@ function TemplateFormModal({
   const payees = payeesQuery.data ?? [];
   const categories = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data]);
 
-  const [name, setName] = useState("");
-  const [accountId, setAccountId] = useState<string | null>(null);
-  const [direction, setDirection] = useState<"expense" | "income">("expense");
-  const [amount, setAmount] = useState("");
-  const [payeeId, setPayeeId] = useState<string | null>(null);
-  const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [memo, setMemo] = useState("");
-  const [paymentMode, setPaymentMode] = useState("0");
-  const [status, setStatus] = useState("0");
+  const [name, setName] = useState(editing?.name ?? "");
+  // The form starts where the template is; the modal is mounted per opening.
+  const startAccount =
+    editing?.accountId != null
+      ? accounts.find((a) => a.id === editing.accountId)
+      : (accounts[0] ?? undefined);
+  const [accountId, setAccountId] = useState<string | null>(
+    startAccount ? String(startAccount.id) : null,
+  );
+  const [direction, setDirection] = useState<"expense" | "income">(
+    (editing?.amount ?? 0) < 0 || !editing ? "expense" : "income",
+  );
+  const [amount, setAmount] = useState(() =>
+    editing && editing.amount !== 0
+      ? formatMinor(Math.abs(editing.amount), {
+          ...accountFormat(startAccount),
+          groupChar: "",
+          symbol: "",
+        })
+      : "",
+  );
+  const [payeeId, setPayeeId] = useState<string | null>(
+    editing?.payeeId != null ? String(editing.payeeId) : null,
+  );
+  const [categoryId, setCategoryId] = useState<string | null>(
+    editing?.categoryId != null ? String(editing.categoryId) : null,
+  );
+  const [memo, setMemo] = useState(editing?.memo ?? "");
+  const [paymentMode, setPaymentMode] = useState(String(editing?.paymentMode ?? 0));
+  const [status, setStatus] = useState(String(editing?.status ?? 0));
 
   // A split or transfer template carries structure this form does not edit; we
   // preserve those fields and only allow renaming / changing the memo.
   const complex = !!(editing?.isSplit || editing?.isTransfer);
-
-  useEffect(() => {
-    if (!opened) return;
-    const acc =
-      editing?.accountId != null
-        ? accounts.find((a) => a.id === editing.accountId)
-        : (accounts[0] ?? undefined);
-    setName(editing?.name ?? "");
-    setAccountId(acc ? String(acc.id) : null);
-    setDirection((editing?.amount ?? 0) < 0 || !editing ? "expense" : "income");
-    setAmount(
-      editing && editing.amount !== 0
-        ? formatMinor(Math.abs(editing.amount), {
-            ...accountFormat(acc),
-            groupChar: "",
-            symbol: "",
-          })
-        : "",
-    );
-    setPayeeId(editing?.payeeId != null ? String(editing.payeeId) : null);
-    setCategoryId(editing?.categoryId != null ? String(editing.categoryId) : null);
-    setMemo(editing?.memo ?? "");
-    setPaymentMode(String(editing?.paymentMode ?? 0));
-    setStatus(String(editing?.status ?? 0));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, editing?.id]);
 
   const onPayee = (v: string | null) => {
     setPayeeId(v);
@@ -321,11 +319,7 @@ function TemplateFormModal({
   });
 
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={editing ? t("templates.edit") : t("templates.create")}
-    >
+    <Modal opened onClose={onClose} title={editing ? t("templates.edit") : t("templates.create")}>
       <Stack>
         <TextInput
           label={t("templates.name")}

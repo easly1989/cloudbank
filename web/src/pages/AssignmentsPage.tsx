@@ -16,7 +16,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconFilter, IconGripVertical, IconPencil, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/confirmContext";
 import { EmptyState } from "../components/EmptyState";
@@ -68,9 +68,15 @@ export function AssignmentsPage() {
     queryFn: () => listCategories(walletId),
   });
 
-  // A local ordered copy so drag-reorder feels instant; synced from the query.
-  const [order, setOrder] = useState<Assignment[]>([]);
-  useEffect(() => setOrder(query.data ?? []), [query.data]);
+  // A local ordered copy so drag-reorder feels instant; adopted from the query
+  // during render rather than in an effect, so the list never paints one frame
+  // of the previous order after a save lands.
+  const [order, setOrder] = useState<Assignment[]>(query.data ?? []);
+  const [seenRules, setSeenRules] = useState(query.data);
+  if (query.data !== seenRules) {
+    setSeenRules(query.data);
+    setOrder(query.data ?? []);
+  }
   const [dragId, setDragId] = useState<number | null>(null);
 
   const invalidate = () => void qc.invalidateQueries({ queryKey: ["assignments", walletId] });
@@ -268,21 +274,25 @@ export function AssignmentsPage() {
         </Table>
       )}
 
-      <RuleForm
-        opened={opened}
-        onClose={form.close}
-        walletId={walletId}
-        editing={editing}
-        payees={payeesQuery.data ?? []}
-        categories={categoriesQuery.data ?? []}
-        onSaved={invalidate}
-      />
+      {/* Mounted per opening: the key gives every rule — and the new-rule form —
+          its own instance, so the fields start where the rule is instead of
+          being reset back to it by an effect. */}
+      {opened && (
+        <RuleForm
+          key={editing?.id ?? "new"}
+          onClose={form.close}
+          walletId={walletId}
+          editing={editing}
+          payees={payeesQuery.data ?? []}
+          categories={categoriesQuery.data ?? []}
+          onSaved={invalidate}
+        />
+      )}
     </Stack>
   );
 }
 
 function RuleForm({
-  opened,
   onClose,
   walletId,
   editing,
@@ -290,7 +300,6 @@ function RuleForm({
   categories,
   onSaved,
 }: {
-  opened: boolean;
   onClose: () => void;
   walletId: number;
   editing: Assignment | null;
@@ -300,17 +309,25 @@ function RuleForm({
 }) {
   const { t } = useTranslation();
 
-  const [matchField, setMatchField] = useState<MatchField>("memo");
-  const [matchType, setMatchType] = useState<MatchType>("contains");
-  const [pattern, setPattern] = useState("");
-  const [caseSensitive, setCaseSensitive] = useState(false);
-  const [matchAccountId, setMatchAccountId] = useState<string | null>(null);
-  const [setPayeeId, setSetPayeeId] = useState<string | null>(null);
-  const [setCategoryId, setSetCategoryId] = useState<string | null>(null);
-  const [setPaymentMode, setSetPaymentMode] = useState<string | null>(null);
-  const [setInfo, setSetInfo] = useState("");
-  const [applyOnManual, setApplyOnManual] = useState(true);
-  const [applyOnImport, setApplyOnImport] = useState(true);
+  const [matchField, setMatchField] = useState<MatchField>(editing?.matchField ?? "memo");
+  const [matchType, setMatchType] = useState<MatchType>(editing?.matchType ?? "contains");
+  const [pattern, setPattern] = useState(editing?.pattern ?? "");
+  const [caseSensitive, setCaseSensitive] = useState(editing?.caseSensitive ?? false);
+  const [matchAccountId, setMatchAccountId] = useState<string | null>(
+    editing?.matchAccountId ? String(editing.matchAccountId) : null,
+  );
+  const [setPayeeId, setSetPayeeId] = useState<string | null>(
+    editing?.setPayeeId ? String(editing.setPayeeId) : null,
+  );
+  const [setCategoryId, setSetCategoryId] = useState<string | null>(
+    editing?.setCategoryId ? String(editing.setCategoryId) : null,
+  );
+  const [setPaymentMode, setSetPaymentMode] = useState<string | null>(
+    editing?.setPaymentMode != null ? String(editing.setPaymentMode) : null,
+  );
+  const [setInfo, setSetInfo] = useState(editing?.setInfo ?? "");
+  const [applyOnManual, setApplyOnManual] = useState(editing?.applyOnManual ?? true);
+  const [applyOnImport, setApplyOnImport] = useState(editing?.applyOnImport ?? true);
   const [testResult, setTestResult] = useState<MatchedTransaction[] | null>(null);
 
   const accountsQuery = useQuery({
@@ -319,23 +336,6 @@ function RuleForm({
     enabled: walletId > 0,
   });
   const accounts = accountsQuery.data ?? [];
-
-  useEffect(() => {
-    if (!opened) return;
-    const e = editing;
-    setMatchField(e?.matchField ?? "memo");
-    setMatchType(e?.matchType ?? "contains");
-    setPattern(e?.pattern ?? "");
-    setCaseSensitive(e?.caseSensitive ?? false);
-    setMatchAccountId(e?.matchAccountId ? String(e.matchAccountId) : null);
-    setSetPayeeId(e?.setPayeeId ? String(e.setPayeeId) : null);
-    setSetCategoryId(e?.setCategoryId ? String(e.setCategoryId) : null);
-    setSetPaymentMode(e?.setPaymentMode != null ? String(e.setPaymentMode) : null);
-    setSetInfo(e?.setInfo ?? "");
-    setApplyOnManual(e?.applyOnManual ?? true);
-    setApplyOnImport(e?.applyOnImport ?? true);
-    setTestResult(null);
-  }, [opened, editing]);
 
   const body = (): AssignmentInput => ({
     matchField,
@@ -388,7 +388,7 @@ function RuleForm({
 
   return (
     <Modal
-      opened={opened}
+      opened
       onClose={onClose}
       title={editing ? t("assignments.editTitle") : t("assignments.addTitle")}
     >

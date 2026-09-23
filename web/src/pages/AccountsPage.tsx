@@ -18,7 +18,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconPencil, IconReportMoney, IconTrash, IconWallet } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/confirmContext";
 import { AssetValuationsModal } from "../components/AssetValuationsModal";
@@ -238,13 +238,19 @@ export function AccountsPage() {
         />
       )}
 
-      <AccountModal
-        opened={modalOpened}
-        onClose={modal.close}
-        walletId={walletId}
-        account={editing}
-        onSaved={invalidate}
-      />
+      {/* Keyed so that opening the modal mounts a fresh form: the reset used to
+          be an effect that ran after the first render, which showed empty
+          fields for a frame and cost a render to fix. */}
+      {modalOpened && (
+        <AccountModal
+          key={editing?.id ?? "new"}
+          opened
+          onClose={modal.close}
+          walletId={walletId}
+          account={editing}
+          onSaved={invalidate}
+        />
+      )}
 
       {valuationsFor && (
         <AssetValuationsModal
@@ -280,36 +286,31 @@ function AccountModal({
   });
   const currencies = currenciesQuery.data ?? [];
   const base = currencies.find((c) => c.isBase);
+  // An amount as the reader types it, in the account's own currency.
+  const amountField = (minor?: number) => {
+    if (account == null || minor == null) return "";
+    const cur = currencies.find((c) => c.id === (account.currencyId ?? base?.id));
+    return minorToInput(minor, cur?.fracDigits ?? 2, cur?.decimalChar ?? ".");
+  };
 
-  const [name, setName] = useState("");
-  const [type, setType] = useState<AccountType>("bank");
-  const [currencyId, setCurrencyId] = useState<string | null>(null);
-  const [institution, setInstitution] = useState("");
-  const [number, setNumber] = useState("");
-  const [initial, setInitial] = useState("");
-  const [minimum, setMinimum] = useState("");
-  const [closed, setClosed] = useState(false);
-  const [groupName, setGroupName] = useState("");
-  const [defaultPaymentMode, setDefaultPaymentMode] = useState("0");
-
-  // Reset the form whenever the modal opens for a (different) account.
-  useEffect(() => {
-    if (!opened) return;
-    setName(account?.name ?? "");
-    setType(account?.type ?? "bank");
-    setCurrencyId(String(account?.currencyId ?? base?.id ?? ""));
-    setInstitution(account?.institution ?? "");
-    setNumber(account?.number ?? "");
-    setGroupName(account?.groupName ?? "");
-    setClosed(account?.closed ?? false);
-    setDefaultPaymentMode(String(account?.defaultPaymentMode ?? 0));
-    const cur = currencies.find((c) => c.id === (account?.currencyId ?? base?.id));
-    const fd = cur?.fracDigits ?? 2;
-    const dc = cur?.decimalChar ?? ".";
-    setInitial(account ? minorToInput(account.initialBalance, fd, dc) : "");
-    setMinimum(account ? minorToInput(account.minimumBalance, fd, dc) : "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, account?.id]);
+  // The form starts where the account is. It used to start empty and be filled
+  // in by an effect on open, which is a second render and a frame of empty
+  // fields; the modal is mounted per opening now (see its `key` at the call
+  // site), so initialising from the account is both simpler and correct.
+  const [name, setName] = useState(account?.name ?? "");
+  const [type, setType] = useState<AccountType>(account?.type ?? "bank");
+  const [currencyId, setCurrencyId] = useState<string | null>(
+    String(account?.currencyId ?? base?.id ?? ""),
+  );
+  const [institution, setInstitution] = useState(account?.institution ?? "");
+  const [number, setNumber] = useState(account?.number ?? "");
+  const [initial, setInitial] = useState(() => amountField(account?.initialBalance));
+  const [minimum, setMinimum] = useState(() => amountField(account?.minimumBalance));
+  const [closed, setClosed] = useState(account?.closed ?? false);
+  const [groupName, setGroupName] = useState(account?.groupName ?? "");
+  const [defaultPaymentMode, setDefaultPaymentMode] = useState(
+    String(account?.defaultPaymentMode ?? 0),
+  );
 
   const selectedCurrency = currencies.find((c) => String(c.id) === currencyId);
   const fd = selectedCurrency?.fracDigits ?? 2;
