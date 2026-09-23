@@ -410,6 +410,7 @@ export function DashboardPage() {
 
       <Group justify="space-between" align="center" wrap="wrap" gap="sm">
         <SegmentedControl
+          className="cb-period-switch"
           aria-label={t("dashboard.period")}
           value={pagePeriod}
           onChange={(v) => persistPeriod.mutate(v as DatePreset)}
