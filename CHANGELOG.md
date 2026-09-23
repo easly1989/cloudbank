@@ -50,6 +50,23 @@ dashboard polish.
   to read; a status is now a word with a small coloured dot, and the colour
   still carries the meaning.
 
+- **The overview answers the question you opened it for.** It led with three
+  bordered cards of balances and a donut. It now leads with one figure at forty
+  pixels — what you have — and beside it what the period earned, spent and kept,
+  so the balance has an explanation next to it rather than two more balances.
+  The period is a row of segments (month through all time) instead of a dropdown,
+  because five choices switched constantly deserve one click each.
+
+  The widgets below lost their frames. A dozen bordered rectangles read as a
+  form; as sections separated by air and a hairline, the figures inside go back
+  to being the subject. "Where your money goes" is a list of rows now — name,
+  amount, and a bar scaled against the largest — which survives being a third of
+  the page wide, where a donut and its legend did not.
+
+  Which balances appear is yours: Settings offers today, reconciled and after
+  everything scheduled, and the ones you pick show on the overview and above the
+  register both.
+
 - **The gear is where it was drawn.** The style tile put it at the foot of the
   sidebar, beside your name; it had shipped as an entry at the end of the
   navigation list, which on a 1280x720 laptop sits 126px below the fold. The
