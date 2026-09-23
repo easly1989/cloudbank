@@ -101,8 +101,11 @@ test.describe("mobile navigation drawer", () => {
     await expect.poll(async () => (await navbar.boundingBox())?.x ?? -999).toBeGreaterThan(-5);
 
     // Selecting a destination navigates AND closes the drawer.
-    await page.getByRole("link", { name: "Settings", exact: true }).first().click();
-    await expect(page).toHaveURL(/\/settings/);
+    // A destination inside the shell: Settings is its own screen now and takes
+    // the whole navbar with it, which would pass this assertion for the wrong
+    // reason.
+    await page.getByRole("link", { name: "Accounts", exact: true }).first().click();
+    await expect(page).toHaveURL(/\/accounts/);
     await expect.poll(async () => (await navbar.boundingBox())?.x ?? 0).toBeLessThan(0);
   });
 });

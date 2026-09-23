@@ -60,9 +60,25 @@ const BankSyncCallback = lazy(() =>
 const ReportsPage = lazy(() =>
   import("./pages/ReportsPage").then((m) => ({ default: m.ReportsPage })),
 );
-const SettingsPage = lazy(() =>
-  import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+// Settings is its own screen with its own shell, so it sits outside AppLayout
+// and loads as one chunk: its sections are small and always visited together.
+const SettingsLayout = lazy(() =>
+  import("./pages/settings/SettingsLayout").then((m) => ({ default: m.SettingsLayout })),
 );
+const settingsSection = (name: keyof typeof import("./pages/settings/SettingsSections")) =>
+  lazy(() => import("./pages/settings/SettingsSections").then((m) => ({ default: m[name] })));
+const LegacySettingsRedirect = lazy(() =>
+  import("./pages/settings/LegacySettingsRedirect").then((m) => ({
+    default: m.LegacySettingsRedirect,
+  })),
+);
+const GeneralSection = settingsSection("GeneralSection");
+const AppearanceSection = settingsSection("AppearanceSection");
+const WalletSection = settingsSection("WalletSection");
+const SecuritySection = settingsSection("SecuritySection");
+const IntegrationsSection = settingsSection("IntegrationsSection");
+const DataSection = settingsSection("DataSection");
+const PeopleSection = settingsSection("PeopleSection");
 const CurrenciesPage = lazy(() =>
   import("./pages/CurrenciesPage").then((m) => ({ default: m.CurrenciesPage })),
 );
@@ -153,16 +169,32 @@ function AuthenticatedApp() {
         <Route path="bank-sync/callback" element={<BankSyncCallback />} />
         <Route path="review" element={<ReviewPage />} />
         <Route path="reports" element={<ReportsPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-        <Route path="wallet" element={<Navigate to="/settings?tab=wallet" replace />} />
-        <Route path="admin/users" element={<Navigate to="/settings?tab=people" replace />} />
+        <Route path="wallet" element={<Navigate to="/settings/wallet" replace />} />
+        <Route path="admin/users" element={<Navigate to="/settings/people" replace />} />
         <Route path="wallet/new" element={<CreateWalletPage />} />
-        <Route
-          path="import"
-          element={<Navigate to="/settings?tab=wallet&section=import" replace />}
-        />
+        <Route path="import" element={<Navigate to="/settings/data" replace />} />
         <Route path="currencies" element={<CurrenciesPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+      {/* Outside AppLayout, so it needs its own Suspense: the layout chunk and
+          each section chunk both load behind this one boundary. */}
+      <Route
+        path="/settings"
+        element={
+          <Suspense fallback={<FullScreenLoader />}>
+            <SettingsLayout />
+          </Suspense>
+        }
+      >
+        <Route index element={<LegacySettingsRedirect />} />
+        <Route path="general" element={<GeneralSection />} />
+        <Route path="appearance" element={<AppearanceSection />} />
+        <Route path="wallet" element={<WalletSection />} />
+        <Route path="security" element={<SecuritySection />} />
+        <Route path="integrations" element={<IntegrationsSection />} />
+        <Route path="data" element={<DataSection />} />
+        <Route path="people" element={<PeopleSection />} />
+        <Route path="*" element={<Navigate to="/settings/general" replace />} />
       </Route>
     </Routes>
   );
