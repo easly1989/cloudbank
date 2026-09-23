@@ -625,7 +625,15 @@
       "show": "Show names and amounts"
     },
     "moveColumnLeft": "Move this column left",
-    "moveColumnRight": "Move this column right"
+    "moveColumnRight": "Move this column right",
+    "import": "Import",
+    "moreActions": "More actions",
+    "search": "Search the register",
+    "columnsHint": "Yours, and remembered.",
+    "columnsReset": "Reset",
+    "newEntry": "New entry — start typing, or press N",
+    "needsCategory": "Needs a category",
+    "reconciledUpToHere": "reconciled up to here"
   },
   "filters": {
     "dateRange": "Date range",
@@ -653,6 +661,23 @@
       "last90": "Last 90 days",
       "custom": "Custom range",
       "thisHalf": "This half-year"
+    },
+    "chip": {
+      "text": "Text",
+      "status": "Status",
+      "payee": "Payee",
+      "category": "Category",
+      "tags": "Tags",
+      "amountMin": "Minimum amount",
+      "amountMax": "Maximum amount",
+      "hideFuture": "Today and earlier",
+      "transfers": {
+        "only": "Transfers only",
+        "none": "No transfers"
+      },
+      "noFlags": "Unflagged",
+      "uncategorised": "Uncategorised",
+      "remove": "Remove the {{name}} filter"
     }
   },
   "bulk": {
@@ -727,7 +752,9 @@
     "signIn": "Sign in",
     "signOut": "Sign out",
     "language": "Language",
-    "toggleTheme": "Toggle color scheme"
+    "toggleTheme": "Toggle color scheme",
+    "done": "Done",
+    "close": "Close"
   },
   "valuations": {
     "title": "Valuations — {{name}}",

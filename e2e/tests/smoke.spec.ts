@@ -47,12 +47,17 @@ test("full journey: setup → wallet → account → transaction → import → 
     await expect(page.getByRole("cell", { name: "Checking" })).toBeVisible();
   });
 
-  await test.step("quick-add a transaction", async () => {
+  await test.step("add a transaction from the first row of the ledger", async () => {
     await nav(page, "Transactions");
-    // The single account is auto-selected; fill the quick-add row.
-    await page.getByLabel("Date", { exact: true }).fill("2026-02-01");
-    await page.getByLabel("Amount", { exact: true }).fill("12.50");
-    await page.getByRole("button", { name: "Add", exact: true }).click();
+    // The way in is the first line of the register, where the transaction will
+    // land; it opens the entry sheet beside the rows.
+    await page.getByRole("button", { name: /New entry/ }).click();
+    const sheet = page.getByRole("dialog");
+    await sheet.getByLabel("Date", { exact: true }).fill("2026-02-01");
+    await sheet.getByLabel("Amount", { exact: true }).fill("12.50");
+    // "Save" keeps the sheet open for the next entry, which is the point of a
+    // side panel; "Save & close" is the one that puts it away.
+    await sheet.getByRole("button", { name: "Save & close", exact: true }).click();
     // The new row shows in the register.
     await expect(page.getByText("2026-02-01")).toBeVisible();
   });
@@ -71,7 +76,10 @@ test("full journey: setup → wallet → account → transaction → import → 
   });
 
   await test.step("enter and cancel the reconcile workflow", async () => {
-    await page.getByRole("button", { name: "Reconcile" }).click();
+    // Reconciling is a workflow, not one of the register's two headline
+    // actions, so it lives in the header's overflow menu.
+    await page.getByRole("button", { name: "More actions" }).click();
+    await page.getByRole("menuitem", { name: "Reconcile" }).click();
     await expect(page.getByLabel("Statement balance")).toBeVisible();
     await page.getByRole("button", { name: "Cancel" }).click();
   });

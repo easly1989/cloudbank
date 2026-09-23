@@ -104,6 +104,64 @@ export function activeFilterCount(f: Filters): number {
   return n;
 }
 
+/**
+ * One active filter, named well enough to put on a chip.
+ *
+ * `labelKey` and `value` are kept apart so the caller translates: the model
+ * knows which facets are on and what they are set to, and nothing about words.
+ * `clear` returns the filters with that one facet back at its default, so
+ * removing a chip is exactly as precise as it looks.
+ */
+export interface ActiveFilter {
+  id: string;
+  labelKey: string;
+  /** Already-resolved text, when the facet carries one (a search term, a tag). */
+  value?: string;
+  clear: (f: Filters) => Filters;
+}
+
+/**
+ * The filters currently narrowing the register, in the order they are shown.
+ *
+ * A count told the reader that three filters were on without saying which, so
+ * the only way to find out was to open the panel and read every control. A row
+ * of chips says what is hiding rows, and lets one of them go without disturbing
+ * the others.
+ */
+export function activeFilters(f: Filters): ActiveFilter[] {
+  const out: ActiveFilter[] = [];
+  const add = (id: string, labelKey: string, clear: (x: Filters) => Filters, value?: string) =>
+    out.push({ id, labelKey, value, clear });
+
+  if (f.preset !== "all")
+    add("preset", `filters.presets.${f.preset}`, (x) => ({
+      ...x,
+      preset: "all",
+      from: "",
+      to: "",
+    }));
+  if (f.text.trim() !== "")
+    add("text", "filters.chip.text", (x) => ({ ...x, text: "" }), f.text.trim());
+  if (f.status !== null) add("status", "filters.chip.status", (x) => ({ ...x, status: null }));
+  if (f.payeeId !== null) add("payee", "filters.chip.payee", (x) => ({ ...x, payeeId: null }));
+  if (f.categoryId !== null)
+    add("category", "filters.chip.category", (x) => ({ ...x, categoryId: null }));
+  if (f.tags.length > 0)
+    add("tags", "filters.chip.tags", (x) => ({ ...x, tags: [] }), f.tags.join(", "));
+  if (f.amountMin !== null)
+    add("amountMin", "filters.chip.amountMin", (x) => ({ ...x, amountMin: null }));
+  if (f.amountMax !== null)
+    add("amountMax", "filters.chip.amountMax", (x) => ({ ...x, amountMax: null }));
+  if (f.hideFuture)
+    add("hideFuture", "filters.chip.hideFuture", (x) => ({ ...x, hideFuture: false }));
+  if (f.transfers !== "all")
+    add("transfers", `filters.chip.transfers.${f.transfers}`, (x) => ({ ...x, transfers: "all" }));
+  if (f.noFlags) add("noFlags", "filters.chip.noFlags", (x) => ({ ...x, noFlags: false }));
+  if (f.uncategorised)
+    add("uncategorised", "filters.chip.uncategorised", (x) => ({ ...x, uncategorised: false }));
+  return out;
+}
+
 export function isActive(f: Filters): boolean {
   return activeFilterCount(f) > 0;
 }

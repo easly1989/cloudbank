@@ -50,6 +50,31 @@ dashboard polish.
   to read; a status is now a word with a small coloured dot, and the colour
   still carries the meaning.
 
+- **The ledger got its screen back, and its first line is the way in.** Filters
+  and columns open beside the transactions instead of unfolding above them:
+  everything they used to take, they took from the rows, and the rows are the
+  page. On the side they cost width, which a ledger has to spare.
+
+  Adding a transaction starts where the transaction will land — the first line
+  of the register, or the N key — instead of a form sitting above it. The entry
+  sheet opens beside the rows, which is where entering one belongs.
+
+  The notice about rows a filter is hiding is one line now rather than a boxed
+  alert. The register is explaining itself, not raising an alarm.
+
+- **The register says which account it is, and what is hiding rows.** The page
+  was called "Transactions" with the account in a dropdown beside the title —
+  the same thing named twice, neither of them the subject. The account is the
+  title now, and switching it is still one click, because the title is the
+  switch. Searching is a field on the page instead of a control inside a panel
+  that starts closed, since narrowing a ledger by text is the commonest thing
+  anyone does to it.
+
+  Active filters are chips you can read. A badge saying "3" told you that three
+  filters were on without saying which, so the only way to find out was to open
+  the panel and inspect every control; each filter now names itself and can be
+  dropped on its own without disturbing the others.
+
 - **The overview answers the question you opened it for.** It led with three
   bordered cards of balances and a donut. It now leads with one figure at forty
   pixels — what you have — and beside it what the period earned, spent and kept,
