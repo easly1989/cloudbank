@@ -631,7 +631,9 @@
     "search": "Search the register",
     "columnsHint": "Yours, and remembered.",
     "columnsReset": "Reset",
-    "newEntry": "New entry — start typing, or press N"
+    "newEntry": "New entry — start typing, or press N",
+    "needsCategory": "Needs a category",
+    "reconciledUpToHere": "reconciled up to here"
   },
   "filters": {
     "dateRange": "Date range",

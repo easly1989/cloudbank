@@ -631,7 +631,9 @@
     "search": "Cerca nel registro",
     "columnsHint": "Tue, e ricordate.",
     "columnsReset": "Ripristina",
-    "newEntry": "Nuova riga — scrivi, oppure premi N"
+    "newEntry": "Nuova riga — scrivi, oppure premi N",
+    "needsCategory": "Serve una categoria",
+    "reconciledUpToHere": "riconciliato fino a qui"
   },
   "filters": {
     "dateRange": "Intervallo date",

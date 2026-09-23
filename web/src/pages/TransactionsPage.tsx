@@ -19,13 +19,11 @@ import {
   IconArrowsExchange,
   IconChecklist,
   IconInfoCircle,
-  IconPencil,
   IconDots,
   IconFileImport,
   IconPlus,
   IconSelector,
   IconWallet,
-  IconTrash,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -74,8 +72,9 @@ import {
   isActive,
   parseFilters,
 } from "./registerFilterModel";
-import { amountColor, attentionColor, negativeOnlyColor } from "../amountTone";
+import { amountColor, attentionColor, errorColor, negativeOnlyColor } from "../amountTone";
 import { pickBalances, type BalanceKey } from "../components/dashboard/overviewFigureModel";
+import { BAND_INSET, BAND_PADDING, ROW_GAP, ROW_TYPE } from "./registerTheme";
 
 // The three figures, and where each name and explanation live.
 const BALANCE_LABEL: Record<BalanceKey, string> = {
@@ -583,50 +582,10 @@ export function TransactionsPage() {
           />
         )}
 
-        {/* Selection actions stay outside the collapsible so they remain reachable
-          even when filters/entry are folded away. */}
-        {account && !reconcile && selected.size > 0 && (
-          <BulkBar
-            count={selected.size}
-            total={selectionTotals.total}
-            inflow={selectionTotals.inflow}
-            outflow={selectionTotals.outflow}
-            fmt={fmt}
-            onEdit={() => setBulkEditOpen(true)}
-            onDelete={deleteSelected}
-            onClear={clearSelection}
-          />
-        )}
-
         {account && filteredRows.length === 0 && rows.length > 0 && (
           <EmptyState message={t("transactions.empty")} />
         )}
       </Stack>
-
-      {/* One line, not a box. The register is explaining itself, not raising an
-          alarm: a filtered ledger whose top line is weeks old looks like the
-          balance has drifted, and it has not. */}
-      {account && hiddenNewer > 0 && (
-        <Group gap="xs" wrap="nowrap" align="center">
-          <IconArrowUp size={15} opacity={0.6} />
-          <Text size="sm" style={{ flex: 1 }}>
-            <Text span fw={600} inherit>
-              {t("register.hiddenNewer.title", { count: hiddenNewer })}
-            </Text>{" "}
-            <Text span c="dimmed" inherit>
-              {t("register.hiddenNewer.body")}
-            </Text>
-          </Text>
-          <Button
-            size="compact-sm"
-            variant="default"
-            onClick={() => setFilters(emptyFilters)}
-            style={{ flexShrink: 0 }}
-          >
-            {t("register.hiddenNewer.action")}
-          </Button>
-        </Group>
-      )}
 
       {/* Rendered even when the account is empty: the first row of the ledger
           is how a transaction gets into it. */}
@@ -647,6 +606,23 @@ export function TransactionsPage() {
           onBulkDelete={deleteSelected}
           panel={panel}
           onPanel={setPanel}
+          notice={
+            hiddenNewer > 0 ? (
+              <HiddenNotice count={hiddenNewer} onShow={() => setFilters(emptyFilters)} />
+            ) : undefined
+          }
+          bulkBar={
+            !reconcile && selected.size > 0 ? (
+              <BulkBar
+                count={selected.size}
+                total={selectionTotals.total}
+                fmt={fmt}
+                onEdit={() => setBulkEditOpen(true)}
+                onDelete={deleteSelected}
+                onClear={clearSelection}
+              />
+            ) : undefined
+          }
           onNew={
             reconcile
               ? undefined
@@ -767,8 +743,6 @@ function BalanceFigure({
 function BulkBar({
   count,
   total,
-  inflow,
-  outflow,
   fmt,
   onEdit,
   onDelete,
@@ -776,8 +750,6 @@ function BulkBar({
 }: {
   count: number;
   total: number;
-  inflow: number;
-  outflow: number;
   fmt: MoneyFormat;
   onEdit: () => void;
   onDelete: () => void;
@@ -785,42 +757,36 @@ function BulkBar({
 }) {
   const { t } = useTranslation();
   return (
-    <Card withBorder padding="xs" bg="var(--mantine-color-blue-light)">
-      <Group gap="xs" align="center" wrap="wrap">
-        <Text fw={500}>{t("bulk.title", { count })}</Text>
-        <Group gap={6} align="baseline" wrap="nowrap">
-          <Text size="xs" c="dimmed" tt="uppercase">
-            {t("bulk.selectedTotal")}
-          </Text>
-          <Text fw={700} c={amountColor(total)}>
-            {formatMinor(total, fmt)}
-          </Text>
-          {inflow > 0 && outflow < 0 && (
-            <Text size="xs" c="dimmed">
-              ({t("bulk.selectedIn")} {formatMinor(inflow, fmt)} · {t("bulk.selectedOut")}{" "}
-              {formatMinor(outflow, fmt)})
-            </Text>
-          )}
-        </Group>
-        <Group gap="xs" ml="auto" wrap="nowrap">
-          <Button size="xs" variant="light" leftSection={<IconPencil size={14} />} onClick={onEdit}>
-            {t("bulk.edit")}
-          </Button>
-          <Button
-            size="xs"
-            variant="light"
-            color="red"
-            leftSection={<IconTrash size={14} />}
-            onClick={onDelete}
-          >
-            {t("bulk.delete")}
-          </Button>
-          <Button size="xs" variant="subtle" color="gray" onClick={onClear}>
-            {t("bulk.clearSelection")}
-          </Button>
-        </Group>
+    // The foot of the ledger, not a card floating above it: what is selected
+    // and what it comes to, then what can be done about it.
+    <Group
+      gap={16}
+      align="center"
+      wrap="wrap"
+      style={{
+        padding: `${BAND_PADDING.bulk}px ${BAND_INSET}px`,
+        background: "var(--cb-band-bulk)",
+        borderTop: "1px solid var(--cb-ledger-border)",
+      }}
+    >
+      <Text fz={ROW_TYPE.bulkLabel.fz} fw={ROW_TYPE.bulkLabel.fw}>
+        {t("bulk.title", { count })}
+      </Text>
+      <Text ff="monospace" fz={ROW_TYPE.bulkSum.fz} fw={ROW_TYPE.bulkSum.fw} c={amountColor(total)}>
+        {formatMinor(total, fmt)}
+      </Text>
+      <Group gap="xs" ml="auto" wrap="nowrap">
+        <Button variant="default" size="compact-md" onClick={onEdit}>
+          {t("bulk.edit")}
+        </Button>
+        <Button variant="default" size="compact-md" c={errorColor} onClick={onDelete}>
+          {t("bulk.delete")}
+        </Button>
+        <Button variant="subtle" color="gray" size="compact-md" onClick={onClear}>
+          {t("bulk.clear")}
+        </Button>
       </Group>
-    </Card>
+    </Group>
   );
 }
 
@@ -899,5 +865,49 @@ function ReconcilePanel({
         {t("reconcile.help")}
       </Text>
     </Card>
+  );
+}
+
+/**
+ * What the filter is keeping out of sight.
+ *
+ * A filtered ledger whose newest line is weeks old reads as a balance that has
+ * drifted, and it has not — so the register says so itself, in its own first
+ * band, with the way back out of the filter right there.
+ */
+function HiddenNotice({ count, onShow }: { count: number; onShow: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <Group
+      gap={ROW_GAP}
+      wrap="nowrap"
+      align="center"
+      style={{
+        padding: `${BAND_PADDING.hiddenNotice}px ${BAND_INSET}px`,
+        background: "var(--cb-band-notice)",
+        borderBottom: "1px solid var(--cb-ledger-border)",
+      }}
+    >
+      <IconArrowUp size={15} style={{ flexShrink: 0 }} />
+      <Text fz={13} style={{ flex: 1, minWidth: 0 }}>
+        <Text span fw={600} inherit>
+          {t("register.hiddenNewer.title", { count })}
+        </Text>{" "}
+        <Text span c="dimmed" inherit>
+          {t("register.hiddenNewer.body")}
+        </Text>
+      </Text>
+      <Button
+        variant="default"
+        h={34}
+        fz={12}
+        fw={500}
+        px={11}
+        onClick={onShow}
+        style={{ flexShrink: 0 }}
+      >
+        {t("register.hiddenNewer.action")}
+      </Button>
+    </Group>
   );
 }
