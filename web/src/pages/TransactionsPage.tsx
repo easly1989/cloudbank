@@ -796,7 +796,7 @@ function BulkBar({
           {t("bulk.delete")}
         </Button>
         <Button variant="subtle" color="gray" size="compact-md" onClick={onClear}>
-          {t("bulk.clear")}
+          {t("bulk.clearSelection")}
         </Button>
       </Group>
     </Group>
