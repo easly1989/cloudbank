@@ -566,7 +566,8 @@
     "empty": "No transactions match \"{{q}}\".",
     "count": "{{count}} result(s)",
     "more": "+{{count}} more — refine your search to narrow it down.",
-    "untitled": "(no description)"
+    "untitled": "(no description)",
+    "short": "Search"
   },
   "attachments": {
     "title": "Attachments",
