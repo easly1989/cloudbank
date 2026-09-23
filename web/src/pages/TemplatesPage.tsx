@@ -176,33 +176,36 @@ export function TemplatesPage() {
         </Table>
       )}
 
-      {/* Mounted per opening: the key gives every template — and the new-template
+      {/* Keyed per record: the key gives every template — and the new-template
           form — its own instance, so the fields start where the template is
-          instead of being reset back to it by an effect. */}
-      {formOpened && (
-        <TemplateFormModal
-          key={editing?.id ?? "new"}
-          onClose={form.close}
-          walletId={walletId}
-          editing={editing}
-          accounts={accounts}
-          onSaved={() => {
-            invalidate();
-            form.close();
-          }}
-        />
-      )}
+          instead of being reset back to it by an effect. It stays mounted while
+          closed, because a modal that is unmounted the moment it closes cannot
+          animate out. */}
+      <TemplateFormModal
+        key={editing?.id ?? "new"}
+        opened={formOpened}
+        onClose={form.close}
+        walletId={walletId}
+        editing={editing}
+        accounts={accounts}
+        onSaved={() => {
+          invalidate();
+          form.close();
+        }}
+      />
     </Stack>
   );
 }
 
 function TemplateFormModal({
+  opened,
   onClose,
   walletId,
   editing,
   accounts,
   onSaved,
 }: {
+  opened: boolean;
   onClose: () => void;
   walletId: number;
   editing: Template | null;
@@ -319,7 +322,11 @@ function TemplateFormModal({
   });
 
   return (
-    <Modal opened onClose={onClose} title={editing ? t("templates.edit") : t("templates.create")}>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={editing ? t("templates.edit") : t("templates.create")}
+    >
       <Stack>
         <TextInput
           label={t("templates.name")}

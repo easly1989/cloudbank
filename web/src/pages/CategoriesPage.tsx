@@ -157,18 +157,16 @@ export function CategoriesPage() {
       ))}
 
       {/* Keyed so each opening mounts a fresh form. */}
-      {formOpened && (
-        <CategoryFormModal
-          key={`${editing?.id ?? "new"}-${presetParent?.id ?? ""}`}
-          opened
-          onClose={form.close}
-          walletId={walletId}
-          editing={editing}
-          presetParent={presetParent}
-          topLevel={tops}
-          onSaved={invalidate}
-        />
-      )}
+      <CategoryFormModal
+        key={`${editing?.id ?? "new"}-${presetParent?.id ?? ""}`}
+        opened={formOpened}
+        onClose={form.close}
+        walletId={walletId}
+        editing={editing}
+        presetParent={presetParent}
+        topLevel={tops}
+        onSaved={invalidate}
+      />
       <MergeModal
         key={`merge-${mergeFrom?.id ?? "none"}`}
         title={t("categories.mergeTitle")}

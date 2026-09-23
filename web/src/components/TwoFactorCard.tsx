@@ -101,13 +101,23 @@ function EnrollModal({
   const [code, setCode] = useState("");
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
 
+  // Clear the previous enrolment when the modal opens, during render: the fetch
+  // below is a real side effect and belongs in an effect, but blanking the
+  // fields is not, and doing it there shows the old QR for a frame.
+  const [seededFor, setSeededFor] = useState(opened);
+  if (opened !== seededFor) {
+    setSeededFor(opened);
+    if (opened) {
+      setSetup(null);
+      setQr("");
+      setCode("");
+      setRecoveryCodes(null);
+    }
+  }
+
   // Fetch a fresh secret each time the modal opens; render its QR.
   useEffect(() => {
     if (!opened) return;
-    setSetup(null);
-    setQr("");
-    setCode("");
-    setRecoveryCodes(null);
     let cancelled = false;
     void setup2fa()
       .then(async (s) => {
