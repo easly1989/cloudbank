@@ -198,3 +198,46 @@ body {
   padding: 4px 0 16px;
   border-bottom: 1px solid var(--mantine-color-default-border);
 }
+
+/* The first line of the ledger: where the next transaction will land.
+   It is a row, not a button that looks like one — the point is that entry
+   happens in the register rather than in a form above it. */
+.cb-new-entry {
+  display: block;
+  width: 100%;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  transition: background-color 140ms ease;
+}
+.cb-new-entry:hover {
+  background: var(--mantine-color-default-hover);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cb-new-entry {
+    transition: none;
+  }
+}
+
+/* The ledger's own surfaces, measured off the Register and Dark boards.
+   The register is a card with bands inside it — the notice about hidden rows,
+   the column header, the line that starts a new entry, the reconciliation
+   marker, the selection bar — and each band has its own tint. Reading them off
+   the artefact rather than picking greys is the difference between a ledger
+   that looks designed and one that looks assembled. */
+:root {
+  --cb-ledger-surface: #ffffff;
+  --cb-ledger-border: #e2e6ec;
+  --cb-band-notice: #f3f6fb;
+  --cb-band-header: #fbfcfd;
+  --cb-band-new: #fafbfe;
+  --cb-band-divider: #f6f7f9;
+  --cb-band-bulk: #eaf0fe;
+}
+:root[data-mantine-color-scheme="dark"] {
+  --cb-ledger-surface: #161c25;
+  --cb-ledger-border: #232b37;
+  --cb-band-notice: #1a2331;
+  --cb-band-header: #1a212b;
+  --cb-band-new: #1b2330;
+  --cb-band-divider: #1a212b;
+  --cb-band-bulk: #18243c;
+}

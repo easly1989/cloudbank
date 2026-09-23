@@ -1,17 +1,16 @@
 import {
   ActionIcon,
-  Alert,
-  Badge,
   Button,
   Card,
   Group,
-  Select,
+  Menu,
   Stack,
   Text,
   TextInput,
   Tooltip,
+  UnstyledButton,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useHotkeys } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
   IconEye,
@@ -19,12 +18,12 @@ import {
   IconArrowUp,
   IconArrowsExchange,
   IconChecklist,
-  IconFilterOff,
   IconInfoCircle,
-  IconPencil,
+  IconDots,
+  IconFileImport,
   IconPlus,
+  IconSelector,
   IconWallet,
-  IconTrash,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -58,15 +57,14 @@ import { useAmountParser } from "../useAmountParser";
 import { useToday } from "../useToday";
 import { useConfirm } from "../components/confirmContext";
 import { BulkEditModal } from "../components/BulkEditModal";
-import { CollapsibleSection } from "../components/CollapsibleSection";
-import { QuickAdd } from "../components/QuickAdd";
 import { TransactionForm } from "../components/TransactionForm";
 import { TransferForm } from "../components/TransferForm";
 import { useWallet } from "../wallet/WalletProvider";
+import { useAuth } from "../auth/AuthProvider";
 import { RegisterFilters } from "./RegisterFilters";
 import { RegisterTable } from "./RegisterTable";
+import { RegisterToolbar, type RegisterPanel } from "./RegisterToolbar";
 import {
-  activeFilterCount,
   applyFilters,
   hiddenNewerCount,
   emptyFilters,
@@ -74,13 +72,28 @@ import {
   isActive,
   parseFilters,
 } from "./registerFilterModel";
-import { amountColor, attentionColor, negativeOnlyColor } from "../amountTone";
+import { amountColor, attentionColor, errorColor, negativeOnlyColor } from "../amountTone";
+import { pickBalances, type BalanceKey } from "../components/dashboard/overviewFigureModel";
+import { BAND_INSET, BAND_PADDING, ROW_GAP, ROW_TYPE } from "./registerTheme";
+
+// The three figures, and where each name and explanation live.
+const BALANCE_LABEL: Record<BalanceKey, string> = {
+  bank: "register.bank",
+  today: "register.today",
+  future: "register.future",
+};
+const BALANCE_HELP: Record<BalanceKey, string> = {
+  bank: "register.bankHelp",
+  today: "register.todayHelp",
+  future: "register.futureHelp",
+};
 
 export function TransactionsPage() {
   const { t } = useTranslation();
   const confirm = useConfirm();
   const qc = useQueryClient();
   const { currentWallet } = useWallet();
+  const { user } = useAuth();
   const walletId = currentWallet?.id ?? 0;
 
   const accountsQuery = useQuery({
@@ -184,6 +197,16 @@ export function TransactionsPage() {
       color: "red",
       message: err instanceof ApiError ? err.message : String(err),
     });
+
+  const balances = pickBalances(user?.preferences?.registerBalances);
+  // Filters and columns share one side panel: two of them open at once would
+  // leave the ledger a strip down the middle.
+  const [panel, setPanel] = useState<RegisterPanel>(null);
+
+  // "N" starts a new transaction. A ledger is somewhere people type, so the
+  // shortcut stands down whenever a field, a menu or the sheet already has the
+  // keyboard — otherwise typing "n" into a memo would open a second form.
+  useHotkeys([["n", () => !formOpened && !transferOpened && !reconcile && form.open()]]);
 
   const [formOpened, form] = useDisclosure(false);
 
@@ -405,50 +428,84 @@ export function TransactionsPage() {
   return (
     <Stack className={privacy ? "cb-private" : undefined}>
       <Stack ref={topRef} gap="md">
+        {/* The account is the title. The register is about one account, so
+            naming the page "Transactions" and putting the account in a control
+            beside it says the wrong thing twice; switching stays one click,
+            because the title is the switch. */}
         <PageHeader
-          title={t("transactions.title")}
+          title={
+            <Menu position="bottom-start" withinPortal>
+              <Menu.Target>
+                <UnstyledButton
+                  aria-label={t("transactions.account")}
+                  disabled={accounts.length < 2}
+                >
+                  <Group gap={6} wrap="nowrap">
+                    <Text inherit>{account?.name ?? t("transactions.title")}</Text>
+                    {accounts.length > 1 && <IconSelector size={20} opacity={0.5} />}
+                  </Group>
+                </UnstyledButton>
+              </Menu.Target>
+              <Menu.Dropdown>
+                {accounts.map((a) => (
+                  <Menu.Item
+                    key={a.id}
+                    onClick={() => setAccountId(String(a.id))}
+                    fw={String(a.id) === accountId ? 700 : 400}
+                  >
+                    {a.name}
+                  </Menu.Item>
+                ))}
+              </Menu.Dropdown>
+            </Menu>
+          }
           actions={
             <>
-              <Select
-                aria-label={t("transactions.account")}
-                data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
-                value={accountId}
-                onChange={setAccountId}
-                allowDeselect={false}
-                w={220}
-              />
-              <Tooltip label={t(privacy ? "register.privacy.show" : "register.privacy.hide")}>
-                <ActionIcon
-                  variant={privacy ? "filled" : "default"}
-                  size={36}
-                  aria-label={t(privacy ? "register.privacy.show" : "register.privacy.hide")}
-                  aria-pressed={privacy}
-                  onClick={() => setPrivacy((v) => !v)}
-                >
-                  {privacy ? <IconEyeOff size={17} /> : <IconEye size={17} />}
-                </ActionIcon>
-              </Tooltip>
+              {/* Reconciling, transferring and hiding figures are workflows, not
+                  the headline actions of the page; they keep their own menu so
+                  the two that matter stay the two you see. */}
+              <Menu position="bottom-end" withinPortal>
+                <Menu.Target>
+                  <ActionIcon variant="default" size={36} aria-label={t("register.moreActions")}>
+                    <IconDots size={18} />
+                  </ActionIcon>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={privacy ? <IconEye size={16} /> : <IconEyeOff size={16} />}
+                    onClick={() => setPrivacy((v) => !v)}
+                  >
+                    {t(privacy ? "register.privacy.show" : "register.privacy.hide")}
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconChecklist size={16} />}
+                    disabled={!account}
+                    onClick={() => {
+                      clearSelection();
+                      setReconcile((v) => !v);
+                    }}
+                  >
+                    {t("reconcile.start")}
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconArrowsExchange size={16} />}
+                    disabled={accounts.length < 2}
+                    onClick={() => {
+                      setEditingTransferId(null);
+                      transferForm.open();
+                    }}
+                  >
+                    {t("transfers.add")}
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
               <Button
-                variant={reconcile ? "filled" : "default"}
-                leftSection={<IconChecklist size={16} />}
-                disabled={!account}
-                onClick={() => {
-                  clearSelection();
-                  setReconcile((v) => !v);
-                }}
-              >
-                {t("reconcile.start")}
-              </Button>
-              <Button
+                component={Link}
+                to="/settings?tab=wallet&section=import"
                 variant="default"
-                leftSection={<IconArrowsExchange size={16} />}
-                disabled={accounts.length < 2}
-                onClick={() => {
-                  setEditingTransferId(null);
-                  transferForm.open();
-                }}
+                leftSection={<IconFileImport size={16} />}
               >
-                {t("transfers.add")}
+                {t("register.import")}
               </Button>
               <Button
                 leftSection={<IconPlus size={16} />}
@@ -478,27 +535,21 @@ export function TransactionsPage() {
           />
         )}
 
+        {/* The same three figures the overview offers, and the same choice of
+            which to show: "how much have I got" is one question asked in two
+            places, so it should not have two answers. */}
         {account && registerQuery.data && (
           <Group gap="xl" align="flex-end" wrap="wrap">
-            <BalanceFigure
-              label={t("register.today")}
-              help={t("register.todayHelp")}
-              value={registerQuery.data.summary.today}
-              fmt={fmt}
-              lead
-            />
-            <BalanceFigure
-              label={t("register.bank")}
-              help={t("register.bankHelp")}
-              value={registerQuery.data.summary.bank}
-              fmt={fmt}
-            />
-            <BalanceFigure
-              label={t("register.future")}
-              help={t("register.futureHelp")}
-              value={registerQuery.data.summary.future}
-              fmt={fmt}
-            />
+            {balances.map((key, i) => (
+              <BalanceFigure
+                key={key}
+                label={t(BALANCE_LABEL[key])}
+                help={t(BALANCE_HELP[key])}
+                value={registerQuery.data.summary[key]}
+                fmt={fmt}
+                lead={i === 0}
+              />
+            ))}
           </Group>
         )}
 
@@ -521,85 +572,24 @@ export function TransactionsPage() {
         )}
 
         {account && !reconcile && (
-          <CollapsibleSection
-            title={t("filters.section")}
-            storageKey="cb.reg.tools"
-            defaultOpen={false}
-            summary={
-              activeFilterCount(filters) > 0 ? (
-                <Badge size="sm" variant="light" aria-label={t("filters.activeCount")}>
-                  {activeFilterCount(filters)}
-                </Badge>
-              ) : undefined
-            }
-            action={
-              activeFilterCount(filters) > 0 ? (
-                <Button
-                  variant="light"
-                  color="gray"
-                  size="xs"
-                  leftSection={<IconFilterOff size={14} />}
-                  onClick={() => setFilters(emptyFilters)}
-                >
-                  {t("filters.clear")}
-                </Button>
-              ) : undefined
-            }
-          >
-            <Stack gap="xs">
-              <RegisterFilters
-                filters={filters}
-                onChange={setFilters}
-                payees={payeesQuery.data ?? []}
-                categories={categoriesQuery.data ?? []}
-                tags={tagsQuery.data ?? []}
-                fmt={fmt}
-              />
-            </Stack>
-          </CollapsibleSection>
-        )}
-
-        {/* Entry sits with the ledger, not inside the filter panel: folding
-          filters away must never fold away the way to add a transaction. */}
-        {account && !reconcile && (
-          <QuickAdd walletId={walletId} account={account} onAdded={invalidate} onError={onError} />
-        )}
-
-        {/* Selection actions stay outside the collapsible so they remain reachable
-          even when filters/entry are folded away. */}
-        {account && !reconcile && selected.size > 0 && (
-          <BulkBar
-            count={selected.size}
-            total={selectionTotals.total}
-            inflow={selectionTotals.inflow}
-            outflow={selectionTotals.outflow}
-            fmt={fmt}
-            onEdit={() => setBulkEditOpen(true)}
-            onDelete={deleteSelected}
-            onClear={clearSelection}
+          <RegisterToolbar
+            filters={filters}
+            onFilters={setFilters}
+            panel={panel}
+            onPanel={setPanel}
+            privacy={privacy}
+            onPrivacy={setPrivacy}
           />
         )}
 
-        {account && filteredRows.length === 0 && <EmptyState message={t("transactions.empty")} />}
+        {account && filteredRows.length === 0 && rows.length > 0 && (
+          <EmptyState message={t("transactions.empty")} />
+        )}
       </Stack>
 
-      {account && hiddenNewer > 0 && (
-        <Alert
-          variant="light"
-          color="gray"
-          icon={<IconArrowUp size={16} />}
-          title={t("register.hiddenNewer.title", { count: hiddenNewer })}
-        >
-          <Group justify="space-between" align="center" gap="sm" wrap="wrap">
-            <Text size="sm">{t("register.hiddenNewer.body")}</Text>
-            <Button size="xs" variant="default" onClick={() => setFilters(emptyFilters)}>
-              {t("register.hiddenNewer.action")}
-            </Button>
-          </Group>
-        </Alert>
-      )}
-
-      {account && filteredRows.length > 0 && (
+      {/* Rendered even when the account is empty: the first row of the ledger
+          is how a transaction gets into it. */}
+      {account && (
         <RegisterTable
           rows={filteredRows}
           accounts={accounts}
@@ -614,6 +604,44 @@ export function TransactionsPage() {
           onSaveTemplate={templateFromRow}
           onBulkEdit={() => setBulkEditOpen(true)}
           onBulkDelete={deleteSelected}
+          panel={panel}
+          onPanel={setPanel}
+          notice={
+            hiddenNewer > 0 ? (
+              <HiddenNotice count={hiddenNewer} onShow={() => setFilters(emptyFilters)} />
+            ) : undefined
+          }
+          bulkBar={
+            !reconcile && selected.size > 0 ? (
+              <BulkBar
+                count={selected.size}
+                total={selectionTotals.total}
+                fmt={fmt}
+                onEdit={() => setBulkEditOpen(true)}
+                onDelete={deleteSelected}
+                onClear={clearSelection}
+              />
+            ) : undefined
+          }
+          onNew={
+            reconcile
+              ? undefined
+              : () => {
+                  setDuplicating(null);
+                  setEditing(null);
+                  form.open();
+                }
+          }
+          filtersPanel={
+            <RegisterFilters
+              filters={filters}
+              onChange={setFilters}
+              payees={payeesQuery.data ?? []}
+              categories={categoriesQuery.data ?? []}
+              tags={tagsQuery.data ?? []}
+              fmt={fmt}
+            />
+          }
           fillRef={topRef}
         />
       )}
@@ -695,7 +723,14 @@ function BalanceFigure({
           </Tooltip>
         )}
       </Group>
-      <Text ff="monospace" fw={lead ? 600 : 500} fz={lead ? 26 : 17} c={negativeOnlyColor(value)}>
+      {/* Only the lead figure is in full-strength text: the others are context
+          for it, and three equal figures would be three headlines. */}
+      <Text
+        ff="monospace"
+        fw={lead ? 600 : 500}
+        fz={lead ? 26 : 17}
+        c={negativeOnlyColor(value) ?? (lead ? undefined : "dimmed")}
+      >
         {formatMinor(value, fmt)}
       </Text>
     </Stack>
@@ -708,8 +743,6 @@ function BalanceFigure({
 function BulkBar({
   count,
   total,
-  inflow,
-  outflow,
   fmt,
   onEdit,
   onDelete,
@@ -717,8 +750,6 @@ function BulkBar({
 }: {
   count: number;
   total: number;
-  inflow: number;
-  outflow: number;
   fmt: MoneyFormat;
   onEdit: () => void;
   onDelete: () => void;
@@ -726,42 +757,36 @@ function BulkBar({
 }) {
   const { t } = useTranslation();
   return (
-    <Card withBorder padding="xs" bg="var(--mantine-color-blue-light)">
-      <Group gap="xs" align="center" wrap="wrap">
-        <Text fw={500}>{t("bulk.title", { count })}</Text>
-        <Group gap={6} align="baseline" wrap="nowrap">
-          <Text size="xs" c="dimmed" tt="uppercase">
-            {t("bulk.selectedTotal")}
-          </Text>
-          <Text fw={700} c={amountColor(total)}>
-            {formatMinor(total, fmt)}
-          </Text>
-          {inflow > 0 && outflow < 0 && (
-            <Text size="xs" c="dimmed">
-              ({t("bulk.selectedIn")} {formatMinor(inflow, fmt)} · {t("bulk.selectedOut")}{" "}
-              {formatMinor(outflow, fmt)})
-            </Text>
-          )}
-        </Group>
-        <Group gap="xs" ml="auto" wrap="nowrap">
-          <Button size="xs" variant="light" leftSection={<IconPencil size={14} />} onClick={onEdit}>
-            {t("bulk.edit")}
-          </Button>
-          <Button
-            size="xs"
-            variant="light"
-            color="red"
-            leftSection={<IconTrash size={14} />}
-            onClick={onDelete}
-          >
-            {t("bulk.delete")}
-          </Button>
-          <Button size="xs" variant="subtle" color="gray" onClick={onClear}>
-            {t("bulk.clearSelection")}
-          </Button>
-        </Group>
+    // The foot of the ledger, not a card floating above it: what is selected
+    // and what it comes to, then what can be done about it.
+    <Group
+      gap={16}
+      align="center"
+      wrap="wrap"
+      style={{
+        padding: `${BAND_PADDING.bulk}px ${BAND_INSET}px`,
+        background: "var(--cb-band-bulk)",
+        borderTop: "1px solid var(--cb-ledger-border)",
+      }}
+    >
+      <Text fz={ROW_TYPE.bulkLabel.fz} fw={ROW_TYPE.bulkLabel.fw}>
+        {t("bulk.title", { count })}
+      </Text>
+      <Text ff="monospace" fz={ROW_TYPE.bulkSum.fz} fw={ROW_TYPE.bulkSum.fw} c={amountColor(total)}>
+        {formatMinor(total, fmt)}
+      </Text>
+      <Group gap="xs" ml="auto" wrap="nowrap">
+        <Button variant="default" size="compact-md" onClick={onEdit}>
+          {t("bulk.edit")}
+        </Button>
+        <Button variant="default" size="compact-md" c={errorColor} onClick={onDelete}>
+          {t("bulk.delete")}
+        </Button>
+        <Button variant="subtle" color="gray" size="compact-md" onClick={onClear}>
+          {t("bulk.clear")}
+        </Button>
       </Group>
-    </Card>
+    </Group>
   );
 }
 
@@ -840,5 +865,49 @@ function ReconcilePanel({
         {t("reconcile.help")}
       </Text>
     </Card>
+  );
+}
+
+/**
+ * What the filter is keeping out of sight.
+ *
+ * A filtered ledger whose newest line is weeks old reads as a balance that has
+ * drifted, and it has not — so the register says so itself, in its own first
+ * band, with the way back out of the filter right there.
+ */
+function HiddenNotice({ count, onShow }: { count: number; onShow: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <Group
+      gap={ROW_GAP}
+      wrap="nowrap"
+      align="center"
+      style={{
+        padding: `${BAND_PADDING.hiddenNotice}px ${BAND_INSET}px`,
+        background: "var(--cb-band-notice)",
+        borderBottom: "1px solid var(--cb-ledger-border)",
+      }}
+    >
+      <IconArrowUp size={15} style={{ flexShrink: 0 }} />
+      <Text fz={13} style={{ flex: 1, minWidth: 0 }}>
+        <Text span fw={600} inherit>
+          {t("register.hiddenNewer.title", { count })}
+        </Text>{" "}
+        <Text span c="dimmed" inherit>
+          {t("register.hiddenNewer.body")}
+        </Text>
+      </Text>
+      <Button
+        variant="default"
+        h={34}
+        fz={12}
+        fw={500}
+        px={11}
+        onClick={onShow}
+        style={{ flexShrink: 0 }}
+      >
+        {t("register.hiddenNewer.action")}
+      </Button>
+    </Group>
   );
 }
