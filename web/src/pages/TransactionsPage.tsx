@@ -74,6 +74,7 @@ import {
 } from "./registerFilterModel";
 import { amountColor, attentionColor, errorColor, negativeOnlyColor } from "../amountTone";
 import { pickBalances, type BalanceKey } from "../components/dashboard/overviewFigureModel";
+import { arrival, useArrival, useCountUp, type Arrival } from "../motion";
 import { BAND_INSET, BAND_PADDING, ROW_GAP, ROW_TYPE } from "./registerTheme";
 
 // The three figures, and where each name and explanation live.
@@ -188,9 +189,16 @@ export function TransactionsPage() {
     [rows, filters, categoriesQuery.data, today], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  const invalidate = () => {
+  // The row that was just saved, and for how long it stays marked. A saved
+  // transaction lands wherever the date order puts it, which on a long register
+  // is often nowhere near where the reader was looking.
+  const [savedMark, setSavedMark] = useState<Arrival | null>(null);
+  const arrived = useArrival(savedMark);
+
+  const invalidate = (id?: number) => {
     void qc.invalidateQueries({ queryKey: ["register", walletId, accountId] });
     void qc.invalidateQueries({ queryKey: ["accounts", walletId] });
+    if (id != null) setSavedMark(arrival(id));
   };
   const onError = (err: unknown) =>
     notifications.show({
@@ -280,18 +288,18 @@ export function TransactionsPage() {
 
   const remove = useMutation({
     mutationFn: (id: number) => deleteTransaction(walletId, id),
-    onSuccess: invalidate,
+    onSuccess: () => invalidate(),
     onError,
   });
   const removeTransfer = useMutation({
     mutationFn: (id: number) => deleteTransfer(walletId, id),
-    onSuccess: invalidate,
+    onSuccess: () => invalidate(),
     onError,
   });
   const toggleStatus = useMutation({
     mutationFn: (v: { id: number; status: number }) =>
       setTransactionStatus(walletId, v.id, v.status),
-    onSuccess: invalidate,
+    onSuccess: () => invalidate(),
     onError,
   });
   const bulk = useMutation({
@@ -611,6 +619,7 @@ export function TransactionsPage() {
               <HiddenNotice count={hiddenNewer} onShow={() => setFilters(emptyFilters)} />
             ) : undefined
           }
+          arrivedId={arrived}
           bulkBar={
             !reconcile && selected.size > 0 ? (
               <BulkBar
@@ -711,6 +720,10 @@ function BalanceFigure({
   help?: string;
   lead?: boolean;
 }) {
+  // The figure travels from its old value to its new one. A balance changes
+  // because of something the reader just did — a filter, a saved row — and
+  // seeing it move says so; a figure that simply swaps does not.
+  const shown = useCountUp(value);
   return (
     <Stack gap={2}>
       <Group gap={4} wrap="nowrap">
@@ -731,7 +744,7 @@ function BalanceFigure({
         fz={lead ? 26 : 17}
         c={negativeOnlyColor(value) ?? (lead ? undefined : "dimmed")}
       >
-        {formatMinor(value, fmt)}
+        {formatMinor(shown, fmt)}
       </Text>
     </Stack>
   );
