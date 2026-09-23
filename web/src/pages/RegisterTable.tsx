@@ -157,6 +157,8 @@ export interface RegisterTableProps {
   bulkBar?: ReactNode;
   /** The band that explains what the filter is hiding, at the head of the card. */
   notice?: ReactNode;
+  /** A row that has just been saved, marked until the tint fades. */
+  arrivedId?: number | null;
 }
 
 // RegisterTable renders the account ledger newest-first with a chronological
@@ -186,6 +188,7 @@ export function RegisterTable({
   onNew,
   bulkBar,
   notice,
+  arrivedId,
 }: RegisterTableProps) {
   const { t } = useTranslation();
   const fmtDate = useDateFormat();
@@ -728,6 +731,7 @@ export function RegisterTable({
                       </Group>
                     )}
                     <div
+                      className={r.id === arrivedId ? "cb-row-arrived" : undefined}
                       onClick={() => setCursorId(r.id)}
                       onDoubleClick={() => onEdit(r)}
                       onContextMenu={(e) => {
