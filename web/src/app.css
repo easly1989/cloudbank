@@ -198,3 +198,21 @@ body {
   padding: 4px 0 16px;
   border-bottom: 1px solid var(--mantine-color-default-border);
 }
+
+/* The first line of the ledger: where the next transaction will land.
+   It is a row, not a button that looks like one — the point is that entry
+   happens in the register rather than in a form above it. */
+.cb-new-entry {
+  display: block;
+  width: 100%;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  transition: background-color 140ms ease;
+}
+.cb-new-entry:hover {
+  background: var(--mantine-color-default-hover);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cb-new-entry {
+    transition: none;
+  }
+}

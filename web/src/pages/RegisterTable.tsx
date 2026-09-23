@@ -1,10 +1,21 @@
-import { ActionIcon, Badge, Box, Checkbox, Group, Menu, Text, UnstyledButton } from "@mantine/core";
+import {
+  ActionIcon,
+  Badge,
+  Box,
+  Button,
+  Checkbox,
+  Group,
+  Kbd,
+  Menu,
+  Stack,
+  Text,
+  UnstyledButton,
+} from "@mantine/core";
 import {
   IconArrowDown,
   IconArrowUp,
   IconChevronDown,
   IconChevronUp,
-  IconAdjustmentsHorizontal,
   IconArrowsExchange,
   IconCircleCheck,
   IconClock,
@@ -51,9 +62,12 @@ import {
 } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { useDateFormat } from "../dates";
+import { todayCivil } from "../civilDate";
 import { formatMinor, type MoneyFormat } from "../money";
 import { stopRowEdit } from "../rowEdit";
-import { moveColumn, normalizeColumnOrder } from "./registerColumns";
+import { ALL_COLUMNS, moveColumn, normalizeColumnOrder } from "./registerColumns";
+import { RegisterSidePanel } from "./RegisterSidePanel";
+import type { RegisterPanel } from "./RegisterToolbar";
 import { isSortable, sortRegisterRows, type RegisterSort } from "./registerFilterModel";
 import { useToday } from "../useToday";
 import { amountColor, negativeOnlyColor } from "../amountTone";
@@ -88,6 +102,10 @@ const TOGGLEABLE: { id: string; def: boolean }[] = [
 ];
 // i18n keys for the toggleable column labels (reuse existing strings).
 const COL_LABEL: Record<string, string> = {
+  // Date and amount cannot be hidden, but they can be moved, so they are named
+  // here too — the panel lists every column, not just the optional ones.
+  date: "transactions.date",
+  amount: "transactions.amount",
   payee: "transactions.payee",
   category: "transactions.category",
   note: "transactions.memo",
@@ -118,6 +136,13 @@ export interface RegisterTableProps {
   // bottom of this element (the block above the table); collapsing sections above
   // reclaims their space for the ledger. Without it, a fixed height is used.
   fillRef?: React.RefObject<HTMLDivElement | null>;
+  /** Which side panel is open, if any. */
+  panel: RegisterPanel;
+  onPanel: (p: RegisterPanel) => void;
+  /** The filter controls, rendered inside the panel when it is showing them. */
+  filtersPanel: ReactNode;
+  /** Start a new transaction. Absent while reconciling, where entry is off. */
+  onNew?: () => void;
 }
 
 // RegisterTable renders the account ledger newest-first with a chronological
@@ -141,6 +166,10 @@ export function RegisterTable({
   onBulkEdit,
   onBulkDelete,
   fillRef,
+  panel,
+  onPanel,
+  filtersPanel,
+  onNew,
 }: RegisterTableProps) {
   const { t } = useTranslation();
   const fmtDate = useDateFormat();
@@ -434,343 +463,386 @@ export function RegisterTable({
     if (cursorId != null && !display.some((r) => r.id === cursorId)) setCursorId(null);
   }, [display, cursorId]);
 
-  return (
-    // Scroll the ledger horizontally within its container on narrow screens so
-    // the page itself never overflows; the header and rows scroll together.
-    <Box style={{ overflowX: "auto" }}>
-      <Box style={{ minWidth: 900 }}>
-        <Box
-          style={{
-            display: "grid",
-            gridTemplateColumns: gridTemplate,
-            gap: 8,
-            padding: "6px 8px",
-            // Matches the 3px accent reserved on each row so columns stay aligned.
-            borderLeft: "3px solid transparent",
-            fontWeight: 600,
-            fontSize: 13,
-            borderBottom: "1px solid var(--mantine-color-default-border)",
-          }}
-        >
-          <Checkbox
-            size="xs"
-            aria-label={t("register.selectAll")}
-            checked={allSelected}
-            indeterminate={!allSelected && display.some((r) => selected.has(r.id))}
-            onChange={(e) =>
-              onToggleAll(
-                display.map((r) => r.id),
-                e.currentTarget.checked,
-              )
-            }
-          />
-          {table.getHeaderGroups()[0].headers.map((h) => (
-            <ColumnHeader
-              key={h.id}
-              id={h.id}
-              sort={sort}
-              onSort={toggleSort}
-              onResize={(width) => setDragWidths({ ...widths, [h.id]: width })}
-              onResizeEnd={() => {
-                if (dragWidths) persistPrefs.mutate({ registerColumnWidths: dragWidths });
-                setDragWidths(null);
-              }}
-            >
-              {flexRender(h.column.columnDef.header, h.getContext())}
-            </ColumnHeader>
-          ))}
-          <Group justify="flex-end">
-            <Menu position="bottom-end" withinPortal closeOnItemClick={false}>
-              <Menu.Target>
-                <ActionIcon
-                  variant="subtle"
-                  size="sm"
-                  color="gray"
-                  aria-label={t("register.columns")}
-                >
-                  <IconAdjustmentsHorizontal size={16} />
-                </ActionIcon>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Label>{t("register.columns")}</Menu.Label>
-                {columnOrder.map((id, i) => {
-                  const toggleable = TOGGLEABLE.find((c) => c.id === id);
-                  return (
-                    <Menu.Item
-                      key={id}
-                      component="div"
-                      style={{ cursor: toggleable ? "pointer" : "default" }}
-                      onClick={() => toggleable && table.getColumn(id)?.toggleVisibility()}
-                    >
-                      <Group gap="xs" wrap="nowrap" justify="space-between">
-                        <Checkbox
-                          size="xs"
-                          readOnly
-                          // Date and amount cannot be hidden — a ledger without
-                          // them is not a ledger — but they can still be moved.
-                          disabled={!toggleable}
-                          checked={toggleable ? (columnVisibility[id] ?? toggleable.def) : true}
-                          label={t(COL_LABEL[id])}
-                        />
-                        <Group gap={2} wrap="nowrap" onClick={(e) => e.stopPropagation()}>
-                          <ActionIcon
-                            variant="subtle"
-                            size="sm"
-                            color="gray"
-                            disabled={i === 0}
-                            aria-label={t("register.moveColumnLeft")}
-                            onClick={() =>
-                              persistPrefs.mutate({
-                                registerColumnOrder: moveColumn(columnOrder, id, -1),
-                              })
-                            }
-                          >
-                            <IconChevronUp size={14} />
-                          </ActionIcon>
-                          <ActionIcon
-                            variant="subtle"
-                            size="sm"
-                            color="gray"
-                            disabled={i === columnOrder.length - 1}
-                            aria-label={t("register.moveColumnRight")}
-                            onClick={() =>
-                              persistPrefs.mutate({
-                                registerColumnOrder: moveColumn(columnOrder, id, 1),
-                              })
-                            }
-                          >
-                            <IconChevronDown size={14} />
-                          </ActionIcon>
-                        </Group>
-                      </Group>
-                    </Menu.Item>
-                  );
-                })}
-              </Menu.Dropdown>
-            </Menu>
+  const columnsPanel = (
+    <Stack gap={2}>
+      {columnOrder.map((id, i) => {
+        const toggleable = TOGGLEABLE.find((c) => c.id === id);
+        return (
+          <Group key={id} gap="xs" wrap="nowrap" justify="space-between">
+            <Checkbox
+              size="xs"
+              // Date and amount cannot be hidden — a ledger without them is not
+              // a ledger — but they can still be moved.
+              disabled={!toggleable}
+              checked={toggleable ? (columnVisibility[id] ?? toggleable.def) : true}
+              onChange={() => toggleable && table.getColumn(id)?.toggleVisibility()}
+              label={t(COL_LABEL[id])}
+            />
+            <Group gap={2} wrap="nowrap">
+              <ActionIcon
+                variant="subtle"
+                size="sm"
+                color="gray"
+                disabled={i === 0}
+                aria-label={t("register.moveColumnLeft")}
+                onClick={() =>
+                  persistPrefs.mutate({ registerColumnOrder: moveColumn(columnOrder, id, -1) })
+                }
+              >
+                <IconChevronUp size={14} />
+              </ActionIcon>
+              <ActionIcon
+                variant="subtle"
+                size="sm"
+                color="gray"
+                disabled={i === columnOrder.length - 1}
+                aria-label={t("register.moveColumnRight")}
+                onClick={() =>
+                  persistPrefs.mutate({ registerColumnOrder: moveColumn(columnOrder, id, 1) })
+                }
+              >
+                <IconChevronDown size={14} />
+              </ActionIcon>
+            </Group>
           </Group>
-        </Box>
-        <div
-          ref={parentRef}
-          tabIndex={0}
-          onKeyDown={onKeyDown}
-          style={{ height: bodyHeight ?? "min(560px, 65vh)", overflow: "auto", outline: "none" }}
-          aria-label={t("register.ledger")}
+        );
+      })}
+      <Group justify="flex-end" mt="xs" gap="xs">
+        <Button
+          variant="default"
+          size="compact-sm"
+          onClick={() =>
+            persistPrefs.mutate({
+              registerColumnOrder: [...ALL_COLUMNS],
+              registerColumns: Object.fromEntries(TOGGLEABLE.map((c) => [c.id, c.def])),
+            })
+          }
         >
-          <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
-            {virtualizer.getVirtualItems().map((vi) => {
-              const row = tableRows[vi.index];
-              const r = row.original;
-              const onCursor = r.id === cursorId;
-              return (
-                <div
-                  key={row.id}
-                  onClick={() => setCursorId(r.id)}
-                  onDoubleClick={() => onEdit(r)}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    setCursorId(r.id);
-                    setMenu({ x: e.clientX, y: e.clientY, row: r });
-                  }}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    userSelect: "none",
-                    transform: `translateY(${vi.start}px)`,
-                    height: ROW_HEIGHT,
-                    display: "grid",
-                    gridTemplateColumns: gridTemplate,
-                    gap: 8,
-                    alignItems: "center",
-                    padding: "0 8px",
-                    // A left accent marks future (scheduled) rows; transparent on
-                    // past/today rows keeps the content aligned.
-                    borderLeft:
-                      r.date > todayStr
-                        ? "3px solid var(--mantine-color-blue-5)"
-                        : "3px solid transparent",
-                    background: selected.has(r.id)
-                      ? "var(--mantine-color-blue-light)"
-                      : onCursor
-                        ? "var(--mantine-color-default-hover)"
-                        : undefined,
-                    borderBottom: "1px solid var(--mantine-color-default-border)",
-                  }}
-                >
-                  <Checkbox
-                    size="xs"
-                    aria-label={t("register.selectRow")}
-                    checked={selected.has(r.id)}
-                    onChange={() => onToggleSelect(r.id)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Shift+click selects the contiguous range from the anchor
-                      // row to this one (preventDefault stops the plain toggle).
-                      if (e.shiftKey && selectAnchorRef.current != null) {
-                        e.preventDefault();
-                        const from = Math.min(selectAnchorRef.current, vi.index);
-                        const to = Math.max(selectAnchorRef.current, vi.index);
-                        onToggleAll(
-                          tableRows.slice(from, to + 1).map((rr) => rr.original.id),
-                          true,
-                        );
-                      } else {
-                        selectAnchorRef.current = vi.index;
-                      }
-                    }}
-                  />
-                  {row.getVisibleCells().map((cell) => (
-                    <Box
-                      key={cell.id}
-                      style={{ minWidth: 0 }}
-                      data-cb-sensitive={SENSITIVE_COLUMNS.has(cell.column.id) || undefined}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </Box>
-                  ))}
-                  <Group gap={2} justify="flex-end" wrap="nowrap" {...stopRowEdit}>
-                    <ActionIcon
-                      variant="subtle"
-                      size="sm"
-                      color="gray"
-                      aria-label={t("templates.saveAs")}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSaveTemplate(r);
-                      }}
-                    >
-                      <IconDeviceFloppy size={15} />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      size="sm"
-                      aria-label={t("transactions.edit")}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit(r);
-                      }}
-                    >
-                      <IconPencil size={15} />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      size="sm"
-                      color="red"
-                      aria-label={t("transactions.delete")}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(r);
-                      }}
-                    >
-                      <IconTrash size={15} />
-                    </ActionIcon>
-                  </Group>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </Box>
+          {t("register.columnsReset")}
+        </Button>
+        <Button size="compact-sm" onClick={() => onPanel(null)}>
+          {t("actions.done")}
+        </Button>
+      </Group>
+    </Stack>
+  );
 
-      {/* Right-click context menu, anchored at the cursor. */}
-      <Menu
-        opened={menu != null}
-        onClose={() => setMenu(null)}
-        position="bottom-start"
-        withinPortal
-        shadow="md"
-        width={210}
-      >
-        <Menu.Target>
-          <div
-            aria-hidden
+  return (
+    // The ledger and whichever panel is open sit side by side. Both panels used
+    // to unfold above the rows, and everything they took they took from the one
+    // thing on the page worth looking at. On the side they cost width, which a
+    // ledger has to spare, rather than height, which it does not.
+    <Group align="flex-start" wrap="wrap" gap="md">
+      <Box style={{ overflowX: "auto", flex: 1, minWidth: 0 }}>
+        <Box style={{ minWidth: 900 }}>
+          <Box
             style={{
-              position: "fixed",
-              left: menu?.x ?? 0,
-              top: menu?.y ?? 0,
-              width: 0,
-              height: 0,
+              display: "grid",
+              gridTemplateColumns: gridTemplate,
+              gap: 8,
+              padding: "6px 8px",
+              // Matches the 3px accent reserved on each row so columns stay aligned.
+              borderLeft: "3px solid transparent",
+              fontWeight: 600,
+              fontSize: 13,
+              borderBottom: "1px solid var(--mantine-color-default-border)",
             }}
-          />
-        </Menu.Target>
-        <Menu.Dropdown>
-          {menu &&
-            (() => {
-              const r = menu.row;
-              const run = (fn: () => void) => () => {
-                setMenu(null);
-                fn();
-              };
-              return (
-                <>
-                  {selected.size > 1 && (onBulkEdit || onBulkDelete) && (
-                    <>
-                      <Menu.Label>{t("bulk.title", { count: selected.size })}</Menu.Label>
-                      {onBulkEdit && (
-                        <Menu.Item leftSection={<IconPencil size={15} />} onClick={run(onBulkEdit)}>
-                          {t("bulk.edit")}
-                        </Menu.Item>
-                      )}
-                      {onBulkDelete && (
-                        <Menu.Item
-                          color="red"
-                          leftSection={<IconTrash size={15} />}
-                          onClick={run(onBulkDelete)}
-                        >
-                          {t("bulk.delete")}
-                        </Menu.Item>
-                      )}
-                      <Menu.Divider />
-                    </>
-                  )}
-                  {r.payeeName ? <Menu.Label>{r.payeeName}</Menu.Label> : null}
-                  <Menu.Item leftSection={<IconPencil size={15} />} onClick={run(() => onEdit(r))}>
-                    {t("transactions.edit")}
-                  </Menu.Item>
-                  {r.transferId == null && (
-                    <Menu.Item
-                      leftSection={<IconCopy size={15} />}
-                      onClick={run(() => onDuplicate(r))}
-                    >
-                      {t("transactions.duplicate")}
-                    </Menu.Item>
-                  )}
-                  <Menu.Item
-                    leftSection={<IconCircleCheck size={15} />}
-                    onClick={run(() => onToggleStatus(r, r.status === 1 ? 0 : 1))}
+          >
+            <Checkbox
+              size="xs"
+              aria-label={t("register.selectAll")}
+              checked={allSelected}
+              indeterminate={!allSelected && display.some((r) => selected.has(r.id))}
+              onChange={(e) =>
+                onToggleAll(
+                  display.map((r) => r.id),
+                  e.currentTarget.checked,
+                )
+              }
+            />
+            {table.getHeaderGroups()[0].headers.map((h) => (
+              <ColumnHeader
+                key={h.id}
+                id={h.id}
+                sort={sort}
+                onSort={toggleSort}
+                onResize={(width) => setDragWidths({ ...widths, [h.id]: width })}
+                onResizeEnd={() => {
+                  if (dragWidths) persistPrefs.mutate({ registerColumnWidths: dragWidths });
+                  setDragWidths(null);
+                }}
+              >
+                {flexRender(h.column.columnDef.header, h.getContext())}
+              </ColumnHeader>
+            ))}
+          </Box>
+          {/* The way in is the first line of the ledger, where the next
+              transaction will actually land — not a form above it. "N" is
+              offered because a ledger is somewhere people type, and reaching
+              for the mouse to start every entry is the slow way round. */}
+          {onNew && (
+            <UnstyledButton
+              onClick={onNew}
+              className="cb-new-entry"
+              aria-label={t("register.newEntry")}
+            >
+              <Group justify="space-between" wrap="nowrap" gap="sm" px="xs" py={7}>
+                <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+                  <Text size="sm" ff="monospace" c="dimmed">
+                    {fmtDate(todayCivil())}
+                  </Text>
+                  <Text size="sm" c="dimmed" truncate>
+                    {t("register.newEntry")}
+                  </Text>
+                </Group>
+                <Kbd size="xs">N</Kbd>
+              </Group>
+            </UnstyledButton>
+          )}
+          <div
+            ref={parentRef}
+            tabIndex={0}
+            onKeyDown={onKeyDown}
+            style={{ height: bodyHeight ?? "min(560px, 65vh)", overflow: "auto", outline: "none" }}
+            aria-label={t("register.ledger")}
+          >
+            <div
+              style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}
+            >
+              {virtualizer.getVirtualItems().map((vi) => {
+                const row = tableRows[vi.index];
+                const r = row.original;
+                const onCursor = r.id === cursorId;
+                return (
+                  <div
+                    key={row.id}
+                    onClick={() => setCursorId(r.id)}
+                    onDoubleClick={() => onEdit(r)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setCursorId(r.id);
+                      setMenu({ x: e.clientX, y: e.clientY, row: r });
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      userSelect: "none",
+                      transform: `translateY(${vi.start}px)`,
+                      height: ROW_HEIGHT,
+                      display: "grid",
+                      gridTemplateColumns: gridTemplate,
+                      gap: 8,
+                      alignItems: "center",
+                      padding: "0 8px",
+                      // A left accent marks future (scheduled) rows; transparent on
+                      // past/today rows keeps the content aligned.
+                      borderLeft:
+                        r.date > todayStr
+                          ? "3px solid var(--mantine-color-blue-5)"
+                          : "3px solid transparent",
+                      background: selected.has(r.id)
+                        ? "var(--mantine-color-blue-light)"
+                        : onCursor
+                          ? "var(--mantine-color-default-hover)"
+                          : undefined,
+                      borderBottom: "1px solid var(--mantine-color-default-border)",
+                    }}
                   >
-                    {t("register.markCleared")}
-                  </Menu.Item>
-                  <Menu.Item
-                    leftSection={<IconLock size={15} />}
-                    onClick={run(() =>
-                      onToggleStatus(r, r.status === STATUS_RECONCILED ? 0 : STATUS_RECONCILED),
+                    <Checkbox
+                      size="xs"
+                      aria-label={t("register.selectRow")}
+                      checked={selected.has(r.id)}
+                      onChange={() => onToggleSelect(r.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Shift+click selects the contiguous range from the anchor
+                        // row to this one (preventDefault stops the plain toggle).
+                        if (e.shiftKey && selectAnchorRef.current != null) {
+                          e.preventDefault();
+                          const from = Math.min(selectAnchorRef.current, vi.index);
+                          const to = Math.max(selectAnchorRef.current, vi.index);
+                          onToggleAll(
+                            tableRows.slice(from, to + 1).map((rr) => rr.original.id),
+                            true,
+                          );
+                        } else {
+                          selectAnchorRef.current = vi.index;
+                        }
+                      }}
+                    />
+                    {row.getVisibleCells().map((cell) => (
+                      <Box
+                        key={cell.id}
+                        style={{ minWidth: 0 }}
+                        data-cb-sensitive={SENSITIVE_COLUMNS.has(cell.column.id) || undefined}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </Box>
+                    ))}
+                    <Group gap={2} justify="flex-end" wrap="nowrap" {...stopRowEdit}>
+                      <ActionIcon
+                        variant="subtle"
+                        size="sm"
+                        color="gray"
+                        aria-label={t("templates.saveAs")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSaveTemplate(r);
+                        }}
+                      >
+                        <IconDeviceFloppy size={15} />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="subtle"
+                        size="sm"
+                        aria-label={t("transactions.edit")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(r);
+                        }}
+                      >
+                        <IconPencil size={15} />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="subtle"
+                        size="sm"
+                        color="red"
+                        aria-label={t("transactions.delete")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(r);
+                        }}
+                      >
+                        <IconTrash size={15} />
+                      </ActionIcon>
+                    </Group>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </Box>
+
+        {/* Right-click context menu, anchored at the cursor. */}
+        <Menu
+          opened={menu != null}
+          onClose={() => setMenu(null)}
+          position="bottom-start"
+          withinPortal
+          shadow="md"
+          width={210}
+        >
+          <Menu.Target>
+            <div
+              aria-hidden
+              style={{
+                position: "fixed",
+                left: menu?.x ?? 0,
+                top: menu?.y ?? 0,
+                width: 0,
+                height: 0,
+              }}
+            />
+          </Menu.Target>
+          <Menu.Dropdown>
+            {menu &&
+              (() => {
+                const r = menu.row;
+                const run = (fn: () => void) => () => {
+                  setMenu(null);
+                  fn();
+                };
+                return (
+                  <>
+                    {selected.size > 1 && (onBulkEdit || onBulkDelete) && (
+                      <>
+                        <Menu.Label>{t("bulk.title", { count: selected.size })}</Menu.Label>
+                        {onBulkEdit && (
+                          <Menu.Item
+                            leftSection={<IconPencil size={15} />}
+                            onClick={run(onBulkEdit)}
+                          >
+                            {t("bulk.edit")}
+                          </Menu.Item>
+                        )}
+                        {onBulkDelete && (
+                          <Menu.Item
+                            color="red"
+                            leftSection={<IconTrash size={15} />}
+                            onClick={run(onBulkDelete)}
+                          >
+                            {t("bulk.delete")}
+                          </Menu.Item>
+                        )}
+                        <Menu.Divider />
+                      </>
                     )}
-                  >
-                    {t("register.markReconciled")}
-                  </Menu.Item>
-                  <Menu.Item
-                    leftSection={<IconDeviceFloppy size={15} />}
-                    onClick={run(() => onSaveTemplate(r))}
-                  >
-                    {t("templates.saveAs")}
-                  </Menu.Item>
-                  <Menu.Divider />
-                  <Menu.Item
-                    color="red"
-                    leftSection={<IconTrash size={15} />}
-                    onClick={run(() => onDelete(r))}
-                  >
-                    {t("transactions.delete")}
-                  </Menu.Item>
-                </>
-              );
-            })()}
-        </Menu.Dropdown>
-      </Menu>
-    </Box>
+                    {r.payeeName ? <Menu.Label>{r.payeeName}</Menu.Label> : null}
+                    <Menu.Item
+                      leftSection={<IconPencil size={15} />}
+                      onClick={run(() => onEdit(r))}
+                    >
+                      {t("transactions.edit")}
+                    </Menu.Item>
+                    {r.transferId == null && (
+                      <Menu.Item
+                        leftSection={<IconCopy size={15} />}
+                        onClick={run(() => onDuplicate(r))}
+                      >
+                        {t("transactions.duplicate")}
+                      </Menu.Item>
+                    )}
+                    <Menu.Item
+                      leftSection={<IconCircleCheck size={15} />}
+                      onClick={run(() => onToggleStatus(r, r.status === 1 ? 0 : 1))}
+                    >
+                      {t("register.markCleared")}
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconLock size={15} />}
+                      onClick={run(() =>
+                        onToggleStatus(r, r.status === STATUS_RECONCILED ? 0 : STATUS_RECONCILED),
+                      )}
+                    >
+                      {t("register.markReconciled")}
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconDeviceFloppy size={15} />}
+                      onClick={run(() => onSaveTemplate(r))}
+                    >
+                      {t("templates.saveAs")}
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item
+                      color="red"
+                      leftSection={<IconTrash size={15} />}
+                      onClick={run(() => onDelete(r))}
+                    >
+                      {t("transactions.delete")}
+                    </Menu.Item>
+                  </>
+                );
+              })()}
+          </Menu.Dropdown>
+        </Menu>
+      </Box>
+      {panel === "filters" && (
+        <RegisterSidePanel title={t("filters.section")} onClose={() => onPanel(null)}>
+          {filtersPanel}
+        </RegisterSidePanel>
+      )}
+      {panel === "columns" && (
+        <RegisterSidePanel
+          title={t("register.columns")}
+          hint={t("register.columnsHint")}
+          onClose={() => onPanel(null)}
+        >
+          {columnsPanel}
+        </RegisterSidePanel>
+      )}
+    </Group>
   );
 }
 

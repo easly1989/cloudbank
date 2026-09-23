@@ -1,7 +1,5 @@
 import {
   ActionIcon,
-  Alert,
-  Badge,
   Button,
   Card,
   Group,
@@ -12,7 +10,7 @@ import {
   Tooltip,
   UnstyledButton,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useHotkeys } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
   IconEye,
@@ -20,9 +18,6 @@ import {
   IconArrowUp,
   IconArrowsExchange,
   IconChecklist,
-  IconFilterOff,
-  IconSearch,
-  IconX,
   IconInfoCircle,
   IconPencil,
   IconDots,
@@ -64,16 +59,14 @@ import { useAmountParser } from "../useAmountParser";
 import { useToday } from "../useToday";
 import { useConfirm } from "../components/confirmContext";
 import { BulkEditModal } from "../components/BulkEditModal";
-import { CollapsibleSection } from "../components/CollapsibleSection";
-import { QuickAdd } from "../components/QuickAdd";
 import { TransactionForm } from "../components/TransactionForm";
 import { TransferForm } from "../components/TransferForm";
 import { useWallet } from "../wallet/WalletProvider";
 import { useAuth } from "../auth/AuthProvider";
 import { RegisterFilters } from "./RegisterFilters";
 import { RegisterTable } from "./RegisterTable";
+import { RegisterToolbar, type RegisterPanel } from "./RegisterToolbar";
 import {
-  activeFilters,
   applyFilters,
   hiddenNewerCount,
   emptyFilters,
@@ -207,7 +200,14 @@ export function TransactionsPage() {
     });
 
   const balances = pickBalances(user?.preferences?.registerBalances);
-  const chips = useMemo(() => activeFilters(filters), [filters]);
+  // Filters and columns share one side panel: two of them open at once would
+  // leave the ledger a strip down the middle.
+  const [panel, setPanel] = useState<RegisterPanel>(null);
+
+  // "N" starts a new transaction. A ledger is somewhere people type, so the
+  // shortcut stands down whenever a field, a menu or the sheet already has the
+  // keyboard — otherwise typing "n" into a memo would open a second form.
+  useHotkeys([["n", () => !formOpened && !transferOpened && !reconcile && form.open()]]);
 
   const [formOpened, form] = useDisclosure(false);
 
@@ -572,98 +572,15 @@ export function TransactionsPage() {
           />
         )}
 
-        {/* Searching is the commonest way to narrow a ledger, so it is a field
-            on the page rather than a control inside a panel that starts closed.
-            It writes the same filter the panel does — one source of truth, two
-            ways in. */}
         {account && !reconcile && (
-          <Stack gap="xs">
-            <TextInput
-              aria-label={t("register.search")}
-              placeholder={t("register.search")}
-              leftSection={<IconSearch size={16} />}
-              rightSection={
-                filters.text ? (
-                  <ActionIcon
-                    variant="subtle"
-                    color="gray"
-                    aria-label={t("filters.clear")}
-                    onClick={() => setFilters({ ...filters, text: "" })}
-                  >
-                    <IconX size={15} />
-                  </ActionIcon>
-                ) : undefined
-              }
-              value={filters.text}
-              onChange={(e) => setFilters({ ...filters, text: e.currentTarget.value })}
-            />
-
-            {/* What is narrowing the register, said out loud. A count told the
-                reader that three filters were on without saying which, so the
-                only way to find out was to open the panel and read every
-                control. */}
-            {chips.length > 0 && (
-              <Group gap="xs">
-                {chips.map((c) => (
-                  <Badge
-                    key={c.id}
-                    variant="light"
-                    size="lg"
-                    rightSection={
-                      <ActionIcon
-                        size="xs"
-                        variant="transparent"
-                        color="gray"
-                        aria-label={t("filters.chip.remove", { name: t(c.labelKey) })}
-                        onClick={() => setFilters(c.clear(filters))}
-                      >
-                        <IconX size={12} />
-                      </ActionIcon>
-                    }
-                  >
-                    {c.value ? `${t(c.labelKey)}: ${c.value}` : t(c.labelKey)}
-                  </Badge>
-                ))}
-                <Button
-                  variant="subtle"
-                  color="gray"
-                  size="compact-sm"
-                  leftSection={<IconFilterOff size={14} />}
-                  onClick={() => setFilters(emptyFilters)}
-                >
-                  {t("filters.clear")}
-                </Button>
-              </Group>
-            )}
-          </Stack>
-        )}
-
-        {/* No count and no clear in this header any more: the chips above say
-            which filters are on and let each one go, so a badge reading "1" and
-            a second Clear button would be the same two facts twice. */}
-        {account && !reconcile && (
-          <CollapsibleSection
-            title={t("filters.section")}
-            storageKey="cb.reg.tools"
-            defaultOpen={false}
-          >
-            <Stack gap="xs">
-              <RegisterFilters
-                filters={filters}
-                onChange={setFilters}
-                payees={payeesQuery.data ?? []}
-                categories={categoriesQuery.data ?? []}
-                tags={tagsQuery.data ?? []}
-                fmt={fmt}
-              />
-            </Stack>
-          </CollapsibleSection>
-        )}
-
-        {/* Entry sits with the ledger, not inside the filter panel: folding
-          filters away must never fold away the way to add a transaction. */}
-        {account && !reconcile && (
-          <QuickAdd walletId={walletId} account={account} onAdded={invalidate} onError={onError} />
+          <RegisterToolbar
+            filters={filters}
+            onFilters={setFilters}
+            panel={panel}
+            onPanel={setPanel}
+            privacy={privacy}
+            onPrivacy={setPrivacy}
+          />
         )}
 
         {/* Selection actions stay outside the collapsible so they remain reachable
@@ -681,26 +598,39 @@ export function TransactionsPage() {
           />
         )}
 
-        {account && filteredRows.length === 0 && <EmptyState message={t("transactions.empty")} />}
+        {account && filteredRows.length === 0 && rows.length > 0 && (
+          <EmptyState message={t("transactions.empty")} />
+        )}
       </Stack>
 
+      {/* One line, not a box. The register is explaining itself, not raising an
+          alarm: a filtered ledger whose top line is weeks old looks like the
+          balance has drifted, and it has not. */}
       {account && hiddenNewer > 0 && (
-        <Alert
-          variant="light"
-          color="gray"
-          icon={<IconArrowUp size={16} />}
-          title={t("register.hiddenNewer.title", { count: hiddenNewer })}
-        >
-          <Group justify="space-between" align="center" gap="sm" wrap="wrap">
-            <Text size="sm">{t("register.hiddenNewer.body")}</Text>
-            <Button size="xs" variant="default" onClick={() => setFilters(emptyFilters)}>
-              {t("register.hiddenNewer.action")}
-            </Button>
-          </Group>
-        </Alert>
+        <Group gap="xs" wrap="nowrap" align="center">
+          <IconArrowUp size={15} opacity={0.6} />
+          <Text size="sm" style={{ flex: 1 }}>
+            <Text span fw={600} inherit>
+              {t("register.hiddenNewer.title", { count: hiddenNewer })}
+            </Text>{" "}
+            <Text span c="dimmed" inherit>
+              {t("register.hiddenNewer.body")}
+            </Text>
+          </Text>
+          <Button
+            size="compact-sm"
+            variant="default"
+            onClick={() => setFilters(emptyFilters)}
+            style={{ flexShrink: 0 }}
+          >
+            {t("register.hiddenNewer.action")}
+          </Button>
+        </Group>
       )}
 
-      {account && filteredRows.length > 0 && (
+      {/* Rendered even when the account is empty: the first row of the ledger
+          is how a transaction gets into it. */}
+      {account && (
         <RegisterTable
           rows={filteredRows}
           accounts={accounts}
@@ -715,6 +645,27 @@ export function TransactionsPage() {
           onSaveTemplate={templateFromRow}
           onBulkEdit={() => setBulkEditOpen(true)}
           onBulkDelete={deleteSelected}
+          panel={panel}
+          onPanel={setPanel}
+          onNew={
+            reconcile
+              ? undefined
+              : () => {
+                  setDuplicating(null);
+                  setEditing(null);
+                  form.open();
+                }
+          }
+          filtersPanel={
+            <RegisterFilters
+              filters={filters}
+              onChange={setFilters}
+              payees={payeesQuery.data ?? []}
+              categories={categoriesQuery.data ?? []}
+              tags={tagsQuery.data ?? []}
+              fmt={fmt}
+            />
+          }
           fillRef={topRef}
         />
       )}

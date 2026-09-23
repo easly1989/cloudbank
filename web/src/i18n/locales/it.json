@@ -628,7 +628,10 @@
     "moveColumnRight": "Sposta la colonna a destra",
     "import": "Importa",
     "moreActions": "Altre azioni",
-    "search": "Cerca nel registro"
+    "search": "Cerca nel registro",
+    "columnsHint": "Tue, e ricordate.",
+    "columnsReset": "Ripristina",
+    "newEntry": "Nuova riga — scrivi, oppure premi N"
   },
   "filters": {
     "dateRange": "Intervallo date",
@@ -747,7 +750,9 @@
     "signIn": "Accedi",
     "signOut": "Esci",
     "language": "Lingua",
-    "toggleTheme": "Cambia tema"
+    "toggleTheme": "Cambia tema",
+    "done": "Fatto",
+    "close": "Chiudi"
   },
   "valuations": {
     "title": "Valutazioni — {{name}}",
