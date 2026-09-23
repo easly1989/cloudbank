@@ -2,6 +2,7 @@ import {
   ActionIcon,
   Badge,
   Group,
+  Kbd,
   Loader,
   Modal,
   Stack,
@@ -23,6 +24,10 @@ import { amountColor, errorColor } from "../amountTone";
 
 const MIN_CHARS = 2;
 
+// The shortcut is shown, so it has to read the way that platform writes it.
+const modKey =
+  typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl+";
+
 function accountFormat(a?: Account): MoneyFormat | undefined {
   if (!a) return undefined;
   return {
@@ -34,11 +39,21 @@ function accountFormat(a?: Account): MoneyFormat | undefined {
   };
 }
 
-// GlobalSearch is the header magnifying glass (and ⌘/Ctrl-K): a modal that
-// searches the whole wallet's register — memo, info, payee, category and tags —
-// via the server endpoint. Selecting a hit opens that account's register with
-// the query pre-applied, so the row lands in its ledger context.
-export function GlobalSearch({ walletId }: { walletId: number }) {
+// GlobalSearch searches the whole wallet's register — memo, info, payee,
+// category and tags — via the server endpoint. Selecting a hit opens that
+// account's register with the query pre-applied, so the row lands in its ledger
+// context. ⌘/Ctrl-K opens it from anywhere.
+//
+// The "sidebar" variant is a row rather than an icon: with no bar across the
+// top of the window, a lone magnifying glass would be the only unlabelled
+// control left, and a keyboard shortcut nobody is told about is not a feature.
+export function GlobalSearch({
+  walletId,
+  variant = "icon",
+}: {
+  walletId: number;
+  variant?: "icon" | "sidebar";
+}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const fmtDate = useDateFormat();
@@ -85,9 +100,21 @@ export function GlobalSearch({ walletId }: { walletId: number }) {
 
   return (
     <>
-      <ActionIcon variant="subtle" color="gray" aria-label={t("search.open")} onClick={open}>
-        <IconSearch size={20} />
-      </ActionIcon>
+      {variant === "sidebar" ? (
+        <UnstyledButton onClick={open} aria-label={t("search.open")} className="cb-search-row">
+          <Group gap={6} wrap="nowrap">
+            <IconSearch size={15} opacity={0.7} />
+            <Text size="sm" c="dimmed" truncate style={{ flex: 1 }}>
+              {t("search.short")}
+            </Text>
+            <Kbd size="xs">{modKey}K</Kbd>
+          </Group>
+        </UnstyledButton>
+      ) : (
+        <ActionIcon variant="subtle" color="gray" aria-label={t("search.open")} onClick={open}>
+          <IconSearch size={20} />
+        </ActionIcon>
+      )}
       <Modal opened={opened} onClose={close} title={t("search.title")} size="lg">
         <Stack gap="sm">
           <TextInput

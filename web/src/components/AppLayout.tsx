@@ -1,82 +1,29 @@
 import {
-  ActionIcon,
   AppShell,
-  Avatar,
-  Box,
   Burger,
-  Button,
   Center,
   Group,
   Loader,
-  Menu,
   ScrollArea,
+  Stack,
   Text,
-  UnstyledButton,
   useMantineColorScheme,
 } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Suspense, useEffect, useState } from "react";
-import {
-  IconChevronDown,
-  IconLayoutSidebarLeftCollapse,
-  IconLayoutSidebarLeftExpand,
-  IconLogout,
-  IconPlus,
-  IconWallet,
-} from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
 import { updateMe, type User } from "../api/client";
-import { useAuth, useLogout } from "../auth/AuthProvider";
+import { useAuth } from "../auth/AuthProvider";
 import { OnboardingTourProvider } from "../onboarding/TourProvider";
 import { useWallet } from "../wallet/WalletProvider";
 import { AppFooter } from "./AppFooter";
-import { ColorSchemeToggle } from "./ColorSchemeToggle";
-import { DonateButton } from "./DonateButton";
-import { GlobalSearch } from "./GlobalSearch";
-import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Logo } from "./Logo";
+import { SidebarFoot } from "./SidebarFoot";
+import { SidebarHead } from "./SidebarHead";
 import { SidebarNav } from "./SidebarNav";
-
-function WalletSwitcher() {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { wallets, currentWallet, setCurrentWalletId } = useWallet();
-
-  return (
-    <Menu position="bottom-start" withinPortal>
-      <Menu.Target>
-        <Button
-          variant="default"
-          size="xs"
-          rightSection={<IconChevronDown size={14} />}
-          data-tour="wallet"
-        >
-          {currentWallet?.title ?? "—"}
-        </Button>
-      </Menu.Target>
-      <Menu.Dropdown>
-        <Menu.Label>{t("wallet.switch")}</Menu.Label>
-        {wallets.map((w) => (
-          <Menu.Item
-            key={w.id}
-            onClick={() => setCurrentWalletId(w.id)}
-            leftSection={<IconWallet size={16} />}
-            fw={w.id === currentWallet?.id ? 700 : 400}
-          >
-            {w.title}
-          </Menu.Item>
-        ))}
-        <Menu.Divider />
-        <Menu.Item leftSection={<IconPlus size={16} />} onClick={() => navigate("/wallet/new")}>
-          {t("wallet.create")}
-        </Menu.Item>
-      </Menu.Dropdown>
-    </Menu>
-  );
-}
 
 export function AppLayout() {
   const [opened, { toggle, close }] = useDisclosure();
@@ -85,7 +32,6 @@ export function AppLayout() {
   const { currentWallet } = useWallet();
   const qc = useQueryClient();
   const { setColorScheme } = useMantineColorScheme();
-  const logout = useLogout();
 
   // Desktop sidebar collapse to an icon-only rail, remembered per user. The rail
   // only applies on desktop; the mobile drawer always shows full labels.
@@ -118,77 +64,49 @@ export function AppLayout() {
   return (
     <OnboardingTourProvider>
       <AppShell
-        header={{ height: 56 }}
+        // No bar across the top: the style tile puts the product, the wallet and
+        // the search at the head of the sidebar, and the page's own actions in
+        // its header. A phone still needs somewhere to open the drawer from, so
+        // the bar survives there and only there.
+        header={{ height: 48, collapsed: !!isDesktop }}
         navbar={{ width: railMode ? 64 : 240, breakpoint: "sm", collapsed: { mobile: !opened } }}
         footer={{ height: 36 }}
         padding="md"
       >
-        <AppShell.Header>
-          <Group h="100%" px="md" justify="space-between" wrap="nowrap">
-            <Group wrap="nowrap" gap="xs" style={{ minWidth: 0 }}>
-              <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                onClick={toggleCollapsed}
-                visibleFrom="sm"
-                aria-label={t("nav.toggleSidebar")}
-              >
-                {collapsed ? (
-                  <IconLayoutSidebarLeftExpand size={20} />
-                ) : (
-                  <IconLayoutSidebarLeftCollapse size={20} />
-                )}
-              </ActionIcon>
-              <Group gap={8} wrap="nowrap">
-                <Logo size={26} />
-                {/* The name label is hidden on phones to keep the header on one row. */}
-                <Text fw={700} size="lg" visibleFrom="xs">
-                  {t("app.name")}
-                </Text>
-              </Group>
-              <WalletSwitcher />
-            </Group>
-            <Group wrap="nowrap" gap="xs">
-              {currentWallet && <GlobalSearch walletId={currentWallet.id} />}
-              <DonateButton />
-              {/* Language lives in Preferences too; hide the header picker on phones. */}
-              <Box visibleFrom="sm">
-                <LanguageSwitcher />
-              </Box>
-              <ColorSchemeToggle />
-              <Menu position="bottom-end" withinPortal>
-                <Menu.Target>
-                  <UnstyledButton aria-label={user?.username}>
-                    <Group gap="xs">
-                      {/* Filled, not the default tint: teal.9 on teal.1 reads
-                          4.33:1, and initials are the only name on a phone,
-                          where the username beside them is hidden. */}
-                      <Avatar radius="xl" size={32} color="teal.9" variant="filled">
-                        {user?.username.slice(0, 2).toUpperCase()}
-                      </Avatar>
-                      <Text size="sm" visibleFrom="sm">
-                        {user?.username}
-                      </Text>
-                    </Group>
-                  </UnstyledButton>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  <Menu.Item leftSection={<IconLogout size={16} />} onClick={() => logout.mutate()}>
-                    {t("actions.signOut")}
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
-            </Group>
+        <AppShell.Header hiddenFrom="sm">
+          <Group h="100%" px="md" gap="xs" wrap="nowrap">
+            <Burger
+              opened={opened}
+              onClick={toggle}
+              size="sm"
+              aria-label={t("nav.toggleSidebar")}
+            />
+            <Logo size={22} />
+            <Text fw={700} truncate>
+              {currentWallet?.title ?? t("app.name")}
+            </Text>
           </Group>
         </AppShell.Header>
 
         <AppShell.Navbar p="sm" data-tour="nav">
-          {/* Scroll the nav so its lower items stay reachable when the grouped
-              sections are taller than a short viewport. */}
-          <ScrollArea h="100%" type="scroll">
-            <SidebarNav railMode={railMode} onNavigate={close} />
-          </ScrollArea>
+          {/* The nav scrolls; the foot does not. Settings is the one
+              destination reachable from anywhere, so it must not depend on how
+              far down a long list of pages the reader has scrolled. */}
+          <Stack h="100%" gap="xs" justify="space-between">
+            <SidebarHead
+              railMode={railMode}
+              onToggleCollapse={toggleCollapsed}
+              onNavigate={close}
+            />
+            <ScrollArea style={{ flex: 1, minHeight: 0 }} type="scroll">
+              <SidebarNav railMode={railMode} onNavigate={close} />
+            </ScrollArea>
+            <SidebarFoot
+              railMode={railMode}
+              onNavigate={close}
+              onToggleCollapse={toggleCollapsed}
+            />
+          </Stack>
         </AppShell.Navbar>
 
         <AppShell.Main>

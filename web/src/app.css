@@ -17,6 +17,15 @@
      an alias of the expense colour today; the two are free to diverge because
      "money out" and "this failed" are not the same statement. */
   --cb-error: #a33529;
+
+  /* The support pill. The style tile is explicit that it is outlined rather
+     than filled, "so it cannot be mistaken for a warning" — it borrows the
+     accent family instead of red. 8.28:1 on white, 7.39:1 on its own hover. */
+  --cb-support-fg: #1c46ae;
+  --cb-support-bg: #ffffff;
+  --cb-support-bg-hover: #edf2ff;
+  --cb-support-border: #c3d4fa;
+  --cb-support-ring: rgba(36, 87, 214, 0.22);
 }
 
 /* Lifted for a dark ground, where the light-mode pair would fall under the
@@ -26,6 +35,12 @@
   --cb-negative: #f08b7e;
   --cb-attention: #e0a43c;
   --cb-error: #f08b7e;
+  /* Lifted for a dark ground: 7.29:1 on a card, 6.33:1 on its own hover. */
+  --cb-support-fg: #a5bdfb;
+  --cb-support-bg: transparent;
+  --cb-support-bg-hover: #2b3560;
+  --cb-support-border: #3b4a7a;
+  --cb-support-ring: rgba(165, 189, 251, 0.25);
 }
 
 /* Secondary text, dark enough to read.
@@ -138,4 +153,33 @@ body {
 }
 .cb-search-hit:hover {
   background: var(--mantine-color-default-hover);
+}
+
+/* The wallet card and the search row at the head of the sidebar.
+   Both are buttons that must not look like buttons: they are the frame the
+   pages sit in, so they stay quiet until the pointer is on them. */
+.cb-wallet-card,
+.cb-search-row {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mantine-color-default-border);
+  background: var(--mantine-color-body);
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+.cb-wallet-card:hover,
+.cb-search-row:hover {
+  background: var(--mantine-color-default-hover);
+}
+.cb-search-row {
+  padding: 6px 10px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cb-wallet-card,
+  .cb-search-row {
+    transition: none;
+  }
 }
