@@ -4,7 +4,7 @@ import { IconTags, IconTrash } from "@tabler/icons-react";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/confirmContext";
 
@@ -82,8 +82,14 @@ function TagRow({
 }) {
   const { t } = useTranslation();
   const confirm = useConfirm();
+  // Follow a rename that came from somewhere else without an effect: React
+  // re-runs this render before painting, so the row never shows the old name.
   const [name, setName] = useState(tag.name);
-  useEffect(() => setName(tag.name), [tag.name]);
+  const [seen, setSeen] = useState(tag.name);
+  if (tag.name !== seen) {
+    setSeen(tag.name);
+    setName(tag.name);
+  }
 
   const onErr = (err: unknown) =>
     notifications.show({

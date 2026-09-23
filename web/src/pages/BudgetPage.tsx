@@ -12,7 +12,7 @@ import {
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "../components/EmptyState";
 import { IconChartPie } from "@tabler/icons-react";
@@ -182,12 +182,16 @@ function BudgetRow({
     (existing?.monthly ?? Array(12).fill(0)).map(toInput),
   );
 
-  useEffect(() => {
+  // Follow a budget that changed underneath us — a save elsewhere, a different
+  // month — without an effect. React re-runs this render before painting, so
+  // the fields never show the previous category's figures.
+  const [seen, setSeen] = useState(existing);
+  if (existing !== seen) {
+    setSeen(existing);
     setMode(existing?.mode ?? "same");
     setSame(toInput(existing?.same ?? 0));
     setMonthly((existing?.monthly ?? Array(12).fill(0)).map(toInput));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existing]);
+  }
 
   const save = useMutation({
     mutationFn: () => {
