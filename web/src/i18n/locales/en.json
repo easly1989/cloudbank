@@ -1066,7 +1066,8 @@
     "followPage": "Page period",
     "confirmResetTitle": "Reset the dashboard?",
     "confirmResetBody": "The widgets and their arrangement go back to the defaults. Your current layout is lost.",
-    "confirmResetAction": "Reset layout"
+    "confirmResetAction": "Reset layout",
+    "chartRows": "Rows"
   },
   "import": {
     "title": "Import",
@@ -1248,7 +1249,9 @@
     "saved": "Preferences saved",
     "restartTour": "Restart tutorial",
     "sidebarAccounts": "Account balances in the sidebar",
-    "sidebarAccountsHint": "Off by default. Pick up to {{max}} — it should stay a glance, not a second account list."
+    "sidebarAccountsHint": "Off by default. Pick up to {{max}} — it should stay a glance, not a second account list.",
+    "balances": "Balances on the overview and above the register",
+    "balancesHint": "Three figures are available. Show the ones you actually reconcile against."
   },
   "tour": {
     "skip": "Skip",
@@ -1326,5 +1329,26 @@
   "common": {
     "cancel": "Cancel",
     "confirm": "Confirm"
+  },
+  "overview": {
+    "balanceToday": "Balance today",
+    "earned": "Earned",
+    "spent": "Spent",
+    "kept": "Kept",
+    "period": {
+      "thisMonth": "Month",
+      "thisQuarter": "Quarter",
+      "thisHalf": "Half-year",
+      "thisYear": "Year",
+      "all": "All time"
+    },
+    "hint": {
+      "thisMonth": "This month so far.",
+      "thisQuarter": "This quarter so far.",
+      "thisHalf": "This half-year so far.",
+      "thisYear": "This year so far.",
+      "all": "Everything you have recorded, since the beginning."
+    },
+    "customise": "Customise"
   }
 }

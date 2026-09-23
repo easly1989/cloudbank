@@ -27,6 +27,18 @@ import { TwoFactorCard } from "../components/TwoFactorCard";
 import { supportedLanguages } from "../i18n";
 import { useTour } from "../onboarding/tourContext";
 import { SIDEBAR_ACCOUNTS_MAX } from "../components/sidebarAccounts";
+import {
+  ALL_BALANCES,
+  pickBalances,
+  type BalanceKey,
+} from "../components/dashboard/overviewFigureModel";
+
+// The three figures, in the order they are offered and shown.
+const BALANCE_LABEL: Record<BalanceKey, string> = {
+  bank: "register.bank",
+  today: "overview.balanceToday",
+  future: "register.future",
+};
 import { ACCENT_COLORS } from "../theme";
 import { useWallet } from "../wallet/WalletProvider";
 
@@ -61,6 +73,20 @@ export function PreferencesPage() {
   const [sidebarAccountIds, setSidebarAccountIds] = useState<number[]>(
     prefs.sidebarAccountIds ?? [],
   );
+  const [balances, setBalances] = useState<BalanceKey[]>(() =>
+    pickBalances(prefs.registerBalances),
+  );
+
+  // Turning the last one off would leave the overview and the register with no
+  // figure at all, so the last one stays on.
+  const toggleBalance = (key: BalanceKey) =>
+    setBalances((prev) =>
+      prev.includes(key)
+        ? prev.length > 1
+          ? prev.filter((k) => k !== key)
+          : prev
+        : ALL_BALANCES.filter((k) => k === key || prev.includes(k)),
+    );
 
   // Picking a fourth drops the oldest rather than refusing the click: the cap
   // is there to keep the strip a glance, not to scold anyone.
@@ -84,6 +110,7 @@ export function PreferencesPage() {
           smartAmountInput: smartAmount,
           themeAccent: accent,
           sidebarAccountIds,
+          registerBalances: balances,
         },
       }),
     onSuccess: (updated: User) => {
@@ -207,6 +234,27 @@ export function PreferencesPage() {
                   {sidebarAccountIds.length} / {SIDEBAR_ACCOUNTS_MAX}
                 </Text>
               )}
+            </Group>
+          </Input.Wrapper>
+
+          <Input.Wrapper
+            label={t("preferences.balances")}
+            description={t("preferences.balancesHint")}
+          >
+            <Group gap="xs" mt={6}>
+              {ALL_BALANCES.map((key) => {
+                const on = balances.includes(key);
+                return (
+                  <Chip
+                    key={key}
+                    checked={on}
+                    onChange={() => toggleBalance(key)}
+                    variant={on ? "filled" : "outline"}
+                  >
+                    {t(BALANCE_LABEL[key])}
+                  </Chip>
+                );
+              })}
             </Group>
           </Input.Wrapper>
 

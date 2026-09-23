@@ -91,6 +91,7 @@ export function SpendingCard({
                   value={config.chartType}
                   onChange={(v) => onConfig({ ...config, chartType: v as ChartType })}
                   data={[
+                    { value: "rows", label: t("dashboard.chartRows") },
                     { value: "donut", label: t("dashboard.chartDonut") },
                     { value: "bar", label: t("dashboard.chartBar") },
                   ]}
@@ -165,6 +166,58 @@ function SpendingChart({
 
   if (slices.length === 0 || !base) {
     return <Text c="dimmed">{t("dashboard.noSpending")}</Text>;
+  }
+
+  // Rows: the name, the figure, and a bar under them scaled against the largest
+  // slice. It reads top-down like a list of facts rather than asking the eye to
+  // compare angles, and it survives being a third of the width, which a donut
+  // with a legend does not.
+  if (chartType === "rows") {
+    const max = Math.max(...data.map((d) => d.value), 1);
+    return (
+      <Stack gap="sm">
+        {data.map((d) => (
+          <Box key={d.label}>
+            <Group justify="space-between" wrap="nowrap" gap="sm" mb={4}>
+              <Group gap={8} wrap="nowrap" style={{ minWidth: 0 }}>
+                <Box
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 999,
+                    background: d.color,
+                    flexShrink: 0,
+                  }}
+                />
+                <Text size="sm" truncate>
+                  {d.label}
+                </Text>
+              </Group>
+              <Text size="sm" fw={500} ff="monospace" style={{ whiteSpace: "nowrap" }}>
+                {base ? formatMinor(d.value, base) : d.value}
+              </Text>
+            </Group>
+            <Box
+              style={{
+                height: 4,
+                borderRadius: 999,
+                background: "var(--mantine-color-default-border)",
+                overflow: "hidden",
+              }}
+            >
+              <Box
+                style={{
+                  width: `${Math.round((d.value / max) * 100)}%`,
+                  height: "100%",
+                  borderRadius: 999,
+                  background: d.color,
+                }}
+              />
+            </Box>
+          </Box>
+        ))}
+      </Stack>
+    );
   }
 
   if (chartType === "bar") {

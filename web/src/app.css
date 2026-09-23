@@ -183,3 +183,18 @@ body {
     transition: none;
   }
 }
+
+/* Widgets on the overview are sections, not boxes.
+   Every widget renders a Mantine Card as its root, which is right when one is
+   dropped into a page on its own and wrong when a dozen of them tile a screen:
+   a field of bordered rectangles reads as a form, and the figures inside stop
+   being the subject. Flattened here, once, instead of in each widget. */
+.cb-widget-body > .mantine-Card-root {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+.cb-widget {
+  padding: 4px 0 16px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}

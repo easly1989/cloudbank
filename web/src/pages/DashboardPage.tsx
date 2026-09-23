@@ -1,5 +1,4 @@
 import {
-  Select,
   ActionIcon,
   Alert,
   Box,
@@ -22,13 +21,16 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { useConfirm } from "../components/confirmContext";
 
 import { type DashboardAccount, type User, getDashboard, updateMe } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
-import type { DatePreset } from "./registerFilterModel";
+import { dateBounds, emptyFilters, type DatePreset } from "./registerFilterModel";
 import { GridDashboard, type GridDashboardHandle } from "../components/dashboard/GridDashboard";
 import { PageHeader } from "../components/PageHeader";
+import { OverviewFigures } from "../components/dashboard/OverviewFigures";
+import { pickBalances } from "../components/dashboard/overviewFigureModel";
 import { NeedsAttention } from "../components/dashboard/NeedsAttention";
 import {
   COLUMNS,
@@ -63,6 +65,7 @@ import {
   DEFAULT_KPI,
   DEFAULT_SPENDING,
   PAGE_PERIODS,
+  periodToMonths,
   type IEConfig,
   type KpiConfig,
   type SpendingConfig,
@@ -73,7 +76,7 @@ import { UpcomingPanel } from "../components/dashboard/widgets/UpcomingPanel";
 import { useWallet } from "../wallet/WalletProvider";
 
 export function DashboardPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const confirm = useConfirm();
   const { currentWallet } = useWallet();
   const { user } = useAuth();
@@ -137,6 +140,29 @@ export function DashboardPage() {
   });
   const data = query.data;
 
+  // A second slice, scoped to the period the reader picked, for the figures at
+  // the head of the page. Balances are current whatever the period, so they come
+  // from the query above; earned and spent are the period's own answer and have
+  // to be asked for separately. The months requested cover the period exactly
+  // (0 meaning every month there is), so summing whole months is not an
+  // approximation: every preset here starts and ends on a month boundary.
+  const periodBounds = useMemo(
+    () => dateBounds({ ...emptyFilters, preset: pagePeriod }),
+    [pagePeriod],
+  );
+  const periodQuery = useQuery({
+    queryKey: ["dashboard", walletId, periodBounds.from ?? "", periodBounds.to ?? "", "period"],
+    queryFn: () =>
+      getDashboard(
+        walletId,
+        periodBounds.from,
+        periodBounds.to,
+        "category",
+        periodToMonths(pagePeriod),
+      ),
+    enabled: walletId > 0,
+  });
+
   // Accounts shown on the home screen exclude closed and excluded-from-summary
   // accounts; group the rest by account type.
   const groups = useMemo(() => {
@@ -151,6 +177,7 @@ export function DashboardPage() {
   }, [data]);
 
   const base = data?.baseCurrency ?? undefined;
+  const balances = pickBalances(user?.preferences?.registerBalances);
 
   // Render one placed widget instance by type, passing its per-instance config.
   const renderWidget = (item: PlacedWidget): ReactNode => {
@@ -323,16 +350,9 @@ export function DashboardPage() {
     <Stack>
       <PageHeader
         title={t("dashboard.title")}
+        hint={t(`overview.hint.${pagePeriod}`)}
         actions={
           <>
-            <Select
-              aria-label={t("dashboard.period")}
-              data={PAGE_PERIODS.map((p) => ({ value: p, label: t(`filters.presets.${p}`) }))}
-              value={pagePeriod}
-              onChange={(v) => v && persistPeriod.mutate(v as DatePreset)}
-              allowDeselect={false}
-              w={150}
-            />
             {editingLayout && (
               <Menu position="bottom-end" withinPortal>
                 <Menu.Target>
@@ -370,18 +390,39 @@ export function DashboardPage() {
                 </Button>
               </>
             )}
+            {/* Outlined beside the filled "Add transaction": the tile gives the
+                page one action that matters and keeps the rest quieter. */}
             <Button
-              variant={editingLayout ? "light" : "subtle"}
-              color="gray"
-              size="xs"
+              variant={editingLayout ? "light" : "default"}
+              color={editingLayout ? undefined : "gray"}
               leftSection={<IconAdjustmentsHorizontal size={16} />}
               onClick={() => setEditingLayout((v) => !v)}
               data-tour="customize"
             >
-              {editingLayout ? t("dashboard.layoutDone") : t("dashboard.customize")}
+              {editingLayout ? t("dashboard.layoutDone") : t("overview.customise")}
+            </Button>
+            <Button component={Link} to="/transactions?new=1" leftSection={<IconPlus size={16} />}>
+              {t("transactions.add")}
             </Button>
           </>
         }
+      />
+
+      <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+        <SegmentedControl
+          aria-label={t("dashboard.period")}
+          value={pagePeriod}
+          onChange={(v) => persistPeriod.mutate(v as DatePreset)}
+          data={PAGE_PERIODS.map((p) => ({ value: p, label: t(`overview.period.${p}`) }))}
+        />
+      </Group>
+
+      <OverviewFigures
+        balances={balances}
+        totals={data?.totals}
+        base={base}
+        points={periodQuery.data?.incomeExpense ?? []}
+        locale={i18n.resolvedLanguage ?? "en"}
       />
 
       {editingLayout && (
@@ -454,7 +495,11 @@ function WidgetFrame({
     width === presets.l ? "l" : width === presets.m ? "m" : width === presets.s ? "s" : "";
   const { t } = useTranslation();
   return (
-    <Box style={{ display: "flex", flexDirection: "column" }}>
+    // cb-widget flattens the card each widget renders as its root: the tile has
+    // the overview as sections separated by air and a hairline, not a field of
+    // boxes. Doing it here rather than in seventeen widgets keeps the widgets
+    // reusable anywhere a card is still the right frame.
+    <Box className="cb-widget" style={{ display: "flex", flexDirection: "column" }}>
       {editing && (
         <Group
           justify="space-between"
@@ -498,7 +543,7 @@ function WidgetFrame({
           </Group>
         </Group>
       )}
-      <Box>{children}</Box>
+      <Box className="cb-widget-body">{children}</Box>
     </Box>
   );
 }
