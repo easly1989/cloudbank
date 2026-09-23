@@ -6,6 +6,7 @@ import { expenseColor, incomeColor, negativeOnlyColor } from "../../amountTone";
 import { formatMinor } from "../../money";
 import { periodTotals, type BalanceKey } from "./overviewFigureModel";
 import { FIGURES } from "../../pages/overviewTheme";
+import { useCountUp } from "../../motion";
 
 /**
  * The figures at the head of the overview: what you have, and what the period
@@ -46,34 +47,32 @@ export function OverviewFigures({
       style={{ width: "100%" }}
     >
       {balances.map((key, i) => (
-        <Figure
+        <MoneyFigure
           key={key}
+          base={base}
+          amount={totals[key]}
           label={label[key]}
           // The first balance is the headline; a second or third one the reader
           // asked for sits at the same size as earned and spent.
           headline={i === 0}
           colour={negativeOnlyColor(totals[key])}
-          value={formatMinor(totals[key], base)}
         />
       ))}
-      <Figure
+      <MoneyFigure
         label={t("overview.earned")}
+        base={base}
+        amount={earned}
+        sign="+"
         colour={incomeColor}
-        value={`+${formatMinor(earned, base)}`}
       />
-      <Figure
+      <MoneyFigure
         label={t("overview.spent")}
+        base={base}
+        amount={spent}
+        sign="−"
         colour={expenseColor}
-        value={`−${formatMinor(spent, base)}`}
       />
-      <Figure
-        label={t("overview.kept")}
-        value={
-          kept == null
-            ? "—"
-            : `${kept.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`
-        }
-      />
+      <KeptFigure label={t("overview.kept")} kept={kept} locale={locale} />
     </Group>
   );
 }
@@ -107,5 +106,72 @@ function Figure({
         {value}
       </Text>
     </Stack>
+  );
+}
+
+/**
+ * A figure in money, counting from where it was.
+ *
+ * The tile asks for this when a filter changes: the figure is the answer to the
+ * filter, and seeing it travel says "this changed because of what you just did"
+ * where a figure that swaps says nothing. Formatting happens after the count,
+ * so the money face, the separators and the currency are the reader's own
+ * throughout — it is the amount that moves, not the text.
+ */
+function MoneyFigure({
+  label,
+  amount,
+  base,
+  sign = "",
+  headline,
+  colour,
+}: {
+  label: string;
+  amount: number;
+  base: CurrencyInfo;
+  sign?: string;
+  headline?: boolean;
+  colour?: string;
+}) {
+  const shown = useCountUp(amount);
+  return (
+    <Figure
+      label={label}
+      headline={headline}
+      colour={colour}
+      value={`${sign}${formatMinor(shown, base)}`}
+    />
+  );
+}
+
+/**
+ * The share of what came in that is still here, as a percentage.
+ *
+ * It counts like the figures beside it — three totals where two travel and one
+ * jumps reads as a bug — but a percentage carries a decimal the others do not,
+ * so it is counted in tenths and divided back.
+ */
+function KeptFigure({
+  label,
+  kept,
+  locale,
+}: {
+  label: string;
+  kept: number | null;
+  locale: string;
+}) {
+  const shown = useCountUp(Math.round((kept ?? 0) * 10));
+  return (
+    <Figure
+      label={label}
+      value={
+        kept == null
+          ? "—"
+          : `${(shown / 10).toLocaleString(locale, {
+              minimumFractionDigits: 1,
+              maximumFractionDigits: 1,
+            })} %`
+      }
+    />
   );
 }

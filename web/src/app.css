@@ -270,6 +270,7 @@ body {
   --cb-nav-active-bg: #eaf0fe;
   --cb-track-bg: #f1f4f9;
   --cb-attention-border: #e6c98f;
+  --cb-arrival-tint: #eaf0fe;
 }
 :root[data-mantine-color-scheme="dark"] {
   --cb-shell-bg: #11161d;
@@ -282,6 +283,7 @@ body {
   --cb-nav-active-bg: #182440;
   --cb-track-bg: #1a212b;
   --cb-attention-border: #5c4726;
+  --cb-arrival-tint: #18243c;
 }
 
 .cb-sidebar {
@@ -397,5 +399,38 @@ body {
   }
   .cb-settings-body {
     height: auto !important;
+  }
+}
+
+/* A row that has just been saved.
+ *
+ * It lands wherever the date order puts it, which on a long register is often
+ * nowhere near where the reader was looking — so it arrives from slightly above
+ * and holds a pale tint for about a second, then stops. A mark that stayed
+ * would be a mark the reader has to learn to ignore.
+ *
+ * The tint is painted as a gradient rather than a background colour: the row
+ * sets its own background inline for selection and cursor, and an inline style
+ * wins over a class. */
+@keyframes cb-arrive {
+  0% {
+    transform: translateY(-6px);
+    background-image: linear-gradient(var(--cb-arrival-tint), var(--cb-arrival-tint));
+  }
+  55% {
+    transform: translateY(0);
+    background-image: linear-gradient(var(--cb-arrival-tint), var(--cb-arrival-tint));
+  }
+  100% {
+    transform: translateY(0);
+    background-image: none;
+  }
+}
+.cb-row-arrived {
+  animation: cb-arrive 1000ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cb-row-arrived {
+    animation: none;
   }
 }

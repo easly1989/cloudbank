@@ -70,7 +70,8 @@ export function TransactionForm({
   editing: Transaction | null;
   /** Pre-fill a NEW transaction from this row (create, not update). */
   duplicate?: Transaction | null;
-  onSaved: () => void;
+  /** Called with the id of the row that was saved, so it can be marked. */
+  onSaved: (savedId?: number) => void;
   templates: Template[];
   onTemplateSaved: () => void;
 }) {
@@ -284,8 +285,8 @@ export function TransactionForm({
         ? updateTransaction(walletId, editing.id, body)
         : createTransaction(walletId, body);
     },
-    onSuccess: () => {
-      onSaved();
+    onSuccess: (saved) => {
+      onSaved(saved?.id);
       const mode = modeRef.current;
       if (mode === "close") {
         onClose();
