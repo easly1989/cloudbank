@@ -15,7 +15,9 @@ test("full journey: setup → wallet → account → transaction → import → 
 
   await test.step("first-run setup", async () => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Welcome to CloudBank" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Welcome to CloudBank" }),
+    ).toBeVisible();
     await page.getByLabel("Username").fill("admin");
     const pw = page.locator('input[type="password"]');
     await pw.first().fill("supersecret1");
@@ -24,12 +26,14 @@ test("full journey: setup → wallet → account → transaction → import → 
   });
 
   await test.step("create the first wallet", async () => {
-    await expect(page.getByRole("heading", { name: "Create your first wallet" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Create your first wallet" }),
+    ).toBeVisible();
     await page.getByLabel("Wallet name").fill("Test Wallet");
     await page.getByRole("button", { name: "Create wallet" }).click();
-    await expect(page.getByRole("button", { name: "Switch wallet" })).toContainText(
-      "Test Wallet",
-    );
+    await expect(
+      page.getByRole("button", { name: "Switch wallet" }),
+    ).toContainText("Test Wallet");
   });
 
   await test.step("dismiss the first-login tour", async () => {
@@ -57,7 +61,9 @@ test("full journey: setup → wallet → account → transaction → import → 
     await sheet.getByLabel("Amount", { exact: true }).fill("12.50");
     // "Save" keeps the sheet open for the next entry, which is the point of a
     // side panel; "Save & close" is the one that puts it away.
-    await sheet.getByRole("button", { name: "Save & close", exact: true }).click();
+    await sheet
+      .getByRole("button", { name: "Save & close", exact: true })
+      .click();
     // The new row shows in the register.
     await expect(page.getByText("2026-02-01")).toBeVisible();
   });
@@ -69,7 +75,9 @@ test("full journey: setup → wallet → account → transaction → import → 
     await page.getByText("2026-02-01").first().dblclick();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await dialog.locator('input[type="file"]').setInputFiles("fixtures/receipt.txt");
+    await dialog
+      .locator('input[type="file"]')
+      .setInputFiles("fixtures/receipt.txt");
     await expect(dialog.getByText("receipt.txt")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
@@ -85,17 +93,22 @@ test("full journey: setup → wallet → account → transaction → import → 
   });
 
   await test.step("import a HomeBank .xhb file", async () => {
-    // Import lives under Settings → the wallet tab → "Import & export" section
+    // Import lives under Settings → "Import & export"
     // (it's wallet-scoped, so it's out of the main nav); deep-link straight to it.
-    await page.goto("/settings?tab=wallet&section=import");
+    await page.goto("/settings/data");
     await page.setInputFiles('input[type="file"]', "fixtures/sample.xhb");
     await page.getByRole("button", { name: "Import", exact: true }).click();
     await expect(page.getByText("Import complete")).toBeVisible();
   });
 
   await test.step("the import switched to the new wallet", async () => {
-    // ImportPage selects the freshly created wallet automatically.
-    await expect(page.getByRole("button", { name: "Switch wallet" })).toContainText("My Money");
+    // ImportPage selects the freshly created wallet automatically. The wallet
+    // card is in the app's sidebar, and settings is its own screen without one,
+    // so leave settings before looking for it.
+    await page.goto("/");
+    await expect(
+      page.getByRole("button", { name: "Switch wallet" }),
+    ).toContainText("My Money");
   });
 
   await test.step("a report renders", async () => {
@@ -113,9 +126,9 @@ test("full journey: setup → wallet → account → transaction → import → 
   });
 
   await test.step("download a wallet backup", async () => {
-    // Backup lives under Settings → the wallet tab → "Backup & integrity"
+    // Backup lives under Settings → "Import & export", below the import tools
     // section; deep-link straight to it.
-    await page.goto("/settings?tab=wallet&section=backup");
+    await page.goto("/settings/data");
     const downloadPromise = page.waitForEvent("download");
     await page.getByRole("button", { name: "Download backup" }).click();
     const download = await downloadPromise;

@@ -16,7 +16,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { errorColor } from "../amountTone";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { ApiError, deleteWallet, listCategories, updateWallet } from "../api/client";
 import { useWallet } from "../wallet/WalletProvider";
@@ -24,11 +24,14 @@ import { BackupCard } from "./BackupCard";
 import { ImportExport } from "./ImportPage";
 import { IntegrityCard } from "./IntegrityCard";
 
-export function WalletSettingsPage() {
+export function WalletSettingsPage({
+  only = "general",
+}: {
+  only?: "general" | "import" | "backup" | "danger";
+}) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const [params, setParams] = useSearchParams();
   const { currentWallet } = useWallet();
   const [title, setTitle] = useState(currentWallet?.title ?? "");
   const [ownerName, setOwnerName] = useState(currentWallet?.ownerName ?? "");
@@ -84,30 +87,13 @@ export function WalletSettingsPage() {
   const isOwner = currentWallet.role === "owner";
   const canDelete = confirm === currentWallet.title;
 
-  // Group the wallet's settings behind a section dropdown (deep-linkable via
-  // ?section=) so the page doesn't fill up. Import is wallet-scoped, so it lives
-  // here rather than in the main nav.
-  const sections = [
-    { value: "general", label: t("settings.sectionGeneral") },
-    { value: "import", label: t("settings.sectionImport") },
-    { value: "backup", label: t("settings.sectionBackup") },
-    ...(isOwner ? [{ value: "danger", label: t("wallet.dangerZone") }] : []),
-  ];
-  const requested = params.get("section") ?? "general";
-  const section = sections.some((s) => s.value === requested) ? requested : "general";
-  const setSection = (s: string) => setParams({ tab: "wallet", section: s }, { replace: true });
+  // Which of the wallet's settings to render. The settings screen owns the
+  // navigation now, so this is a prop rather than a dropdown of its own: two
+  // levels of section picker on one screen is one too many.
+  const section = only;
 
   return (
     <Stack>
-      <Select
-        label={t("settings.section")}
-        data={sections}
-        value={section}
-        onChange={(v) => v && setSection(v)}
-        allowDeselect={false}
-        maw={260}
-      />
-
       {section === "general" && (
         <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
           <Card withBorder>

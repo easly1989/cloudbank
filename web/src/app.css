@@ -356,3 +356,46 @@ body {
   border-radius: 10px;
   padding: 16px 20px;
 }
+
+/* A section in the settings rail. It is a plain link rather than a NavLink
+   component because the rail is not the app's navigation — it is a table of
+   contents for one screen, and borrowing the nav's component would borrow its
+   behaviour too. */
+.cb-settings-section {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--cb-nav-item);
+}
+.cb-settings-section:hover {
+  background: var(--mantine-color-default-hover);
+}
+.cb-settings-section[aria-current="page"] {
+  background: var(--cb-nav-active-bg);
+  color: var(--cb-nav-active);
+  font-weight: 600;
+}
+
+/* The settings screen. The rail takes the sidebar's place at desktop width and
+   stacks above the content below it — 265 pixels of rail beside a 320 pixel
+   screen leaves nothing to read, and settings is the one screen with no burger
+   to hide it behind. */
+.cb-settings-screen {
+  display: flex;
+  min-height: 100vh;
+}
+.cb-settings-rail {
+  flex-shrink: 0;
+}
+@media (max-width: 47.99em) {
+  .cb-settings-screen {
+    flex-direction: column;
+    min-height: auto;
+  }
+  .cb-settings-rail {
+    width: 100% !important;
+  }
+  .cb-settings-body {
+    height: auto !important;
+  }
+}
