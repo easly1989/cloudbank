@@ -566,7 +566,8 @@
     "empty": "Nessuna transazione corrisponde a \"{{q}}\".",
     "count": "{{count}} risultato/i",
     "more": "+{{count}} altri — affina la ricerca per restringere.",
-    "untitled": "(senza descrizione)"
+    "untitled": "(senza descrizione)",
+    "short": "Cerca"
   },
   "attachments": {
     "title": "Allegati",

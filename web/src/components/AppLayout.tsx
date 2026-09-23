@@ -101,7 +101,11 @@ export function AppLayout() {
             <ScrollArea style={{ flex: 1, minHeight: 0 }} type="scroll">
               <SidebarNav railMode={railMode} onNavigate={close} />
             </ScrollArea>
-            <SidebarFoot railMode={railMode} onNavigate={close} />
+            <SidebarFoot
+              railMode={railMode}
+              onNavigate={close}
+              onToggleCollapse={toggleCollapsed}
+            />
           </Stack>
         </AppShell.Navbar>
 

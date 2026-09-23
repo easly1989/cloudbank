@@ -1,6 +1,5 @@
 import { ActionIcon, Box, Group, Menu, Stack, Text, Tooltip, UnstyledButton } from "@mantine/core";
 import {
-  IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
   IconPlus,
   IconSelector,
@@ -71,22 +70,15 @@ export function SidebarHead({
 
   return (
     <Stack gap="xs" mb="xs">
-      <Group justify="space-between" wrap="nowrap" gap="xs">
-        <Group gap={8} wrap="nowrap" style={{ minWidth: 0 }}>
-          <Logo size={24} />
-          <Text fw={700} size="md" truncate>
-            {t("app.name")}
-          </Text>
-        </Group>
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          onClick={onToggleCollapse}
-          visibleFrom="sm"
-          aria-label={t("nav.toggleSidebar")}
-        >
-          <IconLayoutSidebarLeftCollapse size={20} />
-        </ActionIcon>
+      {/* Nothing shares this row. The tile gives the product a 22px mark, a
+          16px/700 name and nine pixels between them, and it reads as roomy
+          precisely because nothing else competes for the width — the collapse
+          control lives at the foot of the sidebar with the other chrome. */}
+      <Group gap={9} wrap="nowrap" style={{ minWidth: 0 }} pt={6} pb={2}>
+        <Logo size={24} />
+        <Text fw={700} size="md" truncate>
+          {t("app.name")}
+        </Text>
       </Group>
 
       {currentWallet && (

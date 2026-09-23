@@ -102,10 +102,10 @@ export function GlobalSearch({
     <>
       {variant === "sidebar" ? (
         <UnstyledButton onClick={open} aria-label={t("search.open")} className="cb-search-row">
-          <Group gap={8} wrap="nowrap">
-            <IconSearch size={16} opacity={0.7} />
+          <Group gap={6} wrap="nowrap">
+            <IconSearch size={15} opacity={0.7} />
             <Text size="sm" c="dimmed" truncate style={{ flex: 1 }}>
-              {t("search.open")}
+              {t("search.short")}
             </Text>
             <Kbd size="xs">{modKey}K</Kbd>
           </Group>

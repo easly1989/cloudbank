@@ -9,7 +9,7 @@ import {
   Tooltip,
   UnstyledButton,
 } from "@mantine/core";
-import { IconLogout, IconSettings } from "@tabler/icons-react";
+import { IconLayoutSidebarLeftCollapse, IconLogout, IconSettings } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -29,9 +29,11 @@ import { DonateButton } from "./DonateButton";
 export function SidebarFoot({
   railMode,
   onNavigate,
+  onToggleCollapse,
 }: {
   railMode: boolean;
   onNavigate?: () => void;
+  onToggleCollapse: () => void;
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -88,20 +90,36 @@ export function SidebarFoot({
             </Menu.Item>
           </Menu.Dropdown>
         </Menu>
-        <Tooltip label={gearLabel} withinPortal>
-          <ActionIcon
-            component={Link}
-            to="/settings"
-            onClick={onNavigate}
-            variant="subtle"
-            color="gray"
-            size="lg"
-            aria-label={gearLabel}
-            data-tour="settings"
-          >
-            <IconSettings size={18} />
-          </ActionIcon>
-        </Tooltip>
+        <Group gap={2} wrap="nowrap">
+          {/* Collapsing the sidebar is chrome, like the gear — it sat in the
+              title row and crowded the product name out of its own line. */}
+          <Tooltip label={t("nav.toggleSidebar")} withinPortal>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="lg"
+              visibleFrom="sm"
+              onClick={onToggleCollapse}
+              aria-label={t("nav.toggleSidebar")}
+            >
+              <IconLayoutSidebarLeftCollapse size={18} />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label={gearLabel} withinPortal>
+            <ActionIcon
+              component={Link}
+              to="/settings"
+              onClick={onNavigate}
+              variant="subtle"
+              color="gray"
+              size="lg"
+              aria-label={gearLabel}
+              data-tour="settings"
+            >
+              <IconSettings size={18} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
       </Group>
     </Box>
   );
