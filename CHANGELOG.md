@@ -50,6 +50,18 @@ dashboard polish.
   to read; a status is now a word with a small coloured dot, and the colour
   still carries the meaning.
 
+- **The ledger got its screen back, and its first line is the way in.** Filters
+  and columns open beside the transactions instead of unfolding above them:
+  everything they used to take, they took from the rows, and the rows are the
+  page. On the side they cost width, which a ledger has to spare.
+
+  Adding a transaction starts where the transaction will land — the first line
+  of the register, or the N key — instead of a form sitting above it. The entry
+  sheet opens beside the rows, which is where entering one belongs.
+
+  The notice about rows a filter is hiding is one line now rather than a boxed
+  alert. The register is explaining itself, not raising an alarm.
+
 - **The register says which account it is, and what is hiding rows.** The page
   was called "Transactions" with the account in a dropdown beside the title —
   the same thing named twice, neither of them the subject. The account is the

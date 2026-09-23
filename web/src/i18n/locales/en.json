@@ -628,7 +628,10 @@
     "moveColumnRight": "Move this column right",
     "import": "Import",
     "moreActions": "More actions",
-    "search": "Search the register"
+    "search": "Search the register",
+    "columnsHint": "Yours, and remembered.",
+    "columnsReset": "Reset",
+    "newEntry": "New entry — start typing, or press N"
   },
   "filters": {
     "dateRange": "Date range",
@@ -747,7 +750,9 @@
     "signIn": "Sign in",
     "signOut": "Sign out",
     "language": "Language",
-    "toggleTheme": "Toggle color scheme"
+    "toggleTheme": "Toggle color scheme",
+    "done": "Done",
+    "close": "Close"
   },
   "valuations": {
     "title": "Valuations — {{name}}",
