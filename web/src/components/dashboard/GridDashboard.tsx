@@ -12,6 +12,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { COLUMNS, type PlacedWidget } from "./layout";
+import { WIDGETS } from "../../pages/overviewTheme";
 
 // Imperative handle so the page can size a specific widget (the S/M/L presets)
 // without rebuilding the grid — gridstack's change event then persists the
@@ -90,7 +91,10 @@ export const GridDashboard = forwardRef<
       {
         column: COLUMNS,
         cellHeight: CELL_HEIGHT,
-        margin: 8,
+        // Fifty-six pixels between widgets, which gridstack expresses as half
+        // that on each side. It is wide on purpose: with no borders left, the
+        // gap is the only thing saying where one section ends.
+        margin: WIDGETS.columnGap / 2,
         float: false, // compact upward — no vertical gaps
         staticGrid: true, // toggled by the editing effect
         // Height is content-driven (see the resize observer below), so only
@@ -194,11 +198,28 @@ export const GridDashboard = forwardRef<
   }, [hosts]);
 
   return (
-    <div ref={elRef} className={`grid-stack${editing ? " grid-stack--editing" : ""}`}>
-      {[...hosts].map(([id, host]) => {
-        const item = items.find((i) => i.id === id);
-        return item ? createPortal(render(item), host, id) : null;
-      })}
+    // gridstack spends its margin on every side of every item, including the
+    // outermost ones, so the grid would sit half a gap in from the figures
+    // above it. The wrapper pulls it back out, which leaves the widgets sharing
+    // the page's left edge with everything else and the block itself starting
+    // the 22 pixels below that the tile asks for. `clip` keeps that overhang
+    // from widening the page — what hangs over is the empty band gridstack
+    // reserves, never a widget — and unlike `hidden` it creates no scroll
+    // container, so nothing inside changes behaviour.
+    <div style={{ overflowX: "clip" }}>
+      <div
+        style={{
+          marginInline: -WIDGETS.columnGap / 2,
+          marginTop: WIDGETS.padTop - WIDGETS.columnGap / 2,
+        }}
+      >
+        <div ref={elRef} className={`grid-stack${editing ? " grid-stack--editing" : ""}`}>
+          {[...hosts].map(([id, host]) => {
+            const item = items.find((i) => i.id === id);
+            return item ? createPortal(render(item), host, id) : null;
+          })}
+        </div>
+      </div>
     </div>
   );
 });

@@ -5,8 +5,8 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { getBills, getBudgetReport, getTransactionReview } from "../../api/client";
-import { attentionColor } from "../../amountTone";
 import { buildAttentionItems, countOverBudget, monthRange } from "./attention";
+import { ATTENTION } from "../../pages/overviewTheme";
 
 /**
  * What the overview opens with: the handful of things that want doing.
@@ -53,30 +53,38 @@ export function NeedsAttention({ walletId }: { walletId: number }) {
   if (items.length === 0) return null;
 
   return (
-    <Box
-      p="md"
-      style={{
-        border: `1px solid ${attentionColor}`,
-        borderRadius: "var(--mantine-radius-md)",
-      }}
-    >
-      <Stack gap="xs">
-        <Text fw={600} size="sm">
+    <Box className="cb-attention">
+      <Stack gap={ATTENTION.gap}>
+        <Text fz={ATTENTION.title.fz} fw={ATTENTION.title.fw}>
           {t("attention.title", { count: items.length })}
         </Text>
-        {items.map((item) => (
-          <Group key={item.key} gap="sm" wrap="nowrap" align="baseline">
-            <Text ff="monospace" fw={600} size="sm" style={{ minWidth: "2.5ch" }}>
-              {item.count}
-            </Text>
-            <Text size="sm" c="dimmed">
-              {t(`attention.${item.key}`, { count: item.count })}
-            </Text>
-            <Anchor component={Link} to={item.to} size="sm" fw={600} ml="auto">
-              {t(`attention.${item.key}Action`)}
-            </Anchor>
-          </Group>
-        ))}
+        <Stack gap={ATTENTION.listGap}>
+          {items.map((item) => (
+            <Group key={item.key} gap={ATTENTION.rowGap} wrap="nowrap" align="baseline">
+              <Text
+                ff="monospace"
+                fz={ATTENTION.count.fz}
+                fw={ATTENTION.count.fw}
+                style={{ minWidth: ATTENTION.count.width }}
+              >
+                {item.count}
+              </Text>
+              <Text fz={ATTENTION.text.fz} c="dimmed">
+                {t(`attention.${item.key}`, { count: item.count })}
+              </Text>
+              <Anchor
+                component={Link}
+                to={item.to}
+                fz={ATTENTION.action.fz}
+                fw={ATTENTION.action.fw}
+                ml="auto"
+                style={{ whiteSpace: "nowrap" }}
+              >
+                {t(`attention.${item.key}Action`)}
+              </Anchor>
+            </Group>
+          ))}
+        </Stack>
       </Stack>
     </Box>
   );
