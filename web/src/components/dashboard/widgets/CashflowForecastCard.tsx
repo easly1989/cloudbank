@@ -38,10 +38,13 @@ export function CashflowForecastCard({
     queryFn: () => getCashflowForecast(walletId, account!.id, days),
     enabled: walletId > 0 && !!account,
   });
-  const dates = q.data?.dates ?? [];
-  const balances = q.data?.balances ?? [];
-  const base = q.data?.currency ?? undefined;
-  const minimum = q.data?.minimum ?? 0;
+  // See BalanceSparklineCard: a fresh `?? []` each render made the chart
+  // option's useMemo a no-op.
+  const data = q.data;
+  const dates = useMemo(() => data?.dates ?? [], [data]);
+  const balances = useMemo(() => data?.balances ?? [], [data]);
+  const base = data?.currency ?? undefined;
+  const minimum = data?.minimum ?? 0;
   const low = balances.length ? Math.min(...balances) : 0;
   const ending = balances.length ? balances[balances.length - 1] : undefined;
   const breaches = balances.length > 0 && low < minimum;

@@ -14,14 +14,16 @@ import { negativeOnlyColor } from "../../../amountTone";
 // so liabilities net out) over the last ~12 months, from the balance report.
 export function NetWorthTrendCard({ walletId }: { walletId: number }) {
   const { t } = useTranslation();
-  const { from, to } = useMemo(trailingYearBounds, []);
+  const { from, to } = useMemo(() => trailingYearBounds(), []);
   const q = useQuery({
     queryKey: ["balance", walletId, "month", [], from, to],
     queryFn: () => getBalanceReport(walletId, "month", [], from, to),
     enabled: walletId > 0,
   });
   const result = q.data;
-  const buckets = result?.buckets ?? [];
+  // See BalanceSparklineCard: a fresh `?? []` each render made both memos below
+  // recompute on every render.
+  const buckets = useMemo(() => result?.buckets ?? [], [result]);
   const base = result?.currency ?? undefined;
   // Net worth per bucket = sum of every account's running balance at that bucket.
   const net = useMemo(
