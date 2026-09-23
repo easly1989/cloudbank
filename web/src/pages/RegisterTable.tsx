@@ -206,6 +206,7 @@ export function RegisterTable({
   // recomputing whenever the block above (fillRef) changes size — e.g. an
   // accordion collapses or the bulk bar appears — and on window resize.
   const [bodyHeight, setBodyHeight] = useState<number>();
+  const footRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     if (!fillRef) return;
     const scroll = parentRef.current;
@@ -214,17 +215,25 @@ export function RegisterTable({
     const BOTTOM_GAP = 56;
     const measure = () => {
       const top = scroll.getBoundingClientRect().top;
-      setBodyHeight(Math.max(240, Math.round(window.innerHeight - top - BOTTOM_GAP)));
+      // The selection bar sits below the body inside the same card, so the body
+      // has to give up exactly its height. Without this the bar is pushed off
+      // the bottom of the window the moment anything is selected, which is the
+      // one thing a bar that summarises the selection must never do.
+      const foot = footRef.current?.getBoundingClientRect().height ?? 0;
+      setBodyHeight(Math.max(240, Math.round(window.innerHeight - top - BOTTOM_GAP - foot)));
     };
     measure();
     const ro = new ResizeObserver(measure);
     if (fillRef.current) ro.observe(fillRef.current);
+    if (footRef.current) ro.observe(footRef.current);
     window.addEventListener("resize", measure);
     return () => {
       ro.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [fillRef]);
+    // bulkBar is in the deps because the foot appearing or leaving changes the
+    // height the body may take, and it is the only signal that it did.
+  }, [fillRef, bulkBar]);
 
   // Column visibility is a per-user preference; resolve defaults for any unset.
   const savedColumns = user?.preferences?.registerColumns;
@@ -293,12 +302,17 @@ export function RegisterTable({
         header: () => t("transactions.date"),
         cell: ({ getValue }) => {
           const date = getValue();
-          if (date <= todayStr) return fmtDate(date);
+          if (date <= todayStr)
+            return (
+              <Text fz={ROW_TYPE.date.fz} style={{ whiteSpace: "nowrap" }}>
+                {fmtDate(date)}
+              </Text>
+            );
           // Future-dated (scheduled) rows: a clock glyph and italic, dimmed date.
           return (
             <Group gap={4} wrap="nowrap" c="dimmed">
               <IconClock size={13} title={t("register.future")} />
-              <Text size="sm" fs="italic">
+              <Text fz={ROW_TYPE.date.fz} fs="italic" style={{ whiteSpace: "nowrap" }}>
                 {fmtDate(date)}
               </Text>
             </Group>
@@ -411,13 +425,27 @@ export function RegisterTable({
 
   // Build the grid template from the currently visible columns (checkbox +
   // visible data columns + actions), so hidden columns reclaim their space.
-  const gridTemplate = [
+  const tracks = [
     ROW_SELECT_WIDTH,
     ...table
       .getVisibleLeafColumns()
       .map((c) => (widths[c.id] ? `${widths[c.id]}px` : (COL_WIDTH[c.id] ?? "minmax(100px, 1fr)"))),
     ROW_ACTIONS_WIDTH,
-  ].join(" ");
+  ];
+  const gridTemplate = tracks.join(" ");
+
+  // The narrowest a row can be drawn without a column being squeezed out of
+  // existence, which is also the width below which the ledger has to scroll
+  // sideways.
+  //
+  // Rows are absolutely positioned inside the virtualiser, so they contribute
+  // nothing to the scroll width: a row wider than the card was simply clipped,
+  // and what fell off the right was the running balance. Deriving the figure
+  // from the same tracks that draw the row means the two cannot disagree.
+  const minRowWidth =
+    tracks.reduce((sum, track) => sum + trackFloor(track), 0) +
+    ROW_GAP * (tracks.length - 1) +
+    BAND_INSET * 2;
 
   // Whether a row's lead column carries a second line, which decides its height.
   const baseRowHeight = useCallback(
@@ -601,7 +629,7 @@ export function RegisterTable({
           borderRadius: "var(--mantine-radius-md)",
         }}
       >
-        <Box style={{ minWidth: 900 }}>
+        <Box style={{ minWidth: minRowWidth }}>
           {/* What the filter is hiding is said inside the ledger, because it is
               a fact about these rows and not a page-level announcement. */}
           {notice}
@@ -842,7 +870,7 @@ export function RegisterTable({
           </div>
           {/* The foot of the card. It stays put while the ledger scrolls, so
               what you have picked and what it comes to never scroll away. */}
-          {bulkBar}
+          <div ref={footRef}>{bulkBar}</div>
         </Box>
 
         {/* Right-click context menu, anchored at the cursor. */}
@@ -1113,4 +1141,18 @@ function CategoryCell({ name, uncategorised }: { name: string; uncategorised: bo
       </Text>
     </Group>
   );
+}
+
+/**
+ * The smallest a grid track can be drawn at.
+ *
+ * Fixed tracks are their own width; a `minmax(Npx, 1fr)` track is N, which is
+ * the point of writing it that way — the column gives up its extra when the
+ * window is narrow and takes the slack when it is not.
+ */
+function trackFloor(track: string): number {
+  const minmax = /^minmax\(\s*(\d+)px/.exec(track);
+  if (minmax) return Number(minmax[1]);
+  const px = /^(\d+)px$/.exec(track);
+  return px ? Number(px[1]) : 100;
 }
