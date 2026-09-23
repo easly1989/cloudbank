@@ -5,11 +5,12 @@ import {
   Button,
   Card,
   Group,
-  Select,
+  Menu,
   Stack,
   Text,
   TextInput,
   Tooltip,
+  UnstyledButton,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -20,9 +21,14 @@ import {
   IconArrowsExchange,
   IconChecklist,
   IconFilterOff,
+  IconSearch,
+  IconX,
   IconInfoCircle,
   IconPencil,
+  IconDots,
+  IconFileImport,
   IconPlus,
+  IconSelector,
   IconWallet,
   IconTrash,
 } from "@tabler/icons-react";
@@ -63,10 +69,11 @@ import { QuickAdd } from "../components/QuickAdd";
 import { TransactionForm } from "../components/TransactionForm";
 import { TransferForm } from "../components/TransferForm";
 import { useWallet } from "../wallet/WalletProvider";
+import { useAuth } from "../auth/AuthProvider";
 import { RegisterFilters } from "./RegisterFilters";
 import { RegisterTable } from "./RegisterTable";
 import {
-  activeFilterCount,
+  activeFilters,
   applyFilters,
   hiddenNewerCount,
   emptyFilters,
@@ -75,12 +82,26 @@ import {
   parseFilters,
 } from "./registerFilterModel";
 import { amountColor, attentionColor, negativeOnlyColor } from "../amountTone";
+import { pickBalances, type BalanceKey } from "../components/dashboard/overviewFigureModel";
+
+// The three figures, and where each name and explanation live.
+const BALANCE_LABEL: Record<BalanceKey, string> = {
+  bank: "register.bank",
+  today: "register.today",
+  future: "register.future",
+};
+const BALANCE_HELP: Record<BalanceKey, string> = {
+  bank: "register.bankHelp",
+  today: "register.todayHelp",
+  future: "register.futureHelp",
+};
 
 export function TransactionsPage() {
   const { t } = useTranslation();
   const confirm = useConfirm();
   const qc = useQueryClient();
   const { currentWallet } = useWallet();
+  const { user } = useAuth();
   const walletId = currentWallet?.id ?? 0;
 
   const accountsQuery = useQuery({
@@ -184,6 +205,9 @@ export function TransactionsPage() {
       color: "red",
       message: err instanceof ApiError ? err.message : String(err),
     });
+
+  const balances = pickBalances(user?.preferences?.registerBalances);
+  const chips = useMemo(() => activeFilters(filters), [filters]);
 
   const [formOpened, form] = useDisclosure(false);
 
@@ -405,50 +429,84 @@ export function TransactionsPage() {
   return (
     <Stack className={privacy ? "cb-private" : undefined}>
       <Stack ref={topRef} gap="md">
+        {/* The account is the title. The register is about one account, so
+            naming the page "Transactions" and putting the account in a control
+            beside it says the wrong thing twice; switching stays one click,
+            because the title is the switch. */}
         <PageHeader
-          title={t("transactions.title")}
+          title={
+            <Menu position="bottom-start" withinPortal>
+              <Menu.Target>
+                <UnstyledButton
+                  aria-label={t("transactions.account")}
+                  disabled={accounts.length < 2}
+                >
+                  <Group gap={6} wrap="nowrap">
+                    <Text inherit>{account?.name ?? t("transactions.title")}</Text>
+                    {accounts.length > 1 && <IconSelector size={20} opacity={0.5} />}
+                  </Group>
+                </UnstyledButton>
+              </Menu.Target>
+              <Menu.Dropdown>
+                {accounts.map((a) => (
+                  <Menu.Item
+                    key={a.id}
+                    onClick={() => setAccountId(String(a.id))}
+                    fw={String(a.id) === accountId ? 700 : 400}
+                  >
+                    {a.name}
+                  </Menu.Item>
+                ))}
+              </Menu.Dropdown>
+            </Menu>
+          }
           actions={
             <>
-              <Select
-                aria-label={t("transactions.account")}
-                data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
-                value={accountId}
-                onChange={setAccountId}
-                allowDeselect={false}
-                w={220}
-              />
-              <Tooltip label={t(privacy ? "register.privacy.show" : "register.privacy.hide")}>
-                <ActionIcon
-                  variant={privacy ? "filled" : "default"}
-                  size={36}
-                  aria-label={t(privacy ? "register.privacy.show" : "register.privacy.hide")}
-                  aria-pressed={privacy}
-                  onClick={() => setPrivacy((v) => !v)}
-                >
-                  {privacy ? <IconEyeOff size={17} /> : <IconEye size={17} />}
-                </ActionIcon>
-              </Tooltip>
+              {/* Reconciling, transferring and hiding figures are workflows, not
+                  the headline actions of the page; they keep their own menu so
+                  the two that matter stay the two you see. */}
+              <Menu position="bottom-end" withinPortal>
+                <Menu.Target>
+                  <ActionIcon variant="default" size={36} aria-label={t("register.moreActions")}>
+                    <IconDots size={18} />
+                  </ActionIcon>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={privacy ? <IconEye size={16} /> : <IconEyeOff size={16} />}
+                    onClick={() => setPrivacy((v) => !v)}
+                  >
+                    {t(privacy ? "register.privacy.show" : "register.privacy.hide")}
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconChecklist size={16} />}
+                    disabled={!account}
+                    onClick={() => {
+                      clearSelection();
+                      setReconcile((v) => !v);
+                    }}
+                  >
+                    {t("reconcile.start")}
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconArrowsExchange size={16} />}
+                    disabled={accounts.length < 2}
+                    onClick={() => {
+                      setEditingTransferId(null);
+                      transferForm.open();
+                    }}
+                  >
+                    {t("transfers.add")}
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
               <Button
-                variant={reconcile ? "filled" : "default"}
-                leftSection={<IconChecklist size={16} />}
-                disabled={!account}
-                onClick={() => {
-                  clearSelection();
-                  setReconcile((v) => !v);
-                }}
-              >
-                {t("reconcile.start")}
-              </Button>
-              <Button
+                component={Link}
+                to="/settings?tab=wallet&section=import"
                 variant="default"
-                leftSection={<IconArrowsExchange size={16} />}
-                disabled={accounts.length < 2}
-                onClick={() => {
-                  setEditingTransferId(null);
-                  transferForm.open();
-                }}
+                leftSection={<IconFileImport size={16} />}
               >
-                {t("transfers.add")}
+                {t("register.import")}
               </Button>
               <Button
                 leftSection={<IconPlus size={16} />}
@@ -478,27 +536,21 @@ export function TransactionsPage() {
           />
         )}
 
+        {/* The same three figures the overview offers, and the same choice of
+            which to show: "how much have I got" is one question asked in two
+            places, so it should not have two answers. */}
         {account && registerQuery.data && (
           <Group gap="xl" align="flex-end" wrap="wrap">
-            <BalanceFigure
-              label={t("register.today")}
-              help={t("register.todayHelp")}
-              value={registerQuery.data.summary.today}
-              fmt={fmt}
-              lead
-            />
-            <BalanceFigure
-              label={t("register.bank")}
-              help={t("register.bankHelp")}
-              value={registerQuery.data.summary.bank}
-              fmt={fmt}
-            />
-            <BalanceFigure
-              label={t("register.future")}
-              help={t("register.futureHelp")}
-              value={registerQuery.data.summary.future}
-              fmt={fmt}
-            />
+            {balances.map((key, i) => (
+              <BalanceFigure
+                key={key}
+                label={t(BALANCE_LABEL[key])}
+                help={t(BALANCE_HELP[key])}
+                value={registerQuery.data.summary[key]}
+                fmt={fmt}
+                lead={i === 0}
+              />
+            ))}
           </Group>
         )}
 
@@ -520,31 +572,80 @@ export function TransactionsPage() {
           />
         )}
 
+        {/* Searching is the commonest way to narrow a ledger, so it is a field
+            on the page rather than a control inside a panel that starts closed.
+            It writes the same filter the panel does — one source of truth, two
+            ways in. */}
         {account && !reconcile && (
-          <CollapsibleSection
-            title={t("filters.section")}
-            storageKey="cb.reg.tools"
-            defaultOpen={false}
-            summary={
-              activeFilterCount(filters) > 0 ? (
-                <Badge size="sm" variant="light" aria-label={t("filters.activeCount")}>
-                  {activeFilterCount(filters)}
-                </Badge>
-              ) : undefined
-            }
-            action={
-              activeFilterCount(filters) > 0 ? (
+          <Stack gap="xs">
+            <TextInput
+              aria-label={t("register.search")}
+              placeholder={t("register.search")}
+              leftSection={<IconSearch size={16} />}
+              rightSection={
+                filters.text ? (
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    aria-label={t("filters.clear")}
+                    onClick={() => setFilters({ ...filters, text: "" })}
+                  >
+                    <IconX size={15} />
+                  </ActionIcon>
+                ) : undefined
+              }
+              value={filters.text}
+              onChange={(e) => setFilters({ ...filters, text: e.currentTarget.value })}
+            />
+
+            {/* What is narrowing the register, said out loud. A count told the
+                reader that three filters were on without saying which, so the
+                only way to find out was to open the panel and read every
+                control. */}
+            {chips.length > 0 && (
+              <Group gap="xs">
+                {chips.map((c) => (
+                  <Badge
+                    key={c.id}
+                    variant="light"
+                    size="lg"
+                    rightSection={
+                      <ActionIcon
+                        size="xs"
+                        variant="transparent"
+                        color="gray"
+                        aria-label={t("filters.chip.remove", { name: t(c.labelKey) })}
+                        onClick={() => setFilters(c.clear(filters))}
+                      >
+                        <IconX size={12} />
+                      </ActionIcon>
+                    }
+                  >
+                    {c.value ? `${t(c.labelKey)}: ${c.value}` : t(c.labelKey)}
+                  </Badge>
+                ))}
                 <Button
-                  variant="light"
+                  variant="subtle"
                   color="gray"
-                  size="xs"
+                  size="compact-sm"
                   leftSection={<IconFilterOff size={14} />}
                   onClick={() => setFilters(emptyFilters)}
                 >
                   {t("filters.clear")}
                 </Button>
-              ) : undefined
-            }
+              </Group>
+            )}
+          </Stack>
+        )}
+
+        {/* No count and no clear in this header any more: the chips above say
+            which filters are on and let each one go, so a badge reading "1" and
+            a second Clear button would be the same two facts twice. */}
+        {account && !reconcile && (
+          <CollapsibleSection
+            title={t("filters.section")}
+            storageKey="cb.reg.tools"
+            defaultOpen={false}
           >
             <Stack gap="xs">
               <RegisterFilters
@@ -695,7 +796,14 @@ function BalanceFigure({
           </Tooltip>
         )}
       </Group>
-      <Text ff="monospace" fw={lead ? 600 : 500} fz={lead ? 26 : 17} c={negativeOnlyColor(value)}>
+      {/* Only the lead figure is in full-strength text: the others are context
+          for it, and three equal figures would be three headlines. */}
+      <Text
+        ff="monospace"
+        fw={lead ? 600 : 500}
+        fz={lead ? 26 : 17}
+        c={negativeOnlyColor(value) ?? (lead ? undefined : "dimmed")}
+      >
         {formatMinor(value, fmt)}
       </Text>
     </Stack>
