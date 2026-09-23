@@ -30,8 +30,10 @@ export type WidgetType = (typeof WIDGET_TYPES)[number];
 // The widgets placed on a fresh dashboard (and back-filled when migrating an
 // older layout). The remaining WIDGET_TYPES are opt-in from the "Add widget"
 // palette, so new widget types don't clutter existing users' dashboards.
+// "totals" is deliberately absent: the same three balances now head the page,
+// above the grid, and a widget repeating them would be the figures twice. The
+// type is kept so a layout that still places it keeps working.
 export const DEFAULT_WIDGET_TYPES: WidgetType[] = [
-  "totals",
   "quickAdd",
   "incomeExpense",
   "accounts",

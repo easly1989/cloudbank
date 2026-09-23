@@ -186,8 +186,25 @@ export function TransactionsPage() {
     });
 
   const [formOpened, form] = useDisclosure(false);
+
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [duplicating, setDuplicating] = useState<Transaction | null>(null);
+
+  // ?new=1 opens the entry sheet on arrival, so the overview's "Add
+  // transaction" can hand the reader straight to it rather than growing a
+  // second entry form of its own — entering a transaction is work you do beside
+  // the ledger, which is the whole argument for the sheet.
+  //
+  // The parameter is read, not copied into state: an effect that mirrors the
+  // URL into a flag has two sources of truth and renders twice to reconcile
+  // them.
+  const openNew = searchParams.get("new") === "1";
+  const clearNew = () => {
+    if (!openNew) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete("new");
+    setSearchParams(next, { replace: true });
+  };
   const [transferOpened, transferForm] = useDisclosure(false);
   const [editingTransferId, setEditingTransferId] = useState<number | null>(null);
 
@@ -615,9 +632,10 @@ export function TransactionsPage() {
 
       {account && (
         <TransactionForm
-          opened={formOpened}
+          opened={formOpened || openNew}
           onClose={() => {
             form.close();
+            clearNew();
             setDuplicating(null);
           }}
           walletId={walletId}
