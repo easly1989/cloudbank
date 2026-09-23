@@ -12,7 +12,7 @@ import {
 import { notifications } from "@mantine/notifications";
 import { IconSparkles } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ApiError, getAISettings, updateAISettings } from "../api/client";
@@ -30,13 +30,17 @@ export function AiSettingsCard() {
   const [apiKey, setApiKey] = useState("");
   const hasKey = query.data?.hasKey ?? false;
 
-  useEffect(() => {
+  // Adopt the stored settings when they arrive, during render rather than in an
+  // effect, so the card never paints its blank defaults over them for a frame.
+  const [seen, setSeen] = useState(query.data);
+  if (query.data !== seen) {
+    setSeen(query.data);
     if (query.data) {
       setEnabled(query.data.enabled);
       setBaseUrl(query.data.baseUrl);
       setModel(query.data.model);
     }
-  }, [query.data]);
+  }
 
   const save = useMutation({
     // Send apiKey only when the user typed a new one, so a blank field keeps

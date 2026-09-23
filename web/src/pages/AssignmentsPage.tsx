@@ -274,25 +274,26 @@ export function AssignmentsPage() {
         </Table>
       )}
 
-      {/* Mounted per opening: the key gives every rule — and the new-rule form —
-          its own instance, so the fields start where the rule is instead of
-          being reset back to it by an effect. */}
-      {opened && (
-        <RuleForm
-          key={editing?.id ?? "new"}
-          onClose={form.close}
-          walletId={walletId}
-          editing={editing}
-          payees={payeesQuery.data ?? []}
-          categories={categoriesQuery.data ?? []}
-          onSaved={invalidate}
-        />
-      )}
+      {/* Keyed per record: the key gives every rule — and the new-rule form — its
+          own instance, so the fields start where the rule is instead of being
+          reset back to it by an effect. It stays mounted while closed, because a
+          modal that is unmounted the moment it closes cannot animate out. */}
+      <RuleForm
+        key={editing?.id ?? "new"}
+        opened={opened}
+        onClose={form.close}
+        walletId={walletId}
+        editing={editing}
+        payees={payeesQuery.data ?? []}
+        categories={categoriesQuery.data ?? []}
+        onSaved={invalidate}
+      />
     </Stack>
   );
 }
 
 function RuleForm({
+  opened,
   onClose,
   walletId,
   editing,
@@ -300,6 +301,7 @@ function RuleForm({
   categories,
   onSaved,
 }: {
+  opened: boolean;
   onClose: () => void;
   walletId: number;
   editing: Assignment | null;
@@ -388,7 +390,7 @@ function RuleForm({
 
   return (
     <Modal
-      opened
+      opened={opened}
       onClose={onClose}
       title={editing ? t("assignments.editTitle") : t("assignments.addTitle")}
     >

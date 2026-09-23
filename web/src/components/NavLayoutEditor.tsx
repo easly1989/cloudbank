@@ -80,20 +80,20 @@ export function NavLayoutEditor() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const isAdmin = Boolean(user?.isAdmin);
-  const prefsRef = useRef(user?.preferences ?? {});
-  prefsRef.current = user?.preferences ?? {};
-
   const [layout, setLayout] = useState<NavLayout>(() =>
     migrateNavLayout(user?.preferences?.navLayout),
   );
+  // The latest layout, for the drag handlers: several of them fire between two
+  // renders, and each has to see what the one before it did. `apply` is the only
+  // place that changes the layout, and it writes both, so this stays in step
+  // without being assigned during render.
   const layoutRef = useRef(layout);
-  layoutRef.current = layout;
   const [activeId, setActiveId] = useState<string | null>(null);
   const beforeDrag = useRef<NavLayout | null>(null);
 
   const save = useMutation({
     mutationFn: (next: NavLayout) =>
-      updateMe({ preferences: { ...prefsRef.current, navLayout: next } }),
+      updateMe({ preferences: { ...(user?.preferences ?? {}), navLayout: next } }),
     onSuccess: (u: User) => qc.setQueryData(["me"], u),
     onError: (err: unknown) =>
       notifications.show({
