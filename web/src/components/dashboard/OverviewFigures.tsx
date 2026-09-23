@@ -5,6 +5,7 @@ import type { CurrencyInfo, MonthPoint } from "../../api/client";
 import { expenseColor, incomeColor, negativeOnlyColor } from "../../amountTone";
 import { formatMinor } from "../../money";
 import { periodTotals, type BalanceKey } from "./overviewFigureModel";
+import { FIGURES } from "../../pages/overviewTheme";
 
 /**
  * The figures at the head of the overview: what you have, and what the period
@@ -37,37 +38,36 @@ export function OverviewFigures({
   };
 
   return (
-    <Group gap={48} wrap="wrap" align="flex-end">
+    <Group
+      gap={FIGURES.gap}
+      wrap="wrap"
+      align="flex-start"
+      py={FIGURES.padY}
+      style={{ width: "100%" }}
+    >
       {balances.map((key, i) => (
         <Figure
           key={key}
           label={label[key]}
           // The first balance is the headline; a second or third one the reader
           // asked for sits at the same size as earned and spent.
-          size={i === 0 ? 40 : 24}
-          weight={i === 0 ? 600 : 500}
+          headline={i === 0}
           colour={negativeOnlyColor(totals[key])}
           value={formatMinor(totals[key], base)}
         />
       ))}
       <Figure
         label={t("overview.earned")}
-        size={24}
-        weight={500}
         colour={incomeColor}
         value={`+${formatMinor(earned, base)}`}
       />
       <Figure
         label={t("overview.spent")}
-        size={24}
-        weight={500}
         colour={expenseColor}
         value={`−${formatMinor(spent, base)}`}
       />
       <Figure
         label={t("overview.kept")}
-        size={24}
-        weight={500}
         value={
           kept == null
             ? "—"
@@ -81,26 +81,28 @@ export function OverviewFigures({
 function Figure({
   label,
   value,
-  size,
-  weight,
+  headline = false,
   colour,
 }: {
   label: string;
   value: string;
-  size: number;
-  weight: number;
+  /** The one figure the page is about; everything else explains it. */
+  headline?: boolean;
   colour?: string;
 }) {
+  const type = headline ? FIGURES.headline : FIGURES.secondary;
   return (
-    <Stack gap={2}>
-      <Text size="sm" c="dimmed" lh={1.2}>
+    // The smaller figures start six pixels down, which is what puts their
+    // labels on the same line as the headline's rather than a hair above it.
+    <Stack gap={FIGURES.labelGap} pt={headline ? 0 : FIGURES.secondaryOffset}>
+      <Text fz={FIGURES.label.fz} c="dimmed" lh={1.2}>
         {label}
       </Text>
       <Text
         ff="monospace"
         c={colour}
-        lh={1.1}
-        style={{ fontSize: size, fontWeight: weight, whiteSpace: "nowrap" }}
+        lh={1.3}
+        style={{ fontSize: type.fz, fontWeight: type.fw, whiteSpace: "nowrap" }}
       >
         {value}
       </Text>
