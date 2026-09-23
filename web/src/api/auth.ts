@@ -18,6 +18,12 @@ export interface Preferences {
   smartAmountInput?: boolean;
   /** Collapse the desktop sidebar to an icon-only rail. */
   sidebarCollapsed?: boolean;
+  /**
+   * Which of the three balances to show — on the overview and above the
+   * register, which are the same question asked in two places. Absent = today
+   * alone; see pickBalances.
+   */
+  registerBalances?: string[];
   /** Accent (Mantine primary) colour name, e.g. "cloudbank", "teal". */
   themeAccent?: string;
   /**

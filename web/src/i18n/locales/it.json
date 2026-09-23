@@ -1066,7 +1066,8 @@
     "followPage": "Periodo della pagina",
     "confirmResetTitle": "Ripristinare la dashboard?",
     "confirmResetBody": "I widget e la loro disposizione tornano ai valori predefiniti. La disposizione attuale va persa.",
-    "confirmResetAction": "Ripristina disposizione"
+    "confirmResetAction": "Ripristina disposizione",
+    "chartRows": "Righe"
   },
   "import": {
     "title": "Importa",
@@ -1248,7 +1249,9 @@
     "saved": "Preferenze salvate",
     "restartTour": "Riavvia il tutorial",
     "sidebarAccounts": "Saldi dei conti nella barra laterale",
-    "sidebarAccountsHint": "Disattivati di default. Scegline al massimo {{max}}: devono restare un colpo d'occhio, non un secondo elenco dei conti."
+    "sidebarAccountsHint": "Disattivati di default. Scegline al massimo {{max}}: devono restare un colpo d'occhio, non un secondo elenco dei conti.",
+    "balances": "Saldi sull'overview e sopra il registro",
+    "balancesHint": "Sono disponibili tre figure. Mostra quelle con cui fai davvero i conti."
   },
   "tour": {
     "skip": "Salta",
@@ -1326,5 +1329,26 @@
   "common": {
     "cancel": "Annulla",
     "confirm": "Conferma"
+  },
+  "overview": {
+    "balanceToday": "Saldo oggi",
+    "earned": "Entrate",
+    "spent": "Uscite",
+    "kept": "Trattenuto",
+    "period": {
+      "thisMonth": "Mese",
+      "thisQuarter": "Trimestre",
+      "thisHalf": "Semestre",
+      "thisYear": "Anno",
+      "all": "Sempre"
+    },
+    "hint": {
+      "thisMonth": "Questo mese, finora.",
+      "thisQuarter": "Questo trimestre, finora.",
+      "thisHalf": "Questo semestre, finora.",
+      "thisYear": "Quest'anno, finora.",
+      "all": "Tutto quello che hai registrato, dall'inizio."
+    },
+    "customise": "Personalizza"
   }
 }

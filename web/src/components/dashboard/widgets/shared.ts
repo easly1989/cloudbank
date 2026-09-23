@@ -55,7 +55,9 @@ export function periodToMonths(period: DatePreset): number {
   }
 }
 
-export type ChartType = "donut" | "bar";
+// "rows" is the default: a list of facts, which is what the tile shows and
+// what survives a widget being a third of the page wide.
+export type ChartType = "rows" | "donut" | "bar";
 export type IEStyle = "bars" | "lines";
 
 // Per-instance config for the spending widget.
@@ -67,7 +69,7 @@ export type SpendingConfig = {
 export const DEFAULT_SPENDING: SpendingConfig = {
   // A widget nobody has configured follows the page.
   period: FOLLOW_PAGE,
-  chartType: "donut",
+  chartType: "rows",
   groupBy: "category",
 };
 
