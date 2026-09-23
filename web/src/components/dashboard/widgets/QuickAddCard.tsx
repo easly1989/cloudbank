@@ -2,7 +2,7 @@ import { Button, Card, Group, Select, Stack, Title } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconPlus } from "@tabler/icons-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { listAccounts, listTemplates } from "../../../api/client";
@@ -31,14 +31,17 @@ export function QuickAddCard({ walletId }: { walletId: number }) {
     () => (accountsQuery.data ?? []).filter((a) => !a.closed),
     [accountsQuery.data],
   );
-  const [accountId, setAccountId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (accountId || accounts.length === 0) return;
-    const pref = user?.preferences?.defaultAccountId;
-    const initial = pref && accounts.some((a) => a.id === pref) ? pref : accounts[0].id;
-    setAccountId(String(initial));
-  }, [accounts, accountId, user]);
+  // Which account the reader picked, if they have picked one. The default is
+  // derived rather than stored: storing it needed an effect that ran after the
+  // accounts arrived, which cost a render and left a frame with nothing
+  // selected. Derived, it is simply right from the first paint, and it follows
+  // the list if the accounts load late.
+  const [picked, setPicked] = useState<string | null>(null);
+  const preferred = user?.preferences?.defaultAccountId;
+  const fallback = accounts.length
+    ? String(preferred && accounts.some((a) => a.id === preferred) ? preferred : accounts[0].id)
+    : null;
+  const accountId = picked ?? fallback;
 
   const account = accounts.find((a) => String(a.id) === accountId);
   if (accounts.length === 0) return null;
@@ -60,7 +63,7 @@ export function QuickAddCard({ walletId }: { walletId: number }) {
             aria-label={t("transactions.account")}
             data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
             value={accountId}
-            onChange={setAccountId}
+            onChange={setPicked}
             allowDeselect={false}
             searchable
             style={{ flex: 1, minWidth: 0, maxWidth: 260 }}
