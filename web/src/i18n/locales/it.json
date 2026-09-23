@@ -5,7 +5,8 @@
     "sourceCode": "Codice sorgente",
     "apiDocs": "Documentazione API",
     "donate": "Dona",
-    "basedOn": "un port web di HomeBank"
+    "basedOn": "un port web di HomeBank",
+    "support": "Sostieni CloudBank"
   },
   "nav": {
     "dashboard": "Cruscotto",
@@ -565,7 +566,8 @@
     "empty": "Nessuna transazione corrisponde a \"{{q}}\".",
     "count": "{{count}} risultato/i",
     "more": "+{{count}} altri — affina la ricerca per restringere.",
-    "untitled": "(senza descrizione)"
+    "untitled": "(senza descrizione)",
+    "short": "Cerca"
   },
   "attachments": {
     "title": "Allegati",
@@ -863,7 +865,8 @@
     "delete": "Elimina portafoglio",
     "billsCategory": "Categoria bollette",
     "billsCategoryHint": "Nella pagina Bills appaiono solo le schedule di questa categoria. Lascia “Tutte le uscite” per includerle tutte.",
-    "billsCategoryNone": "Tutte le uscite"
+    "billsCategoryNone": "Tutte le uscite",
+    "label": "Portafoglio"
   },
   "accounts": {
     "title": "Conti",

@@ -46,7 +46,7 @@ try {
   // First wallet, then import the sample for realistic data.
   await page.getByLabel("Wallet name").fill("Demo");
   await page.getByRole("button", { name: "Create wallet" }).click();
-  await page.getByRole("button", { name: "Test Wallet" }).or(page.getByRole("button", { name: "Demo" })).first().waitFor();
+  await page.getByRole("button", { name: "Switch wallet" }).waitFor();
 
   // The first-login tour auto-runs; skip it before capturing.
   await page.getByRole("button", { name: "Skip" }).click();

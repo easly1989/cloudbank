@@ -135,7 +135,7 @@ export function CategoriesPage() {
           <Group justify="space-between" {...rowEditProps(() => openEdit(top))}>
             <Group gap="xs">
               <Text fw={600}>{top.name}</Text>
-              <Badge color={top.isIncome ? "teal" : "gray"} size="sm">
+              <Badge color={top.isIncome ? "teal" : "gray"} variant="dot" size="sm">
                 {top.isIncome ? t("categories.income") : t("categories.expense")}
               </Badge>
             </Group>

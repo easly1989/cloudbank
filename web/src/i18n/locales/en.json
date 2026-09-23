@@ -5,7 +5,8 @@
     "sourceCode": "Source code",
     "apiDocs": "API docs",
     "donate": "Donate",
-    "basedOn": "a web port of HomeBank"
+    "basedOn": "a web port of HomeBank",
+    "support": "Support CloudBank"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -565,7 +566,8 @@
     "empty": "No transactions match \"{{q}}\".",
     "count": "{{count}} result(s)",
     "more": "+{{count}} more — refine your search to narrow it down.",
-    "untitled": "(no description)"
+    "untitled": "(no description)",
+    "short": "Search"
   },
   "attachments": {
     "title": "Attachments",
@@ -863,7 +865,8 @@
     "delete": "Delete wallet",
     "billsCategory": "Bills category",
     "billsCategoryHint": "Only schedules in this category appear on the Bills page. Leave as All outflows to include every outflow schedule.",
-    "billsCategoryNone": "All outflows"
+    "billsCategoryNone": "All outflows",
+    "label": "Wallet"
   },
   "accounts": {
     "title": "Accounts",

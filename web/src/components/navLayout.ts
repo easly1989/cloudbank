@@ -51,29 +51,22 @@ const DEFAULT_GROUP_OF = new Map<string, string>();
 for (const g of NAV_GROUPS)
   for (const to of g.items) DEFAULT_GROUP_OF.set(to, groupIdFromLabelKey(g.labelKey));
 
-/** The Settings group, always the same: locked, Settings alone, no separators. */
-function settingsGroup(): NavGroupLayout {
-  return {
-    id: SETTINGS_GROUP_ID,
-    labelKey: SETTINGS_GROUP_LABELKEY,
-    locked: true,
-    entries: [{ kind: "item", to: "/settings" }],
-  };
-}
+// Settings is deliberately absent from the navigation. It reaches the reader
+// through the gear at the foot of the sidebar, and a second copy in the list of
+// pages would be the same destination twice — ambiguous to a screen reader, and
+// one more row between the reader and the pages they came for. LOCKED_ITEMS
+// keeps it from being back-filled into another group when an old saved layout
+// is migrated.
 
 /** The default layout: the built-in groups in their natural order and contents. */
 export function defaultNavLayout(): NavLayout {
   return {
     version: NAV_LAYOUT_VERSION,
-    groups: NAV_GROUPS.map((g) =>
-      g.labelKey === SETTINGS_GROUP_LABELKEY
-        ? settingsGroup()
-        : {
-            id: groupIdFromLabelKey(g.labelKey),
-            labelKey: g.labelKey,
-            entries: g.items.map((to) => ({ kind: "item", to }) as NavEntry),
-          },
-    ),
+    groups: NAV_GROUPS.filter((g) => g.labelKey !== SETTINGS_GROUP_LABELKEY).map((g) => ({
+      id: groupIdFromLabelKey(g.labelKey),
+      labelKey: g.labelKey,
+      entries: g.items.map((to) => ({ kind: "item", to }) as NavEntry),
+    })),
   };
 }
 
@@ -99,7 +92,8 @@ export function migrateNavLayout(saved: unknown): NavLayout {
   const seenItems = new Set<string>();
   const groups: NavGroupLayout[] = [];
   for (const g of saved.groups) {
-    // The Settings group is rebuilt from scratch below, never trusted from storage.
+    // A saved layout from before the gear moved to the sidebar foot still holds
+    // the old Settings group; drop it rather than migrating it forward.
     if (g.locked || g.id === SETTINGS_GROUP_ID) continue;
     const entries: NavEntry[] = [];
     for (const e of Array.isArray(g.entries) ? g.entries : []) {
@@ -145,8 +139,6 @@ export function migrateNavLayout(saved: unknown): NavLayout {
     seenItems.add(to);
   }
 
-  // The Settings group is always present, locked, and last.
-  groups.push(settingsGroup());
   return { version: NAV_LAYOUT_VERSION, groups };
 }
 
