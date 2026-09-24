@@ -23,11 +23,16 @@ export function BillsPage() {
   return (
     <Stack>
       <PageHeader
+        tour="bills"
         title={t("bills.title")}
         hint={t("bills.hint")}
-        actions={<Button onClick={addModal.open}>{t("bills.add")}</Button>}
+        actions={
+          <Button onClick={addModal.open} data-tour="bills-add">
+            {t("bills.add")}
+          </Button>
+        }
       />
-      <Card withBorder>
+      <Card withBorder data-tour="bills-list">
         <BillsList walletId={walletId} />
       </Card>
       <BillQuickAddModal

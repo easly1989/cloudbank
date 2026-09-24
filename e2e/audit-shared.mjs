@@ -57,7 +57,7 @@ export async function signIn(page) {
   });
   await api.patch(BASE + "/api/v1/auth/me", {
     headers: HEADERS,
-    data: { preferences: { tutorialSeen: true } },
+    data: { preferences: { tutorialSeen: true, tourOffers: false } },
   });
 
   let wallets = await (await api.get(BASE + "/api/v1/wallets")).json();

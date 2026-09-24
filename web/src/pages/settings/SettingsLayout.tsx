@@ -5,9 +5,16 @@ import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { useAuth } from "../../auth/AuthProvider";
+import { TourButton } from "../../onboarding/TourButton";
+import { usePageTour } from "../../onboarding/tourContext";
+import type { TourId } from "../../onboarding/tours";
 import { useWallet } from "../../wallet/WalletProvider";
 import { RAIL, SECTION } from "./settingsTheme";
 import { SETTINGS_SECTIONS } from "./sections";
+
+// The sections with a tour of their own (#421): General, where the screen as a
+// whole is introduced, and Data, where import and export live.
+const SECTION_TOURS: Partial<Record<string, TourId>> = { general: "settings", data: "data" };
 
 /**
  * Settings is its own screen, not a page inside the app.
@@ -29,6 +36,8 @@ export function SettingsLayout() {
   const { pathname } = useLocation();
   const sections = SETTINGS_SECTIONS.filter((s) => !s.adminOnly || user?.isAdmin);
   const current = sections.find((s) => pathname === `/settings/${s.id}`);
+  const tour = current ? SECTION_TOURS[current.id] : undefined;
+  usePageTour(tour);
 
   return (
     <Box className="cb-settings-screen">
@@ -36,6 +45,7 @@ export function SettingsLayout() {
         component="nav"
         aria-label={t("settings.title")}
         className="cb-sidebar cb-settings-rail"
+        data-tour="settings-rail"
         style={{ width: RAIL.width, padding: `${RAIL.padY}px ${RAIL.padX}px` }}
       >
         <Stack gap={RAIL.gap}>
@@ -46,6 +56,7 @@ export function SettingsLayout() {
               component={Link}
               to="/"
               className="cb-settings-back"
+              data-tour="settings-back"
               c="dimmed"
               fz={RAIL.back.fz}
               px={RAIL.back.inset}
@@ -87,11 +98,14 @@ export function SettingsLayout() {
         <Stack gap={SECTION.gap} p="xl" maw={1100}>
           {current && (
             <Stack gap={6}>
-              <Title order={2} fz={SECTION.title.fz} fw={SECTION.title.fw}>
-                {current.id === "wallet"
-                  ? (currentWallet?.title ?? t(current.labelKey))
-                  : t(current.labelKey)}
-              </Title>
+              <Group justify="space-between" wrap="nowrap" gap="sm">
+                <Title order={2} fz={SECTION.title.fz} fw={SECTION.title.fw}>
+                  {current.id === "wallet"
+                    ? (currentWallet?.title ?? t(current.labelKey))
+                    : t(current.labelKey)}
+                </Title>
+                {tour && <TourButton id={tour} size={40} />}
+              </Group>
               <Text c="dimmed" fz={SECTION.hint.fz}>
                 {t(current.hintKey)}
               </Text>

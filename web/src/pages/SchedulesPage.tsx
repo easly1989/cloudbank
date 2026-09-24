@@ -179,6 +179,7 @@ export function SchedulesPage() {
   // One button, shown in the header or in the empty state — never both.
   const addButton = (
     <Button
+      data-tour="schedules-add"
       onClick={() => {
         setEditing(null);
         form.open();
@@ -191,6 +192,7 @@ export function SchedulesPage() {
   return (
     <Stack>
       <PageHeader
+        tour="schedules"
         title={t("schedules.title")}
         hint={t("schedules.hint")}
         actions={schedules.length > 0 ? addButton : undefined}

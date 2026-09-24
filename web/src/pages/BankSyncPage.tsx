@@ -103,9 +103,9 @@ export function BankSyncPage() {
 
   return (
     <Stack>
-      <PageHeader title={t("banksync.title")} hint={t("banksync.hint")} />
+      <PageHeader tour="bankSync" title={t("banksync.title")} hint={t("banksync.hint")} />
 
-      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" data-tour="banksync-providers">
         <Card withBorder>
           <Group gap="xs" mb="xs">
             <IconBuildingBank size={18} />
@@ -123,7 +123,7 @@ export function BankSyncPage() {
         <PluggyPanel walletId={walletId} />
       </SimpleGrid>
 
-      <Title order={4} mt="sm">
+      <Title order={4} mt="sm" data-tour="banksync-connections">
         {t("banksync.connectedTitle")}
       </Title>
       {(connections.data ?? []).length === 0 ? (

@@ -239,11 +239,11 @@ export function ReviewPage() {
 
   return (
     <Stack>
-      <PageHeader title={t("review.title")} hint={t("review.hint")} />
+      <PageHeader tour="review" title={t("review.title")} hint={t("review.hint")} />
 
       {review.isError && <Text c={errorColor}>{t("review.error")}</Text>}
 
-      <Card withBorder>
+      <Card withBorder data-tour="review-categories">
         <Stack gap="sm">
           <Text fw={600}>{t("review.needsCategory", { count: needs.length })}</Text>
           {needs.length === 0 ? (
@@ -279,7 +279,7 @@ export function ReviewPage() {
         </Stack>
       </Card>
 
-      <Card withBorder>
+      <Card withBorder data-tour="review-duplicates">
         <Stack gap="sm">
           <Group justify="space-between" wrap="nowrap">
             <Text fw={600}>{t("review.duplicates", { count: dups.length })}</Text>

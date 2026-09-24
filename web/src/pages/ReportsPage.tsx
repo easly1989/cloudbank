@@ -11,9 +11,9 @@ export function ReportsPage() {
   const { t } = useTranslation();
   return (
     <Stack>
-      <PageHeader title={t("reports.title")} hint={t("reports.hint")} />
+      <PageHeader tour="reports" title={t("reports.title")} hint={t("reports.hint")} />
       <Tabs defaultValue="statistics">
-        <Tabs.List>
+        <Tabs.List data-tour="reports-tabs">
           <Tabs.Tab value="statistics">{t("reports.statistics")}</Tabs.Tab>
           <Tabs.Tab value="trend">{t("reports.trend")}</Tabs.Tab>
           <Tabs.Tab value="balance">{t("reports.balance")}</Tabs.Tab>

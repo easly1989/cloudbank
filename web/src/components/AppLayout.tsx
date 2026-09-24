@@ -18,7 +18,6 @@ import { Outlet } from "react-router-dom";
 
 import { updateMe, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
-import { OnboardingTourProvider } from "../onboarding/TourProvider";
 import { useWallet } from "../wallet/WalletProvider";
 import { AppFooter } from "./AppFooter";
 import {
@@ -75,86 +74,71 @@ export function AppLayout() {
   }, [user?.locale, user?.theme]);
 
   return (
-    <OnboardingTourProvider>
-      <AppShell
-        // No bar across the top: the style tile puts the product, the wallet and
-        // the search at the head of the sidebar, and the page's own actions in
-        // its header. A phone still needs somewhere to open the drawer from, so
-        // the bar survives there and only there.
-        header={{ height: 48, collapsed: !!isDesktop }}
-        navbar={{
-          width: railMode ? SIDEBAR_RAIL_WIDTH : SIDEBAR_WIDTH,
-          breakpoint: "sm",
-          collapsed: { mobile: !opened },
-        }}
-        footer={{ height: 36, collapsed: !!touch }}
-        padding="md"
-      >
-        <AppShell.Header hiddenFrom="sm">
-          <Group h="100%" px="md" gap="xs" wrap="nowrap">
-            <Burger
-              opened={opened}
-              onClick={toggle}
-              size="sm"
-              aria-label={t("nav.toggleSidebar")}
-            />
-            <Logo size={22} />
-            <Text fw={700} truncate>
-              {currentWallet?.title ?? t("app.name")}
-            </Text>
-          </Group>
-        </AppShell.Header>
+    <AppShell
+      // No bar across the top: the style tile puts the product, the wallet and
+      // the search at the head of the sidebar, and the page's own actions in
+      // its header. A phone still needs somewhere to open the drawer from, so
+      // the bar survives there and only there.
+      header={{ height: 48, collapsed: !!isDesktop }}
+      navbar={{
+        width: railMode ? SIDEBAR_RAIL_WIDTH : SIDEBAR_WIDTH,
+        breakpoint: "sm",
+        collapsed: { mobile: !opened },
+      }}
+      footer={{ height: 36, collapsed: !!touch }}
+      padding="md"
+    >
+      <AppShell.Header hiddenFrom="sm">
+        <Group h="100%" px="md" gap="xs" wrap="nowrap">
+          <Burger opened={opened} onClick={toggle} size="sm" aria-label={t("nav.toggleSidebar")} />
+          <Logo size={22} />
+          <Text fw={700} truncate>
+            {currentWallet?.title ?? t("app.name")}
+          </Text>
+        </Group>
+      </AppShell.Header>
 
-        <AppShell.Navbar
-          className="cb-sidebar"
-          data-tour="nav"
-          style={{ padding: `${SIDEBAR_PAD_Y}px ${SIDEBAR_PAD_X}px` }}
-        >
-          {/* The nav scrolls; the foot does not. Settings is the one
+      <AppShell.Navbar
+        className="cb-sidebar"
+        data-tour="nav"
+        style={{ padding: `${SIDEBAR_PAD_Y}px ${SIDEBAR_PAD_X}px` }}
+      >
+        {/* The nav scrolls; the foot does not. Settings is the one
               destination reachable from anywhere, so it must not depend on how
               far down a long list of pages the reader has scrolled. */}
-          <Stack h="100%" gap={SIDEBAR_BLOCK_GAP} justify="space-between">
-            <SidebarHead
-              railMode={railMode}
-              onToggleCollapse={toggleCollapsed}
-              onNavigate={close}
-            />
-            <ScrollArea style={{ flex: 1, minHeight: 0 }} type="scroll">
-              <SidebarNav railMode={railMode} onNavigate={close} />
-            </ScrollArea>
-            <SidebarFoot
-              railMode={railMode}
-              onNavigate={close}
-              onToggleCollapse={toggleCollapsed}
-            />
-          </Stack>
-        </AppShell.Navbar>
+        <Stack h="100%" gap={SIDEBAR_BLOCK_GAP} justify="space-between">
+          <SidebarHead railMode={railMode} onToggleCollapse={toggleCollapsed} onNavigate={close} />
+          <ScrollArea style={{ flex: 1, minHeight: 0 }} type="scroll">
+            <SidebarNav railMode={railMode} onNavigate={close} />
+          </ScrollArea>
+          <SidebarFoot railMode={railMode} onNavigate={close} onToggleCollapse={toggleCollapsed} />
+        </Stack>
+      </AppShell.Navbar>
 
-        <AppShell.Main>
-          {/* Each page is a lazy chunk; show a loader in the content area (the
+      <AppShell.Main>
+        {/* Each page is a lazy chunk; show a loader in the content area (the
               shell stays put) while it loads. */}
-          <Suspense
-            fallback={
-              <Center mih="60vh">
-                <Loader />
-              </Center>
-            }
-          >
-            <Outlet />
-          </Suspense>
-          {touch && (
-            <Box component="footer" mt="xl" className="cb-footer-inline">
-              <AppFooter />
-            </Box>
-          )}
-        </AppShell.Main>
-
-        {!touch && (
-          <AppShell.Footer>
+        <Suspense
+          fallback={
+            <Center mih="60vh">
+              <Loader />
+            </Center>
+          }
+        >
+          <Outlet />
+        </Suspense>
+        {touch && (
+          <Box component="footer" mt="xl" className="cb-footer-inline">
             <AppFooter />
-          </AppShell.Footer>
+          </Box>
         )}
-      </AppShell>
-    </OnboardingTourProvider>
+      </AppShell.Main>
+
+      {!touch && (
+        <AppShell.Footer>
+          <AppFooter />
+        </AppShell.Footer>
+      )}
+    </AppShell>
   );
 }

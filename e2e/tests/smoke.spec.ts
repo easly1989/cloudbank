@@ -36,10 +36,31 @@ test("full journey: setup → wallet → account → transaction → import → 
     ).toContainText("Test Wallet");
   });
 
-  await test.step("dismiss the first-login tour", async () => {
-    // Entering the app for the first time auto-runs the onboarding tour; its
-    // backdrop blocks the page, so skip it before driving the rest of the journey.
-    await page.getByRole("button", { name: "Skip" }).click();
+  await test.step("the overview offers its tour, and it can be declined", async () => {
+    // The first page anyone sees offers its tour in a corner card (#421). The
+    // journey declines, then turns the offers off: every page after this one
+    // would make the same offer, and the journey is about something else.
+    const offer = page.locator("[data-tour-offer]");
+    await expect(offer).toContainText("New here? Take a quick tour");
+    await offer.getByRole("button", { name: "No thanks" }).click();
+    await expect(offer).toHaveCount(0);
+    await page.evaluate(async () => {
+      const me = await (
+        await fetch("/api/v1/auth/me", { credentials: "same-origin" })
+      ).json();
+      await fetch("/api/v1/auth/me", {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify({
+          preferences: { ...me.preferences, tourOffers: false },
+        }),
+      });
+    });
+    await page.reload();
   });
 
   await test.step("create an account", async () => {

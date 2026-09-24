@@ -52,7 +52,9 @@ const PAGES = [
 // Runs in the page. Returns { failures, unmeasured }.
 const AUDIT = () => {
   const parse = (c) => {
-    const m = c.match(/rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)/);
+    const m = c.match(
+      /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)/,
+    );
     return m ? [+m[1], +m[2], +m[3], m[4] === undefined ? 1 : +m[4]] : null;
   };
   const lum = ([r, g, b]) => {
@@ -64,7 +66,12 @@ const AUDIT = () => {
   };
   const over = (fg, bg) => {
     const a = fg[3];
-    return [fg[0] * a + bg[0] * (1 - a), fg[1] * a + bg[1] * (1 - a), fg[2] * a + bg[2] * (1 - a), 1];
+    return [
+      fg[0] * a + bg[0] * (1 - a),
+      fg[1] * a + bg[1] * (1 - a),
+      fg[2] * a + bg[2] * (1 - a),
+      1,
+    ];
   };
   const ratio = (a, b) => {
     const [hi, lo] = lum(a) > lum(b) ? [lum(a), lum(b)] : [lum(b), lum(a)];
@@ -105,7 +112,8 @@ const AUDIT = () => {
       .join(" ");
     if (!own) continue;
     const s = getComputedStyle(el);
-    if (s.visibility === "hidden" || s.display === "none" || +s.opacity === 0) continue;
+    if (s.visibility === "hidden" || s.display === "none" || +s.opacity === 0)
+      continue;
     const r = el.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) continue;
     if (disabled(el)) continue;
@@ -115,7 +123,13 @@ const AUDIT = () => {
     const size = parseFloat(s.fontSize);
     const weight = +s.fontWeight || 400;
     const need = size >= 24 || (size >= 18.66 && weight >= 700) ? 3 : 4.5;
-    const where = { text: own.slice(0, 48), size, weight, color: s.color, tag: el.tagName.toLowerCase() };
+    const where = {
+      text: own.slice(0, 48),
+      size,
+      weight,
+      color: s.color,
+      tag: el.tagName.toLowerCase(),
+    };
 
     const bg = bgOf(el);
     if (!bg) {
@@ -139,9 +153,17 @@ const AUDIT = () => {
 async function signIn(page) {
   await page.goto(BASE + "/");
   await page.evaluate(async () => {
-    const h = { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" };
+    const h = {
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    };
     const post = (url, body) =>
-      fetch(url, { method: "POST", credentials: "same-origin", headers: h, body: JSON.stringify(body) });
+      fetch(url, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: h,
+        body: JSON.stringify(body),
+      });
     const { needsSetup } = await (await fetch("/api/v1/setup/status")).json();
     const creds = { username: "admin", password: "supersecret1" };
     if (needsSetup) await post("/api/v1/setup", { ...creds, email: "a@b.com" });
@@ -151,10 +173,15 @@ async function signIn(page) {
       method: "PATCH",
       credentials: "same-origin",
       headers: h,
-      body: JSON.stringify({ preferences: { tutorialSeen: true } }),
+      body: JSON.stringify({
+        preferences: { tutorialSeen: true, tourOffers: false },
+      }),
     });
-    const w = await (await fetch("/api/v1/wallets", { credentials: "same-origin" })).json();
-    if (!Array.isArray(w) || w.length === 0) await post("/api/v1/wallets", { title: "Audit", baseCurrency: "EUR" });
+    const w = await (
+      await fetch("/api/v1/wallets", { credentials: "same-origin" })
+    ).json();
+    if (!Array.isArray(w) || w.length === 0)
+      await post("/api/v1/wallets", { title: "Audit", baseCurrency: "EUR" });
   });
 }
 
@@ -182,11 +209,16 @@ try {
         if (!seen.has(key)) seen.set(key, { ...f, pages: new Set() });
         seen.get(key).pages.add(p);
       }
-      for (const u of unmeasured) skipped.add(`${u.tag} "${u.text}" (${u.size}px/${u.weight}, ${u.color})`);
+      for (const u of unmeasured)
+        skipped.add(
+          `${u.tag} "${u.text}" (${u.size}px/${u.weight}, ${u.color})`,
+        );
     }
 
     failed += seen.size;
-    console.log(`\n=== ${scheme.toUpperCase()} — ${seen.size} failing colour combinations ===`);
+    console.log(
+      `\n=== ${scheme.toUpperCase()} — ${seen.size} failing colour combinations ===`,
+    );
     for (const v of [...seen.values()].sort((a, b) => a.ratio - b.ratio)) {
       console.log(
         `${String(v.ratio).padStart(5)} (need ${v.need})  ${v.size}px/${v.weight}  ${v.color} on ${v.bg}  <${v.tag} class="${v.cls}">  "${v.text}"  [${[...v.pages].join(" ")}]`,
@@ -201,5 +233,9 @@ try {
 } finally {
   await browser.close();
 }
-console.log(failed === 0 ? "\nAA clean in both schemes." : `\n${failed} combinations under the floor.`);
+console.log(
+  failed === 0
+    ? "\nAA clean in both schemes."
+    : `\n${failed} combinations under the floor.`,
+);
 process.exit(failed === 0 ? 0 : 1);
