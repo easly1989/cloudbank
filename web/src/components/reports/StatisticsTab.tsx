@@ -106,21 +106,34 @@ export function StatisticsTab() {
       return {
         tooltip: { trigger: "item", valueFormatter },
         color: PALETTE,
-        legend: {
-          type: "scroll",
-          orient: "vertical",
-          right: 8,
-          top: "middle",
-          data: groups.map((g) => g.label),
-        },
+        legend: { type: "scroll", data: groups.map((g) => g.label) },
         series: [
           {
             type: "pie",
-            radius: ["45%", "78%"],
-            center: ["34%", "50%"],
             label: { show: false },
             labelLine: { show: false },
             data: groups.map((g) => ({ name: g.label, value: Math.abs(g.amount), key: g.key })),
+          },
+        ],
+        // Where the ring and its legend go depends on the chart's own width.
+        // Beside each other the ring is centred at a third of the width with a
+        // radius of 78% of half the shorter side — which on a phone, where the
+        // shorter side is the width, put its left edge 18px outside the chart.
+        // Narrow, the legend moves underneath and the ring is centred.
+        media: [
+          {
+            query: { minWidth: 481 },
+            option: {
+              legend: { orient: "vertical", right: 8, top: "middle" },
+              series: [{ radius: ["45%", "78%"], center: ["34%", "50%"] }],
+            },
+          },
+          {
+            query: { maxWidth: 480 },
+            option: {
+              legend: { orient: "horizontal", left: "center", bottom: 0 },
+              series: [{ radius: ["38%", "64%"], center: ["50%", "44%"] }],
+            },
           },
         ],
       };

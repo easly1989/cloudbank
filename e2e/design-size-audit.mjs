@@ -438,6 +438,29 @@ for (const [what, path, state, locate, where, width, textOf] of CHECKS) {
     open = "";
   }
 }
+
+// The register has to fit at the boards' width with its default columns. When
+// it did not, the ledger scrolled sideways and a row's own Edit and Delete sat
+// past the right edge — every size above could match and the page still be
+// wrong. Rows are positioned by the virtualiser and add nothing to the scroll
+// width, so it is the ledger card's own sideways overflow that is measured.
+await page.goto(BASE + "/transactions");
+await settle(page, 700);
+const over = await page.evaluate(() => {
+  // The ledger scrolls itself vertically; the card around it is what
+  // scrolls sideways, so the search starts above the ledger.
+  let n = document.querySelector(".cb-ledger")?.parentElement;
+  while (n && getComputedStyle(n).overflowX !== "auto") n = n.parentElement;
+  return n ? n.scrollWidth - n.clientWidth : null;
+});
+if (over === null || over > 1) failed++;
+rows.push([
+  over === null || over > 1 ? "FAIL" : "ok  ",
+  "register fits at 1280",
+  "no sideways scroll",
+  over === null ? "ledger not found" : `${over}px over`,
+  "",
+]);
 await browser.close();
 
 const pad = (s, n) => String(s).padEnd(n);
