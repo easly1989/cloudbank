@@ -264,7 +264,8 @@ const CHECKS = [
     role("button", "admin"),
     { board: "overview", tag: "a", text: "demo" },
     // Height only: the app's foot also holds a collapse-sidebar button the
-    // board does not draw, and the user row gives up its 36px.
+    // board does not draw — a deliberate divergence, listed in
+    // docs/design/README.md — and the user row gives up its 36px.
     false,
   ],
 
