@@ -6,6 +6,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { getSetupStatus } from "./api/client";
 import { useAuth } from "./auth/AuthProvider";
 import { AppLayout } from "./components/AppLayout";
+import { OnboardingTourProvider } from "./onboarding/TourProvider";
 // Setup and login are the entry screens (critical first paint), so they stay
 // eager; every other page is code-split into its own chunk (loaded on demand)
 // to keep the initial bundle small.
@@ -148,54 +149,57 @@ function AuthenticatedApp() {
   }
 
   // AppLayout wraps the routed pages in a <Suspense> around its <Outlet>, so the
-  // shell (header/nav/footer) stays put while a lazy page chunk loads.
+  // shell (header/nav/footer) stays put while a lazy page chunk loads. The tours
+  // sit above both screens: settings has tours of its own (#421).
   return (
-    <Routes>
-      <Route element={<AppLayout />}>
-        <Route index element={<DashboardPage />} />
-        <Route path="accounts" element={<AccountsPage />} />
-        <Route path="transactions" element={<TransactionsPage />} />
-        <Route path="categories" element={<CategoriesPage />} />
-        <Route path="payees" element={<PayeesPage />} />
-        <Route path="schedules" element={<SchedulesPage />} />
-        <Route path="templates" element={<TemplatesPage />} />
-        <Route path="tags" element={<TagsPage />} />
-        <Route path="vehicles" element={<VehiclesPage />} />
-        <Route path="assignments" element={<AssignmentsPage />} />
-        <Route path="budget" element={<BudgetPage />} />
-        <Route path="goals" element={<GoalsPage />} />
-        <Route path="bills" element={<BillsPage />} />
-        <Route path="bank-sync" element={<BankSyncPage />} />
-        <Route path="bank-sync/callback" element={<BankSyncCallback />} />
-        <Route path="review" element={<ReviewPage />} />
-        <Route path="reports" element={<ReportsPage />} />
-        <Route path="wallet" element={<Navigate to="/settings/wallet" replace />} />
-        <Route path="admin/users" element={<Navigate to="/settings/people" replace />} />
-        <Route path="wallet/new" element={<CreateWalletPage />} />
-        <Route path="import" element={<Navigate to="/settings/data" replace />} />
-        <Route path="currencies" element={<CurrenciesPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-      {/* Outside AppLayout, so it needs its own Suspense: the layout chunk and
+    <OnboardingTourProvider>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="accounts" element={<AccountsPage />} />
+          <Route path="transactions" element={<TransactionsPage />} />
+          <Route path="categories" element={<CategoriesPage />} />
+          <Route path="payees" element={<PayeesPage />} />
+          <Route path="schedules" element={<SchedulesPage />} />
+          <Route path="templates" element={<TemplatesPage />} />
+          <Route path="tags" element={<TagsPage />} />
+          <Route path="vehicles" element={<VehiclesPage />} />
+          <Route path="assignments" element={<AssignmentsPage />} />
+          <Route path="budget" element={<BudgetPage />} />
+          <Route path="goals" element={<GoalsPage />} />
+          <Route path="bills" element={<BillsPage />} />
+          <Route path="bank-sync" element={<BankSyncPage />} />
+          <Route path="bank-sync/callback" element={<BankSyncCallback />} />
+          <Route path="review" element={<ReviewPage />} />
+          <Route path="reports" element={<ReportsPage />} />
+          <Route path="wallet" element={<Navigate to="/settings/wallet" replace />} />
+          <Route path="admin/users" element={<Navigate to="/settings/people" replace />} />
+          <Route path="wallet/new" element={<CreateWalletPage />} />
+          <Route path="import" element={<Navigate to="/settings/data" replace />} />
+          <Route path="currencies" element={<CurrenciesPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+        {/* Outside AppLayout, so it needs its own Suspense: the layout chunk and
           each section chunk both load behind this one boundary. */}
-      <Route
-        path="/settings"
-        element={
-          <Suspense fallback={<FullScreenLoader />}>
-            <SettingsLayout />
-          </Suspense>
-        }
-      >
-        <Route index element={<LegacySettingsRedirect />} />
-        <Route path="general" element={<GeneralSection />} />
-        <Route path="appearance" element={<AppearanceSection />} />
-        <Route path="wallet" element={<WalletSection />} />
-        <Route path="security" element={<SecuritySection />} />
-        <Route path="integrations" element={<IntegrationsSection />} />
-        <Route path="data" element={<DataSection />} />
-        <Route path="people" element={<PeopleSection />} />
-        <Route path="*" element={<Navigate to="/settings/general" replace />} />
-      </Route>
-    </Routes>
+        <Route
+          path="/settings"
+          element={
+            <Suspense fallback={<FullScreenLoader />}>
+              <SettingsLayout />
+            </Suspense>
+          }
+        >
+          <Route index element={<LegacySettingsRedirect />} />
+          <Route path="general" element={<GeneralSection />} />
+          <Route path="appearance" element={<AppearanceSection />} />
+          <Route path="wallet" element={<WalletSection />} />
+          <Route path="security" element={<SecuritySection />} />
+          <Route path="integrations" element={<IntegrationsSection />} />
+          <Route path="data" element={<DataSection />} />
+          <Route path="people" element={<PeopleSection />} />
+          <Route path="*" element={<Navigate to="/settings/general" replace />} />
+        </Route>
+      </Routes>
+    </OnboardingTourProvider>
   );
 }

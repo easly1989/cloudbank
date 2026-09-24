@@ -353,6 +353,7 @@ export function DashboardPage() {
     <Stack>
       <PageHeader
         prominent
+        tour="dashboard"
         title={t("dashboard.title")}
         hint={t(`overview.hint.${pagePeriod}`)}
         actions={

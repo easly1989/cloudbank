@@ -42,7 +42,7 @@ export function RegisterToolbar({
   const privacyLabel = t(privacy ? "register.privacy.show" : "register.privacy.hide");
 
   return (
-    <Group gap={8} wrap="wrap" align="center">
+    <Group gap={8} wrap="wrap" align="center" data-tour="register-toolbar">
       <TextInput
         className="cb-register-search"
         aria-label={t("register.search")}

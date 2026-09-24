@@ -80,8 +80,13 @@ export interface Preferences {
    * Widgets follow it unless they pin a period of their own.
    */
   dashboardPeriod?: string;
-  /** Whether the first-login onboarding tour has been seen (so it runs only once). */
+  /** Legacy: whether the one tour there used to be (the overview's) had run.
+      Read only while toursSeen is absent; see onboarding/TourProvider. */
   tutorialSeen?: boolean;
+  /** The page tours already offered, by id (onboarding/tours.ts). */
+  toursSeen?: string[];
+  /** Whether a page offers its tour the first time it is opened. Default on. */
+  tourOffers?: boolean;
   /** Saved report configurations (Statistics/Trend), scoped per wallet + tab. */
   reportViews?: SavedReportView[];
 }

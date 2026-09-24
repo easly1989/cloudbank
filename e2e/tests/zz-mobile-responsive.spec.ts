@@ -41,14 +41,22 @@ async function ensureReady(page: Page) {
   await page.goto("/");
   await page.waitForLoadState("networkidle");
   await page.evaluate(async () => {
-    const h = { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" };
-    const needsSetup = (await (await fetch("/api/v1/setup/status")).json()).needsSetup as boolean;
+    const h = {
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    };
+    const needsSetup = (await (await fetch("/api/v1/setup/status")).json())
+      .needsSetup as boolean;
     if (needsSetup) {
       await fetch("/api/v1/setup", {
         method: "POST",
         credentials: "same-origin",
         headers: h,
-        body: JSON.stringify({ username: "admin", email: "a@b.com", password: "supersecret1" }),
+        body: JSON.stringify({
+          username: "admin",
+          email: "a@b.com",
+          password: "supersecret1",
+        }),
       });
     } else {
       await fetch("/api/v1/auth/login", {
@@ -63,9 +71,13 @@ async function ensureReady(page: Page) {
       method: "PATCH",
       credentials: "same-origin",
       headers: h,
-      body: JSON.stringify({ preferences: { tutorialSeen: true } }),
+      body: JSON.stringify({
+        preferences: { tutorialSeen: true, tourOffers: false },
+      }),
     });
-    const wallets = await (await fetch("/api/v1/wallets", { credentials: "same-origin" })).json();
+    const wallets = await (
+      await fetch("/api/v1/wallets", { credentials: "same-origin" })
+    ).json();
     if (!Array.isArray(wallets) || wallets.length === 0) {
       await fetch("/api/v1/wallets", {
         method: "POST",
@@ -81,7 +93,9 @@ async function ensureReady(page: Page) {
 
 async function horizontalOverflow(page: Page): Promise<number> {
   return page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    () =>
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
   );
 }
 
@@ -96,13 +110,16 @@ for (const vp of VIEWPORTS) {
         await page.waitForLoadState("networkidle");
         await page.waitForTimeout(300);
         const overflow = await horizontalOverflow(page);
-        expect(overflow, `${path} overflows by ${overflow}px at ${vp.width}px`).toBeLessThanOrEqual(
-          1,
-        );
+        expect(
+          overflow,
+          `${path} overflows by ${overflow}px at ${vp.width}px`,
+        ).toBeLessThanOrEqual(1);
       }
       await page.goto("/transactions");
       await page.waitForLoadState("networkidle");
-      await page.screenshot({ path: `test-results/responsive-${vp.label}-register.png` });
+      await page.screenshot({
+        path: `test-results/responsive-${vp.label}-register.png`,
+      });
     });
   });
 }
@@ -119,14 +136,21 @@ test.describe("mobile navigation drawer", () => {
 
     // Open it with the burger; it slides on-screen (x ~ 0).
     await page.locator(".mantine-Burger-root").first().click();
-    await expect.poll(async () => (await navbar.boundingBox())?.x ?? -999).toBeGreaterThan(-5);
+    await expect
+      .poll(async () => (await navbar.boundingBox())?.x ?? -999)
+      .toBeGreaterThan(-5);
 
     // Selecting a destination navigates AND closes the drawer.
     // A destination inside the shell: Settings is its own screen now and takes
     // the whole navbar with it, which would pass this assertion for the wrong
     // reason.
-    await page.getByRole("link", { name: "Accounts", exact: true }).first().click();
+    await page
+      .getByRole("link", { name: "Accounts", exact: true })
+      .first()
+      .click();
     await expect(page).toHaveURL(/\/accounts/);
-    await expect.poll(async () => (await navbar.boundingBox())?.x ?? 0).toBeLessThan(0);
+    await expect
+      .poll(async () => (await navbar.boundingBox())?.x ?? 0)
+      .toBeLessThan(0);
   });
 });

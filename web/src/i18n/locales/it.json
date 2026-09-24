@@ -1305,11 +1305,14 @@
     "smartAmountHint": "Digita 12.40 o 12,40 — entrambi letti come decimali (stile HomeBank)",
     "save": "Salva",
     "saved": "Preferenze salvate",
-    "restartTour": "Riavvia il tutorial",
     "sidebarAccounts": "Saldi dei conti nella barra laterale",
     "sidebarAccountsHint": "Disattivati di default. Scegline al massimo {{max}}: devono restare un colpo d'occhio, non un secondo elenco dei conti.",
     "balances": "Saldi sull'overview e sopra il registro",
-    "balancesHint": "Sono disponibili tre figure. Mostra quelle con cui fai davvero i conti."
+    "balancesHint": "Sono disponibili tre figure. Mostra quelle con cui fai davvero i conti.",
+    "tourOffers": "Proponi il tour di ogni pagina",
+    "tourOffersHint": "La prima volta che apri una pagina, una card nell'angolo propone un breve giro.",
+    "resetTours": "Mostra di nuovo tutti i tour",
+    "toursReset": "Ogni pagina proporrà di nuovo il suo tour."
   },
   "tour": {
     "skip": "Salta",
@@ -1338,7 +1341,7 @@
     },
     "settings": {
       "title": "Impostazioni e preferenze",
-      "body": "Lingua, tema, formato data e altro sono qui. Puoi riavviare questo tutorial in qualsiasi momento dalle Impostazioni."
+      "body": "Lingua, tema, formato data e altro sono qui. Ogni pagina ha il suo tour: il ? nella sua intestazione lo mostra di nuovo."
     }
   },
   "integrity": {
@@ -1423,5 +1426,153 @@
     "statusDefault": "Stato iniziale",
     "requiredMoved": "{{field}} serve per salvare. Fuori vista, una nuova voce prende: {{value}}.",
     "reset": "Ripristina i predefiniti"
+  },
+  "tours": {
+    "offerBody_one": "{{count}} passo. Il ? nell'intestazione della pagina lo mostra di nuovo quando vuoi.",
+    "offerBody_other": "{{count}} passi, meno di un minuto. Il ? nell'intestazione della pagina lo mostra di nuovo quando vuoi.",
+    "accept_one": "Mostrami",
+    "accept_other": "Mostrami · {{count}} passi",
+    "decline": "No grazie",
+    "replay": "Tour di questa pagina",
+    "dashboard": {
+      "offer": "Prima volta qui? Fai un giro veloce"
+    },
+    "register": {
+      "offer": "Prima volta qui? Fai il giro del registro",
+      "account": {
+        "title": "Un conto alla volta",
+        "body": "Il registro mostra le transazioni e il saldo di un conto. Clicca sul suo nome per passare a un altro conto."
+      },
+      "toolbar": {
+        "title": "Trova qualsiasi transazione",
+        "body": "Cerca in memo, beneficiari e importi. I pulsanti accanto alla ricerca filtrano le righe, nascondono le cifre e scelgono le colonne."
+      },
+      "newEntry": {
+        "title": "Aggiungila dove finirà",
+        "body": "Clicca sulla prima riga, o premi N, per aggiungere una transazione. Nella scheda, Invio salva e chiude; Maiusc+Invio salva e ne inizia un'altra."
+      },
+      "more": {
+        "title": "Riconcilia e trasferisci",
+        "body": "Il menu ⋯ riconcilia il conto con l'estratto della banca, sposta denaro tra conti e nasconde gli importi."
+      }
+    },
+    "accounts": {
+      "offer": "Prima volta qui? Fai il giro dei conti",
+      "add": {
+        "title": "Ogni conto che segui",
+        "body": "Aggiungi ogni conto che vuoi tenere sotto controllo: conto corrente, contanti, carta, risparmi. Ognuno ha il suo registro e il suo saldo."
+      },
+      "closed": {
+        "title": "Chiuso, non cancellato",
+        "body": "Un conto chiuso sparisce dagli elenchi ma conserva la sua storia. Attiva questo interruttore per rivedere i conti chiusi."
+      }
+    },
+    "budget": {
+      "offer": "Prima volta qui? Fai il giro del budget",
+      "tabs": {
+        "title": "Pianifica, poi confronta",
+        "body": "Nella prima scheda pianifichi quanto spendere; il report lo mette a confronto con quanto hai speso davvero."
+      },
+      "editor": {
+        "title": "Un importo per categoria",
+        "body": "Dai a ogni categoria lo stesso importo ogni mese, oppure un importo per mese. \"Ogni anno\" è il valore di base; scegliendo un anno lo sostituisci solo per quell'anno."
+      }
+    },
+    "reports": {
+      "offer": "Prima volta qui? Fai il giro dei report",
+      "tabs": {
+        "title": "Quattro viste sul tuo denaro",
+        "body": "Statistiche divide le spese per categoria o beneficiario, Andamento le segue nel tempo, Saldo segue i conti e Veicolo somma i costi di gestione."
+      },
+      "views": {
+        "title": "Salva una vista che usi",
+        "body": "Salva il raggruppamento e i filtri che hai impostato e riaprili con un clic."
+      },
+      "export": {
+        "title": "Portali altrove",
+        "body": "Scarica i numeri in CSV, o il grafico come immagine."
+      }
+    },
+    "schedules": {
+      "offer": "Prima volta qui? Fai il giro delle pianificazioni",
+      "add": {
+        "title": "Le cose che si ripetono",
+        "body": "Aggiungi lo stipendio, l'affitto, un abbonamento: CloudBank lo registra il giorno in cui scade."
+      },
+      "due": {
+        "title": "In anticipo, o per niente",
+        "body": "Ogni pianificazione si può registrare subito o saltare una volta. Le date successive restano com'erano."
+      }
+    },
+    "bills": {
+      "offer": "Prima volta qui? Fai il giro delle scadenze",
+      "list": {
+        "title": "Cosa scade",
+        "body": "Una riga per scadenza, con l'ultimo pagamento e la prossima data. Segnala come pagata per registrarne la transazione."
+      },
+      "add": {
+        "title": "Aggiungi una scadenza",
+        "body": "Una scadenza è una pianificazione con una data: la aggiungi una volta e torna a ogni periodo."
+      }
+    },
+    "goals": {
+      "offer": "Prima volta qui? Fai il giro degli obiettivi",
+      "add": {
+        "title": "Metti da parte per qualcosa",
+        "body": "Scegli un obiettivo, come una vacanza o una bici nuova, e quanto vuoi mettere da parte."
+      },
+      "topUp": {
+        "title": "Riempilo a mano",
+        "body": "Un obiettivo è un salvadanaio: lo ricarichi ogni volta che metti da parte qualcosa. Gli importi sono nella valuta di base."
+      }
+    },
+    "bankSync": {
+      "offer": "Prima volta qui? Fai il giro del sync bancario",
+      "providers": {
+        "title": "Collega una banca",
+        "body": "Scegli un provider. Le credenziali restano sul server e CloudBank non vede mai l'accesso alla tua banca."
+      },
+      "connections": {
+        "title": "Le tue connessioni",
+        "body": "Ogni banca collegata compare qui con l'ultima sincronizzazione. Le transazioni importate senza categoria ti aspettano in Revisione."
+      }
+    },
+    "review": {
+      "offer": "Prima volta qui? Fai il giro della revisione",
+      "categories": {
+        "title": "Dai loro una categoria",
+        "body": "Qui finiscono le transazioni importate senza categoria. Scegline una e la riga è a posto."
+      },
+      "duplicates": {
+        "title": "La stessa transazione due volte?",
+        "body": "Qui compaiono le importazioni che somigliano a una transazione che hai già, così decidi quale tenere."
+      }
+    },
+    "settings": {
+      "offer": "Prima volta qui? Fai il giro delle Impostazioni",
+      "sections": {
+        "title": "Tutto in un posto",
+        "body": "Le sezioni vanno da ciò che tutti cambiano il primo giorno a ciò che quasi nessuno tocca. Ognuna ha il suo link."
+      },
+      "entry": {
+        "title": "La tua scheda transazione",
+        "body": "Scegli quali campi la scheda mostra subito e con cosa parte una nuova transazione."
+      },
+      "back": {
+        "title": "La via d'uscita",
+        "body": "Torna all'app da qualsiasi sezione."
+      }
+    },
+    "data": {
+      "offer": "Prima volta qui? Fai il giro dei tuoi dati",
+      "import": {
+        "title": "Porta dentro i tuoi estratti",
+        "body": "Importa gli estratti della tua banca; le regole qui sotto assegnano ogni riga alla sua categoria."
+      },
+      "backup": {
+        "title": "Tieni una copia",
+        "body": "Scarica una copia da cui ripristinare e controlla che il database sia integro."
+      }
+    }
   }
 }

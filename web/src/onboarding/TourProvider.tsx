@@ -1,64 +1,108 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Suspense, lazy, useCallback, useEffect, useState, type ReactNode } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { updateMe, type User } from "../api/client";
-import { useSearchParams } from "react-router-dom";
-
+import { updateMe, type Preferences, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
-import { TourContext } from "./tourContext";
+import { TourContext, type TourContextValue } from "./tourContext";
+import { TourOffer } from "./TourOffer";
+import { TOURS, toursSeen, type TourId } from "./tours";
 
-// The visual overlay is loaded only when the tour actually runs, so the tour
+// The visual overlay is loaded only when a tour actually runs, so the tour
 // machinery stays out of the initial bundle.
 const TourOverlay = lazy(() => import("./TourOverlay"));
 
-// OnboardingTourProvider auto-runs the coachmark tour once per user (tracked
-// server-side via preferences.tutorialSeen) and exposes start() so Settings can
-// restart it. It renders no UI itself beyond the lazy overlay while running.
+// How long a page has to sit still — no dialog open, nothing loading, its
+// first step's element present — before its tour is offered. An offer that
+// arrives while the page is still assembling itself lands on the wrong thing.
+const SETTLE_MS = 800;
+const POLL_MS = 200;
+
+function pageIsSettled(id: TourId): boolean {
+  // Visible dialogs only: some modals stay mounted while closed, and their
+  // roots are always in the page.
+  const dialogs = document.querySelectorAll<HTMLElement>('[role="dialog"]');
+  if ([...dialogs].some((d) => d.getClientRects().length > 0)) return false;
+  if (document.querySelector("main .mantine-Loader-root")) return false;
+  const first = TOURS[id].find((s) => s.target)?.target;
+  return !first || !!document.querySelector(`[data-tour="${first}"]`);
+}
+
+/**
+ * The page tours. Each covered page asks for its own when it shows
+ * (usePageTour); the first time, a small card in the corner offers it, and
+ * being offered is what counts as seen — the reader said yes, said no, or
+ * walked away, and none of those wants the question again. The ? in the page's
+ * header runs it any time after.
+ */
 export function OnboardingTourProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [running, setRunning] = useState(false);
-  const [params, setParams] = useSearchParams();
+  const [running, setRunning] = useState<TourId | null>(null);
+  const [requested, setRequested] = useState<TourId | null>(null);
+  const [offered, setOffered] = useState<TourId | null>(null);
 
-  const markSeen = useMutation({
-    mutationFn: () =>
-      updateMe({ preferences: { ...(user?.preferences ?? {}), tutorialSeen: true } }),
+  // Written from the latest copy of the preferences, not the one this render
+  // saw: the reader may have changed another preference in between.
+  const persist = useMutation({
+    mutationFn: (patch: Partial<Preferences>) => {
+      const latest = qc.getQueryData<User>(["me"])?.preferences ?? user?.preferences ?? {};
+      return updateMe({ preferences: { ...latest, ...patch } });
+    },
     onSuccess: (u: User) => qc.setQueryData(["me"], u),
   });
+  const { mutate } = persist;
 
-  // Run automatically the first time a user who hasn't seen it lands in the app,
-  // and on demand when someone arrives from settings asking for it. The tour
-  // points at things in the app's own shell, so it cannot run on the settings
-  // screen — restarting it there is a trip back here.
-  const asked = params.get("tour") === "1";
-  const [decided, setDecided] = useState(false);
-  if (user && !decided) {
-    // Decided once, when the user arrives — during render, so the first frame of
-    // the app already has the tour on it rather than showing the app and then
-    // covering it.
-    setDecided(true);
-    if (asked || !user.preferences?.tutorialSeen) setRunning(true);
-  }
-  // Taking the marker back out of the URL is navigation, and stays in an effect.
+  const seen = useMemo(() => toursSeen(user?.preferences), [user?.preferences]);
+  const offersOn = user?.preferences?.tourOffers ?? true;
+
+  // Offer the requested tour once the page has settled.
   useEffect(() => {
-    if (decided && asked) setParams({}, { replace: true });
-  }, [decided, asked, setParams]);
+    if (!requested || running || offered || !offersOn || seen.includes(requested)) return;
+    let stillFor = 0;
+    const id = window.setInterval(() => {
+      stillFor = pageIsSettled(requested) ? stillFor + POLL_MS : 0;
+      if (stillFor < SETTLE_MS) return;
+      window.clearInterval(id);
+      setOffered(requested);
+      mutate({ toursSeen: [...seen, requested], tutorialSeen: undefined });
+    }, POLL_MS);
+    return () => window.clearInterval(id);
+  }, [requested, running, offered, offersOn, seen, mutate]);
 
-  const start = useCallback(() => setRunning(true), []);
+  const start = useCallback((id: TourId) => {
+    setOffered(null);
+    setRunning(id);
+  }, []);
 
-  const close = useCallback(() => {
-    setRunning(false);
-    // Persist "seen" so the auto-run never fires again on any device; a manual
-    // restart from Settings doesn't need to flip anything (it's already seen).
-    if (!user?.preferences?.tutorialSeen) markSeen.mutate();
-  }, [user, markSeen]);
+  const request = useCallback((id: TourId) => {
+    setRequested(id);
+    return () => {
+      setRequested((r) => (r === id ? null : r));
+      setOffered((o) => (o === id ? null : o));
+    };
+  }, []);
+
+  const resetAll = useCallback(() => mutate({ toursSeen: [], tutorialSeen: undefined }), [mutate]);
+
+  const value = useMemo<TourContextValue>(
+    () => ({ start, request, resetAll }),
+    [start, request, resetAll],
+  );
 
   return (
-    <TourContext.Provider value={{ start }}>
+    <TourContext.Provider value={value}>
       {children}
+      {offered && !running && (
+        <TourOffer
+          id={offered}
+          steps={TOURS[offered].length}
+          onAccept={() => start(offered)}
+          onDecline={() => setOffered(null)}
+        />
+      )}
       {running && (
         <Suspense fallback={null}>
-          <TourOverlay onClose={close} />
+          <TourOverlay steps={TOURS[running]} onClose={() => setRunning(null)} />
         </Suspense>
       )}
     </TourContext.Provider>

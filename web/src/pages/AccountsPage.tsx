@@ -119,15 +119,21 @@ export function AccountsPage() {
 
   // The empty state below offers this same button, and one screen does not
   // need it twice.
-  const addButton = <Button onClick={openCreate}>{t("accounts.add")}</Button>;
+  const addButton = (
+    <Button onClick={openCreate} data-tour="accounts-add">
+      {t("accounts.add")}
+    </Button>
+  );
 
   return (
     <Stack>
       <PageHeader
+        tour="accounts"
         title={t("accounts.title")}
         actions={
           <>
             <Switch
+              wrapperProps={{ "data-tour": "accounts-closed" }}
               label={t("accounts.showClosed")}
               checked={showClosed}
               onChange={(e) => setShowClosed(e.currentTarget.checked)}
