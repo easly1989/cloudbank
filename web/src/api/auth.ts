@@ -14,6 +14,14 @@ export interface Preferences {
   registerColumnWidths?: Record<string, number>;
   /** Which register column is sorted, and how. Absent = the ledger’s own chronological order. */
   registerSort?: { id: string; desc: boolean };
+  /**
+   * Where each field of the entry sheet sits: "base" or "more" (under More
+   * details), keyed by field id. Absent keys take the defaults in
+   * components/entryFields.ts.
+   */
+  entryFields?: Record<string, string>;
+  /** What a new entry starts from: the date ("today" | "last") and the status code. */
+  entryDefaults?: { date?: "today" | "last"; status?: number };
   /** HomeBank-style lenient amount entry (accept "." or "," as decimal). Default on. */
   smartAmountInput?: boolean;
   /** Collapse the desktop sidebar to an icon-only rail. */

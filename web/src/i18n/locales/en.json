@@ -75,9 +75,11 @@
     "confirmDiscardKeep": "Keep editing",
     "noAccountsHint": "Transactions belong to an account, so that is the place to start.",
     "saveAndAddAnother": "Save and add another",
+    "saveAndKeep": "Save and keep",
     "enterSaves": "Enter saves",
     "keepFields": "Keep the fields for the next one",
     "moreDetails": "More details",
+    "customiseFields": "Customise fields…",
     "signExpense": "Expense — switch to income",
     "signIncome": "Income — switch to expense",
     "savedTo": "Saved to {{account}}",
@@ -1409,5 +1411,18 @@
       "all": "Everything you have recorded, since the beginning."
     },
     "customise": "Customise"
+  },
+  "entryFields": {
+    "title": "Transaction sheet",
+    "hint": "Which fields the sheet shows up front, and which wait under More details. Nothing is ever hidden: every field stays one click away.",
+    "inView": "In view",
+    "startsAs": "A new entry starts with",
+    "dateToday": "Today",
+    "dateLast": "The last date saved",
+    "accountDefault": "The register it's opened from",
+    "paymentDefault": "The account's default payment",
+    "statusDefault": "Starting status",
+    "requiredMoved": "{{field}} is needed to save. Out of view, a new entry takes: {{value}}.",
+    "reset": "Restore the defaults"
   }
 }
