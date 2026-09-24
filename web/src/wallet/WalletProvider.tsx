@@ -25,17 +25,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   // Resolve the current wallet, falling back to the first one.
   const currentWallet = wallets.find((w) => w.id === currentId) ?? wallets[0] ?? null;
 
-  useEffect(() => {
-    if (currentWallet && currentWallet.id !== currentId) {
-      setCurrentId(currentWallet.id);
-      localStorage.setItem(STORAGE_KEY, String(currentWallet.id));
-    }
-  }, [currentWallet, currentId]);
+  // Adopt the resolved wallet — first load, or the stored id naming a wallet
+  // that is gone — during render, so nothing downstream sees the stale id.
+  if (currentWallet && currentWallet.id !== currentId) setCurrentId(currentWallet.id);
 
-  const setCurrentWalletId = (id: number) => {
-    setCurrentId(id);
-    localStorage.setItem(STORAGE_KEY, String(id));
-  };
+  // Remembering it is a write to the outside, and stays in an effect.
+  useEffect(() => {
+    if (currentId != null) localStorage.setItem(STORAGE_KEY, String(currentId));
+  }, [currentId]);
+
+  const setCurrentWalletId = (id: number) => setCurrentId(id);
 
   const value: WalletContextValue = {
     wallets,

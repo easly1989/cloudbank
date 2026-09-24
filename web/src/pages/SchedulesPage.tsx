@@ -26,7 +26,7 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/confirmContext";
 import { EmptyState } from "../components/EmptyState";
@@ -436,49 +436,65 @@ function ScheduleForm({
     setToAccountId(tpl.toAccountId ?? null);
   };
 
-  useEffect(() => {
-    if (!opened) return;
-    const e = editing;
-    setUnit(e?.unit ?? "month");
-    setEveryN(e?.everyN ?? 1);
-    setNextDue(e?.nextDue ?? todayCivil());
-    setWeekendMode(String(e?.weekendMode ?? 0));
-    setLimited(e?.remaining != null);
-    setRemaining(e?.remaining ?? 12);
-    setPostAdvance(e?.postAdvance ?? 0);
-    setAutoPost(e?.autoPost ?? true);
-    if (!e) {
-      // New schedule: blank transaction fields (account defaults to the first).
-      setAccountId(accounts[0] ? String(accounts[0].id) : null);
-      setDirection("expense");
-      setAmount("");
-      setPayeeId(null);
-      setCategoryId(null);
-      setMemo("");
-      setPaymentMode("0");
-      setIsTransfer(false);
-      setToAccountId(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, editing]);
+  // Three things seed this modal, and they do not all arrive at once: the
+  // schedule itself is there the moment it opens, while the accounts list and
+  // the schedule's own template come from queries that may resolve afterwards.
+  // Each gets its own key, and each adopts during render rather than in an
+  // effect — an effect runs after the modal is on screen, so the reader gets a
+  // frame of the previous schedule before the right one replaces it.
+  //
+  // The key is null while closed, which is what makes reopening the same
+  // schedule seed it again instead of keeping whatever was typed last time.
 
-  // Default the account to the first one once the accounts list has loaded (the
-  // query may resolve after the modal opened).
-  useEffect(() => {
-    if (opened && !editing && !accountId && accounts.length > 0) {
-      setAccountId(String(accounts[0].id));
+  // 1. Opening: the recurrence fields, plus blank transaction fields for a new
+  //    schedule.
+  const openKey = opened ? (editing ? `edit:${editing.id}` : "new") : null;
+  const [openedFor, setOpenedFor] = useState<string | null>(null);
+  if (openKey !== openedFor) {
+    setOpenedFor(openKey);
+    if (openKey !== null) {
+      const e = editing;
+      setUnit(e?.unit ?? "month");
+      setEveryN(e?.everyN ?? 1);
+      setNextDue(e?.nextDue ?? todayCivil());
+      setWeekendMode(String(e?.weekendMode ?? 0));
+      setLimited(e?.remaining != null);
+      setRemaining(e?.remaining ?? 12);
+      setPostAdvance(e?.postAdvance ?? 0);
+      setAutoPost(e?.autoPost ?? true);
+      if (!e) {
+        setAccountId(accounts[0] ? String(accounts[0].id) : null);
+        setDirection("expense");
+        setAmount("");
+        setPayeeId(null);
+        setCategoryId(null);
+        setMemo("");
+        setPaymentMode("0");
+        setIsTransfer(false);
+        setToAccountId(null);
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, editing, accountsQuery.data]);
+  }
 
-  // When editing, prefill the transaction fields from the schedule's own
-  // template once the templates list has loaded.
-  useEffect(() => {
-    if (!opened || !editing) return;
-    const tpl = templates.find((tp) => tp.id === editing.templateId);
-    if (tpl) fillFromTemplate(tpl);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, editing, templatesQuery.data, accountsQuery.data]);
+  // 2. The accounts list landing after the modal opened: a new schedule needs a
+  //    default account, and only if the reader has not already chosen one.
+  const firstAccountKey = opened && !editing && accounts.length > 0 ? accounts[0].id : null;
+  const [defaultedFrom, setDefaultedFrom] = useState<number | null>(null);
+  if (firstAccountKey !== defaultedFrom) {
+    setDefaultedFrom(firstAccountKey);
+    if (firstAccountKey !== null && !accountId) setAccountId(String(firstAccountKey));
+  }
+
+  // 3. The schedule's own template landing after the modal opened: it carries
+  //    the transaction fields, which the schedule row does not.
+  const editingTemplate =
+    opened && editing ? (templates.find((tp) => tp.id === editing.templateId) ?? null) : null;
+  const templateKey = editingTemplate ? `${editing?.id}:${editingTemplate.id}` : null;
+  const [filledFrom, setFilledFrom] = useState<string | null>(null);
+  if (templateKey !== filledFrom) {
+    setFilledFrom(templateKey);
+    if (editingTemplate) fillFromTemplate(editingTemplate);
+  }
 
   const onPayee = (v: string | null) => {
     setPayeeId(v);
