@@ -432,6 +432,196 @@ body {
   }
 }
 
+/* Control sizes, from the boards (#465; docs/design/*.json).
+ *
+ * The boards draw a scale, and Mantine's defaults sit between its steps: every
+ * button 36 tall at 14px/600 whatever it does. The scale is
+ *
+ *   44  the register's and the overview's header, the register's toolbar
+ *   40  every other button: other pages' headers, the selection bar, the entry
+ *       sheet, the confirmations, settings
+ *   36  the column panel's footer
+ *   34  the notice above a filtered ledger (set on the button itself)
+ *
+ * and inside a step, an outlined button is 13px/500 with 14px of padding and a
+ * filled one 14px/600 with 18 — except where the board sets the filled one
+ * down to its neighbours' 13px/14: the secondary pages' headers and the
+ * confirmations (.cb-quiet-primary). Fields are 44 wherever a board draws one.
+ *
+ * It is done by redefining Mantine's own "sm" step, which is what a control
+ * without a `size` uses, so a control given an explicit xs or compact size on
+ * purpose keeps it. */
+:root .mantine-Button-root {
+  --button-height-sm: 40px;
+  --button-padding-x-sm: 14px;
+}
+:root .mantine-Button-root:is(:not([data-size]), [data-size="sm"]) {
+  font-size: 13px;
+  font-weight: 500;
+}
+:root
+  .mantine-Button-root:is(:not([data-size]), [data-size="sm"]):is(
+    :not([data-variant]),
+    [data-variant="filled"]
+  ) {
+  --button-padding-x-sm: 18px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.cb-page-actions[data-prominent] .mantine-Button-root {
+  --button-height-sm: 44px;
+}
+.cb-page-actions:not([data-prominent])
+  .mantine-Button-root:is(:not([data-size]), [data-size="sm"]):is(
+    :not([data-variant]),
+    [data-variant="filled"]
+  ),
+.cb-quiet-primary
+  .mantine-Button-root:is(:not([data-size]), [data-size="sm"]):is(
+    :not([data-variant]),
+    [data-variant="filled"]
+  ) {
+  --button-padding-x-sm: 14px;
+  font-size: 13px;
+}
+.cb-panel-actions .mantine-Button-root:is(:not([data-size]), [data-size="sm"]) {
+  --button-height-sm: 36px;
+  font-size: 12px;
+}
+.cb-panel-actions
+  .mantine-Button-root:is(:not([data-size]), [data-size="sm"]):is(
+    :not([data-variant]),
+    [data-variant="filled"]
+  ) {
+  --button-padding-x-sm: 12px;
+  font-size: 12px;
+}
+:root .mantine-Input-wrapper {
+  --input-height-sm: 44px;
+}
+/* An icon inside a button sits 8px from its label, and the button keeps its
+   full padding on the icon's side — Mantine trims it to two thirds, which made
+   "Customise" 2px narrower than the overview board draws it. */
+:root .mantine-Button-root:is(:not([data-size]), [data-size="sm"])[data-with-left-section] {
+  padding-inline-start: var(--button-padding-x);
+}
+:root
+  .mantine-Button-root:is(:not([data-size]), [data-size="sm"])
+  .mantine-Button-section[data-position="left"] {
+  margin-inline-end: 8px;
+}
+/* A choice among a few, drawn on the settings board as 40px, 13px/500 — the
+   theme's Auto / Light / Dark. */
+.cb-choice {
+  height: 40px;
+}
+.cb-choice .mantine-SegmentedControl-label {
+  font-size: 13px;
+  font-weight: 500;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-inline: 14px;
+}
+.cb-choice .mantine-SegmentedControl-control {
+  height: 100%;
+}
+.cb-choice .mantine-SegmentedControl-innerLabel {
+  line-height: 1;
+}
+/* The sheet's close button: 34px, like every other icon button in a header. */
+.mantine-Drawer-close {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+}
+
+/* The register's search box is the one field the board draws at 46: the
+   toolbar's 44px buttons sit inside its border, a pixel clear of each edge. */
+.cb-register-search .mantine-Input-wrapper {
+  --input-height-sm: 46px;
+}
+
+/* On a touch screen, 44 is the floor (#403, #465). The boards are all drawn at
+ * 1280px for a mouse; none of them is a phone, so growing a control there
+ * contradicts nothing — and a finger is not a pointer. Every step of Mantine's
+ * scale is lifted rather than the element being given a min-height, so a
+ * control's sections and icons stay centred in it. */
+@media (pointer: coarse) {
+  :root .mantine-Button-root {
+    --button-height-xs: 44px;
+    --button-height-sm: 44px;
+    --button-height-md: 44px;
+    --button-height-compact-xs: 44px;
+    --button-height-compact-sm: 44px;
+    --button-height-compact-md: 44px;
+    --button-height-compact-lg: 44px;
+    min-height: 44px;
+  }
+  :root .mantine-Input-wrapper {
+    --input-height-xs: 44px;
+    --input-height-sm: 44px;
+    --input-height-md: 44px;
+  }
+  /* Icon buttons are sized by number as often as by name, and a number is
+     written inline where no variable can reach it; min-* can. */
+  :root :is(.mantine-ActionIcon-root, .mantine-CloseButton-root, .mantine-Burger-root) {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  /* Controls that are already flex rows only need the floor. */
+  :root
+    :is(
+      .cb-sidebar .mantine-NavLink-root,
+      .cb-settings-section,
+      .cb-settings-back,
+      .cb-sort,
+      .cb-user-row,
+      .mantine-Tabs-tab
+    ) {
+    min-height: 44px;
+  }
+  /* The rest are laid out as text, and are centred on the way up so the words
+     do not sit at the top of a taller box. */
+  :root :is(.cb-nav-group-toggle, .cb-title-switch, .cb-attention-action, .cb-footer-inline a) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .cb-nav-group-toggle {
+    display: flex;
+    width: 100%;
+  }
+  .cb-search-row {
+    padding-block: 10px;
+    min-height: 44px;
+  }
+  /* "Donate" is four letters: 40px of text, so its target is widened to 44
+     around it rather than left to the word. */
+  .cb-footer-inline a {
+    min-width: 44px;
+    justify-content: center;
+  }
+  /* A switch or checkbox is pressed through its label: the label is the
+     target, and it is the label that grows. */
+  :root :is(.mantine-Switch-label, .mantine-Checkbox-label) {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  :root :is(.mantine-Switch-body, .mantine-Checkbox-body) {
+    align-items: center;
+  }
+  /* The register's select column is 34px wide; its press target borrows 5px
+     either side from the row's own padding, where nothing else can be hit. */
+  .cb-row-select {
+    min-height: 44px;
+    padding-inline: 5px;
+    margin-inline: -5px;
+  }
+}
+
 /* A row that has just been saved.
  *
  * It lands wherever the date order puts it, which on a long register is often

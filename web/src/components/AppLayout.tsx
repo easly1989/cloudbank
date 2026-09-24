@@ -1,5 +1,6 @@
 import {
   AppShell,
+  Box,
   Burger,
   Center,
   Group,
@@ -45,6 +46,11 @@ export function AppLayout() {
   const [collapsed, setCollapsed] = useState(() => user?.preferences?.sidebarCollapsed ?? false);
   const isDesktop = useMediaQuery("(min-width: 48em)");
   const railMode = collapsed && !!isDesktop;
+  // On a touch screen the footer leaves the fixed bar for the end of the page.
+  // Its links need 44px for a finger (#465), and five of them wrap to two lines
+  // on a phone — 88px of permanent bar, where 36 was already cutting the second
+  // line off. At the end of the page it costs nothing until it is reached.
+  const touch = useMediaQuery("(pointer: coarse)");
   const persistCollapsed = useMutation({
     mutationFn: (next: boolean) =>
       updateMe({ preferences: { ...(user?.preferences ?? {}), sidebarCollapsed: next } }),
@@ -81,7 +87,7 @@ export function AppLayout() {
           breakpoint: "sm",
           collapsed: { mobile: !opened },
         }}
-        footer={{ height: 36 }}
+        footer={{ height: 36, collapsed: !!touch }}
         padding="md"
       >
         <AppShell.Header hiddenFrom="sm">
@@ -136,11 +142,18 @@ export function AppLayout() {
           >
             <Outlet />
           </Suspense>
+          {touch && (
+            <Box component="footer" mt="xl" className="cb-footer-inline">
+              <AppFooter />
+            </Box>
+          )}
         </AppShell.Main>
 
-        <AppShell.Footer>
-          <AppFooter />
-        </AppShell.Footer>
+        {!touch && (
+          <AppShell.Footer>
+            <AppFooter />
+          </AppShell.Footer>
+        )}
       </AppShell>
     </OnboardingTourProvider>
   );

@@ -107,11 +107,7 @@ export function GoalsPage() {
   if (!currentWallet) return null;
 
   // One button, shown in the header or in the empty state — never both.
-  const addButton = (
-    <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
-      {t("goals.add")}
-    </Button>
-  );
+  const addButton = <Button onClick={openCreate}>{t("goals.add")}</Button>;
 
   return (
     <Stack>

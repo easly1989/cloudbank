@@ -6,11 +6,12 @@
 //
 // It walks every page on a phone — 390x844, touch — and measures every control a
 // finger can press. #403 promised touch targets of at least 44px; WCAG 2.2 puts
-// the floor at 24px (2.5.8, AA) and 44px at AAA (2.5.5). Both lines are reported:
+// the floor at 24px (2.5.8, AA) and 44px at AAA (2.5.5). Both are gates:
 //
 //   - under 24px with no room around it fails AA, and is always a defect;
-//   - anything under 44px misses the bar this app set itself, on the device it
-//     matters on.
+//   - under 44px on a touch screen misses the bar this app set itself (#465:
+//     under `pointer: coarse` every control grows to 44; the desktop keeps the
+//     boards' sizes, which design-size-audit.mjs checks).
 //
 // What counts as the target is what a finger can actually hit, which is not
 // always the element that receives the event. A Mantine checkbox or switch puts
@@ -31,7 +32,8 @@
 //
 // Findings are grouped by what the control is, not by page, because one
 // component explains the whole list: the same row-action icon shows up on nine
-// pages and is one fix. Exits non-zero if anything fails AA or a page overflows.
+// pages and is one fix. Exits non-zero if anything fails AA, anything is under
+// 44px, or a page overflows.
 import { chromium } from "@playwright/test";
 
 import { BASE, PAGES, settle, signIn } from "./audit-shared.mjs";
@@ -271,7 +273,7 @@ try {
 
   const aa = rows.filter((v) => v.small < AA && !v.spaced);
   const bar = rows.filter((v) => !(v.small < AA && !v.spaced));
-  failing = aa.length + overflow.length;
+  failing = aa.length + bar.length + overflow.length;
 
   console.log(
     `\n=== fails WCAG 2.5.8 (AA): under ${AA}px with no room around it — ${aa.length} ===`,
@@ -302,7 +304,7 @@ try {
 }
 console.log(
   failing === 0
-    ? "\nNothing fails AA, and every page fits."
+    ? "\nEvery target is 44px or more, and every page fits."
     : `\n${failing} failures.`,
 );
 process.exit(failing === 0 ? 0 : 1);

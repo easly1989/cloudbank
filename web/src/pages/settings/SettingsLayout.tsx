@@ -45,6 +45,7 @@ export function SettingsLayout() {
             <Text
               component={Link}
               to="/"
+              className="cb-settings-back"
               c="dimmed"
               fz={RAIL.back.fz}
               px={RAIL.back.inset}
