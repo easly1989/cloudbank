@@ -36,6 +36,12 @@ export const ROW_COLUMNS: Record<string, string> = {
 /** Width of the trailing cell that holds a row's own actions. */
 export const ROW_ACTIONS_WIDTH = "84px";
 
+/**
+ * The row's own action buttons, as the register board draws them: two 30px
+ * squares with a 15px glyph, 2px apart, right-aligned in the 84px column.
+ */
+export const ROW_ACTION = { size: 30, icon: 15, gap: 2 } as const;
+
 /** Width of the leading checkbox cell. Not in the tile; see #449. */
 export const ROW_SELECT_WIDTH = "34px";
 

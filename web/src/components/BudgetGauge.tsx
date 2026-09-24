@@ -18,22 +18,29 @@ export function BudgetGauge({
   const { t } = useTranslation();
   const over = actual > budget;
   const pct = budget > 0 ? Math.min(100, Math.round((actual / budget) * 100)) : 0;
+  const spentOf = t("budget.spentOf", {
+    spent: formatMinor(actual, base),
+    budget: formatMinor(budget, base),
+  });
   return (
     <Stack gap={6}>
       <Group justify="space-between" gap="xs" wrap="nowrap">
-        <Text size="sm">
-          {t("budget.spentOf", {
-            spent: formatMinor(actual, base),
-            budget: formatMinor(budget, base),
-          })}
-        </Text>
+        <Text size="sm">{spentOf}</Text>
         <Text size="sm" fw={600} c={over ? attentionColor : undefined}>
           {over
             ? t("budget.overBy", { amount: formatMinor(actual - budget, base) })
             : t("budget.remaining", { amount: formatMinor(budget - actual, base) })}
         </Text>
       </Group>
-      <Progress value={pct} color={over ? attentionColor : undefined} size="lg" radius="sm" />
+      {/* Named by the sentence above it: a bar announced as just "progress bar,
+          40%" does not say forty percent of what. */}
+      <Progress
+        value={pct}
+        color={over ? attentionColor : undefined}
+        size="lg"
+        radius="sm"
+        aria-label={spentOf}
+      />
     </Stack>
   );
 }

@@ -160,6 +160,7 @@
     "hint": "Dove sono finiti i soldi, sull'arco di tempo che scegli."
   },
   "budget": {
+    "amountFor": "Budget per {{name}}",
     "title": "Budget",
     "editor": "Budget",
     "report": "Report",
@@ -307,6 +308,7 @@
     "emptyHint": "Affitto, abbonamenti, stipendio — tutto ciò che torna da solo."
   },
   "tags": {
+    "renameAria": "Rinomina {{name}}",
     "title": "Tag",
     "empty": "Nessun tag. Vengono creati taggando le transazioni.",
     "name": "Tag",
@@ -624,8 +626,8 @@
       "hide": "Nascondi nomi e importi",
       "show": "Mostra nomi e importi"
     },
-    "moveColumnLeft": "Sposta la colonna a sinistra",
-    "moveColumnRight": "Sposta la colonna a destra",
+    "moveColumnLeft": "Sposta {{name}} a sinistra",
+    "moveColumnRight": "Sposta {{name}} a destra",
     "import": "Importa",
     "moreActions": "Altre azioni",
     "search": "Cerca nel registro",
@@ -1087,6 +1089,7 @@
     "cashflow": "Previsione flusso di cassa",
     "hiddenWidgets": "Widget nascosti",
     "hideWidget": "Nascondi widget",
+    "hideWidgetNamed": "Nascondi {{name}}",
     "widgets": {
       "totals": "Totali"
     },
@@ -1378,6 +1381,7 @@
   },
   "common": {
     "cancel": "Annulla",
+    "close": "Chiudi",
     "confirm": "Conferma"
   },
   "overview": {
