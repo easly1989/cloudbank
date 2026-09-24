@@ -75,9 +75,11 @@
     "confirmDiscardKeep": "Continua a modificare",
     "noAccountsHint": "Le transazioni stanno dentro un conto, quindi si parte da lì.",
     "saveAndAddAnother": "Salva e aggiungi un altro",
+    "saveAndKeep": "Salva e tieni",
     "enterSaves": "Invio salva",
     "keepFields": "Tieni i campi per il prossimo",
     "moreDetails": "Altri dettagli",
+    "customiseFields": "Personalizza i campi…",
     "signExpense": "Uscita — passa a entrata",
     "signIncome": "Entrata — passa a uscita",
     "savedTo": "Salvata su {{account}}",
@@ -1409,5 +1411,18 @@
       "all": "Tutto quello che hai registrato, dall'inizio."
     },
     "customise": "Personalizza"
+  },
+  "entryFields": {
+    "title": "Scheda transazione",
+    "hint": "Quali campi la scheda mostra subito e quali restano in Altri dettagli. Nessun campo sparisce: ognuno resta a un clic.",
+    "inView": "In vista",
+    "startsAs": "Una nuova voce parte con",
+    "dateToday": "Oggi",
+    "dateLast": "L'ultima data salvata",
+    "accountDefault": "Il registro da cui la apri",
+    "paymentDefault": "Il pagamento predefinito del conto",
+    "statusDefault": "Stato iniziale",
+    "requiredMoved": "{{field}} serve per salvare. Fuori vista, una nuova voce prende: {{value}}.",
+    "reset": "Ripristina i predefiniti"
   }
 }

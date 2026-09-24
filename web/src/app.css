@@ -587,6 +587,22 @@ body {
   display: flex;
   flex-direction: column;
 }
+/* "Keep the fields" is a square joined to the left of "Save and add another",
+   as tall as the button and so as wide: it follows the button up to 44 on a
+   touch screen without a rule of its own. */
+.cb-keep-toggle {
+  width: var(--button-height);
+  padding: 0;
+}
+/* The status picker stands where a field would, so it is a field's height. */
+.cb-entry .cb-status-picker {
+  height: 44px;
+}
+.cb-status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* The register's search box is the one field the board draws at 46: the
    toolbar's 44px buttons sit inside its border, a pixel clear of each edge. */

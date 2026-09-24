@@ -2,10 +2,10 @@ import {
   ActionIcon,
   Alert,
   Button,
-  Checkbox,
   Collapse,
   Drawer,
   Group,
+  Input,
   Kbd,
   Menu,
   NumberFormatter,
@@ -15,22 +15,37 @@ import {
   TagsInput,
   Text,
   TextInput,
+  Tooltip,
   UnstyledButton,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
+  IconAdjustments,
   IconChevronDown,
   IconDeviceFloppy,
   IconDots,
   IconSparkles,
+  IconSquare,
+  IconSquareCheck,
   IconTrash,
 } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { Fragment, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { errorColor } from "../amountTone";
+import { useAuth } from "../auth/AuthProvider";
 import { useConfirm } from "./confirmContext";
+import {
+  type EntryField,
+  type Placement,
+  lastEntryDate,
+  packRows,
+  placements,
+  rememberEntryDate,
+} from "./entryFields";
+import { StatusPicker } from "./StatusPicker";
 
 import {
   ApiError,
@@ -54,7 +69,7 @@ import {
   updateTransaction,
 } from "../api/client";
 import { minorToInput } from "../money";
-import { PAYMENT_MODES, STATUSES } from "../transactionEnums";
+import { PAYMENT_MODES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import { AttachmentsField } from "./AttachmentsField";
 import { ENTRY_SHEET } from "./entrySheetTheme";
@@ -90,7 +105,15 @@ export function TransactionForm({
 }) {
   const { t } = useTranslation();
   const confirm = useConfirm();
+  const navigate = useNavigate();
   const parseAmount = useAmountParser();
+  const { user } = useAuth();
+  // Which fields sit in the base and which under More details, and what a new
+  // entry starts from: the reader's own choices, from Settings.
+  const place = placements(user?.preferences?.entryFields);
+  const entryDefaults = user?.preferences?.entryDefaults;
+  const startDate = () => (entryDefaults?.date === "last" ? lastEntryDate() : null) ?? todayCivil();
+  const startStatus = entryDefaults?.status ?? 0;
   const payeesQuery = useQuery({
     queryKey: ["payees", walletId],
     queryFn: () => listPayees(walletId),
@@ -118,6 +141,10 @@ export function TransactionForm({
     .filter((a) => !a.closed || a.id === account.id)
     .map((a) => ({ value: String(a.id), label: a.name }));
   const phone = useMediaQuery("(max-width: 47.99em)");
+  // The sheet's own messages go where the sheet is not: the default corner,
+  // bottom right, is its foot, and a toast there sits on the very buttons the
+  // next entry needs — and stays, for as long as the pointer rests on it.
+  const toastAt = phone ? "top-center" : "bottom-left";
 
   const dc = current.currencyDecimalChar;
   const fd = current.currencyFracDigits;
@@ -156,10 +183,16 @@ export function TransactionForm({
     mutationFn: () => suggestCategory(walletId, { payee: payeeName, memo, amount }),
     onSuccess: (res) => {
       if (res.category) setCategoryId(String(res.category.id));
-      else notifications.show({ color: "gray", message: t("ai.noSuggestion") });
+      else
+        notifications.show({
+          position: toastAt,
+          color: "gray",
+          message: t("ai.noSuggestion"),
+        });
     },
     onError: (err: unknown) =>
       notifications.show({
+        position: toastAt,
         color: "red",
         message: err instanceof ApiError ? err.message : String(err),
       }),
@@ -173,7 +206,11 @@ export function TransactionForm({
     onSuccess: (res) => {
       const e = res.entry;
       if (!e) {
-        notifications.show({ color: "gray", message: t("ai.noParse") });
+        notifications.show({
+          position: toastAt,
+          color: "gray",
+          message: t("ai.noParse"),
+        });
         return;
       }
       if (e.amount) setAmount(e.amount);
@@ -187,6 +224,7 @@ export function TransactionForm({
     },
     onError: (err: unknown) =>
       notifications.show({
+        position: toastAt,
         color: "red",
         message: err instanceof ApiError ? err.message : String(err),
       }),
@@ -232,6 +270,22 @@ export function TransactionForm({
       );
   };
 
+  const applyValues = (v: EntryValues) => {
+    setDate(v.date);
+    setDirection(v.direction);
+    setAmount(v.amount);
+    setPaymentMode(v.paymentMode);
+    setStatus(v.status);
+    setPayeeId(v.payeeId);
+    setCategoryId(v.categoryId);
+    setVehicleId(v.vehicleId);
+    setMemo(v.memo);
+    setInfo(v.info);
+    setTags(v.tags);
+    setIsSplit(v.isSplit);
+    setSplits(v.splits);
+  };
+
   // Seed the fields when the drawer opens, during render rather than in an
   // effect: an effect runs after the drawer is already on screen, so the reader
   // gets one frame of whatever the form held last time.
@@ -244,24 +298,14 @@ export function TransactionForm({
   if (openingKey !== seededFor) {
     setSeededFor(openingKey);
     if (openingKey !== null) {
-      const init = initialValues(editing, duplicate, account, fd, dc);
-      setDate(init.date);
-      setDirection(init.direction);
-      setAmount(init.amount);
-      setPaymentMode(init.paymentMode);
-      setStatus(init.status);
-      setPayeeId(init.payeeId);
-      setCategoryId(init.categoryId);
-      setVehicleId(init.vehicleId);
-      setMemo(init.memo);
-      setInfo(init.info);
-      setTags(init.tags);
-      setIsSplit(init.isSplit);
-      setSplits(init.splits);
+      const init = initialValues(editing, duplicate, account, fd, dc, startDate(), startStatus);
+      applyValues(init);
       setBaseline(JSON.stringify(init));
       setAccountId(String(account.id));
       setKeepFields(false);
-      setMoreOpen(hasDetails(init) || (editing?.attachmentCount ?? 0) > 0);
+      setMoreOpen(
+        hasDetails(init, place, account.defaultPaymentMode) || (editing?.attachmentCount ?? 0) > 0,
+      );
     }
   }
 
@@ -308,10 +352,12 @@ export function TransactionForm({
     },
     onSuccess: (saved) => {
       onSaved(saved?.id);
+      if (!editing) rememberEntryDate(date);
       // A row saved to another account does not appear in this register, so
       // say where it went rather than let it look lost.
       if (current.id !== account.id) {
         notifications.show({
+          position: toastAt,
           color: "green",
           message: t("transactions.savedTo", { account: current.name }),
         });
@@ -329,13 +375,19 @@ export function TransactionForm({
       if (!keepFields) resetFields(date);
       else setBaseline(snapshot());
       pulse();
-      notifications.show({ color: "green", message: t("transactions.saved"), autoClose: 1400 });
+      notifications.show({
+        position: toastAt,
+        color: "green",
+        message: t("transactions.saved"),
+        autoClose: 1400,
+      });
       setSavedMsg(t(keepFields ? "transactions.savedKeepOpen" : "transactions.savedNew"));
       amountRef.current?.focus();
       amountRef.current?.select();
     },
     onError: (err: unknown) =>
       notifications.show({
+        position: toastAt,
         color: "red",
         message: err instanceof ApiError ? err.message : String(err),
       }),
@@ -345,20 +397,8 @@ export function TransactionForm({
   // another"), keeping the date, and rebase the dirty snapshot so the
   // just-cleared form isn't flagged as edited.
   const resetFields = (keepDate: string) => {
-    const init = { ...initialValues(null, null, current, fd, dc), date: keepDate };
-    setDate(init.date);
-    setDirection(init.direction);
-    setAmount(init.amount);
-    setPaymentMode(init.paymentMode);
-    setStatus(init.status);
-    setPayeeId(init.payeeId);
-    setCategoryId(init.categoryId);
-    setVehicleId(init.vehicleId);
-    setMemo(init.memo);
-    setInfo(init.info);
-    setTags(init.tags);
-    setIsSplit(init.isSplit);
-    setSplits(init.splits);
+    const init = initialValues(null, null, current, fd, dc, keepDate, startStatus);
+    applyValues(init);
     setBaseline(JSON.stringify(init));
   };
 
@@ -385,50 +425,57 @@ export function TransactionForm({
     setAmount(value);
   };
 
+  // Whether the sheet may close: at once when nothing is unsaved, otherwise
+  // only once the reader agrees to lose it.
+  const mayDiscard = async () =>
+    !dirty ||
+    (await confirm({
+      title: t("transactions.confirmDiscardTitle"),
+      body: t("transactions.confirmDiscardBody"),
+      confirmLabel: t("transactions.confirmDiscardAction"),
+      cancelLabel: t("transactions.confirmDiscardKeep"),
+      danger: true,
+    }));
+
   // Close, warning first if there are unsaved edits (✕ / Escape).
   const requestClose = async () => {
-    if (
-      dirty &&
-      !(await confirm({
-        title: t("transactions.confirmDiscardTitle"),
-        body: t("transactions.confirmDiscardBody"),
-        confirmLabel: t("transactions.confirmDiscardAction"),
-        cancelLabel: t("transactions.confirmDiscardKeep"),
-        danger: true,
-      }))
-    )
-      return;
-    onClose();
+    if (await mayDiscard()) onClose();
   };
 
   // Apply a template into the form (user reviews, then saves).
   const applyTemplate = (id: string | null) => {
     const tpl = templates.find((x) => String(x.id) === id);
     if (!tpl) return;
-    setDirection(tpl.amount < 0 ? "expense" : "income");
-    setAmount(tpl.amount !== 0 ? minorToInput(Math.abs(tpl.amount), fd, dc) : "");
-    setPaymentMode(String(tpl.paymentMode));
-    setStatus(String(tpl.status));
-    setPayeeId(tpl.payeeId ? String(tpl.payeeId) : null);
-    setCategoryId(tpl.categoryId ? String(tpl.categoryId) : null);
-    setMemo(tpl.memo);
-    setInfo(tpl.info);
-    setTags(tpl.tags);
-    setIsSplit(tpl.isSplit);
-    setSplits(
-      tpl.splits?.map((s) => ({
-        categoryId: s.categoryId ? String(s.categoryId) : null,
-        amount: minorToInput(Math.abs(s.amount), fd, dc),
-      })) ?? [],
-    );
-    if (
-      tpl.isSplit ||
-      tpl.tags.length > 0 ||
-      tpl.info ||
-      tpl.status !== 0 ||
-      tpl.paymentMode !== current.defaultPaymentMode
-    )
-      setMoreOpen(true);
+    // A template has no date or vehicle: those stay as they are.
+    const next: EntryValues = {
+      date,
+      direction: tpl.amount < 0 ? "expense" : "income",
+      amount: tpl.amount !== 0 ? minorToInput(Math.abs(tpl.amount), fd, dc) : "",
+      paymentMode: String(tpl.paymentMode),
+      status: String(tpl.status),
+      payeeId: tpl.payeeId ? String(tpl.payeeId) : null,
+      categoryId: tpl.categoryId ? String(tpl.categoryId) : null,
+      vehicleId,
+      memo: tpl.memo,
+      info: tpl.info,
+      tags: tpl.tags,
+      isSplit: tpl.isSplit,
+      splits:
+        tpl.splits?.map((s) => ({
+          categoryId: s.categoryId ? String(s.categoryId) : null,
+          amount: minorToInput(Math.abs(s.amount), fd, dc),
+        })) ?? [],
+    };
+    applyValues(next);
+    if (hasDetails(next, place, current.defaultPaymentMode)) setMoreOpen(true);
+  };
+
+  // Settings is a page of its own, so going there closes the sheet — asking
+  // first, as closing it any other way would.
+  const customise = async () => {
+    if (!(await mayDiscard())) return;
+    onClose();
+    navigate("/settings/general#entry-fields");
   };
 
   const saveTemplate = useMutation({
@@ -453,10 +500,15 @@ export function TransactionForm({
       }),
     onSuccess: () => {
       onTemplateSaved();
-      notifications.show({ color: "green", message: t("templates.saved") });
+      notifications.show({
+        position: toastAt,
+        color: "green",
+        message: t("templates.saved"),
+      });
     },
     onError: (err: unknown) =>
       notifications.show({
+        position: toastAt,
         color: "red",
         message: err instanceof ApiError ? err.message : String(err),
       }),
@@ -516,6 +568,131 @@ export function TransactionForm({
     direction === "expense" ? "transactions.signExpense" : "transactions.signIncome",
   );
 
+  // Every movable field, drawn wherever the reader's layout puts it. The
+  // vehicle is null in a wallet without vehicles, and then not drawn at all.
+  const fieldEl: Record<EntryField, ReactNode> = {
+    date: (
+      <TextInput
+        type="date"
+        label={t("transactions.date")}
+        value={date}
+        onChange={(e) => setDate(e.currentTarget.value)}
+      />
+    ),
+    // The account an entry lands in. It starts on the register the sheet was
+    // opened from; an existing row keeps its own — moving a transaction between
+    // accounts is not what editing it means.
+    account: (
+      <Select
+        label={t("transactions.account")}
+        data={accountOptions}
+        value={accountId}
+        onChange={(v) => v && setAccountId(v)}
+        allowDeselect={false}
+        disabled={!!editing}
+      />
+    ),
+    memo: (
+      <TextInput
+        label={t("transactions.memo")}
+        value={memo}
+        onChange={(e) => setMemo(e.currentTarget.value)}
+        onBlur={() => void runSuggest()}
+      />
+    ),
+    paymentMode: (
+      <Select
+        label={t("transactions.paymentMode")}
+        data={PAYMENT_MODES.map((m) => ({ value: String(m), label: t(`paymentModes.${m}`) }))}
+        value={paymentMode}
+        onChange={(v) => v && setPaymentMode(v)}
+        allowDeselect={false}
+      />
+    ),
+    category: (
+      <div>
+        <Select
+          label={t("transactions.category")}
+          data={categoryOptions}
+          value={isSplit ? null : categoryId}
+          onChange={setCategoryId}
+          placeholder={isSplit ? t("transactions.split") : undefined}
+          disabled={isSplit}
+          clearable
+          searchable
+        />
+        {aiEnabled && !isSplit && (
+          <Button
+            variant="subtle"
+            size="compact-xs"
+            mt={4}
+            leftSection={<IconSparkles size={14} />}
+            loading={suggest.isPending}
+            disabled={!payeeName && !memo}
+            onClick={() => suggest.mutate()}
+          >
+            {t("ai.suggestCategory")}
+          </Button>
+        )}
+      </div>
+    ),
+    status: (
+      <Input.Wrapper label={t("transactions.status")} labelElement="div">
+        <StatusPicker value={status} onChange={setStatus} />
+      </Input.Wrapper>
+    ),
+    payee: (
+      <Select
+        label={t("transactions.payee")}
+        data={payeeOptions}
+        value={payeeId}
+        onChange={setPayeeId}
+        clearable
+        searchable
+      />
+    ),
+    info: (
+      <TextInput
+        label={t("transactions.info")}
+        value={info}
+        onChange={(e) => setInfo(e.currentTarget.value)}
+      />
+    ),
+    vehicle:
+      vehicleOptions.length > 0 ? (
+        <Select
+          label={t("transactions.vehicle")}
+          data={vehicleOptions}
+          value={vehicleId}
+          onChange={setVehicleId}
+          clearable
+          searchable
+        />
+      ) : null,
+    tags: (
+      <TagsInput
+        label={t("transactions.tags")}
+        data={tagsQuery.data ?? []}
+        value={tags}
+        onChange={setTags}
+      />
+    ),
+  };
+  const fieldRows = (p: Placement) =>
+    packRows(
+      (Object.keys(fieldEl) as EntryField[]).filter((id) => place[id] === p && fieldEl[id]),
+    ).map((row) =>
+      row.length === 1 ? (
+        <Fragment key={row[0]}>{fieldEl[row[0]]}</Fragment>
+      ) : (
+        <Group key={row.join()} grow gap={ENTRY_SHEET.pairGap} align="flex-start" wrap="nowrap">
+          {row.map((id) => (
+            <Fragment key={id}>{fieldEl[id]}</Fragment>
+          ))}
+        </Group>
+      ),
+    );
+
   return (
     // A sheet rather than a modal: entering a transaction is work you do beside
     // the ledger, not instead of it. The rows and the running balance stay
@@ -526,9 +703,10 @@ export function TransactionForm({
     // other change.
     //
     // Built to the Entering and deciding board (#469): 396px, the amount first
-    // and large, then Date · Account, Memo, Category · Payee, and a foot with
-    // two actions. What the app has and the board does not draw lives under
-    // "More details".
+    // and large, the fields below it, and a foot with two actions. Which fields
+    // sit in the base and which under "More details" is the reader's choice; by
+    // default the base is what a transaction needs (Date · Account, Memo,
+    // Payment · Category, Status), which is where it departs from the board.
     <Drawer.Root
       opened={opened}
       onClose={requestClose}
@@ -575,6 +753,13 @@ export function TransactionForm({
                   }}
                 >
                   {t("templates.saveAs")}
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  leftSection={<IconAdjustments size={15} />}
+                  onClick={() => void customise()}
+                >
+                  {t("transactions.customiseFields")}
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
@@ -644,70 +829,12 @@ export function TransactionForm({
                 {t("transactions.duplicateWarning", { count: duplicates.length })}
               </Alert>
             )}
-            <Group grow gap={ENTRY_SHEET.pairGap} align="flex-start">
-              <TextInput
-                type="date"
-                label={t("transactions.date")}
-                value={date}
-                onChange={(e) => setDate(e.currentTarget.value)}
-              />
-              {/* The account an entry lands in. It starts on the register the
-                  sheet was opened from; an existing row keeps its own — moving
-                  a transaction between accounts is not what editing it means. */}
-              <Select
-                label={t("transactions.account")}
-                data={accountOptions}
-                value={accountId}
-                onChange={(v) => v && setAccountId(v)}
-                allowDeselect={false}
-                disabled={!!editing}
-              />
-            </Group>
-            <TextInput
-              label={t("transactions.memo")}
-              value={memo}
-              onChange={(e) => setMemo(e.currentTarget.value)}
-              onBlur={() => void runSuggest()}
-            />
-            <Group grow gap={ENTRY_SHEET.pairGap} align="flex-start">
-              <div>
-                <Select
-                  label={t("transactions.category")}
-                  data={categoryOptions}
-                  value={isSplit ? null : categoryId}
-                  onChange={setCategoryId}
-                  placeholder={isSplit ? t("transactions.split") : undefined}
-                  disabled={isSplit}
-                  clearable
-                  searchable
-                />
-                {aiEnabled && !isSplit && (
-                  <Button
-                    variant="subtle"
-                    size="compact-xs"
-                    mt={4}
-                    leftSection={<IconSparkles size={14} />}
-                    loading={suggest.isPending}
-                    disabled={!payeeName && !memo}
-                    onClick={() => suggest.mutate()}
-                  >
-                    {t("ai.suggestCategory")}
-                  </Button>
-                )}
-              </div>
-              <Select
-                label={t("transactions.payee")}
-                data={payeeOptions}
-                value={payeeId}
-                onChange={setPayeeId}
-                clearable
-                searchable
-              />
-            </Group>
+            {fieldRows("base")}
 
-            {/* Everything the board does not draw. Closed on a new entry; open
-                on its own when the row being edited has any of it filled, so
-                nothing already there is hidden from the person changing it. */}
+            {/* Everything else, one click away. Closed on a new entry; open on
+                its own when the row being edited has any of it filled, so
+                nothing already there is hidden from the person changing it.
+                Which fields sit here is the reader's choice, in Settings. */}
             <Button
               variant="subtle"
               color="gray"
@@ -726,48 +853,7 @@ export function TransactionForm({
             </Button>
             <Collapse expanded={moreOpen}>
               <Stack gap={ENTRY_SHEET.gap}>
-                <Group grow gap={ENTRY_SHEET.pairGap} align="flex-start">
-                  <Select
-                    label={t("transactions.paymentMode")}
-                    data={PAYMENT_MODES.map((m) => ({
-                      value: String(m),
-                      label: t(`paymentModes.${m}`),
-                    }))}
-                    value={paymentMode}
-                    onChange={(v) => v && setPaymentMode(v)}
-                    allowDeselect={false}
-                  />
-                  <Select
-                    label={t("transactions.status")}
-                    data={STATUSES.map((st) => ({ value: String(st), label: t(`status.${st}`) }))}
-                    value={status}
-                    onChange={(v) => v && setStatus(v)}
-                    allowDeselect={false}
-                  />
-                </Group>
-                <Group grow gap={ENTRY_SHEET.pairGap} align="flex-start">
-                  <TextInput
-                    label={t("transactions.info")}
-                    value={info}
-                    onChange={(e) => setInfo(e.currentTarget.value)}
-                  />
-                  {vehicleOptions.length > 0 && (
-                    <Select
-                      label={t("transactions.vehicle")}
-                      data={vehicleOptions}
-                      value={vehicleId}
-                      onChange={setVehicleId}
-                      clearable
-                      searchable
-                    />
-                  )}
-                </Group>
-                <TagsInput
-                  label={t("transactions.tags")}
-                  data={tagsQuery.data ?? []}
-                  value={tags}
-                  onChange={setTags}
-                />
+                {fieldRows("more")}
                 <Switch
                   label={t("transactions.splitToggle")}
                   checked={isSplit}
@@ -847,42 +933,64 @@ export function TransactionForm({
 
             {/* The foot: what Enter does, and the two actions. "Save and add
                 another" keeps the date — a run of entries is usually one
-                receipt, one day — and, when asked to, every other field too,
-                for a run of similar ones. */}
-            <Stack gap={ENTRY_SHEET.footGap} mt="auto" pt={ENTRY_SHEET.footTop}>
-              {!editing && (
-                <Checkbox
-                  size="xs"
-                  label={t("transactions.keepFields")}
-                  checked={keepFields}
-                  onChange={(e) => setKeepFields(e.currentTarget.checked)}
-                />
-              )}
-              <Group justify="space-between" gap={ENTRY_SHEET.footButtonsGap} wrap="wrap">
-                <Text fz={12} c="dimmed">
-                  {t("transactions.enterSaves")} <Kbd size="xs">↵</Kbd>
-                </Text>
-                <Group gap={ENTRY_SHEET.footButtonsGap} wrap="nowrap" ml="auto">
-                  {!editing && (
+                receipt, one day — and, with the box on its left ticked, every
+                other field too, for a run of similar ones. The box is a
+                toggle joined to the button rather than a checkbox inside it:
+                a control inside a button is one a click cannot tell apart. */}
+            <Group
+              justify="space-between"
+              gap={ENTRY_SHEET.footButtonsGap}
+              wrap="wrap"
+              mt="auto"
+              pt={ENTRY_SHEET.footTop}
+            >
+              {/* With three controls beside it the hint does not fit on the
+                  buttons' line, and "Save and keep" is shorter than "Save and
+                  add another": left to wrap, it would jump between the two
+                  lines as the box is ticked. So on a new entry it has a line of
+                  its own. */}
+              <Text fz={12} c="dimmed" w={editing ? undefined : "100%"}>
+                {t("transactions.enterSaves")} <Kbd size="xs">↵</Kbd>
+              </Text>
+              <Group gap={ENTRY_SHEET.footButtonsGap} wrap="nowrap" ml="auto">
+                {!editing && (
+                  <Button.Group>
+                    <Tooltip label={t("transactions.keepFields")} openDelay={300}>
+                      <Button
+                        variant="default"
+                        className="cb-keep-toggle"
+                        aria-label={t("transactions.keepFields")}
+                        aria-pressed={keepFields}
+                        onClick={() => setKeepFields((v) => !v)}
+                      >
+                        {keepFields ? (
+                          <IconSquareCheck size={17} color="var(--mantine-primary-color-filled)" />
+                        ) : (
+                          <IconSquare size={17} />
+                        )}
+                      </Button>
+                    </Tooltip>
                     <Button
                       variant="default"
                       onClick={() => submit("new")}
                       loading={save.isPending && savingMode === "new"}
                       disabled={!canSave}
                     >
-                      {t("transactions.saveAndAddAnother")}
+                      {t(
+                        keepFields ? "transactions.saveAndKeep" : "transactions.saveAndAddAnother",
+                      )}
                     </Button>
-                  )}
-                  <Button
-                    onClick={() => submit("close")}
-                    loading={save.isPending && savingMode === "close"}
-                    disabled={!canSave}
-                  >
-                    {t("transactions.save")}
-                  </Button>
-                </Group>
+                  </Button.Group>
+                )}
+                <Button
+                  onClick={() => submit("close")}
+                  loading={save.isPending && savingMode === "close"}
+                  disabled={!canSave}
+                >
+                  {t("transactions.save")}
+                </Button>
               </Group>
-            </Stack>
+            </Group>
             <Text
               role="status"
               aria-live="polite"
@@ -911,7 +1019,7 @@ export function TransactionForm({
  * and to remember what they were, for the unsaved-edits guard — and two copies
  * of this list drift. A new transaction pre-fills the account's default payment
  * mode; editing keeps the stored one (a picked payee's default still overrides).
- * A duplicate starts uncleared.
+ * A new entry, and a duplicate, start from the reader's default date and status.
  */
 function initialValues(
   editing: Transaction | null,
@@ -919,15 +1027,16 @@ function initialValues(
   account: Account,
   fd: number,
   dc: string,
-) {
+  startDate: string,
+  startStatus: number,
+): EntryValues {
   const e = editing ?? duplicate ?? null;
-  const isDup = !editing && duplicate != null;
   return {
-    date: e?.date ?? todayCivil(),
-    direction: ((e?.amount ?? -1) < 0 ? "expense" : "income") as "expense" | "income",
+    date: e?.date ?? startDate,
+    direction: (e?.amount ?? -1) < 0 ? "expense" : "income",
     amount: e ? minorToInput(Math.abs(e.amount), fd, dc) : "",
     paymentMode: String(e?.paymentMode ?? account.defaultPaymentMode),
-    status: String(isDup ? 0 : (e?.status ?? 0)),
+    status: String(editing ? editing.status : startStatus),
     payeeId: e?.payeeId ? String(e.payeeId) : null,
     categoryId: e?.categoryId ? String(e.categoryId) : null,
     vehicleId: e?.vehicleId ? String(e.vehicleId) : null,
@@ -943,10 +1052,47 @@ function initialValues(
   };
 }
 
-/** Whether a set of values uses anything the board's fields do not show, which
- *  decides whether "More details" opens with the sheet. */
-function hasDetails(v: ReturnType<typeof initialValues>) {
+/** What the sheet's fields hold, in one object: seeded, reset, compared. */
+interface EntryValues {
+  date: string;
+  direction: "expense" | "income";
+  amount: string;
+  paymentMode: string;
+  status: string;
+  payeeId: string | null;
+  categoryId: string | null;
+  vehicleId: string | null;
+  memo: string;
+  info: string;
+  tags: string[];
+  isSplit: boolean;
+  splits: { categoryId: string | null; amount: string }[];
+}
+
+/**
+ * Whether anything under More details holds a value, which decides whether it
+ * opens with the sheet. The date and the account always hold one, so they never
+ * count; the payment mode counts when it differs from the account's default.
+ * The split is always under More details.
+ */
+function hasDetails(
+  v: EntryValues,
+  place: Record<EntryField, Placement>,
+  defaultPaymentMode: number,
+) {
+  const filled: Record<EntryField, boolean> = {
+    date: false,
+    account: false,
+    memo: v.memo !== "",
+    paymentMode: v.paymentMode !== String(defaultPaymentMode),
+    category: v.categoryId !== null,
+    status: v.status !== "0",
+    payee: v.payeeId !== null,
+    info: v.info !== "",
+    vehicle: v.vehicleId !== null,
+    tags: v.tags.length > 0,
+  };
   return (
-    v.isSplit || v.tags.length > 0 || v.info !== "" || v.status !== "0" || v.vehicleId !== null
+    v.isSplit || (Object.keys(filled) as EntryField[]).some((f) => place[f] === "more" && filled[f])
   );
 }

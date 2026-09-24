@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { AiSettingsCard } from "../../components/AiSettingsCard";
+import { EntryFieldsCard } from "../../components/EntryFieldsCard";
 import { NavLayoutEditor } from "../../components/NavLayoutEditor";
 import { NotificationsCard } from "../../components/NotificationsCard";
 import { TwoFactorCard } from "../../components/TwoFactorCard";
@@ -22,7 +23,15 @@ import { SettingsGroup } from "./SettingsLayout";
 // share another; and the navigation layout is appearance, not a page of its own.
 
 export function GeneralSection() {
-  return <PreferencesPage section="general" />;
+  const { t } = useTranslation();
+  return (
+    <Stack gap="xl">
+      <PreferencesPage section="general" />
+      <SettingsGroup title={t("entryFields.title")} hint={t("entryFields.hint")}>
+        <EntryFieldsCard />
+      </SettingsGroup>
+    </Stack>
+  );
 }
 
 export function AppearanceSection() {
