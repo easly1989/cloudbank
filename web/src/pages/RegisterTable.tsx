@@ -482,6 +482,11 @@ export function RegisterTable({
     [baseRowHeight, dividerIndex],
   );
 
+  // The compiler will not memoize this component, because TanStack Virtual hands
+  // back functions it cannot safely memoize. That is the trade: a register that
+  // holds a decade of rows has to be virtualised, and one uncompiled component
+  // is cheaper than rendering every row.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: tableRows.length,
     getScrollElement: () => parentRef.current,
