@@ -24,6 +24,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
+	"github.com/easly1989/cloudbank/server/internal/demo"
 	"github.com/easly1989/cloudbank/server/internal/goal"
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/importio"
@@ -128,6 +129,11 @@ type Options struct {
 	OIDCAutoProvision bool
 	// Version is the running build version, surfaced at GET /api/v1/version.
 	Version string
+	// Demo, if non-nil, makes this the public demo: a one-click start in place
+	// of setup and login; no admin, API tokens, two-factor or backup restore;
+	// the pretend bank in place of the real providers; and the demo's limits on
+	// every write. Only the demo build sets it.
+	Demo *demo.Service
 }
 
 // New builds the application's http.Handler.
@@ -162,6 +168,11 @@ func New(opts Options) http.Handler {
 	// JSON API. Concrete resources are mounted by later milestones.
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(csrf)
+		var dh *demoHandlers
+		if opts.Demo != nil {
+			dh = &demoHandlers{svc: opts.Demo, secure: opts.SecureCookies}
+			r.Use(dh.limitBody)
+		}
 		r.Get("/ping", func(w http.ResponseWriter, _ *http.Request) {
 			writeJSON(w, http.StatusOK, map[string]string{"message": "pong"})
 		})
@@ -169,8 +180,12 @@ func New(opts Options) http.Handler {
 			writeJSON(w, http.StatusOK, map[string]string{"version": version})
 		})
 		if opts.Auth != nil {
-			ah := &authHandlers{svc: opts.Auth, secure: opts.SecureCookies}
-			ah.publicRoutes(r)
+			ah := &authHandlers{svc: opts.Auth, secure: opts.SecureCookies, demo: dh != nil}
+			if dh != nil {
+				dh.routes(r)
+			} else {
+				ah.publicRoutes(r)
+			}
 			// OIDC/SSO login (public, pre-auth). /auth/config is always served so
 			// the login page can hide the button when SSO is off.
 			(&oidcHandlers{
@@ -183,9 +198,13 @@ func New(opts Options) http.Handler {
 				pr.Use(ah.requireAuth)
 				ah.protectedRoutes(pr)
 				if opts.Import != nil {
-					pr.Post("/import/xhb", (&importHandlers{svc: opts.Import}).xhb)
+					xhb := pr.With()
+					if dh != nil {
+						xhb = pr.With(dh.newWallet)
+					}
+					xhb.Post("/import/xhb", (&importHandlers{svc: opts.Import}).xhb)
 				}
-				if opts.Backup != nil {
+				if opts.Backup != nil && dh == nil {
 					pr.Post("/backup/restore", (&backupHandlers{svc: opts.Backup}).restore)
 				}
 				if opts.Push != nil {
@@ -208,6 +227,7 @@ func New(opts Options) http.Handler {
 						schedules: opts.Schedules, assignments: opts.Assignments, budgets: opts.Budgets,
 						reports: opts.Reports, csv: opts.CSV, rateProvider: opts.RateProvider,
 						integrity: opts.Integrity, backup: opts.Backup, attachments: opts.Attachments,
+						demo: dh,
 					}).routes(pr)
 					if opts.Currencies != nil {
 						pr.Get("/catalog/currencies", (&currencyHandlers{svc: opts.Currencies}).catalog)
