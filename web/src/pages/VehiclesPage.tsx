@@ -119,16 +119,14 @@ export function VehiclesPage() {
         </Table>
       )}
       {/* Keyed so each opening mounts a fresh form. */}
-      {opened && (
-        <VehicleModal
-          key={editing?.id ?? "new"}
-          opened
-          onClose={modal.close}
-          walletId={walletId}
-          vehicle={editing}
-          onSaved={invalidate}
-        />
-      )}
+      <VehicleModal
+        key={editing?.id ?? "new"}
+        opened={opened}
+        onClose={modal.close}
+        walletId={walletId}
+        vehicle={editing}
+        onSaved={invalidate}
+      />
     </Stack>
   );
 }

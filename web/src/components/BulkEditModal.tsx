@@ -1,5 +1,5 @@
 import { Button, Group, Modal, SegmentedControl, Select, Stack, TagsInput } from "@mantine/core";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { BulkField, Category, Payee } from "../api/client";
@@ -37,7 +37,6 @@ export function BulkEditModal({
   const [value, setValue] = useState<string | null>(null);
   const [tagValues, setTagValues] = useState<string[]>([]);
   const [tagMode, setTagMode] = useState<"add" | "replace">("add");
-  useEffect(() => setValue(null), [field]);
 
   const categoryOptions = categories.map((c) => ({
     value: String(c.id),
@@ -118,7 +117,12 @@ export function BulkEditModal({
             (f) => ({ value: f, label: t(`bulk.fields.${f}`) }),
           )}
           value={field}
-          onChange={(v) => setField((v as EditField) ?? "category")}
+          onChange={(v) => {
+            // A value picked for one field means nothing for the next one, so
+            // it is cleared here rather than by an effect watching `field`.
+            setField((v as EditField) ?? "category");
+            setValue(null);
+          }}
           allowDeselect={false}
         />
         {valueControl}

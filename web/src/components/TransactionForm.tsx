@@ -17,7 +17,7 @@ import {
 import { notifications } from "@mantine/notifications";
 import { IconDeviceFloppy, IconSparkles, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { errorColor } from "../amountTone";
 import { useConfirm } from "./confirmContext";
@@ -169,8 +169,10 @@ export function TransactionForm({
   const amountRef = useRef<HTMLInputElement>(null);
   const [savedMsg, setSavedMsg] = useState("");
   // Snapshot of the form as opened, to detect unsaved edits (dirty) for the
-  // discard guard on Cancel / ✕ / Escape.
-  const initialRef = useRef("");
+  // discard guard on Cancel / ✕ / Escape. State, not a ref: `dirty` is read
+  // during render, and a ref read there is a value React does not promise is
+  // the one this render was given.
+  const [baseline, setBaseline] = useState("");
   const snapshot = () =>
     JSON.stringify({
       date,
@@ -199,50 +201,35 @@ export function TransactionForm({
       );
   };
 
-  useEffect(() => {
-    if (!opened) return;
-    // Edit an existing transaction, or pre-fill a new one from a duplicated row.
-    const e = editing ?? duplicate ?? null;
-    const isDup = !editing && duplicate != null;
-    // Build the initial values once, so we can both seed the fields and remember
-    // them for dirty detection. New transactions pre-fill the account's default
-    // payment mode; editing keeps the stored one (a picked payee's default still
-    // overrides). A duplicate starts uncleared.
-    const init = {
-      date: e?.date ?? todayCivil(),
-      direction: ((e?.amount ?? -1) < 0 ? "expense" : "income") as "expense" | "income",
-      amount: e ? minorToInput(Math.abs(e.amount), fd, dc) : "",
-      paymentMode: String(e?.paymentMode ?? account.defaultPaymentMode),
-      status: String(isDup ? 0 : (e?.status ?? 0)),
-      payeeId: e?.payeeId ? String(e.payeeId) : null,
-      categoryId: e?.categoryId ? String(e.categoryId) : null,
-      vehicleId: e?.vehicleId ? String(e.vehicleId) : null,
-      memo: e?.memo ?? "",
-      info: e?.info ?? "",
-      tags: e?.tags ?? [],
-      isSplit: e?.isSplit ?? false,
-      splits:
-        e?.splits?.map((s) => ({
-          categoryId: s.categoryId ? String(s.categoryId) : null,
-          amount: minorToInput(Math.abs(s.amount), fd, dc),
-        })) ?? [],
-    };
-    setDate(init.date);
-    setDirection(init.direction);
-    setAmount(init.amount);
-    setPaymentMode(init.paymentMode);
-    setStatus(init.status);
-    setPayeeId(init.payeeId);
-    setCategoryId(init.categoryId);
-    setVehicleId(init.vehicleId);
-    setMemo(init.memo);
-    setInfo(init.info);
-    setTags(init.tags);
-    setIsSplit(init.isSplit);
-    setSplits(init.splits);
-    initialRef.current = JSON.stringify(init);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, editing?.id, duplicate?.id]);
+  // Seed the fields when the drawer opens, during render rather than in an
+  // effect: an effect runs after the drawer is already on screen, so the reader
+  // gets one frame of whatever the form held last time.
+  //
+  // The key is null while closed, which is what makes reopening the same row
+  // re-seed it — and it deliberately does NOT clear the fields on the way out,
+  // because the drawer is still animating closed and emptying it is visible.
+  const openingKey = opened ? `${editing?.id ?? "new"}:${duplicate?.id ?? ""}` : null;
+  const [seededFor, setSeededFor] = useState<string | null>(null);
+  if (openingKey !== seededFor) {
+    setSeededFor(openingKey);
+    if (openingKey !== null) {
+      const init = initialValues(editing, duplicate, account, fd, dc);
+      setDate(init.date);
+      setDirection(init.direction);
+      setAmount(init.amount);
+      setPaymentMode(init.paymentMode);
+      setStatus(init.status);
+      setPayeeId(init.payeeId);
+      setCategoryId(init.categoryId);
+      setVehicleId(init.vehicleId);
+      setMemo(init.memo);
+      setInfo(init.info);
+      setTags(init.tags);
+      setIsSplit(init.isSplit);
+      setSplits(init.splits);
+      setBaseline(JSON.stringify(init));
+    }
+  }
 
   const sign = direction === "expense" ? -1 : 1;
   const totalMinor = (parseAmount(amount, fd, dc) ?? 0) * sign;
@@ -312,21 +299,7 @@ export function TransactionForm({
   // Reset the form to the blank new-transaction defaults (used by "Save"), and
   // rebase the dirty snapshot so the just-cleared form isn't flagged as edited.
   const resetFields = () => {
-    const init = {
-      date: todayCivil(),
-      direction: "expense" as "expense" | "income",
-      amount: "",
-      paymentMode: String(account.defaultPaymentMode),
-      status: "0",
-      payeeId: null as string | null,
-      categoryId: null as string | null,
-      vehicleId: null as string | null,
-      memo: "",
-      info: "",
-      tags: [] as string[],
-      isSplit: false,
-      splits: [] as { categoryId: string | null; amount: string }[],
-    };
+    const init = initialValues(null, null, account, fd, dc);
     setDate(init.date);
     setDirection(init.direction);
     setAmount(init.amount);
@@ -340,7 +313,7 @@ export function TransactionForm({
     setTags(init.tags);
     setIsSplit(init.isSplit);
     setSplits(init.splits);
-    initialRef.current = JSON.stringify(init);
+    setBaseline(JSON.stringify(init));
   };
 
   // Save, resolving the modal per mode (close / keep fields / clear fields).
@@ -352,7 +325,7 @@ export function TransactionForm({
 
   // True once the form differs from how it opened — drives the red Cancel and
   // the discard confirmation.
-  const dirty = opened && snapshot() !== initialRef.current;
+  const dirty = opened && snapshot() !== baseline;
 
   // Close, warning first if there are unsaved edits (Cancel / ✕ / Escape).
   const requestClose = async () => {
@@ -756,4 +729,44 @@ export function TransactionForm({
       </Stack>
     </Drawer>
   );
+}
+
+/**
+ * The values a freshly opened form holds: the transaction being edited, the row
+ * being duplicated, or the blank defaults for a new entry.
+ *
+ * It is one function because the values are needed twice — to seed the fields
+ * and to remember what they were, for the unsaved-edits guard — and two copies
+ * of this list drift. A new transaction pre-fills the account's default payment
+ * mode; editing keeps the stored one (a picked payee's default still overrides).
+ * A duplicate starts uncleared.
+ */
+function initialValues(
+  editing: Transaction | null,
+  duplicate: Transaction | null | undefined,
+  account: Account,
+  fd: number,
+  dc: string,
+) {
+  const e = editing ?? duplicate ?? null;
+  const isDup = !editing && duplicate != null;
+  return {
+    date: e?.date ?? todayCivil(),
+    direction: ((e?.amount ?? -1) < 0 ? "expense" : "income") as "expense" | "income",
+    amount: e ? minorToInput(Math.abs(e.amount), fd, dc) : "",
+    paymentMode: String(e?.paymentMode ?? account.defaultPaymentMode),
+    status: String(isDup ? 0 : (e?.status ?? 0)),
+    payeeId: e?.payeeId ? String(e.payeeId) : null,
+    categoryId: e?.categoryId ? String(e.categoryId) : null,
+    vehicleId: e?.vehicleId ? String(e.vehicleId) : null,
+    memo: e?.memo ?? "",
+    info: e?.info ?? "",
+    tags: e?.tags ?? [],
+    isSplit: e?.isSplit ?? false,
+    splits:
+      e?.splits?.map((s) => ({
+        categoryId: s.categoryId ? String(s.categoryId) : null,
+        amount: minorToInput(Math.abs(s.amount), fd, dc),
+      })) ?? [],
+  };
 }

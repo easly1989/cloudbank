@@ -241,16 +241,14 @@ export function AccountsPage() {
       {/* Keyed so that opening the modal mounts a fresh form: the reset used to
           be an effect that ran after the first render, which showed empty
           fields for a frame and cost a render to fix. */}
-      {modalOpened && (
-        <AccountModal
-          key={editing?.id ?? "new"}
-          opened
-          onClose={modal.close}
-          walletId={walletId}
-          account={editing}
-          onSaved={invalidate}
-        />
-      )}
+      <AccountModal
+        key={editing?.id ?? "new"}
+        opened={modalOpened}
+        onClose={modal.close}
+        walletId={walletId}
+        account={editing}
+        onSaved={invalidate}
+      />
 
       {valuationsFor && (
         <AssetValuationsModal
