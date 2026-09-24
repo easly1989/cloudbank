@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 // The entry sheet, rebuilt to its board (#469), does four things the old one
 // did not, and each is the kind that breaks without anything else failing:
 //
-//   - Enter saves, from any plain field;
+//   - Enter saves and closes, Shift+Enter saves and adds another;
 //   - the amount's sign is a switch inside it, and a + typed in front flips it;
 //   - "Save and add another" clears the fields but keeps the date;
 //   - with "Keep the fields" ticked, it keeps them all.
@@ -95,12 +95,19 @@ test("the entry sheet saves on Enter, signs by switch, and adds another", async 
     await expect(page.getByText("Sheet income")).toBeVisible();
   });
 
-  await test.step("Save and add another clears the fields and keeps the date", async () => {
+  await test.step("Shift+Enter saves and adds another: clears the fields, keeps the date", async () => {
     await open();
+    // Each button names its key, and its name is still only its label.
+    await expect(
+      sheet.getByRole("button", { name: "Save", exact: true }),
+    ).toHaveAttribute("aria-keyshortcuts", "Enter");
+    await expect(
+      sheet.getByRole("button", { name: "Save and add another", exact: true }),
+    ).toHaveAttribute("aria-keyshortcuts", "Shift+Enter");
     await amount.fill("5");
     await date.fill("2026-03-11");
     await memo.fill("Sheet first");
-    await sheet.getByRole("button", { name: "Save and add another" }).click();
+    await memo.press("Shift+Enter");
     await expect(page.getByText("Sheet first")).toBeVisible();
     await expect(amount).toHaveValue("");
     await expect(memo).toHaveValue("");
