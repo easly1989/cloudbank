@@ -149,3 +149,66 @@ test("an edit modal opens on its own record, twice running, and blank for a new 
     await page.keyboard.press("Escape");
   });
 });
+
+// A confirmation raised from inside a drawer has to be clickable.
+//
+// It was not (#462): Mantine places each modal in a shared portal node when it
+// mounts, the confirmation mounts with the app and the entry drawer after it,
+// and at equal z-index the later one paints on top — so "Discard your changes?"
+// came up underneath the drawer with its Discard button covered. A click here
+// is a real pointer click on purpose: a dispatched event reaches a covered
+// button just fine, which is exactly how this went unnoticed.
+test("the discard confirmation sits above the entry drawer", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  const walletId = await ensureReady(page);
+
+  const memo = `${PREFIX} discard probe`;
+  await page
+    .evaluate(
+      async ([wid, text]) => {
+        const h = {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        };
+        const acc = await (
+          await fetch(`/api/v1/wallets/${wid}/accounts`, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: h,
+            body: JSON.stringify({ name: `${text} account`, type: "bank" }),
+          })
+        ).json();
+        await fetch(`/api/v1/wallets/${wid}/transactions`, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: h,
+          body: JSON.stringify({
+            accountId: acc.id,
+            date: "2026-03-01",
+            amount: -1234,
+            memo: text,
+          }),
+        });
+        return acc.id as number;
+      },
+      [walletId, memo] as const,
+    )
+    .then((accountId) => page.goto(`/transactions?account=${accountId}`));
+
+  await page.getByText(memo, { exact: true }).first().dblclick();
+  const sheet = page.getByRole("dialog");
+  await sheet.getByLabel("Memo", { exact: true }).fill("edited, never saved");
+  await page.keyboard.press("Escape");
+
+  await expect(page.getByText("Discard your changes?")).toBeVisible();
+  await page.getByRole("button", { name: "Discard", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  // And the edit really was thrown away.
+  await page.getByText(memo, { exact: true }).first().dblclick();
+  await expect(
+    page.getByRole("dialog").getByLabel("Memo", { exact: true }),
+  ).toHaveValue(memo);
+});
