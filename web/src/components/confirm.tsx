@@ -1,8 +1,19 @@
-import { Button, Group, Modal, Stack, Text } from "@mantine/core";
+import { Button, Group, Modal, Stack, Text, getDefaultZIndex } from "@mantine/core";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 
 import { ConfirmContext, type Ask, type ConfirmOptions } from "./confirmContext";
 import { useTranslation } from "react-i18next";
+
+// A confirmation is, by definition, asked on top of something: the drawer whose
+// edits it is about to throw away, the modal whose row it is about to delete.
+// So it sits one step above every modal and drawer instead of level with them.
+//
+// Level with them is not a tie it can win. Mantine renders every portal into
+// one shared node and gives each modal its place there when it MOUNTS, not
+// when it opens — and this one mounts with the app, before any page's drawer.
+// At equal z-index the later place paints on top, so the confirmation came up
+// underneath the entry drawer with its Discard button covered (#462).
+const CONFIRM_Z_INDEX = getDefaultZIndex("modal") + 1;
 
 // Asking before something irreversible.
 //
@@ -62,6 +73,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         title={pending?.title}
         centered
         size="sm"
+        zIndex={CONFIRM_Z_INDEX}
       >
         <Stack>
           {pending?.body && <Text size="sm">{pending.body}</Text>}
