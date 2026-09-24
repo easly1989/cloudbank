@@ -58,3 +58,17 @@ Added since:
   puts only the gear beside the user row; the app keeps a 34px button to fold
   the sidebar into a rail, so the user row is 162px wide instead of 198.
   `e2e/design-size-audit.mjs` checks that row's height only, for this reason.
+- **The entry sheet's fields are the reader's to arrange** (#469). The Entering
+  and deciding board draws Date · Account, Memo, Category · Payee. By default the
+  app instead shows what a transaction needs: Date · Account, Memo, Payment ·
+  Category, and the status as a row of icons. Payee waits under More details
+  with the rest. Settings → General → Transaction sheet moves any field either
+  way, and names the default a new entry takes when the date or the account is
+  out of view. The board's "Save and add another" gains a joined toggle on its
+  left, which keeps every field for the next entry and relabels the button
+  "Save and keep". The board's "Enter saves ↵" line is gone. Each foot button
+  instead shows its own key after its label: ↵ on Save (save and close) and ⇧↵
+  on the other (save and start another). The keys are hidden on a touch screen.
+  This makes both buttons wider than the board draws, so the audit checks their
+  height and type only. It still measures the amount, a paired field (Date) and
+  a full-width field (Memo) against the board.

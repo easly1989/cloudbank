@@ -59,11 +59,9 @@ test("full journey: setup → wallet → account → transaction → import → 
     const sheet = page.getByRole("dialog");
     await sheet.getByLabel("Date", { exact: true }).fill("2026-02-01");
     await sheet.getByLabel("Amount", { exact: true }).fill("12.50");
-    // "Save" keeps the sheet open for the next entry, which is the point of a
-    // side panel; "Save & close" is the one that puts it away.
-    await sheet
-      .getByRole("button", { name: "Save & close", exact: true })
-      .click();
+    // "Save and add another" keeps the sheet open for the next entry, which
+    // is the point of a side panel; "Save" is the one that puts it away.
+    await sheet.getByRole("button", { name: "Save", exact: true }).click();
     // The new row shows in the register.
     await expect(page.getByText("2026-02-01")).toBeVisible();
   });
@@ -75,6 +73,9 @@ test("full journey: setup → wallet → account → transaction → import → 
     await page.getByText("2026-02-01").first().dblclick();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
+    // Attachments are among the fields the board does not draw, so they sit
+    // under "More details", closed on a row that has none yet.
+    await dialog.getByRole("button", { name: "More details" }).click();
     await dialog
       .locator('input[type="file"]')
       .setInputFiles("fixtures/receipt.txt");
