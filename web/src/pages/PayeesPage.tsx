@@ -165,17 +165,15 @@ export function PayeesPage() {
 
       {/* Keyed so each opening mounts a fresh form: the reset was an effect
           that ran after the first render, showing empty fields for a frame. */}
-      {formOpened && (
-        <PayeeFormModal
-          key={editing?.id ?? "new"}
-          opened
-          onClose={form.close}
-          walletId={walletId}
-          editing={editing}
-          categoryOptions={categories.map((c) => ({ value: String(c.id), label: c.name }))}
-          onSaved={invalidate}
-        />
-      )}
+      <PayeeFormModal
+        key={editing?.id ?? "new"}
+        opened={formOpened}
+        onClose={form.close}
+        walletId={walletId}
+        editing={editing}
+        categoryOptions={categories.map((c) => ({ value: String(c.id), label: c.name }))}
+        onSaved={invalidate}
+      />
       <MergeModal
         title={t("payees.mergeTitle")}
         source={mergeFrom}

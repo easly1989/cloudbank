@@ -2,7 +2,7 @@ import { Button, Group, Modal, Select, Stack, Text, TextInput } from "@mantine/c
 import { notifications } from "@mantine/notifications";
 import { IconDeviceFloppy } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { errorColor } from "../amountTone";
 
@@ -58,10 +58,18 @@ export function TransferForm({
   const [memo, setMemo] = useState("");
   const [status, setStatus] = useState("0");
 
-  useEffect(() => {
-    if (!opened) return;
-    if (editingId != null) {
-      if (!loaded) return;
+  // Seed the fields when the drawer opens, during render rather than in an
+  // effect: an effect runs after the drawer is on screen, so the reader gets one
+  // frame of the previous transfer.
+  //
+  // Editing waits for the transfer itself, which arrives after the drawer does —
+  // hence the null key while it is still in flight, and again while closed,
+  // which is what makes reopening the same transfer re-seed it.
+  const seedKey = !opened ? null : editingId == null ? "new" : loaded ? `edit:${loaded.id}` : null;
+  const [seededFor, setSeededFor] = useState<string | null>(null);
+  if (seedKey !== seededFor) {
+    setSeededFor(seedKey);
+    if (seedKey !== null && loaded && editingId != null) {
       const from = accounts.find((a) => a.id === loaded.fromAccountId);
       const to = accounts.find((a) => a.id === loaded.toAccountId);
       setFromId(String(loaded.fromAccountId));
@@ -77,7 +85,7 @@ export function TransferForm({
       );
       setMemo(loaded.memo);
       setStatus(String(loaded.status));
-    } else {
+    } else if (seedKey === "new") {
       setFromId(accounts[0] ? String(accounts[0].id) : null);
       setToId(accounts[1] ? String(accounts[1].id) : null);
       setDate(todayCivil());
@@ -86,8 +94,7 @@ export function TransferForm({
       setMemo("");
       setStatus("0");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, editingId, loaded?.id]);
+  }
 
   const fromAccount = accounts.find((a) => String(a.id) === fromId);
   const toAccount = accounts.find((a) => String(a.id) === toId);

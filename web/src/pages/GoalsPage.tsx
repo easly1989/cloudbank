@@ -137,17 +137,15 @@ export function GoalsPage() {
         </SimpleGrid>
       )}
       {/* Keyed so each opening mounts a fresh form. */}
-      {opened && (
-        <GoalModal
-          key={editing?.id ?? "new"}
-          opened
-          onClose={modal.close}
-          walletId={walletId}
-          goal={editing}
-          fmt={fmt}
-          onSaved={invalidate}
-        />
-      )}
+      <GoalModal
+        key={editing?.id ?? "new"}
+        opened={opened}
+        onClose={modal.close}
+        walletId={walletId}
+        goal={editing}
+        fmt={fmt}
+        onSaved={invalidate}
+      />
     </Stack>
   );
 }
@@ -337,18 +335,16 @@ function GoalCard({
 
       {/* Keyed on the direction too: adding and withdrawing start from
           different defaults, and they are different openings. */}
-      {contribOpened && (
-        <ContributionModal
-          key={withdraw ? "withdraw" : "add"}
-          opened
-          onClose={contribModal.close}
-          walletId={walletId}
-          goalId={goal.id}
-          withdraw={withdraw}
-          fmt={fmt}
-          onSaved={afterContribChange}
-        />
-      )}
+      <ContributionModal
+        key={withdraw ? "withdraw" : "add"}
+        opened={contribOpened}
+        onClose={contribModal.close}
+        walletId={walletId}
+        goalId={goal.id}
+        withdraw={withdraw}
+        fmt={fmt}
+        onSaved={afterContribChange}
+      />
     </Card>
   );
 }
