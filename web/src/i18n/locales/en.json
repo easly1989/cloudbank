@@ -1228,7 +1228,8 @@
       "addSeparator": "Add separator",
       "separator": "Separator",
       "confirmResetTitle": "Reset the navigation menu?",
-      "confirmResetBody": "Your groups and their order are replaced by the defaults."
+      "confirmResetBody": "Your groups and their order are replaced by the defaults.",
+      "removeSeparator": "Remove separator"
     },
     "people": "People",
     "back": "Back to CloudBank",
@@ -1382,7 +1383,8 @@
   "common": {
     "cancel": "Cancel",
     "close": "Close",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "save": "Save"
   },
   "overview": {
     "balanceToday": "Balance today",
