@@ -50,3 +50,24 @@ func TestGetBoolEnvInvalidFallsBack(t *testing.T) {
 		t.Errorf("SecureCookies = %v, want true (fallback)", got)
 	}
 }
+
+func TestDemoLimits(t *testing.T) {
+	t.Setenv("CB_DEMO_MAX_USERS", "")
+	t.Setenv("CB_DEMO_PROXY_HOPS", "1")
+	t.Setenv("CB_DEMO_MAX_WALLETS", "-2")
+	t.Setenv("CB_DEMO_IDLE", "30m")
+
+	d := Load().Demo
+	if d.MaxUsers != 200 {
+		t.Errorf("MaxUsers = %d, want the default 200", d.MaxUsers)
+	}
+	if d.ProxyHops != 1 {
+		t.Errorf("ProxyHops = %d, want 1", d.ProxyHops)
+	}
+	if d.MaxWallets != 3 {
+		t.Errorf("MaxWallets = %d, want the default 3 for a negative value", d.MaxWallets)
+	}
+	if d.Idle.Minutes() != 30 {
+		t.Errorf("Idle = %v, want 30m", d.Idle)
+	}
+}

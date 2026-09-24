@@ -139,6 +139,8 @@ type Service struct {
 	// syncStagger is the pause between connections in a background batch, to avoid
 	// hammering providers. Tests set it to 0.
 	syncStagger time.Duration
+	// demoOnly refuses every provider but the pretend bank (see OnlyDemoBank).
+	demoOnly bool
 }
 
 // NewService builds a Service. imp is the import pipeline used to commit rows.
@@ -175,6 +177,9 @@ func (s *Service) conn(ctx context.Context, walletID, id int64) (db.BankConnecti
 // Connect claims a SimpleFIN setup token, stores the connection, and returns it
 // with its remote accounts so the caller can link them.
 func (s *Service) Connect(ctx context.Context, walletID int64, setupToken, name string) (Connection, []RemoteAccount, error) {
+	if err := s.allowed(providerSimpleFIN); err != nil {
+		return Connection{}, nil, err
+	}
 	accessURL, err := newSimplefinClient(s.hc).claim(ctx, setupToken)
 	if err != nil {
 		return Connection{}, nil, err
@@ -235,7 +240,12 @@ func (s *Service) RemoteAccounts(ctx context.Context, walletID, connID int64) ([
 }
 
 func (s *Service) remoteAccounts(ctx context.Context, c db.BankConnection) ([]RemoteAccount, error) {
+	if err := s.allowed(c.Provider); err != nil {
+		return nil, err
+	}
 	switch c.Provider {
+	case providerDemo:
+		return s.demoRemoteAccounts(ctx, c)
 	case providerEnableBanking:
 		return s.ebRemoteAccounts(ctx, c)
 	case providerPluggy:
@@ -407,6 +417,9 @@ func (s *Service) syncOnce(ctx context.Context, walletID, connID int64) (SyncRes
 	if err != nil {
 		return SyncResult{}, nil, err
 	}
+	if err := s.allowed(c.Provider); err != nil {
+		return SyncResult{}, nil, err
+	}
 	links, err := s.rq.ListBankLinks(ctx, connID)
 	if err != nil {
 		return SyncResult{}, nil, err
@@ -429,6 +442,8 @@ func (s *Service) syncOnce(ctx context.Context, walletID, connID int64) (SyncRes
 		err2      error
 	)
 	switch c.Provider {
+	case providerDemo:
+		byAccount = demoFetchRows(start, time.Now().UTC())
 	case providerEnableBanking:
 		byAccount, failures, err2 = s.ebFetchRows(ctx, c, linkByExt, start)
 	case providerPluggy:

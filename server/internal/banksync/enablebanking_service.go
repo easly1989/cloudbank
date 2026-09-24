@@ -119,6 +119,9 @@ func (s *Service) DeleteEBankingConfig(ctx context.Context, walletID int64) erro
 
 // ebClientForConn builds a client from the wallet's stored credentials.
 func (s *Service) ebClientForConn(ctx context.Context, walletID int64) (*enableBankingClient, error) {
+	if err := s.allowed(providerEnableBanking); err != nil {
+		return nil, err
+	}
 	cfg, err := s.rq.GetEBankingConfig(ctx, walletID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrEBNotConfigured

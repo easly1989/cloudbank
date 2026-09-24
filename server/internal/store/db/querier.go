@@ -75,6 +75,15 @@ type Querier interface {
 	DeleteValuation(ctx context.Context, id int64) error
 	DeleteVehicle(ctx context.Context, id int64) error
 	DeleteWallet(ctx context.Context, id int64) error
+	DemoCountUserWallets(ctx context.Context, userID int64) (int64, error)
+	DemoCountWalletTransactions(ctx context.Context, walletID int64) (int64, error)
+	DemoDeleteIdleUsers(ctx context.Context, expiresAt string) (int64, error)
+	// Queries for the public demo build only (the `demo` build tag). A demo runs on
+	// a disposable database whose every user is a throwaway, so these delete
+	// freely; nothing outside internal/demo may call them.
+	// A demo user is idle once no session of theirs outlives the cutoff. Their
+	// wallets go first: wallets are not tied to users by a cascade.
+	DemoDeleteWalletsOfIdleUsers(ctx context.Context, expiresAt string) error
 	FindDuplicateTransactions(ctx context.Context, arg FindDuplicateTransactionsParams) ([]Transaction, error)
 	GetAISettings(ctx context.Context, userID int64) (GetAISettingsRow, error)
 	GetAPIToken(ctx context.Context, id string) (ApiToken, error)

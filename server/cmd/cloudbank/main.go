@@ -96,7 +96,7 @@ func run() error {
 		Level: parseLevel(cfg.LogLevel),
 	}))
 	slog.SetDefault(logger)
-	logger.Info("starting cloudbank", "version", version, "addr", cfg.Addr, "data_dir", cfg.DataDir)
+	logger.Info("starting cloudbank", "version", version, "addr", cfg.Addr, "data_dir", cfg.DataDir, "demo", demoBuild)
 
 	// Configure at-rest encryption for reversible secrets. Empty CB_SECRET_KEY
 	// keeps secrets in plaintext (the default, backward compatible).
@@ -182,7 +182,7 @@ func run() error {
 		pushSvc = ps
 	}
 
-	handler := httpapi.New(httpapi.Options{
+	opts := httpapi.Options{
 		Logger:            logger,
 		Health:            st,
 		Auth:              authSvc,
@@ -219,7 +219,14 @@ func run() error {
 		SecureCookies:     cfg.SecureCookies,
 		OIDC:              oidcSvc,
 		OIDCAutoProvision: cfg.OIDCAutoProvision,
-	})
+	}
+	// The demo build switches parts of the server off; any other build leaves
+	// opts as they are.
+	runDemo, err := applyDemo(context.Background(), cfg, st, &opts, logger)
+	if err != nil {
+		return err
+	}
+	handler := httpapi.New(opts)
 
 	srv := &http.Server{
 		Addr:              cfg.Addr,
@@ -246,8 +253,14 @@ func run() error {
 	go runRateRefresh(ctx, currencySvc, rateProvider, logger)
 
 	// Send bills reminders (Web Push) at startup, then once a day.
-	if pushSvc != nil {
-		go runBillsReminders(ctx, pushSvc, logger)
+	if opts.Push != nil {
+		go runBillsReminders(ctx, opts.Push, logger)
+	}
+
+	// The demo's accounts: idle ones deleted every few minutes, all of them
+	// every night.
+	if runDemo != nil {
+		go runDemo(ctx)
 	}
 
 	// Background bank sync: keep auto-sync connections up to date on a schedule.

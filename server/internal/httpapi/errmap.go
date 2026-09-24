@@ -3,6 +3,8 @@ package httpapi
 import (
 	"errors"
 	"net/http"
+
+	"github.com/easly1989/cloudbank/server/internal/demo"
 )
 
 // errCase maps a domain sentinel error to the HTTP response it should produce.
@@ -20,6 +22,10 @@ type errCase struct {
 func mapError(w http.ResponseWriter, err error, fallbackMsg string, cases ...errCase) bool {
 	if err == nil {
 		return true
+	}
+	if demo.IsLimit(err) {
+		writeLimit(w, "of these")
+		return false
 	}
 	for _, c := range cases {
 		if errors.Is(err, c.target) {

@@ -57,6 +57,9 @@ func (s *Service) SavePluggyConfig(ctx context.Context, walletID int64, clientID
 	if clientID == "" || clientSecret == "" {
 		return ErrPluggyCredentials
 	}
+	if err := s.allowed(providerPluggy); err != nil {
+		return err
+	}
 	// Verify before storing, so a typo is reported now rather than at the first
 	// scheduled sync in the middle of the night.
 	if _, err := newPluggyClient(s.hc, s.pluggyBase).authenticate(ctx, clientID, clientSecret); err != nil {
@@ -82,6 +85,9 @@ func (s *Service) DeletePluggyConfig(ctx context.Context, walletID int64) error 
 // whenever the user changes credentials. Within one run the key is passed down
 // rather than re-fetched.
 func (s *Service) pluggyKeyFor(ctx context.Context, walletID int64) (pluggyAPIKey, error) {
+	if err := s.allowed(providerPluggy); err != nil {
+		return pluggyAPIKey{}, err
+	}
 	cfg, err := s.q.GetPluggyConfig(ctx, walletID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return pluggyAPIKey{}, ErrPluggyNotConfigured

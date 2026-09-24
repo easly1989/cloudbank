@@ -138,6 +138,35 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /api/v1/demo/session:
+    post:
+      operationId: startDemo
+      summary: Start a demo (demo build only)
+      description: >-
+        Exists only on the public demo build. Creates a throwaway, non-admin account
+        filled with a year of made-up data, in the language of Accept-Language, and
+        starts its session. The account is deleted after two hours without use, every
+        night at 03:00 UTC, and whenever the demo is redeployed.
+      security: []
+      responses:
+        "201":
+          description: Demo account created and logged in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "429":
+          description: Too many demos started from this address in the last hour.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: The demo is full (code demo_full).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /api/v1/auth/logout:
     post:
       operationId: logout
@@ -308,6 +337,23 @@ paths:
         "201": { description: The connection and its remote accounts., content: { application/json: { schema: { $ref: "#/components/schemas/BankConnectResult" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "502": { description: The bank provider request failed. }
+  /api/v1/wallets/{walletId}/bank/demo/connect:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: connectDemoBank
+      summary: Connect the pretend bank (demo build only)
+      description: >-
+        Exists only on the public demo build, in place of the real providers. The
+        pretend bank reaches nothing; each sync makes up a few days of card payments.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { name: { type: string } } }
+      responses:
+        "201": { description: The connection and its remote accounts., content: { application/json: { schema: { $ref: "#/components/schemas/BankConnectResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
   /api/v1/wallets/{walletId}/bank/connections/{connId}:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
