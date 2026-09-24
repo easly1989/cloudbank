@@ -348,7 +348,7 @@ export function RegisterTable({
                   ? t("transfers.transfer")
                   : row.original.isSplit
                     ? t("transactions.split")
-                    : (row.original.categoryName ?? t("review.uncategorised"))
+                    : (row.original.categoryName ?? t("filters.uncategorised"))
               }
               uncategorised={uncategorised}
             />
