@@ -89,12 +89,16 @@ export function DataSection() {
   const { t } = useTranslation();
   return (
     <Stack gap="xl">
-      <SettingsGroup title={t("settings.sectionImport")} hint={t("settings.importHint")}>
-        <WalletSettingsPage only="import" />
-      </SettingsGroup>
-      <SettingsGroup title={t("settings.sectionBackup")} hint={t("settings.backupHint")}>
-        <WalletSettingsPage only="backup" />
-      </SettingsGroup>
+      <div data-tour="data-import">
+        <SettingsGroup title={t("settings.sectionImport")} hint={t("settings.importHint")}>
+          <WalletSettingsPage only="import" />
+        </SettingsGroup>
+      </div>
+      <div data-tour="data-backup">
+        <SettingsGroup title={t("settings.sectionBackup")} hint={t("settings.backupHint")}>
+          <WalletSettingsPage only="backup" />
+        </SettingsGroup>
+      </div>
       <WalletSettingsPage only="danger" />
     </Stack>
   );

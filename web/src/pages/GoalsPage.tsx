@@ -107,11 +107,16 @@ export function GoalsPage() {
   if (!currentWallet) return null;
 
   // One button, shown in the header or in the empty state — never both.
-  const addButton = <Button onClick={openCreate}>{t("goals.add")}</Button>;
+  const addButton = (
+    <Button onClick={openCreate} data-tour="goals-add">
+      {t("goals.add")}
+    </Button>
+  );
 
   return (
     <Stack>
       <PageHeader
+        tour="goals"
         title={t("goals.title")}
         hint={t("goals.hint")}
         actions={goals.length > 0 ? addButton : undefined}

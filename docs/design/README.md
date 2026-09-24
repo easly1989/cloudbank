@@ -58,6 +58,13 @@ Added since:
   puts only the gear beside the user row; the app keeps a 34px button to fold
   the sidebar into a rail, so the user row is 162px wide instead of 198.
   `e2e/design-size-audit.mjs` checks that row's height only, for this reason.
+- **Page tours** (#421). The boards draw no help at all. Each page with a tour
+  has a **?** as the first of its header actions: a default icon button, 44px on
+  the register and the overview and 40 elsewhere, like its neighbours. The two
+  settings sections with tours (General, Data) put it beside the section title.
+  The first time a page is opened, a 320px card in the bottom-right corner
+  offers its tour. It is not a dialog, and it sits above the page but below any
+  modal.
 - **The entry sheet's fields are the reader's to arrange** (#469). The Entering
   and deciding board draws Date · Account, Memo, Category · Payee. By default the
   app instead shows what a transaction needs: Date · Account, Memo, Payment ·

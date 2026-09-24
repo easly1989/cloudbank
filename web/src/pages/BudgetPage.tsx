@@ -62,13 +62,13 @@ export function BudgetPage() {
 
   return (
     <Stack>
-      <PageHeader title={t("budget.title")} hint={t("budget.hint")} />
+      <PageHeader tour="budget" title={t("budget.title")} hint={t("budget.hint")} />
       <Tabs defaultValue="editor">
-        <Tabs.List>
+        <Tabs.List data-tour="budget-tabs">
           <Tabs.Tab value="editor">{t("budget.editor")}</Tabs.Tab>
           <Tabs.Tab value="report">{t("budget.report")}</Tabs.Tab>
         </Tabs.List>
-        <Tabs.Panel value="editor" pt="md">
+        <Tabs.Panel value="editor" pt="md" data-tour="budget-editor">
           <BudgetEditor walletId={walletId} fmt={fmt} />
         </Tabs.Panel>
         <Tabs.Panel value="report" pt="md">
