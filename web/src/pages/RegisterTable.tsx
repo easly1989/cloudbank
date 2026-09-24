@@ -104,11 +104,19 @@ const MIN_COL_WIDTH = 64;
 const SENSITIVE_COLUMNS = new Set(["payee", "note", "amount", "runningBalance"]);
 
 // Columns the user can show/hide, with their default visibility.
+//
+// Status starts hidden, as on the register board. It is the app's own column —
+// 140px, which the Italian labels and the lock and paperclip beside them need —
+// and with it the default row came to 1014px against the 981 the register gets
+// at the board's own 1280, so the ledger scrolled sideways and a row's own
+// actions fell off the right. It is one tick away in the column panel, and a
+// row's status still changes from its menu and with C / R. A saved choice wins
+// over this default, so nobody who has already set their columns loses it.
 const TOGGLEABLE: { id: string; def: boolean }[] = [
   { id: "payee", def: true },
   { id: "category", def: true },
   { id: "note", def: false },
-  { id: "status", def: true },
+  { id: "status", def: false },
   { id: "runningBalance", def: true },
 ];
 // i18n keys for the toggleable column labels (reuse existing strings).
