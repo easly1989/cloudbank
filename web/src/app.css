@@ -324,6 +324,36 @@ body {
   padding: 0 8px 6px;
 }
 
+/* The ledger's own focus ring. Inset, because the ledger is a scroll box and an
+   outline drawn outside it is cut off by its own edge. :focus-visible, so a
+   click into the rows does not light it up — only arriving by keyboard does. */
+.cb-ledger {
+  outline: none;
+}
+.cb-ledger:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: -2px;
+}
+
+/* The register's select column as one press target (see RegisterTable). It
+   fills its grid track top to bottom and leaves the checkbox where it was. */
+.cb-row-select {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* The group toggle is the label's 11px line plus its 6px of padding: 23px tall,
+   with a nav link directly under it, which is one pixel short of WCAG 2.5.8's
+   24px floor and has no spare room around it to pass on spacing instead. The
+   missing pixel is borrowed from the 16px gap above — padded in, pulled back
+   out — so the target reaches 24 and nothing on screen moves. */
+.cb-nav-group-toggle {
+  margin-top: -1px;
+  padding-top: 1px;
+}
+
 /* The period switch at the head of the overview: a track with one pill lit.
    Mantine's default is a hair tighter than the tile everywhere, and the
    difference shows because this control sits directly under the page title

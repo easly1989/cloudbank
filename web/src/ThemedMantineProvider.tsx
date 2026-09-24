@@ -1,5 +1,6 @@
 import { MantineProvider, localStorageColorSchemeManager } from "@mantine/core";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useAuth } from "./auth/AuthProvider";
 import { buildTheme } from "./theme";
@@ -14,9 +15,10 @@ const colorSchemeManager = localStorageColorSchemeManager({ key: "cb-color-schem
 // only context), which lets this read useAuth() without a second query.
 export function ThemedMantineProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   return (
     <MantineProvider
-      theme={buildTheme(user?.preferences?.themeAccent)}
+      theme={buildTheme(user?.preferences?.themeAccent, t("common.close"))}
       defaultColorScheme="auto"
       colorSchemeManager={colorSchemeManager}
     >

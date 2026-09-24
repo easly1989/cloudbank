@@ -160,6 +160,7 @@
     "hint": "Where the money went, over whatever span you ask for."
   },
   "budget": {
+    "amountFor": "Budget for {{name}}",
     "title": "Budget",
     "editor": "Budget",
     "report": "Report",
@@ -307,6 +308,7 @@
     "emptyHint": "Rent, a subscription, a salary — anything that comes round on its own."
   },
   "tags": {
+    "renameAria": "Rename {{name}}",
     "title": "Tags",
     "empty": "No tags yet. They are created as you tag transactions.",
     "name": "Tag",
@@ -624,8 +626,8 @@
       "hide": "Hide names and amounts",
       "show": "Show names and amounts"
     },
-    "moveColumnLeft": "Move this column left",
-    "moveColumnRight": "Move this column right",
+    "moveColumnLeft": "Move {{name}} left",
+    "moveColumnRight": "Move {{name}} right",
     "import": "Import",
     "moreActions": "More actions",
     "search": "Search the register",
@@ -1087,6 +1089,7 @@
     "cashflow": "Cashflow forecast",
     "hiddenWidgets": "Hidden widgets",
     "hideWidget": "Hide widget",
+    "hideWidgetNamed": "Hide {{name}}",
     "widgets": {
       "totals": "Totals"
     },
@@ -1378,6 +1381,7 @@
   },
   "common": {
     "cancel": "Cancel",
+    "close": "Close",
     "confirm": "Confirm"
   },
   "overview": {

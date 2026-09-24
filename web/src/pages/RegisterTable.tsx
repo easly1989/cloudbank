@@ -71,6 +71,7 @@ import {
   BAND_INSET,
   BAND_PADDING,
   CATEGORY_DOT,
+  ROW_ACTION,
   ROW_ACTIONS_WIDTH,
   ROW_COLUMNS,
   DIVIDER_HEIGHT,
@@ -569,12 +570,16 @@ export function RegisterTable({
               label={t(COL_LABEL[id])}
             />
             <Group gap={2} wrap="nowrap">
+              {/* Named for the column they move: seven buttons all called "Move
+                  this column left" tell a screen reader nothing. 24px, not 22,
+                  because they stack two pixels apart and 22 is under WCAG 2.5.8's
+                  floor with no room around it. */}
               <ActionIcon
                 variant="subtle"
-                size="sm"
+                size={24}
                 color="gray"
                 disabled={i === 0}
-                aria-label={t("register.moveColumnLeft")}
+                aria-label={t("register.moveColumnLeft", { name: t(COL_LABEL[id]) })}
                 onClick={() =>
                   persistPrefs.mutate({ registerColumnOrder: moveColumn(columnOrder, id, -1) })
                 }
@@ -583,10 +588,10 @@ export function RegisterTable({
               </ActionIcon>
               <ActionIcon
                 variant="subtle"
-                size="sm"
+                size={24}
                 color="gray"
                 disabled={i === columnOrder.length - 1}
-                aria-label={t("register.moveColumnRight")}
+                aria-label={t("register.moveColumnRight", { name: t(COL_LABEL[id]) })}
                 onClick={() =>
                   persistPrefs.mutate({ registerColumnOrder: moveColumn(columnOrder, id, 1) })
                 }
@@ -714,11 +719,18 @@ export function RegisterTable({
               </Group>
             </UnstyledButton>
           )}
+          {/* Focusable, so it has to show focus. It used to set outline: none and
+              show nothing at all until the first arrow key — WCAG 2.4.7 — so a
+              keyboard user tabbing in could not tell they had arrived. The ring
+              is drawn inside the edge (app.css), where the scroll box cannot clip
+              it. A region, so its name is one a screen reader will read out. */}
           <div
             ref={parentRef}
             tabIndex={0}
+            role="region"
+            className="cb-ledger"
             onKeyDown={onKeyDown}
-            style={{ height: bodyHeight ?? "min(560px, 65vh)", overflow: "auto", outline: "none" }}
+            style={{ height: bodyHeight ?? "min(560px, 65vh)", overflow: "auto" }}
             aria-label={t("register.ledger")}
           >
             <div
@@ -799,28 +811,54 @@ export function RegisterTable({
                         borderBottom: "1px solid var(--cb-ledger-border)",
                       }}
                     >
-                      <Checkbox
-                        size="xs"
-                        aria-label={t("register.selectRow")}
-                        checked={selected.has(r.id)}
-                        onChange={() => onToggleSelect(r.id)}
+                      {/* The checkbox is 16px and sits in a row that moves the cursor
+                          when clicked, so a finger that misses it by a hair did
+                          something else — under WCAG 2.5.8's 24px floor, with no
+                          room around it. The whole select column takes the press
+                          instead, as a <label> for it — which is what that is. A
+                          label would hand the checkbox a click of its own, without
+                          the shift key; so that is cancelled and the same click is
+                          handed over instead, shift key and all, and range
+                          selection behaves exactly as it does on the box itself. */}
+                      <Box
+                        component="label"
+                        className="cb-row-select"
                         onClick={(e) => {
+                          if ((e.target as HTMLElement).tagName === "INPUT") return;
+                          e.preventDefault();
                           e.stopPropagation();
-                          // Shift+click selects the contiguous range from the anchor
-                          // row to this one (preventDefault stops the plain toggle).
-                          if (e.shiftKey && selectAnchorRef.current != null) {
-                            e.preventDefault();
-                            const from = Math.min(selectAnchorRef.current, vi.index);
-                            const to = Math.max(selectAnchorRef.current, vi.index);
-                            onToggleAll(
-                              tableRows.slice(from, to + 1).map((rr) => rr.original.id),
-                              true,
-                            );
-                          } else {
-                            selectAnchorRef.current = vi.index;
-                          }
+                          e.currentTarget.querySelector("input")?.dispatchEvent(
+                            new MouseEvent("click", {
+                              bubbles: true,
+                              cancelable: true,
+                              shiftKey: e.shiftKey,
+                            }),
+                          );
                         }}
-                      />
+                      >
+                        <Checkbox
+                          size="xs"
+                          aria-label={t("register.selectRow")}
+                          checked={selected.has(r.id)}
+                          onChange={() => onToggleSelect(r.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Shift+click selects the contiguous range from the anchor
+                            // row to this one (preventDefault stops the plain toggle).
+                            if (e.shiftKey && selectAnchorRef.current != null) {
+                              e.preventDefault();
+                              const from = Math.min(selectAnchorRef.current, vi.index);
+                              const to = Math.max(selectAnchorRef.current, vi.index);
+                              onToggleAll(
+                                tableRows.slice(from, to + 1).map((rr) => rr.original.id),
+                                true,
+                              );
+                            } else {
+                              selectAnchorRef.current = vi.index;
+                            }
+                          }}
+                        />
+                      </Box>
                       {row.getVisibleCells().map((cell) => (
                         <Box
                           key={cell.id}
@@ -830,33 +868,26 @@ export function RegisterTable({
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </Box>
                       ))}
-                      <Group gap={2} justify="flex-end" wrap="nowrap" {...stopRowEdit}>
+                      {/* Two actions at 30px, as the register board draws them. There
+                          were three at 22 — under WCAG 2.5.8's 24px floor, side by
+                          side — and three at 30 do not fit the column. Saving a row
+                          as a template is the rarest of the three and was already
+                          in the row's menu, so that is where it lives now. */}
+                      <Group gap={ROW_ACTION.gap} justify="flex-end" wrap="nowrap" {...stopRowEdit}>
                         <ActionIcon
                           variant="subtle"
-                          size="sm"
-                          color="gray"
-                          aria-label={t("templates.saveAs")}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSaveTemplate(r);
-                          }}
-                        >
-                          <IconDeviceFloppy size={15} />
-                        </ActionIcon>
-                        <ActionIcon
-                          variant="subtle"
-                          size="sm"
+                          size={ROW_ACTION.size}
                           aria-label={t("transactions.edit")}
                           onClick={(e) => {
                             e.stopPropagation();
                             onEdit(r);
                           }}
                         >
-                          <IconPencil size={15} />
+                          <IconPencil size={ROW_ACTION.icon} />
                         </ActionIcon>
                         <ActionIcon
                           variant="subtle"
-                          size="sm"
+                          size={ROW_ACTION.size}
                           color="red"
                           aria-label={t("transactions.delete")}
                           onClick={(e) => {
@@ -864,7 +895,7 @@ export function RegisterTable({
                             onDelete(r);
                           }}
                         >
-                          <IconTrash size={15} />
+                          <IconTrash size={ROW_ACTION.icon} />
                         </ActionIcon>
                       </Group>
                     </div>

@@ -239,7 +239,13 @@ function GoalCard({
           </Group>
         </Group>
 
-        <Progress value={pct} color={reached ? "teal" : undefined} size="lg" radius="sm" />
+        <Progress
+          value={pct}
+          color={reached ? "teal" : undefined}
+          size="lg"
+          radius="sm"
+          aria-label={goal.name}
+        />
         <Group justify="space-between" gap="xs">
           <Text size="sm" fw={500}>
             {formatMinor(goal.saved, fmt)}{" "}

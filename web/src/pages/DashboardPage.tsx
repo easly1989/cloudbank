@@ -518,7 +518,9 @@ function WidgetFrame({
         >
           <Group gap={4} wrap="nowrap">
             <IconGripVertical size={14} opacity={0.6} />
-            <Text size="xs" fw={600} c="dimmed" lineClamp={1}>
+            {/* Full-strength text, not dimmed: this bar sits on the hover grey,
+                and dimmed text on it is 3.98:1 in dark mode. */}
+            <Text size="xs" fw={600} lineClamp={1}>
               {label}
             </Text>
           </Group>
@@ -538,7 +540,9 @@ function WidgetFrame({
               size="sm"
               variant="subtle"
               color="red"
-              aria-label={label}
+              // Named for what it does. Named after the widget alone, a screen
+              // reader announced "Balances, button" for the control that hides it.
+              aria-label={t("dashboard.hideWidgetNamed", { name: label })}
               onPointerDown={(e) => e.stopPropagation()}
               onClick={onRemove}
             >
