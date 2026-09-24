@@ -38,7 +38,7 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { errorColor } from "../amountTone";
 import { useConfirm } from "../components/confirmContext";
@@ -257,11 +257,17 @@ function ConnectionCard({
   );
 
   // Enable Banking consent status from validUntil (~90-day PSD2 consent).
+  //
+  // "Now" is read once, when the card mounts, rather than on every render: a
+  // render that reads the clock gives a different answer each time it runs, and
+  // this one is counting down whole days over three months, so a session that
+  // outlives the reading by an hour still says the same thing.
+  const [now] = useState(() => Date.now());
   const consent = (() => {
     if (connection.provider !== "enablebanking" || !connection.validUntil) return null;
     const ms = new Date(connection.validUntil).getTime();
     if (Number.isNaN(ms)) return null;
-    const days = Math.ceil((ms - Date.now()) / 86_400_000);
+    const days = Math.ceil((ms - now) / 86_400_000);
     if (days < 0)
       return { text: t("banksync.eb.consentExpired"), color: "red" as const, urgent: true };
     if (days <= 7)
@@ -1075,14 +1081,17 @@ function EnableBankingConfigModal({
   const redirectUrl = ebRedirectUrl();
 
   // Prefill the app id / environment when opening in edit mode; the private key
-  // is write-only and starts blank (blank = keep the stored key).
-  useEffect(() => {
+  // is write-only and starts blank (blank = keep the stored key). Done during
+  // render, so the modal never shows the previous values for a frame.
+  const [seededFor, setSeededFor] = useState(opened);
+  if (opened !== seededFor) {
+    setSeededFor(opened);
     if (opened) {
       setAppId(currentAppId ?? "");
       setEnvironment(currentEnvironment ?? "sandbox");
       setPrivateKey("");
     }
-  }, [opened, currentAppId, currentEnvironment]);
+  }
 
   const save = useMutation({
     mutationFn: () =>

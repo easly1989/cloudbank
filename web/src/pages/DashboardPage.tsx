@@ -88,8 +88,10 @@ export function DashboardPage() {
   const [layout, setLayout] = useState<DashboardLayoutV2>(() =>
     migrateLayout(user?.preferences?.dashboardLayout),
   );
+  // The latest layout, for the handlers: gridstack fires several of them between
+  // two renders and each has to see what the one before it did. `commitLayout`
+  // is the only place the layout changes, and it writes both.
   const layoutRef = useRef(layout);
-  layoutRef.current = layout;
   const [editingLayout, setEditingLayout] = useState(false);
   // Imperative handle to the grid so the S/M/L preset buttons can resize a widget.
   const gridApi = useRef<GridDashboardHandle>(null);
@@ -111,6 +113,7 @@ export function DashboardPage() {
   // Debounce persistence so a drag/resize burst is a single network write.
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const commitLayout = (next: DashboardLayoutV2) => {
+    layoutRef.current = next;
     setLayout(next);
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => persistLayout.mutate(next), 500);

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Suspense, lazy, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState, type ReactNode } from "react";
 
 import { updateMe, type User } from "../api/client";
 import { useSearchParams } from "react-router-dom";
@@ -19,7 +19,6 @@ export function OnboardingTourProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
   const [running, setRunning] = useState(false);
   const [params, setParams] = useSearchParams();
-  const autoStarted = useRef(false);
 
   const markSeen = useMutation({
     mutationFn: () =>
@@ -31,16 +30,19 @@ export function OnboardingTourProvider({ children }: { children: ReactNode }) {
   // and on demand when someone arrives from settings asking for it. The tour
   // points at things in the app's own shell, so it cannot run on the settings
   // screen — restarting it there is a trip back here.
+  const asked = params.get("tour") === "1";
+  const [decided, setDecided] = useState(false);
+  if (user && !decided) {
+    // Decided once, when the user arrives — during render, so the first frame of
+    // the app already has the tour on it rather than showing the app and then
+    // covering it.
+    setDecided(true);
+    if (asked || !user.preferences?.tutorialSeen) setRunning(true);
+  }
+  // Taking the marker back out of the URL is navigation, and stays in an effect.
   useEffect(() => {
-    if (!user || autoStarted.current) return;
-    autoStarted.current = true;
-    if (params.get("tour") === "1") {
-      setParams({}, { replace: true });
-      setRunning(true);
-      return;
-    }
-    if (!user.preferences?.tutorialSeen) setRunning(true);
-  }, [user, params, setParams]);
+    if (decided && asked) setParams({}, { replace: true });
+  }, [decided, asked, setParams]);
 
   const start = useCallback(() => setRunning(true), []);
 

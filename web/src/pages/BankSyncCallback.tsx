@@ -19,17 +19,19 @@ export function BankSyncCallback() {
   const nav = useNavigate();
   const [params] = useSearchParams();
   const { currentWallet } = useWallet();
-  const [status, setStatus] = useState<"working" | "done" | "error">("working");
-  const [message, setMessage] = useState("");
+  // A redirect that arrives without its code is broken before anything is
+  // attempted, so that is the state this page opens in rather than a state an
+  // effect puts it into after showing "working" for a frame.
+  const code = params.get("code");
+  const state = params.get("state");
+  const malformed = !code || !state;
+  const [status, setStatus] = useState<"working" | "done" | "error">(
+    malformed ? "error" : "working",
+  );
+  const [message, setMessage] = useState(malformed ? t("banksync.eb.callback.error") : "");
 
   useEffect(() => {
-    const code = params.get("code");
-    const state = params.get("state");
-    if (!code || !state) {
-      setStatus("error");
-      setMessage(t("banksync.eb.callback.error"));
-      return;
-    }
+    if (malformed) return;
     const walletId = currentWallet?.id ?? 0;
     if (walletId <= 0) return; // wait until the wallet is loaded
     let alive = true;
@@ -52,7 +54,7 @@ export function BankSyncCallback() {
     return () => {
       alive = false;
     };
-  }, [params, currentWallet, nav, t]);
+  }, [code, state, malformed, currentWallet, nav, t]);
 
   return (
     <Center mih={400}>
