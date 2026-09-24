@@ -506,7 +506,7 @@ function SortableEntryRow({
             size="sm"
             variant="subtle"
             color="red"
-            aria-label={t("actions.remove")}
+            aria-label={t("settings.nav.removeSeparator")}
             onClick={onRemove}
           >
             <IconTrash size={14} />
