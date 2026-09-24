@@ -352,6 +352,7 @@ export function DashboardPage() {
   return (
     <Stack>
       <PageHeader
+        prominent
         title={t("dashboard.title")}
         hint={t(`overview.hint.${pagePeriod}`)}
         actions={
@@ -398,13 +399,13 @@ export function DashboardPage() {
             <Button
               variant={editingLayout ? "light" : "default"}
               color={editingLayout ? undefined : "gray"}
-              leftSection={<IconAdjustmentsHorizontal size={16} />}
+              leftSection={<IconAdjustmentsHorizontal size={15} />}
               onClick={() => setEditingLayout((v) => !v)}
               data-tour="customize"
             >
               {editingLayout ? t("dashboard.layoutDone") : t("overview.customise")}
             </Button>
-            <Button component={Link} to="/transactions?new=1" leftSection={<IconPlus size={16} />}>
+            <Button component={Link} to="/transactions?new=1">
               {t("transactions.add")}
             </Button>
           </>

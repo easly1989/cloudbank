@@ -51,3 +51,10 @@ row, the register's reconcile and transfer workflows, several dashboard widgets.
 Where that happens it was a decision, not an oversight; see #449 for which ones
 and why. Adding to that list is fine, but say so rather than letting the two
 drift apart quietly.
+
+Added since:
+
+- **The collapse-sidebar button in the sidebar foot** (#465). The overview board
+  puts only the gear beside the user row; the app keeps a 34px button to fold
+  the sidebar into a rail, so the user row is 162px wide instead of 198.
+  `e2e/design-size-audit.mjs` checks that row's height only, for this reason.

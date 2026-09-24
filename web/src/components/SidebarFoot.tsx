@@ -69,13 +69,16 @@ export function SidebarFoot({
   return (
     <Stack gap={FOOT.gap} pt={FOOT.padTop}>
       <DonateButton fullWidth />
-      <Group justify="space-between" wrap="nowrap" gap="xs" h={FOOT.user.height}>
+      <Group justify="space-between" wrap="nowrap" gap={FOOT.user.gearGap} h={FOOT.user.height}>
         <Menu position="top-start" withinPortal>
           <Menu.Target>
             <UnstyledButton
+              className="cb-user-row"
               aria-label={user?.username}
-              style={{ minWidth: 0 }}
+              h={FOOT.user.height}
+              fz={FOOT.user.fz}
               px={FOOT.user.inset}
+              style={{ minWidth: 0, flex: 1, borderRadius: FOOT.user.radius }}
             >
               <Group gap={FOOT.user.gap} wrap="nowrap">
                 <Avatar radius="xl" size={24} color="teal.9" variant="filled">

@@ -63,6 +63,13 @@
   transform: scale(1.18);
 }
 
+/* A finger's 44px floor (#465); the board's 38 is a mouse's. */
+@media (pointer: coarse) {
+  .donate {
+    min-height: 44px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .donate,
   .donate .heart,

@@ -153,6 +153,7 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
                   {t("preferences.theme")}
                 </Group>
                 <SegmentedControl
+                  className="cb-choice"
                   value={theme}
                   onChange={setTheme}
                   data={[
@@ -169,6 +170,7 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
                   {ACCENT_COLORS.map((c) => (
                     <ColorSwatch
                       key={c}
+                      size={22}
                       component="button"
                       type="button"
                       color={`var(--mantine-color-${c}-6)`}
@@ -176,7 +178,7 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
                       aria-label={c}
                       style={{ color: "#fff", cursor: "pointer" }}
                     >
-                      {accent === c && <IconCheck size={14} />}
+                      {accent === c && <IconCheck size={12} />}
                     </ColorSwatch>
                   ))}
                 </Group>

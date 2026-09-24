@@ -1,6 +1,5 @@
 import { Button, Card, Stack } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconPlus } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
@@ -26,11 +25,7 @@ export function BillsPage() {
       <PageHeader
         title={t("bills.title")}
         hint={t("bills.hint")}
-        actions={
-          <Button leftSection={<IconPlus size={16} />} onClick={addModal.open}>
-            {t("bills.add")}
-          </Button>
-        }
+        actions={<Button onClick={addModal.open}>{t("bills.add")}</Button>}
       />
       <Card withBorder>
         <BillsList walletId={walletId} />

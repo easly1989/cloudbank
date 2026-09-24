@@ -18,13 +18,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import {
-  IconPencil,
-  IconPlayerPlay,
-  IconPlayerSkipForward,
-  IconPlus,
-  IconTrash,
-} from "@tabler/icons-react";
+import { IconPencil, IconPlayerPlay, IconPlayerSkipForward, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -185,7 +179,6 @@ export function SchedulesPage() {
   // One button, shown in the header or in the empty state — never both.
   const addButton = (
     <Button
-      leftSection={<IconPlus size={16} />}
       onClick={() => {
         setEditing(null);
         form.open();

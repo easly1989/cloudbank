@@ -602,10 +602,9 @@ export function RegisterTable({
           </Group>
         );
       })}
-      <Group justify="flex-end" mt="xs" gap="xs">
+      <Group className="cb-panel-actions" justify="flex-end" mt="xs" gap="xs">
         <Button
           variant="default"
-          size="compact-sm"
           onClick={() =>
             persistPrefs.mutate({
               registerColumnOrder: [...ALL_COLUMNS],
@@ -615,9 +614,7 @@ export function RegisterTable({
         >
           {t("register.columnsReset")}
         </Button>
-        <Button size="compact-sm" onClick={() => onPanel(null)}>
-          {t("actions.done")}
-        </Button>
+        <Button onClick={() => onPanel(null)}>{t("actions.done")}</Button>
       </Group>
     </Stack>
   );
@@ -655,18 +652,22 @@ export function RegisterTable({
               borderBottom: "1px solid var(--cb-ledger-border)",
             }}
           >
-            <Checkbox
-              size="xs"
-              aria-label={t("register.selectAll")}
-              checked={allSelected}
-              indeterminate={!allSelected && display.some((r) => selected.has(r.id))}
-              onChange={(e) =>
-                onToggleAll(
-                  display.map((r) => r.id),
-                  e.currentTarget.checked,
-                )
-              }
-            />
+            {/* A label round it, like each row's, so the whole cell takes the
+                press and there is something to grow on a touch screen. */}
+            <Box component="label" className="cb-row-select">
+              <Checkbox
+                size="xs"
+                aria-label={t("register.selectAll")}
+                checked={allSelected}
+                indeterminate={!allSelected && display.some((r) => selected.has(r.id))}
+                onChange={(e) =>
+                  onToggleAll(
+                    display.map((r) => r.id),
+                    e.currentTarget.checked,
+                  )
+                }
+              />
+            </Box>
             {table.getHeaderGroups()[0].headers.map((h) => (
               <ColumnHeader
                 key={h.id}
@@ -1077,6 +1078,7 @@ function ColumnHeader({
     <Box ref={ref} style={{ position: "relative", minWidth: 0 }}>
       {sortable ? (
         <UnstyledButton
+          className="cb-sort"
           onClick={() => onSort(id)}
           aria-label={t("register.sortBy")}
           style={{ display: "flex", alignItems: "center", gap: 4, width: "100%", minWidth: 0 }}
