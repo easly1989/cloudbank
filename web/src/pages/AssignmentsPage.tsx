@@ -180,98 +180,103 @@ export function AssignmentsPage() {
       )}
 
       {order.length > 0 && (
-        <Table>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th w={32} />
-              <Table.Th>{t("assignments.match")}</Table.Th>
-              <Table.Th>{t("assignments.sets")}</Table.Th>
-              <Table.Th>{t("assignments.applies")}</Table.Th>
-              <Table.Th />
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {order.map((r) => (
-              <Table.Tr
-                key={r.id}
-                draggable
-                onDragStart={() => setDragId(r.id)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => drop(r.id)}
-                onDoubleClick={() => {
-                  setEditing(r);
-                  form.open();
-                }}
-                style={{ cursor: "grab", userSelect: "none", opacity: dragId === r.id ? 0.5 : 1 }}
-              >
-                <Table.Td>
-                  <IconGripVertical size={16} opacity={0.5} />
-                </Table.Td>
-                <Table.Td>
-                  <Text size="sm">
-                    {t(`assignments.fields.${r.matchField}`)}{" "}
-                    {t(`assignments.types.${r.matchType}`)}{" "}
-                    <Text span fw={600}>
-                      “{r.pattern}”
-                    </Text>
-                    {r.caseSensitive ? ` (${t("assignments.caseSensitiveShort")})` : ""}
-                  </Text>
-                </Table.Td>
-                <Table.Td>
-                  <Text size="sm" c="dimmed">
-                    {[
-                      payeeName(r.setPayeeId),
-                      categoryName(r.setCategoryId),
-                      r.setPaymentMode != null ? t(`paymentModes.${r.setPaymentMode}`) : undefined,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ") || "—"}
-                  </Text>
-                </Table.Td>
-                <Table.Td>
-                  <Text size="xs" c="dimmed">
-                    {[
-                      r.applyOnManual ? t("assignments.onManual") : null,
-                      r.applyOnImport ? t("assignments.onImport") : null,
-                    ]
-                      .filter(Boolean)
-                      .join(", ") || "—"}
-                  </Text>
-                </Table.Td>
-                <Table.Td ta="right" {...stopRowEdit}>
-                  <Group gap={4} justify="flex-end" wrap="nowrap">
-                    <ActionIcon
-                      variant="subtle"
-                      aria-label={t("assignments.edit")}
-                      onClick={() => {
-                        setEditing(r);
-                        form.open();
-                      }}
-                    >
-                      <IconPencil size={16} />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      aria-label={t("assignments.delete")}
-                      onClick={async () => {
-                        const ok = await confirm({
-                          title: t("assignments.confirmDeleteTitle"),
-                          body: t("assignments.confirmDeleteBody"),
-                          confirmLabel: t("assignments.delete"),
-                          danger: true,
-                        });
-                        if (ok) remove.mutate(r.id);
-                      }}
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  </Group>
-                </Table.Td>
+        <Table.ScrollContainer minWidth={440}>
+          {/* Scrolls inside itself on a phone rather than pushing the whole page sideways, as the other tables in the app do. */}
+          <Table>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th w={32} />
+                <Table.Th>{t("assignments.match")}</Table.Th>
+                <Table.Th>{t("assignments.sets")}</Table.Th>
+                <Table.Th>{t("assignments.applies")}</Table.Th>
+                <Table.Th />
               </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+            </Table.Thead>
+            <Table.Tbody>
+              {order.map((r) => (
+                <Table.Tr
+                  key={r.id}
+                  draggable
+                  onDragStart={() => setDragId(r.id)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => drop(r.id)}
+                  onDoubleClick={() => {
+                    setEditing(r);
+                    form.open();
+                  }}
+                  style={{ cursor: "grab", userSelect: "none", opacity: dragId === r.id ? 0.5 : 1 }}
+                >
+                  <Table.Td>
+                    <IconGripVertical size={16} opacity={0.5} />
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm">
+                      {t(`assignments.fields.${r.matchField}`)}{" "}
+                      {t(`assignments.types.${r.matchType}`)}{" "}
+                      <Text span fw={600}>
+                        “{r.pattern}”
+                      </Text>
+                      {r.caseSensitive ? ` (${t("assignments.caseSensitiveShort")})` : ""}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm" c="dimmed">
+                      {[
+                        payeeName(r.setPayeeId),
+                        categoryName(r.setCategoryId),
+                        r.setPaymentMode != null
+                          ? t(`paymentModes.${r.setPaymentMode}`)
+                          : undefined,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "—"}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="xs" c="dimmed">
+                      {[
+                        r.applyOnManual ? t("assignments.onManual") : null,
+                        r.applyOnImport ? t("assignments.onImport") : null,
+                      ]
+                        .filter(Boolean)
+                        .join(", ") || "—"}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td ta="right" {...stopRowEdit}>
+                    <Group gap={4} justify="flex-end" wrap="nowrap">
+                      <ActionIcon
+                        variant="subtle"
+                        aria-label={t("assignments.edit")}
+                        onClick={() => {
+                          setEditing(r);
+                          form.open();
+                        }}
+                      >
+                        <IconPencil size={16} />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        aria-label={t("assignments.delete")}
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: t("assignments.confirmDeleteTitle"),
+                            body: t("assignments.confirmDeleteBody"),
+                            confirmLabel: t("assignments.delete"),
+                            danger: true,
+                          });
+                          if (ok) remove.mutate(r.id);
+                        }}
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       )}
 
       {/* Keyed per record: the key gives every rule — and the new-rule form — its

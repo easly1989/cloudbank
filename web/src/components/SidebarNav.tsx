@@ -134,6 +134,7 @@ export function SidebarNav({
             <UnstyledButton
               onClick={() => toggle(g.id)}
               aria-expanded={!isCollapsed}
+              className="cb-nav-group-toggle"
               style={{ width: "100%" }}
             >
               <Group gap={4} justify="space-between" wrap="nowrap" className="cb-nav-group-label">

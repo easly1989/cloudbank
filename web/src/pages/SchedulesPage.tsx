@@ -252,91 +252,94 @@ export function SchedulesPage() {
       )}
 
       {schedules.length > 0 && (
-        <Table striped highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>{t("schedules.template")}</Table.Th>
-              <Table.Th ta="right">{t("transactions.amount")}</Table.Th>
-              <Table.Th>{t("schedules.cadenceLabel")}</Table.Th>
-              <Table.Th>{t("schedules.nextDue")}</Table.Th>
-              <Table.Th>{t("schedules.remaining")}</Table.Th>
-              <Table.Th>{t("schedules.mode")}</Table.Th>
-              <Table.Th />
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {schedules.map((s) => (
-              <Table.Tr
-                key={s.id}
-                {...rowEditProps(() => {
-                  setEditing(s);
-                  form.open();
-                })}
-              >
-                <Table.Td>{s.templateName}</Table.Td>
-                <Table.Td ta="right" c={amountColor(s.templateAmount)}>
-                  {formatMinor(s.templateAmount, accountFormat(accountFor(s)))}
-                </Table.Td>
-                <Table.Td>
-                  {t("schedules.cadence", { n: s.everyN, unit: t(`schedules.units.${s.unit}`) })}
-                </Table.Td>
-                <Table.Td>{fmtDate(s.nextDue)}</Table.Td>
-                <Table.Td>{s.remaining ?? "∞"}</Table.Td>
-                <Table.Td>
-                  <Badge variant="dot" color={s.autoPost ? "teal" : "gray"}>
-                    {s.autoPost ? t("schedules.autoLabel") : t("schedules.remindLabel")}
-                  </Badge>
-                </Table.Td>
-                <Table.Td ta="right" {...stopRowEdit}>
-                  <Group gap={4} justify="flex-end" wrap="nowrap">
-                    <ActionIcon
-                      variant="subtle"
-                      color="teal"
-                      aria-label={t("schedules.postNow")}
-                      onClick={() => post.mutate(s.id)}
-                    >
-                      <IconPlayerPlay size={16} />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      aria-label={t("schedules.skip")}
-                      onClick={() => skip.mutate(s.id)}
-                    >
-                      <IconPlayerSkipForward size={16} />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      aria-label={t("schedules.edit")}
-                      onClick={() => {
-                        setEditing(s);
-                        form.open();
-                      }}
-                    >
-                      <IconPencil size={16} />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      aria-label={t("schedules.delete")}
-                      onClick={async () => {
-                        const ok = await confirm({
-                          title: t("schedules.confirmDeleteTitle"),
-                          body: t("schedules.confirmDeleteBody"),
-                          confirmLabel: t("schedules.delete"),
-                          danger: true,
-                        });
-                        if (ok) remove.mutate(s.id);
-                      }}
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  </Group>
-                </Table.Td>
+        <Table.ScrollContainer minWidth={700}>
+          {/* Scrolls inside itself on a phone rather than pushing the whole page sideways, as the other tables in the app do. */}
+          <Table striped highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>{t("schedules.template")}</Table.Th>
+                <Table.Th ta="right">{t("transactions.amount")}</Table.Th>
+                <Table.Th>{t("schedules.cadenceLabel")}</Table.Th>
+                <Table.Th>{t("schedules.nextDue")}</Table.Th>
+                <Table.Th>{t("schedules.remaining")}</Table.Th>
+                <Table.Th>{t("schedules.mode")}</Table.Th>
+                <Table.Th />
               </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+            </Table.Thead>
+            <Table.Tbody>
+              {schedules.map((s) => (
+                <Table.Tr
+                  key={s.id}
+                  {...rowEditProps(() => {
+                    setEditing(s);
+                    form.open();
+                  })}
+                >
+                  <Table.Td>{s.templateName}</Table.Td>
+                  <Table.Td ta="right" c={amountColor(s.templateAmount)}>
+                    {formatMinor(s.templateAmount, accountFormat(accountFor(s)))}
+                  </Table.Td>
+                  <Table.Td>
+                    {t("schedules.cadence", { n: s.everyN, unit: t(`schedules.units.${s.unit}`) })}
+                  </Table.Td>
+                  <Table.Td>{fmtDate(s.nextDue)}</Table.Td>
+                  <Table.Td>{s.remaining ?? "∞"}</Table.Td>
+                  <Table.Td>
+                    <Badge variant="dot" color={s.autoPost ? "teal" : "gray"}>
+                      {s.autoPost ? t("schedules.autoLabel") : t("schedules.remindLabel")}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td ta="right" {...stopRowEdit}>
+                    <Group gap={4} justify="flex-end" wrap="nowrap">
+                      <ActionIcon
+                        variant="subtle"
+                        color="teal"
+                        aria-label={t("schedules.postNow")}
+                        onClick={() => post.mutate(s.id)}
+                      >
+                        <IconPlayerPlay size={16} />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        aria-label={t("schedules.skip")}
+                        onClick={() => skip.mutate(s.id)}
+                      >
+                        <IconPlayerSkipForward size={16} />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="subtle"
+                        aria-label={t("schedules.edit")}
+                        onClick={() => {
+                          setEditing(s);
+                          form.open();
+                        }}
+                      >
+                        <IconPencil size={16} />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        aria-label={t("schedules.delete")}
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: t("schedules.confirmDeleteTitle"),
+                            body: t("schedules.confirmDeleteBody"),
+                            confirmLabel: t("schedules.delete"),
+                            danger: true,
+                          });
+                          if (ok) remove.mutate(s.id);
+                        }}
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       )}
 
       <ScheduleForm

@@ -44,26 +44,29 @@ export function TagsPage() {
       {tags.length === 0 ? (
         <EmptyState icon={IconTags} message={t("tags.empty")} />
       ) : (
-        <Table>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>{t("tags.name")}</Table.Th>
-              <Table.Th ta="right">{t("tags.count")}</Table.Th>
-              <Table.Th />
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {tags.map((tag) => (
-              <TagRow
-                key={tag.id}
-                walletId={walletId}
-                tag={tag}
-                allTags={tags}
-                onChanged={invalidate}
-              />
-            ))}
-          </Table.Tbody>
-        </Table>
+        <Table.ScrollContainer minWidth={560}>
+          {/* Scrolls inside itself on a phone rather than pushing the whole page sideways, as the other tables in the app do. */}
+          <Table>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>{t("tags.name")}</Table.Th>
+                <Table.Th ta="right">{t("tags.count")}</Table.Th>
+                <Table.Th />
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {tags.map((tag) => (
+                <TagRow
+                  key={tag.id}
+                  walletId={walletId}
+                  tag={tag}
+                  allTags={tags}
+                  onChanged={invalidate}
+                />
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       )}
     </Stack>
   );
@@ -119,6 +122,7 @@ function TagRow({
         <TextInput
           size="xs"
           w={220}
+          aria-label={t("tags.renameAria", { name: tag.name })}
           value={name}
           onChange={(e) => setName(e.currentTarget.value)}
           onBlur={() => {
