@@ -51,9 +51,6 @@
     "edit": "Modifica",
     "delete": "Elimina",
     "split": "Suddivisa",
-    "type": "Tipo",
-    "expense": "Uscita",
-    "income": "Entrata",
     "paymentMode": "Pagamento",
     "splitToggle": "Suddividi tra categorie",
     "addSplit": "Aggiungi riga",
@@ -64,8 +61,6 @@
     "memo": "Note",
     "cancel": "Annulla",
     "save": "Salva",
-    "saveClose": "Salva e chiudi",
-    "saveAndKeep": "Salva e continua",
     "savedKeepOpen": "Transazione salvata — il modulo resta aperto per la prossima.",
     "savedNew": "Transazione salvata — il modulo è pronto per una nuova voce.",
     "saved": "Transazione salvata",
@@ -78,7 +73,16 @@
     "confirmDiscardBody": "Quello che hai scritto qui va perso e la transazione non viene salvata.",
     "confirmDiscardAction": "Scarta",
     "confirmDiscardKeep": "Continua a modificare",
-    "noAccountsHint": "Le transazioni stanno dentro un conto, quindi si parte da lì."
+    "noAccountsHint": "Le transazioni stanno dentro un conto, quindi si parte da lì.",
+    "saveAndAddAnother": "Salva e nuovo",
+    "saveAndKeep": "Salva e tieni",
+    "keepFields": "Tieni i campi per il prossimo",
+    "moreDetails": "Altri dettagli",
+    "customiseFields": "Personalizza i campi…",
+    "signExpense": "Uscita — passa a entrata",
+    "signIncome": "Entrata — passa a uscita",
+    "savedTo": "Salvata su {{account}}",
+    "removeSplit": "Togli questa riga"
   },
   "transfers": {
     "add": "Trasferimento",
@@ -1406,5 +1410,18 @@
       "all": "Tutto quello che hai registrato, dall'inizio."
     },
     "customise": "Personalizza"
+  },
+  "entryFields": {
+    "title": "Scheda transazione",
+    "hint": "Quali campi la scheda mostra subito e quali restano in Altri dettagli. Nessun campo sparisce: ognuno resta a un clic.",
+    "inView": "In vista",
+    "startsAs": "Una nuova voce parte con",
+    "dateToday": "Oggi",
+    "dateLast": "L'ultima data salvata",
+    "accountDefault": "Il registro da cui la apri",
+    "paymentDefault": "Il pagamento predefinito del conto",
+    "statusDefault": "Stato iniziale",
+    "requiredMoved": "{{field}} serve per salvare. Fuori vista, una nuova voce prende: {{value}}.",
+    "reset": "Ripristina i predefiniti"
   }
 }

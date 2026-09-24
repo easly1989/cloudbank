@@ -87,6 +87,8 @@ const STATES = {
   },
 };
 
+const sheetField = (label) => (page) =>
+  page.locator(".mantine-Drawer-content").getByLabel(label, { exact: true });
 const role =
   (r, name, opts = {}) =>
   (page) =>
@@ -100,12 +102,8 @@ const inConfirm = (name) => (page) =>
     .getByRole("button", { name, exact: true });
 
 // Checks that stay in the report but do not fail it, each with the issue that
-// owns the gap. The entry sheet is laid out differently from its board, not
-// merely sized differently, and is rebuilt in #469.
-const DEFERRED = new Map([
-  ["sheet: amount", "#469"],
-  ["sheet: save", "#469"],
-]);
+// owns the gap. Empty when nothing is waiting on another issue.
+const DEFERRED = new Map([]);
 
 // [what, page, state, app control, board element, compare width?,
 //  where the text is set, when that is not the control itself]
@@ -334,19 +332,55 @@ const CHECKS = [
     true,
   ],
   [
+    "sheet: title",
+    "/transactions",
+    "sheet",
+    (p) => p.locator(".mantine-Drawer-title"),
+    { board: "entering-and-deciding", tag: "h2", text: "New transaction" },
+    true,
+  ],
+  [
     "sheet: amount",
     "/transactions",
     "sheet",
-    (p) => p.getByRole("dialog").first().getByLabel("Amount", { exact: true }),
+    sheetField("Amount"),
     { board: "entering-and-deciding", tag: "input", size: [355, 58] },
-    false,
+    true,
+    // A field the board draws empty has no text to compare, but the amount's
+    // type is the point of it: read it off the input itself.
+    sheetField("Amount"),
+  ],
+  [
+    "sheet: field in a pair",
+    "/transactions",
+    "sheet",
+    sheetField("Date"),
+    { board: "entering-and-deciding", tag: "input", size: [173, 44] },
+    true,
   ],
   [
     "sheet: field",
     "/transactions",
     "sheet",
-    (p) => p.getByRole("dialog").first().getByLabel("Memo", { exact: true }),
+    sheetField("Memo"),
     { board: "entering-and-deciding", tag: "input", size: [355, 44] },
+    true,
+  ],
+  [
+    "sheet: save and add another",
+    "/transactions",
+    "sheet",
+    (p) =>
+      p
+        .locator(".mantine-Drawer-body")
+        .getByRole("button", { name: "Save and add another", exact: true }),
+    {
+      board: "entering-and-deciding",
+      tag: "button",
+      text: "Save and add another",
+    },
+    // Height and type only: each button also wears its key (↵, ⇧↵),
+    // which the board does not draw — listed in docs/design/README.md.
     false,
   ],
   [
@@ -355,11 +389,12 @@ const CHECKS = [
     "sheet",
     (p) =>
       p
-        .locator(".mantine-Drawer-body button")
-        .filter({ hasText: /^Save/ })
-        .last(),
+        .locator(".mantine-Drawer-body")
+        .getByRole("button", { name: "Save", exact: true }),
     { board: "entering-and-deciding", tag: "button", text: "Save" },
-    true,
+    // Height and type only: each button also wears its key (↵, ⇧↵),
+    // which the board does not draw — listed in docs/design/README.md.
+    false,
   ],
   [
     "confirmation: confirm",
@@ -419,7 +454,7 @@ for (const [what, path, state, locate, where, width, textOf] of CHECKS) {
       bad.push(`w ${Math.round(got.w)}≠${want.w}`);
     // A field's box is not where its text is set; its font is checked on the
     // input, and an input the board draws with no text has nothing to compare.
-    if (want.text && got.font !== want.font)
+    if ((want.text || textOf) && got.font !== want.font)
       bad.push(`font ${got.font}≠${want.font}`);
     const deferred = bad.length && DEFERRED.get(what);
     if (bad.length && !deferred) failed++;

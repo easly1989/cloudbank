@@ -537,6 +537,93 @@ body {
   min-height: 34px;
 }
 
+/* The entry sheet, as the Entering and deciding board draws it (#469): 20px
+   of padding, a 17px/700 title, labels at 12px/600 six pixels above their
+   field, and the amount at 58px in 26px/600 — the one figure on the sheet a
+   reader checks before saving. */
+.cb-entry .mantine-Drawer-header {
+  padding: 20px 20px 14px;
+}
+.cb-entry .mantine-Drawer-title {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 20px;
+}
+.cb-entry .mantine-Drawer-body {
+  padding: 0 20px 20px;
+  flex: 1;
+}
+.cb-entry .mantine-InputWrapper-label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 14px;
+  margin-bottom: 6px;
+}
+.cb-amount .mantine-Input-wrapper {
+  --input-height-sm: 58px;
+}
+.cb-amount .mantine-Input-input {
+  font-size: 26px;
+  font-weight: 600;
+}
+/* The sign inside the amount: a switch the size of the figure it signs. */
+.cb-amount-sign {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cb-amount-sign:hover {
+  background: var(--mantine-color-default-hover);
+}
+/* The body fills the sheet so the foot can sit at its bottom, as on the board,
+   and scrolls when "More details" makes it taller than the screen. */
+.cb-entry {
+  display: flex;
+  flex-direction: column;
+}
+/* "Keep the fields" is a square joined to the left of "Save and add another",
+   as tall as the button and so as wide: it follows the button up to 44 on a
+   touch screen without a rule of its own. */
+.cb-keep-toggle {
+  width: var(--button-height);
+  padding: 0;
+}
+/* A button's own shortcut, drawn inside it after its label: an outline in the
+   label's colour, so it reads on the filled Save and the outlined one alike. */
+.cb-keys {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  margin-inline-start: 8px;
+  padding: 0 5px;
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+}
+/* A touch screen has no Enter to press, and the foot needs the room. */
+@media (pointer: coarse) {
+  .cb-keys {
+    display: none;
+  }
+}
+/* The status picker stands where a field would, so it is a field's height. */
+.cb-entry .cb-status-picker {
+  height: 44px;
+}
+.cb-status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* The register's search box is the one field the board draws at 46: the
    toolbar's 44px buttons sit inside its border, a pixel clear of each edge. */
 .cb-register-search .mantine-Input-wrapper {
