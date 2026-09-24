@@ -17,6 +17,7 @@ export function PageHeader({
   title,
   hint,
   actions,
+  prominent = false,
 }: {
   /** Usually the page's name; the register passes a control, because there the
       name of the account *is* the title and switching it is one click. */
@@ -25,6 +26,11 @@ export function PageHeader({
   hint?: ReactNode;
   /** Buttons, switches, anything that acts on the page as a whole. */
   actions?: ReactNode;
+  /** The register and the overview: the two screens the app is used from. The
+      boards give their header buttons 44px and every other page's 40, with a
+      13px primary instead of 14 — the difference between a page you work in
+      and one you visit. The sizes themselves are in app.css (#465). */
+  prominent?: boolean;
 }) {
   return (
     <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
@@ -37,7 +43,14 @@ export function PageHeader({
         )}
       </Stack>
       {actions && (
-        <Group gap="xs" wrap="wrap" justify="flex-end" style={{ minWidth: 0 }}>
+        <Group
+          className="cb-page-actions"
+          data-prominent={prominent || undefined}
+          gap="xs"
+          wrap="wrap"
+          justify="flex-end"
+          style={{ minWidth: 0 }}
+        >
           {actions}
         </Group>
       )}

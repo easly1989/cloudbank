@@ -14,7 +14,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconCategory, IconDots, IconPlus } from "@tabler/icons-react";
+import { IconCategory, IconDots } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -107,11 +107,7 @@ export function CategoriesPage() {
   );
 
   // One button, shown in the header or in the empty state — never both.
-  const addButton = (
-    <Button leftSection={<IconPlus size={16} />} onClick={() => openAdd(null)}>
-      {t("categories.add")}
-    </Button>
-  );
+  const addButton = <Button onClick={() => openAdd(null)}>{t("categories.add")}</Button>;
 
   return (
     <Stack maw={720}>

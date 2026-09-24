@@ -75,6 +75,7 @@ export function NeedsAttention({ walletId }: { walletId: number }) {
               <Anchor
                 component={Link}
                 to={item.to}
+                className="cb-attention-action"
                 fz={ATTENTION.action.fz}
                 fw={ATTENTION.action.fw}
                 ml="auto"

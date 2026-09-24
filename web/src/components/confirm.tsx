@@ -77,7 +77,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       >
         <Stack>
           {pending?.body && <Text size="sm">{pending.body}</Text>}
-          <Group justify="flex-end">
+          {/* The board sets a confirmation's buttons level with each other:
+              40px, 13px, the filled one no louder than the outlined (#465). */}
+          <Group className="cb-quiet-primary" justify="flex-end">
             <Button variant="default" onClick={() => settle(false)}>
               {pending?.cancelLabel ?? t("common.cancel")}
             </Button>
