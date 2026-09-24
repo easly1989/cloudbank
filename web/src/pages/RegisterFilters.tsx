@@ -1,5 +1,5 @@
 import { Card, Group, Select, Stack, Switch, TagsInput, TextInput } from "@mantine/core";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { Category, Payee } from "../api/client";
@@ -53,9 +53,24 @@ export function RegisterFilters({
   const [text, setText] = useState(filters.text);
   const [amin, setAmin] = useState(minorToInput(filters.amountMin, fmt));
   const [amax, setAmax] = useState(minorToInput(filters.amountMax, fmt));
-  useEffect(() => setText(filters.text), [filters.text]);
-  useEffect(() => setAmin(minorToInput(filters.amountMin, fmt)), [filters.amountMin]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => setAmax(minorToInput(filters.amountMax, fmt)), [filters.amountMax]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Adopted during render rather than in an effect, and one field at a time:
+  // clearing the text filter must not throw away an amount the reader is in the
+  // middle of typing.
+  const [seenText, setSeenText] = useState(filters.text);
+  if (filters.text !== seenText) {
+    setSeenText(filters.text);
+    setText(filters.text);
+  }
+  const [seenMin, setSeenMin] = useState(filters.amountMin);
+  if (filters.amountMin !== seenMin) {
+    setSeenMin(filters.amountMin);
+    setAmin(minorToInput(filters.amountMin, fmt));
+  }
+  const [seenMax, setSeenMax] = useState(filters.amountMax);
+  if (filters.amountMax !== seenMax) {
+    setSeenMax(filters.amountMax);
+    setAmax(minorToInput(filters.amountMax, fmt));
+  }
 
   const categoryOptions = useMemo(
     () =>

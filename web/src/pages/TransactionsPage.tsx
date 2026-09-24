@@ -108,11 +108,12 @@ export function TransactionsPage() {
   const [accountId, setAccountId] = useState<string | null>(() =>
     new URLSearchParams(window.location.search).get("account"),
   );
-  useEffect(() => {
-    if (accounts.length === 0) return;
-    const valid = accountId != null && accounts.some((a) => String(a.id) === accountId);
-    if (!valid) setAccountId(String(accounts[0].id));
-  }, [accounts, accountId]);
+  // Fall back to the first account when the chosen one is not in the list — the
+  // ?account= link named something that is gone, or nothing was chosen yet.
+  // During render, so no query below ever fires for an account that is not there.
+  if (accounts.length > 0 && !accounts.some((a) => String(a.id) === accountId)) {
+    setAccountId(String(accounts[0].id));
+  }
   const account = accounts.find((a) => String(a.id) === accountId);
 
   const registerQuery = useQuery({
@@ -246,11 +247,15 @@ export function TransactionsPage() {
   // for a moment to take a screenshot, not a mode to wake up in.
   const [privacy, setPrivacy] = useState(false);
   const [reconcile, setReconcile] = useState(false);
-  useEffect(() => {
-    // Switching account resets transient selection/reconcile state.
+  // Switching account resets transient selection/reconcile state, during render:
+  // a selection carried into another account's register is a selection of rows
+  // that are no longer on screen.
+  const [selectionFor, setSelectionFor] = useState(accountId);
+  if (accountId !== selectionFor) {
+    setSelectionFor(accountId);
     setSelected(new Set());
     setReconcile(false);
-  }, [accountId]);
+  }
   const toggleSelect = (id: number) =>
     setSelected((s) => {
       const next = new Set(s);
