@@ -43,6 +43,7 @@ import {
   deleteTransaction,
   deleteTransfer,
   getRegister,
+  getTransaction,
   listAccounts,
   listCategories,
   listPayees,
@@ -367,17 +368,36 @@ export function TransactionsPage() {
       setEditingTransferId(row.transferId);
       transferForm.open();
     } else {
+      const full = await loadWhole(row);
+      if (!full) return;
       setDuplicating(null);
-      setEditing(row);
+      setEditing(full);
       form.open();
     }
   };
   // Duplicate: open the entry form pre-filled from the row as a NEW transaction.
-  const duplicateRow = (row: RegisterRow) => {
+  const duplicateRow = async (row: RegisterRow) => {
     if (row.transferId != null) return; // transfers aren't duplicated here
+    const full = await loadWhole(row);
+    if (!full) return;
     setEditing(null);
-    setDuplicating(row);
+    setDuplicating(full);
     form.open();
+  };
+  // A register row is not the whole transaction: the list leaves out its
+  // splits and tags. The sheet saves everything it holds, so seeded from the row
+  // alone it would save a split with no lines and no tags — deleting both. It
+  // opens on the whole record, or not at all.
+  const loadWhole = async (row: RegisterRow): Promise<RegisterRow | null> => {
+    try {
+      return { ...row, ...(await getTransaction(walletId, row.id)) };
+    } catch (err) {
+      notifications.show({
+        color: "red",
+        message: err instanceof ApiError ? err.message : String(err),
+      });
+      return null;
+    }
   };
   const deleteRow = async (row: RegisterRow) => {
     if (
