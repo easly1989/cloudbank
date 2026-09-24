@@ -6,7 +6,6 @@ import {
   Drawer,
   Group,
   Input,
-  Kbd,
   Menu,
   NumberFormatter,
   Select,
@@ -551,17 +550,22 @@ export function TransactionForm({
     }
   };
 
-  // Enter saves, from any plain field — the footer says so. Not from a field
-  // whose own Enter means something: an open dropdown picking its option, the
-  // tags field adding a tag, the quick-entry line sending its text.
+  // Enter saves and closes; Shift+Enter saves and starts another — each
+  // button wears its key. From any plain field, but not from one whose own
+  // Enter means something: an open dropdown picking its option, the tags field
+  // adding a tag, the quick-entry line sending its text. Editing has no
+  // "another", so there Shift+Enter does nothing.
   const onEnter = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== "Enter" || e.defaultPrevented || e.shiftKey || e.nativeEvent.isComposing) return;
+    if (e.key !== "Enter" || e.defaultPrevented || e.nativeEvent.isComposing) return;
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
     const el = e.target as HTMLElement;
     if (el.tagName !== "INPUT" || (el as HTMLInputElement).type === "file") return;
     if (el.getAttribute("aria-expanded") === "true") return;
     if (el.closest(".mantine-TagsInput-root")) return;
     e.preventDefault();
-    if (canSave) submit("close");
+    if (!canSave) return;
+    if (!e.shiftKey) submit("close");
+    else if (!editing) submit("new");
   };
 
   const signLabel = t(
@@ -931,28 +935,14 @@ export function TransactionForm({
               </Stack>
             </Collapse>
 
-            {/* The foot: what Enter does, and the two actions. "Save and add
+            {/* The foot: the two actions, each with its key. "Save and add
                 another" keeps the date — a run of entries is usually one
                 receipt, one day — and, with the box on its left ticked, every
                 other field too, for a run of similar ones. The box is a
                 toggle joined to the button rather than a checkbox inside it:
                 a control inside a button is one a click cannot tell apart. */}
-            <Group
-              justify="space-between"
-              gap={ENTRY_SHEET.footButtonsGap}
-              wrap="wrap"
-              mt="auto"
-              pt={ENTRY_SHEET.footTop}
-            >
-              {/* With three controls beside it the hint does not fit on the
-                  buttons' line, and "Save and keep" is shorter than "Save and
-                  add another": left to wrap, it would jump between the two
-                  lines as the box is ticked. So on a new entry it has a line of
-                  its own. */}
-              <Text fz={12} c="dimmed" w={editing ? undefined : "100%"}>
-                {t("transactions.enterSaves")} <Kbd size="xs">↵</Kbd>
-              </Text>
-              <Group gap={ENTRY_SHEET.footButtonsGap} wrap="nowrap" ml="auto">
+            <Group justify="flex-end" mt="auto" pt={ENTRY_SHEET.footTop}>
+              <Group gap={ENTRY_SHEET.footButtonsGap} wrap="nowrap">
                 {!editing && (
                   <Button.Group>
                     <Tooltip label={t("transactions.keepFields")} openDelay={300}>
@@ -975,10 +965,12 @@ export function TransactionForm({
                       onClick={() => submit("new")}
                       loading={save.isPending && savingMode === "new"}
                       disabled={!canSave}
+                      aria-keyshortcuts="Shift+Enter"
                     >
                       {t(
                         keepFields ? "transactions.saveAndKeep" : "transactions.saveAndAddAnother",
                       )}
+                      <Keys keys="⇧↵" />
                     </Button>
                   </Button.Group>
                 )}
@@ -986,8 +978,10 @@ export function TransactionForm({
                   onClick={() => submit("close")}
                   loading={save.isPending && savingMode === "close"}
                   disabled={!canSave}
+                  aria-keyshortcuts="Enter"
                 >
                   {t("transactions.save")}
+                  <Keys keys="↵" />
                 </Button>
               </Group>
             </Group>
@@ -1008,6 +1002,19 @@ export function TransactionForm({
         </Drawer.Body>
       </Drawer.Content>
     </Drawer.Root>
+  );
+}
+
+/**
+ * A button's keyboard shortcut, drawn inside it. Hidden from assistive tech —
+ * the button's aria-keyshortcuts says it, and its name stays just its label —
+ * and hidden on a touch screen, which has no Enter to press.
+ */
+function Keys({ keys }: { keys: string }) {
+  return (
+    <span className="cb-keys" aria-hidden>
+      {keys}
+    </span>
   );
 }
 

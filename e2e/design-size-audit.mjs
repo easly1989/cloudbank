@@ -379,7 +379,9 @@ const CHECKS = [
       tag: "button",
       text: "Save and add another",
     },
-    true,
+    // Height and type only: each button also wears its key (↵, ⇧↵),
+    // which the board does not draw — listed in docs/design/README.md.
+    false,
   ],
   [
     "sheet: save",
@@ -390,7 +392,9 @@ const CHECKS = [
         .locator(".mantine-Drawer-body")
         .getByRole("button", { name: "Save", exact: true }),
     { board: "entering-and-deciding", tag: "button", text: "Save" },
-    true,
+    // Height and type only: each button also wears its key (↵, ⇧↵),
+    // which the board does not draw — listed in docs/design/README.md.
+    false,
   ],
   [
     "confirmation: confirm",

@@ -66,5 +66,9 @@ Added since:
   way, and names the default a new entry takes when the date or the account is
   out of view. The board's "Save and add another" gains a joined toggle on its
   left, which keeps every field for the next entry and relabels the button
-  "Save and keep". The audit still measures the amount, a paired field (Date),
-  a full-width field (Memo) and both foot buttons against the board.
+  "Save and keep". The board's "Enter saves ↵" line is gone. Each foot button
+  instead shows its own key after its label: ↵ on Save (save and close) and ⇧↵
+  on the other (save and start another). The keys are hidden on a touch screen.
+  This makes both buttons wider than the board draws, so the audit checks their
+  height and type only. It still measures the amount, a paired field (Date) and
+  a full-width field (Memo) against the board.

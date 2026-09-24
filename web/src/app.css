@@ -594,6 +594,26 @@ body {
   width: var(--button-height);
   padding: 0;
 }
+/* A button's own shortcut, drawn inside it after its label: an outline in the
+   label's colour, so it reads on the filled Save and the outlined one alike. */
+.cb-keys {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  margin-inline-start: 8px;
+  padding: 0 5px;
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+}
+/* A touch screen has no Enter to press, and the foot needs the room. */
+@media (pointer: coarse) {
+  .cb-keys {
+    display: none;
+  }
+}
 /* The status picker stands where a field would, so it is a field's height. */
 .cb-entry .cb-status-picker {
   height: 44px;
