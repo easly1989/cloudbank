@@ -11,7 +11,28 @@ const VIEWPORTS = [
   { label: "tablet", width: 768, height: 1024 },
 ];
 
-const PAGES = ["/", "/accounts", "/transactions", "/reports", "/budget", "/settings"];
+// Every page, not a sample of them. With six, three pages that each overflowed a
+// phone by up to 319px — tags, rules, schedules — passed this suite for as long
+// as it existed (#446).
+const PAGES = [
+  "/",
+  "/accounts",
+  "/transactions",
+  "/templates",
+  "/tags",
+  "/assignments",
+  "/schedules",
+  "/bills",
+  "/budget",
+  "/goals",
+  "/bank-sync",
+  "/review",
+  "/reports",
+  "/vehicles",
+  "/categories",
+  "/payees",
+  "/settings",
+];
 
 // ensureReady authenticates (setting up the admin on a fresh instance, else
 // logging in) and makes sure a wallet exists, all via the same-origin API so
