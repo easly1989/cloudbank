@@ -245,6 +245,7 @@ function BudgetRow({
           <TextInput
             size="xs"
             w={120}
+            aria-label={t("budget.amountFor", { name: category.name })}
             value={same}
             onChange={(e) => setSame(e.currentTarget.value)}
             onBlur={() => save.mutate()}

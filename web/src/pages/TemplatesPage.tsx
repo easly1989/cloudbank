@@ -123,57 +123,60 @@ export function TemplatesPage() {
       )}
 
       {templates.length > 0 && (
-        <Table>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>{t("templates.name")}</Table.Th>
-              <Table.Th>{t("transactions.account")}</Table.Th>
-              <Table.Th ta="right">{t("transactions.amount")}</Table.Th>
-              <Table.Th />
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {templates.map((tpl) => {
-              const acc = tpl.accountId != null ? accountById.get(tpl.accountId) : undefined;
-              return (
-                <Table.Tr key={tpl.id} {...rowEditProps(() => openEdit(tpl))}>
-                  <Table.Td>{tpl.name}</Table.Td>
-                  <Table.Td>{acc?.name ?? "—"}</Table.Td>
-                  <Table.Td ta="right" c={amountColor(tpl.amount)}>
-                    {formatMinor(tpl.amount, accountFormat(acc))}
-                  </Table.Td>
-                  <Table.Td ta="right" {...stopRowEdit}>
-                    <Group gap={4} justify="flex-end" wrap="nowrap">
-                      <ActionIcon
-                        variant="subtle"
-                        aria-label={t("templates.edit")}
-                        onClick={() => openEdit(tpl)}
-                      >
-                        <IconPencil size={16} />
-                      </ActionIcon>
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        aria-label={t("templates.delete")}
-                        onClick={async () => {
-                          const ok = await confirm({
-                            title: t("templates.confirmDeleteTitle", { name: tpl.name }),
-                            body: t("templates.confirmDeleteBody"),
-                            confirmLabel: t("templates.delete"),
-                            danger: true,
-                          });
-                          if (ok) remove.mutate(tpl.id);
-                        }}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              );
-            })}
-          </Table.Tbody>
-        </Table>
+        <Table.ScrollContainer minWidth={480}>
+          {/* Scrolls inside itself on a phone: at 320px the actions column was pushed 48px past the edge, taking the whole page sideways with it. */}
+          <Table>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>{t("templates.name")}</Table.Th>
+                <Table.Th>{t("transactions.account")}</Table.Th>
+                <Table.Th ta="right">{t("transactions.amount")}</Table.Th>
+                <Table.Th />
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {templates.map((tpl) => {
+                const acc = tpl.accountId != null ? accountById.get(tpl.accountId) : undefined;
+                return (
+                  <Table.Tr key={tpl.id} {...rowEditProps(() => openEdit(tpl))}>
+                    <Table.Td>{tpl.name}</Table.Td>
+                    <Table.Td>{acc?.name ?? "—"}</Table.Td>
+                    <Table.Td ta="right" c={amountColor(tpl.amount)}>
+                      {formatMinor(tpl.amount, accountFormat(acc))}
+                    </Table.Td>
+                    <Table.Td ta="right" {...stopRowEdit}>
+                      <Group gap={4} justify="flex-end" wrap="nowrap">
+                        <ActionIcon
+                          variant="subtle"
+                          aria-label={t("templates.edit")}
+                          onClick={() => openEdit(tpl)}
+                        >
+                          <IconPencil size={16} />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          aria-label={t("templates.delete")}
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: t("templates.confirmDeleteTitle", { name: tpl.name }),
+                              body: t("templates.confirmDeleteBody"),
+                              confirmLabel: t("templates.delete"),
+                              danger: true,
+                            });
+                            if (ok) remove.mutate(tpl.id);
+                          }}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                );
+              })}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       )}
 
       {/* Keyed per record: the key gives every template — and the new-template

@@ -1,4 +1,14 @@
-import { Badge, Button, createTheme, Modal, Table, type MantineColorsTuple } from "@mantine/core";
+import {
+  Badge,
+  Button,
+  createTheme,
+  defaultVariantColorsResolver,
+  Drawer,
+  Modal,
+  Table,
+  type MantineColorsTuple,
+  type VariantColorsResolver,
+} from "@mantine/core";
 
 // CloudBank's own blue, as a Mantine tuple. Shade 6 (#2457D6) is the accent the
 // app ships with; the rest ramp either side of it for hovers, tints and dark
@@ -36,15 +46,45 @@ export const ACCENT_COLORS = [
 
 const DEFAULT_ACCENT = "cloudbank";
 
+// A destructive action, filled. Mantine fills `color="red"` with red.6, #fa5252,
+// and white on that reads 3.28:1 — under the 4.5:1 floor, on the one button that
+// throws work away. The confirmation board fills it with the expense colour
+// instead (#a33529, --cb-negative in app.css): 6.9:1, and the same red the app
+// already uses for "this costs you". It is dark enough to stand on a dark card
+// too, so it does not change with the scheme. Every other variant of red — the
+// subtle icons, the light alerts — is left to Mantine.
+const DANGER_FILL = "#a33529";
+const DANGER_FILL_HOVER = "#8c2c22";
+
+const variantColorResolver: VariantColorsResolver = (input) => {
+  const colors = defaultVariantColorsResolver(input);
+  if (input.variant === "filled" && input.color === "red") {
+    return { ...colors, background: DANGER_FILL, hover: DANGER_FILL_HOVER, color: "#fff" };
+  }
+  return colors;
+};
+
 // buildTheme creates the Mantine theme using the user's chosen accent colour
 // (falling back to the default). Called from main with the signed-in user's
 // preference so changing the accent updates the whole app live.
-export function buildTheme(accent?: string) {
+//
+// `closeLabel` is the translated name for the ✕ on every modal and sheet. Mantine
+// draws that button as a bare icon with no name, which a screen reader announces
+// as just "button" — thirty dialogs' worth of it. The theme is the one place that
+// reaches all of them, so the name is passed in here rather than at each call.
+export function buildTheme(accent?: string, closeLabel = "Close") {
   const primaryColor =
     accent && (ACCENT_COLORS as readonly string[]).includes(accent) ? accent : DEFAULT_ACCENT;
+  const closeButtonProps = { "aria-label": closeLabel };
   return createTheme({
     primaryColor,
     colors: { cloudbank },
+    variantColorResolver,
+    // Mantine's own transitions — a sheet sliding in, a dialog scaling up, a
+    // sidebar group collapsing — run regardless of the reader's motion setting
+    // unless this is on. The app's own motion already checks it (motion.ts,
+    // app.css); this brings the component library into line.
+    respectReducedMotion: true,
     // Public Sans holds up at thirteen pixels in a dense table, which is where
     // this app actually lives. IBM Plex Mono is reserved for figures: every
     // digit the same width, so a column of amounts lines up on the decimal.
@@ -85,8 +125,9 @@ export function buildTheme(accent?: string) {
       // plain: centred, no scroll-jump, and never used for entering data (that
       // is what the side sheet is for).
       Modal: Modal.extend({
-        defaultProps: { centered: true, radius: "md", overlayProps: { blur: 2 } },
+        defaultProps: { centered: true, radius: "md", overlayProps: { blur: 2 }, closeButtonProps },
       }),
+      Drawer: Drawer.extend({ defaultProps: { closeButtonProps } }),
     },
   });
 }
