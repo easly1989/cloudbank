@@ -594,6 +594,24 @@ body {
   width: var(--button-height);
   padding: 0;
 }
+/* The first-visit tour offer (#421): a card in the corner, above the page and
+   below any dialog (Mantine's modals sit at 200), so it never covers a
+   decision the reader is in the middle of. */
+.cb-tour-offer {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 320px;
+  z-index: 190;
+}
+@media (max-width: 47.99em) {
+  .cb-tour-offer {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: auto;
+  }
+}
 /* A button's own shortcut, drawn inside it after its label: an outline in the
    label's colour, so it reads on the filled Save and the outlined one alike. */
 .cb-keys {

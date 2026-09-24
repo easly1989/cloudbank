@@ -107,7 +107,7 @@ export function EntryFieldsCard() {
   };
 
   return (
-    <Card withBorder ref={ref} id="entry-fields">
+    <Card withBorder ref={ref} id="entry-fields" data-tour="entry-fields">
       <Stack gap="sm">
         {ENTRY_FIELDS.map((f, i) => {
           const label = t(f.labelKey);

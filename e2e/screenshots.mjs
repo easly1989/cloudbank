@@ -5,8 +5,8 @@
 //   3. CB_BASE_URL=http://localhost:8080 node screenshots.mjs
 //
 // Output PNGs land in ../docs/img. The run is self-contained: it does first-run
-// setup, imports the sample .xhb for realistic data, dismisses the first-login
-// tour, then captures each screen.
+// setup, imports the sample .xhb for realistic data, turns the page-tour
+// offers off, then captures each screen.
 import { chromium } from "@playwright/test";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -26,7 +26,9 @@ async function shoot(page, name) {
 
 // CB_CHROME lets a caller point at a preinstalled Chromium (e.g. a sandbox where
 // `playwright install` is unavailable); otherwise Playwright's own browser is used.
-const browser = await chromium.launch({ executablePath: process.env.CB_CHROME || undefined });
+const browser = await chromium.launch({
+  executablePath: process.env.CB_CHROME || undefined,
+});
 const ctx = await browser.newContext({
   viewport: VIEWPORT,
   deviceScaleFactor: 1.5,
@@ -52,8 +54,21 @@ try {
   await page.getByRole("button", { name: "Create wallet" }).click();
   await page.getByRole("button", { name: "Switch wallet" }).waitFor();
 
-  // The first-login tour auto-runs; skip it before capturing.
-  await page.getByRole("button", { name: "Skip" }).click();
+  // Each page offers its tour the first time it is opened, in a corner card
+  // that would be in every capture. Turn the offers off before capturing.
+  await page.evaluate(async () => {
+    await fetch("/api/v1/auth/me", {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      body: JSON.stringify({
+        preferences: { tutorialSeen: true, tourOffers: false },
+      }),
+    });
+  });
 
   // Import now lives under Settings → wallet tab → "Import & export" section.
   await page.goto(BASE + "/settings/data");
@@ -97,14 +112,19 @@ try {
 
   // Seed a look-alike pair so the Review page's duplicate finder has content.
   await page.evaluate(async () => {
-    const hdr = { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" };
+    const hdr = {
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    };
     const wallets = await (
       await fetch("/api/v1/wallets", { credentials: "same-origin" })
     ).json();
     let wid, acc;
     for (const w of wallets) {
       const as = await (
-        await fetch(`/api/v1/wallets/${w.id}/accounts`, { credentials: "same-origin" })
+        await fetch(`/api/v1/wallets/${w.id}/accounts`, {
+          credentials: "same-origin",
+        })
       ).json();
       if (as.length) {
         wid = w.id;

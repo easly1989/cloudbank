@@ -38,7 +38,9 @@ async function ensureReady(page: Page): Promise<number> {
       method: "PATCH",
       credentials: "same-origin",
       headers: h,
-      body: JSON.stringify({ preferences: { tutorialSeen: true } }),
+      body: JSON.stringify({
+        preferences: { tutorialSeen: true, tourOffers: false },
+      }),
     });
     let wallets = await (
       await fetch("/api/v1/wallets", { credentials: "same-origin" })

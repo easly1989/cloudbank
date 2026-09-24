@@ -1305,11 +1305,14 @@
     "smartAmountHint": "Type 12.40 or 12,40 — both are read as decimals (HomeBank style)",
     "save": "Save",
     "saved": "Preferences saved",
-    "restartTour": "Restart tutorial",
     "sidebarAccounts": "Account balances in the sidebar",
     "sidebarAccountsHint": "Off by default. Pick up to {{max}} — it should stay a glance, not a second account list.",
     "balances": "Balances on the overview and above the register",
-    "balancesHint": "Three figures are available. Show the ones you actually reconcile against."
+    "balancesHint": "Three figures are available. Show the ones you actually reconcile against.",
+    "tourOffers": "Offer each page's tour",
+    "tourOffersHint": "The first time you open a page, a card in the corner offers a short tour.",
+    "resetTours": "Show all tours again",
+    "toursReset": "Each page will offer its tour again."
   },
   "tour": {
     "skip": "Skip",
@@ -1338,7 +1341,7 @@
     },
     "settings": {
       "title": "Settings & preferences",
-      "body": "Language, theme, date format and more live here. You can restart this tour anytime from Settings."
+      "body": "Language, theme, date format and more live here. Every page has a tour of its own: the ? in its header shows it again."
     }
   },
   "integrity": {
@@ -1423,5 +1426,153 @@
     "statusDefault": "Starting status",
     "requiredMoved": "{{field}} is needed to save. Out of view, a new entry takes: {{value}}.",
     "reset": "Restore the defaults"
+  },
+  "tours": {
+    "offerBody_one": "{{count}} step. The ? in the page header shows it again whenever you like.",
+    "offerBody_other": "{{count}} steps, under a minute. The ? in the page header shows it again whenever you like.",
+    "accept_one": "Show me",
+    "accept_other": "Show me · {{count}} steps",
+    "decline": "No thanks",
+    "replay": "Tour of this page",
+    "dashboard": {
+      "offer": "New here? Take a quick tour"
+    },
+    "register": {
+      "offer": "New here? Take the register's tour",
+      "account": {
+        "title": "One account at a time",
+        "body": "The register shows one account's transactions and balance. Click its name to switch to another account."
+      },
+      "toolbar": {
+        "title": "Find any transaction",
+        "body": "Search memos, payees and amounts. The buttons beside the search filter the rows, hide the figures and choose the columns."
+      },
+      "newEntry": {
+        "title": "Add it where it lands",
+        "body": "Click the first line, or press N, to add a transaction. In the sheet, Enter saves and closes; Shift+Enter saves and starts the next one."
+      },
+      "more": {
+        "title": "Reconcile and transfer",
+        "body": "The ⋯ menu reconciles the account against a bank statement, moves money between accounts and hides the amounts."
+      }
+    },
+    "accounts": {
+      "offer": "New here? Take the accounts tour",
+      "add": {
+        "title": "Every account you follow",
+        "body": "Add each account you want to keep track of: a current account, cash, a card, savings. Each one has its own register and balance."
+      },
+      "closed": {
+        "title": "Closed, not deleted",
+        "body": "A closed account leaves the lists but keeps its history. Switch this on to see closed accounts again."
+      }
+    },
+    "budget": {
+      "offer": "New here? Take the budget tour",
+      "tabs": {
+        "title": "Plan, then compare",
+        "body": "The first tab is where you plan what to spend; the report sets that against what you actually spent."
+      },
+      "editor": {
+        "title": "An amount per category",
+        "body": "Give each category the same amount every month, or one amount per month. \"Every year\" is the default; picking a year overrides it for that year only."
+      }
+    },
+    "reports": {
+      "offer": "New here? Take the reports tour",
+      "tabs": {
+        "title": "Four views of your money",
+        "body": "Statistics splits spending by category or payee, Trend follows it over time, Balance tracks your accounts and Vehicle adds up running costs."
+      },
+      "views": {
+        "title": "Keep a view you use",
+        "body": "Save the grouping and filters you have set, and open them again in one click."
+      },
+      "export": {
+        "title": "Take it elsewhere",
+        "body": "Download the figures as CSV, or the chart as an image."
+      }
+    },
+    "schedules": {
+      "offer": "New here? Take the schedules tour",
+      "add": {
+        "title": "Things that repeat",
+        "body": "Add a salary, the rent, a subscription: CloudBank posts it on the day it comes due."
+      },
+      "due": {
+        "title": "Early, or not at all",
+        "body": "Any schedule can be posted now or skipped once. The dates after it stay as they were."
+      }
+    },
+    "bills": {
+      "offer": "New here? Take the bills tour",
+      "list": {
+        "title": "What is due",
+        "body": "One row per bill, with its last payment and next due date. Mark a bill paid to post its transaction."
+      },
+      "add": {
+        "title": "Add a bill",
+        "body": "A bill is a schedule with a due date: add it once and it comes back every period."
+      }
+    },
+    "goals": {
+      "offer": "New here? Take the goals tour",
+      "add": {
+        "title": "Save towards something",
+        "body": "Set a target, like a holiday or a new bike, and how much you want to put aside for it."
+      },
+      "topUp": {
+        "title": "Fill it by hand",
+        "body": "A goal is a piggy bank: top it up whenever you set money aside. Amounts are in your base currency."
+      }
+    },
+    "bankSync": {
+      "offer": "New here? Take the bank sync tour",
+      "providers": {
+        "title": "Connect a bank",
+        "body": "Pick a provider. Your credentials stay on the server, and CloudBank never sees your bank login."
+      },
+      "connections": {
+        "title": "Your connections",
+        "body": "Each connected bank shows up here with its last sync. Imported transactions that need a category wait in Review."
+      }
+    },
+    "review": {
+      "offer": "New here? Take the review tour",
+      "categories": {
+        "title": "Give them a category",
+        "body": "Imported transactions without a category land here. Pick one and the row is done."
+      },
+      "duplicates": {
+        "title": "The same transaction twice?",
+        "body": "Imports that look like a transaction you already have show up here, so you can decide which to keep."
+      }
+    },
+    "settings": {
+      "offer": "New here? Take a tour of Settings",
+      "sections": {
+        "title": "Everything in one place",
+        "body": "The sections run from what everyone changes on day one to what most people never touch. Each one is a link of its own."
+      },
+      "entry": {
+        "title": "Your transaction sheet",
+        "body": "Choose which fields the sheet shows up front, and what a new transaction starts with."
+      },
+      "back": {
+        "title": "The way out",
+        "body": "Back to the app, from any section."
+      }
+    },
+    "data": {
+      "offer": "New here? Take a tour of your data",
+      "import": {
+        "title": "Bring your statements in",
+        "body": "Import statements from your bank; the rules below file each row into its category."
+      },
+      "backup": {
+        "title": "Keep a copy",
+        "body": "Download a copy you can restore from, and check that the database is sound."
+      }
+    }
   }
 }

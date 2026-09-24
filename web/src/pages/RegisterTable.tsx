@@ -700,6 +700,7 @@ export function RegisterTable({
             <UnstyledButton
               onClick={onNew}
               className="cb-new-entry"
+              data-tour="register-new"
               aria-label={t("register.newEntry")}
               style={{
                 display: "grid",

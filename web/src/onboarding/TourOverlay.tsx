@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
-import { TOUR_STEPS } from "./steps";
+import type { TourStep } from "./tours";
 
 interface Rect {
   top: number;
@@ -74,16 +74,33 @@ function cardPosition(rect: Rect | null, cardW: number, cardH: number): CSSPrope
   return { top: clamp(top, MARGIN, maxTop), left: clamp(left, MARGIN, maxLeft) };
 }
 
-export default function TourOverlay({ onClose }: { onClose: () => void }) {
+export default function TourOverlay({
+  steps: all,
+  onClose,
+}: {
+  steps: TourStep[];
+  onClose: () => void;
+}) {
   const { t } = useTranslation();
+  // The steps this page can show: one whose element is not in the page at all
+  // is left out rather than shown centred over nothing. Decided once, as the
+  // tour starts, so the count does not change under the reader. A page with
+  // none of its elements (a register with no accounts) still says its piece,
+  // centred, rather than showing nothing when asked.
+  const [steps] = useState(() => {
+    const present = all.filter(
+      (s) => !s.target || document.querySelector(`[data-tour="${s.target}"]`),
+    );
+    return present.length > 0 ? present : all;
+  });
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const [pos, setPos] = useState<CSSProperties | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const current = TOUR_STEPS[step];
+  const current = steps[step];
   const isFirst = step === 0;
-  const isLast = step === TOUR_STEPS.length - 1;
+  const isLast = step === steps.length - 1;
 
   const next = () => (isLast ? onClose() : setStep((s) => s + 1));
   const back = () => setStep((s) => Math.max(0, s - 1));
@@ -157,6 +174,11 @@ export default function TourOverlay({ onClose }: { onClose: () => void }) {
       )}
       <Paper
         ref={cardRef}
+        data-tour-step={current.target ?? ""}
+        data-tour-skipped={all.length - steps.length}
+        // A step that points at something but found nothing to point at: the
+        // tours spec fails on it, so a renamed element cannot hide.
+        data-tour-centred={(current.target && !rect) || undefined}
         shadow="md"
         p="md"
         radius="md"
@@ -195,7 +217,7 @@ export default function TourOverlay({ onClose }: { onClose: () => void }) {
           </Group>
         </Group>
         <Text size="xs" c="dimmed" ta="center" mt="xs">
-          {step + 1} / {TOUR_STEPS.length}
+          {step + 1} / {steps.length}
         </Text>
       </Paper>
     </>,

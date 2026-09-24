@@ -192,18 +192,20 @@ export function StatisticsTab() {
   return (
     <Stack>
       <Group justify="space-between" align="flex-end">
-        <SavedViews
-          tab="statistics"
-          walletId={walletId}
-          current={{ groupBy, view, chartType, filters }}
-          onApply={(c) => {
-            if (c.groupBy) setGroupBy(c.groupBy as ReportGroupBy);
-            if (c.view) setView(c.view as "chart" | "table");
-            if (c.chartType) setChartType(c.chartType as "pie" | "bar");
-            if (c.filters) setFilters(c.filters as Filters);
-          }}
-        />
-        <Group gap="xs">
+        <div data-tour="reports-views">
+          <SavedViews
+            tab="statistics"
+            walletId={walletId}
+            current={{ groupBy, view, chartType, filters }}
+            onApply={(c) => {
+              if (c.groupBy) setGroupBy(c.groupBy as ReportGroupBy);
+              if (c.view) setView(c.view as "chart" | "table");
+              if (c.chartType) setChartType(c.chartType as "pie" | "bar");
+              if (c.filters) setFilters(c.filters as Filters);
+            }}
+          />
+        </div>
+        <Group gap="xs" data-tour="reports-export">
           <Button
             component="a"
             href={statisticsCsvUrl(walletId, groupBy, params)}

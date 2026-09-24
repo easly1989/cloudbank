@@ -18,10 +18,10 @@ import { IconCheck } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 
 import { ApiError, listAccounts, updateMe, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
+import { useTour } from "../onboarding/tourContext";
 import { supportedLanguages } from "../i18n";
 import { SIDEBAR_ACCOUNTS_MAX } from "../components/sidebarAccounts";
 import {
@@ -55,6 +55,7 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
   const { user } = useAuth();
   const { setColorScheme } = useMantineColorScheme();
   const { currentWallet } = useWallet();
+  const { resetAll } = useTour();
   const walletId = currentWallet?.id ?? 0;
 
   const accountsQuery = useQuery({
@@ -73,6 +74,7 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
     prefs.defaultAccountId ? String(prefs.defaultAccountId) : null,
   );
   const [smartAmount, setSmartAmount] = useState(prefs.smartAmountInput ?? true);
+  const [tourOffers, setTourOffers] = useState(prefs.tourOffers ?? true);
   const [accent, setAccent] = useState(prefs.themeAccent ?? "cloudbank");
   const [sidebarAccountIds, setSidebarAccountIds] = useState<number[]>(
     prefs.sidebarAccountIds ?? [],
@@ -112,6 +114,7 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
           startScreen,
           defaultAccountId: defaultAccount ? Number(defaultAccount) : undefined,
           smartAmountInput: smartAmount,
+          tourOffers,
           themeAccent: accent,
           sidebarAccountIds,
           registerBalances: balances,
@@ -226,6 +229,14 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
             )}
             {general && (
               <Switch
+                label={t("preferences.tourOffers")}
+                description={t("preferences.tourOffersHint")}
+                checked={tourOffers}
+                onChange={(e) => setTourOffers(e.currentTarget.checked)}
+              />
+            )}
+            {general && (
+              <Switch
                 label={t("preferences.smartAmount")}
                 description={t("preferences.smartAmountHint")}
                 checked={smartAmount}
@@ -287,8 +298,16 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
 
           <Group justify="space-between">
             {general ? (
-              <Button component={Link} to="/?tour=1" variant="default">
-                {t("preferences.restartTour")}
+              // Forgetting which tours were offered is its own action, not part
+              // of Save: it is undone by nothing but opening the pages again.
+              <Button
+                variant="default"
+                onClick={() => {
+                  resetAll();
+                  notifications.show({ color: "teal", message: t("preferences.toursReset") });
+                }}
+              >
+                {t("preferences.resetTours")}
               </Button>
             ) : (
               <span />

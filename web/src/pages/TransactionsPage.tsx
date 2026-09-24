@@ -465,11 +465,13 @@ export function TransactionsPage() {
             because the title is the switch. */}
         <PageHeader
           prominent
+          tour="register"
           title={
             <Menu position="bottom-start" withinPortal>
               <Menu.Target>
                 <UnstyledButton
                   className="cb-title-switch"
+                  data-tour="register-account"
                   aria-label={t("transactions.account")}
                   disabled={accounts.length < 2}
                 >
@@ -499,7 +501,12 @@ export function TransactionsPage() {
                   the two that matter stay the two you see. */}
               <Menu position="bottom-end" withinPortal>
                 <Menu.Target>
-                  <ActionIcon variant="default" size={44} aria-label={t("register.moreActions")}>
+                  <ActionIcon
+                    variant="default"
+                    size={44}
+                    aria-label={t("register.moreActions")}
+                    data-tour="register-more"
+                  >
                     <IconDots size={18} />
                   </ActionIcon>
                 </Menu.Target>

@@ -34,7 +34,9 @@ async function signIn(page: Page) {
       method: "PATCH",
       credentials: "same-origin",
       headers: h,
-      body: JSON.stringify({ preferences: { tutorialSeen: true } }),
+      body: JSON.stringify({
+        preferences: { tutorialSeen: true, tourOffers: false },
+      }),
     });
     // Two wallets, so "the current one" is a choice rather than the only option.
     const titles = ["Wallet one", "Wallet two"];
