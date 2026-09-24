@@ -42,11 +42,12 @@ export function RegisterToolbar({
   const privacyLabel = t(privacy ? "register.privacy.show" : "register.privacy.hide");
 
   return (
-    <Group gap="xs" wrap="wrap" align="center">
+    <Group gap={8} wrap="wrap" align="center">
       <TextInput
+        className="cb-register-search"
         aria-label={t("register.search")}
         placeholder={t("register.search")}
-        leftSection={<IconSearch size={16} />}
+        leftSection={<IconSearch size={15} />}
         rightSection={
           filters.text ? (
             <ActionIcon
@@ -101,34 +102,34 @@ export function RegisterToolbar({
       <Tooltip label={t("filters.section")}>
         <ActionIcon
           variant={panel === "filters" ? "filled" : "default"}
-          size={36}
+          size={44}
           aria-label={t("filters.section")}
           aria-pressed={panel === "filters"}
           onClick={() => onPanel(panel === "filters" ? null : "filters")}
         >
-          <IconFilter size={17} />
+          <IconFilter size={16} />
         </ActionIcon>
       </Tooltip>
       <Tooltip label={privacyLabel}>
         <ActionIcon
           variant={privacy ? "filled" : "default"}
-          size={36}
+          size={44}
           aria-label={privacyLabel}
           aria-pressed={privacy}
           onClick={() => onPrivacy(!privacy)}
         >
-          {privacy ? <IconEyeOff size={17} /> : <IconEye size={17} />}
+          {privacy ? <IconEyeOff size={16} /> : <IconEye size={16} />}
         </ActionIcon>
       </Tooltip>
       <Tooltip label={t("register.columns")}>
         <ActionIcon
           variant={panel === "columns" ? "filled" : "default"}
-          size={36}
+          size={44}
           aria-label={t("register.columns")}
           aria-pressed={panel === "columns"}
           onClick={() => onPanel(panel === "columns" ? null : "columns")}
         >
-          <IconColumns3 size={17} />
+          <IconColumns3 size={16} />
         </ActionIcon>
       </Tooltip>
     </Group>

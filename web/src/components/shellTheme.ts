@@ -49,5 +49,7 @@ export const FOOT = {
   padTop: 14,
   gap: 8,
   pill: { height: 38, radius: 999, inset: 16, fz: 13, fw: 600 },
-  user: { height: 40, radius: 7, inset: 8, gap: 10, fz: 14 },
+  // The user row is one 40px press target the width of the rail less the gear
+  // (198 of 236 on the overview board), 4px from it.
+  user: { height: 40, radius: 7, inset: 8, gap: 10, fz: 14, gearGap: 4 },
 } as const;

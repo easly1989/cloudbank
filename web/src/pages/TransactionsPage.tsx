@@ -20,8 +20,6 @@ import {
   IconChecklist,
   IconInfoCircle,
   IconDots,
-  IconFileImport,
-  IconPlus,
   IconSelector,
   IconWallet,
 } from "@tabler/icons-react";
@@ -446,10 +444,12 @@ export function TransactionsPage() {
             beside it says the wrong thing twice; switching stays one click,
             because the title is the switch. */}
         <PageHeader
+          prominent
           title={
             <Menu position="bottom-start" withinPortal>
               <Menu.Target>
                 <UnstyledButton
+                  className="cb-title-switch"
                   aria-label={t("transactions.account")}
                   disabled={accounts.length < 2}
                 >
@@ -479,7 +479,7 @@ export function TransactionsPage() {
                   the two that matter stay the two you see. */}
               <Menu position="bottom-end" withinPortal>
                 <Menu.Target>
-                  <ActionIcon variant="default" size={36} aria-label={t("register.moreActions")}>
+                  <ActionIcon variant="default" size={44} aria-label={t("register.moreActions")}>
                     <IconDots size={18} />
                   </ActionIcon>
                 </Menu.Target>
@@ -512,16 +512,10 @@ export function TransactionsPage() {
                   </Menu.Item>
                 </Menu.Dropdown>
               </Menu>
-              <Button
-                component={Link}
-                to="/settings?tab=wallet&section=import"
-                variant="default"
-                leftSection={<IconFileImport size={16} />}
-              >
+              <Button component={Link} to="/settings?tab=wallet&section=import" variant="default">
                 {t("register.import")}
               </Button>
               <Button
-                leftSection={<IconPlus size={16} />}
                 disabled={!account}
                 onClick={() => {
                   setDuplicating(null);
@@ -793,14 +787,15 @@ function BulkBar({
       <Text ff="monospace" fz={ROW_TYPE.bulkSum.fz} fw={ROW_TYPE.bulkSum.fw} c={amountColor(total)}>
         {formatMinor(total, fmt)}
       </Text>
-      <Group gap="xs" ml="auto" wrap="nowrap">
-        <Button variant="default" size="compact-md" onClick={onEdit}>
+      {/* 40px buttons 16 apart, as the register board's selection bar. */}
+      <Group gap={16} ml="auto" wrap="nowrap">
+        <Button variant="default" onClick={onEdit}>
           {t("bulk.edit")}
         </Button>
-        <Button variant="default" size="compact-md" c={errorColor} onClick={onDelete}>
+        <Button variant="default" c={errorColor} onClick={onDelete}>
           {t("bulk.delete")}
         </Button>
-        <Button variant="subtle" color="gray" size="compact-md" onClick={onClear}>
+        <Button variant="subtle" color="gray" onClick={onClear}>
           {t("bulk.clearSelection")}
         </Button>
       </Group>
