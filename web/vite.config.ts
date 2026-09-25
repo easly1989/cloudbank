@@ -7,6 +7,11 @@ import { VitePWA } from "vite-plugin-pwa";
 // single binary can serve the SPA. In dev, /api and /healthz are proxied to the
 // Go backend on :8080.
 export default defineConfig({
+  // The public demo (#420) is a build of its own: CB_DEMO=1 turns on the demo's
+  // screens, and a normal build folds every one of them away.
+  define: {
+    __DEMO__: JSON.stringify(process.env.CB_DEMO === "1"),
+  },
   plugins: [
     react(),
     // Installable PWA: a web manifest plus a Workbox service worker that

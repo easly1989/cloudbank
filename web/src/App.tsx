@@ -6,6 +6,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { getSetupStatus } from "./api/client";
 import { useAuth } from "./auth/AuthProvider";
 import { AppLayout } from "./components/AppLayout";
+import { DemoLoginPage } from "./demo/DemoLoginPage";
 import { OnboardingTourProvider } from "./onboarding/TourProvider";
 // Setup and login are the entry screens (critical first paint), so they stay
 // eager; every other page is code-split into its own chunk (loaded on demand)
@@ -116,11 +117,12 @@ export function App() {
     );
   }
 
-  // Not logged in: only the login page is reachable.
+  // Not logged in: only the login page is reachable. The demo build's login
+  // page is one button that makes an account.
   if (!user) {
     return (
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login" element={__DEMO__ ? <DemoLoginPage /> : <LoginPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );

@@ -55,6 +55,9 @@ func authViaToken(ctx context.Context) bool {
 type authHandlers struct {
 	svc    *auth.Service
 	secure bool
+	// demo leaves out what a throwaway demo account has no use for: API
+	// tokens, two-factor and user administration.
+	demo bool
 }
 
 // userResponse is the JSON shape returned for an account. It never contains the
@@ -97,6 +100,9 @@ func (h *authHandlers) protectedRoutes(r chi.Router) {
 	r.Post("/auth/logout", h.logout)
 	r.Get("/auth/me", h.me)
 	r.Patch("/auth/me", h.updateMe)
+	if h.demo {
+		return
+	}
 	h.tokenRoutes(r)
 	h.twoFactorRoutes(r)
 

@@ -65,6 +65,9 @@ type walletHandlers struct {
 	integrity    *integrity.Service
 	backup       *backup.Service
 	attachments  *attachment.Service
+	// demo, when set, applies the demo's limits and swaps the real bank
+	// providers for the pretend bank.
+	demo *demoHandlers
 }
 
 type walletResponse struct {
@@ -88,9 +91,16 @@ func toWalletResponse(w wallet.Wallet) walletResponse {
 
 func (h *walletHandlers) routes(r chi.Router) {
 	r.Get("/wallets", h.list)
-	r.Post("/wallets", h.create)
+	if h.demo != nil {
+		r.With(h.demo.newWallet).Post("/wallets", h.create)
+	} else {
+		r.Post("/wallets", h.create)
+	}
 	r.Route("/wallets/{walletId}", func(r chi.Router) {
 		r.Use(h.walletContext)
+		if h.demo != nil {
+			r.Use(h.demo.fullWallet)
+		}
 		r.Get("/", h.get)
 		r.Patch("/", h.update)
 		r.Delete("/", h.delete)
@@ -134,7 +144,7 @@ func (h *walletHandlers) routes(r chi.Router) {
 			(&aiHandlers{svc: h.ai}).walletRoutes(r)
 		}
 		if h.bankSync != nil {
-			(&bankSyncHandlers{svc: h.bankSync}).walletRoutes(r)
+			(&bankSyncHandlers{svc: h.bankSync, demo: h.demo != nil}).walletRoutes(r)
 		}
 		if h.templates != nil {
 			(&templateHandlers{svc: h.templates}).walletRoutes(r)

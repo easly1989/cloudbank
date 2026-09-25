@@ -15,11 +15,13 @@ import (
 // bankSyncHandlers serves the wallet-scoped bank-sync endpoints.
 type bankSyncHandlers struct {
 	svc *banksync.Service
+	// demo mounts the pretend bank and none of the real providers: their
+	// routes do not exist, and the service refuses them besides.
+	demo bool
 }
 
 func (h *bankSyncHandlers) walletRoutes(r chi.Router) {
 	r.Get("/bank/connections", h.list)
-	r.Post("/bank/connections", h.connect)
 	r.Route("/bank/connections/{connId}", func(r chi.Router) {
 		r.Delete("/", h.remove)
 		r.Get("/accounts", h.accounts)
@@ -28,10 +30,17 @@ func (h *bankSyncHandlers) walletRoutes(r chi.Router) {
 		r.Post("/sync", h.sync)
 		r.Get("/history", h.history)
 		r.Delete("/history", h.clearHistory)
-		r.Post("/reauth", h.ebReauth)
 		r.Post("/auto-sync", h.setAutoSync)
 		r.Post("/schedule", h.setSchedule)
+		if !h.demo {
+			r.Post("/reauth", h.ebReauth)
+		}
 	})
+	if h.demo {
+		r.Post("/bank/demo/connect", h.demoConnect)
+		return
+	}
+	r.Post("/bank/connections", h.connect)
 	// Enable Banking (EU/PSD2), bring-your-own credentials.
 	r.Get("/bank/enablebanking/config", h.ebGetConfig)
 	r.Put("/bank/enablebanking/config", h.ebSetConfig)
@@ -58,6 +67,8 @@ func (h *bankSyncHandlers) writeErr(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, banksync.ErrTokenClaimed):
 		writeError(w, http.StatusBadRequest, "token_invalid", "the setup token is invalid or already used")
+	case errors.Is(err, banksync.ErrProviderDisabled):
+		writeError(w, http.StatusNotFound, "not_found", "this bank provider is not available here")
 	case errors.Is(err, banksync.ErrNotFound):
 		writeError(w, http.StatusNotFound, "not_found", "not found")
 	case errors.Is(err, banksync.ErrInvalid):
@@ -304,6 +315,23 @@ func (h *bankSyncHandlers) connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	conn, accounts, err := h.svc.Connect(r.Context(), wl.ID, body.SetupToken, body.Name)
+	if err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"connection": conn, "accounts": accounts})
+}
+
+// demoConnect connects the demo build's pretend bank.
+func (h *bankSyncHandlers) demoConnect(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body struct {
+		Name string `json:"name"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	conn, accounts, err := h.svc.ConnectDemo(r.Context(), wl.ID, strings.TrimSpace(body.Name))
 	if err != nil {
 		h.writeErr(w, err)
 		return

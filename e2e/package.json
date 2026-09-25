@@ -5,6 +5,7 @@
   "description": "End-to-end smoke tests for CloudBank (Playwright).",
   "scripts": {
     "test": "playwright test",
+    "test:demo": "playwright test -c playwright.demo.config.ts",
     "report": "playwright show-report"
   },
   "devDependencies": {
