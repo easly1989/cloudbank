@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <sub>A public instance to click around in — don't put anything real in it.</sub>
+  <sub>Made-up data in a throwaway account, deleted when you stop using it. <a href="docs/demo.md">What the demo is</a>.</sub>
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 <p align="center">
   <a href="https://paypal.me/carloruggiero"><img src="https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&logoColor=white" alt="Donate via PayPal" /></a>
   <a href="https://buy.stripe.com/8x26oAeqA7h6dPk80hfbq00"><img src="https://img.shields.io/badge/Donate-Stripe-635BFF?logo=stripe&logoColor=white" alt="Donate via Stripe" /></a>
-  <a href="https://liberapay.com/amon2126/donate"><img src="https://img.shields.io/liberapay/patrons/amon2126.svg?logo=liberapay" alt="Donate via Liberapay" ></a>
+  <a href="https://liberapay.com/amon2126/donate"><img src="https://img.shields.io/badge/Donate-Liberapay-F6C915?logo=liberapay&logoColor=black" alt="Donate via Liberapay" /></a>
   <a href="https://github.com/sponsors/easly1989"><img src="https://img.shields.io/badge/Sponsor-GitHub-EA4AAA?logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub" /></a>
 </p>
 
@@ -37,8 +37,12 @@
 
 > Status: **production-ready.** 1.0 reached HomeBank parity; the **2.x** line added
 > deep personalization and interop, and the **3.x** line the post-parity
-> capabilities — automatic bank sync, 2FA, an installable PWA, and opt-in AI. See
-> the [CHANGELOG](CHANGELOG.md).
+> capabilities — automatic bank sync, 2FA, an installable PWA, and opt-in AI.
+> **3.2** redesigned the whole interface. See the [CHANGELOG](CHANGELOG.md).
+
+**Try it first:** the [live demo](https://p01--cloudbank--7dcjw6mlmtky.code.run/)
+is one click, no sign-up, with a year of made-up data. It is deleted after two
+hours without use, so nothing you put in it stays — [what the demo is](docs/demo.md).
 
 ## Why
 
@@ -56,19 +60,22 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 | :------------------------------------------------------: | :---------------------------------------------------------: |
 | ![Bills](docs/img/bills.png)                             | ![Bank-sync review](docs/img/review.png)                    |
 
-|                 Interactive reports                 |            Preferences, themes & accent            |
+|                 Interactive reports                 |            Appearance — theme, accent, sidebar            |
 | :-------------------------------------------------: | :------------------------------------------------: |
 | ![Reports](docs/img/reports.png)                    | ![Settings](docs/img/settings.png)                 |
 
-|            Customizable, free-form dashboard             |          HomeBank `.xhb` export & backup           |
+|            Customizable, free-form dashboard             |    Import & export — HomeBank `.xhb`, backup & restore    |
 | :------------------------------------------------------: | :------------------------------------------------: |
 | ![Customize the dashboard](docs/img/dashboard-customize.png) | ![Export](docs/img/export.png)                 |
+
+<sub>The screenshots use the demo's made-up data. `e2e/screenshots.mjs` retakes them all.</sub>
 
 ## Features
 
 - **Accounts** of every HomeBank type (bank, cash, checking, savings, credit card, liability, asset, investment) with per-account currency, a **default payment mode**, and the full set of flags, showing both today's balance and a projected future balance.
 - **Transactions** with 12 payment types, the cleared/reconciled status lifecycle, category splits, free tags, internal transfers (including cross-currency), a right-click context menu, and multi-selection **bulk actions** — set category / payee / payment mode / status / **tags** (add or replace) or **delete** across many rows at once, with **shift-click** range selection — plus duplicate detection.
-- **Register** view with running balance, rich filtering (including a show/hide **future transactions** toggle), per-user column customization, a **selection total** (net + income/expense split of the currently selected rows), a reconciliation workflow, double-click-to-edit, and **full-text search** across memo, payee, category and info.
+- **Register** view with running balance, rich filtering (including a show/hide **future transactions** toggle), columns you can show, hide, resize and **reorder**, a **selection total** (net + income/expense split of the currently selected rows), a reconciliation workflow with a **"reconciled up to here"** marker when a filter hides rows, double-click-to-edit, a **privacy switch** that blurs names and amounts for a screenshot, and **full-text search** across memo, payee, category and info.
+- **Entering a transaction** happens in a sheet beside the ledger, so the rows and the running balance stay in view. You choose which fields it shows and which wait under **More details**, and **Save and keep** carries the fields over to the next entry.
 - **Scheduled transactions** with automatic posting (optionally **pre-registering up to 3 months ahead**, HomeBank style), a **per-week/month/year income & expense summary**, the recurring **amount** shown in the schedules grid, **templates** (a dedicated management area, and offered when entering a transaction), and **assignment rules** for auto-categorization.
 - **Budgets** and a full suite of **reports** (Statistics, Trend Time, Balance, Budget, Vehicle cost) with interactive charts and CSV/PNG export.
 - **Savings goals** — manual piggy-bank goals with contribute / withdraw, a progress bar and an optional target date (included in wallet backup/restore).
@@ -77,16 +84,17 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 - **Automatic bank sync** — pull new transactions straight from your bank, run through your assignment rules and **reconciled against what you already have**: a bank row that matches an existing manual or scheduled transaction (amount + nearby date) is **merged** into it instead of duplicated, imported with the right status (booked → reconciled, pending → cleared) and a sensible default payment mode. Three providers, all **bring-your-own-credentials** so CloudBank never sees your bank login: **[SimpleFIN](https://www.simplefin.org/)** (worldwide; a ~$15/year SimpleFIN Bridge subscription) and **[Enable Banking](https://enablebanking.com/)** (EU/EEA + UK via PSD2 — a free sandbox to test, your own production application for real accounts). Plus **[Pluggy](https://pluggy.ai/)** (Latin America — free for personal use via [Meu Pluggy](https://meu.pluggy.ai), where you link the banks and CloudBank just reads them). **Pluggy is experimental and needs real-world testing** — it follows the published API but has not been run against a live Latin American bank by the maintainers, so if you use it, please [open an issue](https://github.com/easly1989/cloudbank/issues/new) with anything that looks wrong, however small. A **personal (restricted)** Enable Banking production app can only sync accounts you **link** to it in its panel — the [bank-sync guide](docs/bank-sync.md) walks through it.
 - **Bank-sync review** — a dedicated page that lists imported transactions still **needing a category** (set it inline) and finds **possible duplicates** that slipped through, with per-pair **merge**, edit, delete, or **"not a duplicate"** (remembered, so it isn't shown again).
 - **Multi-currency** with manual and online (ECB / frankfurter.app) exchange rates.
-- Multi-user (admin-managed), responsive UI, English and Italian.
+- Multi-user (managed by the admin from **Settings → People**), responsive UI, English and Italian.
 
 ### Make it yours
 
-- **Fully customizable, free-form dashboard** — place and resize widgets anywhere on a grid, and add **multiple instances of any widget** from a palette, each with its own settings. A varied widget library covers the standard cases (base-currency totals, quick-add, income/expense, accounts, spending donut, budget gauge, upcoming) plus building blocks for a custom layout (single **account balance**, **recent transactions**, a **key-figure** big-number, and free-text **notes**). Pick an account and **Add** opens the full entry modal; the Upcoming panel splits into **Recurring / Future / Reminders** with post / skip / edit. In edit mode, **Tidy** re-packs the widgets with no gaps and **Reset** restores the default layout. Existing dashboards migrate automatically, and the grid stacks to one column on phones.
+- **A dashboard that opens with what needs doing** — overdue bills, possible duplicates and other things waiting on you sit above the widgets, and one period control (month to all time) sets the span for the whole page.
+- **Fully customizable, free-form dashboard** — place and resize widgets anywhere on a grid, and add **multiple instances of any widget** from a palette, each with its own settings. A varied widget library covers the standard cases (base-currency totals, quick-add, income/expense, accounts, spending donut, budget gauge, upcoming) plus building blocks for a custom layout (single **account balance**, **recent transactions**, a **key-figure** big-number, and free-text **notes**). Pick an account and **Add** opens the entry sheet; the Upcoming panel splits into **Recurring / Future / Reminders** with post / skip / edit. In edit mode, **Tidy** re-packs the widgets with no gaps and **Reset** restores the default layout. Existing dashboards migrate automatically, and the grid stacks to one column on phones.
 - **Themes** — light / dark / auto plus an **accent-colour picker**; your choice persists per user across devices.
-- **Collapsible sidebar** and a **pinnable, reorderable navigation** ("More" group for the rest).
+- **Collapsible sidebar** and a **reorderable navigation** — rename or add groups, hide pages, and optionally show up to three **account balances** under the wallet.
 - **Smart amount entry** (HomeBank style) — type `12.40` or `12,40` and both are read as decimals (toggleable per user).
 - **Dates** rendered everywhere in your configured format.
-- A **first-login tutorial** that points out the essentials — dismissable, shown once, and restartable from Settings.
+- **Page tours** — each main page offers a short tour the first time you open it, and the **?** in its header replays it. Settings → General can turn the offers off or reset them.
 
 ### Secure & on every device
 
@@ -133,8 +141,8 @@ docker compose up -d
 
 That is the whole install — one container, no external database. Your data lives
 in the `cloudbank-data` volume (a SQLite database under `/data`). Back it up by
-copying that volume, or use the in-app **wallet backup** (Settings → Wallet tab)
-and the admin **full-database backup**.
+copying that volume, or use the in-app **wallet backup** (Settings → Import &
+export) and the admin **full-database backup**.
 
 Running behind HTTPS (recommended for anything beyond a trusted LAN)? See
 [docs/reverse-proxy.md](docs/reverse-proxy.md). Coming from the HomeBank desktop
@@ -168,6 +176,7 @@ latest version on the next launch after you deploy a new image.
 
 - **API**: interactive Swagger UI is served by the app at **`/api/docs`** (the
   OpenAPI spec is at `/api/openapi.yaml`).
+- **The live demo** — what it is, what it switches off, when it forgets you: [docs/demo.md](docs/demo.md).
 - **Reverse proxy / HTTPS**: [docs/reverse-proxy.md](docs/reverse-proxy.md).
 - **Migrating from HomeBank**: [docs/migrate-from-homebank.md](docs/migrate-from-homebank.md).
 - **Automatic bank sync** (SimpleFIN, Enable Banking & Pluggy): [docs/bank-sync.md](docs/bank-sync.md).
@@ -183,8 +192,10 @@ latest version on the next launch after you deploy a new image.
 | `CB_LOG_LEVEL`      | `info`              | `debug`, `info`, `warn`, or `error`.                        |
 | `CB_SECURE_COOKIES` | `true`              | Set `false` for plain-HTTP LAN installs (no TLS).           |
 | `CB_RATE_URL`       | _(frankfurter.app)_ | Override the online exchange-rate API root (e.g. a mirror). |
+| `CB_VAPID_SUBJECT`  | `mailto:cloudbank@localhost` | Contact sent to browser push services with each web-push message. Set it to a `mailto:` or `https:` address of yours. |
 | `CB_SECRET_KEY`     | _(none)_            | If set, encrypts secrets at rest (bank credentials, AI keys, 2FA & push keys). Use a **strong, high-entropy** value — generate one with `openssl rand -base64 48` rather than a hand-picked passphrase. Keep it **stable** — losing it makes encrypted secrets unrecoverable. |
 | `CB_BANK_SYNC_INTERVAL` | `1h`            | How often the background job checks for connections due to sync. Each connection has its own interval (default daily, configurable per connection), so this only bounds how promptly a due one is picked up. Set `0`/`off` to disable background sync (manual "Sync now" still works). |
+| `CB_ENABLEBANKING_BASE_URL` | _(Enable Banking's API)_ | Diagnostics and testing only: points Enable Banking calls at another API root. |
 | `CB_BANK_SYNC_DEBUG_PENDING` | _(off)_    | Diagnostics only. When set, each auto-sync makes one extra `transaction_status=PDNG` call per account and logs the provider's exact response, to investigate why an ASPSP returns no pending transactions. Leave off in normal use — the extra call spends the PSD2 daily budget. |
 | `CB_OIDC_ISSUER`    | _(none)_            | OIDC/SSO issuer URL (e.g. `https://auth.example.com/realms/main`). Setting issuer + client id + client secret + redirect URL enables a "Sign in with …" button alongside local login. |
 | `CB_OIDC_CLIENT_ID` | _(none)_            | OIDC client id registered with the provider.                |
@@ -193,6 +204,11 @@ latest version on the next launch after you deploy a new image.
 | `CB_OIDC_SCOPES`    | `openid profile email` | Space-separated scopes requested (must include `openid`). |
 | `CB_OIDC_NAME`      | `SSO`               | Label shown on the sign-in button ("Sign in with _\<name\>_"). |
 | `CB_OIDC_AUTO_PROVISION` | `false`        | When `true`, first SSO login for an unknown identity creates a local (non-admin) account; otherwise the account must already exist (matched by verified email) or login is refused. |
+
+The `:demo` build reads a few more, all prefixed `CB_DEMO_` (idle timeout, user and
+transaction limits, the per-address rate, proxy hops); they are listed with their
+defaults in [`server/internal/config`](server/internal/config/config.go) and do
+nothing in an ordinary build.
 
 ## Container images and tag convention
 
@@ -204,7 +220,7 @@ Images are published to **GHCR**: `ghcr.io/easly1989/cloudbank`.
 > | --------- | ---------------------------------------------------------------------- |
 > | `:main`   | **Latest stable release** — use this for a stable self-hosted install. |
 > | `:latest` | **Nightly build** from the `main` branch — bleeding edge, may break.    |
-> | `:vX.Y.Z` | A specific released version (e.g. `:v3.0.3`). Also `:vX.Y`.             |
+> | `:vX.Y.Z` | A specific released version (e.g. `:v3.1.5`). Also `:vX.Y`.             |
 > | `:demo`   | **The public demo** — throwaway accounts, never for real money.         |
 >
 > In other words, `:latest` is the development nightly, and `:main` is the stable release. This is the opposite of the usual Docker convention, so pin deliberately.
@@ -224,7 +240,7 @@ UTC. Admin, restore, attachments, AI, push, API tokens, two-factor and OIDC are 
 sync talks to a pretend bank. Run it **without a volume**, so a redeploy starts empty; it refuses to
 start on a data directory that holds real accounts. It is tuned with `CB_DEMO_*` variables (see
 `server/internal/config`); behind a proxy, set `CB_DEMO_PROXY_HOPS` so the per-address limit sees
-the visitor and not the proxy.
+the visitor and not the proxy. What a visitor sees is described in [docs/demo.md](docs/demo.md).
 
 ## License
 
@@ -236,6 +252,7 @@ CloudBank is an open-source labour of love. If it's useful to you, consider a
 donation — it genuinely helps and is much appreciated. ♥ Pick whichever suits
 you on the [**donation page**](https://easly1989.github.io/donate.html):
 [PayPal](https://paypal.me/carloruggiero),
+[Stripe](https://buy.stripe.com/8x26oAeqA7h6dPk80hfbq00),
 [Liberapay](https://liberapay.com/amon2126/donate) or
 [GitHub Sponsors](https://github.com/sponsors/easly1989).
 
