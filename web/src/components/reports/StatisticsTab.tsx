@@ -17,7 +17,7 @@ import {
   statisticsCsvUrl,
 } from "../../api/client";
 import { useDateFormat } from "../../dates";
-import { type MoneyFormat, formatMinor } from "../../money";
+import { type MoneyFormat, formatAxisMinor, formatMinor } from "../../money";
 import { RegisterFilters } from "../../pages/RegisterFilters";
 import { type Filters, dateBounds, emptyFilters } from "../../pages/registerFilterModel";
 import { useWallet } from "../../wallet/WalletProvider";
@@ -143,7 +143,7 @@ export function StatisticsTab() {
       grid: { left: 80, right: 20, bottom: 60, top: 20 },
       legend: showCompare ? { bottom: 0 } : undefined,
       xAxis: { type: "category", data: groups.map((g) => g.label), axisLabel: { rotate: 30 } },
-      yAxis: { type: "value" },
+      yAxis: { type: "value", axisLabel: { formatter: (v: number) => formatAxisMinor(v, fmt) } },
       color: PALETTE,
       series: [
         {

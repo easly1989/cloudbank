@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { formatMinor, parseAmountSmart, parseMinor } from "./money";
+import {
+  formatAxisMinor,
+  formatMinor,
+  type MoneyFormat,
+  parseAmountSmart,
+  parseMinor,
+} from "./money";
 
 describe("formatMinor", () => {
   it("formats with prefix symbol and grouping", () => {
@@ -35,6 +41,45 @@ describe("formatMinor", () => {
         symbolPrefix: true,
       }),
     ).toBe("-$0.99");
+  });
+});
+
+describe("formatAxisMinor", () => {
+  const eur: MoneyFormat = {
+    fracDigits: 2,
+    decimalChar: ",",
+    groupChar: ".",
+    symbol: "€",
+    symbolPrefix: false,
+  };
+  const usd: MoneyFormat = {
+    ...eur,
+    decimalChar: ".",
+    groupChar: ",",
+    symbol: "$",
+    symbolPrefix: true,
+  };
+
+  it("shows a whole tick in major units, without cents", () => {
+    // The dashboard's axis read 230,000 for a month of 2.300 € (#477).
+    expect(formatAxisMinor(230000, eur)).toBe("2.300 €");
+    expect(formatAxisMinor(-100000, eur)).toBe("-1.000 €");
+    expect(formatAxisMinor(0, eur)).toBe("0 €");
+    expect(formatAxisMinor(150000, usd)).toBe("$1,500");
+  });
+
+  it("keeps the decimals when a tick is not a whole unit", () => {
+    expect(formatAxisMinor(1250, eur)).toBe("12,50 €");
+    expect(formatAxisMinor(-50, usd)).toBe("-$0.50");
+  });
+
+  it("rounds the float noise ECharts can put on a tick", () => {
+    expect(formatAxisMinor(99999.99999, eur)).toBe("1.000 €");
+  });
+
+  it("handles a currency with no minor unit", () => {
+    const jpy: MoneyFormat = { ...usd, fracDigits: 0, symbol: "¥" };
+    expect(formatAxisMinor(1500, jpy)).toBe("¥1,500");
   });
 });
 
