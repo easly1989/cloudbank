@@ -46,6 +46,20 @@ export function formatMinor(amount: number, fmt: MoneyFormat): string {
 }
 
 /**
+ * Format minor units for a chart's value axis: whole major units ("2.300 €")
+ * when the value is a whole unit, as an axis tick almost always is, and the
+ * currency's decimals only when it is not, so the ticks of a small range stay
+ * apart. ECharts can hand over a tick like 12.000000001, so it is rounded to a
+ * minor unit first.
+ */
+export function formatAxisMinor(amount: number, fmt: MoneyFormat): string {
+  const minor = Math.round(amount);
+  const scale = pow10(Math.max(0, fmt.fracDigits));
+  if (minor % scale !== 0) return formatMinor(minor, fmt);
+  return formatMinor(minor / scale, { ...fmt, fracDigits: 0 });
+}
+
+/**
  * Render minor units as a plain, editable decimal string: no grouping
  * separators, currency symbol or sign padding — just the number with the
  * currency's decimal character, suitable for a text input's value.

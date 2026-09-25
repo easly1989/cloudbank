@@ -5,7 +5,7 @@ import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { type ReportBucket, getBalanceReport, listAccounts } from "../../api/client";
-import { formatMinor } from "../../money";
+import { formatAxisMinor, formatMinor } from "../../money";
 import { useWallet } from "../../wallet/WalletProvider";
 import { Chart, type ChartHandle } from "../Chart";
 import { BUCKETS, SERIES_PALETTE, baseFmt, todayBucketKey } from "./reportUtils";
@@ -50,6 +50,12 @@ export function BalanceTab() {
           yAxis: s.minimumBalance,
           name: t("reports.overdraft"),
           lineStyle: { type: "dashed", color: "#fa5252" },
+          // Inside the plot: at the line's end the label ran off the chart's edge.
+          label: {
+            formatter: `${t("reports.overdraft")} ${formatMinor(s.minimumBalance, fmt)}`,
+            color: "#fa5252",
+            position: "insideEndTop",
+          },
         });
       if (i === 0 && showToday)
         lines.push({
@@ -76,7 +82,7 @@ export function BalanceTab() {
       legend: { type: "scroll" },
       grid: { left: 90, right: 20, bottom: 60, top: 40 },
       xAxis: { type: "category", data: buckets, axisLabel: { rotate: 30 } },
-      yAxis: { type: "value" },
+      yAxis: { type: "value", axisLabel: { formatter: (v: number) => formatAxisMinor(v, fmt) } },
       series,
     };
   }, [result, fmt, t, bucket]);
