@@ -66,7 +66,7 @@ import { RegisterToolbar, type RegisterPanel } from "./RegisterToolbar";
 import {
   applyFilters,
   hiddenNewerCount,
-  reconciledThrough,
+  hiddenReconciled,
   emptyFilters,
   filtersToParams,
   isActive,
@@ -277,7 +277,12 @@ export function TransactionsPage() {
   // hiddenNewerCount: a filtered register whose newest line is weeks old looks
   // like the balance has drifted, and it hasn't.
   const hiddenNewer = useMemo(() => hiddenNewerCount(rows, filteredRows), [rows, filteredRows]);
-  const reconciledLine = useMemo(() => reconciledThrough(rows, filteredRows), [rows, filteredRows]);
+  // The reconciled rows a status filter hides; the register marks where they were (#480).
+  const reconciledHidden = useMemo(
+    () => hiddenReconciled(rows, filters, categoriesQuery.data ?? []),
+    // `today` is an intentional recompute trigger, as for filteredRows.
+    [rows, filters, categoriesQuery.data, today], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   const selectionTotals = useMemo(() => {
     let total = 0;
@@ -628,7 +633,8 @@ export function TransactionsPage() {
       {account && (
         <RegisterTable
           rows={filteredRows}
-          reconciledThrough={reconciledLine}
+          ledgerRows={rows}
+          hiddenReconciled={reconciledHidden}
           accounts={accounts}
           fmt={fmt}
           selected={selected}

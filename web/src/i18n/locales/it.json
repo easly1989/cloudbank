@@ -639,7 +639,9 @@
     "columnsReset": "Ripristina",
     "newEntry": "Nuova riga — scrivi, oppure premi N",
     "needsCategory": "Serve una categoria",
-    "reconciledUpToHere": "riconciliato fino a qui"
+    "reconciledRun_one": "{{count}} riconciliato",
+    "reconciledRun_other": "{{count}} riconciliati",
+    "reconciledAll": "tutto riconciliato fino a qui"
   },
   "filters": {
     "dateRange": "Intervallo date",
