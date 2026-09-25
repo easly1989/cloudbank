@@ -21,8 +21,7 @@ use **File → Save as…** in HomeBank to write a fresh copy somewhere obvious.
 ## 2. Import it into CloudBank
 
 1. Log in to CloudBank.
-2. Go to **Settings → Wallet → Import** (the **HomeBank file** tab). Import is
-   wallet-scoped, so it lives in the active wallet's settings.
+2. Go to **Settings → Import & export**, on the **HomeBank file** tab.
 3. Choose your `.xhb` file and click **Import**.
 4. CloudBank creates a **new wallet** from the file and shows a summary of how
    many of each entity were imported, plus any warnings. The import is
@@ -60,14 +59,14 @@ latest save — re-export from HomeBank and import again into a fresh wallet.
 If you're coming from another tool, CloudBank also imports **CSV** (the HomeBank
 CSV dialect and generic mapped CSV), **QIF**, **OFX/QFX** and **CAMT.053**
 (the ISO 20022 statement most European banks offer as a download) from the same
-**Settings → Wallet → Import** screen, with duplicate detection and optional rule
-application.
+section, on the **Bank / CSV / QIF / OFX** tab, with duplicate detection and
+optional rule application.
 
 ## Exporting back to HomeBank (`.xhb`)
 
 CloudBank can export a wallet **back to a HomeBank `.xhb` file**, so you're never
-locked in. Go to **Settings → Wallet → Backup & restore** and click
-**Export .xhb**; the downloaded file opens directly in the HomeBank desktop app.
+locked in. Go to **Settings → Import & export**, and under **Backup & restore**
+click **Export .xhb**; the downloaded file opens directly in the HomeBank desktop app.
 
 The export reverses the import exactly — accounts, payees, categories, tags,
 transactions (with splits and re-paired transfers), schedules, templates,
@@ -80,4 +79,4 @@ counts and per-account balances to the cent.
 Re-running the `.xhb` import always creates a **new** wallet, so it never clobbers
 existing data. To move data back out, use the **`.xhb` export** above, **CSV/QIF
 export** per account, or take a full **wallet backup** (portable JSON) from the
-wallet settings.
+same **Backup & restore** panel.

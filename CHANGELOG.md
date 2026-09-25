@@ -6,9 +6,13 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
-Not yet in a tagged release: smarter **bank sync** (reconciliation against your
-existing entries and a review workflow), the **Bills** redesign, and register /
-dashboard polish.
+## [3.2.0] — 2026-09-25
+
+The redesign. Every screen was rebuilt to one measured design — the shell, the
+register, the overview, settings and the secondary pages — and checked against it
+by measuring rather than by eye. Around it: an entry sheet beside the ledger that
+you arrange yourself, page tours, and a public demo to try it all without
+installing anything.
 
 ### Changed
 
@@ -169,6 +173,63 @@ dashboard polish.
   to three accounts in Settings and their balances sit at the foot of the
   sidebar. Only a negative balance is coloured, because colouring the healthy
   ones too would turn the sidebar into a traffic light.
+
+- **The entry sheet shows what a transaction needs, and you decide the rest.**
+  By default: date, account, memo, payment, category and the status as a row of
+  icons; payee and everything else wait under **More details**. Settings →
+  General moves any field either way. **Save and add another** gained a toggle
+  that keeps every field for the next entry ("Save and keep"), and each button
+  shows its key: ↵ saves and closes, ⇧↵ saves and starts another.
+
+- **Page tours.** Each main page offers a short tour the first time you open it,
+  in a card in the corner that never blocks the page, and the **?** in its header
+  replays it. They replace the one first-login tutorial, which explained
+  everything at once to someone who had not yet seen any of it. Settings →
+  General turns the offers off, or resets them.
+
+- **A public demo, and the `:demo` image it runs.** One click makes a throwaway
+  account with a year of made-up data, in English or Italian. It is deleted after
+  two hours without use, every night and on every update; bank sync talks to a
+  pretend bank, and anything that would keep real secrets is switched off. See
+  [docs/demo.md](docs/demo.md).
+
+### Fixed
+
+- **Save stays in reach in a long entry sheet.** A split of several lines made
+  the sheet taller than the screen, and with its scrollbar hidden nothing said
+  Save was further down. The foot now stays at the bottom, and the scrollbar
+  shows.
+- **"Reconciled up to here" shows when it helps.** It drew in the unfiltered
+  register, where each row's status already says the same, and vanished under a
+  filter, the one place it helps. It now shows only while a filter hides rows —
+  under "Not reconciled", below the last row.
+- **Chart axes show money.** The value axes of the dashboard and the reports
+  printed stored minor units — 230,000 for a month of 2.300 €. They show the
+  amount now, and the Balance report's minimum-balance line is labelled inside
+  the chart instead of off its edge.
+- **Forms stop overwriting what you type.** Forms, modals, dashboard widgets and
+  the bank-sync panels filled themselves in when their data arrived, and a
+  slow response could land after you had started typing and replace it.
+- **A confirmation opens above the sheet that asked for it**, instead of behind
+  it.
+- **The register fits a 1280px screen without sideways scrolling**, and the
+  spending pie fits on a phone.
+- **Controls are the size the design gives them**, and at least 44px on a touch
+  screen.
+- **Accessibility, measured.** An axe audit (WCAG 2.2 AA, both themes) now finds
+  nothing: every close button, input and progress bar has a name, the column
+  panel's arrows say which column they move, and the ledger shows a focus ring.
+  Sheets, dialogs and collapses no longer move under `prefers-reduced-motion`, and
+  the register can be driven by keyboard alone, from the ledger to the sheet to a
+  confirmation. The audits stay in `e2e/`.
+
+## [3.1.0 – 3.1.5] — 2026-09-04 → 2026-09-17
+
+Smarter **bank sync** — reconciliation against the entries you already have, a
+review page, per-connection schedules and a third provider — the **Bills**
+redesign, CAMT.053 import, and the first step of the design system.
+
+### Added
 
 - **A design system underneath the app.** The first step of the restyle: CloudBank
   now has its own blue as the default accent, two bundled typefaces (Public Sans

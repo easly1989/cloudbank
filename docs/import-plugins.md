@@ -1,8 +1,8 @@
 # Writing an import plugin
 
 CloudBank can import a bank's statement export directly. Beyond the built-in
-generic CSV, QIF and OFX/QFX importers, **bank-specific plugins** handle formats
-those can't — a bank's Excel export, a fixed CSV layout with quirks, and so on.
+importers (generic CSV, QIF, OFX/QFX and ISO 20022 CAMT.053), **bank-specific
+plugins** handle formats those can't — a bank's Excel export, a fixed CSV layout with quirks, and so on.
 
 A plugin is deliberately small: it is **just a parser**. You turn the uploaded
 file's bytes into a slice of normalized `Row`s; the shared pipeline does
@@ -42,7 +42,7 @@ rescaling (`csv.go`):
 type Row struct {
 	Line        int      // 1-based source line/row, for error messages
 	Date        string   // civil date, "YYYY-MM-DD"
-	Amount      int64     // signed, at SIX fraction digits (see below)
+	Amount      int64    // signed, at SIX fraction digits (see below)
 	PaymentMode int      // HomeBank payment mode 0..11 (0 = none)
 	Info        string   // the "info"/reference/cheque-number field
 	Payee       string   // payee name (resolved/created by the pipeline)
@@ -96,8 +96,8 @@ var plugins = []ImportPlugin{
 }
 ```
 
-That's all the wiring: the plugin then appears in the import wizard's **Bank**
-picker automatically, and the endpoint runs your `Parse` over the uploaded bytes
+That's all the wiring: the plugin then appears in the **Bank** picker of the
+import wizard (**Settings → Import & export → Bank / CSV / QIF / OFX**), and the endpoint runs your `Parse` over the uploaded bytes
 before the shared preview pipeline.
 
 ## A minimal worked example

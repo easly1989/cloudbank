@@ -75,6 +75,11 @@ unauthenticated.
 - WebSocket upgrades are not required.
 - If you put it on a sub-domain, that's all CloudBank needs — it has no
   hard-coded base URL.
+- **Failed sign-ins are counted per address and username**, and the address is
+  the TCP peer: CloudBank deliberately ignores `X-Forwarded-For`, which a client
+  can forge. Behind a proxy every visitor shares the proxy's address, so ten
+  wrong passwords for one username within 15 minutes block that username for
+  everyone until the window passes. Successful sign-ins are never counted.
 - **Serving over HTTPS is what makes the installable PWA work.** The web manifest
   and service worker are already inside the image, but browsers only register the
   service worker (offline app shell, opt-in web-push reminders) and offer
