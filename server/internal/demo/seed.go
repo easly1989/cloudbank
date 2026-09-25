@@ -157,6 +157,40 @@ type seeder struct {
 	kxfer int
 	// card spending per month, paid off from checking the month after
 	cardSpend map[time.Month]int64
+	// amounts already booked, per account, with their dates (see unique)
+	booked map[int]map[int64][]time.Time
+}
+
+// lookAlikeDays is how close two equal amounts on one account may fall before
+// the review page calls them a suspected duplicate (duplicateFinderWindowDays
+// in internal/transaction). The seed stays clear of it: a made-up year should
+// not open with a dozen false alarms.
+const lookAlikeDays = 14
+
+// unique nudges an amount until no other on the account is equal to it within
+// lookAlikeDays, and books it.
+func (s *seeder) unique(account int, d time.Time, cents int64) int64 {
+	for s.clash(account, d, cents) {
+		cents -= 7
+	}
+	s.book(account, d, cents)
+	return cents
+}
+
+func (s *seeder) clash(account int, d time.Time, cents int64) bool {
+	for _, other := range s.booked[account][cents] {
+		if gap := d.Sub(other).Hours() / 24; gap > -lookAlikeDays-1 && gap < lookAlikeDays+1 {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *seeder) book(account int, d time.Time, cents int64) {
+	if s.booked[account] == nil {
+		s.booked[account] = map[int64][]time.Time{}
+	}
+	s.booked[account][cents] = append(s.booked[account][cents], d)
 }
 
 func (s *seeder) w(key string) string {
@@ -207,6 +241,7 @@ func (s *seeder) add(o ope) {
 	if o.date.After(s.today) {
 		return
 	}
+	o.cents = s.unique(o.account, o.date, o.cents)
 	if o.account == accCard {
 		s.cardSpend[o.date.Month()] += o.cents
 	}
@@ -220,6 +255,12 @@ func (s *seeder) transfer(d time.Time, from, to int, cents int64, memo string) {
 	if d.After(s.today) || cents <= 0 {
 		return
 	}
+	// Both legs move together, so both must be clear.
+	for s.clash(from, d, -cents) || s.clash(to, d, cents) {
+		cents += 7
+	}
+	s.book(from, d, -cents)
+	s.book(to, d, cents)
 	s.kxfer++
 	for _, leg := range []struct {
 		acc, dst int
@@ -237,6 +278,7 @@ func (s *seeder) split(d time.Time, food, house int64) {
 	if d.After(s.today) {
 		return
 	}
+	food = -s.unique(accChecking, d, -(food+house)) - house
 	s.x.Operations = append(s.x.Operations, importer.XOpe{
 		Date: julian(d), Amount: amount(-(food + house)), Account: accChecking, Paymode: modeDebit,
 		St: s.status(d), Payee: paySupermarket, Wording: s.w("weekly"),
@@ -253,6 +295,7 @@ func seedFile(today time.Time, italian bool) *importer.XHB {
 		rng:       rand.New(rand.NewPCG(420, 2026)),
 		x:         &importer.XHB{Version: "1.6"},
 		cardSpend: map[time.Month]int64{},
+		booked:    map[int]map[int64][]time.Time{},
 	}
 	if italian {
 		s.lang = 1
@@ -374,7 +417,7 @@ func (s *seeder) month(start time.Time, back int) {
 		s.add(ope{date: bill, account: accChecking, cents: -s.between(lo, hi), mode: modeDirect, payee: payEnergy, category: catUtilities, memo: s.w("energy")})
 	}
 	s.add(ope{date: on(15), account: accCard, cents: -1299, mode: modeCard, payee: payStreaming, category: catSubscriptions, memo: s.w("streaming")})
-	s.add(ope{date: on(3), account: accChecking, cents: -3500, mode: modeDebit, payee: payGym, category: catSport, memo: s.w("gym")})
+	s.add(ope{date: on(3), account: accChecking, cents: -3900, mode: modeDebit, payee: payGym, category: catSport, memo: s.w("gym")})
 	s.add(ope{date: on(2), account: accChecking, cents: -3500, mode: modeDebit, payee: payTransit, category: catTransit, memo: s.w("pass")})
 
 	// Groceries: most weeks at the supermarket, a Saturday market now and then,
