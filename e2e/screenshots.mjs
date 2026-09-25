@@ -5,16 +5,28 @@
 //   3. CB_BASE_URL=http://localhost:8080 node screenshots.mjs
 //
 // Output PNGs land in ../docs/img. The run is self-contained: it does first-run
-// setup, imports the sample .xhb for realistic data, turns the page-tour
-// offers off, then captures each screen.
+// setup, loads data, turns the page-tour offers off, then captures each screen.
+//
+// The data. With CB_DEMO_URL pointing at a running `:demo` build, the run starts
+// a demo session there and brings its wallet over through a wallet backup: a
+// year of made-up transactions, budgets and schedules, so the charts have
+// something to say. The pictures are still taken on the ordinary build, so they
+// show what an install looks like (every settings section, no demo band).
+// Without CB_DEMO_URL it imports the small sample .xhb instead.
 import { chromium } from "@playwright/test";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { readFileSync } from "node:fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BASE = process.env.CB_BASE_URL ?? "http://localhost:8080";
+const DEMO = process.env.CB_DEMO_URL;
 const OUT = resolve(__dirname, "../docs/img");
 const FIXTURE = resolve(__dirname, "fixtures/sample.xhb");
+const HEADERS = {
+  "Content-Type": "application/json",
+  "X-Requested-With": "XMLHttpRequest",
+};
 
 const VIEWPORT = { width: 1320, height: 860 };
 
@@ -29,6 +41,24 @@ async function shoot(page, name) {
 const browser = await chromium.launch({
   executablePath: process.env.CB_CHROME || undefined,
 });
+
+// The demo's wallet, as a backup document: one session, one download.
+async function demoBackup() {
+  const ctx = await browser.newContext();
+  const api = ctx.request;
+  const res = await api.post(DEMO + "/api/v1/demo/session", {
+    headers: HEADERS,
+  });
+  if (!res.ok())
+    throw new Error(`demo session: ${res.status()} ${await res.text()}`);
+  const wallets = await (await api.get(DEMO + "/api/v1/wallets")).json();
+  const backup = await (
+    await api.get(DEMO + `/api/v1/wallets/${wallets[0].id}/backup`)
+  ).json();
+  await ctx.close();
+  return backup;
+}
+
 const ctx = await browser.newContext({
   viewport: VIEWPORT,
   deviceScaleFactor: 1.5,
@@ -41,46 +71,72 @@ const ctx = await browser.newContext({
 const page = await ctx.newPage();
 
 try {
-  // First-run setup.
-  await page.goto(BASE);
-  await page.getByLabel("Username").fill("demo");
-  const pw = page.locator('input[type="password"]');
-  await pw.first().fill("demodemo123");
-  await pw.nth(1).fill("demodemo123");
-  await page.getByRole("button", { name: "Create admin account" }).click();
-
-  // First wallet, then import the sample for realistic data.
-  await page.getByLabel("Wallet name").fill("Demo");
-  await page.getByRole("button", { name: "Create wallet" }).click();
-  await page.getByRole("button", { name: "Switch wallet" }).waitFor();
-
-  // Each page offers its tour the first time it is opened, in a corner card
-  // that would be in every capture. Turn the offers off before capturing.
-  await page.evaluate(async () => {
-    await fetch("/api/v1/auth/me", {
-      method: "PATCH",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Requested-With": "XMLHttpRequest",
-      },
-      body: JSON.stringify({
-        preferences: { tutorialSeen: true, tourOffers: false },
-      }),
-    });
+  // First-run setup, and the tour offers off: each page offers its tour the
+  // first time it is opened, in a corner card that would be in every capture.
+  const api = page.request;
+  await api.post(BASE + "/api/v1/setup", {
+    headers: HEADERS,
+    data: {
+      username: "demo",
+      email: "demo@example.com",
+      password: "demodemo123",
+    },
+  });
+  await api.patch(BASE + "/api/v1/auth/me", {
+    headers: HEADERS,
+    data: { preferences: { tutorialSeen: true, tourOffers: false } },
   });
 
-  // Import now lives under Settings → wallet tab → "Import & export" section.
-  await page.goto(BASE + "/settings/data");
-  await page.setInputFiles('input[type="file"]', FIXTURE);
-  await page.getByRole("button", { name: "Import", exact: true }).click();
-  await page.getByText("Import complete").waitFor();
+  let walletId;
+  if (DEMO) {
+    const res = await api.post(BASE + "/api/v1/backup/restore", {
+      headers: HEADERS,
+      data: await demoBackup(),
+    });
+    if (!res.ok())
+      throw new Error(`restore: ${res.status()} ${await res.text()}`);
+    walletId = (await res.json()).walletId;
+  } else {
+    const res = await api.post(BASE + "/api/v1/import/xhb", {
+      headers: {
+        "Content-Type": "application/xml",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      data: readFileSync(FIXTURE),
+    });
+    if (!res.ok())
+      throw new Error(`import: ${res.status()} ${await res.text()}`);
+    const imported = await res.json();
+    walletId = imported.walletId ?? imported.wallet?.id ?? imported.id;
+  }
 
-  // Dashboard (imported wallet is now active). Settings is its own screen with
-  // no app sidebar, so leave it rather than looking for a nav link that is not
-  // on this page.
+  // Seed a look-alike pair so the Review page's duplicate finder has content.
+  const accounts = await (
+    await api.get(BASE + `/api/v1/wallets/${walletId}/accounts`)
+  ).json();
+  const today = new Date();
+  const day = (back) =>
+    new Date(today.getTime() - back * 86_400_000).toISOString().slice(0, 10);
+  for (const [back, memo] of [
+    [9, "Gym membership"],
+    [6, "GYM CLUB MONTHLY"],
+  ]) {
+    await api.post(BASE + `/api/v1/wallets/${walletId}/transactions`, {
+      headers: HEADERS,
+      data: { accountId: accounts[0].id, date: day(back), amount: -4200, memo },
+    });
+  }
+
+  // The current wallet is remembered per browser: name it before the app reads it.
+  await page.goto(BASE + "/");
+  await page.evaluate(
+    (id) => localStorage.setItem("cb.currentWalletId", String(id)),
+    walletId,
+  );
+
   await page.goto(BASE + "/");
   await page.getByRole("heading", { name: "Dashboard" }).waitFor();
+  await page.waitForLoadState("networkidle");
   await shoot(page, "dashboard");
 
   // Dashboard customise mode (the dashboard button, not the sidebar's).
@@ -88,86 +144,39 @@ try {
   await shoot(page, "dashboard-customize");
   await page.getByRole("button", { name: "Done", exact: true }).click();
 
-  // Register / transactions.
-  await page.getByRole("link", { name: "Transactions", exact: true }).click();
-  await page.waitForTimeout(400);
-  await shoot(page, "register");
-
   // Register with a multi-selection so the bulk-action bar is visible.
-  try {
-    const boxes = page.locator('[aria-label="Select row"]');
-    const n = Math.min(await boxes.count(), 4);
-    for (let i = 0; i < n; i++) await boxes.nth(i).click();
-    await page.waitForTimeout(300);
-    await shoot(page, "register-bulk");
-    for (let i = 0; i < n; i++) await boxes.nth(i).click(); // clear selection
-  } catch {
-    /* selection is best-effort */
-  }
+  await page.getByRole("link", { name: "Transactions", exact: true }).click();
+  await page.waitForLoadState("networkidle");
+  const boxes = page.getByRole("checkbox", { name: "Select row" });
+  await boxes.first().waitFor();
+  for (let i = 0; i < 4; i++) await boxes.nth(i).click();
+  await shoot(page, "register-bulk");
 
   // Bills — one row per bill (last payment + next occurrence).
   await page.goto(BASE + "/bills");
-  await page.waitForTimeout(500);
+  await page.waitForLoadState("networkidle");
   await shoot(page, "bills");
 
-  // Seed a look-alike pair so the Review page's duplicate finder has content.
-  await page.evaluate(async () => {
-    const hdr = {
-      "Content-Type": "application/json",
-      "X-Requested-With": "XMLHttpRequest",
-    };
-    const wallets = await (
-      await fetch("/api/v1/wallets", { credentials: "same-origin" })
-    ).json();
-    let wid, acc;
-    for (const w of wallets) {
-      const as = await (
-        await fetch(`/api/v1/wallets/${w.id}/accounts`, {
-          credentials: "same-origin",
-        })
-      ).json();
-      if (as.length) {
-        wid = w.id;
-        acc = as[0].id;
-        break;
-      }
-    }
-    const post = (body) =>
-      fetch(`/api/v1/wallets/${wid}/transactions`, {
-        method: "POST",
-        credentials: "same-origin",
-        headers: hdr,
-        body: JSON.stringify({ accountId: acc, ...body }),
-      });
-    await post({ date: "2026-02-10", amount: -4200, memo: "Gym membership" });
-    await post({ date: "2026-02-13", amount: -4200, memo: "GYM CLUB MONTHLY" });
-  });
-
-  // Bank-sync review — uncategorized imports + duplicate finder.
+  // Bank-sync review — uncategorised imports + the duplicate finder.
   await page.goto(BASE + "/review");
-  await page.waitForTimeout(700);
+  await page.waitForLoadState("networkidle");
   await shoot(page, "review");
 
   // Reports — Statistics.
-  await page.getByRole("link", { name: "Reports", exact: true }).click();
+  await page.goto(BASE + "/reports");
   await page.getByRole("tab", { name: "Statistics" }).waitFor();
   await page.locator("canvas").first().waitFor();
+  await page.waitForLoadState("networkidle");
   await shoot(page, "reports");
 
-  // Templates.
-  await page.getByRole("link", { name: "Templates", exact: true }).click();
-  await page.waitForTimeout(300);
-  await shoot(page, "templates");
-
-  // Settings — preferences (theme + accent picker).
-  await page.goto(BASE + "/settings/general");
-  await page.waitForTimeout(300);
+  // Settings — appearance (theme + accent picker).
+  await page.goto(BASE + "/settings/appearance");
+  await page.waitForLoadState("networkidle");
   await shoot(page, "settings");
 
-  // Wallet settings — backup / .xhb export. The wallet tab is titled after the
-  // active wallet, so deep-link to its backup section instead of clicking a tab.
+  // Settings — data: backup, .xhb export and import.
   await page.goto(BASE + "/settings/data");
-  await page.waitForTimeout(400);
+  await page.waitForLoadState("networkidle");
   await shoot(page, "export");
 
   console.log("\nAll screenshots written to", OUT);

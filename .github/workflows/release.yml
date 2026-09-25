@@ -91,3 +91,23 @@ jobs:
             org.opencontainers.image.licenses=AGPL-3.0
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Tell the website: versions.json on the site-data branch (see the script).
+  versions:
+    needs: build-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # Per channel, so a nightly never cancels a stable waiting its turn.
+    concurrency:
+      group: site-data-stable
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+      - name: Record the stable version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.version }}
+        run: bash .github/scripts/publish-version.sh stable "$VERSION"

@@ -87,9 +87,15 @@ requests are same-origin with cookies and `X-Requested-With` (the server's CSRF 
 Vite builds **into `server/internal/webui/dist`** so `//go:embed` picks it up — a bare `go run`
 without a frontend build serves a placeholder page, which is expected.
 
-**Other top-level dirs**: `landing/` is the static one-pager deployed by hand to the separate
-`easly1989.github.io` repo (this repo has no Pages site of its own); `e2e/` is Playwright against
-the real container; `docs/` holds user-facing guides.
+**Other top-level dirs**: `e2e/` is Playwright against the real container, plus the audits and
+`screenshots.mjs`; `docs/` holds user-facing guides. The website lives in the separate
+`easly1989.github.io` repo (this repo has no Pages site of its own). It reads the published
+versions from `versions.json` on this repo's `site-data` branch, which `release.yml` and
+`docker-nightly.yml` rewrite on every publish.
+
+**The demo build** (`:demo`) is the same app compiled with the Go tag `demo` and Vite's
+`__DEMO__` (`CB_DEMO=1`): `internal/demo` makes throwaway accounts with seeded data and purges
+them. `docs/demo.md` describes it for visitors — change the two together.
 
 ## Conventions that bite
 

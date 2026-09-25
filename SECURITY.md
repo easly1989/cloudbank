@@ -1,6 +1,6 @@
 # Security Policy
 
-CloudBank handles personal financial data, so we take security seriously even during early development.
+CloudBank handles personal financial data, so we take security seriously.
 
 ## Reporting a vulnerability
 
@@ -25,4 +25,8 @@ Security fixes target the **latest stable release** (the `:main` container tag) 
 
 ## Scope
 
-In scope: authentication/session handling, wallet data isolation between users, injection, CSRF/XSS, and container hardening. Out of scope: issues requiring a pre-compromised host or physical access to the server.
+In scope: authentication/session handling, wallet data isolation between users, injection, CSRF/XSS, secrets at rest, and container hardening. Out of scope: issues requiring a pre-compromised host or physical access to the server.
+
+The [public demo](docs/demo.md) is in scope for anything that lets one visitor
+reach another's account or the host. Its deliberate resets and limits are not
+vulnerabilities, and please don't load-test it.

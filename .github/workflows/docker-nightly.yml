@@ -52,3 +52,18 @@ jobs:
             ${{ env.IMAGE }}:sha-${{ steps.vars.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Tell the website: versions.json on the site-data branch (see the script).
+  versions:
+    needs: build-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+      - name: Record the nightly version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .github/scripts/publish-version.sh nightly "nightly-${GITHUB_SHA::7}"

@@ -2,18 +2,20 @@
 
 CloudBank can pull new transactions straight from your bank and import them —
 de-duplicated and run through your [assignment rules](../README.md#features) —
-through two providers. Both use a **bring-your-own-credentials** model: **you**
+through three providers. All use a **bring-your-own-credentials** model: **you**
 supply the provider credentials, CloudBank stores them **server-side** (never
 returned to the browser) and signs the provider requests. CloudBank never sees
 your bank username or password.
 
 Bank sync lives at **Bank sync** in the sidebar. Each provider is configured
-per **wallet**.
+per **wallet**. The public demo does not reach any of them; it has a pretend
+bank instead (see [demo.md](demo.md)).
 
 | Provider | Coverage | You bring | Cost to you |
 | --- | --- | --- | --- |
 | **SimpleFIN** | Worldwide (via SimpleFIN Bridge) | A SimpleFIN **setup token** | ~$15/year SimpleFIN Bridge subscription |
 | **Enable Banking** | EU/EEA + UK (PSD2 open banking) | Your own **application** (app id + RSA key) | Free sandbox; production is your own agreement with Enable Banking |
+| **Pluggy** _(experimental)_ | Brazil and Latin America | A Pluggy **client id + secret**, and the **item id** of each bank linked in Meu Pluggy | Free for personal use through Meu Pluggy |
 
 The import itself reuses CloudBank's normal pipeline: transactions are
 de-duplicated (by the provider's transaction id, or a stable hash when none is
