@@ -639,7 +639,9 @@
     "columnsReset": "Reset",
     "newEntry": "New entry — start typing, or press N",
     "needsCategory": "Needs a category",
-    "reconciledUpToHere": "reconciled up to here"
+    "reconciledRun_one": "{{count}} reconciled",
+    "reconciledRun_other": "{{count}} reconciled",
+    "reconciledAll": "everything reconciled up to here"
   },
   "filters": {
     "dateRange": "Date range",
