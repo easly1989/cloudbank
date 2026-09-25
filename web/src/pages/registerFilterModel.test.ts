@@ -7,7 +7,8 @@ import {
   dateBounds,
   emptyFilters,
   hiddenNewerCount,
-  reconciledThrough,
+  hiddenReconciled,
+  reconciledMarks,
   isSortable,
   sortRegisterRows,
   filtersToParams,
@@ -254,33 +255,78 @@ describe("hiddenNewerCount", () => {
   });
 });
 
-describe("reconciledThrough", () => {
-  const at = (id: number, date: string, status = 0) => ({ id, date, status }) as RegisterRow;
-  const all = [
-    at(5, "2026-03-25"),
-    at(4, "2026-03-20", 2),
-    at(3, "2026-03-15", 2),
-    at(2, "2026-03-10"),
-    at(1, "2026-03-01", 2),
+describe("hiddenReconciled", () => {
+  const rows = [
+    row({ id: 1, date: "2026-03-01", status: 2, payeeName: "Rent" }),
+    row({ id: 2, date: "2026-03-05", status: 2, payeeName: "Cinema" }),
+    row({ id: 3, date: "2026-03-10", status: 1, payeeName: "Cinema" }),
+    row({ id: 4, date: "2026-03-12", status: 0, payeeName: "Rent" }),
   ];
-  const unreconciled = all.filter((r) => r.status !== 2);
+  const f = (p: Partial<Filters>): Filters => ({ ...emptyFilters, ...p });
+  const ids = (rs: RegisterRow[]) => rs.map((r) => r.id);
 
-  it("says nothing unfiltered: every status is on screen already", () => {
-    expect(reconciledThrough(all, all)).toBeNull();
+  it("is nothing unless the status filter leaves reconciled rows out", () => {
+    expect(hiddenReconciled(rows, emptyFilters, [])).toEqual([]);
+    // A date or text filter hides rows, but the reconciled ones it keeps show their status.
+    expect(hiddenReconciled(rows, f({ text: "cinema" }), [])).toEqual([]);
+    expect(hiddenReconciled(rows, f({ status: 2 }), [])).toEqual([]);
   });
 
-  it("marks the latest reconciled date when a filter hides rows", () => {
-    // The filter hid every reconciled row; the line still knows where they were.
-    expect(reconciledThrough(all, unreconciled)).toBe("2026-03-20");
-    expect(reconciledThrough(all, [at(5, "2026-03-25")])).toBe("2026-03-20");
+  it("is the reconciled rows a status filter hides", () => {
+    expect(ids(hiddenReconciled(rows, f({ status: 1 }), []))).toEqual([1, 2]);
+    expect(ids(hiddenReconciled(rows, f({ status: 0 }), []))).toEqual([1, 2]);
+    expect(ids(hiddenReconciled(rows, f({ noFlags: true }), []))).toEqual([1, 2]);
   });
 
-  it("says nothing when the account was never reconciled", () => {
-    expect(reconciledThrough(unreconciled, [unreconciled[0]])).toBeNull();
+  it("counts only the reconciled rows every other filter would keep", () => {
+    expect(ids(hiddenReconciled(rows, f({ status: 1, text: "cinema" }), []))).toEqual([2]);
+  });
+});
+
+describe("reconciledMarks", () => {
+  // Newest first, as the register shows it.
+  const ledger = [
+    row({ id: 9, date: "2026-03-25", status: 1 }),
+    row({ id: 8, date: "2026-03-25", status: 2 }),
+    row({ id: 7, date: "2026-03-24", status: 1 }),
+    row({ id: 6, date: "2026-03-24", status: 2 }),
+    row({ id: 5, date: "2026-03-23", status: 2 }),
+    row({ id: 4, date: "2026-03-20", status: 1 }),
+    row({ id: 3, date: "2026-03-15", status: 2 }),
+    row({ id: 2, date: "2026-03-10", status: 2 }),
+    row({ id: 1, date: "2026-03-01", status: 2 }),
+  ];
+  const cleared = ledger.filter((r) => r.status === 1);
+  const reconciled = ledger.filter((r) => r.status === 2);
+
+  it("puts one line where each run of hidden reconciled rows sits", () => {
+    expect(reconciledMarks(ledger, cleared, reconciled)).toEqual([
+      // Below the first 25th: the reconciled one of that day.
+      { before: 1, count: 1, from: "2026-03-25", to: "2026-03-25", closesLedger: false },
+      // Two days in one run: no visible row between them.
+      { before: 2, count: 2, from: "2026-03-23", to: "2026-03-24", closesLedger: false },
+      // After the last visible row, and everything older is reconciled.
+      { before: 3, count: 3, from: "2026-03-01", to: "2026-03-15", closesLedger: true },
+    ]);
   });
 
-  it("says nothing when nothing is visible: an empty result speaks for itself", () => {
-    expect(reconciledThrough(all, [])).toBeNull();
+  it("only closes the ledger when every older row is reconciled", () => {
+    // "Not reconciled" also hides the cleared rows, which are not reconciled.
+    const older = [...ledger, row({ id: 0, date: "2026-02-20", status: 1 })];
+    const marks = reconciledMarks(older, cleared, reconciled);
+    expect(marks[marks.length - 1]).toMatchObject({ before: 3, count: 3, closesLedger: false });
+  });
+
+  it("marks a run above the first visible row", () => {
+    const visible = [ledger[2]];
+    expect(reconciledMarks(ledger, visible, [ledger[1]])).toEqual([
+      { before: 0, count: 1, from: "2026-03-25", to: "2026-03-25", closesLedger: false },
+    ]);
+  });
+
+  it("is nothing when nothing is visible, or nothing reconciled is hidden", () => {
+    expect(reconciledMarks(ledger, [], reconciled)).toEqual([]);
+    expect(reconciledMarks(ledger, cleared, [])).toEqual([]);
   });
 });
 

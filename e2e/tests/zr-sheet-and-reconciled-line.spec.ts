@@ -7,6 +7,10 @@ import { expect, test, type Page } from "@playwright/test";
 //   - "reconciled up to here" repeated the status column when nothing was
 //     filtered, and vanished under the one filter it would have helped with.
 //
+// And one reported after (#480): the line showed under a date filter, with the
+// reconciled rows on screen, and one line could not say where reconciled rows
+// sat among the rest. Now a status filter that hides them draws a line per run.
+//
 // Named "zr-" so it runs after the main journey, whose admin it reuses; it also
 // sets itself up when run alone.
 
@@ -100,76 +104,94 @@ test("Save stays in reach however long a split grows", async ({ page }) => {
   expect(bar).not.toBe("none");
 });
 
-test("'reconciled up to here' shows only when a filter hides rows", async ({
+// Posts transactions to the account: [date, status] pairs.
+async function post(
+  page: Page,
+  wid: number,
+  acc: number,
+  rows: [string, number][],
+): Promise<void> {
+  await page.evaluate(
+    async ({ wid, acc, rows, h }) => {
+      for (const [date, status] of rows) {
+        await fetch(`/api/v1/wallets/${wid}/transactions`, {
+          method: "POST",
+          headers: h,
+          body: JSON.stringify({ accountId: acc, date, amount: -1000, status }),
+        });
+      }
+    },
+    { wid, acc, rows, h: H },
+  );
+}
+
+const anyLine = /^\d+ reconciled$|^everything reconciled up to here$/;
+
+test("reconciled lines show only when the status filter hides them", async ({
   page,
 }) => {
   const { wid, acc } = await ready(page, "Reconcile line");
-  await page.evaluate(
-    async ({ wid, acc, h }) => {
-      for (const [date, status] of [
-        ["2026-02-01", 2],
-        ["2026-02-10", 0],
-        ["2026-02-20", 2],
-        ["2026-03-01", 0],
-      ] as const) {
-        await fetch(`/api/v1/wallets/${wid}/transactions`, {
-          method: "POST",
-          headers: h,
-          body: JSON.stringify({ accountId: acc, date, amount: -1000, status }),
-        });
-      }
-    },
-    { wid, acc, h: H },
-  );
+  await post(page, wid, acc, [
+    ["2026-02-01", 2],
+    ["2026-02-10", 0],
+    ["2026-02-20", 2],
+    ["2026-02-25", 2],
+    ["2026-03-01", 0],
+  ]);
 
-  // Every status is on screen already: the line would only repeat it.
+  // Every status is on screen already: a line would only repeat it.
   await page.goto(`/transactions?account=${acc}`);
   await expect(page.getByText("2026-03-01").first()).toBeVisible();
-  await expect(page.getByText("reconciled up to here")).toHaveCount(0);
+  await expect(page.getByText(anyLine)).toHaveCount(0);
 
-  // Filtered to what is not reconciled: the line marks where the account was
-  // reconciled to, between the newer row and the older one.
+  // A date filter hides rows, but the reconciled ones it keeps are on screen.
+  await page.goto(
+    `/transactions?account=${acc}&dp=custom&df=2026-02-15&dt=2026-03-31`,
+  );
+  await expect(page.getByText("2026-02-25").first()).toBeVisible();
+  await expect(page.getByText(anyLine)).toHaveCount(0);
+
+  // Filtered to what is not reconciled: one line for the two rows between the
+  // newer row and the older one, and one closing the list, since everything
+  // older is reconciled.
   await page.goto(`/transactions?account=${acc}&st=0`);
-  const line = page.getByText("reconciled up to here");
-  await expect(line).toBeVisible();
-  const [newer, older, marker] = await Promise.all([
+  const run = page.getByText("2 reconciled", { exact: true });
+  const all = page.getByText("everything reconciled up to here");
+  await expect(run).toBeVisible();
+  await expect(all).toBeVisible();
+  await expect(page.getByText("2026-02-20 – 2026-02-25")).toBeVisible();
+  const [newer, older, mid, end] = await Promise.all([
     page.getByText("2026-03-01").first().boundingBox(),
     page.getByText("2026-02-10").first().boundingBox(),
-    line.boundingBox(),
+    run.boundingBox(),
+    all.boundingBox(),
   ]);
-  expect(marker!.y).toBeGreaterThan(newer!.y);
-  expect(marker!.y).toBeLessThan(older!.y);
+  expect(mid!.y).toBeGreaterThan(newer!.y);
+  expect(mid!.y).toBeLessThan(older!.y);
+  expect(end!.y).toBeGreaterThan(older!.y);
 });
 
-test("under 'not reconciled' the line closes the list", async ({ page }) => {
-  // The usual shape: the account was reconciled, and everything since is not.
-  // Every row the filter leaves is newer, so the line sits below the last one.
+test("the last line only says 'everything' when it is true", async ({
+  page,
+}) => {
+  // A cleared row older than the reconciled one: "not reconciled" hides both,
+  // so the account is not reconciled all the way down, and the line counts.
   const { wid, acc } = await ready(page, "Reconciled before");
-  await page.evaluate(
-    async ({ wid, acc, h }) => {
-      for (const [date, status] of [
-        ["2026-02-01", 2],
-        ["2026-02-20", 2],
-        ["2026-03-01", 0],
-        ["2026-03-05", 0],
-      ] as const) {
-        await fetch(`/api/v1/wallets/${wid}/transactions`, {
-          method: "POST",
-          headers: h,
-          body: JSON.stringify({ accountId: acc, date, amount: -1000, status }),
-        });
-      }
-    },
-    { wid, acc, h: H },
-  );
+  await post(page, wid, acc, [
+    ["2026-02-01", 1],
+    ["2026-02-20", 2],
+    ["2026-03-01", 0],
+  ]);
 
   await page.goto(`/transactions?account=${acc}&st=0`);
-  const line = page.getByText("reconciled up to here");
+  const line = page.getByText("1 reconciled", { exact: true });
   await expect(line).toBeVisible();
+  await expect(page.getByText("everything reconciled up to here")).toHaveCount(
+    0,
+  );
   const [last, marker] = await Promise.all([
     page.getByText("2026-03-01").first().boundingBox(),
     line.boundingBox(),
   ]);
   expect(marker!.y).toBeGreaterThan(last!.y);
-  await expect(page.getByText("2026-02-20")).toBeVisible();
 });
