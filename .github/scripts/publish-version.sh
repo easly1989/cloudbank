@@ -27,7 +27,8 @@ case "$channel" in
   *) echo "unknown channel: $channel" >&2; exit 2 ;;
 esac
 
-remote="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+# SITE_DATA_REMOTE points it at another repository, for trying it locally.
+remote=${SITE_DATA_REMOTE:-"https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"}
 published=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 dir=$(mktemp -d)
 
