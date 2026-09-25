@@ -10,6 +10,8 @@ server/                   Go module (backend + embedded SPA)
   cmd/cloudbank/          main entrypoint
   internal/               application packages
 web/                      React + Vite + TypeScript single-page app
+e2e/                      Playwright suite, plus the audits and the screenshot script
+docs/                     User guides; docs/design/ holds the measured design boards
 .github/workflows/        CI/CD pipelines
 Dockerfile                Multi-stage build → single container
 docker-compose.yml        Local run example
@@ -31,7 +33,6 @@ Use a type prefix matching the issue:
 | `fix/`    | Bug fixes                                      | `fix/running-balance-order`   |
 | `test/`   | Test-only changes                              | `test/e2e-playwright`         |
 
-The exact branch name for each planned issue is listed in that issue's description.
 
 ### Commit messages
 
@@ -40,9 +41,11 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/): `type(scope
 ### Pull requests
 
 - Target `main`. Keep the PR scoped to a single issue; link it with `Closes #N`.
-- CI (lint + test + build for both stacks, plus a Docker smoke build) must be green.
+- CI must be green: lint + test + build for both stacks, a Docker smoke build, and
+  the Playwright suite against both the ordinary and the `:demo` build.
 - Update `api/openapi.yaml` and the generated types when you change the HTTP contract.
-- Add or update tests. User-facing strings must ship for both `en` and `it`.
+- Add or update tests. User-facing strings must ship for both `en` and `it`, with
+  identical key sets (`cd web && npm run check:i18n`).
 
 ## Engineering conventions
 
@@ -61,7 +64,7 @@ personal statement as a fixture — redact it to a couple of fabricated rows.
 
 ## Local development
 
-Prerequisites: **Go 1.25+**, **Node 22+**, and Docker (for the container build).
+Prerequisites: **Go 1.26+**, **Node 22+**, and Docker (for the container build).
 
 ```bash
 # Backend
@@ -77,8 +80,8 @@ npm run dev                   # Vite dev server, proxies /api → :8080
 Common tasks are wrapped in the `Makefile`:
 
 ```bash
-make gen      # regenerate sqlc + OpenAPI types
-make lint     # golangci-lint + eslint + prettier + tsc
+make gen      # regenerate sqlc + OpenAPI types, and copy the spec the server embeds
+make lint     # go vet + gofmt, eslint + prettier (CI also runs golangci-lint)
 make test     # go test + vitest
 make build    # build the web app and the Go binary (embeds the SPA)
 make docker   # build the container image locally
@@ -100,13 +103,25 @@ It exits non-zero if anything fails, and lists separately the text sitting on a
 gradient — there is no single background colour to measure there, so those are
 checked by hand. Disabled controls are skipped: WCAG exempts them.
 
-**Point it at an instance with data in it.** It can only measure what renders,
-and an empty wallet hides every badge, amount and row — a bare instance will
-report clean while a seeded one finds real failures. Importing
-`e2e/fixtures/sample.xhb` first is enough.
+**It needs data to measure.** It can only measure what renders, and an empty
+wallet hides every badge, amount and row — a bare instance reports clean while a
+seeded one finds real failures. So the audit imports `e2e/fixtures/sample.xhb`
+into a wallet of its own the first time it runs.
 
 Change a colour and it is worth a run, especially a token in `web/src/app.css`
 or anything passed as `c=` on a `Text`.
+
+### Retaking the documentation screenshots
+
+`e2e/screenshots.mjs` retakes every image in `docs/img`. Run it against a fresh
+ordinary build; point `CB_DEMO_URL` at a running `:demo` build too, and it
+copies the demo's year of made-up data in through a wallet backup first:
+
+```bash
+CB_BASE_URL=http://localhost:8080 CB_DEMO_URL=http://localhost:8081 node screenshots.mjs
+```
+
+Without `CB_DEMO_URL` it imports the much smaller sample file instead.
 
 ### Working on Windows
 
