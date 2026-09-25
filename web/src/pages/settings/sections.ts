@@ -15,6 +15,8 @@ export interface SettingsSection {
   hintKey: string;
   icon: Icon;
   adminOnly?: boolean;
+  /** Everything in it is switched off in the demo build, so it is not shown. */
+  notInDemo?: boolean;
 }
 
 /**
@@ -43,11 +45,13 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     labelKey: "settings.security",
     hintKey: "settings.securityHint",
     icon: IconShieldLock,
+    notInDemo: true,
   },
   {
     id: "integrations",
-    labelKey: "settings.integrations",
-    hintKey: "settings.integrationsHint",
+    // The demo build has no AI, so the section is the bank sync alone.
+    labelKey: __DEMO__ ? "banksync.title" : "settings.integrations",
+    hintKey: __DEMO__ ? "settings.bankSyncHint" : "settings.integrationsHint",
     icon: IconBuildingBank,
   },
   { id: "data", labelKey: "settings.data", hintKey: "settings.dataHint", icon: IconDatabase },

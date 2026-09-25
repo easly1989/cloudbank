@@ -1574,5 +1574,33 @@
         "body": "Download a copy you can restore from, and check that the database is sound."
       }
     }
+  },
+  "demo": {
+    "loginTitle": "Try CloudBank",
+    "loginBody": "One click gives you an account of your own, with a year of made-up transactions to explore. No sign-up, no email, no password.",
+    "loginResets": "Everything you see or change is thrown away after 2 hours without use, every night at 03:00 UTC, and whenever the demo is updated.",
+    "start": "Start the demo",
+    "full": "The demo is full right now. Try again in a few minutes.",
+    "tooMany": "Several demos have been started from here in the last hour. Try again later.",
+    "failed": "The demo could not start. Try again.",
+    "noticeTitle": "Welcome to the CloudBank demo",
+    "noticeFakeLead": "Nothing here is real.",
+    "noticeFake": "The accounts, transactions and budgets are made up.",
+    "noticeYoursLead": "Change anything you like.",
+    "noticeYours": "This account is yours alone, for this session.",
+    "noticeResetLead": "It all goes away",
+    "noticeReset": "after 2 hours without use, every night at 03:00 UTC, and whenever the demo is updated. An update can come at any time of day.",
+    "noticeOffLead": "A few things are off:",
+    "noticeOff": "attachments, AI, notifications, API tokens, two-factor and restoring backups. The bank connection is a pretend bank.",
+    "gotIt": "Got it",
+    "bannerLabel": "Demo",
+    "banner": "Made-up data. It resets after 2 hours without use, every night, and whenever the demo is updated.",
+    "whatsDifferent": "What's different here?",
+    "limit": "That is as much as the demo allows. Delete something to make room.",
+    "tooLarge": "The demo does not take a file this large: 1 MB at most.",
+    "bankTitle": "Pretend bank",
+    "bankHint": "The demo reaches no real bank. Each sync, the pretend bank makes up a few days of card payments.",
+    "bankConnect": "Connect the pretend bank",
+    "bankName": "Demo Bank"
   }
 }

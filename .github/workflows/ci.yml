@@ -36,6 +36,8 @@ jobs:
         run: diff -u ../api/openapi.yaml internal/httpapi/openapi.yaml
       - name: Vet
         run: go vet ./...
+      - name: Vet the demo build
+        run: go vet -tags demo ./...
       - name: Cache golangci-lint binary
         uses: actions/cache@v6
         with:
@@ -55,10 +57,13 @@ jobs:
             go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
           fi
           "$bin" run ./...
+          "$bin" run --build-tags demo ./cmd/...
       - name: Test
         run: go test ./... -race -count=1
       - name: Build
         run: CGO_ENABLED=0 go build ./...
+      - name: Build the demo
+        run: CGO_ENABLED=0 go build -tags demo ./...
 
   web:
     name: Web (React)
@@ -199,6 +204,73 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-artifacts
+          path: |
+            e2e/test-results/
+            e2e/playwright-report/
+          retention-days: 7
+
+  e2e-demo:
+    name: E2E (demo build)
+    runs-on: ubuntu-latest
+    # The demo image (#420) is published by hand, so a break in it would only
+    # show on the public demo. Build it on every PR and walk its front door.
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - uses: docker/setup-buildx-action@v4
+      - name: Build the demo image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: cloudbank:demo-e2e
+          build-args: |
+            VERSION=demo-e2e
+            DEMO=1
+          cache-from: type=gha,scope=demo
+          cache-to: type=gha,mode=max,scope=demo
+      - name: Start the demo (no volume, as it is deployed)
+        run: |
+          docker run -d --name cb-demo -p 8080:8080 -e CB_SECURE_COOKIES=false -e CB_DEMO_SESSIONS_PER_HOUR=100 cloudbank:demo-e2e
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/healthz; then ok=1; break; fi
+            sleep 2
+          done
+          test -n "$ok"
+      - name: Install e2e dependencies
+        working-directory: e2e
+        run: npm ci
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/package-lock.json') }}
+      - name: Install Playwright browser
+        working-directory: e2e
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install-deps chromium
+          else
+            npx playwright install --with-deps chromium
+          fi
+      - name: Run the demo suite
+        working-directory: e2e
+        run: npm run test:demo
+        env:
+          E2E_BASE_URL: http://localhost:8080
+      - name: Container logs on failure
+        if: failure()
+        run: docker logs cb-demo
+      - name: Upload Playwright traces and screenshots
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-demo-artifacts
           path: |
             e2e/test-results/
             e2e/playwright-report/

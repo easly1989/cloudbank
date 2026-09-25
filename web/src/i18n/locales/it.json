@@ -1574,5 +1574,33 @@
         "body": "Scarica una copia da cui ripristinare e controlla che il database sia integro."
       }
     }
+  },
+  "demo": {
+    "loginTitle": "Prova CloudBank",
+    "loginBody": "Un clic e hai un account tutto tuo, con un anno di movimenti inventati da esplorare. Niente registrazione, niente email, niente password.",
+    "loginResets": "Tutto ciò che vedi o modifichi viene cancellato dopo 2 ore di inattività, ogni notte alle 03:00 UTC e a ogni aggiornamento della demo.",
+    "start": "Avvia la demo",
+    "full": "La demo è piena in questo momento. Riprova tra qualche minuto.",
+    "tooMany": "Da qui sono state avviate diverse demo nell'ultima ora. Riprova più tardi.",
+    "failed": "Non è stato possibile avviare la demo. Riprova.",
+    "noticeTitle": "Ti diamo il benvenuto nella demo di CloudBank",
+    "noticeFakeLead": "Niente qui è reale.",
+    "noticeFake": "Conti, movimenti e budget sono inventati.",
+    "noticeYoursLead": "Modifica tutto ciò che vuoi.",
+    "noticeYours": "Questo account è solo tuo, per questa sessione.",
+    "noticeResetLead": "Tutto viene cancellato",
+    "noticeReset": "dopo 2 ore di inattività, ogni notte alle 03:00 UTC e a ogni aggiornamento della demo. Un aggiornamento può arrivare a qualsiasi ora del giorno.",
+    "noticeOffLead": "Alcune cose sono spente:",
+    "noticeOff": "allegati, AI, notifiche, token API, autenticazione a due fattori e ripristino dei backup. Il collegamento bancario è una banca finta.",
+    "gotIt": "Ho capito",
+    "bannerLabel": "Demo",
+    "banner": "Dati inventati. Si azzerano dopo 2 ore di inattività, ogni notte e a ogni aggiornamento della demo.",
+    "whatsDifferent": "Cosa cambia qui?",
+    "limit": "La demo non permette di più. Elimina qualcosa per fare spazio.",
+    "tooLarge": "La demo non accetta file così grandi: al massimo 1 MB.",
+    "bankTitle": "Banca finta",
+    "bankHint": "La demo non si collega a nessuna banca reale. A ogni sincronizzazione la banca finta inventa qualche giorno di pagamenti con carta.",
+    "bankConnect": "Collega la banca finta",
+    "bankName": "Banca Demo"
   }
 }

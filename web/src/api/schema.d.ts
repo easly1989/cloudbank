@@ -118,6 +118,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/demo/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a demo (demo build only)
+         * @description Exists only on the public demo build. Creates a throwaway, non-admin account filled with a year of made-up data, in the language of Accept-Language, and starts its session. The account is deleted after two hours without use, every night at 03:00 UTC, and whenever the demo is redeployed.
+         */
+        post: operations["startDemo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/logout": {
         parameters: {
             query?: never;
@@ -325,6 +345,28 @@ export interface paths {
         put?: never;
         /** Connect a bank by claiming a SimpleFIN setup token */
         post: operations["connectBank"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/bank/demo/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Connect the pretend bank (demo build only)
+         * @description Exists only on the public demo build, in place of the real providers. The pretend bank reaches nothing; each sync makes up a few days of card payments.
+         */
+        post: operations["connectDemoBank"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3997,6 +4039,44 @@ export interface operations {
             };
         };
     };
+    startDemo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Demo account created and logged in. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            /** @description Too many demos started from this address in the last hour. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The demo is full (code demo_full). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     logout: {
         parameters: {
             query?: never;
@@ -4392,6 +4472,35 @@ export interface operations {
                 };
                 content?: never;
             };
+        };
+    };
+    connectDemoBank: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The connection and its remote accounts. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankConnectResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
         };
     };
     removeBankConnection: {

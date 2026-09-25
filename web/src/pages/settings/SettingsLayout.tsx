@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { useAuth } from "../../auth/AuthProvider";
+import { DemoChrome } from "../../demo/DemoChrome";
 import { TourButton } from "../../onboarding/TourButton";
 import { usePageTour } from "../../onboarding/tourContext";
 import type { TourId } from "../../onboarding/tours";
@@ -34,7 +35,9 @@ export function SettingsLayout() {
   const { user } = useAuth();
   const { currentWallet } = useWallet();
   const { pathname } = useLocation();
-  const sections = SETTINGS_SECTIONS.filter((s) => !s.adminOnly || user?.isAdmin);
+  const sections = SETTINGS_SECTIONS.filter(
+    (s) => (!s.adminOnly || user?.isAdmin) && !(__DEMO__ && s.notInDemo),
+  );
   const current = sections.find((s) => pathname === `/settings/${s.id}`);
   const tour = current ? SECTION_TOURS[current.id] : undefined;
   usePageTour(tour);
@@ -96,6 +99,11 @@ export function SettingsLayout() {
 
       <ScrollArea className="cb-settings-body" style={{ flex: 1, minWidth: 0, height: "100vh" }}>
         <Stack gap={SECTION.gap} p="xl" maw={1100}>
+          {__DEMO__ && (
+            <div>
+              <DemoChrome />
+            </div>
+          )}
           {current && (
             <Stack gap={6}>
               <Group justify="space-between" wrap="nowrap" gap="sm">

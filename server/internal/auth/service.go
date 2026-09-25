@@ -28,8 +28,8 @@ var (
 	ErrTOTPNotEnabled = errors.New("auth: two-factor not enabled")
 )
 
-// sessionTTL is the sliding lifetime of a session; each authenticated request
-// extends it.
+// sessionTTL is the default sliding lifetime of a session; each authenticated
+// request extends it.
 const sessionTTL = 7 * 24 * time.Hour
 
 // User is the public representation of an account — never includes the hash.
@@ -87,6 +87,7 @@ type Service struct {
 	q       *db.Queries
 	limiter *rateLimiter
 	now     func() time.Time
+	ttl     time.Duration
 }
 
 // NewService builds a Service backed by the given querier.
@@ -95,6 +96,15 @@ func NewService(q *db.Queries) *Service {
 		q:       q,
 		limiter: newRateLimiter(10, 15*time.Minute),
 		now:     time.Now,
+		ttl:     sessionTTL,
+	}
+}
+
+// SetSessionTTL changes how long a session lives without use. The demo build
+// shortens it: an idle demo session is what marks its account for deletion.
+func (s *Service) SetSessionTTL(d time.Duration) {
+	if d > 0 {
+		s.ttl = d
 	}
 }
 
@@ -233,7 +243,7 @@ func (s *Service) Authenticate(ctx context.Context, token string) (User, error) 
 		return User{}, ErrUnauthorized
 	}
 	_ = s.q.TouchSession(ctx, db.TouchSessionParams{
-		ExpiresAt: s.now().Add(sessionTTL).UTC().Format(time.RFC3339),
+		ExpiresAt: s.now().Add(s.ttl).UTC().Format(time.RFC3339),
 		ID:        id,
 	})
 	return toUser(u), nil
@@ -646,7 +656,7 @@ func (s *Service) openSession(ctx context.Context, userID int64, userAgent strin
 	if err := s.q.CreateSession(ctx, db.CreateSessionParams{
 		ID:        id,
 		UserID:    userID,
-		ExpiresAt: s.now().Add(sessionTTL).UTC().Format(time.RFC3339),
+		ExpiresAt: s.now().Add(s.ttl).UTC().Format(time.RFC3339),
 		UserAgent: userAgent,
 	}); err != nil {
 		return "", err

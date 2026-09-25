@@ -56,6 +56,31 @@ type Config struct {
 	// SSO login for an unknown identity; otherwise the account must pre-exist
 	// (matched by verified email) or login is refused.
 	OIDCAutoProvision bool
+
+	// Demo tunes the public demo build (the `demo` build tag). A normal build
+	// reads it and never uses it.
+	Demo Demo
+}
+
+// Demo holds the public demo's limits.
+type Demo struct {
+	// Idle is how long a demo account lives without use before it is deleted.
+	Idle time.Duration
+	// MaxUsers caps the demo accounts alive at once.
+	MaxUsers int
+	// SessionsPerHour caps the demo accounts one address may start in an hour.
+	SessionsPerHour int
+	// ProxyHops says which X-Forwarded-For entry is the visitor: 0 ignores the
+	// header (the TCP peer is the visitor), 1 takes the last entry (the one the
+	// nearest proxy appended), and so on. Entries further left are the client's
+	// own word and never trusted.
+	ProxyHops int
+	// MaxTransactions caps the transactions in one demo wallet.
+	MaxTransactions int
+	// MaxWallets caps the wallets one demo account may hold.
+	MaxWallets int
+	// MaxBody caps any request body, uploads and imports included, in bytes.
+	MaxBody int64
 }
 
 // OIDCEnabled reports whether OIDC/SSO login is fully configured.
@@ -82,6 +107,16 @@ func Load() Config {
 		OIDCScopes:        getenv("CB_OIDC_SCOPES", "openid profile email"),
 		OIDCName:          getenv("CB_OIDC_NAME", "SSO"),
 		OIDCAutoProvision: getBoolEnv("CB_OIDC_AUTO_PROVISION", false),
+
+		Demo: Demo{
+			Idle:            getDurationEnv("CB_DEMO_IDLE", 2*time.Hour),
+			MaxUsers:        getIntEnv("CB_DEMO_MAX_USERS", 200),
+			SessionsPerHour: getIntEnv("CB_DEMO_SESSIONS_PER_HOUR", 10),
+			ProxyHops:       getIntEnv("CB_DEMO_PROXY_HOPS", 0),
+			MaxTransactions: getIntEnv("CB_DEMO_MAX_TRANSACTIONS", 5000),
+			MaxWallets:      getIntEnv("CB_DEMO_MAX_WALLETS", 3),
+			MaxBody:         int64(getIntEnv("CB_DEMO_MAX_BODY", 1<<20)),
+		},
 	}
 }
 
@@ -108,6 +143,19 @@ func getDurationEnv(key string, fallback time.Duration) time.Duration {
 		return fallback
 	}
 	return d
+}
+
+// getIntEnv parses a non-negative integer; anything else falls back.
+func getIntEnv(key string, fallback int) int {
+	v, ok := os.LookupEnv(key)
+	if !ok || strings.TrimSpace(v) == "" {
+		return fallback
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(v))
+	if err != nil || n < 0 {
+		return fallback
+	}
+	return n
 }
 
 func getBoolEnv(key string, fallback bool) bool {
