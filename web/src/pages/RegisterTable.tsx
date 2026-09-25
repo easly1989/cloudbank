@@ -166,6 +166,11 @@ export interface RegisterTableProps {
   bulkBar?: ReactNode;
   /** The band that explains what the filter is hiding, at the head of the card. */
   notice?: ReactNode;
+  /**
+   * The date the account is reconciled through, when a filter hides rows and
+   * the "reconciled up to here" line has something to say; null otherwise.
+   */
+  reconciledThrough?: string | null;
   /** A row that has just been saved, marked until the tint fades. */
   arrivedId?: number | null;
 }
@@ -198,6 +203,7 @@ export function RegisterTable({
   bulkBar,
   notice,
   arrivedId,
+  reconciledThrough,
 }: RegisterTableProps) {
   const { t } = useTranslation();
   const fmtDate = useDateFormat();
@@ -468,27 +474,26 @@ export function RegisterTable({
     [tableRows, table],
   );
 
-  // The row the reconciled block starts at, when the ledger runs newest first.
+  // Where "reconciled up to here" goes, when the ledger runs newest first: above
+  // the first row on or before the date the account is reconciled through, or
+  // below the last row when every row left is newer than it — the usual case
+  // under "not reconciled", where the line says all of them came after. The page
+  // passes that date only while a filter hides rows (see reconciledThrough, #474).
   //
   // Sorted any other way the line would be a lie — "up to here" only means
   // something along a date — so the divider simply does not appear. It is drawn
-  // on top of its row rather than as an item of its own, which keeps every
-  // index in this table the index of a transaction.
-  const dividerIndex = useMemo(() => {
-    if (sort && !(sort.id === "date" && sort.desc === false)) return -1;
-    for (let i = 1; i < tableRows.length; i++) {
-      if (
-        tableRows[i].original.status === STATUS_RECONCILED &&
-        tableRows[i - 1].original.status !== STATUS_RECONCILED
-      )
-        return i;
-    }
-    return -1;
-  }, [tableRows, sort]);
+  // beside its row rather than as an item of its own, which keeps every index in
+  // this table the index of a transaction.
+  const divider = useMemo((): { index: number; below: boolean } | null => {
+    if (!reconciledThrough || tableRows.length === 0) return null;
+    if (sort && !(sort.id === "date" && sort.desc === false)) return null;
+    const index = tableRows.findIndex((r) => r.original.date <= reconciledThrough);
+    return index === -1 ? { index: tableRows.length - 1, below: true } : { index, below: false };
+  }, [tableRows, sort, reconciledThrough]);
 
   const rowHeight = useCallback(
-    (index: number) => baseRowHeight(index) + (index === dividerIndex ? DIVIDER_HEIGHT : 0),
-    [baseRowHeight, dividerIndex],
+    (index: number) => baseRowHeight(index) + (index === divider?.index ? DIVIDER_HEIGHT : 0),
+    [baseRowHeight, divider],
   );
 
   // The compiler will not memoize this component, because TanStack Virtual hands
@@ -502,6 +507,14 @@ export function RegisterTable({
     estimateSize: rowHeight,
     overscan: 12,
   });
+  // The virtualizer caches every estimate until the row count changes, so a line
+  // that appears or moves over the same rows would overlap one of them. Keyed on
+  // where the line is, not on rowHeight: that is rebuilt with the rows, and
+  // measuring re-renders, so it would measure forever.
+  const dividerAt = divider ? `${divider.index}${divider.below ? "+" : ""}` : "";
+  useEffect(() => {
+    virtualizer.measure();
+  }, [virtualizer, dividerAt]);
 
   const cursorIndex = useMemo(
     () => display.findIndex((r) => r.id === cursorId),
@@ -750,10 +763,12 @@ export function RegisterTable({
                 const row = tableRows[vi.index];
                 const r = row.original;
                 const onCursor = r.id === cursorId;
-                const divider = vi.index === dividerIndex;
+                const lineHere = vi.index === divider?.index;
+                // A line above the row pushes it down; one below sits after it.
+                const rowTop = vi.start + (lineHere && !divider.below ? DIVIDER_HEIGHT : 0);
                 return (
                   <Fragment key={row.id}>
-                    {divider && (
+                    {lineHere && (
                       <Group
                         gap={ROW_GAP}
                         wrap="nowrap"
@@ -763,7 +778,9 @@ export function RegisterTable({
                           top: 0,
                           left: 0,
                           width: "100%",
-                          transform: `translateY(${vi.start}px)`,
+                          transform: `translateY(${
+                            divider.below ? vi.start + baseRowHeight(vi.index) : vi.start
+                          }px)`,
                           height: DIVIDER_HEIGHT,
                           padding: `${BAND_PADDING.divider}px ${BAND_INSET}px`,
                           background: "var(--cb-band-divider)",
@@ -775,7 +792,7 @@ export function RegisterTable({
                           fw={ROW_TYPE.divider.fw}
                           c="dimmed"
                         >
-                          {fmtDate(r.date)}
+                          {fmtDate(reconciledThrough ?? r.date)}
                         </Text>
                         <Box
                           style={{ flex: 1, height: 1, background: "var(--cb-ledger-border)" }}
@@ -800,7 +817,7 @@ export function RegisterTable({
                         left: 0,
                         width: "100%",
                         userSelect: "none",
-                        transform: `translateY(${vi.start + (divider ? DIVIDER_HEIGHT : 0)}px)`,
+                        transform: `translateY(${rowTop}px)`,
                         height: baseRowHeight(vi.index),
                         display: "grid",
                         gridTemplateColumns: gridTemplate,
