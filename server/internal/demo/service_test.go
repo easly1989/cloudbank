@@ -103,6 +103,15 @@ func TestStartFillsAnAccountOfItsOwn(t *testing.T) {
 		}
 	}
 
+	// The review page opens without false alarms.
+	rev, err := transaction.NewService(st.Write()).Review(ctx, wid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rev.Duplicates) != 0 {
+		t.Errorf("the seed looks like %d duplicate pairs", len(rev.Duplicates))
+	}
+
 	// No account ends the year overdrawn or buried in cash.
 	rows, err := st.Read().Query(`SELECT a.name, a.initial_balance + COALESCE(SUM(t.amount), 0)
 		FROM accounts a LEFT JOIN transactions t ON t.account_id = a.id
