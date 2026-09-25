@@ -87,6 +87,8 @@ export interface Preferences {
   toursSeen?: string[];
   /** Whether a page offers its tour the first time it is opened. Default on. */
   tourOffers?: boolean;
+  /** Demo build: whether the notice about the demo has been read. */
+  demoNoticeSeen?: boolean;
   /** Saved report configurations (Statistics/Trend), scoped per wallet + tab. */
   reportViews?: SavedReportView[];
 }
@@ -141,6 +143,13 @@ export const postSetup = (body: Credentials) => api.post<User>("/api/v1/setup", 
 export const login = (body: Credentials) => api.post<LoginResult>("/api/v1/auth/login", body);
 
 export const logout = () => api.post<void>("/api/v1/auth/logout");
+
+/**
+ * Demo build only: make a throwaway account with a year of made-up data and
+ * sign in to it. The data is written in the language the reader has chosen.
+ */
+export const startDemo = (language: string) =>
+  api.post<User>("/api/v1/demo/session", undefined, { "Accept-Language": language });
 
 export const getMe = () => api.get<User>("/api/v1/auth/me");
 

@@ -71,9 +71,11 @@ export function IntegrationsSection() {
   const { t } = useTranslation();
   return (
     <Stack gap="xl">
-      <SettingsGroup title={t("settings.ai")} hint={t("settings.aiHint")}>
-        <AiSettingsCard />
-      </SettingsGroup>
+      {!__DEMO__ && (
+        <SettingsGroup title={t("settings.ai")} hint={t("settings.aiHint")}>
+          <AiSettingsCard />
+        </SettingsGroup>
+      )}
       <SettingsGroup title={t("banksync.title")} hint={t("settings.bankSyncHint")}>
         {/* The connections themselves are a page, not a setting: they have
             their own state, their own errors and their own history. */}

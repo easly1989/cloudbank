@@ -79,3 +79,11 @@ Added since:
   This makes both buttons wider than the board draws, so the audit checks their
   height and type only. It still measures the amount, a paired field (Date) and
   a full-width field (Memo) against the board.
+- **The demo build's band and notice** (#420). Only the `:demo` image has them.
+  A yellow band opens every page, with "What's different here?" at its right.
+  On the dark theme that link takes the band's own text colour, underlined,
+  because the accent blue falls to 3:1 there. The band opens a notice, which also
+  opens by itself on the first visit. The login card becomes a single "Start the
+  demo" button. Settings loses Security. Integrations becomes Bank sync, with no
+  AI. The Data section keeps the downloads but not the restore. The bank sync
+  page shows the pretend bank's panel in place of the three providers.

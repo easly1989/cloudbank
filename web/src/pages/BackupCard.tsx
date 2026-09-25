@@ -74,23 +74,29 @@ export function BackupCard() {
           </Button>
         </Group>
 
-        <Divider label={t("backup.restoreLabel")} labelPosition="left" />
-        <FileInput
-          placeholder={t("backup.choosePlaceholder")}
-          accept=".json,application/json"
-          leftSection={<IconUpload size={16} />}
-          value={file}
-          onChange={setFile}
-          clearable
-        />
-        <Group justify="space-between">
-          <Text size="xs" c="dimmed">
-            {t("backup.restoreHint")}
-          </Text>
-          <Button disabled={!file} onClick={() => restore.mutate()} loading={restore.isPending}>
-            {t("backup.restore")}
-          </Button>
-        </Group>
+        {/* The demo build restores nothing: a restore makes a wallet from a
+            file of any size, past every limit the demo keeps. */}
+        {!__DEMO__ && (
+          <>
+            <Divider label={t("backup.restoreLabel")} labelPosition="left" />
+            <FileInput
+              placeholder={t("backup.choosePlaceholder")}
+              accept=".json,application/json"
+              leftSection={<IconUpload size={16} />}
+              value={file}
+              onChange={setFile}
+              clearable
+            />
+            <Group justify="space-between">
+              <Text size="xs" c="dimmed">
+                {t("backup.restoreHint")}
+              </Text>
+              <Button disabled={!file} onClick={() => restore.mutate()} loading={restore.isPending}>
+                {t("backup.restore")}
+              </Button>
+            </Group>
+          </>
+        )}
 
         {user?.isAdmin && (
           <>

@@ -759,3 +759,20 @@ body {
     animation: none;
   }
 }
+
+/* The demo build's band (#420): the data is made up and goes away. Yellow as the
+   notes on the design's canvas are, so it reads as a note about the page and not
+   as part of it. */
+.cb-demo-banner {
+  background: var(--mantine-color-yellow-light);
+  border-radius: var(--mantine-radius-md);
+  padding: 10px 16px;
+  margin-bottom: var(--mantine-spacing-md);
+}
+
+/* On the dark band the accent blue falls to 3:1; the band's own text colour,
+   underlined, still reads as a link. */
+[data-mantine-color-scheme="dark"] .cb-demo-banner-link {
+  color: var(--mantine-color-text);
+  text-decoration: underline;
+}

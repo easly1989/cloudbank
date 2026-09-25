@@ -68,6 +68,13 @@ export const connectBank = (walletId: number, setupToken: string, name: string) 
     { setupToken, name },
   );
 
+/** Demo build only: connect the pretend bank, which reaches nothing. */
+export const connectDemoBank = (walletId: number, name: string) =>
+  api.post<{ connection: BankConnection; accounts?: BankRemoteAccount[] }>(
+    `/api/v1/wallets/${walletId}/bank/demo/connect`,
+    { name },
+  );
+
 export const removeBankConnection = (walletId: number, connId: number) =>
   api.del<void>(`/api/v1/wallets/${walletId}/bank/connections/${connId}`);
 

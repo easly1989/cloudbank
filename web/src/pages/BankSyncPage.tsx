@@ -48,6 +48,7 @@ import {
   type BankConnection,
   clearBankConnectionSyncRuns,
   connectBank,
+  connectDemoBank,
   connectPluggy,
   deleteEnableBankingConfig,
   deletePluggyConfig,
@@ -105,23 +106,27 @@ export function BankSyncPage() {
     <Stack>
       <PageHeader tour="bankSync" title={t("banksync.title")} hint={t("banksync.hint")} />
 
-      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" data-tour="banksync-providers">
-        <Card withBorder>
-          <Group gap="xs" mb="xs">
-            <IconBuildingBank size={18} />
-            <Text fw={600}>{t("banksync.simplefin.title")}</Text>
-          </Group>
-          <Text size="sm" c="dimmed" mb="sm">
-            {t("banksync.simplefin.hint")}
-          </Text>
-          <Button leftSection={<IconPlus size={16} />} onClick={() => setAddOpen(true)}>
-            {t("banksync.connect")}
-          </Button>
-        </Card>
+      {__DEMO__ ? (
+        <DemoBankPanel walletId={walletId} />
+      ) : (
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" data-tour="banksync-providers">
+          <Card withBorder>
+            <Group gap="xs" mb="xs">
+              <IconBuildingBank size={18} />
+              <Text fw={600}>{t("banksync.simplefin.title")}</Text>
+            </Group>
+            <Text size="sm" c="dimmed" mb="sm">
+              {t("banksync.simplefin.hint")}
+            </Text>
+            <Button leftSection={<IconPlus size={16} />} onClick={() => setAddOpen(true)}>
+              {t("banksync.connect")}
+            </Button>
+          </Card>
 
-        <EnableBankingPanel walletId={walletId} />
-        <PluggyPanel walletId={walletId} />
-      </SimpleGrid>
+          <EnableBankingPanel walletId={walletId} />
+          <PluggyPanel walletId={walletId} />
+        </SimpleGrid>
+      )}
 
       <Title order={4} mt="sm" data-tour="banksync-connections">
         {t("banksync.connectedTitle")}
@@ -149,6 +154,45 @@ export function BankSyncPage() {
         onDone={() => void qc.invalidateQueries({ queryKey: ["bankConnections", walletId] })}
       />
     </Stack>
+  );
+}
+
+/**
+ * The demo build's only provider: a pretend bank that reaches nothing and
+ * makes up a few days of card payments each sync. It stands where the real
+ * providers' panels stand, so the page reads the same.
+ */
+function DemoBankPanel({ walletId }: { walletId: number }) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const connect = useMutation({
+    mutationFn: () => connectDemoBank(walletId, t("demo.bankName")),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["bankConnections", walletId] }),
+    onError: (err: unknown) =>
+      notifications.show({
+        color: "red",
+        message: err instanceof ApiError ? err.message : String(err),
+      }),
+  });
+  return (
+    <Card withBorder data-tour="banksync-providers" maw={560}>
+      <Group gap="xs" mb="xs">
+        <IconBuildingBank size={18} />
+        <Text fw={600}>{t("demo.bankTitle")}</Text>
+      </Group>
+      <Text size="sm" c="dimmed" mb="sm">
+        {t("demo.bankHint")}
+      </Text>
+      <Group>
+        <Button
+          leftSection={<IconPlus size={16} />}
+          onClick={() => connect.mutate()}
+          loading={connect.isPending}
+        >
+          {t("demo.bankConnect")}
+        </Button>
+      </Group>
+    </Card>
   );
 }
 
@@ -316,7 +360,9 @@ function ConnectionCard({
                 {connection.name || t("banksync.unnamed")}
               </Text>
               <Badge size="xs" variant="light" color="gray">
-                {providerLabel(connection.provider)}
+                {connection.provider === "demo"
+                  ? t("demo.bankTitle")
+                  : providerLabel(connection.provider)}
               </Badge>
             </Group>
             <Text size="xs" c="dimmed">

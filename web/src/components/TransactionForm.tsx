@@ -172,6 +172,8 @@ export function TransactionForm({
     queryKey: ["aiSettings"],
     queryFn: getAISettings,
     staleTime: 60_000,
+    // The demo build has no AI to ask.
+    enabled: !__DEMO__,
   });
   const aiEnabled = !!(aiSettings.data?.enabled && aiSettings.data?.hasKey);
   const payeeName = useMemo(
@@ -931,7 +933,9 @@ export function TransactionForm({
                     </Group>
                   </Stack>
                 )}
-                {editing && <AttachmentsField walletId={walletId} transactionId={editing.id} />}
+                {editing && !__DEMO__ && (
+                  <AttachmentsField walletId={walletId} transactionId={editing.id} />
+                )}
               </Stack>
             </Collapse>
 
