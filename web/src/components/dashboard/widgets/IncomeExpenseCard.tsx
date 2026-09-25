@@ -17,7 +17,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { type CurrencyInfo, type MonthPoint, getDashboard } from "../../../api/client";
-import { formatMinor } from "../../../money";
+import { formatAxisMinor, formatMinor } from "../../../money";
 import type { DatePreset } from "../../../pages/registerFilterModel";
 import { Chart } from "../../Chart";
 import { FOLLOW_PAGE, IE_MONTHS, periodToMonths, type IEConfig, type IEStyle } from "./shared";
@@ -187,7 +187,10 @@ function IncomeExpenseChart({
         data: points.map((p) => p.month),
         axisLabel: { rotate: points.length > 14 ? 60 : 30 },
       },
-      yAxis: { type: "value" },
+      yAxis: {
+        type: "value",
+        axisLabel: { formatter: (v: number) => (base ? formatAxisMinor(v, base) : String(v)) },
+      },
       series: [
         {
           name: incomeLabel,

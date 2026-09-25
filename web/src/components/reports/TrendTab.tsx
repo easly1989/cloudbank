@@ -12,7 +12,7 @@ import {
   listPayees,
   listTags,
 } from "../../api/client";
-import { formatMinor } from "../../money";
+import { formatAxisMinor, formatMinor } from "../../money";
 import { RegisterFilters } from "../../pages/RegisterFilters";
 import { type Filters, dateBounds, emptyFilters } from "../../pages/registerFilterModel";
 import { useWallet } from "../../wallet/WalletProvider";
@@ -120,7 +120,7 @@ export function TrendTab() {
       legend: { type: "scroll", show: breakdown !== "none" || showCompare },
       grid: { left: 80, right: 20, bottom: 60, top: 40 },
       xAxis: { type: "category", data: buckets, axisLabel: { rotate: 30 } },
-      yAxis: { type: "value" },
+      yAxis: { type: "value", axisLabel: { formatter: (v: number) => formatAxisMinor(v, fmt) } },
       series,
     };
   }, [result, chartType, cumulative, breakdown, fmt, showCompare, prevResult, t]);
