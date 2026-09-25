@@ -275,23 +275,84 @@ export function hiddenNewerCount(all: RegisterRow[], visible: RegisterRow[]): nu
 const RECONCILED = 2;
 
 /**
- * Where "reconciled up to here" belongs: the date of the account's latest
- * reconciled transaction, or null when the line has nothing to add (#474).
+ * The reconciled rows the status filter is hiding, and only those (#480).
  *
- * Unfiltered, every row shows its own status, so a line saying which ones are
- * reconciled repeats the column beside it. The line earns its place when a
- * filter has hidden rows, above all the reconciled ones: it marks the point the
- * account was last reconciled to, so the reader can see which of the rows left
- * are older than it. It is read from every row of the account, not from the
- * visible ones, since the reconciled rows are the ones a filter tends to hide.
+ * A status filter that leaves reconciled rows out — "not reconciled", "cleared",
+ * "no status" — hides exactly the rows that say how far the account has been
+ * reconciled, so the register marks where they were. Any other filter leaves the
+ * reconciled rows it keeps on screen, each showing its own status: there is
+ * nothing to mark, and nothing is returned.
+ *
+ * Only rows that pass every other filter count: under a search for a payee, the
+ * marks stand for that payee's reconciled rows, not the whole account's.
  */
-export function reconciledThrough(all: RegisterRow[], visible: RegisterRow[]): string | null {
-  if (visible.length === 0 || visible.length >= all.length) return null;
-  let last: string | null = null;
-  // Dates are civil `YYYY-MM-DD`, so a string comparison is a date comparison.
-  for (const r of all)
-    if (r.status === RECONCILED && (last === null || r.date > last)) last = r.date;
-  return last;
+export function hiddenReconciled(
+  rows: RegisterRow[],
+  f: Filters,
+  categories: Category[],
+  now = new Date(),
+): RegisterRow[] {
+  const hides = (f.status !== null && f.status !== RECONCILED) || f.noFlags;
+  if (!hides) return [];
+  return applyFilters(rows, { ...f, status: null, noFlags: false }, categories, now).filter(
+    (r) => r.status === RECONCILED,
+  );
+}
+
+/** A line standing for a run of hidden reconciled rows (see reconciledMarks). */
+export interface ReconciledMark {
+  /** The visible row the line sits above, or the number of visible rows for one after the last. */
+  before: number;
+  count: number;
+  /** The run's oldest and newest dates, civil `YYYY-MM-DD`. */
+  from: string;
+  to: string;
+  /** Every older transaction of the account is reconciled, so the line closes the ledger. */
+  closesLedger: boolean;
+}
+
+/**
+ * Where the hidden reconciled rows would sit, as lines between the visible ones.
+ *
+ * `ledger` is every row of the account and `visible` the rows on screen, both in
+ * the order the register shows them, newest first. Hidden reconciled rows between
+ * the same two visible rows make one line: a line per day would, under "not
+ * reconciled", rebuild the ledger out of lines. The last line may say the account
+ * is reconciled up to it, and only says so when every older row really is — a
+ * cleared row the filter also hides further down would make that untrue.
+ *
+ * Nothing when nothing is visible: an empty result is its own message.
+ */
+export function reconciledMarks(
+  ledger: RegisterRow[],
+  visible: RegisterRow[],
+  hidden: RegisterRow[],
+): ReconciledMark[] {
+  if (visible.length === 0 || hidden.length === 0) return [];
+  const at = new Map(visible.map((r, i) => [r.id, i]));
+  const isHidden = new Set(hidden.map((r) => r.id));
+  const marks: ReconciledMark[] = [];
+  let run: Omit<ReconciledMark, "before" | "closesLedger"> | null = null;
+  // Whether every row since the last visible one is reconciled.
+  let olderReconciled = true;
+  for (const r of ledger) {
+    const i = at.get(r.id);
+    if (i !== undefined) {
+      if (run) marks.push({ ...run, before: i, closesLedger: false });
+      run = null;
+      olderReconciled = true;
+      continue;
+    }
+    if (r.status !== RECONCILED) olderReconciled = false;
+    if (!isHidden.has(r.id)) continue;
+    // Dates are civil `YYYY-MM-DD`, so a string comparison is a date comparison.
+    if (!run) run = { count: 0, from: r.date, to: r.date };
+    run.count++;
+    if (r.date < run.from) run.from = r.date;
+    if (r.date > run.to) run.to = r.date;
+  }
+  if (run) marks.push({ ...run, before: visible.length, closesLedger: olderReconciled });
+  return marks;
 }
 
 // --- URL (de)serialization: only non-default keys are written. ---

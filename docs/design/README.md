@@ -87,13 +87,16 @@ Added since:
   demo" button. Settings loses Security. Integrations becomes Bank sync, with no
   AI. The Data section keeps the downloads but not the restore. The bank sync
   page shows the pretend bank's panel in place of the three providers.
-- **"Reconciled up to here" only under a filter** (#474). The register board
-  draws the line in the unfiltered ledger, where each row's status already says
-  what the line would. The app shows it only while a filter hides rows. It sits
-  at the date of the account's latest reconciled transaction, read from the
-  whole account rather than the visible rows. It goes above the first row on or
-  before that date, or below the last row when every row left is newer (the
-  usual case under "Not reconciled").
+- **Reconciled lines only under a status filter** (#474, #480). The register
+  board draws one "reconciled up to here" line in the unfiltered ledger, where
+  each row's status already says what the line would. The app draws lines only
+  while the status filter hides reconciled rows ("Not reconciled", "Cleared",
+  "No status", or "no flags"); a date or text filter leaves the reconciled rows
+  it keeps on screen, so it draws none. Each run of hidden reconciled rows
+  between two visible rows becomes one line, where the run sits in the ledger,
+  with its date (or date range) and how many rows it stands for. The last line
+  reads "everything reconciled up to here" when every older transaction of the
+  account is reconciled. Lines only appear while the register runs newest first.
 - **The entry sheet's foot stays in view** (#474). A split of several lines can
   make the sheet taller than the screen. The foot is sticky at the bottom of the
   sheet, on the sheet's own background, and the sheet shows a thin scrollbar in

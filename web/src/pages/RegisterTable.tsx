@@ -81,7 +81,13 @@ import {
 } from "./registerTheme";
 import { RegisterSidePanel } from "./RegisterSidePanel";
 import type { RegisterPanel } from "./RegisterToolbar";
-import { isSortable, sortRegisterRows, type RegisterSort } from "./registerFilterModel";
+import {
+  isSortable,
+  reconciledMarks,
+  sortRegisterRows,
+  type ReconciledMark,
+  type RegisterSort,
+} from "./registerFilterModel";
 import { useToday } from "../useToday";
 import { amountColor, attentionColor, negativeOnlyColor } from "../amountTone";
 
@@ -166,11 +172,13 @@ export interface RegisterTableProps {
   bulkBar?: ReactNode;
   /** The band that explains what the filter is hiding, at the head of the card. */
   notice?: ReactNode;
+  /** Every row of the account, oldest first: where the hidden rows sit (#480). */
+  ledgerRows?: RegisterRow[];
   /**
-   * The date the account is reconciled through, when a filter hides rows and
-   * the "reconciled up to here" line has something to say; null otherwise.
+   * The reconciled rows the status filter is hiding; each run of them is marked
+   * with a line where it would sit (see hiddenReconciled, reconciledMarks).
    */
-  reconciledThrough?: string | null;
+  hiddenReconciled?: RegisterRow[];
   /** A row that has just been saved, marked until the tint fades. */
   arrivedId?: number | null;
 }
@@ -203,7 +211,8 @@ export function RegisterTable({
   bulkBar,
   notice,
   arrivedId,
-  reconciledThrough,
+  ledgerRows,
+  hiddenReconciled,
 }: RegisterTableProps) {
   const { t } = useTranslation();
   const fmtDate = useDateFormat();
@@ -474,26 +483,30 @@ export function RegisterTable({
     [tableRows, table],
   );
 
-  // Where "reconciled up to here" goes, when the ledger runs newest first: above
-  // the first row on or before the date the account is reconciled through, or
-  // below the last row when every row left is newer than it — the usual case
-  // under "not reconciled", where the line says all of them came after. The page
-  // passes that date only while a filter hides rows (see reconciledThrough, #474).
-  //
-  // Sorted any other way the line would be a lie — "up to here" only means
-  // something along a date — so the divider simply does not appear. It is drawn
-  // beside its row rather than as an item of its own, which keeps every index in
-  // this table the index of a transaction.
-  const divider = useMemo((): { index: number; below: boolean } | null => {
-    if (!reconciledThrough || tableRows.length === 0) return null;
-    if (sort && !(sort.id === "date" && sort.desc === false)) return null;
-    const index = tableRows.findIndex((r) => r.original.date <= reconciledThrough);
-    return index === -1 ? { index: tableRows.length - 1, below: true } : { index, below: false };
-  }, [tableRows, sort, reconciledThrough]);
+  // Lines standing for the reconciled rows the status filter hides, each where
+  // its run would sit (#480). Only while the ledger runs newest first: sorted by
+  // anything else, "where they would sit" and "reconciled up to here" mean
+  // nothing. A line is drawn beside its row rather than as an item of its own,
+  // which keeps every index in this table the index of a transaction.
+  const marks = useMemo(() => {
+    const newestFirst = !sort || (sort.id === "date" && sort.desc);
+    if (!newestFirst || !ledgerRows || !hiddenReconciled?.length) return [];
+    const ledger = sortRegisterRows([...ledgerRows].reverse(), sort);
+    return reconciledMarks(
+      ledger,
+      tableRows.map((r) => r.original),
+      hiddenReconciled,
+    );
+  }, [sort, ledgerRows, hiddenReconciled, tableRows]);
+  const markAbove = useMemo(() => new Map(marks.map((m) => [m.before, m])), [marks]);
+  const markAfter = markAbove.get(tableRows.length) ?? null;
 
   const rowHeight = useCallback(
-    (index: number) => baseRowHeight(index) + (index === divider?.index ? DIVIDER_HEIGHT : 0),
-    [baseRowHeight, divider],
+    (index: number) =>
+      baseRowHeight(index) +
+      (markAbove.has(index) ? DIVIDER_HEIGHT : 0) +
+      (markAfter && index === tableRows.length - 1 ? DIVIDER_HEIGHT : 0),
+    [baseRowHeight, markAbove, markAfter, tableRows.length],
   );
 
   // The compiler will not memoize this component, because TanStack Virtual hands
@@ -507,14 +520,54 @@ export function RegisterTable({
     estimateSize: rowHeight,
     overscan: 12,
   });
-  // The virtualizer caches every estimate until the row count changes, so a line
-  // that appears or moves over the same rows would overlap one of them. Keyed on
-  // where the line is, not on rowHeight: that is rebuilt with the rows, and
+  // The virtualizer caches every estimate until the row count changes, so lines
+  // that appear or move over the same rows would overlap them. Keyed on where
+  // the lines are, not on rowHeight: that is rebuilt with the rows, and
   // measuring re-renders, so it would measure forever.
-  const dividerAt = divider ? `${divider.index}${divider.below ? "+" : ""}` : "";
+  const marksAt = marks.map((m) => m.before).join(",");
   useEffect(() => {
     virtualizer.measure();
-  }, [virtualizer, dividerAt]);
+  }, [virtualizer, marksAt]);
+
+  // One line: the run's date (or dates), and what it stands for. The band spans
+  // the columns, but its text keeps to the visible width (100cqw of the ledger
+  // card): on a phone the columns scroll sideways, and the count would sit
+  // past the edge of the screen.
+  const markLine = (m: ReconciledMark, top: number) => (
+    <Box
+      key={`mark-${m.before}`}
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        transform: `translateY(${top}px)`,
+        height: DIVIDER_HEIGHT,
+        background: "var(--cb-band-divider)",
+      }}
+    >
+      <Group
+        gap={ROW_GAP}
+        wrap="nowrap"
+        align="center"
+        style={{
+          width: "min(100%, 100cqw)",
+          height: "100%",
+          padding: `${BAND_PADDING.divider}px ${BAND_INSET}px`,
+        }}
+      >
+        <Text ff="monospace" fz={ROW_TYPE.divider.fz} fw={ROW_TYPE.divider.fw} c="dimmed">
+          {m.from === m.to ? fmtDate(m.to) : `${fmtDate(m.from)} – ${fmtDate(m.to)}`}
+        </Text>
+        <Box style={{ flex: 1, height: 1, background: "var(--cb-ledger-border)" }} />
+        <Text fz={ROW_TYPE.divider.fz} fw={ROW_TYPE.divider.fw} c="dimmed">
+          {m.closesLedger
+            ? t("register.reconciledAll")
+            : t("register.reconciledRun", { count: m.count })}
+        </Text>
+      </Group>
+    </Box>
+  );
 
   const cursorIndex = useMemo(
     () => display.findIndex((r) => r.id === cursorId),
@@ -651,6 +704,8 @@ export function RegisterTable({
           overflowX: "auto",
           flex: 1,
           minWidth: 0,
+          // The width a reconciled line's text keeps to (see markLine).
+          containerType: "inline-size",
           // The ledger is a card, and every band below sits inside it.
           background: "var(--cb-ledger-surface)",
           border: "1px solid var(--cb-ledger-border)",
@@ -763,45 +818,14 @@ export function RegisterTable({
                 const row = tableRows[vi.index];
                 const r = row.original;
                 const onCursor = r.id === cursorId;
-                const lineHere = vi.index === divider?.index;
-                // A line above the row pushes it down; one below sits after it.
-                const rowTop = vi.start + (lineHere && !divider.below ? DIVIDER_HEIGHT : 0);
+                const above = markAbove.get(vi.index);
+                const after = markAfter && vi.index === tableRows.length - 1 ? markAfter : null;
+                // A line above the row pushes it down; one after it sits below.
+                const rowTop = vi.start + (above ? DIVIDER_HEIGHT : 0);
                 return (
                   <Fragment key={row.id}>
-                    {lineHere && (
-                      <Group
-                        gap={ROW_GAP}
-                        wrap="nowrap"
-                        align="center"
-                        style={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          width: "100%",
-                          transform: `translateY(${
-                            divider.below ? vi.start + baseRowHeight(vi.index) : vi.start
-                          }px)`,
-                          height: DIVIDER_HEIGHT,
-                          padding: `${BAND_PADDING.divider}px ${BAND_INSET}px`,
-                          background: "var(--cb-band-divider)",
-                        }}
-                      >
-                        <Text
-                          ff="monospace"
-                          fz={ROW_TYPE.divider.fz}
-                          fw={ROW_TYPE.divider.fw}
-                          c="dimmed"
-                        >
-                          {fmtDate(reconciledThrough ?? r.date)}
-                        </Text>
-                        <Box
-                          style={{ flex: 1, height: 1, background: "var(--cb-ledger-border)" }}
-                        />
-                        <Text fz={ROW_TYPE.divider.fz} fw={ROW_TYPE.divider.fw} c="dimmed">
-                          {t("register.reconciledUpToHere")}
-                        </Text>
-                      </Group>
-                    )}
+                    {above && markLine(above, vi.start)}
+                    {after && markLine(after, rowTop + baseRowHeight(vi.index))}
                     <div
                       className={r.id === arrivedId ? "cb-row-arrived" : undefined}
                       onClick={() => setCursorId(r.id)}
