@@ -48,7 +48,8 @@ Your account and everything in it are deleted:
 
 - **after 2 hours without use**,
 - **every night at 03:00 UTC**, and
-- **whenever the demo is updated**, which can happen at any time of day.
+- **whenever the demo is updated**: with every CloudBank release, and now and
+  then in between, at any time of day.
 
 There is no way to keep a demo account, and no warning before one of these
 happens. It says so three times: on the front door, in a notice that opens by
@@ -62,6 +63,6 @@ If you like what you see, CloudBank is one container and a volume. The
 minutes, and [Migrating from HomeBank](migrate-from-homebank.md) brings your
 existing file over.
 
-The demo itself is the `:demo` image. It is a different build from the one you
-would install; see [Container images](../README.md#container-images-and-tag-convention)
+The demo itself is the `:demo` image, rebuilt with every release, so it runs the
+latest version. It is a different build from the one you would install; see [Container images](../README.md#container-images-and-tag-convention)
 before running it anywhere.

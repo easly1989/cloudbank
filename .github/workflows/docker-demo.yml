@@ -1,16 +1,23 @@
 name: Docker demo
 
-# Publishes the public demo image, ghcr.io/easly1989/cloudbank:demo (#420). By
-# hand only: a host that redeploys on a new :demo (Northflank does) resets every
-# demo account when it does, so a push here is a reset for whoever is using the
-# demo at that moment. The demo says so on its front door, in its notice and in
-# the band on every page.
+# Publishes the public demo image, ghcr.io/easly1989/cloudbank:demo (#420), with
+# every published release (#482) and by hand in between. A host that redeploys
+# on a new :demo (Northflank does) resets every demo account when it does, so a
+# push here is a reset for whoever is using the demo at that moment. The demo
+# says so on its front door, in its notice and in the band on every page.
+#
+# A release builds from its tag, so the demo is the version just published.
+# Prereleases are skipped: a beta does not go on the public demo. This is its
+# own workflow rather than a job in release.yml, so a failed demo build never
+# marks the stable release as failed.
 #
 # The image is the demo build (DEMO=1): throwaway accounts, no setup or login,
 # no admin, restore, attachments, AI, push, API tokens, two-factor or OIDC, and
 # a pretend bank in place of the real ones. It never reaches :latest or :main.
 
 on:
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       ref:
@@ -31,11 +38,12 @@ env:
 
 jobs:
   build-push:
+    if: github.event_name != 'release' || !github.event.release.prerelease
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.ref }}
 
       - uses: docker/setup-buildx-action@v4
 
@@ -46,9 +54,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Short SHA
+      # The release's tag names the build; a run by hand is named by its commit.
+      - name: Label
         id: vars
-        run: echo "sha=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: echo "label=${TAG:-$(git rev-parse --short=7 HEAD)}" >> "$GITHUB_OUTPUT"
 
       # amd64 only: the demo runs on one hosted instance, not on anyone's Pi.
       - name: Build and push
@@ -58,10 +69,10 @@ jobs:
           platforms: linux/amd64
           push: true
           build-args: |
-            VERSION=demo-${{ steps.vars.outputs.sha }}
+            VERSION=demo-${{ steps.vars.outputs.label }}
             DEMO=1
           tags: |
             ${{ env.IMAGE }}:demo
-            ${{ env.IMAGE }}:demo-${{ steps.vars.outputs.sha }}
+            ${{ env.IMAGE }}:demo-${{ steps.vars.outputs.label }}
           cache-from: type=gha,scope=demo
           cache-to: type=gha,mode=max,scope=demo
