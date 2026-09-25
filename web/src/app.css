@@ -132,17 +132,14 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* The transaction sheet can be taller than the viewport; keep it scrollable but
-   hide the scrollbar (it looked heavy over the dark panel). Both the scrolling
-   body and the content are covered so it works regardless of which element
-   Mantine scrolls. */
+/* The transaction sheet can be taller than the viewport (More details, a split
+   of several lines). It used to hide its scrollbar as too heavy, and then
+   nothing said there was more below (#474); a thin one says it without the
+   weight. Both the body and the content are covered, whichever one Mantine
+   scrolls. */
 .txnFormInner,
 .txnFormContent {
-  scrollbar-width: none; /* Firefox */
-}
-.txnFormInner::-webkit-scrollbar,
-.txnFormContent::-webkit-scrollbar {
-  display: none; /* Chrome / Safari / Edge */
+  scrollbar-width: thin;
 }
 
 /* Global-search result rows: a subtle hover highlight (the whole row is a
@@ -550,8 +547,19 @@ body {
   line-height: 20px;
 }
 .cb-entry .mantine-Drawer-body {
-  padding: 0 20px 20px;
+  padding: 0 20px;
   flex: 1;
+}
+/* The foot stays at the bottom of the sheet however long the sheet grows, so
+   Save is never scrolled out of reach (#474). It carries the body's bottom
+   padding and the sheet's own background, so the fields pass under it, and a
+   sheet that fits looks as the board draws it. */
+.cb-entry-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding-bottom: 20px;
+  background: var(--mantine-color-body);
 }
 .cb-entry .mantine-InputWrapper-label {
   font-size: 12px;

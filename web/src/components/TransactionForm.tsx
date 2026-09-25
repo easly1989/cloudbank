@@ -945,7 +945,7 @@ export function TransactionForm({
                 other field too, for a run of similar ones. The box is a
                 toggle joined to the button rather than a checkbox inside it:
                 a control inside a button is one a click cannot tell apart. */}
-            <Group justify="flex-end" mt="auto" pt={ENTRY_SHEET.footTop}>
+            <Group justify="flex-end" mt="auto" pt={ENTRY_SHEET.footTop} className="cb-entry-foot">
               <Group gap={ENTRY_SHEET.footButtonsGap} wrap="nowrap">
                 {!editing && (
                   <Button.Group>
