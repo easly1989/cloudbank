@@ -233,8 +233,9 @@ optional version input). If a pull fails with `unauthorized`, the GHCR package i
 private: make it public (package → Settings → Change visibility) or
 `docker login ghcr.io` with a token that has `read:packages`.
 
-**`:demo`** is a different program, built with `--build-arg DEMO=1` and published only when the
-**Docker demo** workflow is run by hand. There is no setup and no login: one button makes an account
+**`:demo`** is a different program, built with `--build-arg DEMO=1` and published by the **Docker
+demo** workflow: with every published release (not prereleases), from the release's tag, and when the
+workflow is run by hand. There is no setup and no login: one button makes an account
 with a year of made-up data. Accounts are deleted after two hours without use and every night at 03:00
 UTC. Admin, restore, attachments, AI, push, API tokens, two-factor and OIDC are switched off, and bank
 sync talks to a pretend bank. Run it **without a volume**, so a redeploy starts empty; it refuses to
