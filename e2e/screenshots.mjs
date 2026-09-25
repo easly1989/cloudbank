@@ -76,7 +76,11 @@ try {
   const api = page.request;
   await api.post(BASE + "/api/v1/setup", {
     headers: HEADERS,
-    data: { username: "demo", email: "demo@example.com", password: "demodemo123" },
+    data: {
+      username: "demo",
+      email: "demo@example.com",
+      password: "demodemo123",
+    },
   });
   await api.patch(BASE + "/api/v1/auth/me", {
     headers: HEADERS,
