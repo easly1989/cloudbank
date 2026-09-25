@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
 
 import { updateMe, type User } from "../api/client";
+import { DemoChrome } from "../demo/DemoChrome";
 import { useAuth } from "../auth/AuthProvider";
 import { useWallet } from "../wallet/WalletProvider";
 import { AppFooter } from "./AppFooter";
@@ -116,6 +117,7 @@ export function AppLayout() {
       </AppShell.Navbar>
 
       <AppShell.Main>
+        {__DEMO__ && <DemoChrome />}
         {/* Each page is a lazy chunk; show a loader in the content area (the
               shell stays put) while it loads. */}
         <Suspense
