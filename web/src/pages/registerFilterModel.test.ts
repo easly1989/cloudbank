@@ -7,6 +7,7 @@ import {
   dateBounds,
   emptyFilters,
   hiddenNewerCount,
+  reconciledThrough,
   isSortable,
   sortRegisterRows,
   filtersToParams,
@@ -250,6 +251,36 @@ describe("hiddenNewerCount", () => {
   it("counts a same-day row as newer only when it is strictly later", () => {
     const sameDay = [at(9, "2026-03-10"), at(2, "2026-03-10")];
     expect(hiddenNewerCount(sameDay, [at(2, "2026-03-10")])).toBe(0);
+  });
+});
+
+describe("reconciledThrough", () => {
+  const at = (id: number, date: string, status = 0) => ({ id, date, status }) as RegisterRow;
+  const all = [
+    at(5, "2026-03-25"),
+    at(4, "2026-03-20", 2),
+    at(3, "2026-03-15", 2),
+    at(2, "2026-03-10"),
+    at(1, "2026-03-01", 2),
+  ];
+  const unreconciled = all.filter((r) => r.status !== 2);
+
+  it("says nothing unfiltered: every status is on screen already", () => {
+    expect(reconciledThrough(all, all)).toBeNull();
+  });
+
+  it("marks the latest reconciled date when a filter hides rows", () => {
+    // The filter hid every reconciled row; the line still knows where they were.
+    expect(reconciledThrough(all, unreconciled)).toBe("2026-03-20");
+    expect(reconciledThrough(all, [at(5, "2026-03-25")])).toBe("2026-03-20");
+  });
+
+  it("says nothing when the account was never reconciled", () => {
+    expect(reconciledThrough(unreconciled, [unreconciled[0]])).toBeNull();
+  });
+
+  it("says nothing when nothing is visible: an empty result speaks for itself", () => {
+    expect(reconciledThrough(all, [])).toBeNull();
   });
 });
 

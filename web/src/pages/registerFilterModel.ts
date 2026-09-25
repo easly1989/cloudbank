@@ -271,6 +271,29 @@ export function hiddenNewerCount(all: RegisterRow[], visible: RegisterRow[]): nu
   return n;
 }
 
+/** The reconciled status code (see transactionEnums). */
+const RECONCILED = 2;
+
+/**
+ * Where "reconciled up to here" belongs: the date of the account's latest
+ * reconciled transaction, or null when the line has nothing to add (#474).
+ *
+ * Unfiltered, every row shows its own status, so a line saying which ones are
+ * reconciled repeats the column beside it. The line earns its place when a
+ * filter has hidden rows, above all the reconciled ones: it marks the point the
+ * account was last reconciled to, so the reader can see which of the rows left
+ * are older than it. It is read from every row of the account, not from the
+ * visible ones, since the reconciled rows are the ones a filter tends to hide.
+ */
+export function reconciledThrough(all: RegisterRow[], visible: RegisterRow[]): string | null {
+  if (visible.length === 0 || visible.length >= all.length) return null;
+  let last: string | null = null;
+  // Dates are civil `YYYY-MM-DD`, so a string comparison is a date comparison.
+  for (const r of all)
+    if (r.status === RECONCILED && (last === null || r.date > last)) last = r.date;
+  return last;
+}
+
 // --- URL (de)serialization: only non-default keys are written. ---
 
 export function parseFilters(p: URLSearchParams): Filters {
