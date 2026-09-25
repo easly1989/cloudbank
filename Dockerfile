@@ -2,6 +2,12 @@
 
 # CloudBank ships as a single container: the Go binary embeds the built React
 # SPA and serves both the API and the UI. SQLite lives on the /data volume.
+#
+# --build-arg DEMO=1 builds the public demo instead (#420): throwaway accounts,
+# no setup or login, and everything deleted after two hours without use and
+# every night. Published only as :demo, by the docker-demo workflow. Run it
+# without a volume: an empty /data on every start is what makes a redeploy a
+# reset.
 
 # --- Stage 1: build the web SPA ---
 FROM node:26-bookworm-slim AS web
@@ -12,8 +18,9 @@ RUN npm ci
 # The OpenAPI spec is the source of the generated TS API types.
 COPY api/ /src/api/
 COPY web/ ./
+ARG DEMO=
 # Vite's outDir points at ../server/internal/webui/dist (see vite.config.ts).
-RUN npm run gen:api && npm run build
+RUN npm run gen:api && CB_DEMO="${DEMO}" npm run build
 
 # --- Stage 2: build the Go binary (with the SPA embedded) ---
 FROM golang:1.27-bookworm AS build
@@ -27,7 +34,9 @@ COPY --from=web /src/server/internal/webui/dist ./internal/webui/dist
 # ownership into the distroless stage (which has no shell to mkdir/chown).
 RUN mkdir -p /data
 ARG VERSION=dev
-RUN CGO_ENABLED=0 GOOS=linux go build \
+ARG DEMO=
+RUN tags=""; if [ "${DEMO}" = "1" ]; then tags="demo"; fi; \
+    CGO_ENABLED=0 GOOS=linux go build -tags "${tags}" \
     -ldflags "-s -w -X main.version=${VERSION}" \
     -o /out/cloudbank ./cmd/cloudbank
 

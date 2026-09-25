@@ -205,6 +205,7 @@ Images are published to **GHCR**: `ghcr.io/easly1989/cloudbank`.
 > | `:main`   | **Latest stable release** — use this for a stable self-hosted install. |
 > | `:latest` | **Nightly build** from the `main` branch — bleeding edge, may break.    |
 > | `:vX.Y.Z` | A specific released version (e.g. `:v3.0.3`). Also `:vX.Y`.             |
+> | `:demo`   | **The public demo** — throwaway accounts, never for real money.         |
 >
 > In other words, `:latest` is the development nightly, and `:main` is the stable release. This is the opposite of the usual Docker convention, so pin deliberately.
 
@@ -215,6 +216,15 @@ manually from the **Actions** tab (it has a `workflow_dispatch` trigger, with an
 optional version input). If a pull fails with `unauthorized`, the GHCR package is
 private: make it public (package → Settings → Change visibility) or
 `docker login ghcr.io` with a token that has `read:packages`.
+
+**`:demo`** is a different program, built with `--build-arg DEMO=1` and published only when the
+**Docker demo** workflow is run by hand. There is no setup and no login: one button makes an account
+with a year of made-up data. Accounts are deleted after two hours without use and every night at 03:00
+UTC. Admin, restore, attachments, AI, push, API tokens, two-factor and OIDC are switched off, and bank
+sync talks to a pretend bank. Run it **without a volume**, so a redeploy starts empty; it refuses to
+start on a data directory that holds real accounts. It is tuned with `CB_DEMO_*` variables (see
+`server/internal/config`); behind a proxy, set `CB_DEMO_PROXY_HOPS` so the per-address limit sees
+the visitor and not the proxy.
 
 ## License
 
