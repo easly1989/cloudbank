@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reports redesign</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #12161d; --ink2: #4a5462; --muted: #67707e; --line: #e2e6ec; --track: #f1f3f6;
+    --surface: #ffffff; --shell: #f6f7f9; --accent: #2457d6; --accent-text: #1c46ae; --accent-bg: #eaf0fe;
+    --in: #10704e; --out: #a33529; --amber: #9a6100; --amber-bg: #fdf3e2;
+    --c1: #c2762b; --c2: #4b63c7; --c3: #2f7d63; --c4: #8a5ba8; --c5: #b0476b; --c6: #3e8ca3; --c7: #7c7a2a; --c8: #8b93a1;
+    --note: #fff4c2; --note-ink: #5c4a00;
+  }
+  :root[data-theme="dark"] {
+    --ink: #e8edf5; --ink2: #a6b0bf; --muted: #7c8798; --line: #232b37; --track: #1f2733;
+    --surface: #161c25; --shell: #0e1218; --accent: #7aa2ff; --accent-text: #a5bdfb; --accent-bg: #18243c;
+    --in: #4fc095; --out: #f08b7e; --amber: #e0a43c; --amber-bg: #2a2214;
+    --c1: #d8955a; --c2: #7c8fdd; --c3: #55a98a; --c4: #b08ccc; --c5: #d97a98; --c6: #6db3c6; --c7: #b2ae5c; --c8: #8b93a1;
+    --note: #3a3312; --note-ink: #f3e3a0;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #d9dde3; font: 15px/1.4 "Public Sans", sans-serif; color: var(--ink); padding: 28px; }
+  :root[data-theme="dark"] body { background: #05070a; }
+  .mono { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .pair { display: flex; gap: 28px; align-items: flex-start; margin-bottom: 40px; }
+  .frame { background: var(--surface); border-radius: 14px; box-shadow: 0 1px 0 rgba(0,0,0,.04); overflow: hidden; container-type: inline-size; }
+  .desk { width: 1040px; }
+  .phone { width: 390px; }
+  .page { padding: 28px 32px 32px; }
+  @container (max-width: 600px) { .page { padding: 20px 16px 24px; } }
+  .note { width: 250px; background: var(--note); color: var(--note-ink); font-size: 13px; line-height: 1.45; padding: 14px 16px; border-radius: 4px; transform: rotate(-.6deg); box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+  .note b { display: block; margin-bottom: 6px; font-size: 13px; }
+  .note ul { margin: 0; padding-left: 16px; } .note li { margin-bottom: 5px; }
+
+  h1 { font-size: 30px; font-weight: 700; margin: 0; letter-spacing: -.01em; }
+  .hint { color: var(--ink2); font-size: 14px; margin: 4px 0 0; }
+  @container (max-width: 600px) { h1 { font-size: 26px; } }
+
+  /* period bar + tabs */
+  .bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 20px 0 0; }
+  .seg { display: inline-flex; background: var(--track); border-radius: 8px; padding: 3px; gap: 2px; }
+  .seg span { font-size: 13px; font-weight: 500; color: var(--ink2); padding: 6px 11px; border-radius: 6px; white-space: nowrap; }
+  .seg span.on { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .stepper { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; font-size: 14px; }
+  .stepper i { font-style: normal; width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 7px; color: var(--ink2); }
+  .stepper em { font-style: normal; padding: 0 6px; min-width: 128px; text-align: center; }
+  .spacer { flex: 1; }
+  .btn { font-size: 13px; font-weight: 600; border: 1px solid var(--line); border-radius: 7px; padding: 6px 12px; background: var(--surface); color: var(--ink); white-space: nowrap; }
+  .btn .n { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 6px; border-radius: 9px; background: var(--accent-bg); color: var(--accent-text); font-size: 11px; text-align: center; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .chip { font-size: 12px; font-weight: 600; background: var(--accent-bg); color: var(--accent-text); border-radius: 99px; padding: 3px 10px; }
+  .tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); margin-top: 18px; overflow-x: auto; }
+  .tabs span { padding: 10px 0; font-size: 14px; font-weight: 500; color: var(--ink2); white-space: nowrap; border-bottom: 2px solid transparent; }
+  .tabs span.on { color: var(--ink); font-weight: 600; border-color: var(--ink); }
+  .stepper em { white-space: nowrap; }
+  @container (max-width: 600px) {
+    .bar .seg { width: 100%; overflow-x: auto; }
+    .stepper em { min-width: 0; flex: 1; }
+    .stepper { flex: 1; }
+    .bar .spacer { display: none; }
+  }
+  .cols.wide { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+  @container (max-width: 600px) { .cols.wide { grid-template-columns: 1fr; } }
+
+  /* answer row */
+  .answer { display: flex; gap: 40px; flex-wrap: wrap; margin: 24px 0 8px; align-items: flex-end; }
+  .answer .k { font-size: 13px; color: var(--ink2); }
+  .answer .v { font-size: 28px; font-weight: 500; }
+  .answer .v.big { font-size: 40px; font-weight: 600; letter-spacing: -.01em; }
+  .answer .s { font-size: 13px; color: var(--ink2); margin-top: 2px; }
+  @container (max-width: 600px) { .answer { gap: 18px 28px; } .answer .v.big { font-size: 32px; } .answer .v { font-size: 22px; } }
+  .in { color: var(--in); } .out { color: var(--out); } .amber { color: var(--amber); }
+
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0 14px; align-items: center; }
+  .controls .lbl { font-size: 13px; color: var(--ink2); }
+
+  /* two-column body */
+  .cols { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+  @container (max-width: 600px) { .cols { grid-template-columns: 1fr; gap: 20px; } }
+  .panel h3 { font-size: 15px; font-weight: 600; margin: 0 0 12px; }
+  .panel .sub { font-size: 13px; color: var(--ink2); font-weight: 400; }
+
+  /* ranked list */
+  .rank { display: grid; gap: 12px; }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; row-gap: 6px; align-items: center; }
+  .row .name { display: flex; align-items: center; gap: 8px; font-size: 14px; min-width: 0; }
+  .row .name .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .row .amt { font-size: 14px; font-weight: 500; text-align: right; }
+  .row .trk { position: relative; height: 6px; background: var(--track); border-radius: 3px; }
+  .row .trk b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
+  .row .trk u { position: absolute; top: -3px; width: 2px; height: 12px; background: var(--ink); opacity: .55; border-radius: 1px; }
+  .row .meta { font-size: 12px; color: var(--muted); text-align: right; white-space: nowrap; }
+  .row .meta .up { color: var(--amber); }
+  .row.sel { outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 4px; }
+  .legendline { font-size: 12px; color: var(--muted); margin-top: 14px; display: flex; gap: 6px; align-items: center; }
+  .legendline u { display: inline-block; width: 2px; height: 11px; background: var(--ink); opacity: .55; }
+
+  /* drill list */
+  .drill { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .drill .t { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 10px; font-size: 13px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .drill .t:first-of-type { border-top: 0; }
+  .drill .t .d { color: var(--muted); }
+  .drill .link { display: inline-block; margin-top: 10px; font-size: 13px; font-weight: 600; color: var(--accent); }
+
+  /* charts */
+  svg text { font-family: "IBM Plex Mono", monospace; font-size: 11px; fill: var(--muted); }
+  svg .lbl { font-family: "Public Sans", sans-serif; font-size: 12px; fill: var(--ink2); }
+  svg .strong { fill: var(--ink); font-weight: 600; }
+  .chart { width: 100%; }
+
+  /* tables / month list */
+  .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tbl th { text-align: right; font-weight: 600; color: var(--ink2); font-size: 12px; padding: 8px 0 8px 10px; border-bottom: 1px solid var(--line); }
+  .tbl th:first-child, .tbl td:first-child { text-align: left; padding-left: 0; }
+  .tbl td { text-align: right; padding: 8px 0 8px 10px; border-bottom: 1px solid var(--line); }
+  .tbl tr.now td { font-weight: 600; }
+  @container (max-width: 600px) { .tbl .hide-s { display: none; } }
+
+  /* accounts */
+  .acc { display: grid; grid-template-columns: minmax(0, 1.2fr) 120px minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .acc .b { font-weight: 500; text-align: right; }
+  .acc .c { font-size: 12px; color: var(--muted); text-align: right; }
+  .acc .warn { grid-column: 1 / -1; font-size: 13px; color: var(--amber); background: var(--amber-bg); border-radius: 6px; padding: 6px 10px; margin-top: -2px; }
+  @container (max-width: 600px) {
+    .acc { grid-template-columns: minmax(0, 1fr) auto; }
+    .acc svg { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+    .acc .c.low { display: none; }
+  }
+
+  /* vehicle fills */
+  .fills { display: grid; }
+  .fill { display: grid; grid-template-columns: 96px repeat(4, minmax(0, 1fr)); gap: 10px; font-size: 13px; padding: 9px 0; border-top: 1px solid var(--line); align-items: baseline; }
+  .fill.h { color: var(--ink2); font-weight: 600; font-size: 12px; border-top: 0; }
+  .fill span:not(:first-child) { text-align: right; }
+  @container (max-width: 600px) {
+    .fill { grid-template-columns: minmax(0,1fr) auto; row-gap: 2px; }
+    .fill.h { display: none; }
+    .fill .km, .fill .l, .fill .cn { display: none; }
+    .fill .sm { grid-column: 1 / -1; text-align: left !important; color: var(--muted); font-size: 12px; }
+  }
+  .fill .sm { display: none; }
+  @container (max-width: 600px) { .fill .sm { display: block; } }
+
+  /* needs a category */
+  .need { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 8px 20px; padding: 14px 0; border-top: 1px solid var(--line); align-items: start; }
+  .need .m { font-size: 14px; overflow-wrap: anywhere; }
+  .need .x { font-size: 13px; color: var(--ink2); margin-top: 3px; }
+  .select { border: 1px solid var(--line); border-radius: 7px; padding: 8px 12px; font-size: 14px; color: var(--muted); display: flex; justify-content: space-between; }
+  @container (max-width: 600px) { .need { grid-template-columns: 1fr; } }
+
+  .sheet-note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .section-title { font: 600 13px "Public Sans"; color: #3b4350; margin: 0 0 10px; }
+  :root[data-theme="dark"] .section-title { color: #a6b0bf; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const P = (n, d = 2) => {
+  const neg = n < 0; n = Math.abs(n);
+  const [i, f] = n.toFixed(d).split(".");
+  return (neg ? "−" : "") + i.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + (d ? "," + f : "") + " €";
+};
+const S = (n, d = 2) => (n > 0 ? "+" : "") + P(n, d);
+const N = (n, d = 1) => { const [i, f] = n.toFixed(d).split("."); return i.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + (d ? "," + f : ""); };
+
+const head = (tab, span = ["Month", "September 2026"], extra = "") => `
+  <h1>Reports</h1>
+  <p class="hint">Where the money went, and how it moved, over the span you pick.</p>
+  <div class="bar">
+    <div class="seg">${["Month", "Quarter", "Half-year", "Year", "All time"].map((s) => `<span class="${s === span[0] ? "on" : ""}">${s}</span>`).join("")}</div>
+    <div class="stepper"><i>‹</i><em>${span[1]}</em><i>›</i></div>
+    <span class="spacer"></span>
+    <span class="btn">Filters${extra ? '<span class="n">1</span>' : ""}</span>
+    <span class="btn">⋯</span>
+  </div>
+  ${extra ? `<div class="chips"><span class="chip">${extra} ✕</span></div>` : ""}
+  <div class="tabs">${["Spending", "Cash flow", "Balances", "Vehicle"].map((t) => `<span class="${t === tab ? "on" : ""}">${t}</span>`).join("")}</div>`;
+
+// ---------- Spending ----------
+const cats = [
+  ["Home", 1050.0, 1050.0, "--c1"], ["Food", 412.3, 389.7, "--c2"], ["Transport", 158.4, 142.0, "--c3"],
+  ["Leisure", 96.0, 180.0, "--c4"], ["Clothing", 45.0, 0, "--c5"], ["Health", 30.1, 12.0, "--c6"], ["Other (2)", 24.6, 30.0, "--c8"],
+];
+const spentTotal = cats.reduce((s, c) => s + c[1], 0);
+function rank(sel) {
+  const max = Math.max(...cats.map((c) => Math.max(c[1], c[2])));
+  return `<div class="rank">${cats.map(([n, v, p, c]) => {
+    const d = v - p;
+    return `<div class="row ${n === sel ? "sel" : ""}">
+      <span class="name"><span class="dot" style="background:var(${c})"></span>${n}</span>
+      <span class="amt mono">${P(v)}</span>
+      <span class="trk"><b style="width:${(v / max) * 100}%;background:var(${c})"></b>${p ? `<u style="left:${(p / max) * 100}%"></u>` : ""}</span>
+      <span class="meta mono">${Math.round((v / spentTotal) * 100)}% · <span class="${d > 0 ? "up" : ""}">${d === 0 ? "same" : S(d)}</span></span>
+    </div>`; }).join("")}</div>
+    <div class="legendline"><u></u> August, for comparison</div>`;
+}
+const spending = () => `${head("Spending")}
+  <div class="answer">
+    <div><div class="k">Spent in September</div><div class="v big mono out">${P(-spentTotal)}</div><div class="s">excluding transfers between your accounts</div></div>
+    <div><div class="k">Compared with August</div><div class="v mono">${P(spentTotal - 1803.7)} more</div><div class="s">less on leisure, more on food</div></div>
+  </div>
+  <div class="controls"><div class="seg"><span class="on">Spending</span><span>Income</span></div>
+    <span class="lbl">by</span><div class="seg"><span class="on">Category</span><span>Payee</span><span>Tag</span></div></div>
+  <div class="cols">
+    <div class="panel">${rank("Food")}</div>
+    <div class="panel"><div class="drill">
+      <h3>Food <span class="sub">· 14 transactions</span></h3>
+      ${[["26 Sep", "Supermarket", -64.58], ["20 Sep", "Supermarket", -76.49], ["17 Sep", "Supermarket", -64.06], ["12 Sep", "Bakery", -12.4], ["10 Sep", "Supermarket", -52.61]]
+        .map(([d, n, a]) => `<div class="t"><span class="d mono">${d}</span><span>${n}</span><span class="mono out">${P(a)}</span></div>`).join("")}
+      <span class="link">Show all 14 in the register</span></div>
+      <div class="sheet-note">On a phone, tapping a row opens this as a sheet from the bottom.</div></div>
+  </div>`;
+
+// ---------- Cash flow ----------
+const months = [["Jan", 2450, 1612.2], ["Feb", 2450, 1688.1], ["Mar", 2450, 1634.9], ["Apr", 2450, 1702.3], ["May", 2450, 1718.0], ["Jun", 2450, 1690.4], ["Jul", 2450, 1676.8], ["Aug", 2450, 2905.3], ["Sep", 2450, 1816.4]];
+function cashChart(w) {
+  const h = 240, l = 58, r = 10, t = 14, b = 26, max = 3000;
+  const iw = w - l - r, ih = h - t - b, zero = t + ih / 2, sy = (ih / 2) / max, bw = Math.min(26, iw / months.length / 2.6);
+  let g = "";
+  for (const v of [-3000, -1500, 0, 1500, 3000]) {
+    const y = zero - v * sy;
+    g += `<line x1="${l}" x2="${w - r}" y1="${y}" y2="${y}" stroke="var(--line)" ${v === 0 ? 'stroke="var(--ink2)"' : ""}/><text x="${l - 8}" y="${y + 4}" text-anchor="end">${v === 0 ? "0" : (v > 0 ? "" : "−") + N(Math.abs(v), 0)}</text>`;
+  }
+  months.forEach(([m, i, o], k) => {
+    const cx = l + iw * (k + 0.5) / months.length;
+    g += `<rect x="${cx - bw - 1}" y="${zero - i * sy}" width="${bw}" height="${i * sy}" rx="2" fill="var(--in)"/>`;
+    g += `<rect x="${cx + 1}" y="${zero}" width="${bw}" height="${o * sy}" rx="2" fill="var(--out)"/>`;
+    const net = i - o; const ny = zero - net * sy;
+    g += `<circle cx="${cx}" cy="${ny}" r="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/>`;
+    g += `<text class="lbl" x="${cx}" y="${h - 6}" text-anchor="middle">${m}</text>`;
+  });
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Money in and out per month, January to September 2026">${g}</svg>
+    <div class="legendline"><span style="width:10px;height:10px;border-radius:2px;background:var(--in);display:inline-block"></span> In
+      <span style="width:10px;height:10px;border-radius:2px;background:var(--out);display:inline-block;margin-left:10px"></span> Out
+      <span style="width:9px;height:9px;border-radius:50%;border:2px solid var(--ink);display:inline-block;margin-left:10px"></span> Kept (in − out)</div>`;
+}
+const cashflow = (w) => {
+  let run = 0;
+  const rows = months.map(([m, i, o]) => { run += i - o; return [m, i, o, i - o, run]; }).reverse();
+  const E = (n) => P(n).replace(" €", "");
+  const sg = (n) => (n > 0 ? "+" : "") + E(n);
+  return `${head("Cash flow", ["Year", "2026"])}
+  <div class="answer">
+    <div><div class="k">Kept so far this year</div><div class="v big mono in">${S(rows[0][4])}</div><div class="s">January to today, 25% of what came in</div></div>
+    <div><div class="k">In</div><div class="v mono in">${S(22050)}</div></div>
+    <div><div class="k">Out</div><div class="v mono out">${P(-15944.4)}</div></div>
+  </div>
+  <div class="controls"><span class="lbl">One bar per</span><div class="seg"><span>Week</span><span class="on">Month</span><span>Quarter</span></div></div>
+  <div class="cols wide">
+    <div class="panel">${cashChart(w === 640 ? 524 : w)}</div>
+    <div class="panel"><table class="tbl mono"><thead><tr><th>€</th><th class="hide-s">In</th><th class="hide-s">Out</th><th>Kept</th><th>So far</th></tr></thead>
+      <tbody>${rows.map(([m, i, o, n, r], k) => `<tr class="${k === 0 ? "now" : ""}"><td style="font-family:Public Sans">${m}</td><td class="hide-s in">${sg(i)}</td><td class="hide-s out">${E(-o)}</td><td class="${n < 0 ? "out" : "in"}">${sg(n)}</td><td>${sg(r)}</td></tr>`).join("")}</tbody></table></div>
+  </div>`;
+};
+
+// ---------- Balances ----------
+const total = [12107, 12545, 12800, 13160, 13552, 13890, 14230, 14675, 13102, 14484];
+function balChart(w) {
+  const h = 220, l = 64, r = 12, t = 16, b = 26, lo = 11000, hi = 15500;
+  const iw = w - l - r, ih = h - t - b, x = (k) => l + iw * k / 12, y = (v) => t + ih * (1 - (v - lo) / (hi - lo));
+  let g = "";
+  for (const v of [11000, 12500, 14000, 15500]) g += `<line x1="${l}" x2="${w - r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${l - 8}" y="${y(v) + 4}" text-anchor="end">${N(v, 0)}</text>`;
+  let d = `M${x(0)},${y(total[0])}`;
+  total.forEach((v, k) => { if (k) d += ` H${x(k)} V${y(v)}`; });
+  const todayX = x(8.83);
+  d += ` H${todayX}`;
+  g += `<path d="${d} V${t + ih} H${x(0)} Z" fill="var(--ink)" opacity=".06"/>`;
+  g += `<path d="${d}" fill="none" stroke="var(--ink)" stroke-width="2"/>`;
+  g += `<path d="M${todayX},${y(14484)} H${x(9.2)} V${y(14330)} H${x(10)} V${y(14700)} H${x(11)} V${y(14880)} H${x(12)}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="4 4" opacity=".5"/>`;
+  g += `<line x1="${todayX}" x2="${todayX}" y1="${t}" y2="${t + ih}" stroke="var(--muted)"/><text class="lbl" x="${todayX + 6}" y="${t + 10}">Today</text>`;
+  g += `<text class="lbl" x="${x(12)}" y="${y(14880) + 18}" text-anchor="end">scheduled</text>`;
+  ["Jan", "Mar", "May", "Jul", "Sep", "Nov"].forEach((m, k) => g += `<text class="lbl" x="${x(k * 2) + 4}" y="${h - 6}">${m}</text>`);
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Total balance through 2026">${g}</svg>`;
+}
+const spark = (pts, col) => { const lo = Math.min(...pts), hi = Math.max(...pts); const d = pts.map((v, k) => `${k ? "L" : "M"}${(k / (pts.length - 1)) * 116 + 2},${22 - ((v - lo) / (hi - lo || 1)) * 18}`).join(" "); return `<svg width="120" height="26" viewBox="0 0 120 26" aria-hidden="true"><path d="${d}" fill="none" stroke="${col}" stroke-width="1.6"/></svg>`; };
+const accs = [
+  ["Checking", 3745.2, -2461, "lowest 3.702,10 €", [4100, 4500, 4800, 5250, 5500, 5900, 6200, 6450, 3750, 3745]],
+  ["Savings", 10612.0, 2812, "lowest 7.800,00 €", [7800, 8200, 8600, 9000, 9400, 9800, 10200, 10600, 10612, 10612]],
+  ["Credit card", -212.4, -12.4, "lowest −1.420,00 €", [-200, -320, -240, -360, -280, -330, -300, -1420, -210, -212]],
+  ["Cash", 339.09, 139.09, "lowest 180,00 €", [200, 230, 250, 270, 290, 300, 310, 180, 330, 339], "Went under its 200,00 € minimum on 12 August."],
+];
+const balances = (w) => `${head("Balances", ["Year", "2026"])}
+  <div class="answer">
+    <div><div class="k">All accounts today</div><div class="v big mono">${P(14483.89)}</div><div class="s">${S(2376.49)} since 1 January</div></div>
+    <div><div class="k">By the end of the year</div><div class="v mono">${P(14880)}</div><div class="s">with what is scheduled</div></div>
+  </div>
+  <div class="controls"><div class="seg"><span class="on">All accounts</span><span>Pick accounts</span></div></div>
+  ${balChart(w === 640 ? 976 : w)}
+  <div style="margin-top:14px">${accs.map(([n, b, c, low, pts, warn]) => `<div class="acc"><span>${n}</span>${spark(pts, "var(--ink2)")}<span class="b mono">${P(b)}<div class="c">${S(c)} this year</div></span><span class="c low mono">${low}</span>${warn ? `<span class="warn">${warn}</span>` : ""}</div>`).join("")}</div>`;
+
+// ---------- Vehicle ----------
+const fills = [["4 Apr", 41955, 0, 38.2, 0, 65.12], ["2 May", 42718, 763, 41.0, 5.4, 70.11], ["30 May", 43468, 750, 36.5, 4.9, 61.5], ["27 Jun", 44228, 760, 40.1, 5.3, 68.9], ["25 Jul", 44986, 758, 39.4, 5.2, 66.2], ["22 Aug", 45753, 767, 42.3, 5.5, 73.0], ["19 Sep", 46506, 753, 37.8, 5.0, 64.8]];
+function vehChart(w) {
+  const h = 170, l = 44, r = 10, t = 12, b = 24, lo = 4, hi = 6;
+  const pts = fills.filter((f) => f[4]); const iw = w - l - r, ih = h - t - b;
+  const x = (k) => l + iw * (k + 0.5) / pts.length, y = (v) => t + ih * (1 - (v - lo) / (hi - lo));
+  let g = "";
+  for (const v of [4, 5, 6]) g += `<line x1="${l}" x2="${w - r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${l - 8}" y="${y(v) + 4}" text-anchor="end">${N(v, 1)}</text>`;
+  g += `<line x1="${l}" x2="${w - r}" y1="${y(5.2)}" y2="${y(5.2)}" stroke="var(--ink2)" stroke-dasharray="5 4"/><text class="lbl" x="${w - r}" y="${y(5.2) - 6}" text-anchor="end">average 5,2</text>`;
+  pts.forEach((f, k) => { g += `<rect x="${x(k) - 9}" y="${y(f[4])}" width="18" height="${y(lo) - y(f[4])}" rx="2" fill="var(--c2)"/><text class="lbl" x="${x(k)}" y="${h - 6}" text-anchor="middle">${f[0]}</text>`; });
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Litres per 100 km at each full fill">${g}</svg>`;
+}
+const vehicle = (w) => `${head("Vehicle", ["Year", "2026"])}
+  <div class="controls"><div class="seg"><span class="on">Family car</span><span>Scooter</span></div></div>
+  <div class="answer" style="margin-top:6px">
+    <div><div class="k">Cost per km</div><div class="v big mono">0,10 €</div><div class="s">${P(469.63)} for 4.551 km</div></div>
+    <div><div class="k">Consumption</div><div class="v mono">5,2 L/100 km</div><div class="s">275,3 L in 7 fills</div></div>
+  </div>
+  <div class="cols">
+    <div class="panel"><h3>Litres per 100 km, fill by fill</h3>${vehChart(w === 640 ? 542 : w)}</div>
+    <div class="panel"><div class="fills">
+      <div class="fill h"><span>Date</span><span class="km">Km</span><span class="l">Litres</span><span class="cn">L/100 km</span><span>Cost</span></div>
+      ${fills.slice().reverse().map(([d, m, km, l, c, a]) => `<div class="fill mono"><span style="font-family:Public Sans">${d}</span><span class="km">${km ? N(km, 0) : "—"}</span><span class="l">${N(l, 1)}</span><span class="cn">${c ? N(c, 1) : "—"}</span><span>${P(a)}</span><span class="sm">${km ? `${N(km, 0)} km, ${N(l, 1)} L, ${N(c, 1)} L/100 km` : `${N(l, 1)} L, first fill`}</span></div>`).join("")}
+    </div></div>
+  </div>`;
+
+// ---------- Needs a category ----------
+const needs = () => `<h1 style="font-size:24px">Bank sync review</h1>
+  <p class="hint">Complete imported transactions that still need a category.</p>
+  <h3 style="margin:22px 0 4px;font-size:16px">Needs a category (2)</h3>
+  ${[["DIRECT DEBIT SEPA CORE MANDATE IT00ZZZ0000000000000 CREDITOR ACME INSURANCE SPA INVOICE 2026/0931 PERIOD SEPTEMBER", "22 Sep 2026", "Checking", -45], ["CARD PAYMENT 4000 XXXX XXXX XX02 MADE ON 2026-09-19 AT 12:05 BOOKSHOP CENTRAL STATION MILANO TERMINAL 0117 REF 000998877665 NO FEE", "21 Sep 2026", "Checking", -18.9]]
+    .map(([m, d, a, v]) => `<div class="need"><div><div class="m">${m}</div><div class="x">${d}, ${a}, <span class="mono out">${P(v)}</span></div></div><div class="select"><span>Category</span><span>⌄</span></div></div>`).join("")}`;
+
+const tabs = [
+  ["Spending", spending, ["Answers first: what was spent, against last month, before any control.", "Spending and income are never mixed: today Income is the biggest slice of the pie.", "Transfers between your own accounts are left out.", "A ranked list with bars replaces the pie: every name and figure is readable, and nothing needs a legend.", "The ticks are August, so the comparison needs no second chart.", "Each row is a button: the transactions open beside it, or as a sheet on a phone."]],
+  ["Cash flow", cashflow, ["In and out as two bars per month, and what was kept as a dot: today one net line hides both.", "Months after today are not drawn as zero.", "Month labels are short and never rotated.", "The table carries the same numbers, with the running total, so nothing is colour only."]],
+  ["Balances", balances, ["Balances move in steps, so the line is stepped, not smoothed.", "What is scheduled continues as a dashed line after today.", "One row per account with its own sparkline, instead of four lines on one scale.", "A minimum that was crossed is said in words, on the account it belongs to."]],
+  ["Vehicle", vehicle, ["The two figures people ask for come first: cost per km and consumption.", "A chart of consumption per fill, against the average.", "Numbers follow the app's format (4.551 km, not 4,551).", "On a phone the fills become rows: today the table makes the whole page scroll sideways."]],
+  ["Needs a category", needs, ["The bank's description is shown in full.", "The category picker keeps one width; on a phone it goes under the description, full width."]],
+];
+
+const only = new URLSearchParams(location.search).get("tab");
+if (new URLSearchParams(location.search).get("theme") === "dark") document.documentElement.dataset.theme = "dark";
+document.getElementById("root").innerHTML = tabs.filter(([n]) => !only || n === only).map(([n, f, notes]) => `
+  <div class="section-title">${n}</div>
+  <div class="pair">
+    <div class="frame desk"><div class="page">${f(640)}</div></div>
+    <div class="frame phone"><div class="page">${f(358)}</div></div>
+    <div class="note"><b>Why</b><ul>${notes.map((x) => `<li>${x}</li>`).join("")}</ul></div>
+  </div>`).join("");
+</script>
+</body>
+</html>
