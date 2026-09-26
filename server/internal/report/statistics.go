@@ -25,6 +25,8 @@ const (
 )
 
 // Filter mirrors the register filter model. Zero/empty fields are not applied.
+// "Hide future" has no field: the client clamps To to its own today, the civil
+// date the register uses.
 type Filter struct {
 	From       string
 	To         string
@@ -35,7 +37,24 @@ type Filter struct {
 	AmountMin  *int64
 	AmountMax  *int64
 	Text       string
+	// Transfers keeps only transfer legs (TransfersOnly) or drops them
+	// (TransfersNone); anything else keeps both.
+	Transfers string
+	// NoFlags keeps only transactions with no status.
+	NoFlags bool
+	// Uncategorised keeps only transactions with no category; a split carries
+	// its categories on its lines, so it is not uncategorised.
+	Uncategorised bool
 }
+
+// Values of Filter.Transfers.
+const (
+	TransfersOnly = "only"
+	TransfersNone = "none"
+)
+
+// transferLegIDs is a sub-SELECT of every transaction that is a leg of a transfer.
+const transferLegIDs = "SELECT txn_from_id FROM transfers UNION SELECT txn_to_id FROM transfers"
 
 // Group is one aggregated bucket (amount in base currency, signed).
 type Group struct {
@@ -134,6 +153,18 @@ func (s *Service) conds(ctx context.Context, walletID int64, f Filter) (parts []
 		like := "%" + txt + "%"
 		parts = append(parts, "(t.memo LIKE ? OR t.info LIKE ? OR COALESCE(p.name, '') LIKE ?)")
 		args = append(args, like, like, like)
+	}
+	switch f.Transfers {
+	case TransfersOnly:
+		parts = append(parts, "t.id IN ("+transferLegIDs+")")
+	case TransfersNone:
+		parts = append(parts, "t.id NOT IN ("+transferLegIDs+")")
+	}
+	if f.NoFlags {
+		parts = append(parts, "t.status = 0")
+	}
+	if f.Uncategorised {
+		parts = append(parts, "(t.category_id IS NULL AND t.is_split = 0)")
 	}
 	if len(f.Tags) > 0 {
 		ph := placeholders(len(f.Tags))

@@ -24,6 +24,7 @@ import {
   SERIES_PALETTE,
   baseFmt,
   cumulate,
+  filterToParams,
   previousPeriod,
 } from "./reportUtils";
 
@@ -49,20 +50,7 @@ export function TrendTab() {
   });
   const tagsQuery = useQuery({ queryKey: ["tags", walletId], queryFn: () => listTags(walletId) });
 
-  const params = useMemo(() => {
-    const out: Record<string, string> = {};
-    const { from, to } = dateBounds(filters);
-    if (from) out.from = from;
-    if (to) out.to = to;
-    if (filters.status !== null) out.status = String(filters.status);
-    if (filters.payeeId !== null) out.payeeId = String(filters.payeeId);
-    if (filters.categoryId !== null) out.categoryId = String(filters.categoryId);
-    if (filters.tags.length > 0) out.tags = filters.tags.join(",");
-    if (filters.amountMin !== null) out.amountMin = String(filters.amountMin);
-    if (filters.amountMax !== null) out.amountMax = String(filters.amountMax);
-    if (filters.text.trim()) out.text = filters.text.trim();
-    return out;
-  }, [filters]);
+  const params = useMemo(() => filterToParams(filters), [filters]);
 
   const query = useQuery({
     queryKey: ["trend", walletId, bucket, breakdown, params],
