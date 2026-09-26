@@ -3,6 +3,7 @@ package transaction
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/easly1989/cloudbank/server/internal/store"
@@ -558,6 +559,58 @@ func TestReviewAndDuplicates(t *testing.T) {
 	}
 	if row.ImportRef != "bank:3" {
 		t.Errorf("kept import_ref = %q, want bank:3 (carried from the merged row)", row.ImportRef)
+	}
+}
+
+// A duplicate pair carries every field the review compares side by side (#484).
+func TestReviewPairDetails(t *testing.T) {
+	s, _, wid, acc := newTestService(t)
+	ctx := context.Background()
+
+	manual, err := s.Create(ctx, wid, Input{
+		AccountID: acc, Date: "2026-05-01", Amount: -2500, Memo: "gym", Info: "chq 12",
+		PaymentMode: 6, Status: 1, Tags: []string{"sport", "monthly"},
+		Splits: []Split{{Amount: -1000, Memo: "fee"}, {Amount: -1500, Memo: "month"}},
+	})
+	if err != nil {
+		t.Fatalf("create manual: %v", err)
+	}
+	memo := "CARD PAYMENT 4000 XXXX XXXX XX02 MADE ON 2026-05-01 AT 18:42 CITY GYM MEMBERSHIP MAY TERMINAL 0042"
+	bank, err := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-05-06", Amount: -2500, Memo: memo, ImportRef: "bank:9"})
+	if err != nil {
+		t.Fatalf("create bank: %v", err)
+	}
+
+	rev, err := s.Review(ctx, wid)
+	if err != nil {
+		t.Fatalf("review: %v", err)
+	}
+	if len(rev.Duplicates) != 1 {
+		t.Fatalf("duplicates = %d, want 1", len(rev.Duplicates))
+	}
+	p := rev.Duplicates[0]
+	m, b := p.A, p.B
+	if m.ID != manual.ID {
+		m, b = b, m
+	}
+	if m.ID != manual.ID || b.ID != bank.ID {
+		t.Fatalf("unexpected pair: %+v", p)
+	}
+	if m.Info != "chq 12" || m.PaymentMode != 6 || !m.IsSplit || m.Status != 1 {
+		t.Errorf("manual side = %+v, want info, payment mode, split and status", m)
+	}
+	if got := strings.Join(m.Tags, ","); got != "monthly,sport" {
+		t.Errorf("manual tags = %q, want monthly,sport", got)
+	}
+	if b.Memo != memo || b.ImportRef != "bank:9" || len(b.Tags) != 0 || b.TransferAccountID != nil {
+		t.Errorf("bank side = %+v, want the whole memo, its ref, no tags and no transfer", b)
+	}
+
+	// The uncategorised list stays lightweight: no tags looked up there.
+	for _, r := range rev.NeedsCategory {
+		if r.Tags != nil {
+			t.Errorf("needsCategory row %d carries tags %v", r.ID, r.Tags)
+		}
 	}
 }
 
