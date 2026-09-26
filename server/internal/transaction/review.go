@@ -15,19 +15,26 @@ import (
 // caught; a false positive is dismissed once and never shown again.
 const duplicateFinderWindowDays = 14
 
-// ReviewTxn is the lightweight transaction shape the review surfaces: enough to
-// judge a duplicate or complete a category, including the import ref so the
-// bank-sourced row is distinguishable.
+// ReviewTxn is the transaction shape the review surfaces: enough to judge a
+// duplicate or complete a category, including the import ref so the
+// bank-sourced row is distinguishable. A duplicate pair also carries the tags
+// and the transfer's other account, so the two can be compared field by field
+// (#484); the uncategorised list, which can be long, does without.
 type ReviewTxn struct {
-	ID         int64  `json:"id"`
-	AccountID  int64  `json:"accountId"`
-	Date       string `json:"date"`
-	Amount     int64  `json:"amount"`
-	Memo       string `json:"memo"`
-	PayeeID    *int64 `json:"payeeId,omitempty"`
-	CategoryID *int64 `json:"categoryId,omitempty"`
-	Status     int    `json:"status"`
-	ImportRef  string `json:"importRef,omitempty"`
+	ID                int64    `json:"id"`
+	AccountID         int64    `json:"accountId"`
+	Date              string   `json:"date"`
+	Amount            int64    `json:"amount"`
+	Memo              string   `json:"memo"`
+	Info              string   `json:"info"`
+	PaymentMode       int      `json:"paymentMode"`
+	PayeeID           *int64   `json:"payeeId,omitempty"`
+	CategoryID        *int64   `json:"categoryId,omitempty"`
+	IsSplit           bool     `json:"isSplit"`
+	Status            int      `json:"status"`
+	ImportRef         string   `json:"importRef,omitempty"`
+	Tags              []string `json:"tags,omitempty"`
+	TransferAccountID *int64   `json:"transferAccountId,omitempty"`
 }
 
 // DuplicatePair is two transactions that look like the same movement.
@@ -46,9 +53,30 @@ type ReviewResult struct {
 func reviewTxn(r db.Transaction) ReviewTxn {
 	return ReviewTxn{
 		ID: r.ID, AccountID: r.AccountID, Date: r.Date, Amount: r.Amount, Memo: r.Memo,
-		PayeeID: idPtr(r.PayeeID), CategoryID: idPtr(r.CategoryID), Status: int(r.Status),
-		ImportRef: r.ImportRef,
+		Info: r.Info, PaymentMode: int(r.PaymentMode),
+		PayeeID: idPtr(r.PayeeID), CategoryID: idPtr(r.CategoryID), IsSplit: r.IsSplit != 0,
+		Status: int(r.Status), ImportRef: r.ImportRef,
 	}
+}
+
+// pairTxn is reviewTxn plus what a side-by-side comparison needs: the tags and,
+// for a transfer leg, the other leg's account. seen caches rows that appear in
+// several pairs.
+func (s *Service) pairTxn(ctx context.Context, r db.Transaction, seen map[int64]ReviewTxn) (ReviewTxn, error) {
+	if t, ok := seen[r.ID]; ok {
+		return t, nil
+	}
+	t := reviewTxn(r)
+	tags, err := s.rq.ListTransactionTags(ctx, r.ID)
+	if err != nil {
+		return ReviewTxn{}, err
+	}
+	t.Tags = tags
+	if _, t.TransferAccountID, err = s.transferInfo(ctx, r.ID); err != nil {
+		return ReviewTxn{}, err
+	}
+	seen[r.ID] = t
+	return t, nil
 }
 
 func pairKey(a, b int64) (int64, int64) {
@@ -115,6 +143,7 @@ func (s *Service) duplicatePairs(ctx context.Context, walletID int64) ([]Duplica
 	}
 
 	pairs := []DuplicatePair{}
+	seen := map[int64]ReviewTxn{}
 	// rows are ordered by (account, amount, date). For each row pair within the
 	// same account+amount group and inside the date window, emit a suspected
 	// duplicate unless it was dismissed.
@@ -131,7 +160,15 @@ func (s *Service) duplicatePairs(ctx context.Context, walletID int64) ([]Duplica
 			if skip[[2]int64{ka, kb}] {
 				continue
 			}
-			pairs = append(pairs, DuplicatePair{A: reviewTxn(a), B: reviewTxn(b)})
+			ta, err := s.pairTxn(ctx, a, seen)
+			if err != nil {
+				return nil, err
+			}
+			tb, err := s.pairTxn(ctx, b, seen)
+			if err != nil {
+				return nil, err
+			}
+			pairs = append(pairs, DuplicatePair{A: ta, B: tb})
 		}
 	}
 	return pairs, nil

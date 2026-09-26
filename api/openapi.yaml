@@ -3143,11 +3143,23 @@ components:
         date: { type: string }
         amount: { type: integer, format: int64 }
         memo: { type: string }
+        info: { type: string }
+        paymentMode: { type: integer }
         payeeId: { type: integer, format: int64, nullable: true }
         categoryId: { type: integer, format: int64, nullable: true }
+        isSplit: { type: boolean, description: "the categories are on the splits, and categoryId is empty" }
         status: { type: integer }
         importRef: { type: string }
-      required: [id, accountId, date, amount, memo, status]
+        tags:
+          type: array
+          items: { type: string }
+          description: "the transaction's tags; filled in for duplicate pairs only"
+        transferAccountId:
+          type: integer
+          format: int64
+          nullable: true
+          description: "the other leg's account, when this is one leg of a transfer; duplicate pairs only"
+      required: [id, accountId, date, amount, memo, info, paymentMode, isSplit, status]
     DuplicatePair:
       type: object
       description: Two transactions that look like the same movement.
