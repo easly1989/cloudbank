@@ -7726,6 +7726,12 @@ export interface operations {
                 amountMin?: number;
                 amountMax?: number;
                 text?: string;
+                /** @description transfer legs: all (default), only them, or none of them */
+                transfers?: "all" | "only" | "none";
+                /** @description only transactions with no status */
+                noFlags?: boolean;
+                /** @description only transactions with no category (a split is not) */
+                uncategorised?: boolean;
                 format?: "json" | "csv";
             };
             header?: never;
@@ -7762,6 +7768,12 @@ export interface operations {
                 amountMin?: number;
                 amountMax?: number;
                 text?: string;
+                /** @description transfer legs: all (default), only them, or none of them */
+                transfers?: "all" | "only" | "none";
+                /** @description only transactions with no status */
+                noFlags?: boolean;
+                /** @description only transactions with no category (a split is not) */
+                uncategorised?: boolean;
             };
             header?: never;
             path: {
@@ -7797,6 +7809,12 @@ export interface operations {
                 amountMin?: number;
                 amountMax?: number;
                 text?: string;
+                /** @description transfer legs: all (default), only them, or none of them */
+                transfers?: "all" | "only" | "none";
+                /** @description only transactions with no status */
+                noFlags?: boolean;
+                /** @description only transactions with no category (a split is not) */
+                uncategorised?: boolean;
             };
             header?: never;
             path: {
