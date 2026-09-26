@@ -87,19 +87,6 @@ export const DEFAULT_IE: IEConfig = { months: null, style: "bars", net: false, c
 export type KpiConfig = { metric: "today" | "future" | "bank" };
 export const DEFAULT_KPI: KpiConfig = { metric: "today" };
 
-// A fixed, color-blind-friendly palette cycled across spending slices.
-export const DONUT_PALETTE = [
-  "#4dabf7",
-  "#ff8787",
-  "#69db7c",
-  "#ffd43b",
-  "#da77f2",
-  "#3bc9db",
-  "#ffa94d",
-  "#a9e34b",
-  "#9775fa",
-];
-
 // Income/expense trailing windows offered in the chart's period dropdown
 // (0 = all dates).
 export const IE_MONTHS: number[] = [6, 12, 24, 36, 0];

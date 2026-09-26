@@ -45,9 +45,9 @@ export const TOURS = {
   ],
   budget: [step("budget", "tabs", "budget-tabs"), step("budget", "editor", "budget-editor")],
   reports: [
+    step("reports", "period", "reports-period"),
     step("reports", "tabs", "reports-tabs"),
-    step("reports", "views", "reports-views"),
-    step("reports", "export", "reports-export"),
+    step("reports", "more", "reports-more"),
   ],
   schedules: [step("schedules", "add", "schedules-add"), step("schedules", "due")],
   bills: [step("bills", "list", "bills-list"), step("bills", "add", "bills-add")],

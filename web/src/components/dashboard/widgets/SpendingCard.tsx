@@ -17,13 +17,13 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { type CurrencyInfo, type DashboardGroupBy, getDashboard } from "../../../api/client";
+import { categoryColor, useChartColors } from "../../../chartPalette";
 import { formatMinor } from "../../../money";
 import type { DatePreset } from "../../../pages/registerFilterModel";
 import { Chart } from "../../Chart";
 import { Donut } from "../../Donut";
 import {
   type ChartType,
-  DONUT_PALETTE,
   effectivePeriod,
   FOLLOW_PAGE,
   PERIODS,
@@ -132,15 +132,16 @@ function SpendingChart({
   chartType: ChartType;
 }) {
   const { t } = useTranslation();
+  const colors = useChartColors();
 
   const data = useMemo(
     () =>
       slices.map((s, i) => ({
         label: s.categoryId === 0 ? t("dashboard.other") : s.name,
         value: s.amount,
-        color: DONUT_PALETTE[i % DONUT_PALETTE.length],
+        color: s.categoryId === 0 ? colors.other : categoryColor(colors, i),
       })),
-    [slices, t],
+    [slices, t, colors],
   );
 
   const barOption: EChartsOption = useMemo(() => {
