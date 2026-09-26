@@ -161,7 +161,15 @@ func parseReportFilter(r *http.Request) report.Filter {
 	if v := q.Get("tags"); v != "" {
 		f.Tags = strings.Split(v, ",")
 	}
+	f.Transfers = q.Get("transfers")
+	f.NoFlags = queryFlag(q.Get("noFlags"))
+	f.Uncategorised = queryFlag(q.Get("uncategorised"))
 	return f
+}
+
+// queryFlag reads a boolean query parameter: "1" or "true" is on.
+func queryFlag(v string) bool {
+	return v == "1" || v == "true"
 }
 
 func (h *reportHandlers) statistics(w http.ResponseWriter, r *http.Request) {
