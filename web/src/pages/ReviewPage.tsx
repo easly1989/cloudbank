@@ -1,21 +1,21 @@
 import {
   ActionIcon,
   Badge,
+  Box,
   Button,
   Card,
   Divider,
   Group,
-  SimpleGrid,
   Stack,
   Select,
   Text,
   Tooltip,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { useDisclosure } from "@mantine/hooks";
-import { IconGitMerge, IconPencil, IconTrash } from "@tabler/icons-react";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
+import { IconArrowsLeftRight, IconGitMerge, IconPencil, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/confirmContext";
 
@@ -32,6 +32,7 @@ import {
   getTransactionReview,
   listAccounts,
   listCategories,
+  listPayees,
   listTemplates,
   mergeTransactions,
 } from "../api/client";
@@ -41,6 +42,24 @@ import { formatMinor, type MoneyFormat } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
 import { PageHeader } from "../components/PageHeader";
 import { amountColor, errorColor } from "../amountTone";
+import { compareRows, type CompareField, type CompareRow, type Described } from "./reviewCompare";
+
+// The label each compared field goes by (#484).
+const FIELD_LABEL: Record<CompareField, string> = {
+  amount: "transactions.amount",
+  account: "transactions.account",
+  transfer: "transfers.transfer",
+  payee: "transactions.payee",
+  category: "transactions.category",
+  memo: "transactions.memo",
+  info: "transactions.info",
+  paymentMode: "transactions.paymentMode",
+  status: "transactions.status",
+  tags: "transactions.tags",
+};
+
+// A compared row's rule, between it and the next.
+const ROW_RULE = "1px solid var(--mantine-color-default-border)";
 
 function fmtFor(acc?: Account): MoneyFormat {
   return {
@@ -78,6 +97,11 @@ export function ReviewPage() {
     queryFn: () => listCategories(walletId),
     enabled: walletId > 0,
   });
+  const payeesQuery = useQuery({
+    queryKey: ["payees", walletId],
+    queryFn: () => listPayees(walletId),
+    enabled: walletId > 0,
+  });
   const templatesQuery = useQuery({
     queryKey: ["templates", walletId],
     queryFn: () => listTemplates(walletId),
@@ -95,6 +119,23 @@ export function ReviewPage() {
         : c.name,
     }));
   }, [categoriesQuery.data]);
+
+  const payeeById = useMemo(
+    () => new Map((payeesQuery.data ?? []).map((p) => [p.id, p.name])),
+    [payeesQuery.data],
+  );
+  const categoryName = useMemo(() => {
+    const cats = categoriesQuery.data ?? [];
+    const byId = new Map(cats.map((c) => [c.id, c]));
+    return (id?: number | null) => {
+      const c = id ? byId.get(id) : undefined;
+      if (!c) return "";
+      const parent = c.parentId ? byId.get(c.parentId) : undefined;
+      return parent ? `${parent.name} › ${c.name}` : c.name;
+    };
+  }, [categoriesQuery.data]);
+  // Side by side on a desktop; on a phone the two stack.
+  const phone = useMediaQuery("(max-width: 47.99em)");
 
   const [editTx, setEditTx] = useState<{ tx: Transaction; account: Account } | null>(null);
   const [formOpen, form] = useDisclosure(false);
@@ -166,74 +207,191 @@ export function ReviewPage() {
   const needs = review.data?.needsCategory ?? [];
   const dups = review.data?.duplicates ?? [];
 
-  const dupCell = (tx: ReviewTxn, other: ReviewTxn) => {
+  // A transaction's compared fields, as the reader sees them.
+  const describe = (tx: ReviewTxn): Described => {
     const acc = accountById.get(tx.accountId);
+    const other = tx.transferAccountId ? accountById.get(tx.transferAccountId) : undefined;
+    return {
+      amount: formatMinor(tx.amount, fmtFor(acc)),
+      account: acc?.name ?? "",
+      transfer: tx.transferAccountId ? (other?.name ?? "?") : "",
+      payee: tx.payeeId ? (payeeById.get(tx.payeeId) ?? "") : "",
+      category: tx.isSplit ? t("transactions.split") : categoryName(tx.categoryId),
+      memo: tx.memo,
+      info: tx.info,
+      paymentMode: tx.paymentMode ? t(`paymentModes.${tx.paymentMode}`) : "",
+      status: t(`status.${tx.status}`),
+      tags: (tx.tags ?? []).join(", "),
+    };
+  };
+
+  // One side's value in a compared row. What the two share is dimmed, so the
+  // differences are what the eye lands on; the memo is never cut short.
+  const value = (row: CompareRow, side: "a" | "b", tx: ReviewTxn): ReactNode => {
+    const text = row[side];
+    if (text === "") {
+      return (
+        <Text size="sm" c="dimmed">
+          —
+        </Text>
+      );
+    }
+    if (row.field === "amount") {
+      return (
+        <Text
+          size="sm"
+          fw={600}
+          ff="monospace"
+          c={amountColor(tx.amount)}
+          opacity={row.same ? 0.6 : 1}
+        >
+          {text}
+        </Text>
+      );
+    }
     return (
-      <Card withBorder padding="sm">
-        <Stack gap={4}>
-          <Group justify="space-between" wrap="nowrap">
-            <Text fw={600} size="sm">
-              {fmtDate(tx.date)}
-            </Text>
-            <Text fw={600} size="sm" c={amountColor(tx.amount)}>
-              {formatMinor(tx.amount, fmtFor(acc))}
-            </Text>
-          </Group>
-          <Text size="xs" c="dimmed" truncate>
-            {tx.memo || t("review.noMemo")}
-            {acc ? ` · ${acc.name}` : ""}
-          </Text>
-          {tx.importRef ? (
-            <Badge size="xs" variant="dot" color="blue">
-              {t("review.fromBank")}
-            </Badge>
-          ) : (
-            <Badge size="xs" variant="dot" color="gray">
-              {t("review.manual")}
-            </Badge>
-          )}
-          <Group gap={4} mt={4} wrap="nowrap">
-            <Button
-              size="xs"
-              variant="light"
-              leftSection={<IconGitMerge size={14} />}
-              onClick={() => merge.mutate({ keepId: tx.id, dropId: other.id })}
-              loading={merge.isPending}
+      <Text
+        size="sm"
+        c={row.same ? "dimmed" : undefined}
+        style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+      >
+        {row.field === "transfer" && (
+          <IconArrowsLeftRight size={13} style={{ marginRight: 4, verticalAlign: -2 }} />
+        )}
+        {text}
+      </Text>
+    );
+  };
+
+  const label = (field: CompareField) => (
+    <Text size="xs" fw={600} c="dimmed" tt="uppercase" style={{ letterSpacing: "0.04em" }}>
+      {t(FIELD_LABEL[field])}
+    </Text>
+  );
+
+  // The date and where the row came from, above its column.
+  const heading = (tx: ReviewTxn) => (
+    <Group gap={8} wrap="nowrap">
+      <Text fw={700} size="sm" ff="monospace">
+        {fmtDate(tx.date)}
+      </Text>
+      {tx.importRef ? (
+        <Badge size="xs" variant="dot" color="blue">
+          {t("review.fromBank")}
+        </Badge>
+      ) : (
+        <Badge size="xs" variant="dot" color="gray">
+          {t("review.manual")}
+        </Badge>
+      )}
+    </Group>
+  );
+
+  const actions = (tx: ReviewTxn, other: ReviewTxn) => (
+    <Group gap={4} wrap="nowrap">
+      <Button
+        size="xs"
+        variant="light"
+        leftSection={<IconGitMerge size={14} />}
+        onClick={() => merge.mutate({ keepId: tx.id, dropId: other.id })}
+        loading={merge.isPending}
+      >
+        {t("review.keepThis")}
+      </Button>
+      <Tooltip label={t("review.edit")} withArrow>
+        <ActionIcon
+          variant="subtle"
+          size="sm"
+          aria-label={t("review.edit")}
+          onClick={() => void openEdit(tx.id, tx.accountId)}
+        >
+          <IconPencil size={15} />
+        </ActionIcon>
+      </Tooltip>
+      <Tooltip label={t("review.delete")} withArrow>
+        <ActionIcon
+          variant="subtle"
+          size="sm"
+          color="red"
+          aria-label={t("review.delete")}
+          onClick={async () => {
+            const ok = await confirm({
+              title: t("transactions.confirmDeleteTitle"),
+              body: t("transactions.confirmDeleteBody"),
+              confirmLabel: t("transactions.confirmDeleteAction"),
+              danger: true,
+            });
+            if (ok) remove.mutate(tx.id);
+          }}
+        >
+          <IconTrash size={15} />
+        </ActionIcon>
+      </Tooltip>
+    </Group>
+  );
+
+  // A pair, field by field (#484): one row per field with the two side by side,
+  // so a row is as tall as its longer value and the columns stay aligned.
+  const comparison = (a: ReviewTxn, b: ReviewTxn) => {
+    const rows = compareRows(describe(a), describe(b));
+    const cell = { padding: "6px 0", borderBottom: ROW_RULE, minWidth: 0 };
+    if (phone) {
+      const sides = [
+        [a, b, "a"],
+        [b, a, "b"],
+      ] as const;
+      return (
+        <Stack gap="sm">
+          {sides.map(([tx, other, side]) => (
+            <Box
+              key={tx.id}
+              p="sm"
+              style={{ border: ROW_RULE, borderRadius: "var(--mantine-radius-md)" }}
             >
-              {t("review.keepThis")}
-            </Button>
-            <Tooltip label={t("review.edit")} withArrow>
-              <ActionIcon
-                variant="subtle"
-                size="sm"
-                aria-label={t("review.edit")}
-                onClick={() => void openEdit(tx.id, tx.accountId)}
-              >
-                <IconPencil size={15} />
-              </ActionIcon>
-            </Tooltip>
-            <Tooltip label={t("review.delete")} withArrow>
-              <ActionIcon
-                variant="subtle"
-                size="sm"
-                color="red"
-                aria-label={t("review.delete")}
-                onClick={async () => {
-                  const ok = await confirm({
-                    title: t("transactions.confirmDeleteTitle"),
-                    body: t("transactions.confirmDeleteBody"),
-                    confirmLabel: t("transactions.confirmDeleteAction"),
-                    danger: true,
-                  });
-                  if (ok) remove.mutate(tx.id);
+              {heading(tx)}
+              <Box
+                mt={6}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "92px minmax(0, 1fr)",
+                  columnGap: 10,
                 }}
               >
-                <IconTrash size={15} />
-              </ActionIcon>
-            </Tooltip>
-          </Group>
+                {rows.map((row) => (
+                  <Fragment key={row.field}>
+                    <Box style={{ ...cell, paddingTop: 8 }}>{label(row.field)}</Box>
+                    <Box style={cell}>{value(row, side, tx)}</Box>
+                  </Fragment>
+                ))}
+              </Box>
+              <Box mt="sm">{actions(tx, other)}</Box>
+            </Box>
+          ))}
         </Stack>
-      </Card>
+      );
+    }
+    return (
+      <Box
+        style={{
+          display: "grid",
+          gridTemplateColumns: "max-content minmax(0, 1fr) minmax(0, 1fr)",
+          columnGap: 20,
+        }}
+      >
+        <Box style={{ ...cell, paddingBottom: 10 }} />
+        <Box style={{ ...cell, paddingBottom: 10 }}>{heading(a)}</Box>
+        <Box style={{ ...cell, paddingBottom: 10 }}>{heading(b)}</Box>
+        {rows.map((row) => (
+          <Fragment key={row.field}>
+            <Box style={{ ...cell, paddingTop: 8 }}>{label(row.field)}</Box>
+            <Box style={cell}>{value(row, "a", a)}</Box>
+            <Box style={cell}>{value(row, "b", b)}</Box>
+          </Fragment>
+        ))}
+        <Box />
+        <Box pt="sm">{actions(a, b)}</Box>
+        <Box pt="sm">{actions(b, a)}</Box>
+      </Box>
     );
   };
 
@@ -281,7 +439,8 @@ export function ReviewPage() {
 
       <Card withBorder data-tour="review-duplicates">
         <Stack gap="sm">
-          <Group justify="space-between" wrap="nowrap">
+          {/* Wraps on a phone, where the title and the button do not fit one line. */}
+          <Group justify="space-between" gap="xs">
             <Text fw={600}>{t("review.duplicates", { count: dups.length })}</Text>
             {dups.length > 0 && (
               <Button
@@ -314,10 +473,7 @@ export function ReviewPage() {
                 padding="sm"
                 bg="var(--mantine-color-body)"
               >
-                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-                  {dupCell(p.a, p.b)}
-                  {dupCell(p.b, p.a)}
-                </SimpleGrid>
+                {comparison(p.a, p.b)}
                 <Divider my="xs" />
                 <Group justify="flex-end">
                   <Button

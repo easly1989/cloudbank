@@ -248,10 +248,17 @@ export interface ReviewTxn {
   date: string;
   amount: number;
   memo: string;
+  info: string;
+  paymentMode: number;
   payeeId?: number | null;
   categoryId?: number | null;
+  isSplit: boolean;
   status: number;
   importRef?: string;
+  /** Duplicate pairs only. */
+  tags?: string[];
+  /** Duplicate pairs only: the other leg's account, for a transfer. */
+  transferAccountId?: number | null;
 }
 export interface DuplicatePair {
   a: ReviewTxn;

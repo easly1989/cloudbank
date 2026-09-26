@@ -261,7 +261,9 @@ category, the **Review** page (in the sidebar) helps you finish the job:
   inline.
 - **Possible duplicates** finds pairs that look like the same movement (same
   account and amount, close dates) that reconciliation didn't catch — for example a
-  manual entry whose date was well off. For each pair you can **merge** (keep one,
+  manual entry whose date was well off. The two are compared field by field —
+  payee, category, the whole memo, info, payment, status, tags — with what they
+  share dimmed, so the differences stand out. For each pair you can **merge** (keep one,
   carrying the bank reference over), **edit** or **delete** a row, or mark it **"not
   a duplicate"** so it is never shown again.
 

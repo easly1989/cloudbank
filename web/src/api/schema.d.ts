@@ -3379,12 +3379,23 @@ export interface components {
             /** Format: int64 */
             amount: number;
             memo: string;
+            info: string;
+            paymentMode: number;
             /** Format: int64 */
             payeeId?: number | null;
             /** Format: int64 */
             categoryId?: number | null;
+            /** @description the categories are on the splits, and categoryId is empty */
+            isSplit: boolean;
             status: number;
             importRef?: string;
+            /** @description the transaction's tags; filled in for duplicate pairs only */
+            tags?: string[];
+            /**
+             * Format: int64
+             * @description the other leg's account, when this is one leg of a transfer; duplicate pairs only
+             */
+            transferAccountId?: number | null;
         };
         /** @description Two transactions that look like the same movement. */
         DuplicatePair: {
