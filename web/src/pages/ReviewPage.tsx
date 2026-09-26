@@ -412,9 +412,23 @@ export function ReviewPage() {
             needs.map((tx) => {
               const acc = accountById.get(tx.accountId);
               return (
-                <Group key={tx.id} justify="space-between" wrap="nowrap" gap="sm">
+                // The bank's description is what the category is chosen from, so it
+                // is shown whole (#486). The picker keeps one width beside it; on
+                // a phone it goes underneath, full width, instead of being squeezed.
+                <Box
+                  key={tx.id}
+                  data-testid="needs-category-row"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: phone ? "minmax(0, 1fr)" : "minmax(0, 1fr) 240px",
+                    gap: "8px 20px",
+                    alignItems: "start",
+                    paddingTop: 12,
+                    borderTop: ROW_RULE,
+                  }}
+                >
                   <div style={{ minWidth: 0 }}>
-                    <Text size="sm" truncate>
+                    <Text size="sm" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
                       {tx.memo || t("review.noMemo")}
                     </Text>
                     <Text size="xs" c="dimmed">
@@ -424,13 +438,13 @@ export function ReviewPage() {
                   </div>
                   <Select
                     placeholder={t("transactions.category")}
+                    aria-label={t("transactions.category")}
                     data={categoryOptions}
                     value={tx.categoryId ? String(tx.categoryId) : null}
                     onChange={(v) => v && setCategory.mutate({ id: tx.id, categoryId: Number(v) })}
                     searchable
-                    w={240}
                   />
-                </Group>
+                </Box>
               );
             })
           )}
