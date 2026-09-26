@@ -126,17 +126,33 @@ export interface BalanceSeries {
   accountId: number;
   label: string;
   minimumBalance: number;
+  /** The balance at the end of each bucket, in the account's own currency. */
   values: number[];
+  currency: CurrencyInfo | null;
+  /** The balance before the range's first day. */
+  start: number;
+  /** The balance at the end of asOf. */
+  today: number;
+  /** The lowest balance from the range's first day through asOf, on lowDate. */
+  low: number;
+  lowDate: string;
+  /** The first day that ended under minimumBalance; "" when none did. */
+  underMinimumOn: string;
 }
 
 export interface BalanceResult {
   buckets: string[];
   series: BalanceSeries[];
+  /** The series summed per bucket, in the base currency. */
+  total: number[];
+  startTotal: number;
+  todayTotal: number;
+  asOf: string;
   currency: CurrencyInfo | null;
 }
 
 export type ReportBucket = "day" | "week" | "month" | "quarter" | "year";
-export type TrendBreakdown = "none" | "account" | "payee" | "category";
+export type TrendBreakdown = "none" | "account" | "payee" | "category" | "flow";
 
 export const getTrend = (
   walletId: number,
@@ -154,11 +170,15 @@ export const getBalanceReport = (
   accountIds: number[],
   from?: string,
   to?: string,
+  /** The caller's today, and whether to add what the schedules will do after it. */
+  opts: { asOf?: string; scheduled?: boolean } = {},
 ) => {
   const q = new URLSearchParams({ bucket });
   if (accountIds.length > 0) q.set("accountIds", accountIds.join(","));
   if (from) q.set("from", from);
   if (to) q.set("to", to);
+  if (opts.asOf) q.set("asOf", opts.asOf);
+  if (opts.scheduled) q.set("scheduled", "1");
   return api.get<BalanceResult>(`/api/v1/wallets/${walletId}/reports/balance?${q.toString()}`);
 };
 
