@@ -83,8 +83,10 @@ export const Chart = forwardRef<
     option: EChartsOption;
     height?: number;
     onSelect?: (key: string) => void;
+    /** What the chart shows, for a screen reader; the figures beside it carry the rest. */
+    label?: string;
   }
->(function Chart({ option, height = 360, onSelect }, ref) {
+>(function Chart({ option, height = 360, onSelect, label }, ref) {
   const el = useRef<HTMLDivElement>(null);
   const chart = useRef<ECharts | null>(null);
   // Re-theme (and re-render) the option whenever the colour scheme changes so
@@ -93,7 +95,12 @@ export const Chart = forwardRef<
   const themed = useMemo(() => applyChartTheme(option, scheme === "dark"), [option, scheme]);
 
   useImperativeHandle(ref, () => ({
-    getPng: () => chart.current?.getDataURL({ pixelRatio: 2, backgroundColor: "#fff" }),
+    // The card's own ground: on white, the dark scheme's light text disappears.
+    getPng: () =>
+      chart.current?.getDataURL({
+        pixelRatio: 2,
+        backgroundColor: scheme === "dark" ? "#161c25" : "#fff",
+      }),
   }));
 
   useEffect(() => {
@@ -133,5 +140,12 @@ export const Chart = forwardRef<
     }
   }, [themed, onSelect]);
 
-  return <div ref={el} style={{ width: "100%", height }} />;
+  return (
+    <div
+      ref={el}
+      style={{ width: "100%", height }}
+      role={label ? "img" : undefined}
+      aria-label={label}
+    />
+  );
 });

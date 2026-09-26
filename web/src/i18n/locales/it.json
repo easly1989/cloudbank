@@ -101,53 +101,20 @@
   },
   "reports": {
     "title": "Report",
-    "statistics": "Statistiche",
-    "trend": "Andamento",
-    "balance": "Saldo",
-    "vehicle": "Veicolo",
-    "pickVehicle": "Scegli un veicolo…",
+    "hint": "Dove sono andati i soldi, e come si sono mossi, nel periodo che scegli.",
     "meter": "Contachilometri",
-    "distance": "Distanza",
-    "volume": "Volume",
-    "consumption": "Consumo",
-    "costPerDistance": "Costo / distanza",
-    "totalCost": "Costo totale",
     "partial": "parziale",
     "unitDistance": "km",
     "unitVolume": "L",
     "unitConsumption": "L/100km",
-    "exportCsv": "Esporta CSV",
-    "exportPng": "Esporta PNG",
-    "chart": "Grafico",
-    "table": "Tabella",
-    "pie": "Torta",
-    "column": "Colonne",
-    "line": "Linea",
-    "cumulative": "Cumulativo",
-    "compare": "Confronta col periodo precedente",
-    "previous": "Precedente",
-    "change": "Variazione",
-    "savedViews": "Vista salvata",
-    "savedViewsPlaceholder": "Viste salvate…",
-    "saveView": "Salva vista",
-    "deleteView": "Elimina",
-    "saveViewPrompt": "Nome della vista",
-    "overdraft": "Minimo",
+    "consumption": "Consumo",
+    "exportCsv": "Scarica i numeri (CSV)",
+    "exportPng": "Scarica il grafico (PNG)",
     "today": "Oggi",
     "accounts": "Conti",
     "allAccounts": "Tutti i conti",
-    "group": "Gruppo",
     "amount": "Importo",
-    "total": "Totale",
     "empty": "Nessun dato per questi filtri.",
-    "groups": {
-      "category": "Categoria",
-      "subcategory": "Sottocategoria",
-      "payee": "Beneficiario",
-      "tag": "Tag",
-      "month": "Mese",
-      "year": "Anno"
-    },
     "buckets": {
       "day": "Giorno",
       "week": "Settimana",
@@ -155,13 +122,150 @@
       "quarter": "Trimestre",
       "year": "Anno"
     },
-    "breakdowns": {
-      "none": "Totale",
-      "account": "Conto",
-      "payee": "Beneficiario",
-      "category": "Categoria"
+    "filters": "Filtri",
+    "more": "Viste salvate e download",
+    "tabs": {
+      "spending": "Spese",
+      "cashflow": "Entrate e uscite",
+      "balances": "Saldi",
+      "vehicle": "Veicolo"
     },
-    "hint": "Dove sono finiti i soldi, sull'arco di tempo che scegli."
+    "period": {
+      "span": "Periodo",
+      "month": "Mese",
+      "quarter": "Trimestre",
+      "half": "Semestre",
+      "year": "Anno",
+      "all": "Tutto",
+      "allTime": "Da sempre",
+      "quarterName": "{{n}}º trimestre {{year}}",
+      "halfName": "{{n}}º semestre {{year}}",
+      "previous": "Periodo precedente",
+      "in": {
+        "month": "a {{name}}",
+        "quarter": "nel {{name}}",
+        "half": "nel {{name}}",
+        "year": "nel {{name}}",
+        "all": "in tutto"
+      },
+      "vs": {
+        "month": "Confronto con {{name}}",
+        "quarter": "Confronto con il {{name}}",
+        "half": "Confronto con il {{name}}",
+        "year": "Confronto con il {{name}}",
+        "all": "Confronto con prima"
+      },
+      "atEnd": {
+        "month": "Alla fine di {{name}}",
+        "quarter": "Alla fine del {{name}}",
+        "half": "Alla fine del {{name}}",
+        "year": "Alla fine del {{name}}",
+        "all": "All'ultima transazione"
+      },
+      "byEnd": {
+        "month": "Alla fine di {{name}}",
+        "quarter": "Alla fine del {{name}}",
+        "half": "Alla fine del {{name}}",
+        "year": "Alla fine del {{name}}",
+        "all": "All'ultima transazione"
+      },
+      "next": "Periodo successivo"
+    },
+    "chip": {
+      "transfers": {
+        "all": "Trasferimenti inclusi",
+        "only": "Solo trasferimenti"
+      }
+    },
+    "views": {
+      "menu": "Viste salvate…",
+      "title": "Viste salvate",
+      "name": "Salva questa vista come",
+      "namePlaceholder": "es. Cibo quest'anno",
+      "save": "Salva",
+      "empty": "Nessuna vista salvata. Una vista tiene la scheda, il periodo e i filtri come sono ora.",
+      "delete": "Elimina {{name}}"
+    },
+    "spending": {
+      "type": "Spese o entrate",
+      "expense": "Spese",
+      "income": "Entrate",
+      "byLabel": "per",
+      "by": {
+        "category": "Categoria",
+        "payee": "Beneficiario",
+        "tag": "Tag"
+      },
+      "total": {
+        "expense": "Speso {{when}}",
+        "expenseSoFar": "Speso finora {{when}}",
+        "income": "Entrato {{when}}",
+        "incomeSoFar": "Entrato finora {{when}}"
+      },
+      "noTransfers": "esclusi i trasferimenti tra i tuoi conti",
+      "more": "{{amount}} in più",
+      "less": "{{amount}} in meno",
+      "same": "Uguale",
+      "movers": "meno per {{less}}, più per {{more}}",
+      "moreOn": "più per {{name}}",
+      "lessOn": "meno per {{name}}",
+      "other_one": "Altro ({{count}})",
+      "other_other": "Altro ({{count}})",
+      "showFewer": "Mostra meno",
+      "tickLegend": "{{period}}, per confronto",
+      "new": "nuovo",
+      "sameShort": "uguale",
+      "noPayee": "Nessun beneficiario",
+      "count_one": "{{count}} transazione",
+      "count_other": "{{count}} transazioni",
+      "showAll_one": "Mostrala nel registro",
+      "showAll_other": "Mostra tutte le {{count}} nel registro",
+      "showIn": "Mostrale nel registro:"
+    },
+    "cashflow": {
+      "in": "Entrate",
+      "out": "Uscite",
+      "kept": "Rimasto",
+      "keptLegend": "Rimasto (entrate − uscite)",
+      "running": "Progressivo",
+      "soFar": "finora",
+      "keptSoFar": "Rimasto finora {{when}}",
+      "keptIn": "Rimasto {{when}}",
+      "share": "il {{pct}}% di quanto è entrato",
+      "overspent": "è uscito più di quanto è entrato",
+      "barPer": "Una barra per",
+      "chartLabel": "Entrate e uscite, {{period}}",
+      "future": "Questo periodo non è ancora iniziato."
+    },
+    "balances": {
+      "allToday": "Tutti i conti oggi",
+      "pickedToday": "Questi conti oggi",
+      "withScheduled": "con quanto è programmato",
+      "since": "dal {{date}}",
+      "sinceStart": "dalla prima transazione",
+      "which": "Quali conti",
+      "pick": "Scegli conti",
+      "pickPlaceholder": "Tutti i conti",
+      "total": "Tutti i conti",
+      "scheduled": "Programmato",
+      "chartLabel": "Saldo totale, {{period}}",
+      "change": "{{amount}} {{when}}",
+      "lowest": "minimo {{amount}}",
+      "under": "È sceso sotto il minimo di {{amount}} il {{date}}."
+    },
+    "fuel": {
+      "pick": "Veicolo",
+      "none": "Nessun veicolo.",
+      "add": "Aggiungi un veicolo",
+      "empty": "Nessun rifornimento per questo veicolo nel periodo.",
+      "costPerKm": "Costo al km",
+      "costFor": "{{cost}} per {{distance}}",
+      "volumeIn_one": "{{volume}} in {{count}} rifornimento",
+      "volumeIn_other": "{{volume}} in {{count}} rifornimenti",
+      "chartTitle": "Litri per 100 km, rifornimento per rifornimento",
+      "average": "media {{value}}",
+      "needTwoFills": "Per il consumo servono due pieni di fila."
+    }
   },
   "budget": {
     "amountFor": "Budget per {{name}}",
@@ -1482,17 +1586,17 @@
     },
     "reports": {
       "offer": "Prima volta qui? Fai il giro dei report",
+      "period": {
+        "title": "Un periodo per tutte le schede",
+        "body": "Scegli un mese, un trimestre, un anno o tutto, e spostati avanti e indietro con le frecce. I filtri valgono per tutte le schede insieme."
+      },
       "tabs": {
-        "title": "Quattro viste sul tuo denaro",
-        "body": "Statistiche divide le spese per categoria o beneficiario, Andamento le segue nel tempo, Saldo segue i conti e Veicolo somma i costi di gestione."
+        "title": "Quattro domande",
+        "body": "Spese dice dove sono andati i soldi, Entrate e uscite cosa è entrato e uscito, Saldi quanto hanno i tuoi conti, Veicolo quanto costa un'auto."
       },
-      "views": {
-        "title": "Salva una vista che usi",
-        "body": "Salva il raggruppamento e i filtri che hai impostato e riaprili con un clic."
-      },
-      "export": {
-        "title": "Portali altrove",
-        "body": "Scarica i numeri in CSV, o il grafico come immagine."
+      "more": {
+        "title": "Tienilo, o portalo altrove",
+        "body": "Salva il report com'è ora e riaprilo con un clic, oppure scarica i suoi numeri e il suo grafico."
       }
     },
     "schedules": {
