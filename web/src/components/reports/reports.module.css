@@ -1,0 +1,401 @@
+/* The reports' shared layout. Container queries rather than media queries: a
+   report's width is the page's minus the sidebar, so the page decides, not the
+   window. 600px is where two columns stop fitting. */
+
+.page {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+/* The period bar: the span on one line, arrows and the two buttons after it.
+   On a phone the span takes the first row whole. */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.spacer {
+  flex: 1;
+}
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.stepLabel {
+  font-weight: 600;
+  font-size: 14px;
+  min-width: 128px;
+  text-align: center;
+  white-space: nowrap;
+  padding: 0 6px;
+}
+@container (max-width: 600px) {
+  .span {
+    width: 100%;
+  }
+  .stepper {
+    flex: 1;
+  }
+  .stepLabel {
+    flex: 1;
+    min-width: 0;
+  }
+  .spacer {
+    display: none;
+  }
+}
+
+/* The figures that answer the tab's question, before any control. */
+.answer {
+  display: flex;
+  gap: 18px 40px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.figureLabel {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+}
+.figure {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.figure[data-big] {
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.figureSub {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+  margin-top: 2px;
+}
+@container (max-width: 600px) {
+  .answer {
+    gap: 18px 28px;
+  }
+  .figure {
+    font-size: 22px;
+  }
+  .figure[data-big] {
+    font-size: 32px;
+  }
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Two columns: the list or chart, and what goes with it. */
+.cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+.cols[data-wide] {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+}
+@container (max-width: 600px) {
+  .cols,
+  .cols[data-wide] {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+}
+
+.mono {
+  font-family: var(--mantine-font-family-monospace);
+}
+
+/* A legend line under a chart or list: small, and never the only carrier. */
+.legend {
+  font-size: 12px;
+  color: var(--mantine-color-dimmed);
+  display: flex;
+  gap: 6px 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+}
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.tickSwatch {
+  display: inline-block;
+  width: 2px;
+  height: 11px;
+  background: var(--mantine-color-text);
+  opacity: 0.55;
+}
+.dotSwatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--mantine-color-text);
+}
+
+/* A table of figures: right-aligned, the first column a name. */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.table th {
+  text-align: right;
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+  font-size: 12px;
+  padding: 8px 0 8px 10px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  white-space: nowrap;
+}
+.table td {
+  text-align: right;
+  padding: 8px 0 8px 10px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  font-family: var(--mantine-font-family-monospace);
+  white-space: nowrap;
+}
+.table th:first-child,
+.table td:first-child {
+  text-align: left;
+  padding-left: 0;
+  font-family: inherit;
+}
+.table tr[data-current] td {
+  font-weight: 600;
+}
+@container (max-width: 600px) {
+  .table .wideOnly {
+    display: none;
+  }
+}
+
+/* The ranked list: one button per row — name, amount, a bar against the
+   largest, a tick where the period before stood, and the share and change. */
+.rank {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+}
+/* One subgrid per row, so every bar ends where the others do: the figures
+   column is as wide as the widest figure in the whole list. */
+.row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  row-gap: 6px;
+  align-items: center;
+  padding: 7px 8px;
+  margin: 0 -8px;
+  border-radius: 6px;
+  color: inherit;
+}
+.row:hover {
+  background: var(--mantine-color-default-hover);
+}
+.row[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px var(--cb-accent-text);
+}
+.rowName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  min-width: 0;
+}
+.rowName span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.rowAmount {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: right;
+  white-space: nowrap;
+}
+.track {
+  position: relative;
+  height: 6px;
+  background: var(--cb-track-bg);
+  border-radius: 3px;
+}
+.trackFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+}
+.tick {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 12px;
+  margin-left: -1px;
+  background: var(--mantine-color-text);
+  opacity: 0.55;
+  border-radius: 1px;
+}
+.rowMeta {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 12px;
+  color: var(--mantine-color-dimmed);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* A row's transactions: beside the list on a desktop, in a sheet on a phone. */
+.drill {
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.drillRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  font-size: 13px;
+  padding: 8px 0;
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+.drillRow:first-of-type {
+  border-top: 0;
+}
+.drillRow > span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* One row per account: name, its own line, the balance and what moved it. */
+.acc {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) 120px minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 6px 14px;
+  padding: 12px 0;
+  border-top: 1px solid var(--mantine-color-default-border);
+  font-size: 14px;
+}
+.accBalance {
+  font-family: var(--mantine-font-family-monospace);
+  font-weight: 500;
+  text-align: right;
+  white-space: nowrap;
+}
+.accNote {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 12px;
+  color: var(--mantine-color-dimmed);
+  text-align: right;
+  font-weight: 400;
+}
+.accWarn {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--cb-attention);
+  border: 1px solid var(--cb-attention-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+@container (max-width: 600px) {
+  .acc {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .acc .spark {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+  }
+  .acc .accLow {
+    display: none;
+  }
+}
+
+/* The fills: a table on a desktop; on a phone a row per fill with the date
+   and cost, and the rest in a line under them, never a page scrolling sideways. */
+.fill {
+  display: grid;
+  grid-template-columns: 96px repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  font-size: 13px;
+  padding: 9px 0;
+  border-top: 1px solid var(--mantine-color-default-border);
+  align-items: baseline;
+}
+.fill > span:not(:first-child) {
+  text-align: right;
+  font-family: var(--mantine-font-family-monospace);
+  white-space: nowrap;
+}
+.fillHead {
+  color: var(--mantine-color-dimmed);
+  font-weight: 600;
+  font-size: 12px;
+  border-top: 0;
+}
+.fillHead > span:not(:first-child) {
+  font-family: inherit;
+}
+.fill > span.fillSummary {
+  display: none;
+}
+@container (max-width: 600px) {
+  .fill {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 2px;
+  }
+  .fillHead {
+    display: none;
+  }
+  .fill .wideOnly {
+    display: none;
+  }
+  .fill > span.fillSummary {
+    display: block;
+    font-family: inherit;
+    grid-column: 1 / -1;
+    text-align: left;
+    color: var(--mantine-color-dimmed);
+    font-size: 12px;
+    white-space: normal;
+  }
+}
+
+/* The tabs stay on one line; on a phone that is narrower than all four, the
+   row scrolls rather than leaving one tab alone on a second line. */
+.tabList {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabList > * {
+  flex: none;
+}

@@ -139,6 +139,57 @@ func TestReportTrendAndBalance(t *testing.T) {
 	}
 }
 
+// The redesigned report tabs (#490–#492) read spending or income apart, money in
+// and out apart, and the balances as of the caller's today.
+func TestReportTypeFlowAndAsOf(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccountWithBalance(t, c, 100000)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	c.do(http.MethodPost, base+"/transactions", map[string]any{"accountId": acc, "date": "2026-01-10", "amount": -3000}, true).Body.Close()
+	c.do(http.MethodPost, base+"/transactions", map[string]any{"accountId": acc, "date": "2026-01-12", "amount": 5000}, true).Body.Close()
+	c.do(http.MethodPost, base+"/transactions", map[string]any{"accountId": acc, "date": "2026-02-10", "amount": -1000}, true).Body.Close()
+
+	for query, want := range map[string]int64{"type=expense": -4000, "type=income": 5000, "": 1000} {
+		r := c.do(http.MethodGet, base+"/reports/statistics?groupBy=month&"+query, nil, false)
+		var got struct{ Total int64 }
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		r.Body.Close()
+		if got.Total != want {
+			t.Errorf("%q: total %d, want %d", query, got.Total, want)
+		}
+	}
+
+	tr := c.do(http.MethodGet, base+"/reports/trend?bucket=month&breakdown=flow&from=2026-01-01&to=2026-02-28", nil, false)
+	var trend struct {
+		Series []struct {
+			Key    string
+			Values []int64
+		}
+	}
+	_ = json.NewDecoder(tr.Body).Decode(&trend)
+	tr.Body.Close()
+	if len(trend.Series) != 2 || trend.Series[0].Key != "in" || trend.Series[0].Values[0] != 5000 || trend.Series[1].Values[0] != -3000 {
+		t.Fatalf("flow = %+v", trend)
+	}
+
+	br := c.do(http.MethodGet, base+"/reports/balance?bucket=month&from=2026-01-01&to=2026-02-28&asOf=2026-01-31", nil, false)
+	var bal struct {
+		AsOf       string
+		TodayTotal int64
+		Total      []int64
+	}
+	_ = json.NewDecoder(br.Body).Decode(&bal)
+	br.Body.Close()
+	if bal.AsOf != "2026-01-31" || bal.TodayTotal != 102000 || len(bal.Total) != 2 || bal.Total[1] != 101000 {
+		t.Fatalf("balance = %+v", bal)
+	}
+	if r := c.do(http.MethodGet, base+"/reports/balance?bucket=month&asOf=yesterday", nil, false); r.StatusCode != http.StatusBadRequest {
+		t.Fatalf("bad asOf = %d, want 400", r.StatusCode)
+	} else {
+		r.Body.Close()
+	}
+}
+
 func TestReportVehicle(t *testing.T) {
 	c := newTestAPI(t)
 	wid, acc := makeAccount(t, c)

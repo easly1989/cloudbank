@@ -101,53 +101,20 @@
   },
   "reports": {
     "title": "Reports",
-    "statistics": "Statistics",
-    "trend": "Trend",
-    "balance": "Balance",
-    "vehicle": "Vehicle",
-    "pickVehicle": "Pick a vehicle…",
+    "hint": "Where the money went, and how it moved, over the span you pick.",
     "meter": "Odometer",
-    "distance": "Distance",
-    "volume": "Volume",
-    "consumption": "Consumption",
-    "costPerDistance": "Cost / distance",
-    "totalCost": "Total cost",
     "partial": "partial",
     "unitDistance": "km",
     "unitVolume": "L",
     "unitConsumption": "L/100km",
-    "exportCsv": "Export CSV",
-    "exportPng": "Export PNG",
-    "chart": "Chart",
-    "table": "Table",
-    "pie": "Pie",
-    "column": "Column",
-    "line": "Line",
-    "cumulative": "Cumulative",
-    "compare": "Compare to previous period",
-    "previous": "Previous",
-    "change": "Change",
-    "savedViews": "Saved view",
-    "savedViewsPlaceholder": "Saved views…",
-    "saveView": "Save view",
-    "deleteView": "Delete",
-    "saveViewPrompt": "Name this view",
-    "overdraft": "Minimum",
+    "consumption": "Consumption",
+    "exportCsv": "Download the figures (CSV)",
+    "exportPng": "Download the chart (PNG)",
     "today": "Today",
     "accounts": "Accounts",
     "allAccounts": "All accounts",
-    "group": "Group",
     "amount": "Amount",
-    "total": "Total",
     "empty": "No data for these filters.",
-    "groups": {
-      "category": "Category",
-      "subcategory": "Subcategory",
-      "payee": "Payee",
-      "tag": "Tag",
-      "month": "Month",
-      "year": "Year"
-    },
     "buckets": {
       "day": "Day",
       "week": "Week",
@@ -155,13 +122,150 @@
       "quarter": "Quarter",
       "year": "Year"
     },
-    "breakdowns": {
-      "none": "Total",
-      "account": "Account",
-      "payee": "Payee",
-      "category": "Category"
+    "filters": "Filters",
+    "more": "Saved views and downloads",
+    "tabs": {
+      "spending": "Spending",
+      "cashflow": "Cash flow",
+      "balances": "Balances",
+      "vehicle": "Vehicle"
     },
-    "hint": "Where the money went, over whatever span you ask for."
+    "period": {
+      "span": "Period",
+      "month": "Month",
+      "quarter": "Quarter",
+      "half": "Half-year",
+      "year": "Year",
+      "all": "All time",
+      "allTime": "All time",
+      "quarterName": "Q{{n}} {{year}}",
+      "halfName": "H{{n}} {{year}}",
+      "previous": "Previous period",
+      "in": {
+        "month": "in {{name}}",
+        "quarter": "in {{name}}",
+        "half": "in {{name}}",
+        "year": "in {{name}}",
+        "all": "overall"
+      },
+      "vs": {
+        "month": "Compared with {{name}}",
+        "quarter": "Compared with {{name}}",
+        "half": "Compared with {{name}}",
+        "year": "Compared with {{name}}",
+        "all": "Compared with before"
+      },
+      "atEnd": {
+        "month": "At the end of {{name}}",
+        "quarter": "At the end of {{name}}",
+        "half": "At the end of {{name}}",
+        "year": "At the end of {{name}}",
+        "all": "At the last transaction"
+      },
+      "byEnd": {
+        "month": "By the end of {{name}}",
+        "quarter": "By the end of {{name}}",
+        "half": "By the end of {{name}}",
+        "year": "By the end of {{name}}",
+        "all": "By the last transaction"
+      },
+      "next": "Next period"
+    },
+    "chip": {
+      "transfers": {
+        "all": "Including transfers",
+        "only": "Only transfers"
+      }
+    },
+    "views": {
+      "menu": "Saved views…",
+      "title": "Saved views",
+      "name": "Save this view as",
+      "namePlaceholder": "e.g. Food this year",
+      "save": "Save",
+      "empty": "No saved views yet. A view keeps the tab, the period and the filters as they are now.",
+      "delete": "Delete {{name}}"
+    },
+    "spending": {
+      "type": "Spending or income",
+      "expense": "Spending",
+      "income": "Income",
+      "byLabel": "by",
+      "by": {
+        "category": "Category",
+        "payee": "Payee",
+        "tag": "Tag"
+      },
+      "total": {
+        "expense": "Spent {{when}}",
+        "expenseSoFar": "Spent so far {{when}}",
+        "income": "Received {{when}}",
+        "incomeSoFar": "Received so far {{when}}"
+      },
+      "noTransfers": "excluding transfers between your accounts",
+      "more": "{{amount}} more",
+      "less": "{{amount}} less",
+      "same": "The same",
+      "movers": "less on {{less}}, more on {{more}}",
+      "moreOn": "more on {{name}}",
+      "lessOn": "less on {{name}}",
+      "other_one": "Other ({{count}})",
+      "other_other": "Other ({{count}})",
+      "showFewer": "Show fewer",
+      "tickLegend": "{{period}}, for comparison",
+      "new": "new",
+      "sameShort": "same",
+      "noPayee": "No payee",
+      "count_one": "{{count}} transaction",
+      "count_other": "{{count}} transactions",
+      "showAll_one": "Show it in the register",
+      "showAll_other": "Show all {{count}} in the register",
+      "showIn": "Show them in the register:"
+    },
+    "cashflow": {
+      "in": "In",
+      "out": "Out",
+      "kept": "Kept",
+      "keptLegend": "Kept (in − out)",
+      "running": "So far",
+      "soFar": "so far",
+      "keptSoFar": "Kept so far {{when}}",
+      "keptIn": "Kept {{when}}",
+      "share": "{{pct}}% of what came in",
+      "overspent": "more went out than came in",
+      "barPer": "One bar per",
+      "chartLabel": "Money in and out, {{period}}",
+      "future": "This period has not started yet."
+    },
+    "balances": {
+      "allToday": "All accounts today",
+      "pickedToday": "These accounts today",
+      "withScheduled": "with what is scheduled",
+      "since": "since {{date}}",
+      "sinceStart": "since the first transaction",
+      "which": "Which accounts",
+      "pick": "Pick accounts",
+      "pickPlaceholder": "All accounts",
+      "total": "All accounts",
+      "scheduled": "Scheduled",
+      "chartLabel": "Total balance, {{period}}",
+      "change": "{{amount}} {{when}}",
+      "lowest": "lowest {{amount}}",
+      "under": "Went under its {{amount}} minimum on {{date}}."
+    },
+    "fuel": {
+      "pick": "Vehicle",
+      "none": "No vehicles yet.",
+      "add": "Add a vehicle",
+      "empty": "No fills for this vehicle in this period.",
+      "costPerKm": "Cost per km",
+      "costFor": "{{cost}} for {{distance}}",
+      "volumeIn_one": "{{volume}} in {{count}} fill",
+      "volumeIn_other": "{{volume}} in {{count}} fills",
+      "chartTitle": "Litres per 100 km, fill by fill",
+      "average": "average {{value}}",
+      "needTwoFills": "Consumption needs two full fills in a row."
+    }
   },
   "budget": {
     "amountFor": "Budget for {{name}}",
@@ -1482,17 +1586,17 @@
     },
     "reports": {
       "offer": "New here? Take the reports tour",
+      "period": {
+        "title": "One period for every tab",
+        "body": "Pick a month, a quarter, a year or all time, and step back and forth with the arrows. Filters narrow every tab at once."
+      },
       "tabs": {
-        "title": "Four views of your money",
-        "body": "Statistics splits spending by category or payee, Trend follows it over time, Balance tracks your accounts and Vehicle adds up running costs."
+        "title": "Four questions",
+        "body": "Spending says where the money went, Cash flow what came in and went out, Balances what your accounts hold, Vehicle what a car costs."
       },
-      "views": {
-        "title": "Keep a view you use",
-        "body": "Save the grouping and filters you have set, and open them again in one click."
-      },
-      "export": {
-        "title": "Take it elsewhere",
-        "body": "Download the figures as CSV, or the chart as an image."
+      "more": {
+        "title": "Keep it, or take it elsewhere",
+        "body": "Save the report as it looks now and open it again in one click, or download its figures and its chart."
       }
     },
     "schedules": {

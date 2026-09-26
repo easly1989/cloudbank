@@ -1971,6 +1971,7 @@ paths:
         - { name: transfers, in: query, required: false, schema: { type: string, enum: [all, only, none] }, description: "transfer legs: all (default), only them, or none of them" }
         - { name: noFlags, in: query, required: false, schema: { type: boolean }, description: "only transactions with no status" }
         - { name: uncategorised, in: query, required: false, schema: { type: boolean }, description: "only transactions with no category (a split is not)" }
+        - { name: type, in: query, required: false, schema: { type: string, enum: [expense, income] }, description: "only money going out (expense) or coming in (income); a split's lines are judged one by one. Default: both" }
         - { name: format, in: query, required: false, schema: { type: string, enum: [json, csv] } }
       responses:
         "200": { description: The report (JSON, or CSV when format=csv)., content: { application/json: { schema: { $ref: "#/components/schemas/StatisticsResult" } } } }
@@ -1996,6 +1997,7 @@ paths:
         - { name: transfers, in: query, required: false, schema: { type: string, enum: [all, only, none] }, description: "transfer legs: all (default), only them, or none of them" }
         - { name: noFlags, in: query, required: false, schema: { type: boolean }, description: "only transactions with no status" }
         - { name: uncategorised, in: query, required: false, schema: { type: boolean }, description: "only transactions with no category (a split is not)" }
+        - { name: type, in: query, required: false, schema: { type: string, enum: [expense, income] }, description: "only money going out (expense) or coming in (income); a split's lines are judged one by one. Default: both" }
       responses:
         "200": { description: Transactions., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ReportTransaction" } } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -2007,7 +2009,7 @@ paths:
       summary: Bucketed evolution over time, optionally split into series
       parameters:
         - { name: bucket, in: query, required: true, schema: { type: string, enum: [day, week, month, quarter, year] } }
-        - { name: breakdown, in: query, required: false, schema: { type: string, enum: [none, account, payee, category] } }
+        - { name: breakdown, in: query, required: false, schema: { type: string, enum: [none, account, payee, category, flow] }, description: "flow: two series, in (keys \"in\") and out (\"out\"), judged per transaction by its sign" }
         - { name: from, in: query, required: false, schema: { type: string } }
         - { name: to, in: query, required: false, schema: { type: string } }
         - { name: status, in: query, required: false, schema: { type: integer } }
@@ -2034,6 +2036,8 @@ paths:
         - { name: accountIds, in: query, required: false, schema: { type: string }, description: "comma-separated; empty = all accounts" }
         - { name: from, in: query, required: false, schema: { type: string } }
         - { name: to, in: query, required: false, schema: { type: string } }
+        - { name: asOf, in: query, required: false, schema: { type: string }, description: "the caller's today (YYYY-MM-DD); default today in UTC" }
+        - { name: scheduled, in: query, required: false, schema: { type: boolean }, description: "add the active schedules' occurrences after asOf, as the cash-flow forecast does" }
       responses:
         "200": { description: The balance report., content: { application/json: { schema: { $ref: "#/components/schemas/BalanceResult" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -3335,19 +3339,30 @@ components:
       required: [buckets, series]
     BalanceSeries:
       type: object
+      description: One account's balance at the end of each bucket, in the account's own currency.
       properties:
         accountId: { type: integer, format: int64 }
         label: { type: string }
         minimumBalance: { type: integer, format: int64 }
         values: { type: array, items: { type: integer, format: int64 } }
-      required: [accountId, label, minimumBalance, values]
+        currency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
+        start: { type: integer, format: int64, description: "the balance before the range's first day" }
+        today: { type: integer, format: int64, description: "the balance at the end of asOf" }
+        low: { type: integer, format: int64, description: "the lowest balance from the range's first day through asOf (or the range's end)" }
+        lowDate: { type: string, description: "when low was reached; empty when that span is empty" }
+        underMinimumOn: { type: string, description: "the first day of that span ending below minimumBalance; empty when none, or no minimum is set" }
+      required: [accountId, label, minimumBalance, values, start, today, low, lowDate, underMinimumOn]
     BalanceResult:
       type: object
       properties:
         buckets: { type: array, items: { type: string } }
         series: { type: array, items: { $ref: "#/components/schemas/BalanceSeries" } }
+        total: { type: array, items: { type: integer, format: int64 }, description: "the series summed per bucket, in the base currency" }
+        startTotal: { type: integer, format: int64 }
+        todayTotal: { type: integer, format: int64 }
+        asOf: { type: string, description: "the day counted as today" }
         currency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
-      required: [buckets, series]
+      required: [buckets, series, total, startTotal, todayTotal, asOf]
     CashflowResult:
       type: object
       properties:

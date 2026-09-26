@@ -1,139 +1,243 @@
-import { Group, Select, Stack, Table, Text } from "@mantine/core";
+import { Anchor, SegmentedControl, Select, Stack, Text } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import type { EChartsOption } from "echarts";
+import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
-import {
-  type VehicleReport,
-  getVehicleReport,
-  listCurrencies,
-  listVehicles,
-} from "../../api/client";
-import { useDateFormat } from "../../dates";
-import { formatMinor } from "../../money";
-import { useWallet } from "../../wallet/WalletProvider";
-import { baseFmt } from "./reportUtils";
+import { getVehicleReport, listVehicles } from "../../api/client";
+import { categoryColor, useChartColors } from "../../chartPalette";
+import { formatMinor, formatNumber } from "../../money";
+import { Chart, type ChartHandle } from "../Chart";
+import { Figure, Figures } from "./Figures";
+import { type ReportContext, csvAmount, shortDay } from "./reportContext";
+import classes from "./reports.module.css";
 
-export function VehicleTab() {
-  const { t } = useTranslation();
-  const fmtDate = useDateFormat();
-  const { currentWallet } = useWallet();
-  const walletId = currentWallet?.id ?? 0;
+/** Up to this many vehicles are picked with a segmented control, beyond it a select. */
+const SEGMENTS = 4;
+
+// Vehicle (#493): the two figures people ask of a car — what it costs a
+// kilometre and what it drinks — then consumption fill by fill against the
+// average, and the fills themselves.
+export function VehicleTab({ ctx }: { ctx: ReportContext }) {
+  const { t, i18n } = useTranslation();
+  const colors = useChartColors();
+  const { walletId, state, set, period, fmt, isPhone, setExport } = ctx;
+  const chartRef = useRef<ChartHandle>(null);
 
   const vehiclesQuery = useQuery({
     queryKey: ["vehicles", walletId],
     queryFn: () => listVehicles(walletId),
     enabled: walletId > 0,
   });
-  const currenciesQuery = useQuery({
-    queryKey: ["currencies", walletId],
-    queryFn: () => listCurrencies(walletId),
-    enabled: walletId > 0,
-  });
-  const base = (currenciesQuery.data ?? []).find((c) => c.isBase);
+  const vehicles = useMemo(() => vehiclesQuery.data ?? [], [vehiclesQuery.data]);
+  const vehicleId =
+    state.vehicle !== null && vehicles.some((v) => v.id === state.vehicle)
+      ? state.vehicle
+      : (vehicles[0]?.id ?? null);
 
-  const [vehicleId, setVehicleId] = useState<string | null>(null);
   const query = useQuery({
-    queryKey: ["vehicle", walletId, vehicleId],
-    queryFn: () => getVehicleReport(walletId, Number(vehicleId)),
-    enabled: walletId > 0 && !!vehicleId,
+    queryKey: ["vehicle", walletId, vehicleId, period.from, period.to],
+    queryFn: () => getVehicleReport(walletId, vehicleId!, period.from, period.to),
+    enabled: walletId > 0 && vehicleId !== null,
   });
-  const report: VehicleReport | undefined = query.data;
-  const fmt = useMemo(() => baseFmt(report?.currency ?? base), [report?.currency, base]);
+  const report = query.data;
+  const num = (v: number, digits = 1) => formatNumber(v, digits, fmt);
+  const km = t("reports.unitDistance");
+  const l = t("reports.unitVolume");
+  const per100 = t("reports.unitConsumption");
 
-  const num = (v: number, digits = 1) =>
-    v.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  const fills = useMemo(() => report?.entries.filter((e) => e.consumption > 0) ?? [], [report]);
+  const option: EChartsOption = useMemo(
+    () => ({
+      animation: false,
+      grid: { left: 8, right: 12, top: 22, bottom: 8, containLabel: true },
+      tooltip: {
+        trigger: "axis",
+        valueFormatter: (v: unknown) => `${num(Number(v) || 0)} ${per100}`,
+      },
+      xAxis: {
+        type: "category",
+        data: fills.map((e) => shortDay(e.date, i18n.language)),
+        axisTick: { show: false },
+        axisLabel: { rotate: 0, hideOverlap: true },
+      },
+      yAxis: { type: "value", scale: true, axisLabel: { formatter: (v: number) => num(v) } },
+      series: [
+        {
+          // Points joined by a line, not bars: the differences are tenths of a
+          // litre, and bars on an axis that does not start at zero would make
+          // them look like halves.
+          name: per100,
+          type: "line",
+          symbol: "circle",
+          symbolSize: 8,
+          data: fills.map((e) => Math.round(e.consumption * 10) / 10),
+          lineStyle: { color: categoryColor(colors, 1), width: 2 },
+          itemStyle: { color: categoryColor(colors, 1) },
+          markLine: report?.avgConsumption
+            ? {
+                symbol: "none",
+                silent: true,
+                lineStyle: { color: colors.muted, type: "dashed" },
+                label: {
+                  formatter: t("reports.fuel.average", { value: num(report.avgConsumption) }),
+                  color: colors.muted,
+                  position: "insideEndTop",
+                },
+                data: [{ yAxis: report.avgConsumption }],
+              }
+            : undefined,
+        },
+      ],
+    }),
+    // num reads fmt only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fills, report?.avgConsumption, colors, fmt, t, i18n.language, per100],
+  );
+
+  useEffect(() => {
+    if (!report) {
+      setExport(null);
+      return;
+    }
+    setExport({
+      name: `vehicle-${period.from?.slice(0, 7) ?? "all"}`,
+      rows: () => [
+        [t("transactions.date"), t("reports.meter"), km, l, per100, t("reports.amount")],
+        ...report.entries.map((e) => [
+          e.date,
+          e.meter,
+          e.distance,
+          e.partial ? "" : e.volume,
+          e.consumption ? e.consumption.toFixed(2) : "",
+          csvAmount(e.cost, fmt.fracDigits),
+        ]),
+      ],
+      png: fills.length > 0 ? () => chartRef.current?.getPng() : undefined,
+    });
+    return () => setExport(null);
+  }, [report, fills.length, fmt, period.from, setExport, t, km, l, per100]);
+
+  if (vehiclesQuery.data && vehicles.length === 0) {
+    return (
+      <Text c="dimmed">
+        {t("reports.fuel.none")}{" "}
+        <Anchor component={Link} to="/vehicles">
+          {t("reports.fuel.add")}
+        </Anchor>
+      </Text>
+    );
+  }
+
+  const picker =
+    vehicles.length <= SEGMENTS ? (
+      <SegmentedControl
+        aria-label={t("reports.fuel.pick")}
+        value={vehicleId === null ? "" : String(vehicleId)}
+        onChange={(v) => set({ vehicle: Number(v) })}
+        data={vehicles.map((v) => ({ value: String(v.id), label: v.name }))}
+      />
+    ) : (
+      <Select
+        aria-label={t("reports.fuel.pick")}
+        data={vehicles.map((v) => ({ value: String(v.id), label: v.name }))}
+        value={vehicleId === null ? null : String(vehicleId)}
+        onChange={(v) => v && set({ vehicle: Number(v) })}
+        allowDeselect={false}
+        searchable
+        w={isPhone ? "100%" : 280}
+      />
+    );
+
+  const entries = report?.entries ?? [];
+  const costPerKm =
+    report && report.totalDistance > 0 ? Math.round(report.totalCost / report.totalDistance) : null;
 
   return (
-    <Stack>
-      <Group align="flex-end">
-        <Select
-          label={t("reports.vehicle")}
-          placeholder={t("reports.pickVehicle")}
-          data={(vehiclesQuery.data ?? []).map((v) => ({ value: String(v.id), label: v.name }))}
-          value={vehicleId}
-          onChange={setVehicleId}
-          searchable
-          clearable
-          w={280}
-        />
-      </Group>
+    <Stack gap="lg">
+      {vehicles.length > 1 && <div className={classes.controls}>{picker}</div>}
 
-      {report && (
-        <Group gap="xl">
-          <Stat
-            label={t("reports.distance")}
-            value={`${num(report.totalDistance, 0)} ${t("reports.unitDistance")}`}
-          />
-          <Stat
-            label={t("reports.volume")}
-            value={`${num(report.totalVolume)} ${t("reports.unitVolume")}`}
-          />
-          <Stat
-            label={t("reports.consumption")}
-            value={`${num(report.avgConsumption)} ${t("reports.unitConsumption")}`}
-          />
-          <Stat label={t("reports.totalCost")} value={formatMinor(report.totalCost, fmt)} />
-          <Stat
-            label={t("reports.costPerDistance")}
-            value={
-              report.totalDistance > 0
-                ? `${formatMinor(Math.round(report.totalCost / report.totalDistance), fmt)} / ${t("reports.unitDistance")}`
-                : "—"
-            }
-          />
-        </Group>
-      )}
+      {report && entries.length === 0 && <Text c="dimmed">{t("reports.fuel.empty")}</Text>}
 
-      {report && report.entries.length === 0 && vehicleId && (
-        <Text c="dimmed">{t("reports.empty")}</Text>
-      )}
+      {report && entries.length > 0 && (
+        <>
+          <Figures>
+            <Figure
+              big
+              testId="vehicle-cost"
+              label={t("reports.fuel.costPerKm")}
+              value={costPerKm === null ? "—" : formatMinor(costPerKm, fmt)}
+              sub={t("reports.fuel.costFor", {
+                cost: formatMinor(report.totalCost, fmt),
+                distance: `${num(report.totalDistance, 0)} ${km}`,
+              })}
+            />
+            <Figure
+              testId="vehicle-consumption"
+              label={t("reports.consumption")}
+              value={report.avgConsumption ? `${num(report.avgConsumption)} ${per100}` : "—"}
+              sub={t("reports.fuel.volumeIn", {
+                volume: `${num(report.totalVolume)} ${l}`,
+                count: entries.length,
+              })}
+            />
+          </Figures>
 
-      {report && report.entries.length > 0 && (
-        <Table striped>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>{t("transactions.date")}</Table.Th>
-              <Table.Th ta="right">{t("reports.meter")}</Table.Th>
-              <Table.Th ta="right">{t("reports.distance")}</Table.Th>
-              <Table.Th ta="right">{t("reports.volume")}</Table.Th>
-              <Table.Th ta="right">{t("reports.consumption")}</Table.Th>
-              <Table.Th ta="right">{t("reports.amount")}</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {report.entries.map((e) => (
-              <Table.Tr key={e.transactionId}>
-                <Table.Td>{fmtDate(e.date)}</Table.Td>
-                <Table.Td ta="right">{num(e.meter, 0)}</Table.Td>
-                <Table.Td ta="right">{e.distance > 0 ? num(e.distance, 0) : "—"}</Table.Td>
-                <Table.Td ta="right">
-                  {e.partial ? (
-                    <Text span c="dimmed">
-                      {t("reports.partial")}
-                    </Text>
-                  ) : (
-                    num(e.volume)
-                  )}
-                </Table.Td>
-                <Table.Td ta="right">{e.consumption > 0 ? num(e.consumption) : "—"}</Table.Td>
-                <Table.Td ta="right">{formatMinor(e.cost, fmt)}</Table.Td>
-              </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+          <div className={classes.cols}>
+            <div>
+              <Text fw={600} size="sm" mb="xs">
+                {t("reports.fuel.chartTitle")}
+              </Text>
+              {fills.length > 0 ? (
+                <Chart
+                  ref={chartRef}
+                  option={option}
+                  height={isPhone ? 170 : 200}
+                  label={t("reports.fuel.chartTitle")}
+                />
+              ) : (
+                <Text c="dimmed" size="sm">
+                  {t("reports.fuel.needTwoFills")}
+                </Text>
+              )}
+            </div>
+            <div data-testid="vehicle-fills">
+              <div className={`${classes.fill} ${classes.fillHead}`}>
+                <span>{t("transactions.date")}</span>
+                <span className={classes.wideOnly}>{km}</span>
+                <span className={classes.wideOnly}>{l}</span>
+                <span className={classes.wideOnly}>{per100}</span>
+                <span>{t("reports.amount")}</span>
+              </div>
+              {[...entries].reverse().map((e) => (
+                <div key={e.transactionId} className={classes.fill}>
+                  <span>{shortDay(e.date, i18n.language)}</span>
+                  <span className={classes.wideOnly}>
+                    {e.distance > 0 ? num(e.distance, 0) : "—"}
+                  </span>
+                  <span className={classes.wideOnly}>
+                    {e.partial ? t("reports.partial") : num(e.volume)}
+                  </span>
+                  <span className={classes.wideOnly}>
+                    {e.consumption > 0 ? num(e.consumption) : "—"}
+                  </span>
+                  <span>{formatMinor(e.cost, fmt)}</span>
+                  <span className={classes.fillSummary}>
+                    {[
+                      e.distance > 0 ? `${num(e.distance, 0)} ${km}` : null,
+                      e.partial ? t("reports.partial") : `${num(e.volume)} ${l}`,
+                      e.consumption > 0 ? `${num(e.consumption)} ${per100}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
       )}
     </Stack>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <Text size="xs" c="dimmed" tt="uppercase">
-        {label}
-      </Text>
-      <Text fw={600}>{value}</Text>
-    </div>
   );
 }

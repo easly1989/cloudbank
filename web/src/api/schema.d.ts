@@ -3571,6 +3571,7 @@ export interface components {
             series: components["schemas"]["ReportSeries"][];
             currency?: components["schemas"]["CurrencyInfo"];
         };
+        /** @description One account's balance at the end of each bucket, in the account's own currency. */
         BalanceSeries: {
             /** Format: int64 */
             accountId: number;
@@ -3578,10 +3579,38 @@ export interface components {
             /** Format: int64 */
             minimumBalance: number;
             values: number[];
+            currency?: components["schemas"]["CurrencyInfo"];
+            /**
+             * Format: int64
+             * @description the balance before the range's first day
+             */
+            start: number;
+            /**
+             * Format: int64
+             * @description the balance at the end of asOf
+             */
+            today: number;
+            /**
+             * Format: int64
+             * @description the lowest balance from the range's first day through asOf (or the range's end)
+             */
+            low: number;
+            /** @description when low was reached; empty when that span is empty */
+            lowDate: string;
+            /** @description the first day of that span ending below minimumBalance; empty when none, or no minimum is set */
+            underMinimumOn: string;
         };
         BalanceResult: {
             buckets: string[];
             series: components["schemas"]["BalanceSeries"][];
+            /** @description the series summed per bucket, in the base currency */
+            total: number[];
+            /** Format: int64 */
+            startTotal: number;
+            /** Format: int64 */
+            todayTotal: number;
+            /** @description the day counted as today */
+            asOf: string;
             currency?: components["schemas"]["CurrencyInfo"];
         };
         CashflowResult: {
@@ -7732,6 +7761,8 @@ export interface operations {
                 noFlags?: boolean;
                 /** @description only transactions with no category (a split is not) */
                 uncategorised?: boolean;
+                /** @description only money going out (expense) or coming in (income); a split's lines are judged one by one. Default: both */
+                type?: "expense" | "income";
                 format?: "json" | "csv";
             };
             header?: never;
@@ -7774,6 +7805,8 @@ export interface operations {
                 noFlags?: boolean;
                 /** @description only transactions with no category (a split is not) */
                 uncategorised?: boolean;
+                /** @description only money going out (expense) or coming in (income); a split's lines are judged one by one. Default: both */
+                type?: "expense" | "income";
             };
             header?: never;
             path: {
@@ -7799,7 +7832,8 @@ export interface operations {
         parameters: {
             query: {
                 bucket: "day" | "week" | "month" | "quarter" | "year";
-                breakdown?: "none" | "account" | "payee" | "category";
+                /** @description flow: two series, in (keys "in") and out ("out"), judged per transaction by its sign */
+                breakdown?: "none" | "account" | "payee" | "category" | "flow";
                 from?: string;
                 to?: string;
                 status?: number;
@@ -7844,6 +7878,10 @@ export interface operations {
                 accountIds?: string;
                 from?: string;
                 to?: string;
+                /** @description the caller's today (YYYY-MM-DD); default today in UTC */
+                asOf?: string;
+                /** @description add the active schedules' occurrences after asOf, as the cash-flow forecast does */
+                scheduled?: boolean;
             };
             header?: never;
             path: {

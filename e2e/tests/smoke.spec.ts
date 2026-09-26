@@ -135,8 +135,11 @@ test("full journey: setup → wallet → account → transaction → import → 
 
   await test.step("a report renders", async () => {
     await nav(page, "Reports");
-    await expect(page.getByRole("tab", { name: "Statistics" })).toBeVisible();
-    // The statistics report draws an ECharts canvas.
+    await expect(page.getByRole("tab", { name: "Spending" })).toBeVisible();
+    // The answer comes first: the month's spending, before any control.
+    await expect(page.getByTestId("spending-total")).toBeVisible();
+    // The cash flow draws an ECharts canvas.
+    await page.goto("/reports?tab=cashflow&p=all");
     await expect(page.locator("canvas").first()).toBeVisible();
   });
 

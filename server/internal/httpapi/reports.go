@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -122,7 +123,15 @@ func (h *reportHandlers) balance(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	res, err := h.svc.Balance(r.Context(), wl.ID, q.Get("from"), q.Get("to"), bucket, accountIDs)
+	asOf := q.Get("asOf")
+	if asOf != "" {
+		if _, err := time.Parse("2006-01-02", asOf); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_date", "asOf must be YYYY-MM-DD")
+			return
+		}
+	}
+	opts := report.BalanceOptions{AsOf: asOf, Scheduled: queryFlag(q.Get("scheduled"))}
+	res, err := h.svc.Balance(r.Context(), wl.ID, q.Get("from"), q.Get("to"), bucket, accountIDs, opts)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not build balance report")
 		return
@@ -164,6 +173,7 @@ func parseReportFilter(r *http.Request) report.Filter {
 	f.Transfers = q.Get("transfers")
 	f.NoFlags = queryFlag(q.Get("noFlags"))
 	f.Uncategorised = queryFlag(q.Get("uncategorised"))
+	f.Type = q.Get("type")
 	return f
 }
 

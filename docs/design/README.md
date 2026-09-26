@@ -101,3 +101,29 @@ Added since:
   make the sheet taller than the screen. The foot is sticky at the bottom of the
   sheet, on the sheet's own background, and the sheet shows a thin scrollbar in
   place of a hidden one.
+- **The reports** (#488–#493). No board draws them, so they follow the tile's
+  rules rather than a mock of their own:
+  - **One frame for every tab.** A period bar (Month, Quarter, Half-year, Year,
+    All time, then ‹ period ›), a Filters button that opens the register's
+    filters (beside the page on a desktop, from the bottom on a phone), and a
+    **⋯** for saved views and the two downloads. Filters that are on show as
+    chips under the bar. Everything is in the URL. The tabs are Spending, Cash
+    flow, Balances and Vehicle. Transfers between one's own accounts are left
+    out unless the filters include them.
+  - **The answer first.** Each tab opens with its figures — a label, the figure
+    in IBM Plex Mono (40px for the main one, 28px beside it; 32 and 22 on a
+    phone), a line of context — before any control.
+  - **No pies, and never colour alone.** Spending is a ranked list: a dot, the
+    name, the amount, a bar against the largest, a tick where the period before
+    stood, and the share and change in words. After seven rows the rest become
+    "Other (n)". Every chart has its figures beside it, in a list or a table.
+  - **Colours.** Categories take the tile's four (#C2762B #4B63C7 #2F7D63
+    #8A5BA8; dark #D8955A #7C8FDD #55A98A #B08CCC) and three drawn to match
+    (#B0476B #3E8CA3 #7C7A2A), with #8B93A1 for "Other". Money in and out keep
+    the amounts' pair, attention its amber, and blue is only for what can be
+    clicked. The dashboard's spending widget uses the same set
+    (`web/src/chartPalette.ts`).
+  - **Honest charts.** Axis labels are never turned; balances are drawn in
+    steps; nothing after today is drawn as zero, and a period still running
+    says "so far". A chart whose axis cannot start at zero uses points, not
+    bars.
