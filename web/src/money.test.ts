@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatAxisMinor,
   formatMinor,
+  formatNumber,
   type MoneyFormat,
   parseAmountSmart,
   parseMinor,
@@ -129,5 +130,20 @@ describe("parseAmountSmart", () => {
   it("returns null on no digits", () => {
     expect(parseAmountSmart("", 2)).toBeNull();
     expect(parseAmountSmart("abc", 2)).toBeNull();
+  });
+});
+
+// Kilometres and litres read like the amounts beside them (#493): "4.551 km",
+// not the browser locale's "4,551".
+describe("formatNumber", () => {
+  const it_ = { decimalChar: ",", groupChar: "." };
+  it("groups and rounds with the currency's separators", () => {
+    expect(formatNumber(4551, 0, it_)).toBe("4.551");
+    expect(formatNumber(5.24, 1, it_)).toBe("5,2");
+    expect(formatNumber(1234567.891, 2, { decimalChar: ".", groupChar: "," })).toBe("1,234,567.89");
+  });
+  it("keeps a sign only when something is left after rounding", () => {
+    expect(formatNumber(-1250, 0, it_)).toBe("-1.250");
+    expect(formatNumber(-0.01, 1, it_)).toBe("0,0");
   });
 });
