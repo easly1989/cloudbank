@@ -103,11 +103,24 @@ export function todayBucketKey(bucket: ReportBucket, now = new Date()): string {
   }
 }
 
-export function filterToParams(f: Filters): Record<string, string> {
+/**
+ * The register filters as report query parameters. Every filter the panel shows
+ * reaches the server (#487): "hide future" by ending the span today, the user's
+ * own civil date, as the register does; the rest as parameters of their own.
+ */
+export function filterToParams(f: Filters, now = new Date()): Record<string, string> {
   const out: Record<string, string> = {};
-  const { from, to } = dateBounds(f);
+  const { from } = dateBounds(f);
+  let { to } = dateBounds(f);
+  if (f.hideFuture) {
+    const today = toCivilDate(now);
+    if (!to || to > today) to = today;
+  }
   if (from) out.from = from;
   if (to) out.to = to;
+  if (f.transfers !== "all") out.transfers = f.transfers;
+  if (f.noFlags) out.noFlags = "1";
+  if (f.uncategorised) out.uncategorised = "1";
   if (f.status !== null) out.status = String(f.status);
   if (f.payeeId !== null) out.payeeId = String(f.payeeId);
   if (f.categoryId !== null) out.categoryId = String(f.categoryId);

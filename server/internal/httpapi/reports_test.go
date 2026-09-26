@@ -67,6 +67,28 @@ func TestReportStatisticsAndDrilldown(t *testing.T) {
 		t.Fatalf("drilldown rows = %d, want 2", len(rows))
 	}
 
+	// The register's other filters are read too (#487). The drill-down lists the
+	// newest first: February's row is cleared, so "no status" leaves January's.
+	c.do(http.MethodPatch, base+"/transactions/"+strconv.FormatInt(int64(rows[0]["id"].(float64)), 10)+"/status",
+		map[string]any{"status": 1}, true).Body.Close()
+	for _, tc := range []struct {
+		query string
+		want  int64
+	}{
+		{"noFlags=1", -1000},
+		{"noFlags=true&transfers=none", -1000},
+		{"uncategorised=1", 0},
+		{"transfers=only", 0},
+	} {
+		r := c.do(http.MethodGet, base+"/reports/statistics?groupBy=month&"+tc.query, nil, false)
+		var got struct{ Total int64 }
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		r.Body.Close()
+		if got.Total != tc.want {
+			t.Errorf("%s: total %d, want %d", tc.query, got.Total, tc.want)
+		}
+	}
+
 	// Invalid groupBy → 400.
 	if r := c.do(http.MethodGet, base+"/reports/statistics?groupBy=nope", nil, false); r.StatusCode != http.StatusBadRequest {
 		t.Fatalf("bad group = %d, want 400", r.StatusCode)

@@ -1968,6 +1968,9 @@ paths:
         - { name: amountMin, in: query, required: false, schema: { type: integer, format: int64 } }
         - { name: amountMax, in: query, required: false, schema: { type: integer, format: int64 } }
         - { name: text, in: query, required: false, schema: { type: string } }
+        - { name: transfers, in: query, required: false, schema: { type: string, enum: [all, only, none] }, description: "transfer legs: all (default), only them, or none of them" }
+        - { name: noFlags, in: query, required: false, schema: { type: boolean }, description: "only transactions with no status" }
+        - { name: uncategorised, in: query, required: false, schema: { type: boolean }, description: "only transactions with no category (a split is not)" }
         - { name: format, in: query, required: false, schema: { type: string, enum: [json, csv] } }
       responses:
         "200": { description: The report (JSON, or CSV when format=csv)., content: { application/json: { schema: { $ref: "#/components/schemas/StatisticsResult" } } } }
@@ -1990,6 +1993,9 @@ paths:
         - { name: amountMin, in: query, required: false, schema: { type: integer, format: int64 } }
         - { name: amountMax, in: query, required: false, schema: { type: integer, format: int64 } }
         - { name: text, in: query, required: false, schema: { type: string } }
+        - { name: transfers, in: query, required: false, schema: { type: string, enum: [all, only, none] }, description: "transfer legs: all (default), only them, or none of them" }
+        - { name: noFlags, in: query, required: false, schema: { type: boolean }, description: "only transactions with no status" }
+        - { name: uncategorised, in: query, required: false, schema: { type: boolean }, description: "only transactions with no category (a split is not)" }
       responses:
         "200": { description: Transactions., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ReportTransaction" } } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -2011,6 +2017,9 @@ paths:
         - { name: amountMin, in: query, required: false, schema: { type: integer, format: int64 } }
         - { name: amountMax, in: query, required: false, schema: { type: integer, format: int64 } }
         - { name: text, in: query, required: false, schema: { type: string } }
+        - { name: transfers, in: query, required: false, schema: { type: string, enum: [all, only, none] }, description: "transfer legs: all (default), only them, or none of them" }
+        - { name: noFlags, in: query, required: false, schema: { type: boolean }, description: "only transactions with no status" }
+        - { name: uncategorised, in: query, required: false, schema: { type: boolean }, description: "only transactions with no category (a split is not)" }
       responses:
         "200": { description: The trend., content: { application/json: { schema: { $ref: "#/components/schemas/TrendResult" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
