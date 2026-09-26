@@ -46,6 +46,24 @@ export function formatMinor(amount: number, fmt: MoneyFormat): string {
 }
 
 /**
+ * Format a plain quantity (kilometres, litres) with the currency's separators, so
+ * a distance reads "4.551" on the same page as an amount reading "4.551,00 €".
+ * toLocaleString would follow the browser's locale instead, and put "4,551"
+ * beside it.
+ */
+export function formatNumber(
+  value: number,
+  digits: number,
+  fmt: Pick<MoneyFormat, "decimalChar" | "groupChar">,
+): string {
+  const [intPart, fracPart] = Math.abs(value).toFixed(Math.max(0, digits)).split(".");
+  const neg = value < 0 && Number(value.toFixed(digits)) !== 0;
+  let out = (neg ? "-" : "") + group(intPart, fmt.groupChar);
+  if (fracPart) out += (fmt.decimalChar || ".") + fracPart;
+  return out;
+}
+
+/**
  * Format minor units for a chart's value axis: whole major units ("2.300 €")
  * when the value is a whole unit, as an axis tick almost always is, and the
  * currency's decimals only when it is not, so the ticks of a small range stay

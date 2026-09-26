@@ -45,6 +45,10 @@ type Filter struct {
 	// Uncategorised keeps only transactions with no category; a split carries
 	// its categories on its lines, so it is not uncategorised.
 	Uncategorised bool
+	// Type keeps only money going out (TypeExpense) or coming in (TypeIncome);
+	// anything else keeps both. Statistics and drill-down read it: a split's
+	// lines are judged one by one, since one split can hold both.
+	Type string
 }
 
 // Values of Filter.Transfers.
@@ -52,6 +56,24 @@ const (
 	TransfersOnly = "only"
 	TransfersNone = "none"
 )
+
+// Values of Filter.Type.
+const (
+	TypeExpense = "expense"
+	TypeIncome  = "income"
+)
+
+// signCond is the " AND …" fragment keeping the amounts in col that match
+// Filter.Type, or "" when the type keeps both.
+func signCond(typ, col string) string {
+	switch typ {
+	case TypeExpense:
+		return " AND " + col + " < 0"
+	case TypeIncome:
+		return " AND " + col + " > 0"
+	}
+	return ""
+}
 
 // transferLegIDs is a sub-SELECT of every transaction that is a leg of a transfer.
 const transferLegIDs = "SELECT txn_from_id FROM transfers UNION SELECT txn_to_id FROM transfers"
@@ -309,7 +331,7 @@ SELECT CAST(grp AS TEXT) AS key, label, currency_id, CAST(SUM(amount) AS INTEGER
   LEFT JOIN payees p ON p.id = t.payee_id
   JOIN categories c ON c.id = t.category_id
   LEFT JOIN categories par ON par.id = c.parent_id
-  WHERE t.is_split = 0 AND t.category_id IS NOT NULL AND c.no_report = 0 AND (par.id IS NULL OR par.no_report = 0) AND %[3]s%[4]s
+  WHERE t.is_split = 0 AND t.category_id IS NOT NULL AND c.no_report = 0 AND (par.id IS NULL OR par.no_report = 0) AND %[3]s%[4]s%[6]s
   UNION ALL
   SELECT %[1]s AS grp, %[2]s AS label, a.currency_id AS currency_id, s.amount AS amount
   FROM splits s
@@ -318,9 +340,10 @@ SELECT CAST(grp AS TEXT) AS key, label, currency_id, CAST(SUM(amount) AS INTEGER
   LEFT JOIN payees p ON p.id = t.payee_id
   JOIN categories c ON c.id = s.category_id
   LEFT JOIN categories par ON par.id = c.parent_id
-  WHERE s.category_id IS NOT NULL AND c.no_report = 0 AND (par.id IS NULL OR par.no_report = 0) AND %[3]s%[5]s
+  WHERE s.category_id IS NOT NULL AND c.no_report = 0 AND (par.id IS NULL OR par.no_report = 0) AND %[3]s%[5]s%[7]s
 )
-GROUP BY grp, currency_id`, keyExpr, labelExpr, where, nonSplitCat, splitCat)
+GROUP BY grp, currency_id`, keyExpr, labelExpr, where, nonSplitCat, splitCat,
+			signCond(f.Type, "t.amount"), signCond(f.Type, "s.amount"))
 		return q, append(nsArgs, spArgs...), nil
 
 	case GroupPayee, GroupTag, GroupMonth, GroupYear:
@@ -348,8 +371,8 @@ SELECT CAST(%[1]s AS TEXT) AS key, %[2]s AS label, a.currency_id AS currency_id,
 FROM transactions t
 JOIN accounts a ON a.id = t.account_id
 LEFT JOIN payees p ON p.id = t.payee_id%[5]s
-WHERE %[3]s%[4]s
-GROUP BY %[1]s, a.currency_id`, keyExpr, labelExpr, where, catCond, extraJoin)
+WHERE %[3]s%[4]s%[6]s
+GROUP BY %[1]s, a.currency_id`, keyExpr, labelExpr, where, catCond, extraJoin, signCond(f.Type, "t.amount"))
 		return q, args, nil
 	}
 	return "", nil, fmt.Errorf("report: invalid group %q", groupBy)
@@ -396,7 +419,7 @@ func (s *Service) Drilldown(ctx context.Context, walletID int64, f Filter, group
 	if err != nil {
 		return nil, err
 	}
-	cond, condArgs, err := s.groupCond(ctx, walletID, groupBy, groupKey)
+	cond, condArgs, err := s.groupCond(ctx, walletID, groupBy, groupKey, f.Type)
 	if err != nil {
 		return nil, err
 	}
@@ -430,20 +453,22 @@ LIMIT 500`
 	return out, rows.Err()
 }
 
-// groupCond builds the transaction-level condition selecting one group bucket.
-func (s *Service) groupCond(ctx context.Context, walletID int64, groupBy, key string) (string, []any, error) {
+// groupCond builds the transaction-level condition selecting one group bucket,
+// keeping only amounts of the given type (see Filter.Type).
+func (s *Service) groupCond(ctx context.Context, walletID int64, groupBy, key, typ string) (string, []any, error) {
+	sign := signCond(typ, "t.amount")
 	switch groupBy {
 	case GroupPayee:
 		if key == "0" || key == "" {
-			return "t.payee_id IS NULL", nil, nil
+			return "t.payee_id IS NULL" + sign, nil, nil
 		}
-		return "t.payee_id = ?", []any{key}, nil
+		return "t.payee_id = ?" + sign, []any{key}, nil
 	case GroupMonth:
-		return "substr(t.date, 1, 7) = ?", []any{key}, nil
+		return "substr(t.date, 1, 7) = ?" + sign, []any{key}, nil
 	case GroupYear:
-		return "substr(t.date, 1, 4) = ?", []any{key}, nil
+		return "substr(t.date, 1, 4) = ?" + sign, []any{key}, nil
 	case GroupTag:
-		return "t.id IN (SELECT transaction_id FROM transaction_tags WHERE tag_id = ?)", []any{key}, nil
+		return "t.id IN (SELECT transaction_id FROM transaction_tags WHERE tag_id = ?)" + sign, []any{key}, nil
 	case GroupCategory, GroupSubcategory:
 		var id int64
 		if _, err := fmt.Sscan(key, &id); err != nil {
@@ -469,7 +494,8 @@ func (s *Service) groupCond(ctx context.Context, walletID int64, groupBy, key st
 		for _, v := range ids {
 			args = append(args, v)
 		}
-		cond := "(t.category_id IN (" + ph + ") OR t.id IN (SELECT transaction_id FROM splits WHERE category_id IN (" + ph + ")))"
+		// A split belongs to the group through a line of the right sign.
+		cond := "((t.category_id IN (" + ph + ")" + sign + ") OR t.id IN (SELECT transaction_id FROM splits WHERE category_id IN (" + ph + ")" + signCond(typ, "amount") + "))"
 		return cond, args, nil
 	}
 	return "1 = 0", nil, nil

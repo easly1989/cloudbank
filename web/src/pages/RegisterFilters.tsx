@@ -35,6 +35,7 @@ export function RegisterFilters({
   categories,
   tags,
   fmt,
+  dates = true,
 }: {
   filters: Filters;
   onChange: (f: Filters) => void;
@@ -42,6 +43,8 @@ export function RegisterFilters({
   categories: Category[];
   tags: string[];
   fmt: MoneyFormat;
+  /** The date range. The reports leave it out: their period bar sets it. */
+  dates?: boolean;
 }) {
   const { t } = useTranslation();
   const parseAmount = useAmountParser();
@@ -89,15 +92,17 @@ export function RegisterFilters({
     <Card withBorder padding="xs">
       <Stack gap="xs">
         <Group gap="xs" align="flex-end" wrap="wrap">
-          <Select
-            label={t("filters.dateRange")}
-            data={PRESETS.map((p) => ({ value: p, label: t(`filters.presets.${p}`) }))}
-            value={filters.preset}
-            onChange={(v) => onChange({ ...filters, preset: (v as DatePreset) ?? "all" })}
-            allowDeselect={false}
-            w={150}
-          />
-          {filters.preset === "custom" && (
+          {dates && (
+            <Select
+              label={t("filters.dateRange")}
+              data={PRESETS.map((p) => ({ value: p, label: t(`filters.presets.${p}`) }))}
+              value={filters.preset}
+              onChange={(v) => onChange({ ...filters, preset: (v as DatePreset) ?? "all" })}
+              allowDeselect={false}
+              w={150}
+            />
+          )}
+          {dates && filters.preset === "custom" && (
             <>
               <TextInput
                 type="date"

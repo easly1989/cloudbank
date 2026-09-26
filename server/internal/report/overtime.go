@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
@@ -15,12 +14,15 @@ const (
 	BreakdownAccount  = "account"
 	BreakdownPayee    = "payee"
 	BreakdownCategory = "category"
+	// BreakdownFlow splits each bucket into what came in (series "in") and what
+	// went out (series "out"), judged per transaction by the sign of its amount.
+	BreakdownFlow = "flow"
 )
 
 // ValidBreakdown reports whether b is a supported trend breakdown.
 func ValidBreakdown(b string) bool {
 	switch b {
-	case BreakdownNone, BreakdownAccount, BreakdownPayee, BreakdownCategory:
+	case BreakdownNone, BreakdownAccount, BreakdownPayee, BreakdownCategory, BreakdownFlow:
 		return true
 	}
 	return false
@@ -69,6 +71,9 @@ func (s *Service) Trend(ctx context.Context, walletID int64, f Filter, bucket, b
 		labelExpr = "COALESCE(par.name, c.name)"
 		extra = " JOIN categories c ON c.id = t.category_id LEFT JOIN categories par ON par.id = c.parent_id"
 		parts = append(parts, "t.category_id IS NOT NULL")
+	case BreakdownFlow:
+		keyExpr = "CASE WHEN t.amount < 0 THEN 'out' ELSE 'in' END"
+		labelExpr = keyExpr
 	default:
 		keyExpr, labelExpr = "'all'", "'Total'"
 	}
@@ -110,6 +115,13 @@ GROUP BY bucket, skey, a.currency_id`, bucketExpr(bucket), keyExpr, labelExpr, e
 	}
 	if err := rows.Err(); err != nil {
 		return TrendResult{}, err
+	}
+
+	if breakdown == BreakdownFlow {
+		// Both series, always in this order, so a period with nothing coming in
+		// still has an "in" row of zeros.
+		seriesOrder = []string{"in", "out"}
+		labels["in"], labels["out"] = "in", "out"
 	}
 
 	buckets, err := s.bucketAxis(ctx, walletID, f, bucket)
@@ -160,154 +172,6 @@ func (s *Service) dateRange(ctx context.Context, walletID int64) (string, string
 		return "", "", nil
 	}
 	return *minD, *maxD, nil
-}
-
-// BalanceSeries is one account's running balance over time (its own currency).
-type BalanceSeries struct {
-	AccountID      int64   `json:"accountId"`
-	Label          string  `json:"label"`
-	MinimumBalance int64   `json:"minimumBalance"`
-	Values         []int64 `json:"values"`
-}
-
-// BalanceResult is the balance-over-time report.
-type BalanceResult struct {
-	Buckets  []string        `json:"buckets"`
-	Series   []BalanceSeries `json:"series"`
-	Currency *CurrencyInfo   `json:"currency"`
-}
-
-// Balance computes each account's running balance at the end of every bucket:
-// initial balance + all transactions up to that point. Values are in each
-// account's own currency, so the final point equals the register running
-// balance. Only the date range and account selection apply (balances are not
-// otherwise filtered). accountIDs empty means all accounts.
-func (s *Service) Balance(ctx context.Context, walletID int64, from, to, bucket string, accountIDs []int64) (BalanceResult, error) {
-	accounts, err := s.q.ListAccountsForWallet(ctx, walletID)
-	if err != nil {
-		return BalanceResult{}, err
-	}
-	want := map[int64]bool{}
-	for _, id := range accountIDs {
-		want[id] = true
-	}
-	type acctMeta struct {
-		name     string
-		initial  int64
-		minimum  int64
-		currency int64
-	}
-	meta := map[int64]acctMeta{}
-	ids := []int64{}
-	for _, a := range accounts {
-		if len(accountIDs) > 0 && !want[a.ID] {
-			continue
-		}
-		meta[a.ID] = acctMeta{name: a.Name, initial: a.InitialBalance, minimum: a.MinimumBalance, currency: a.CurrencyID}
-		ids = append(ids, a.ID)
-	}
-	if len(ids) == 0 {
-		return BalanceResult{Buckets: []string{}, Series: []BalanceSeries{}}, nil
-	}
-
-	// Default range to the wallet's transaction span.
-	if from == "" || to == "" {
-		minD, maxD, err := s.dateRange(ctx, walletID)
-		if err != nil {
-			return BalanceResult{}, err
-		}
-		if from == "" {
-			from = firstNonEmpty(minD, time.Now().UTC().Format(dateLayout))
-		}
-		if to == "" {
-			to = firstNonEmpty(maxD, time.Now().UTC().Format(dateLayout))
-		}
-	}
-	buckets, err := GenerateBuckets(from, to, bucket)
-	if err != nil {
-		return BalanceResult{}, err
-	}
-
-	idPH := placeholders(len(ids))
-	idArgs := func() []any {
-		a := make([]any, 0, len(ids)+2)
-		return a
-	}
-
-	// Opening balance per account = initial + sum of amounts before the range.
-	opening := map[int64]int64{}
-	for id, m := range meta {
-		opening[id] = m.initial
-	}
-	{
-		args := append(idArgs(), walletID)
-		for _, id := range ids {
-			args = append(args, id)
-		}
-		args = append(args, from)
-		q := "SELECT account_id, CAST(SUM(amount) AS INTEGER) FROM transactions WHERE wallet_id = ? AND account_id IN (" + idPH + ") AND date < ? GROUP BY account_id"
-		rows, err := s.db.QueryContext(ctx, q, args...)
-		if err != nil {
-			return BalanceResult{}, err
-		}
-		for rows.Next() {
-			var id, sum int64
-			if err := rows.Scan(&id, &sum); err != nil {
-				_ = rows.Close()
-				return BalanceResult{}, err
-			}
-			opening[id] += sum
-		}
-		_ = rows.Close()
-	}
-
-	// Per-account per-bucket delta within the range.
-	delta := map[int64]map[string]int64{}
-	for _, id := range ids {
-		delta[id] = map[string]int64{}
-	}
-	{
-		args := append(idArgs(), walletID)
-		for _, id := range ids {
-			args = append(args, id)
-		}
-		args = append(args, from, to)
-		q := fmt.Sprintf(`SELECT t.account_id, %s AS bucket, CAST(SUM(t.amount) AS INTEGER) AS delta
-FROM transactions t
-WHERE t.wallet_id = ? AND t.account_id IN (%s) AND t.date >= ? AND t.date <= ?
-GROUP BY t.account_id, bucket`, bucketExpr(bucket), idPH)
-		rows, err := s.db.QueryContext(ctx, q, args...)
-		if err != nil {
-			return BalanceResult{}, err
-		}
-		for rows.Next() {
-			var id, d int64
-			var bk string
-			if err := rows.Scan(&id, &bk, &d); err != nil {
-				_ = rows.Close()
-				return BalanceResult{}, err
-			}
-			delta[id][bk] += d
-		}
-		_ = rows.Close()
-	}
-
-	base, _, err := s.baseAndCurrencies(ctx, walletID)
-	if err != nil {
-		return BalanceResult{}, err
-	}
-	out := BalanceResult{Buckets: buckets, Series: []BalanceSeries{}, Currency: currencyInfo(base)}
-	for _, id := range ids {
-		m := meta[id]
-		running := opening[id]
-		vals := make([]int64, len(buckets))
-		for i, b := range buckets {
-			running += delta[id][b]
-			vals[i] = running
-		}
-		out.Series = append(out.Series, BalanceSeries{AccountID: id, Label: m.name, MinimumBalance: m.minimum, Values: vals})
-	}
-	return out, nil
 }
 
 func currencyInfo(base *db.Currency) *CurrencyInfo {

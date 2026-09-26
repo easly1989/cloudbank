@@ -29,7 +29,7 @@ func TestBalanceEndpointEqualsRegister(t *testing.T) {
 	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: acc, Date: "2026-02-15", Amount: 5000})
 	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: acc, Date: "2026-03-20", Amount: -1000})
 
-	res, err := f.s.Balance(ctx, f.wid, "2026-01-01", "2026-03-31", BucketMonth, []int64{acc})
+	res, err := f.s.Balance(ctx, f.wid, "2026-01-01", "2026-03-31", BucketMonth, []int64{acc}, BalanceOptions{})
 	if err != nil {
 		t.Fatalf("Balance: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestBalanceOpeningBalanceBeforeRange(t *testing.T) {
 	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: acc, Date: "2026-02-15", Amount: 5000})
 
 	// Range starts in February; the opening balance must include January's -3000.
-	res, _ := f.s.Balance(ctx, f.wid, "2026-02-01", "2026-02-28", BucketMonth, []int64{acc})
+	res, _ := f.s.Balance(ctx, f.wid, "2026-02-01", "2026-02-28", BucketMonth, []int64{acc}, BalanceOptions{})
 	if len(res.Series[0].Values) != 1 || res.Series[0].Values[0] != 102000 {
 		t.Fatalf("feb balance = %v, want [102000]", res.Series[0].Values)
 	}
@@ -73,7 +73,7 @@ func TestBalanceMultiAccountOverlay(t *testing.T) {
 	ctx := context.Background()
 	a := f.accountWithBalance(t, "Acc1", 1000, 0)
 	b := f.accountWithBalance(t, "Acc2", 2000, 0)
-	res, _ := f.s.Balance(ctx, f.wid, "2026-01-01", "2026-01-31", BucketMonth, []int64{a, b})
+	res, _ := f.s.Balance(ctx, f.wid, "2026-01-01", "2026-01-31", BucketMonth, []int64{a, b}, BalanceOptions{})
 	if len(res.Series) != 2 {
 		t.Fatalf("series = %d, want 2 (overlay)", len(res.Series))
 	}
@@ -111,5 +111,36 @@ func TestTrendByAccountSeries(t *testing.T) {
 	res, _ := f.s.Trend(ctx, f.wid, Filter{From: "2026-01-01", To: "2026-01-31"}, BucketMonth, BreakdownAccount)
 	if len(res.Series) != 2 {
 		t.Fatalf("series = %d, want 2", len(res.Series))
+	}
+}
+
+// The cash-flow tab needs what came in and what went out apart (#491), not the
+// net that hides both.
+func TestTrendFlow(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-01-05", Amount: 250000})
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-01-10", Amount: -3000})
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-01-20", Amount: -7000})
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-03-10", Amount: -1000})
+
+	res, err := f.s.Trend(ctx, f.wid, Filter{From: "2026-01-01", To: "2026-03-31"}, BucketMonth, BreakdownFlow)
+	if err != nil {
+		t.Fatalf("Trend: %v", err)
+	}
+	if len(res.Series) != 2 || res.Series[0].Key != "in" || res.Series[1].Key != "out" {
+		t.Fatalf("series = %+v, want in then out", res.Series)
+	}
+	wantIn, wantOut := []int64{250000, 0, 0}, []int64{-10000, 0, -1000}
+	for i := range res.Buckets {
+		if res.Series[0].Values[i] != wantIn[i] || res.Series[1].Values[i] != wantOut[i] {
+			t.Fatalf("in = %v, out = %v; want %v, %v", res.Series[0].Values, res.Series[1].Values, wantIn, wantOut)
+		}
+	}
+
+	// Nothing came in at all: the "in" row is still there, as zeros.
+	res, _ = f.s.Trend(ctx, f.wid, Filter{From: "2026-03-01", To: "2026-03-31"}, BucketMonth, BreakdownFlow)
+	if len(res.Series) != 2 || res.Series[0].Values[0] != 0 || res.Series[1].Values[0] != -1000 {
+		t.Fatalf("march = %+v", res.Series)
 	}
 }

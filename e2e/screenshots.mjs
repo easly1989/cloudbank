@@ -162,9 +162,9 @@ try {
   await page.waitForLoadState("networkidle");
   await shoot(page, "review");
 
-  // Reports — Statistics.
-  await page.goto(BASE + "/reports");
-  await page.getByRole("tab", { name: "Statistics" }).waitFor();
+  // Reports — Cash flow, the tab with a chart and its table.
+  await page.goto(BASE + "/reports?tab=cashflow");
+  await page.getByRole("tab", { name: "Cash flow" }).waitFor();
   await page.locator("canvas").first().waitFor();
   await page.waitForLoadState("networkidle");
   await shoot(page, "reports");
