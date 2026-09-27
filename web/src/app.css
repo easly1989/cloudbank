@@ -672,6 +672,18 @@ body {
   display: flex;
   gap: 8px;
 }
+/* A label's short form, for the narrowest phones (components/ShortLabel). */
+.cb-label-short {
+  display: none;
+}
+@media (max-width: 359.98px) {
+  .cb-label-long {
+    display: none;
+  }
+  .cb-label-short {
+    display: inline;
+  }
+}
 @media (max-width: 47.99em) {
   .cb-register-toolbar {
     flex-wrap: nowrap;
