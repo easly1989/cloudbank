@@ -1,4 +1,5 @@
-import { ActionIcon, Badge, Button, Group, TextInput, Tooltip } from "@mantine/core";
+import { ActionIcon, Indicator, TextInput, Tooltip } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   IconColumns3,
   IconEye,
@@ -9,7 +10,9 @@ import {
 } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
-import { activeFilters, type Filters } from "./registerFilterModel";
+import { FilterChips } from "../components/FilterChips";
+import { clearedFacets, registerChips } from "./registerChips";
+import { type Filters } from "./registerFilterModel";
 
 /** Which side panel is open, if any. */
 export type RegisterPanel = "filters" | "columns" | null;
@@ -22,6 +25,12 @@ export type RegisterPanel = "filters" | "columns" | null;
 // clear button — and each of those took height from the only thing on the page
 // worth looking at. A ledger you can see ten rows of is a different tool from
 // one you can see four rows of.
+//
+// On a phone even the chips were too much: six of them filled the screen
+// before the first row (#502). There the Filters button keeps only their count
+// and the chips move to the head of the filter panel; the privacy switch, which
+// the header's ⋯ menu also holds, leaves the row so that search, Filters and
+// Columns fit on one line.
 export function RegisterToolbar({
   filters,
   onFilters,
@@ -38,11 +47,14 @@ export function RegisterToolbar({
   onPrivacy: (v: boolean) => void;
 }) {
   const { t } = useTranslation();
-  const chips = activeFilters(filters);
+  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
+  const chips = registerChips(filters, onFilters, t);
   const privacyLabel = t(privacy ? "register.privacy.show" : "register.privacy.hide");
+  const filtersLabel =
+    chips.length > 0 ? `${t("filters.section")} (${chips.length})` : t("filters.section");
 
   return (
-    <Group gap={8} wrap="wrap" align="center" data-tour="register-toolbar">
+    <div className="cb-register-toolbar" data-tour="register-toolbar">
       <TextInput
         className="cb-register-search"
         aria-label={t("register.search")}
@@ -62,82 +74,59 @@ export function RegisterToolbar({
         }
         value={filters.text}
         onChange={(e) => onFilters({ ...filters, text: e.currentTarget.value })}
-        style={{ flex: 1, minWidth: 220 }}
       />
 
       {/* Each filter names itself and goes on its own. A badge reading "3" told
           the reader that three were on without saying which, so the only way to
-          find out was to open the panel and read every control. */}
-      {chips.map((c) => (
-        <Badge
-          key={c.id}
-          variant="light"
-          size="lg"
-          rightSection={
+          find out was to open the panel and read every control. The count on
+          the button is there as well, not instead. */}
+      {!phone && <FilterChips chips={chips} onClear={() => onFilters(clearedFacets(filters))} />}
+
+      <div className="cb-register-toolbar-buttons">
+        <Tooltip label={t("filters.section")}>
+          <Indicator
+            label={chips.length}
+            size={18}
+            offset={4}
+            disabled={chips.length === 0}
+            data-testid="filters-count"
+          >
             <ActionIcon
-              size="xs"
-              variant="transparent"
-              color="gray"
-              aria-label={t("filters.chip.remove", { name: t(c.labelKey) })}
-              onClick={() => onFilters(c.clear(filters))}
+              variant={panel === "filters" ? "filled" : "default"}
+              size={44}
+              aria-label={filtersLabel}
+              aria-pressed={panel === "filters"}
+              onClick={() => onPanel(panel === "filters" ? null : "filters")}
             >
-              <IconX size={12} />
+              <IconFilter size={16} />
             </ActionIcon>
-          }
-        >
-          {c.value ? `${t(c.labelKey)}: ${c.value}` : t(c.labelKey)}
-        </Badge>
-      ))}
-      {chips.length > 1 && (
-        <Button
-          variant="subtle"
-          color="gray"
-          size="compact-sm"
-          onClick={() => onFilters({ ...filters, ...clearedFacets(filters) })}
-        >
-          {t("filters.clear")}
-        </Button>
-      )}
-
-      <Tooltip label={t("filters.section")}>
-        <ActionIcon
-          variant={panel === "filters" ? "filled" : "default"}
-          size={44}
-          aria-label={t("filters.section")}
-          aria-pressed={panel === "filters"}
-          onClick={() => onPanel(panel === "filters" ? null : "filters")}
-        >
-          <IconFilter size={16} />
-        </ActionIcon>
-      </Tooltip>
-      <Tooltip label={privacyLabel}>
-        <ActionIcon
-          variant={privacy ? "filled" : "default"}
-          size={44}
-          aria-label={privacyLabel}
-          aria-pressed={privacy}
-          onClick={() => onPrivacy(!privacy)}
-        >
-          {privacy ? <IconEyeOff size={16} /> : <IconEye size={16} />}
-        </ActionIcon>
-      </Tooltip>
-      <Tooltip label={t("register.columns")}>
-        <ActionIcon
-          variant={panel === "columns" ? "filled" : "default"}
-          size={44}
-          aria-label={t("register.columns")}
-          aria-pressed={panel === "columns"}
-          onClick={() => onPanel(panel === "columns" ? null : "columns")}
-        >
-          <IconColumns3 size={16} />
-        </ActionIcon>
-      </Tooltip>
-    </Group>
+          </Indicator>
+        </Tooltip>
+        {!phone && (
+          <Tooltip label={privacyLabel}>
+            <ActionIcon
+              variant={privacy ? "filled" : "default"}
+              size={44}
+              aria-label={privacyLabel}
+              aria-pressed={privacy}
+              onClick={() => onPrivacy(!privacy)}
+            >
+              {privacy ? <IconEyeOff size={16} /> : <IconEye size={16} />}
+            </ActionIcon>
+          </Tooltip>
+        )}
+        <Tooltip label={t("register.columns")}>
+          <ActionIcon
+            variant={panel === "columns" ? "filled" : "default"}
+            size={44}
+            aria-label={t("register.columns")}
+            aria-pressed={panel === "columns"}
+            onClick={() => onPanel(panel === "columns" ? null : "columns")}
+          >
+            <IconColumns3 size={16} />
+          </ActionIcon>
+        </Tooltip>
+      </div>
+    </div>
   );
-}
-
-// Clearing every chip at once, by asking each one to clear itself — so "clear
-// all" can never drift from what the individual chips do.
-function clearedFacets(f: Filters): Filters {
-  return activeFilters(f).reduce((acc, c) => c.clear(acc), f);
 }

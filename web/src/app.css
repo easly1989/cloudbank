@@ -655,6 +655,31 @@ body {
 .cb-register-search .mantine-Input-wrapper {
   --input-height-sm: 46px;
 }
+/* Search, the chips where there is room, then the panel buttons, which stay
+   together when the row wraps. On a phone the chips are in the filter panel
+   (#502), so search and buttons share one line. */
+.cb-register-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.cb-register-toolbar .cb-register-search {
+  flex: 1;
+  min-width: 220px;
+}
+.cb-register-toolbar-buttons {
+  display: flex;
+  gap: 8px;
+}
+@media (max-width: 47.99em) {
+  .cb-register-toolbar {
+    flex-wrap: nowrap;
+  }
+  .cb-register-toolbar .cb-register-search {
+    min-width: 0;
+  }
+}
 
 /* On a touch screen, 44 is the floor (#403, #465). The boards are all drawn at
  * 1280px for a mouse; none of them is a phone, so growing a control there
