@@ -5,6 +5,11 @@ import { sinceNow } from "./bankSyncNotice";
 describe("sinceNow", () => {
   const now = Date.parse("2026-09-27T12:00:00Z");
 
+  it("says now under a minute", () => {
+    expect(sinceNow("2026-09-27T11:59:50Z", "en", now)).toBe("now");
+    expect(sinceNow("2026-09-27T11:59:50Z", "it", now)).toBe("ora");
+  });
+
   it("says minutes under an hour", () => {
     expect(sinceNow("2026-09-27T11:55:00Z", "en", now)).toBe("5 minutes ago");
   });

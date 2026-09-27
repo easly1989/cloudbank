@@ -76,9 +76,15 @@ export function IntegrationsSection() {
           <AiSettingsCard />
         </SettingsGroup>
       )}
-      <SettingsGroup title={t("banksync.title")} hint={t("banksync.hint")}>
+      {/* The demo's section is Bank sync alone, so a group of the same name
+          would only repeat it, and its hint names providers the demo lacks. */}
+      {__DEMO__ ? (
         <BankSyncSettings />
-      </SettingsGroup>
+      ) : (
+        <SettingsGroup title={t("banksync.title")} hint={t("banksync.hint")}>
+          <BankSyncSettings />
+        </SettingsGroup>
+      )}
     </Stack>
   );
 }
