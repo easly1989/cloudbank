@@ -1064,7 +1064,15 @@ export function RegisterTable({
         </Menu>
       </Box>
       {panel === "filters" && (
-        <RegisterSidePanel title={t("filters.section")} onClose={() => onPanel(null)}>
+        <RegisterSidePanel
+          title={t("filters.section")}
+          onClose={() => onPanel(null)}
+          footer={
+            <Button fullWidth onClick={() => onPanel(null)}>
+              {t("filters.showRows", { count: rows.length })}
+            </Button>
+          }
+        >
           {filtersPanel}
         </RegisterSidePanel>
       )}
