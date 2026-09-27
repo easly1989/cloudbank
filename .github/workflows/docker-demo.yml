@@ -1,10 +1,12 @@
 name: Docker demo
 
 # Publishes the public demo image, ghcr.io/easly1989/cloudbank:demo (#420), with
-# every published release (#482) and by hand in between. A host that redeploys
-# on a new :demo (Northflank does) resets every demo account when it does, so a
-# push here is a reset for whoever is using the demo at that moment. The demo
-# says so on its front door, in its notice and in the band on every page.
+# every published release (#482) and by hand in between, then points the
+# Northflank service that hosts it at the image just built (#497). Northflank
+# does not watch ghcr.io on its own: without that call the demo keeps running
+# the image it last pulled. A redeploy resets every demo account, so a run here
+# is a reset for whoever is using the demo at that moment. The demo says so on
+# its front door, in its notice and in the band on every page.
 #
 # A release builds from its tag, so the demo is the version just published.
 # Prereleases are skipped: a beta does not go on the public demo. This is its
@@ -40,6 +42,10 @@ jobs:
   build-push:
     if: github.event_name != 'release' || !github.event.release.prerelease
     runs-on: ubuntu-latest
+    env:
+      # Job-level so the deploy step can test for it: a step's `if` cannot see
+      # secrets, nor the step's own env.
+      NF_TOKEN: ${{ secrets.NORTHFLANK_API_TOKEN }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -76,3 +82,29 @@ jobs:
             ${{ env.IMAGE }}:demo-${{ steps.vars.outputs.label }}
           cache-from: type=gha,scope=demo
           cache-to: type=gha,mode=max,scope=demo
+
+      # Point the demo service at the tag just pushed. A new image path is a new
+      # deployment, so Northflank rolls it out; the versioned tag also says which
+      # build is running. The image is public, so no registry credentials. This
+      # is the one call northflank/deploy-to-northflank makes, without taking on
+      # an action last touched in 2022 on a retired Node runtime. Skipped until
+      # the token is configured, so the workflow stays green without it.
+      - name: Deploy to Northflank
+        if: env.NF_TOKEN != ''
+        env:
+          PROJECT: ${{ vars.NORTHFLANK_PROJECT_ID }}
+          SERVICE: ${{ vars.NORTHFLANK_SERVICE_ID }}
+          IMAGE_PATH: ${{ env.IMAGE }}:demo-${{ steps.vars.outputs.label }}
+        run: |
+          if [ -z "$PROJECT" ] || [ -z "$SERVICE" ]; then
+            echo "::error::NORTHFLANK_PROJECT_ID and NORTHFLANK_SERVICE_ID must be set as repository variables"
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer $NF_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data "{\"external\":{\"imagePath\":\"$IMAGE_PATH\"}}" \
+            "https://api.northflank.com/v1/projects/$PROJECT/services/$SERVICE/deployment"
+          echo
+          echo "Northflank now runs $IMAGE_PATH"
