@@ -1,0 +1,69 @@
+.wrap {
+  min-width: 0;
+}
+
+/* One line, always. While the figures fit, nothing here shows: no scrollbar,
+   no dots, no snapping to notice. */
+.strip {
+  position: relative;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+/* Off a phone the figures wrap, as they always did. */
+.strip[data-wrap] {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+.strip::-webkit-scrollbar {
+  display: none;
+}
+.strip > * {
+  flex: none;
+}
+/* Once they do not fit, each figure is a stop: a swipe comes to rest on one,
+   never between two. */
+.strip[data-ticker] {
+  scroll-snap-type: x mandatory;
+}
+.strip[data-ticker] > * {
+  scroll-snap-align: start;
+}
+
+/* Which figure is showing. A dot is small to see, but its button is the 24px
+   the target-size rule asks for. */
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-top: 2px;
+}
+.dot {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.dot::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--mantine-color-default-border);
+  transition: width 150ms ease;
+}
+.dot[data-on]::after {
+  width: 16px;
+  background: var(--mantine-color-dimmed);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dot::after {
+    transition: none;
+  }
+}

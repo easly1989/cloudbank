@@ -27,6 +27,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "../components/EmptyState";
+import { FigureStrip } from "../components/FigureStrip";
 import { FilterChips } from "../components/FilterChips";
 import { PageHeader } from "../components/PageHeader";
 import { Link, useSearchParams } from "react-router-dom";
@@ -582,8 +583,10 @@ export function TransactionsPage() {
         {/* The same three figures the overview offers, and the same choice of
             which to show: "how much have I got" is one question asked in two
             places, so it should not have two answers. */}
+        {/* On one line whatever the screen: when the three do not fit a
+            phone, they step through a strip one figure high (#503). */}
         {account && registerQuery.data && (
-          <Group gap="xl" align="flex-end" wrap="wrap">
+          <FigureStrip gap={32} align="flex-end" label={t("register.balances")}>
             {balances.map((key, i) => (
               <BalanceFigure
                 key={key}
@@ -594,7 +597,7 @@ export function TransactionsPage() {
                 lead={i === 0}
               />
             ))}
-          </Group>
+          </FigureStrip>
         )}
 
         {account && reconcile && (
