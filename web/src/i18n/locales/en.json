@@ -38,6 +38,7 @@
   "transactions": {
     "title": "Transactions",
     "add": "Add transaction",
+    "addShort": "Add",
     "addTitle": "New transaction",
     "editTitle": "Edit transaction",
     "account": "Account",

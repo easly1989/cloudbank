@@ -28,9 +28,8 @@ export type RegisterPanel = "filters" | "columns" | null;
 //
 // On a phone even the chips were too much: six of them filled the screen
 // before the first row (#502). There the Filters button keeps only their count
-// and the chips move to the head of the filter panel; the privacy switch, which
-// the header's ⋯ menu also holds, leaves the row so that search, Filters and
-// Columns fit on one line.
+// and the chips move to the head of the filter panel, so search and the three
+// buttons share one line; the search box is what gives way.
 export function RegisterToolbar({
   filters,
   onFilters,
@@ -102,19 +101,17 @@ export function RegisterToolbar({
             </ActionIcon>
           </Indicator>
         </Tooltip>
-        {!phone && (
-          <Tooltip label={privacyLabel}>
-            <ActionIcon
-              variant={privacy ? "filled" : "default"}
-              size={44}
-              aria-label={privacyLabel}
-              aria-pressed={privacy}
-              onClick={() => onPrivacy(!privacy)}
-            >
-              {privacy ? <IconEyeOff size={16} /> : <IconEye size={16} />}
-            </ActionIcon>
-          </Tooltip>
-        )}
+        <Tooltip label={privacyLabel}>
+          <ActionIcon
+            variant={privacy ? "filled" : "default"}
+            size={44}
+            aria-label={privacyLabel}
+            aria-pressed={privacy}
+            onClick={() => onPrivacy(!privacy)}
+          >
+            {privacy ? <IconEyeOff size={16} /> : <IconEye size={16} />}
+          </ActionIcon>
+        </Tooltip>
         <Tooltip label={t("register.columns")}>
           <ActionIcon
             variant={panel === "columns" ? "filled" : "default"}
