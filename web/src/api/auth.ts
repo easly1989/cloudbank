@@ -87,6 +87,9 @@ export interface Preferences {
   toursSeen?: string[];
   /** Whether a page offers its tour the first time it is opened. Default on. */
   tourOffers?: boolean;
+  /** Whether the reader has been asked, after turning a tour down, if the
+      other pages should stop offering theirs (#501). Asked once. */
+  tourSkipAsked?: boolean;
   /** Demo build: whether the notice about the demo has been read. */
   demoNoticeSeen?: boolean;
   /** Saved report configurations (Statistics/Trend), scoped per wallet + tab. */
