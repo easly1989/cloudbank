@@ -28,6 +28,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "../components/EmptyState";
 import { FigureStrip } from "../components/FigureStrip";
+import { ShortLabel } from "../components/ShortLabel";
 import { FilterChips } from "../components/FilterChips";
 import { PageHeader } from "../components/PageHeader";
 import { Link, useSearchParams } from "react-router-dom";
@@ -561,7 +562,7 @@ export function TransactionsPage() {
                   form.open();
                 }}
               >
-                {t("transactions.add")}
+                <ShortLabel long={t("transactions.add")} short={t("transactions.addShort")} />
               </Button>
             </>
           }

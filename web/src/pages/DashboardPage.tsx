@@ -22,6 +22,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { ShortLabel } from "../components/ShortLabel";
 import { useConfirm } from "../components/confirmContext";
 
 import { type DashboardAccount, type User, getDashboard, updateMe } from "../api/client";
@@ -407,7 +408,7 @@ export function DashboardPage() {
               {editingLayout ? t("dashboard.layoutDone") : t("overview.customise")}
             </Button>
             <Button component={Link} to="/transactions?new=1">
-              {t("transactions.add")}
+              <ShortLabel long={t("transactions.add")} short={t("transactions.addShort")} />
             </Button>
           </>
         }

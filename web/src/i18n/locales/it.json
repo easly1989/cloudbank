@@ -38,6 +38,7 @@
   "transactions": {
     "title": "Transazioni",
     "add": "Aggiungi transazione",
+    "addShort": "Aggiungi",
     "addTitle": "Nuova transazione",
     "editTitle": "Modifica transazione",
     "account": "Conto",
