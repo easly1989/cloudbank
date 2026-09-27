@@ -72,7 +72,9 @@ export function BankSyncCallback() {
               <Text c={errorColor} ta="center">
                 {message || t("banksync.eb.callback.error")}
               </Text>
-              <Button onClick={() => nav("/settings/integrations")}>{t("banksync.eb.callback.back")}</Button>
+              <Button onClick={() => nav("/settings/integrations")}>
+                {t("banksync.eb.callback.back")}
+              </Button>
             </>
           )}
         </Stack>
