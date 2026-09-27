@@ -44,7 +44,7 @@ export function BankSyncCallback() {
       .then(() => {
         if (!alive) return;
         setStatus("done");
-        setTimeout(() => nav("/bank-sync"), 1200);
+        setTimeout(() => nav("/settings/integrations"), 1200);
       })
       .catch((err: unknown) => {
         if (!alive) return;
@@ -72,7 +72,7 @@ export function BankSyncCallback() {
               <Text c={errorColor} ta="center">
                 {message || t("banksync.eb.callback.error")}
               </Text>
-              <Button onClick={() => nav("/bank-sync")}>{t("banksync.eb.callback.back")}</Button>
+              <Button onClick={() => nav("/settings/integrations")}>{t("banksync.eb.callback.back")}</Button>
             </>
           )}
         </Stack>

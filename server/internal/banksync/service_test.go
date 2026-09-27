@@ -120,6 +120,37 @@ func TestConnectLinkSyncDedup(t *testing.T) {
 	}
 }
 
+// The listing names the accounts each connection feeds, from its links alone,
+// so the register can offer Sync without calling the bank (#504).
+func TestListConnectionsNamesLinkedAccounts(t *testing.T) {
+	svc, _, _, wid, acc := newFixture(t)
+	ctx := context.Background()
+	setupToken := base64.StdEncoding.EncodeToString([]byte("https://example.test/claim/x"))
+	conn, _, err := svc.Connect(ctx, wid, setupToken, "Demo bank")
+	if err != nil {
+		t.Fatalf("Connect: %v", err)
+	}
+
+	list, err := svc.ListConnections(ctx, wid)
+	if err != nil || len(list) != 1 {
+		t.Fatalf("ListConnections = %+v, %v", list, err)
+	}
+	if len(list[0].LinkedAccountIDs) != 0 {
+		t.Fatalf("unlinked connection lists accounts %v", list[0].LinkedAccountIDs)
+	}
+
+	if err := svc.Link(ctx, wid, conn.ID, "ACT-1", acc); err != nil {
+		t.Fatalf("Link: %v", err)
+	}
+	list, err = svc.ListConnections(ctx, wid)
+	if err != nil {
+		t.Fatalf("ListConnections: %v", err)
+	}
+	if got := list[0].LinkedAccountIDs; len(got) != 1 || got[0] != acc {
+		t.Fatalf("linked accounts = %v, want [%d]", got, acc)
+	}
+}
+
 func TestSyncDueRespectsScheduleAndAutoSync(t *testing.T) {
 	svc, q, st, wid, acc := newFixture(t)
 	ctx := context.Background()

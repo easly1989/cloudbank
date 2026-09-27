@@ -87,4 +87,40 @@ describe("navLayout", () => {
         ?.entries.some((e) => e.kind === "item" && e.to === "/accounts"),
     ).toBe(true);
   });
+
+  // Bank sync and Review left the sidebar (#504, #505). A layout saved before
+  // loses them, and the group that held them unless the reader put their own
+  // page in it.
+  it("drops Bank sync, Review and their emptied Banking group", () => {
+    const banking = (entries: { kind: "item"; to: string }[]) => ({
+      id: "banking",
+      labelKey: "nav.group.banking",
+      entries,
+    });
+    const gone = migrateNavLayout({
+      version: 1,
+      groups: [
+        banking([
+          { kind: "item", to: "/bank-sync" },
+          { kind: "item", to: "/review" },
+        ]),
+      ],
+    });
+    expect(gone.groups.some((g) => g.id === "banking")).toBe(false);
+    const paths = gone.groups.flatMap((g) =>
+      g.entries.flatMap((e) => (e.kind === "item" ? [e.to] : [])),
+    );
+    expect(paths).not.toContain("/bank-sync");
+    expect(paths).not.toContain("/review");
+
+    const kept = migrateNavLayout({
+      version: 1,
+      groups: [banking([{ kind: "item", to: "/reports" }])],
+    });
+    expect(kept.groups.find((g) => g.id === "banking")?.entries[0]).toEqual({
+      kind: "item",
+      to: "/reports",
+      hidden: false,
+    });
+  });
 });

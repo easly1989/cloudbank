@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -68,6 +69,10 @@ type Connection struct {
 	LastSyncAt      string `json:"lastSyncAt,omitempty"`
 	LastSyncStatus  string `json:"lastSyncStatus,omitempty"`
 	LastSyncMessage string `json:"lastSyncMessage,omitempty"`
+	// LinkedAccountIDs are the CloudBank accounts the connection feeds, read
+	// from its links alone: the register shows its Sync button for them
+	// without asking the bank anything (#504). Filled by ListConnections.
+	LinkedAccountIDs []int64 `json:"linkedAccountIds,omitempty"`
 }
 
 // RemoteAccount is a provider account, with the linked CloudBank account if any.
@@ -206,7 +211,20 @@ func (s *Service) ListConnections(ctx context.Context, walletID int64) ([]Connec
 	}
 	out := make([]Connection, 0, len(rows))
 	for _, c := range rows {
-		out = append(out, toConnection(c))
+		conn := toConnection(c)
+		links, err := s.rq.ListBankLinks(ctx, c.ID)
+		if err != nil {
+			return nil, err
+		}
+		seen := map[int64]bool{}
+		for _, l := range links {
+			if !seen[l.AccountID] {
+				seen[l.AccountID] = true
+				conn.LinkedAccountIDs = append(conn.LinkedAccountIDs, l.AccountID)
+			}
+		}
+		slices.Sort(conn.LinkedAccountIDs)
+		out = append(out, conn)
 	}
 	return out, nil
 }

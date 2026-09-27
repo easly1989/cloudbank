@@ -63,6 +63,7 @@ import { TransactionForm } from "../components/TransactionForm";
 import { TransferForm } from "../components/TransferForm";
 import { useWallet } from "../wallet/WalletProvider";
 import { useAuth } from "../auth/AuthProvider";
+import { RegisterBankRow } from "./RegisterBankRow";
 import { RegisterFilters } from "./RegisterFilters";
 import { RegisterTable } from "./RegisterTable";
 import { clearedFacets, registerChips } from "./registerChips";
@@ -584,6 +585,10 @@ export function TransactionsPage() {
         {/* The same three figures the overview offers, and the same choice of
             which to show: "how much have I got" is one question asked in two
             places, so it should not have two answers. */}
+        {/* The account's bank and what it has to review, when it has
+            either (#504, #505). */}
+        {account && <RegisterBankRow walletId={walletId} accountId={account.id} />}
+
         {/* On one line whatever the screen: when the three do not fit a
             phone, they step through a strip one figure high (#503). */}
         {account && registerQuery.data && (
