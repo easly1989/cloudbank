@@ -1540,6 +1540,12 @@
     "accept_other": "Mostrami · {{count}} passi",
     "decline": "No grazie",
     "replay": "Tour di questa pagina",
+    "skipAsk": {
+      "title": "Salto anche i tour delle altre pagine?",
+      "body": "Il ? in cima a ogni pagina li mostra comunque quando vuoi. Puoi riattivare le proposte in Impostazioni › Generali.",
+      "onlyThis": "Solo questo",
+      "all": "Salta tutti"
+    },
     "dashboard": {
       "offer": "Prima volta qui? Fai un giro veloce"
     },

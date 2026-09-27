@@ -79,7 +79,9 @@ export default function TourOverlay({
   onClose,
 }: {
   steps: TourStep[];
-  onClose: () => void;
+  /** `finished` is true when the reader went through to the last step, false
+      when they skipped or pressed Escape. */
+  onClose: (finished: boolean) => void;
 }) {
   const { t } = useTranslation();
   // The steps this page can show: one whose element is not in the page at all
@@ -102,7 +104,7 @@ export default function TourOverlay({
   const isFirst = step === 0;
   const isLast = step === steps.length - 1;
 
-  const next = () => (isLast ? onClose() : setStep((s) => s + 1));
+  const next = () => (isLast ? onClose(true) : setStep((s) => s + 1));
   const back = () => setStep((s) => Math.max(0, s - 1));
 
   // Measure the target and the card on every step change, resize and scroll,
@@ -139,7 +141,7 @@ export default function TourOverlay({
   // Keyboard navigation (no dep array so the handlers always see fresh state).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onClose(false);
       else if (e.key === "ArrowRight") next();
       else if (e.key === "ArrowLeft") back();
     };
@@ -202,7 +204,7 @@ export default function TourOverlay({
           {t(current.bodyKey)}
         </Text>
         <Group justify="space-between" mt="md">
-          <Button variant="subtle" color="gray" size="xs" onClick={onClose}>
+          <Button variant="subtle" color="gray" size="xs" onClick={() => onClose(false)}>
             {t("tour.skip")}
           </Button>
           <Group gap="xs">
