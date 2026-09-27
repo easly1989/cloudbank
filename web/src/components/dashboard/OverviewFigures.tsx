@@ -1,4 +1,5 @@
 import { Group, Stack, Text } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { useTranslation } from "react-i18next";
 
 import type { CurrencyInfo, MonthPoint } from "../../api/client";
@@ -7,6 +8,7 @@ import { formatMinor } from "../../money";
 import { periodTotals, type BalanceKey } from "./overviewFigureModel";
 import { FIGURES } from "../../pages/overviewTheme";
 import { useCountUp } from "../../motion";
+import { FigureStrip } from "../FigureStrip";
 
 /**
  * The figures at the head of the overview: what you have, and what the period
@@ -30,6 +32,7 @@ export function OverviewFigures({
   locale: string;
 }) {
   const { t } = useTranslation();
+  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
   if (!base || !totals) return null;
   const { earned, spent, kept } = periodTotals(points);
   const label: Record<BalanceKey, string> = {
@@ -38,41 +41,62 @@ export function OverviewFigures({
     future: t("register.future"),
   };
 
+  const [lead, ...others] = balances;
   return (
     <Group
       gap={FIGURES.gap}
       wrap="wrap"
       align="flex-start"
       py={FIGURES.padY}
-      style={{ width: "100%" }}
+      // On a phone the strip drops under the headline; a figure gap between
+      // the two lines would leave a hole.
+      style={{ width: "100%", rowGap: phone ? 12 : undefined }}
     >
-      {balances.map((key, i) => (
+      {lead && (
         <MoneyFigure
-          key={key}
           base={base}
-          amount={totals[key]}
-          label={label[key]}
-          // The first balance is the headline; a second or third one the reader
-          // asked for sits at the same size as earned and spent.
-          headline={i === 0}
-          colour={negativeOnlyColor(totals[key])}
+          amount={totals[lead]}
+          label={label[lead]}
+          headline
+          colour={negativeOnlyColor(totals[lead])}
         />
-      ))}
-      <MoneyFigure
-        label={t("overview.earned")}
-        base={base}
-        amount={earned}
-        sign="+"
-        colour={incomeColor}
-      />
-      <MoneyFigure
-        label={t("overview.spent")}
-        base={base}
-        amount={spent}
-        sign="−"
-        colour={expenseColor}
-      />
-      <KeptFigure label={t("overview.kept")} kept={kept} locale={locale} />
+      )}
+      {/* Everything after the headline keeps to one line (#503). Beside the
+          headline while there is room; on a phone, under it, where the five
+          step through a strip one figure high rather than stacking into a
+          screen of their own. */}
+      <FigureStrip
+        gap={phone ? 28 : FIGURES.gap}
+        style={{ flex: "1 1 260px", minWidth: 0 }}
+        label={t("overview.figures")}
+      >
+        {others.map((key) => (
+          // A second or third balance the reader asked for sits at the same
+          // size as earned and spent.
+          <MoneyFigure
+            key={key}
+            base={base}
+            amount={totals[key]}
+            label={label[key]}
+            colour={negativeOnlyColor(totals[key])}
+          />
+        ))}
+        <MoneyFigure
+          label={t("overview.earned")}
+          base={base}
+          amount={earned}
+          sign="+"
+          colour={incomeColor}
+        />
+        <MoneyFigure
+          label={t("overview.spent")}
+          base={base}
+          amount={spent}
+          sign="−"
+          colour={expenseColor}
+        />
+        <KeptFigure label={t("overview.kept")} kept={kept} locale={locale} />
+      </FigureStrip>
     </Group>
   );
 }
