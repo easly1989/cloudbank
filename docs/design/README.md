@@ -127,3 +127,10 @@ Added since:
     steps; nothing after today is drawn as zero, and a period still running
     says "so far". A chart whose axis cannot start at zero uses points, not
     bars.
+- **Bank sync in Settings, Review from the register** (#504, #505). The
+  settings board already names the section "Bank sync & AI"; the app now puts
+  the whole bank sync there instead of on a page of its own, and the sidebar
+  loses its Banking group. Neither board draws what replaces the links: the
+  register of an account linked to a bank gets a row above its balances — when
+  it last synced, a Sync button, and an amber "N to review" when that account
+  has rows waiting — and Review opens filtered to that account.

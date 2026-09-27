@@ -1,6 +1,5 @@
-import { Anchor, Stack } from "@mantine/core";
+import { Stack } from "@mantine/core";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 
 import { AiSettingsCard } from "../../components/AiSettingsCard";
 import { EntryFieldsCard } from "../../components/EntryFieldsCard";
@@ -8,6 +7,7 @@ import { NavLayoutEditor } from "../../components/NavLayoutEditor";
 import { NotificationsCard } from "../../components/NotificationsCard";
 import { TwoFactorCard } from "../../components/TwoFactorCard";
 import { ApiTokensPage } from "../ApiTokensPage";
+import { BankSyncSettings } from "../BankSyncPage";
 import { PreferencesPage } from "../PreferencesPage";
 import { WalletSettingsPage } from "../WalletSettingsPage";
 import { UsersPage } from "../admin/UsersPage";
@@ -76,13 +76,15 @@ export function IntegrationsSection() {
           <AiSettingsCard />
         </SettingsGroup>
       )}
-      <SettingsGroup title={t("banksync.title")} hint={t("settings.bankSyncHint")}>
-        {/* The connections themselves are a page, not a setting: they have
-            their own state, their own errors and their own history. */}
-        <Anchor component={Link} to="/bank-sync">
-          {t("settings.bankSyncOpen")}
-        </Anchor>
-      </SettingsGroup>
+      {/* The demo's section is Bank sync alone, so a group of the same name
+          would only repeat it, and its hint names providers the demo lacks. */}
+      {__DEMO__ ? (
+        <BankSyncSettings />
+      ) : (
+        <SettingsGroup title={t("banksync.title")} hint={t("banksync.hint")}>
+          <BankSyncSettings />
+        </SettingsGroup>
+      )}
     </Stack>
   );
 }

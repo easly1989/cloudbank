@@ -233,7 +233,7 @@ test("every step of every tour points at something on its page", async ({
     ["schedules", "/schedules"],
     ["bills", "/bills"],
     ["goals", "/goals"],
-    ["bankSync", "/bank-sync"],
+    ["bankSync", "/settings/integrations"],
     ["review", "/review"],
     ["settings", "/settings/general"],
     ["data", "/settings/data"],

@@ -7,8 +7,9 @@ supply the provider credentials, CloudBank stores them **server-side** (never
 returned to the browser) and signs the provider requests. CloudBank never sees
 your bank username or password.
 
-Bank sync lives at **Bank sync** in the sidebar. Each provider is configured
-per **wallet**. The public demo does not reach any of them; it has a pretend
+Bank sync lives in **Settings → Bank sync & AI**. Each provider is configured
+per **wallet**. Once an account is linked, its register shows when it last
+synced, a **Sync** button, and how many of its imported rows still need a look. The public demo does not reach any of them; it has a pretend
 bank instead (see [demo.md](demo.md)).
 
 | Provider | Coverage | You bring | Cost to you |
@@ -29,7 +30,7 @@ Signed amounts follow CloudBank's convention (negative = money out).
 1. Create a **SimpleFIN Bridge** account at <https://beta-bridge.simplefin.org/>
    and connect your bank there. SimpleFIN Bridge is the paid piece (~$15/year).
 2. Generate a **setup token** in SimpleFIN Bridge.
-3. In CloudBank: **Bank sync → SimpleFIN → Connect a bank**, give it a name and
+3. In CloudBank: **Settings → Bank sync & AI → SimpleFIN → Connect a bank**, give it a name and
    paste the setup token. CloudBank claims the token once for a secret access URL
    (stored server-side) — a token can only be claimed once.
 4. Under the new connection, **link** each provider account to a CloudBank
@@ -104,7 +105,7 @@ rotate it in the Control Panel.
 
 ### 2. Configure CloudBank
 
-**Bank sync → Enable Banking (EU) → Configure**, then paste:
+**Settings → Bank sync & AI → Enable Banking (EU) → Configure**, then paste:
 
 - **Application ID**
 - **RSA private key** (PEM — PKCS#1 from `openssl genrsa`, or PKCS#8 from the
@@ -144,7 +145,7 @@ app, so there is no consent redirect to configure here.
    its **Client ID** and **Client Secret**.
 3. In the Dashboard, open your application and copy the **item id** of each
    connection you want CloudBank to read.
-4. In CloudBank: **Bank sync -> Pluggy -> Configure**, paste the client id and
+4. In CloudBank: **Settings → Bank sync & AI → Pluggy → Configure**, paste the client id and
    secret. They are verified against Pluggy before being saved, so a typo is
    caught immediately rather than at the first scheduled sync.
 5. **Connect an item**, paste the item id, then **link** each account to a
@@ -221,12 +222,12 @@ demand.
 
 The background job wakes every `CB_BANK_SYNC_INTERVAL` (default `1h`; set it to
 `0`/`off` to disable background sync entirely) and runs each connection that is
-due for its scheduled slot. Account balances shown on the Bank sync page are
+due for its scheduled slot. Account balances shown in the bank sync settings are
 cached and refreshed at most every 12h, so opening the page repeatedly does not
 spend the daily budget. An Enable Banking connection whose consent has expired is
 skipped until you **reconnect** it.
 
-Each connection keeps a short **sync history**: expand it on the Bank sync page to
+Each connection keeps a short **sync history**: expand it in the bank sync settings to
 see the recent runs — when each ran, whether it was manual or automatic, and, per
 linked account, how it went (fetched / imported / reconciled, or the error). It's
 the quickest way to answer "why didn't my last sync import anything?" without
@@ -255,7 +256,10 @@ pipeline as a file import, with extra reconciliation:
 ## Reviewing imports
 
 Because imported rows arrive reconciled but the bank supplies no CloudBank
-category, the **Review** page (in the sidebar) helps you finish the job:
+category, the **Review** page helps you finish the job. It has no place in the sidebar:
+the register of a linked account shows "N to review" when there is something to
+look at, and the button opens Review on that account alone ("Show all accounts"
+widens it again).
 
 - **Needs a category** lists imported transactions that still have none — pick one
   inline.

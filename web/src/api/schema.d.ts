@@ -2609,6 +2609,8 @@ export interface components {
             lastSyncStatus?: "ok" | "partial" | "error";
             /** @description human summary or error of the last attempt */
             lastSyncMessage?: string;
+            /** @description the CloudBank accounts this connection feeds, from its links (listing only; no provider call) */
+            linkedAccountIds?: number[];
         };
         /** @description One linked account's outcome within a sync run. */
         BankSyncAccountResult: {

@@ -40,7 +40,7 @@ const PAGES = [
   "/bills",
   "/budget",
   "/goals",
-  "/bank-sync",
+  "/settings/integrations",
   "/review",
   "/reports",
   "/vehicles",

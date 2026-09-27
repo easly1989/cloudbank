@@ -513,6 +513,8 @@
     "auto": "auto"
   },
   "review": {
+    "oneAccount": "One account",
+    "allAccounts": "Show all accounts",
     "title": "Bank sync review",
     "hint": "Complete imported transactions that still need a category, and resolve possible duplicates.",
     "error": "Could not load the review.",
@@ -707,6 +709,9 @@
     "emptyHint": "The weekly shop, the monthly transfer: the transactions you would otherwise retype."
   },
   "register": {
+    "sync": "Sync",
+    "toReview_one": "{{count}} to review",
+    "toReview_other": "{{count}} to review",
     "bank": "Reconciled",
     "today": "Today",
     "future": "Future",
@@ -1369,7 +1374,6 @@
     "ai": "AI",
     "aiHint": "Used to suggest categories. Your key is stored encrypted and never leaves this server.",
     "bankSyncHint": "Connections to your banks, with their own state and history.",
-    "bankSyncOpen": "Open bank sync",
     "importHint": "Statements, and the rules that file them.",
     "backupHint": "A copy you can restore from, and a check that the database is sound."
   },

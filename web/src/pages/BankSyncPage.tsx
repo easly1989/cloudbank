@@ -73,7 +73,7 @@ import {
 import { useDateFormat } from "../dates";
 import { localScheduleToUtc, utcScheduleToLocal } from "../schedule";
 import { useWallet } from "../wallet/WalletProvider";
-import { PageHeader } from "../components/PageHeader";
+import { showSyncResult } from "../bankSyncNotice";
 import { EmptyState } from "../components/EmptyState";
 
 // The Enable Banking redirect target — must be whitelisted in the user's app.
@@ -87,7 +87,14 @@ const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => ({
 }));
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
-export function BankSyncPage() {
+/**
+ * The bank connections: the providers to connect through, then each connected
+ * bank with its schedule, its linked accounts and its history. It used to be a
+ * page of its own in the sidebar; it is a setting, and lives in Settings ›
+ * Bank sync & AI (#504). Syncing by hand is also offered from the register of
+ * any linked account.
+ */
+export function BankSyncSettings() {
   const { t } = useTranslation();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
@@ -104,8 +111,6 @@ export function BankSyncPage() {
 
   return (
     <Stack>
-      <PageHeader tour="bankSync" title={t("banksync.title")} hint={t("banksync.hint")} />
-
       {__DEMO__ ? (
         <DemoBankPanel walletId={walletId} />
       ) : (
@@ -249,19 +254,8 @@ function ConnectionCard({
   const sync = useMutation({
     mutationFn: () => syncBankConnection(walletId, connection.id),
     onSuccess: (res) => {
-      const failed = res.failed ?? 0;
-      notifications.show({
-        color: failed > 0 ? "orange" : "teal",
-        message:
-          failed > 0
-            ? t("banksync.syncedPartial", {
-                imported: res.imported,
-                reconciled: res.reconciled,
-                warnings: (res.warnings ?? []).join("; "),
-              })
-            : t("banksync.synced", { imported: res.imported, reconciled: res.reconciled }),
-        autoClose: failed > 0 ? 8000 : undefined,
-      });
+      showSyncResult(res, t);
+      void qc.invalidateQueries({ queryKey: ["review", walletId] });
       void qc.invalidateQueries({ queryKey: ["register", walletId] });
       void qc.invalidateQueries({ queryKey: ["accounts", walletId] });
       void qc.invalidateQueries({ queryKey: ["bankRemote", walletId, connection.id] });
