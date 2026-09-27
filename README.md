@@ -25,6 +25,7 @@
 </p>
 
 <p align="center">
+  <a href="https://buymeacoffee.com/easly1989"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=black" alt="Buy me a coffee" /></a>
   <a href="https://paypal.me/carloruggiero"><img src="https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&logoColor=white" alt="Donate via PayPal" /></a>
   <a href="https://buy.stripe.com/8x26oAeqA7h6dPk80hfbq00"><img src="https://img.shields.io/badge/Donate-Stripe-635BFF?logo=stripe&logoColor=white" alt="Donate via Stripe" /></a>
   <a href="https://liberapay.com/amon2126/donate"><img src="https://img.shields.io/badge/Donate-Liberapay-F6C915?logo=liberapay&logoColor=black" alt="Donate via Liberapay" /></a>
@@ -250,8 +251,9 @@ CloudBank is licensed under the **GNU Affero General Public License v3.0** — s
 ## Support the project
 
 CloudBank is an open-source labour of love. If it's useful to you, consider a
-donation — it genuinely helps and is much appreciated. ♥ Pick whichever suits
-you on the [**donation page**](https://easly1989.github.io/donate.html):
+donation — it genuinely helps and is much appreciated. ♥ The easiest way is
+[**Buy Me a Coffee**](https://buymeacoffee.com/easly1989). If you prefer another,
+the [donation page](https://easly1989.github.io/donate.html) lists them all:
 [PayPal](https://paypal.me/carloruggiero),
 [Stripe](https://buy.stripe.com/8x26oAeqA7h6dPk80hfbq00),
 [Liberapay](https://liberapay.com/amon2126/donate) or
