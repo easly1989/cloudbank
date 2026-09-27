@@ -21,6 +21,8 @@ export interface BankConnection {
   /** Outcome of the last attempt. */
   lastSyncStatus?: "ok" | "partial" | "error";
   lastSyncMessage?: string;
+  /** The CloudBank accounts this connection feeds (its links). */
+  linkedAccountIds?: number[];
 }
 
 export interface BankSyncAccountResult {

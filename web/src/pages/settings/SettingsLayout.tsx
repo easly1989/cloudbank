@@ -14,8 +14,13 @@ import { RAIL, SECTION } from "./settingsTheme";
 import { SETTINGS_SECTIONS } from "./sections";
 
 // The sections with a tour of their own (#421): General, where the screen as a
-// whole is introduced, and Data, where import and export live.
-const SECTION_TOURS: Partial<Record<string, TourId>> = { general: "settings", data: "data" };
+// whole is introduced, Data, where import and export live, and the bank sync,
+// which moved here from a page of its own (#504).
+const SECTION_TOURS: Partial<Record<string, TourId>> = {
+  general: "settings",
+  integrations: "bankSync",
+  data: "data",
+};
 
 /**
  * Settings is its own screen, not a page inside the app.

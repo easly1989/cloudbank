@@ -513,6 +513,8 @@
     "auto": "auto"
   },
   "review": {
+    "oneAccount": "Un conto",
+    "allAccounts": "Mostra tutti i conti",
     "title": "Revisione sync bancario",
     "hint": "Completa le transazioni importate a cui manca una categoria e risolvi i possibili duplicati.",
     "error": "Impossibile caricare la revisione.",
@@ -707,6 +709,9 @@
     "emptyHint": "La spesa settimanale, il bonifico mensile: le transazioni che altrimenti riscriveresti."
   },
   "register": {
+    "sync": "Sincronizza",
+    "toReview_one": "{{count}} da rivedere",
+    "toReview_other": "{{count}} da rivedere",
     "bank": "Riconciliato",
     "today": "Oggi",
     "future": "Futuro",
@@ -1369,7 +1374,6 @@
     "ai": "AI",
     "aiHint": "Serve a proporre le categorie. La chiave è conservata cifrata e non lascia mai questo server.",
     "bankSyncHint": "Le connessioni alle tue banche, con il loro stato e la loro storia.",
-    "bankSyncOpen": "Apri la sincronizzazione bancaria",
     "importHint": "Gli estratti conto, e le regole che li archiviano.",
     "backupHint": "Una copia da cui ripristinare, e un controllo che il database sia integro."
   },

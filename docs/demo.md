@@ -27,7 +27,7 @@ about into it.
 These are not bugs, so please don't report them as bugs:
 
 - **Bank sync talks to a pretend bank.** The demo reaches no real bank. Connect
-  _Demo Bank_ on the Bank sync page and each sync makes up a few days of card
+  _Demo Bank_ in Settings → Bank sync and each sync makes up a few days of card
   payments, which then run through reconciliation and the Review page like the
   real thing. SimpleFIN, Enable Banking and Pluggy are not offered.
 - **No attachments, no AI, no push notifications, no API tokens, no two-factor

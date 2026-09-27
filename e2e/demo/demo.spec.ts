@@ -92,7 +92,7 @@ test("the pretend bank syncs", async ({ page }) => {
     .click();
   await noTourOffers(page);
 
-  await page.goto("/bank-sync");
+  await page.goto("/settings/integrations");
   await expect(page.getByText("Pretend bank").first()).toBeVisible();
   await expect(page.getByText("SimpleFIN")).toHaveCount(0);
   await page.getByRole("button", { name: "Sync now" }).first().click();

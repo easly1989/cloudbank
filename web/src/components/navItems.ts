@@ -1,10 +1,8 @@
 import {
   IconArrowsExchange,
-  IconBuildingBank,
   IconCalendarRepeat,
   IconCar,
   IconChartBar,
-  IconChecklist,
   IconLayoutDashboard,
   IconPigMoney,
   IconReceipt,
@@ -25,6 +23,12 @@ export interface NavItemDef {
 }
 
 // The full set of navigation destinations, in their default order.
+//
+// Bank sync and Review are not among them (#504, #505): the bank connections
+// are a setting, under Settings › Bank sync & AI, and Review is reached from
+// where its work is — the register's "to review" button and the overview's
+// list of things that want doing — rather than from a page that sits in the
+// sidebar whether or not there is anything to review.
 export const NAV_ITEMS: NavItemDef[] = [
   { to: "/", labelKey: "nav.dashboard", icon: IconLayoutDashboard, end: true, adminOnly: false },
   { to: "/accounts", labelKey: "nav.accounts", icon: IconWallet, end: false, adminOnly: false },
@@ -43,14 +47,6 @@ export const NAV_ITEMS: NavItemDef[] = [
     adminOnly: false,
   },
   { to: "/bills", labelKey: "nav.bills", icon: IconReceipt, end: false, adminOnly: false },
-  {
-    to: "/bank-sync",
-    labelKey: "nav.bankSync",
-    icon: IconBuildingBank,
-    end: false,
-    adminOnly: false,
-  },
-  { to: "/review", labelKey: "nav.review", icon: IconChecklist, end: false, adminOnly: false },
   { to: "/templates", labelKey: "nav.templates", icon: IconTemplate, end: false, adminOnly: false },
   { to: "/tags", labelKey: "nav.tags", icon: IconTag, end: false, adminOnly: false },
   { to: "/vehicles", labelKey: "nav.vehicles", icon: IconCar, end: false, adminOnly: false },
@@ -75,6 +71,5 @@ export const NAV_GROUPS: NavGroupDef[] = [
     items: ["/accounts", "/transactions", "/templates", "/tags", "/assignments"],
   },
   { labelKey: "nav.group.planning", items: ["/schedules", "/bills", "/budget", "/goals"] },
-  { labelKey: "nav.group.banking", items: ["/bank-sync", "/review"] },
   { labelKey: "nav.group.insights", items: ["/reports", "/vehicles"] },
 ];

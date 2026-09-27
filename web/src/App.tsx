@@ -53,9 +53,6 @@ const BillsPage = lazy(() => import("./pages/BillsPage").then((m) => ({ default:
 const ReviewPage = lazy(() =>
   import("./pages/ReviewPage").then((m) => ({ default: m.ReviewPage })),
 );
-const BankSyncPage = lazy(() =>
-  import("./pages/BankSyncPage").then((m) => ({ default: m.BankSyncPage })),
-);
 const BankSyncCallback = lazy(() =>
   import("./pages/BankSyncCallback").then((m) => ({ default: m.BankSyncCallback })),
 );
@@ -170,7 +167,10 @@ function AuthenticatedApp() {
           <Route path="budget" element={<BudgetPage />} />
           <Route path="goals" element={<GoalsPage />} />
           <Route path="bills" element={<BillsPage />} />
-          <Route path="bank-sync" element={<BankSyncPage />} />
+          {/* The bank connections live in Settings now (#504); the old address
+              still leads there. The callback keeps its path: it is the
+              redirect URL people registered with Enable Banking. */}
+          <Route path="bank-sync" element={<Navigate to="/settings/integrations" replace />} />
           <Route path="bank-sync/callback" element={<BankSyncCallback />} />
           <Route path="review" element={<ReviewPage />} />
           <Route path="reports" element={<ReportsPage />} />
