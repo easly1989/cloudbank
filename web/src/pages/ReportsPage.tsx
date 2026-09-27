@@ -3,7 +3,6 @@ import {
   Badge,
   Button,
   Drawer,
-  Group,
   Menu,
   SegmentedControl,
   Stack,
@@ -18,7 +17,6 @@ import {
   IconFileSpreadsheet,
   IconFilter,
   IconPhoto,
-  IconX,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -26,6 +24,7 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
 import { listCategories, listCurrencies, listPayees, listTags } from "../api/client";
+import { FilterChips, type FilterChip } from "../components/FilterChips";
 import { PageHeader } from "../components/PageHeader";
 import { BalancesTab } from "../components/reports/BalancesTab";
 import { CashFlowTab } from "../components/reports/CashFlowTab";
@@ -160,6 +159,11 @@ export function ReportsPage() {
     category: categories.data?.find((c) => c.id === state.filters.categoryId)?.name,
   });
   const setFilters = (filters: Filters) => set({ filters });
+  const chipItems: FilterChip[] = chips.map((c) => ({
+    id: c.id,
+    label: c.label,
+    onRemove: () => setFilters(c.clear(state.filters)),
+  }));
 
   return (
     <Stack className={classes.page}>
@@ -247,30 +251,9 @@ export function ReportsPage() {
         </Menu>
       </div>
 
-      {chips.length > 0 && (
-        <Group gap={6} wrap="wrap">
-          {chips.map((c) => (
-            <Badge
-              key={c.id}
-              variant="light"
-              size="lg"
-              rightSection={
-                <ActionIcon
-                  size="xs"
-                  variant="transparent"
-                  color="gray"
-                  aria-label={t("filters.chip.remove", { name: c.label })}
-                  onClick={() => setFilters(c.clear(state.filters))}
-                >
-                  <IconX size={12} />
-                </ActionIcon>
-              }
-            >
-              {c.label}
-            </Badge>
-          ))}
-        </Group>
-      )}
+      {/* The register's rule (#502): the count on the button always, the chips
+          where there is room — on a phone, at the head of the filter sheet. */}
+      {!isPhone && <FilterChips chips={chipItems} />}
 
       <Tabs
         value={state.tab}
@@ -305,15 +288,23 @@ export function ReportsPage() {
         size={isPhone ? "85%" : 380}
         title={t("reports.filters")}
       >
-        <RegisterFilters
-          filters={state.filters}
-          onChange={setFilters}
-          payees={payees.data ?? []}
-          categories={categories.data ?? []}
-          tags={tags.data ?? []}
-          fmt={fmt}
-          dates={false}
-        />
+        <Stack gap="sm">
+          {isPhone && <FilterChips chips={chipItems} />}
+          <RegisterFilters
+            filters={state.filters}
+            onChange={setFilters}
+            payees={payees.data ?? []}
+            categories={categories.data ?? []}
+            tags={tags.data ?? []}
+            fmt={fmt}
+            dates={false}
+          />
+          {isPhone && (
+            <Button fullWidth onClick={() => setFiltersOpen(false)}>
+              {t("actions.done")}
+            </Button>
+          )}
+        </Stack>
       </Drawer>
 
       <SavedViewsModal
