@@ -304,6 +304,7 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
                 variant="default"
                 onClick={() => {
                   resetAll();
+                  setTourOffers(true);
                   notifications.show({ color: "teal", message: t("preferences.toursReset") });
                 }}
               >

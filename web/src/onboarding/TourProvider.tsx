@@ -4,7 +4,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type ReactNo
 import { updateMe, type Preferences, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { TourContext, type TourContextValue } from "./tourContext";
-import { TourOffer } from "./TourOffer";
+import { TourOffer, TourSkipAsk } from "./TourOffer";
 import { TOURS, toursSeen, type TourId } from "./tours";
 
 // The visual overlay is loaded only when a tour actually runs, so the tour
@@ -33,6 +33,10 @@ function pageIsSettled(id: TourId): boolean {
  * being offered is what counts as seen — the reader said yes, said no, or
  * walked away, and none of those wants the question again. The ? in the page's
  * header runs it any time after.
+ *
+ * Turning down the first offered tour — "No thanks", or leaving it before its
+ * end — asks once whether the other pages should stop offering theirs (#501).
+ * A tour started from the ? never asks: there the reader asked for it.
  */
 export function OnboardingTourProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -40,6 +44,10 @@ export function OnboardingTourProvider({ children }: { children: ReactNode }) {
   const [running, setRunning] = useState<TourId | null>(null);
   const [requested, setRequested] = useState<TourId | null>(null);
   const [offered, setOffered] = useState<TourId | null>(null);
+  // Whether the running tour is the one a page offered, rather than one the
+  // reader started from the ?: only the first kind asks about the others.
+  const [fromOffer, setFromOffer] = useState(false);
+  const [asking, setAsking] = useState(false);
 
   // Written from the latest copy of the preferences, not the one this render
   // saw: the reader may have changed another preference in between.
@@ -54,10 +62,14 @@ export function OnboardingTourProvider({ children }: { children: ReactNode }) {
 
   const seen = useMemo(() => toursSeen(user?.preferences), [user?.preferences]);
   const offersOn = user?.preferences?.tourOffers ?? true;
+  const skipAsked = user?.preferences?.tourSkipAsked ?? false;
+  const turnedDown = useCallback(() => {
+    if (!skipAsked) setAsking(true);
+  }, [skipAsked]);
 
   // Offer the requested tour once the page has settled.
   useEffect(() => {
-    if (!requested || running || offered || !offersOn || seen.includes(requested)) return;
+    if (!requested || running || offered || asking || !offersOn || seen.includes(requested)) return;
     let stillFor = 0;
     const id = window.setInterval(() => {
       stillFor = pageIsSettled(requested) ? stillFor + POLL_MS : 0;
@@ -67,10 +79,12 @@ export function OnboardingTourProvider({ children }: { children: ReactNode }) {
       mutate({ toursSeen: [...seen, requested], tutorialSeen: undefined });
     }, POLL_MS);
     return () => window.clearInterval(id);
-  }, [requested, running, offered, offersOn, seen, mutate]);
+  }, [requested, running, offered, asking, offersOn, seen, mutate]);
 
   const start = useCallback((id: TourId) => {
     setOffered(null);
+    setAsking(false);
+    setFromOffer(false);
     setRunning(id);
   }, []);
 
@@ -82,7 +96,17 @@ export function OnboardingTourProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const resetAll = useCallback(() => mutate({ toursSeen: [], tutorialSeen: undefined }), [mutate]);
+  // "Show all tours again" means the offers too, so it also undoes "Skip all".
+  const resetAll = useCallback(
+    () =>
+      mutate({
+        toursSeen: [],
+        tutorialSeen: undefined,
+        tourOffers: true,
+        tourSkipAsked: undefined,
+      }),
+    [mutate],
+  );
 
   const value = useMemo<TourContextValue>(
     () => ({ start, request, resetAll }),
@@ -96,13 +120,38 @@ export function OnboardingTourProvider({ children }: { children: ReactNode }) {
         <TourOffer
           id={offered}
           steps={TOURS[offered].length}
-          onAccept={() => start(offered)}
-          onDecline={() => setOffered(null)}
+          onAccept={() => {
+            start(offered);
+            setFromOffer(true);
+          }}
+          onDecline={() => {
+            setOffered(null);
+            turnedDown();
+          }}
+        />
+      )}
+      {asking && !running && !offered && (
+        <TourSkipAsk
+          onOnlyThis={() => {
+            setAsking(false);
+            mutate({ tourSkipAsked: true });
+          }}
+          onSkipAll={() => {
+            setAsking(false);
+            mutate({ tourSkipAsked: true, tourOffers: false });
+          }}
         />
       )}
       {running && (
         <Suspense fallback={null}>
-          <TourOverlay steps={TOURS[running]} onClose={() => setRunning(null)} />
+          <TourOverlay
+            steps={TOURS[running]}
+            onClose={(finished) => {
+              setRunning(null);
+              if (!finished && fromOffer) turnedDown();
+              setFromOffer(false);
+            }}
+          />
         </Suspense>
       )}
     </TourContext.Provider>

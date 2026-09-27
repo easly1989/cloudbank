@@ -6,7 +6,9 @@ import { expect, test, type Page } from "@playwright/test";
 //   - every step of every tour points at something real. A step whose element
 //     was renamed away is skipped (or, if the element has no size, centred), and
 //     both look fine to anyone watching, so only a test sees them;
-//   - Settings brings all the offers back.
+//   - Settings brings all the offers back;
+//   - turning an offered tour down asks, once, whether to skip the others, and
+//     "Skip them all" stops every other page offering its own (#501).
 //
 // Named "zq-" so it runs after the main journey, whose admin it reuses; it also
 // sets itself up when run alone.
@@ -101,6 +103,7 @@ test("a page offers its tour once, and the ? plays it again", async ({
   });
   const offer = page.locator("[data-tour-offer]");
   const card = page.locator("[data-tour-step]");
+  const ask = page.locator("[data-tour-skip-ask]");
 
   await test.step("the first visit offers it", async () => {
     await page.goto("/budget");
@@ -128,6 +131,8 @@ test("a page offers its tour once, and the ? plays it again", async ({
     await expect(card).toContainText("Plan, then compare");
     await page.keyboard.press("Escape");
     await expect(card).toHaveCount(0);
+    // Left early, but the reader asked for it: no question about the others.
+    await expect(ask).toHaveCount(0);
   });
 
   await test.step("Settings brings every offer back", async () => {
@@ -140,6 +145,74 @@ test("a page offers its tour once, and the ? plays it again", async ({
     await expect(offer).toContainText("New here? Take the budget tour");
     await offer.getByRole("button", { name: "No thanks" }).click();
     await expect(offer).toHaveCount(0);
+    // Turned down, so it asks about the others; "Just this one" is an answer
+    // too, and the question is not asked again.
+    await expect(ask).toContainText("Skip the other pages' tours too?");
+    await ask.getByRole("button", { name: "Just this one" }).click();
+    await expect(ask).toHaveCount(0);
+  });
+});
+
+test("skipping an offered tour can skip them all", async ({ page }) => {
+  test.setTimeout(120_000);
+  // Only the budget's and the goals' tours still to offer, and not yet asked.
+  await ready(page, {
+    tutorialSeen: true,
+    tourOffers: true,
+    tourSkipAsked: false,
+    toursSeen: [
+      "dashboard",
+      "register",
+      "accounts",
+      "reports",
+      "schedules",
+      "bills",
+      "bankSync",
+      "review",
+      "settings",
+      "data",
+    ],
+  });
+  const offer = page.locator("[data-tour-offer]");
+  const card = page.locator("[data-tour-step]");
+  const ask = page.locator("[data-tour-skip-ask]");
+
+  await test.step("leaving an offered tour asks", async () => {
+    await page.goto("/budget");
+    await offer.getByRole("button", { name: "Show me · 2 steps" }).click();
+    await expect(card).toContainText("Plan, then compare");
+    await card.getByRole("button", { name: "Skip" }).click();
+    await expect(card).toHaveCount(0);
+    await expect(ask).toContainText("Skip the other pages' tours too?");
+    await ask.getByRole("button", { name: "Skip them all" }).click();
+    await expect(ask).toHaveCount(0);
+  });
+
+  await test.step("no other page offers its tour", async () => {
+    await page.goto("/goals");
+    await page.waitForLoadState("networkidle");
+    // Longer than the page is given to settle before an offer is made.
+    await page.waitForTimeout(2000);
+    await expect(offer).toHaveCount(0);
+    const prefs = await page.evaluate(async () => {
+      const me = await (await fetch("/api/v1/auth/me")).json();
+      return me.preferences;
+    });
+    expect(prefs.tourOffers).toBe(false);
+    // The ? still plays it.
+    await page.getByRole("button", { name: "Tour of this page" }).click();
+    await expect(card).toBeVisible();
+    await page.keyboard.press("Escape");
+  });
+
+  await test.step("Settings brings the offers back", async () => {
+    await page.goto("/settings/general");
+    await page.getByRole("button", { name: "Show all tours again" }).click();
+    await expect(
+      page.getByText("Each page will offer its tour again."),
+    ).toBeVisible();
+    await page.goto("/goals");
+    await expect(offer).toBeVisible();
   });
 });
 

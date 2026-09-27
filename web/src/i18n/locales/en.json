@@ -1540,6 +1540,12 @@
     "accept_other": "Show me · {{count}} steps",
     "decline": "No thanks",
     "replay": "Tour of this page",
+    "skipAsk": {
+      "title": "Skip the other pages' tours too?",
+      "body": "The ? at the top of each page still shows its tour whenever you like. You can turn the offers back on in Settings › General.",
+      "onlyThis": "Just this one",
+      "all": "Skip them all"
+    },
     "dashboard": {
       "offer": "New here? Take a quick tour"
     },
