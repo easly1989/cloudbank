@@ -762,6 +762,9 @@
     "noFlags": "Senza stato",
     "uncategorised": "Senza categoria",
     "clear": "Azzera filtri",
+    "noMatch": "Nessuna transazione corrisponde ai filtri.",
+    "showRows_one": "Mostra {{count}} transazione",
+    "showRows_other": "Mostra {{count}} transazioni",
     "section": "Filtri e inserimento rapido",
     "activeCount": "Filtri attivi",
     "presets": {

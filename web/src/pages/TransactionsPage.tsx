@@ -10,7 +10,7 @@ import {
   Tooltip,
   UnstyledButton,
 } from "@mantine/core";
-import { useDisclosure, useHotkeys } from "@mantine/hooks";
+import { useDisclosure, useHotkeys, useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
   IconEye,
@@ -27,6 +27,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "../components/EmptyState";
+import { FilterChips } from "../components/FilterChips";
 import { PageHeader } from "../components/PageHeader";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -62,6 +63,7 @@ import { useWallet } from "../wallet/WalletProvider";
 import { useAuth } from "../auth/AuthProvider";
 import { RegisterFilters } from "./RegisterFilters";
 import { RegisterTable } from "./RegisterTable";
+import { clearedFacets, registerChips } from "./registerChips";
 import { RegisterToolbar, type RegisterPanel } from "./RegisterToolbar";
 import {
   applyFilters,
@@ -211,6 +213,7 @@ export function TransactionsPage() {
   // Filters and columns share one side panel: two of them open at once would
   // leave the ledger a strip down the middle.
   const [panel, setPanel] = useState<RegisterPanel>(null);
+  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
 
   // "N" starts a new transaction. A ledger is somewhere people type, so the
   // shortcut stands down whenever a field, a menu or the sheet already has the
@@ -623,8 +626,17 @@ export function TransactionsPage() {
           />
         )}
 
+        {/* Every row is there, the filters are hiding them: say that, and
+            offer the way back, rather than calling the account empty. */}
         {account && filteredRows.length === 0 && rows.length > 0 && (
-          <EmptyState message={t("transactions.empty")} />
+          <EmptyState
+            message={t("filters.noMatch")}
+            action={
+              <Button variant="default" onClick={() => setFilters(emptyFilters)}>
+                {t("filters.clear")}
+              </Button>
+            }
+          />
         )}
       </Stack>
 
@@ -677,14 +689,24 @@ export function TransactionsPage() {
                 }
           }
           filtersPanel={
-            <RegisterFilters
-              filters={filters}
-              onChange={setFilters}
-              payees={payeesQuery.data ?? []}
-              categories={categoriesQuery.data ?? []}
-              tags={tagsQuery.data ?? []}
-              fmt={fmt}
-            />
+            <Stack gap="sm">
+              {/* On a phone the toolbar keeps only the count (#502): the
+                  chips that say which filters are on head the panel. */}
+              {phone && (
+                <FilterChips
+                  chips={registerChips(filters, setFilters, t)}
+                  onClear={() => setFilters(clearedFacets(filters))}
+                />
+              )}
+              <RegisterFilters
+                filters={filters}
+                onChange={setFilters}
+                payees={payeesQuery.data ?? []}
+                categories={categoriesQuery.data ?? []}
+                tags={tagsQuery.data ?? []}
+                fmt={fmt}
+              />
+            </Stack>
           }
           fillRef={topRef}
         />

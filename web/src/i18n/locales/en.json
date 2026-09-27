@@ -762,6 +762,9 @@
     "noFlags": "No status",
     "uncategorised": "Uncategorised",
     "clear": "Clear filters",
+    "noMatch": "No transaction matches the filters.",
+    "showRows_one": "Show {{count}} transaction",
+    "showRows_other": "Show {{count}} transactions",
     "section": "Filters & quick add",
     "activeCount": "Active filters",
     "presets": {
