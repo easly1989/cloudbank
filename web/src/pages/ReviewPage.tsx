@@ -17,6 +17,7 @@ import { IconArrowsLeftRight, IconGitMerge, IconPencil, IconTrash } from "@table
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { useConfirm } from "../components/confirmContext";
 
 import {
@@ -109,6 +110,17 @@ export function ReviewPage() {
   });
 
   const accounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data]);
+
+  // ?account=N narrows the page to one account: the register's "to review"
+  // button opens it that way (#505). Without it, the whole wallet.
+  const [params, setParams] = useSearchParams();
+  const onlyAccount = Number(params.get("account")) || null;
+  const needs = (review.data?.needsCategory ?? []).filter(
+    (r) => !onlyAccount || r.accountId === onlyAccount,
+  );
+  const dups = (review.data?.duplicates ?? []).filter(
+    (p) => !onlyAccount || p.a.accountId === onlyAccount || p.b.accountId === onlyAccount,
+  );
   const accountById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
   const categoryOptions = useMemo(() => {
     const cats = categoriesQuery.data ?? [];
@@ -172,8 +184,14 @@ export function ReviewPage() {
     onSuccess: refresh,
     onError,
   });
+  // Every pair in the wallet, or — when the page is narrowed to one account —
+  // only the pairs on screen: "all" means what the reader can see.
   const dismissAll = useMutation({
-    mutationFn: () => dismissAllDuplicatePairs(walletId),
+    mutationFn: async () => {
+      if (!onlyAccount) return dismissAllDuplicatePairs(walletId);
+      for (const p of dups) await dismissDuplicatePair(walletId, p.a.id, p.b.id);
+      return { dismissed: dups.length };
+    },
     onSuccess: (res) => {
       refresh();
       notifications.show({
@@ -203,9 +221,6 @@ export function ReviewPage() {
   };
 
   if (!currentWallet) return null;
-
-  const needs = review.data?.needsCategory ?? [];
-  const dups = review.data?.duplicates ?? [];
 
   // A transaction's compared fields, as the reader sees them.
   const describe = (tx: ReviewTxn): Described => {
@@ -398,6 +413,24 @@ export function ReviewPage() {
   return (
     <Stack>
       <PageHeader tour="review" title={t("review.title")} hint={t("review.hint")} />
+
+      {onlyAccount && (
+        <Group gap="xs" data-testid="review-account-filter">
+          <Badge variant="light" size="lg">
+            {accountById.get(onlyAccount)?.name ?? t("review.oneAccount")}
+          </Badge>
+          <Button
+            variant="subtle"
+            size="compact-sm"
+            onClick={() => {
+              params.delete("account");
+              setParams(params, { replace: true });
+            }}
+          >
+            {t("review.allAccounts")}
+          </Button>
+        </Group>
+      )}
 
       {review.isError && <Text c={errorColor}>{t("review.error")}</Text>}
 

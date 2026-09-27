@@ -2506,6 +2506,10 @@ components:
         lastSyncAt: { type: string, description: "time of the last sync ATTEMPT (manual or background), RFC3339" }
         lastSyncStatus: { type: string, enum: [ok, partial, error], description: "outcome of the last attempt" }
         lastSyncMessage: { type: string, description: "human summary or error of the last attempt" }
+        linkedAccountIds:
+          type: array
+          items: { type: integer, format: int64 }
+          description: "the CloudBank accounts this connection feeds, from its links (listing only; no provider call)"
       required: [id, provider, name, createdAt]
     BankSyncAccountResult:
       type: object

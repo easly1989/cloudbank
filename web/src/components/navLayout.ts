@@ -45,6 +45,12 @@ const KNOWN_DESTINATIONS = new Set(NAV_ITEMS.map((i) => i.to));
 
 const groupIdFromLabelKey = (labelKey: string) => labelKey.split(".").pop() ?? labelKey;
 
+// Built-in groups a later release took away. A saved layout still holds them,
+// emptied of their pages; unless the reader put something of their own in
+// one, it goes too, rather than staying as a heading over nothing. "banking"
+// held Bank sync and Review until #504/#505.
+const RETIRED_GROUPS = new Set(["nav.group.banking"]);
+
 // The default group each destination belongs to, so back-filled items (a nav
 // destination added after the user saved a layout) land in a sensible place.
 const DEFAULT_GROUP_OF = new Map<string, string>();
@@ -113,6 +119,13 @@ export function migrateNavLayout(saved: unknown): NavLayout {
         entries.push({ kind: "item", to: e.to, hidden: e.hidden === true });
       }
     }
+    if (
+      g.labelKey &&
+      RETIRED_GROUPS.has(g.labelKey) &&
+      !g.label &&
+      !entries.some((e) => e.kind === "item")
+    )
+      continue;
     groups.push({
       id: g.id || `grp-${Math.random().toString(36).slice(2, 8)}`,
       labelKey: g.label ? undefined : g.labelKey,
