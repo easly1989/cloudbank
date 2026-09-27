@@ -26,12 +26,13 @@ export function showSyncResult(res: BankSyncResult, t: TFunction) {
 
 /**
  * How long ago an RFC3339 moment was, in the app's language: "2 hours ago",
- * "2 ore fa", "yesterday". Minutes under an hour, hours under a day, days
- * after that.
+ * "2 ore fa", "yesterday". "Now" under a minute (the minute unit would say
+ * "this minute"), minutes under an hour, hours under a day, days after that.
  */
 export function sinceNow(iso: string, lang: string, now = Date.now()): string {
   const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
   const minutes = Math.round((new Date(iso).getTime() - now) / 60000);
+  if (minutes === 0) return rtf.format(0, "second");
   if (Math.abs(minutes) < 60) return rtf.format(minutes, "minute");
   const hours = Math.round(minutes / 60);
   if (Math.abs(hours) < 24) return rtf.format(hours, "hour");

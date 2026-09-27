@@ -1,5 +1,5 @@
 import { Button, Group, Text, Tooltip } from "@mantine/core";
-import { IconAlertTriangle, IconBuildingBank, IconRefresh } from "@tabler/icons-react";
+import { IconBuildingBank, IconRefresh } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -71,10 +71,17 @@ export function RegisterBankRow({ walletId, accountId }: { walletId: number; acc
   return (
     <Group gap="xs" wrap="nowrap" data-testid="register-bank-row">
       {connection && (
-        <Tooltip label={connection.name || t("banksync.unnamed")} openDelay={300}>
+        <Tooltip
+          label={`${connection.name || t("banksync.unnamed")} · ${
+            last ? sinceNow(last, i18n.language) : t("banksync.neverSynced")
+          }`}
+          openDelay={300}
+        >
           <Group gap={6} wrap="nowrap" style={{ minWidth: 0, flex: "0 1 auto" }}>
             <IconBuildingBank size={16} style={{ flexShrink: 0, opacity: 0.7 }} />
-            <Text size="sm" c="dimmed" truncate>
+            {/* Below 360px the two buttons need the row; the time stays in
+                the tooltip's reach through the icon. */}
+            <Text size="sm" c="dimmed" truncate className="cb-label-long">
               {last ? sinceNow(last, i18n.language) : t("banksync.neverSynced")}
             </Text>
           </Group>
@@ -85,6 +92,7 @@ export function RegisterBankRow({ walletId, accountId }: { walletId: number; acc
         <Button
           size="compact-sm"
           variant="light"
+          style={{ flexShrink: 0 }}
           leftSection={<IconRefresh size={14} />}
           loading={sync.isPending}
           onClick={() => sync.mutate()}
@@ -97,7 +105,7 @@ export function RegisterBankRow({ walletId, accountId }: { walletId: number; acc
           size="compact-sm"
           variant="light"
           color="orange"
-          leftSection={<IconAlertTriangle size={14} />}
+          style={{ flexShrink: 0 }}
           component={Link}
           to={`/review?account=${accountId}`}
         >
