@@ -1,4 +1,5 @@
 import { Group, Stack, Text, Title } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import type { ReactNode } from "react";
 
 import { TourButton } from "../onboarding/TourButton";
@@ -17,6 +18,10 @@ import type { TourId } from "../onboarding/tours";
 // buttons inside it wrap among themselves. Both are needed: the register's
 // header carries an account picker and five buttons, and a block that only
 // moved down as one piece would still be 400px wider than a phone.
+//
+// On a phone the ? leaves the actions for the title's own line (#500). In the
+// action block it was the one button left behind on pages with no other
+// action, and so took a 60px row to itself; beside the title it takes none.
 export function PageHeader({
   title,
   hint,
@@ -41,6 +46,37 @@ export function PageHeader({
   tour?: TourId;
 }) {
   usePageTour(tour);
+  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
+  if (phone) {
+    return (
+      <Stack gap="sm">
+        <Stack gap={2}>
+          <Group justify="space-between" align="center" gap="xs" wrap="nowrap">
+            <Title order={2} style={{ minWidth: 0 }}>
+              {title}
+            </Title>
+            {tour && <TourButton id={tour} size={32} round />}
+          </Group>
+          {hint && (
+            <Text c="dimmed" size="sm">
+              {hint}
+            </Text>
+          )}
+        </Stack>
+        {actions && (
+          <Group
+            className="cb-page-actions"
+            data-prominent={prominent || undefined}
+            gap="xs"
+            wrap="wrap"
+            justify="flex-end"
+          >
+            {actions}
+          </Group>
+        )}
+      </Stack>
+    );
+  }
   return (
     <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
       <Stack gap={2} style={{ minWidth: 0, flex: "1 1 auto" }}>
