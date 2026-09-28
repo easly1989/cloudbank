@@ -1745,5 +1745,12 @@
     "support": "Sostieni CloudBank",
     "supportHint": "Buy Me a Coffee e gli altri modi",
     "homebankHint": "L'app desktop di cui CloudBank è un port web"
+  },
+  "pageError": {
+    "title": "Questa pagina si è interrotta",
+    "body": "I tuoi dati non sono stati toccati e il resto di CloudBank funziona. Ricaricare di solito basta.",
+    "reload": "Ricarica la pagina",
+    "home": "Vai al cruscotto",
+    "report": "Segnala il problema"
   }
 }

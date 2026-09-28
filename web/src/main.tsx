@@ -24,6 +24,7 @@ import { App } from "./App";
 import { ThemedMantineProvider } from "./ThemedMantineProvider";
 import { AuthProvider } from "./auth/AuthProvider";
 import { ConfirmProvider } from "./components/confirm";
+import { PageErrorBoundary } from "./components/PageErrorBoundary";
 import "./i18n";
 
 const queryClient = new QueryClient({
@@ -38,12 +39,16 @@ createRoot(rootElement).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemedMantineProvider>
-          <ConfirmProvider>
-            <Notifications />
-            <BrowserRouter>
-              <App />
-            </BrowserRouter>
-          </ConfirmProvider>
+          {/* The last net: if the shell itself breaks, a full-page message
+              instead of a blank one (#518). Pages have their own, inside it. */}
+          <PageErrorBoundary fullPage>
+            <ConfirmProvider>
+              <Notifications />
+              <BrowserRouter>
+                <App />
+              </BrowserRouter>
+            </ConfirmProvider>
+          </PageErrorBoundary>
         </ThemedMantineProvider>
       </AuthProvider>
     </QueryClientProvider>

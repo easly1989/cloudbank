@@ -859,3 +859,11 @@ body {
   color: var(--mantine-color-text);
   text-decoration: underline;
 }
+
+/* The report link under a broken page's message (#518) is text, not a button,
+   but a finger still needs the 44px floor to hit it. */
+@media (pointer: coarse) {
+  .cb-page-error-report {
+    min-height: 44px;
+  }
+}

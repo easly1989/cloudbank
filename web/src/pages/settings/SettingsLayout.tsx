@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { useAuth } from "../../auth/AuthProvider";
+import { PageErrorBoundary } from "../../components/PageErrorBoundary";
 import { DemoChrome } from "../../demo/DemoChrome";
 import { TourButton } from "../../onboarding/TourButton";
 import { usePageTour } from "../../onboarding/tourContext";
@@ -39,7 +40,7 @@ export function SettingsLayout() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { currentWallet } = useWallet();
-  const { pathname } = useLocation();
+  const { pathname, key } = useLocation();
   const sections = SETTINGS_SECTIONS.filter(
     (s) => (!s.adminOnly || user?.isAdmin) && !(__DEMO__ && s.notInDemo),
   );
@@ -124,9 +125,12 @@ export function SettingsLayout() {
               </Text>
             </Stack>
           )}
-          <Suspense fallback={<Loader />}>
-            <Outlet />
-          </Suspense>
+          {/* A section that throws leaves the rail in place (#518). */}
+          <PageErrorBoundary resetKey={key}>
+            <Suspense fallback={<Loader />}>
+              <Outlet />
+            </Suspense>
+          </PageErrorBoundary>
         </Stack>
       </ScrollArea>
     </Box>
