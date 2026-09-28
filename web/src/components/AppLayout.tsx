@@ -14,7 +14,7 @@ import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 
 import { updateMe, type User } from "../api/client";
 import { DemoChrome } from "../demo/DemoChrome";
@@ -29,6 +29,7 @@ import {
   SIDEBAR_WIDTH,
 } from "./shellTheme";
 import { Logo } from "./Logo";
+import { PageErrorBoundary } from "./PageErrorBoundary";
 import { SidebarFoot } from "./SidebarFoot";
 import { SidebarHead } from "./SidebarHead";
 import { SidebarNav } from "./SidebarNav";
@@ -40,6 +41,7 @@ export function AppLayout() {
   const { currentWallet } = useWallet();
   const qc = useQueryClient();
   const { setColorScheme } = useMantineColorScheme();
+  const location = useLocation();
 
   // Desktop sidebar collapse to an icon-only rail, remembered per user. The rail
   // only applies on desktop; the mobile drawer always shows full labels.
@@ -122,16 +124,20 @@ export function AppLayout() {
       <AppShell.Main>
         {__DEMO__ && <DemoChrome />}
         {/* Each page is a lazy chunk; show a loader in the content area (the
-              shell stays put) while it loads. */}
-        <Suspense
-          fallback={
-            <Center mih="60vh">
-              <Loader />
-            </Center>
-          }
-        >
-          <Outlet />
-        </Suspense>
+              shell stays put) while it loads. A page that throws is replaced
+              by a message, the shell stays usable, and any navigation (the
+              location key changes on every one) clears it (#518). */}
+        <PageErrorBoundary resetKey={location.key}>
+          <Suspense
+            fallback={
+              <Center mih="60vh">
+                <Loader />
+              </Center>
+            }
+          >
+            <Outlet />
+          </Suspense>
+        </PageErrorBoundary>
         {touch && showFooter && (
           <Box component="footer" mt="xl" className="cb-footer-inline">
             <AppFooter compact />
