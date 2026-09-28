@@ -1745,5 +1745,12 @@
     "support": "Support CloudBank",
     "supportHint": "Buy Me a Coffee and the other ways",
     "homebankHint": "The desktop app CloudBank is a web port of"
+  },
+  "pageError": {
+    "title": "This page stopped working",
+    "body": "Your data has not been touched and the rest of CloudBank works. Reloading usually fixes it.",
+    "reload": "Reload the page",
+    "home": "Go to the dashboard",
+    "report": "Report the problem"
   }
 }

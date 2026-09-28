@@ -125,6 +125,43 @@ for (const vp of VIEWPORTS) {
   });
 }
 
+// Every screen, settings sections included, opened on a phone: none may throw.
+// An error while rendering shows the page's error message (#518) and an error
+// anywhere else fires "pageerror"; either one fails. The import preview that
+// went blank (#519) broke on a list the server sent as null, which no test
+// had opened.
+const SETTINGS = [
+  "general",
+  "appearance",
+  "wallet",
+  "security",
+  "integrations",
+  "data",
+  "people",
+  "about",
+].map((s) => `/settings/${s}`);
+
+test.describe("no page breaks", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("every page and settings section renders without an error", async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(`${page.url()}: ${e.message}`));
+    await ensureReady(page);
+    for (const path of [...new Set([...PAGES, ...SETTINGS])]) {
+      await page.goto(path);
+      await page.waitForLoadState("networkidle");
+      await expect(
+        page.locator(".cb-page-error"),
+        `${path} shows the error message`,
+      ).toHaveCount(0);
+    }
+    expect(errors).toEqual([]);
+  });
+});
+
 test.describe("mobile navigation drawer", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 

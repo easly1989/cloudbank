@@ -261,7 +261,7 @@ func healthHandler(h HealthChecker) http.HandlerFunc {
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+	_ = json.NewEncoder(w).Encode(emptyLists(v))
 }
 
 // requestLogger logs one line per request at debug level.
