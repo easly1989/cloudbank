@@ -134,3 +134,16 @@ Added since:
   register of an account linked to a bank gets a row above its balances — when
   it last synced, a Sync button, and an amber "N to review" when that account
   has rows waiting — and Review opens filtered to that account.
+- **Settings › About, and a footer that can be turned off** (#513). The
+  settings board has seven sections; the app adds an eighth, About, last and for
+  everyone: the version, the licence in a sentence, and the source, API docs,
+  donation and HomeBank links. It exists so that the switch the app adds to
+  Appearance, "Show the footer", hides nothing the AGPL needs in reach. On a
+  touch screen the footer at the end of the page is one 44px line, the version
+  and licence with a "Links" toggle that opens the links one per row; the fixed
+  bar a mouse gets is unchanged.
+- **Accounts on a phone** (#514). No board draws the accounts page at phone
+  width. There each account is one line: the name over its bank and share on
+  the left, the amount on the right, never wrapped, and a ⋯ menu (Edit,
+  Valuations for assets and investments, Delete) in place of the three icons.
+  A tap on the row opens the account. The name gives way first.

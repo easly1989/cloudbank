@@ -78,6 +78,7 @@ const SecuritySection = settingsSection("SecuritySection");
 const IntegrationsSection = settingsSection("IntegrationsSection");
 const DataSection = settingsSection("DataSection");
 const PeopleSection = settingsSection("PeopleSection");
+const AboutSection = settingsSection("AboutSection");
 const CurrenciesPage = lazy(() =>
   import("./pages/CurrenciesPage").then((m) => ({ default: m.CurrenciesPage })),
 );
@@ -199,6 +200,7 @@ function AuthenticatedApp() {
           <Route path="integrations" element={<IntegrationsSection />} />
           <Route path="data" element={<DataSection />} />
           <Route path="people" element={<PeopleSection />} />
+          <Route path="about" element={<AboutSection />} />
           <Route path="*" element={<Navigate to="/settings/general" replace />} />
         </Route>
       </Routes>
