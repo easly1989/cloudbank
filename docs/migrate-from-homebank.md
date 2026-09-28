@@ -79,7 +79,7 @@ If you're coming from another tool, CloudBank also imports **CSV** (the HomeBank
 CSV dialect and generic mapped CSV), **QIF**, **OFX/QFX** and **CAMT.053**
 (the ISO 20022 statement most European banks offer as a download) from the same
 section, on the **Bank / CSV / QIF / OFX** tab, with duplicate detection and
-optional rule application.
+optional rule application: see [Importing transactions](import.md).
 
 ## Exporting back to HomeBank (`.xhb`)
 
