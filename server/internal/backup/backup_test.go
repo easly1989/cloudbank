@@ -3,6 +3,7 @@ package backup
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"os"
 	"testing"
@@ -310,6 +311,103 @@ func TestBackupRestoreGoals(t *testing.T) {
 	}
 	if len(contribs) != 2 {
 		t.Fatalf("restored contributions = %d, want 2", len(contribs))
+	}
+}
+
+// A vehicle and each transaction's link to it survive a round trip (#528): the
+// backup used to leave both out, so the restored wallet's vehicle report was empty.
+func TestBackupRestoreVehicles(t *testing.T) {
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("store.Open: %v", err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	q := db.New(st.Write())
+	ctx := context.Background()
+	user, _ := q.CreateUser(ctx, db.CreateUserParams{Username: "u", PasswordHash: "x"})
+	w, _ := q.CreateWallet(ctx, db.CreateWalletParams{Title: "W"})
+	cur, _ := q.InsertCurrency(ctx, db.InsertCurrencyParams{
+		WalletID: w.ID, IsoCode: "EUR", Name: "Euro", Symbol: "€",
+		DecimalChar: ",", GroupChar: ".", FracDigits: 2, IsBase: 1, Rate: 1,
+	})
+	acc, _ := q.InsertAccount(ctx, db.InsertAccountParams{
+		WalletID: w.ID, Name: "Checking", Type: "bank", CurrencyID: cur.ID, Position: 1,
+	})
+	car, err := q.InsertVehicle(ctx, db.InsertVehicleParams{WalletID: w.ID, Name: "Car", Plate: "AB123CD", Notes: "blue"})
+	if err != nil {
+		t.Fatalf("insert vehicle: %v", err)
+	}
+	if _, err := q.InsertTransaction(ctx, db.InsertTransactionParams{
+		WalletID: w.ID, AccountID: acc.ID, Date: "2026-09-01", Amount: -5000, Memo: "d=1000 v=30",
+		VehicleID: sql.NullInt64{Int64: car.ID, Valid: true},
+	}); err != nil {
+		t.Fatalf("insert fuel: %v", err)
+	}
+	if _, err := q.InsertTransaction(ctx, db.InsertTransactionParams{
+		WalletID: w.ID, AccountID: acc.ID, Date: "2026-09-02", Amount: -300, Memo: "coffee",
+	}); err != nil {
+		t.Fatalf("insert coffee: %v", err)
+	}
+
+	svc := NewService(st.Write())
+	doc, err := svc.Export(ctx, w.ID)
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+	data, _ := json.Marshal(doc)
+	var restored Document
+	if err := json.Unmarshal(data, &restored); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	newID, err := svc.Restore(ctx, user.ID, &restored)
+	if err != nil {
+		t.Fatalf("Restore: %v", err)
+	}
+
+	vehicles, _ := q.ListVehiclesForWallet(ctx, newID)
+	if len(vehicles) != 1 || vehicles[0].Name != "Car" || vehicles[0].Plate != "AB123CD" || vehicles[0].Notes != "blue" {
+		t.Fatalf("restored vehicles = %+v", vehicles)
+	}
+	newAccts, _ := q.ListAccountsForWallet(ctx, newID)
+	rows, _ := q.ListTransactionsForAccount(ctx, db.ListTransactionsForAccountParams{
+		AccountID: newAccts[0].ID, Limit: 10,
+	})
+	linked := map[string]sql.NullInt64{}
+	for _, r := range rows {
+		linked[r.Memo] = r.VehicleID
+	}
+	if v := linked["d=1000 v=30"]; !v.Valid || v.Int64 != vehicles[0].ID {
+		t.Fatalf("fuel transaction vehicle = %+v, want %d", v, vehicles[0].ID)
+	}
+	if v := linked["coffee"]; v.Valid {
+		t.Fatalf("coffee has a vehicle: %+v", v)
+	}
+}
+
+// A backup written before vehicles were included still restores.
+func TestRestoreBackupWithoutVehicles(t *testing.T) {
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("store.Open: %v", err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	q := db.New(st.Write())
+	ctx := context.Background()
+	user, _ := q.CreateUser(ctx, db.CreateUserParams{Username: "u", PasswordHash: "x"})
+	old := `{"version":1,"wallet":{"title":"Old"},
+	  "currencies":[{"id":1,"isoCode":"EUR","name":"Euro","symbol":"€","decimalChar":",","groupChar":".","fracDigits":2,"isBase":true,"rate":1}],
+	  "accounts":[{"id":1,"name":"Checking","type":"bank","currencyId":1}],
+	  "transactions":[{"id":1,"accountId":1,"date":"2026-09-01","amount":-5000,"memo":"fuel"}]}`
+	var doc Document
+	if err := json.Unmarshal([]byte(old), &doc); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	newID, err := NewService(st.Write()).Restore(ctx, user.ID, &doc)
+	if err != nil {
+		t.Fatalf("Restore: %v", err)
+	}
+	if vs, _ := q.ListVehiclesForWallet(ctx, newID); len(vs) != 0 {
+		t.Fatalf("vehicles = %+v, want none", vs)
 	}
 }
 
