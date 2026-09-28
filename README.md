@@ -180,6 +180,8 @@ latest version on the next launch after you deploy a new image.
 
 ## Documentation
 
+Every guide, grouped by what you are trying to do: **[docs/README.md](docs/README.md)**.
+
 - **Getting started** — from a fresh install to your first transactions: [docs/getting-started.md](docs/getting-started.md).
 - **API**: interactive Swagger UI is served by the app at **`/api/docs`** (the
   OpenAPI spec is at `/api/openapi.yaml`).
