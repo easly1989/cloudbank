@@ -1108,7 +1108,7 @@
     "confirmDeleteTitle": "Delete \"{{name}}\"?",
     "confirmDeleteBody": "Transactions that used this payee stay, but they are left without one.",
     "hint": "Who you pay and who pays you. Give one a default category and its transactions arrive sorted.",
-    "emptyHint": "Payees build up as you enter transactions, or you can add the ones you already know."
+    "emptyHint": "Importing a file adds the payees it names. Add the ones you already know here, so you can pick them as you enter transactions."
   },
   "currencies": {
     "title": "Currencies",

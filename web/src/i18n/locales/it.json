@@ -1108,7 +1108,7 @@
     "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
     "confirmDeleteBody": "Le transazioni che usavano questo beneficiario restano, ma rimangono senza.",
     "hint": "Chi paghi e chi ti paga. Assegna una categoria predefinita e le loro transazioni arrivano già in ordine.",
-    "emptyHint": "I beneficiari si accumulano mentre inserisci le transazioni, ma puoi aggiungere subito quelli che già conosci."
+    "emptyHint": "Importando un file si aggiungono i beneficiari che contiene. Aggiungi qui quelli che già conosci, per sceglierli quando inserisci le transazioni."
   },
   "currencies": {
     "title": "Valute",
