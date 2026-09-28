@@ -6,6 +6,9 @@ splits and re-paired transfers), scheduled transactions and templates, assignmen
 rules and budgets. Amounts are converted exactly, so balances match HomeBank to
 the cent.
 
+CloudBank follows HomeBank's current release (5.10.3 at the time of writing); a
+scheduled check opens an issue whenever HomeBank publishes a newer one.
+
 ## 1. Find your `.xhb` file
 
 In HomeBank, your file is what you open from **File → Open**. By default it lives
@@ -27,6 +30,11 @@ use **File → Save as…** in HomeBank to write a fresh copy somewhere obvious.
    many of each entity were imported, plus any warnings. The import is
    all-or-nothing: if anything fails, nothing is created.
 
+> **Behind nginx?** Its default upload limit is 1 MB, which most HomeBank files
+> exceed, and the import then stops with a 413 error. Raise it first:
+> `client_max_body_size` in [the reverse-proxy guide](reverse-proxy.md) shows how.
+> CloudBank itself accepts files up to 64 MiB.
+
 The new wallet becomes the active one. Open **Accounts** and the **register** to
 confirm your balances; they should equal HomeBank's exactly.
 
@@ -43,6 +51,17 @@ A quick check after importing:
 
 If a balance is off, it almost always means the `.xhb` you imported wasn't the
 latest save — re-export from HomeBank and import again into a fresh wallet.
+
+## 4. Next steps
+
+- **Connect your bank** in **Settings → Bank sync & AI** ([the bank-sync guide](bank-sync.md)).
+  A bank row that matches a transaction you already have — the same amount on a
+  nearby date — is merged into it rather than added twice, so your history and
+  the new rows line up.
+- **Let the rules you brought over do the typing.** Your HomeBank assignment
+  rules run on every bank sync, and on a file import when you tick the option.
+- **Keep HomeBank as a way out.** You can export the wallet back to `.xhb` at any
+  time (see below).
 
 ## What is and isn't carried over
 
