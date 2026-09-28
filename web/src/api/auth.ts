@@ -90,6 +90,9 @@ export interface Preferences {
   /** Whether the reader has been asked, after turning a tour down, if the
       other pages should stop offering theirs (#501). Asked once. */
   tourSkipAsked?: boolean;
+  /** Whether the footer shows (#513). Default on; its contents are also in
+      Settings › About, which the AGPL needs in reach when it is off. */
+  showFooter?: boolean;
   /** Demo build: whether the notice about the demo has been read. */
   demoNoticeSeen?: boolean;
   /** Saved report configurations (Statistics/Trend), scoped per wallet + tab. */

@@ -693,6 +693,50 @@ body {
   }
 }
 
+/* The footer at the end of the page on a touch screen (#513): one line, the
+   version and licence and a "Links" toggle, and under it, when opened, one
+   link per 44px row. */
+.cb-footer-compact {
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+.cb-footer-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding-inline: 4px;
+  flex-shrink: 0;
+  color: var(--mantine-color-anchor);
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+}
+.cb-footer-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+/* A link in Settings › About (#513): a whole row, name over address. */
+.cb-about-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 14px;
+}
+
+/* An account on a phone (#514): one line per account, ruled like the table
+   rows it replaces, tall enough for a name over its bank and share. */
+.cb-account-row {
+  min-height: 56px;
+  padding-block: 4px;
+}
+.cb-account-row + .cb-account-row {
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
 /* On a touch screen, 44 is the floor (#403, #465). The boards are all drawn at
  * 1280px for a mouse; none of them is a phone, so growing a control there
  * contradicts nothing — and a finger is not a pointer. Every step of Mantine's
@@ -734,7 +778,7 @@ body {
   }
   /* The rest are laid out as text, and are centred on the way up so the words
      do not sit at the top of a taller box. */
-  :root :is(.cb-nav-group-toggle, .cb-title-switch, .cb-attention-action, .cb-footer-inline a) {
+  :root :is(.cb-nav-group-toggle, .cb-title-switch, .cb-attention-action) {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
@@ -746,12 +790,6 @@ body {
   .cb-search-row {
     padding-block: 10px;
     min-height: 44px;
-  }
-  /* "Donate" is four letters: 40px of text, so its target is widened to 44
-     around it rather than left to the word. */
-  .cb-footer-inline a {
-    min-width: 44px;
-    justify-content: center;
   }
   /* A switch or checkbox is pressed through its label: the label is the
      target, and it is the label that grows. */
