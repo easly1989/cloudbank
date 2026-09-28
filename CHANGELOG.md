@@ -6,6 +6,62 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
+## [3.6.0] — 2026-09-28
+
+The first answers to the first public feedback. A reader found the
+documentation missing, and writing it turned up three things a new user
+could not do.
+
+### Added
+
+- **A user guide.** `docs/` gains guides for getting started, importing
+  transactions, every page of the app, and backups, upgrades and restoring,
+  with an index at `docs/README.md`. Settings › About and the footer link it
+  as "Guide", first among their links.
+- **Change your own password.** Settings › Security has a Password card: the
+  current password, the new one, and the new one again. Changing it signs out
+  every other session, while this device stays signed in. Until now only an
+  administrator could reset a password.
+- **Create a category or a payee from the entry sheet.** Typing a name that
+  matches nothing offers "+ Create “Coffee”" (or "+ Add" for a payee). The new
+  one is selected at once, and the rest of the sheet is kept. A category made
+  there is top level, and an expense or an income as the amount's sign says.
+  Split rows offer it too.
+
+### Changed
+
+- **Names no longer differ only in case.** A second payee "bar centrale" beside
+  "Bar Centrale" is refused, and so is a category that repeats one at its
+  level. The entry sheet shows the existing one instead of offering a new one.
+  The Payees and Categories forms say so before saving, and point at Merge for
+  duplicates already in the data.
+
+### Fixed
+
+- **Vehicles survive a wallet backup.** A wallet backup left out vehicles and
+  which transactions belonged to them, so a restore lost both. Backups made by
+  3.5.1 or earlier still restore, without vehicles.
+- **The empty Payees page** says where payees come from: entering transactions
+  and importing files.
+
+## [3.5.1] — 2026-09-28
+
+### Fixed
+
+- **Importing a file with untagged rows no longer blanks the preview.** The
+  preview's tags field could not take an empty list sent as `null`, and the
+  whole page went white. The API now never sends `null` where a list belongs.
+- **Import counts use the singular for one:** "1 row will be imported", not
+  "1 rows", in the review and in the result after it.
+- **A page that breaks shows a message, not a blank app.** The error stays on
+  that page: the sidebar and the other pages keep working, and moving away
+  clears it.
+
+### Documentation
+
+- The migration guide covers the nginx upload limit, and what to check after
+  importing.
+
 ## [3.5.0] — 2026-09-28
 
 The phone release. CloudBank was designed at 1280px, and it showed on a phone:
@@ -636,7 +692,9 @@ HomeBank feature parity, shipped as a single Docker container.
 - CI (lint, race tests, build, Docker smoke, Playwright e2e) and automated GHCR
   publishing (`:latest` nightly, `:main` stable, `:vX.Y.Z` per release).
 
-[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.5.0...HEAD
+[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.6.0...HEAD
+[3.6.0]: https://github.com/easly1989/cloudbank/compare/v3.5.1...v3.6.0
+[3.5.1]: https://github.com/easly1989/cloudbank/compare/v3.5.0...v3.5.1
 [3.5.0]: https://github.com/easly1989/cloudbank/compare/v3.2.2...v3.5.0
 [3.2.2]: https://github.com/easly1989/cloudbank/compare/v3.2.1...v3.2.2
 [3.2.1]: https://github.com/easly1989/cloudbank/compare/v3.2.0...v3.2.1
