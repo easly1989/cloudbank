@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/easly1989/cloudbank/server/internal/dbconv"
@@ -21,6 +22,40 @@ var (
 	ErrSelfReference = errors.New("category: cannot merge a category into itself")
 	ErrBadTarget     = errors.New("category: invalid merge/reassign target")
 )
+
+// DuplicateError says which category already has a name at the same level
+// (top level, or under the same parent). Names are compared without regard to
+// case or surrounding spaces (#531). It matches ErrDuplicate.
+type DuplicateError struct{ Existing string }
+
+func (e *DuplicateError) Error() string {
+	return fmt.Sprintf("category: %q already exists here", e.Existing)
+}
+
+// Is makes errors.Is(err, ErrDuplicate) hold.
+func (e *DuplicateError) Is(target error) bool { return target == ErrDuplicate }
+
+// sameName finds another category under the same parent with this name,
+// ignoring case. The database's unique index cannot: it is case-sensitive, and
+// it treats every top-level category's NULL parent as different.
+func (s *Service) sameName(ctx context.Context, walletID, exceptID int64, parentID *int64, name string) (*DuplicateError, error) {
+	rows, err := s.q.ListCategoriesForWallet(ctx, walletID)
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range rows {
+		if c.ID == exceptID || c.ParentID.Valid != (parentID != nil) {
+			continue
+		}
+		if parentID != nil && c.ParentID.Int64 != *parentID {
+			continue
+		}
+		if strings.EqualFold(strings.TrimSpace(c.Name), name) {
+			return &DuplicateError{Existing: c.Name}, nil
+		}
+	}
+	return nil, nil
+}
 
 // Category is the public representation of a category.
 type Category struct {
@@ -119,6 +154,12 @@ func (s *Service) Create(ctx context.Context, walletID int64, name string, paren
 		}
 		isIncome = parent.IsIncome // inherit
 	}
+	name = strings.TrimSpace(name)
+	if dup, err := s.sameName(ctx, walletID, 0, parentID, name); err != nil {
+		return Category{}, err
+	} else if dup != nil {
+		return Category{}, dup
+	}
 	c, err := s.q.InsertCategory(ctx, db.InsertCategoryParams{
 		WalletID: walletID, ParentID: nullID(parentID), Name: name,
 		IsIncome: dbconv.B2i(isIncome), NoBudget: dbconv.B2i(noBudget), NoReport: dbconv.B2i(noReport),
@@ -142,6 +183,12 @@ func (s *Service) Update(ctx context.Context, id int64, name string, isIncome, n
 	}
 	if cur.ParentID != nil {
 		isIncome = cur.IsIncome // subcategory type is fixed by its parent
+	}
+	name = strings.TrimSpace(name)
+	if dup, err := s.sameName(ctx, cur.WalletID, id, cur.ParentID, name); err != nil {
+		return Category{}, err
+	} else if dup != nil {
+		return Category{}, dup
 	}
 	if err := s.q.UpdateCategory(ctx, db.UpdateCategoryParams{
 		Name: name, IsIncome: dbconv.B2i(isIncome), NoBudget: dbconv.B2i(noBudget), NoReport: dbconv.B2i(noReport), ID: id,

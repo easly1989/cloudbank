@@ -146,6 +146,7 @@ func TestDemoMountsNothingItSwitchedOff(t *testing.T) {
 		{http.MethodPost, "/api/v1/auth/login"},
 		{http.MethodGet, "/api/v1/auth/tokens"},
 		{http.MethodPost, "/api/v1/auth/2fa/setup"},
+		{http.MethodPost, "/api/v1/auth/me/password"},
 		{http.MethodGet, "/api/v1/admin/users"},
 		{http.MethodPost, "/api/v1/backup/restore"},
 		{http.MethodPost, w + "/bank/connections"},

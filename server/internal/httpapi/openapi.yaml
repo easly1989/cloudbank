@@ -197,6 +197,28 @@ paths:
       responses:
         "200": { description: The updated user., content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/auth/me/password:
+    post:
+      operationId: changePassword
+      summary: Change your own password, knowing the current one (session only)
+      description: >-
+        Every other session of the user is signed out; the session making the
+        change stays signed in. API tokens are not affected.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentPassword: { type: string }
+                newPassword: { type: string, minLength: 8 }
+              required: [currentPassword, newPassword]
+      responses:
+        "204": { description: Changed. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: "The current password is wrong (code invalid_password), or the request came with an API token." }
   /api/v1/auth/2fa/setup:
     post:
       operationId: setup2fa
@@ -2458,6 +2480,7 @@ components:
         disabled: { type: boolean }
         twoFactorEnabled: { type: boolean }
         createdAt: { type: string }
+        signsInWithSso: { type: boolean, description: "GET /auth/me only: an SSO identity is linked to this user" }
       required: [id, username, email, isAdmin, locale, theme, disabled, createdAt]
     UpdateMeRequest:
       type: object

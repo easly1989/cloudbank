@@ -1,5 +1,6 @@
 {
   "app": {
+    "guide": "Guida",
     "name": "CloudBank",
     "tagline": "Gestione delle finanze personali self-hosted",
     "sourceCode": "Codice sorgente",
@@ -37,6 +38,9 @@
     }
   },
   "transactions": {
+    "createCategory": "Crea «{{name}}»",
+    "addPayee": "Aggiungi «{{name}}»",
+    "alreadyExists": "«{{name}}» esiste già: è stato scelto quello.",
     "title": "Transazioni",
     "add": "Aggiungi transazione",
     "addShort": "Aggiungi",
@@ -1061,6 +1065,7 @@
     "emptyHint": "Un conto è dove vivono le transazioni — un conto in banca, i contanti che hai in tasca, una carta di credito."
   },
   "categories": {
+    "duplicate": "«{{name}}» esiste già a questo livello. Per tenerne una sola, usa Unisci nell'elenco.",
     "title": "Categorie",
     "add": "Aggiungi categoria",
     "addSub": "Aggiungi sottocategoria",
@@ -1091,6 +1096,7 @@
     "emptyHint": "Raggruppa le spese come le pensi tu, non come le vede la banca."
   },
   "payees": {
+    "duplicate": "«{{name}}» esiste già. Per tenerne uno solo, usa Unisci nell'elenco.",
     "title": "Beneficiari",
     "add": "Aggiungi beneficiario",
     "addTitle": "Nuovo beneficiario",
@@ -1108,7 +1114,7 @@
     "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
     "confirmDeleteBody": "Le transazioni che usavano questo beneficiario restano, ma rimangono senza.",
     "hint": "Chi paghi e chi ti paga. Assegna una categoria predefinita e le loro transazioni arrivano già in ordine.",
-    "emptyHint": "Importando un file si aggiungono i beneficiari che contiene. Aggiungi qui quelli che già conosci, per sceglierli quando inserisci le transazioni."
+    "emptyHint": "I beneficiari si aggiungono mentre inserisci le transazioni, scrivendo un nome nuovo nel campo Beneficiario, e importando un file. Puoi anche aggiungere qui quelli che già conosci."
   },
   "currencies": {
     "title": "Valute",
@@ -1374,7 +1380,7 @@
     "peopleHint": "Gestire chi può accedere sta qui, non nel menù principale.",
     "navigationHint": "Quali pagine elenca la barra laterale, e in che ordine.",
     "signIn": "Accesso",
-    "signInHint": "Un secondo passaggio all'accesso, oltre alla password.",
+    "signInHint": "La password con cui entri, e un secondo passaggio oltre a quella.",
     "apiTokensHint": "Un token permette a uno script o a un'altra app di agire come te. Revocarlo lo blocca all'istante.",
     "notificationsHint": "Dove CloudBank ti raggiunge quando qualcosa ti richiede.",
     "ai": "AI",
@@ -1738,6 +1744,7 @@
     "bankName": "Banca Demo"
   },
   "about": {
+    "guideHint": "Come si usa CloudBank, passo per passo",
     "version": "versione {{version}}",
     "licence": "CloudBank è software libero sotto licenza <b>AGPL-3.0</b>: puoi leggerne il codice, modificarlo e ridistribuirlo alle stesse condizioni.",
     "source": "Codice sorgente",
@@ -1752,5 +1759,18 @@
     "reload": "Ricarica la pagina",
     "home": "Vai al cruscotto",
     "report": "Segnala il problema"
+  },
+  "password": {
+    "title": "Password",
+    "hint": "Cambiala quando vuoi. Gli altri dispositivi dovranno accedere di nuovo; questo resta dentro.",
+    "sso": "Accedi con il single sign-on. Se non hai mai impostato una password di CloudBank, chiedi a un amministratore di impostartene una.",
+    "current": "Password attuale",
+    "new": "Nuova password",
+    "newHint": "Almeno {{n}} caratteri.",
+    "repeat": "Ripeti la nuova password",
+    "submit": "Cambia password",
+    "changed": "Password cambiata. Gli altri dispositivi dovranno accedere di nuovo.",
+    "wrongCurrent": "Non è la tua password attuale.",
+    "mismatch": "Le due password non coincidono."
   }
 }

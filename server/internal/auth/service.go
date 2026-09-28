@@ -298,6 +298,39 @@ func (s *Service) ResetPassword(ctx context.Context, id int64, password string) 
 	return s.q.DeleteUserSessions(ctx, id)
 }
 
+// ChangePassword sets a user's own new password after checking the current
+// one, then signs out every other session of theirs: whoever else knew the old
+// password loses access at once. keepToken is the session making the change,
+// which stays signed in.
+func (s *Service) ChangePassword(ctx context.Context, userID int64, current, next, keepToken string) error {
+	u, err := s.q.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	ok, err := Verify(u.PasswordHash, current)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return ErrInvalidCredentials
+	}
+	hash, err := Hash(next)
+	if err != nil {
+		return err
+	}
+	if err := s.q.UpdateUserPassword(ctx, db.UpdateUserPasswordParams{PasswordHash: hash, ID: userID}); err != nil {
+		return err
+	}
+	return s.q.DeleteOtherUserSessions(ctx, db.DeleteOtherUserSessionsParams{UserID: userID, ID: hashToken(keepToken)})
+}
+
+// SignsInWithSSO reports whether the user has an SSO identity linked. One
+// created by SSO on first sign-in has a random password it never saw.
+func (s *Service) SignsInWithSSO(ctx context.Context, userID int64) (bool, error) {
+	n, err := s.q.CountOIDCIdentitiesForUser(ctx, userID)
+	return n > 0, err
+}
+
 func (s *Service) createUser(ctx context.Context, username, email, password string, isAdmin bool) (db.User, error) {
 	hash, err := Hash(password)
 	if err != nil {

@@ -173,6 +173,26 @@ export interface paths {
         patch: operations["updateMe"];
         trace?: never;
     };
+    "/api/v1/auth/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change your own password, knowing the current one (session only)
+         * @description Every other session of the user is signed out; the session making the change stays signed in. API tokens are not affected.
+         */
+        post: operations["changePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/2fa/setup": {
         parameters: {
             query?: never;
@@ -2549,6 +2569,8 @@ export interface components {
             disabled: boolean;
             twoFactorEnabled?: boolean;
             createdAt: string;
+            /** @description GET /auth/me only: an SSO identity is linked to this user */
+            signsInWithSso?: boolean;
         };
         UpdateMeRequest: {
             locale?: string;
@@ -4181,6 +4203,40 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    currentPassword: string;
+                    newPassword: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Changed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description The current password is wrong (code invalid_password), or the request came with an API token. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     setup2fa: {

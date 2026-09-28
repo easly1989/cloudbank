@@ -29,6 +29,7 @@ type Querier interface {
 	ClearUserTOTP(ctx context.Context, id int64) error
 	ClearWalletBase(ctx context.Context, walletID int64) error
 	ConsumeRecoveryCode(ctx context.Context, arg ConsumeRecoveryCodeParams) (int64, error)
+	CountOIDCIdentitiesForUser(ctx context.Context, userID int64) (int64, error)
 	CountPayeesWithCategory(ctx context.Context, defaultCategoryID sql.NullInt64) (int64, error)
 	CountSubcategories(ctx context.Context, parentID sql.NullInt64) (int64, error)
 	CountTransactionsForAccount(ctx context.Context, accountID int64) (int64, error)
@@ -56,6 +57,7 @@ type Querier interface {
 	DeleteEBankingConfig(ctx context.Context, walletID int64) (int64, error)
 	DeleteExpiredSessions(ctx context.Context, expiresAt string) error
 	DeleteGoal(ctx context.Context, id int64) error
+	DeleteOtherUserSessions(ctx context.Context, arg DeleteOtherUserSessionsParams) error
 	DeletePayee(ctx context.Context, id int64) error
 	DeletePluggyConfig(ctx context.Context, walletID int64) error
 	DeletePushSubscription(ctx context.Context, arg DeletePushSubscriptionParams) error

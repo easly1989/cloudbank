@@ -8,6 +8,9 @@ import { getVersion } from "./api/client";
 export const SOURCE_URL = "https://github.com/easly1989/cloudbank";
 // The donation page lists every method (Buy Me a Coffee / PayPal / Liberapay / …).
 export const DONATE_URL = "https://easly1989.github.io/donate.html";
+// The user guides live with the code; the link is to main, since the guides
+// are newer than some releases still running (#522).
+export const GUIDE_URL = "https://github.com/easly1989/cloudbank/blob/main/docs/README.md";
 export const HOMEBANK_URL = "http://homebank.free.fr";
 export const API_DOCS_URL = "/api/docs";
 

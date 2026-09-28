@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -145,6 +146,11 @@ func (h *payeeHandlers) payeeFromPath(w http.ResponseWriter, r *http.Request) (p
 }
 
 func writePayeeError(w http.ResponseWriter, err error) bool {
+	var dup *payee.DuplicateError
+	if errors.As(err, &dup) {
+		writeError(w, http.StatusConflict, "duplicate", fmt.Sprintf("a payee named “%s” already exists", dup.Existing))
+		return false
+	}
 	return mapError(w, err, "could not save payee",
 		errCase{payee.ErrNotFound, http.StatusNotFound, "not_found", "payee not found"},
 		errCase{payee.ErrDuplicate, http.StatusConflict, "duplicate", "a payee with that name already exists"},
