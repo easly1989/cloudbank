@@ -36,9 +36,10 @@ without the same key loses those secrets, and they have to be set up again.
   - currencies, accounts and their valuations;
   - payees, categories and tags;
   - transactions with their splits, transfers and attachments;
-  - templates, schedules, rules, budgets and goals.
+  - templates, schedules, rules, budgets and goals;
+  - vehicles, and which transactions belong to each. Backups taken with
+    3.5.1 or earlier lack them.
 - **What it leaves out:**
-  - **vehicles**, and which transactions belonged to which vehicle;
   - bank connections, which you connect again;
   - the people, their preferences, two-factor and API tokens.
 - **Restoring:** see [One wallet, from a wallet backup](#one-wallet-from-a-wallet-backup).
@@ -113,8 +114,7 @@ under **Restore**. The restore creates a **new wallet**, and never overwrites an
 existing one. If the new wallet replaces an old one, delete the old one
 afterwards, under **Delete wallet** at the bottom of the same page.
 
-Afterwards, reconnect the wallet's banks and create its vehicles again, which
-the wallet backup does not hold.
+Afterwards, reconnect the wallet's banks, which the wallet backup does not hold.
 
 ### The whole server, from a full database
 

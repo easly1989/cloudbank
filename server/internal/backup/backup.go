@@ -37,6 +37,17 @@ type Document struct {
 	Budgets      []Budget      `json:"budgets"`
 	Goals        []Goal        `json:"goals,omitempty"`
 	Attachments  []Attachment  `json:"attachments,omitempty"`
+	// Vehicles were left out until #528, so a restore lost them and every
+	// transaction's link to one. Older backups simply have none.
+	Vehicles []Vehicle `json:"vehicles,omitempty"`
+}
+
+// Vehicle is a backed-up vehicle. Transactions reference it by its in-document id.
+type Vehicle struct {
+	ID    int64  `json:"id"`
+	Name  string `json:"name"`
+	Plate string `json:"plate,omitempty"`
+	Notes string `json:"notes,omitempty"`
 }
 
 // Attachment is a backed-up transaction file: its metadata plus the file bytes
@@ -155,6 +166,7 @@ type Transaction struct {
 	ImportRef   string   `json:"importRef,omitempty"`
 	Tags        []string `json:"tags,omitempty"`
 	Splits      []Split  `json:"splits,omitempty"`
+	VehicleID   *int64   `json:"vehicleId,omitempty"`
 }
 
 // Transfer links two transactions as an internal transfer.
@@ -342,6 +354,14 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 		doc.Tags = append(doc.Tags, Tag{ID: t.ID, Name: t.Name})
 	}
 
+	vehicles, err := q.ListVehiclesForWallet(ctx, walletID)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range vehicles {
+		doc.Vehicles = append(doc.Vehicles, Vehicle{ID: v.ID, Name: v.Name, Plate: v.Plate, Notes: v.Notes})
+	}
+
 	for _, a := range accts {
 		rows, err := q.ListTransactionsForAccount(ctx, db.ListTransactionsForAccountParams{
 			AccountID: a.ID, Limit: 1 << 31, Offset: 0,
@@ -354,7 +374,7 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 				ID: r.ID, AccountID: r.AccountID, Date: r.Date, Amount: r.Amount,
 				PaymentMode: r.PaymentMode, Status: r.Status, Info: r.Info,
 				PayeeID: dbconv.NullToPtr(r.PayeeID), CategoryID: dbconv.NullToPtr(r.CategoryID), Memo: r.Memo,
-				IsSplit: r.IsSplit != 0, ImportRef: r.ImportRef,
+				IsSplit: r.IsSplit != 0, ImportRef: r.ImportRef, VehicleID: dbconv.NullToPtr(r.VehicleID),
 			}
 			if txn.Tags, err = q.ListTransactionTags(ctx, r.ID); err != nil {
 				return nil, err
@@ -640,6 +660,24 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 		tagByName[t.Name] = row.ID
 	}
 
+	vehMap := map[int64]int64{}
+	for _, v := range doc.Vehicles {
+		row, err := q.InsertVehicle(ctx, db.InsertVehicleParams{WalletID: w.ID, Name: v.Name, Plate: v.Plate, Notes: v.Notes})
+		if err != nil {
+			return 0, err
+		}
+		vehMap[v.ID] = row.ID
+	}
+	remapVehicle := func(p *int64) *int64 {
+		if p == nil {
+			return nil
+		}
+		if v, ok := vehMap[*p]; ok {
+			return &v
+		}
+		return nil
+	}
+
 	txnMap := map[int64]int64{}
 	for _, t := range doc.Transactions {
 		row, err := q.InsertTransaction(ctx, db.InsertTransactionParams{
@@ -647,6 +685,7 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 			PaymentMode: t.PaymentMode, Status: t.Status, Info: t.Info,
 			PayeeID: dbconv.PtrToNull(remapPayee(t.PayeeID)), CategoryID: dbconv.PtrToNull(remapCat(t.CategoryID)),
 			Memo: t.Memo, IsSplit: dbconv.B2i(t.IsSplit), ImportRef: t.ImportRef,
+			VehicleID: dbconv.PtrToNull(remapVehicle(t.VehicleID)),
 		})
 		if err != nil {
 			return 0, err
