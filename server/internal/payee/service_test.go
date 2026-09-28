@@ -2,6 +2,7 @@ package payee
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/easly1989/cloudbank/server/internal/store"
@@ -36,7 +37,7 @@ func TestCrudAndDuplicate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create: %v", err)
 	}
-	if _, err := s.Create(ctx, wid, "Acme", nil, nil); err != ErrDuplicate {
+	if _, err := s.Create(ctx, wid, "Acme", nil, nil); !errors.Is(err, ErrDuplicate) {
 		t.Fatalf("duplicate = %v, want ErrDuplicate", err)
 	}
 
@@ -71,5 +72,35 @@ func TestMergeAndDelete(t *testing.T) {
 	list, _ := s.List(ctx, wid)
 	if len(list) != 0 {
 		t.Fatalf("payees remain: %+v", list)
+	}
+}
+
+// "bar Centrale" is the same payee as "Bar Centrale" (#531): refused on create
+// and on rename, and the error names the one that exists.
+func TestDuplicateIgnoresCaseAndSpaces(t *testing.T) {
+	s, _, wid := newTestService(t)
+	ctx := context.Background()
+
+	bar, err := s.Create(ctx, wid, "  Bar Centrale ", nil, nil)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if bar.Name != "Bar Centrale" {
+		t.Fatalf("name = %q, want it trimmed", bar.Name)
+	}
+	var dup *DuplicateError
+	if _, err := s.Create(ctx, wid, "bar centrale", nil, nil); !errors.As(err, &dup) || dup.Existing != "Bar Centrale" {
+		t.Fatalf("case-different create = %v, want a DuplicateError naming Bar Centrale", err)
+	}
+	other, err := s.Create(ctx, wid, "Pharmacy", nil, nil)
+	if err != nil {
+		t.Fatalf("create other: %v", err)
+	}
+	if _, err := s.Update(ctx, other.ID, "BAR CENTRALE", nil, nil); !errors.Is(err, ErrDuplicate) {
+		t.Fatalf("rename onto another = %v, want ErrDuplicate", err)
+	}
+	// Changing only the case of its own name is fine.
+	if _, err := s.Update(ctx, bar.ID, "Bar centrale", nil, nil); err != nil {
+		t.Fatalf("recase own name: %v", err)
 	}
 }

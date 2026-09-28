@@ -32,6 +32,7 @@ import {
 import { rowEditProps, stopRowEdit } from "../rowEdit";
 import { useWallet } from "../wallet/WalletProvider";
 import { MergeModal } from "./CategoriesPage";
+import { sameName } from "../sameName";
 
 export function PayeesPage() {
   const { t } = useTranslation();
@@ -171,6 +172,7 @@ export function PayeesPage() {
         walletId={walletId}
         editing={editing}
         categoryOptions={categories.map((c) => ({ value: String(c.id), label: c.name }))}
+        others={payees.filter((p) => p.id !== editing?.id).map((p) => p.name)}
         onSaved={invalidate}
       />
       <MergeModal
@@ -199,6 +201,7 @@ function PayeeFormModal({
   walletId,
   editing,
   categoryOptions,
+  others,
   onSaved,
 }: {
   opened: boolean;
@@ -206,6 +209,8 @@ function PayeeFormModal({
   walletId: number;
   editing: Payee | null;
   categoryOptions: { value: string; label: string }[];
+  /** The other payees' names: a new name may not repeat one, whatever its case. */
+  others: string[];
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
@@ -215,6 +220,7 @@ function PayeeFormModal({
   const [defaultCategory, setDefaultCategory] = useState<string | null>(
     editing?.defaultCategoryId ? String(editing.defaultCategoryId) : null,
   );
+  const duplicate = others.find((n) => sameName(n, name));
 
   const save = useMutation({
     mutationFn: () =>
@@ -249,6 +255,7 @@ function PayeeFormModal({
           label={t("payees.name")}
           required
           value={name}
+          error={duplicate ? t("payees.duplicate", { name: duplicate }) : undefined}
           onChange={(e) => setName(e.currentTarget.value)}
         />
         <Select
@@ -263,7 +270,11 @@ function PayeeFormModal({
           <Button variant="default" onClick={onClose}>
             {t("payees.cancel")}
           </Button>
-          <Button onClick={() => save.mutate()} loading={save.isPending} disabled={!name}>
+          <Button
+            onClick={() => save.mutate()}
+            loading={save.isPending}
+            disabled={!name.trim() || !!duplicate}
+          >
             {t("payees.save")}
           </Button>
         </Group>

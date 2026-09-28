@@ -32,6 +32,7 @@ import {
 } from "../api/client";
 import { rowEditProps, stopRowEdit } from "../rowEdit";
 import { useWallet } from "../wallet/WalletProvider";
+import { sameName } from "../sameName";
 
 export function CategoriesPage() {
   const { t } = useTranslation();
@@ -161,6 +162,7 @@ export function CategoriesPage() {
         editing={editing}
         presetParent={presetParent}
         topLevel={tops}
+        all={categories}
         onSaved={invalidate}
       />
       <MergeModal
@@ -202,6 +204,7 @@ function CategoryFormModal({
   editing,
   presetParent,
   topLevel,
+  all,
   onSaved,
 }: {
   opened: boolean;
@@ -210,6 +213,8 @@ function CategoryFormModal({
   editing: Category | null;
   presetParent: Category | null;
   topLevel: Category[];
+  /** Every category, so a name is not repeated at its level, whatever its case. */
+  all: Category[];
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
@@ -229,6 +234,12 @@ function CategoryFormModal({
   );
 
   const isSub = parentId != null;
+  const duplicate = all.find(
+    (c) =>
+      c.id !== editing?.id &&
+      (c.parentId ?? null) === (parentId ? Number(parentId) : null) &&
+      sameName(c.name, name),
+  );
   const save = useMutation({
     mutationFn: () => {
       const body = {
@@ -262,6 +273,7 @@ function CategoryFormModal({
           label={t("categories.name")}
           required
           value={name}
+          error={duplicate ? t("categories.duplicate", { name: duplicate.name }) : undefined}
           onChange={(e) => setName(e.currentTarget.value)}
         />
         {!editing && (
@@ -295,7 +307,11 @@ function CategoryFormModal({
           <Button variant="default" onClick={onClose}>
             {t("categories.cancel")}
           </Button>
-          <Button onClick={() => save.mutate()} loading={save.isPending} disabled={!name}>
+          <Button
+            onClick={() => save.mutate()}
+            loading={save.isPending}
+            disabled={!name.trim() || !!duplicate}
+          >
             {t("categories.save")}
           </Button>
         </Group>
