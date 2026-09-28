@@ -39,7 +39,8 @@
 > Status: **production-ready.** 1.0 reached HomeBank parity; the **2.x** line added
 > deep personalization and interop, and the **3.x** line the post-parity
 > capabilities — automatic bank sync, 2FA, an installable PWA, and opt-in AI.
-> **3.2** redesigned the whole interface. See the [CHANGELOG](CHANGELOG.md).
+> **3.2** redesigned the whole interface, and **3.5** made it fit a phone. See the
+> [CHANGELOG](CHANGELOG.md).
 
 **Try it first:** the [live demo](https://p01--cloudbank--7dcjw6mlmtky.code.run/)
 is one click, no sign-up, with a year of made-up data. It is deleted after two
@@ -83,7 +84,7 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 - **Bills** — a focused "what's due" view showing **one row per bill** with its **last successful payment** and its **next occurrence** (due / overdue), one-click posting, and a **quick "add a bill" form** (name, amount, account, day of month → a monthly scheduled outflow).
 - **Import**: HomeBank `.xhb`, QIF, OFX/QFX, CSV, **ISO 20022 CAMT.053** — with an import assistant. **Export**: HomeBank `.xhb`, QIF, CSV.
 - **Automatic bank sync** — pull new transactions straight from your bank, run through your assignment rules and **reconciled against what you already have**: a bank row that matches an existing manual or scheduled transaction (amount + nearby date) is **merged** into it instead of duplicated, imported with the right status (booked → reconciled, pending → cleared) and a sensible default payment mode. Three providers, all **bring-your-own-credentials** so CloudBank never sees your bank login: **[SimpleFIN](https://www.simplefin.org/)** (worldwide; a ~$15/year SimpleFIN Bridge subscription) and **[Enable Banking](https://enablebanking.com/)** (EU/EEA + UK via PSD2 — a free sandbox to test, your own production application for real accounts). Plus **[Pluggy](https://pluggy.ai/)** (Latin America — free for personal use via [Meu Pluggy](https://meu.pluggy.ai), where you link the banks and CloudBank just reads them). **Pluggy is experimental and needs real-world testing** — it follows the published API but has not been run against a live Latin American bank by the maintainers, so if you use it, please [open an issue](https://github.com/easly1989/cloudbank/issues/new) with anything that looks wrong, however small. A **personal (restricted)** Enable Banking production app can only sync accounts you **link** to it in its panel — the [bank-sync guide](docs/bank-sync.md) walks through it.
-- **Bank-sync review** — a dedicated page that lists imported transactions still **needing a category** (set it inline) and finds **possible duplicates** that slipped through, with per-pair **merge**, edit, delete, or **"not a duplicate"** (remembered, so it isn't shown again).
+- **Review** — lists imported transactions still **needing a category** (set it inline) and finds **possible duplicates** that slipped through, with per-pair **merge**, edit, delete, or **"not a duplicate"** (remembered, so it isn't shown again). An account with something to review says so in its register ("3 to review"), and the button opens Review on that account; a linked account also shows when it last synced, with a **Sync** button. The connections themselves are set up in **Settings → Bank sync & AI**.
 - **Multi-currency** with manual and online (ECB / frankfurter.app) exchange rates.
 - Multi-user (managed by the admin from **Settings → People**), responsive UI, English and Italian.
 

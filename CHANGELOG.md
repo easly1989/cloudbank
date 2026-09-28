@@ -6,6 +6,96 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
+## [3.5.0] — 2026-09-28
+
+The phone release. CloudBank was designed at 1280px, and it showed on a phone:
+buttons wrapped, figures took a screen of their own, and pages leaned on
+controls that no longer fitted. Most of this release is about giving a phone
+its space back. Alongside it, the bank sync moves into Settings, and syncing
+and reviewing happen from the register.
+
+### Added
+
+- **Sync an account, and see what it needs, from its register.** An account
+  linked to a bank shows when it last synced ("2 hours ago") and a Sync button
+  above its balances. Syncing no longer means leaving the ledger. When the
+  account has rows waiting for a look, an amber "3 to review" appears beside
+  them. These are imported rows with no category, or possible duplicates. The
+  button opens Review on that account alone, and "Show all accounts" widens it
+  again. It depends on what there is to review, not on the bank: a file import
+  or two hand-entered rows can need it just as much.
+- **Settings › About.** A new last section, for everyone: the version, the
+  licence in a sentence, and the links to the source, the API docs, the
+  donation page and HomeBank.
+- **The footer can be turned off.** Settings › Appearance has a "Show the
+  footer" switch, on every screen. It hides nothing: what the footer carries is
+  also in Settings › About.
+- **Skipping one tour can skip them all.** Turning down a page tour that was
+  offered asks once whether the other pages should stop offering theirs. The
+  "?" on each page still plays its tour, and resetting the tours in Settings
+  turns the offers back on.
+
+### Changed
+
+- **Bank sync lives in Settings.** Settings › Bank sync & AI holds everything
+  the Bank sync page had: providers, connections, schedules, linked accounts
+  and history. The sidebar loses Bank sync, Review and the Banking group they
+  sat in. Old links to `/bank-sync` land on the section, and the address
+  Enable Banking returns to is unchanged.
+- **Filters say how many are on, always.** The Filters button carries a count
+  everywhere. On a desktop the chips naming each filter stay beside the search.
+  On a phone, where they took a line or three above the ledger, they move into
+  the filter panel. Reports work the same way. A register emptied by its
+  filters says so, and offers to clear them.
+- **Figures that do not fit a phone step through a strip.** The register's
+  balances and the overview's figures took two lines, or a screen, on a phone.
+  When they do not fit, they now sit in a strip one figure high, stepping every
+  four seconds. A touch stops it, a swipe scrolls it, and with reduced motion
+  it never moves by itself. The overview's headline balance stays large and
+  still. Whether the figures fit is measured, not guessed: when they fit, and
+  on every wider screen, they stay a plain row.
+- **Accounts on a phone are one line each.** The desktop table squeezed the
+  name and the amount until "Credit card" wrapped word by word and the € sat on
+  its own line. At 320px the edit and delete buttons fell outside the card. Each
+  account is now its name over its bank and share, its amount, which never
+  wraps, and a ⋯ menu holding Edit, Valuations and Delete. A single tap on the
+  row opens the account.
+- **The footer folds on a touch screen.** At the end of the page it was three
+  lines of links. It is now one line, the version and licence with a "Links"
+  toggle that opens them one per row.
+- **Phone headers fit.** A page's "?" sits on its title row, as a small round
+  button, instead of taking the action row. At 320px "Add transaction" reads
+  "Add", so the actions keep to one line.
+- **The README points at Buy Me a Coffee first,** the easiest way to support
+  the project.
+
+## [3.2.2] — 2026-09-27
+
+### Changed
+
+- **The reports were redesigned.** One frame for every tab: a period bar, the
+  register's filters, and a ⋯ for saved views and downloads. Each tab opens
+  with its answer, the figure, before any control. Spending is a ranked list
+  instead of a pie. Every chart has its figures beside it, and a period still
+  running says "so far".
+- **Review compares a possible duplicate field by field,** with what the two
+  rows share dimmed so the differences stand out, and shows a bank's memo in
+  full wherever a row needs a category.
+
+### Fixed
+
+- The reports now honour the transfer, "no status" and "uncategorised" filters.
+
+## [3.2.1] — 2026-09-25
+
+### Changed
+
+- **Reconciled lines appear only under a status filter.** The register draws
+  its "reconciled up to here" lines only while a status filter hides the
+  reconciled rows, one per run of hidden rows, with its dates and count.
+  Unfiltered, each row's status already says what a line would.
+- The demo image is published with every release.
+
 ## [3.2.0] — 2026-09-25
 
 The redesign. Every screen was rebuilt to one measured design — the shell, the
@@ -546,6 +636,11 @@ HomeBank feature parity, shipped as a single Docker container.
 - CI (lint, race tests, build, Docker smoke, Playwright e2e) and automated GHCR
   publishing (`:latest` nightly, `:main` stable, `:vX.Y.Z` per release).
 
-[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.0.3...HEAD
+[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.5.0...HEAD
+[3.5.0]: https://github.com/easly1989/cloudbank/compare/v3.2.2...v3.5.0
+[3.2.2]: https://github.com/easly1989/cloudbank/compare/v3.2.1...v3.2.2
+[3.2.1]: https://github.com/easly1989/cloudbank/compare/v3.2.0...v3.2.1
+[3.2.0]: https://github.com/easly1989/cloudbank/compare/v3.1.5...v3.2.0
+[3.1.0 – 3.1.5]: https://github.com/easly1989/cloudbank/compare/v3.0.3...v3.1.5
 [2.0.0 – 3.0.3]: https://github.com/easly1989/cloudbank/compare/v1.0.0...v3.0.3
 [1.0.0]: https://github.com/easly1989/cloudbank/releases/tag/v1.0.0
