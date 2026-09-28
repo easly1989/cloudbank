@@ -2,6 +2,7 @@ package importio
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -104,5 +105,36 @@ func TestExportQIFThroughService(t *testing.T) {
 	}
 	if rescaleAmount(reparsed[0].Amount, 2) != -1234 || reparsed[0].Category != "Food:Groceries" {
 		t.Fatalf("round-trip row0 = %+v", reparsed[0])
+	}
+}
+
+// A row without tags goes out as "tags": [], never null, whatever the format:
+// the wizard's tag field maps over it, and a null blanked the page.
+func TestPreviewRowsWithoutTagsSendAnEmptyList(t *testing.T) {
+	s, _, _, _, wid, acc := newTestService(t)
+	ctx := context.Background()
+
+	generic := "Date,Description,Amount\n2026-09-01,Coffee,-3.50\n"
+	csv, err := s.Preview(ctx, wid, PreviewRequest{
+		AccountID: acc, Content: generic, Dialect: DialectGeneric, Delimiter: ",", HasHeader: true,
+		Mapping: map[string]int{"date": 0, "memo": 1, "amount": 2},
+	})
+	if err != nil {
+		t.Fatalf("Preview: %v", err)
+	}
+	qifRows, _ := ParseQIF(sampleQIF, "")
+	qif, err := s.PreviewParsed(ctx, wid, acc, qifRows, false, false)
+	if err != nil {
+		t.Fatalf("PreviewParsed: %v", err)
+	}
+
+	for name, pv := range map[string]Preview{"generic csv": csv, "qif": qif} {
+		if len(pv.Rows) == 0 {
+			t.Fatalf("%s: no rows", name)
+		}
+		body, _ := json.Marshal(pv)
+		if strings.Contains(string(body), `"tags":null`) {
+			t.Fatalf("%s: a row sends tags as null: %s", name, body)
+		}
 	}
 }

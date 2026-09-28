@@ -194,7 +194,7 @@ export function ImportWizard() {
           payee: r.payee,
           memo: r.memo,
           category: r.category,
-          tags: r.tags,
+          tags: r.tags ?? [],
           status: r.status,
           importRef: r.importRef,
           updateId: r.match === "update" ? r.matchId : undefined,
@@ -511,7 +511,10 @@ export function ImportWizard() {
                         <TagsInput
                           aria-label={t("importCsv.fields.tags")}
                           data={tagsQuery.data ?? []}
-                          value={r.tags}
+                          // TagsInput maps over its value, and a null here
+                          // (rows without tags used to arrive that way) took
+                          // the whole page down.
+                          value={r.tags ?? []}
                           onChange={(v) => setRowTags(i, v)}
                           disabled={!r.include || !!r.error}
                           size="xs"

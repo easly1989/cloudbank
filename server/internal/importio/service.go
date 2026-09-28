@@ -228,6 +228,12 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 			Payee: r.Payee, Memo: r.Memo, Category: r.Category, Tags: r.Tags, Status: r.Status,
 			ImportRef: r.FITID,
 		}
+		// A row without tags is an empty list, never null: the contract says
+		// array, and the wizard's tag field reads it as one. A null there took
+		// the whole page down (every format sends rows without tags).
+		if pr.Tags == nil {
+			pr.Tags = []string{}
+		}
 		if r.Err != "" {
 			pr.Error = r.Err
 			out = append(out, pr)
