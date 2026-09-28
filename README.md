@@ -146,6 +146,9 @@ in the `cloudbank-data` volume (a SQLite database under `/data`). Back it up by
 copying that volume, or use the in-app **wallet backup** (Settings → Import &
 export) and the admin **full-database backup**.
 
+Then follow [Getting started](docs/getting-started.md): the administrator, a
+wallet, your accounts and categories, and your first transactions.
+
 Running behind HTTPS (recommended for anything beyond a trusted LAN)? See
 [docs/reverse-proxy.md](docs/reverse-proxy.md). Coming from the HomeBank desktop
 app? See [docs/migrate-from-homebank.md](docs/migrate-from-homebank.md).
@@ -176,6 +179,7 @@ latest version on the next launch after you deploy a new image.
 
 ## Documentation
 
+- **Getting started** — from a fresh install to your first transactions: [docs/getting-started.md](docs/getting-started.md).
 - **API**: interactive Swagger UI is served by the app at **`/api/docs`** (the
   OpenAPI spec is at `/api/openapi.yaml`).
 - **The live demo** — what it is, what it switches off, when it forgets you: [docs/demo.md](docs/demo.md).
