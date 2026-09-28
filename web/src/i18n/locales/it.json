@@ -37,6 +37,9 @@
     }
   },
   "transactions": {
+    "createCategory": "Crea «{{name}}»",
+    "addPayee": "Aggiungi «{{name}}»",
+    "alreadyExists": "«{{name}}» esiste già: è stato scelto quello.",
     "title": "Transazioni",
     "add": "Aggiungi transazione",
     "addShort": "Aggiungi",
@@ -1061,6 +1064,7 @@
     "emptyHint": "Un conto è dove vivono le transazioni — un conto in banca, i contanti che hai in tasca, una carta di credito."
   },
   "categories": {
+    "duplicate": "«{{name}}» esiste già a questo livello. Per tenerne una sola, usa Unisci nell'elenco.",
     "title": "Categorie",
     "add": "Aggiungi categoria",
     "addSub": "Aggiungi sottocategoria",
@@ -1091,6 +1095,7 @@
     "emptyHint": "Raggruppa le spese come le pensi tu, non come le vede la banca."
   },
   "payees": {
+    "duplicate": "«{{name}}» esiste già. Per tenerne uno solo, usa Unisci nell'elenco.",
     "title": "Beneficiari",
     "add": "Aggiungi beneficiario",
     "addTitle": "Nuovo beneficiario",
@@ -1108,7 +1113,7 @@
     "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
     "confirmDeleteBody": "Le transazioni che usavano questo beneficiario restano, ma rimangono senza.",
     "hint": "Chi paghi e chi ti paga. Assegna una categoria predefinita e le loro transazioni arrivano già in ordine.",
-    "emptyHint": "Importando un file si aggiungono i beneficiari che contiene. Aggiungi qui quelli che già conosci, per sceglierli quando inserisci le transazioni."
+    "emptyHint": "I beneficiari si aggiungono mentre inserisci le transazioni, scrivendo un nome nuovo nel campo Beneficiario, e importando un file. Puoi anche aggiungere qui quelli che già conosci."
   },
   "currencies": {
     "title": "Valute",

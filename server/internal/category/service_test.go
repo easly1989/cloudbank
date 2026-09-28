@@ -3,6 +3,7 @@ package category
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"testing"
 
 	"github.com/easly1989/cloudbank/server/internal/store"
@@ -144,5 +145,42 @@ func TestUsage(t *testing.T) {
 	}
 	if u.Subcategories != 1 || u.Payees != 1 {
 		t.Fatalf("usage = %+v, want {1,1}", u)
+	}
+}
+
+// Category names are unique per level without regard to case (#531). The
+// database index could not catch two top-level "Food"s at all: NULL parents
+// never compare equal.
+func TestDuplicateIgnoresCasePerLevel(t *testing.T) {
+	s, _, wid := newTestService(t)
+	ctx := context.Background()
+
+	food, err := s.Create(ctx, wid, "Food", nil, false, false, false)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	var dup *DuplicateError
+	if _, err := s.Create(ctx, wid, "Food", nil, false, false, false); !errors.As(err, &dup) || dup.Existing != "Food" {
+		t.Fatalf("second top-level Food = %v, want a DuplicateError", err)
+	}
+	if _, err := s.Create(ctx, wid, " food ", nil, false, false, false); !errors.Is(err, ErrDuplicate) {
+		t.Fatalf("case-different top-level = %v, want ErrDuplicate", err)
+	}
+	// The same name under a parent is another level: allowed.
+	if _, err := s.Create(ctx, wid, "food", &food.ID, false, false, false); err != nil {
+		t.Fatalf("food under Food: %v", err)
+	}
+	if _, err := s.Create(ctx, wid, "FOOD", &food.ID, false, false, false); !errors.Is(err, ErrDuplicate) {
+		t.Fatalf("second food under Food = %v, want ErrDuplicate", err)
+	}
+	home, err := s.Create(ctx, wid, "Home", nil, false, false, false)
+	if err != nil {
+		t.Fatalf("create Home: %v", err)
+	}
+	if _, err := s.Update(ctx, home.ID, "FOOD", false, false, false); !errors.Is(err, ErrDuplicate) {
+		t.Fatalf("rename Home to FOOD = %v, want ErrDuplicate", err)
+	}
+	if _, err := s.Update(ctx, food.ID, "food", false, false, false); err != nil {
+		t.Fatalf("recase own name: %v", err)
 	}
 }
