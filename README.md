@@ -184,6 +184,7 @@ latest version on the next launch after you deploy a new image.
   OpenAPI spec is at `/api/openapi.yaml`).
 - **The live demo** — what it is, what it switches off, when it forgets you: [docs/demo.md](docs/demo.md).
 - **Reverse proxy / HTTPS**: [docs/reverse-proxy.md](docs/reverse-proxy.md).
+- **Using CloudBank, page by page** — what each page is for and what it can do: [docs/pages.md](docs/pages.md).
 - **Importing transactions** (bank CSV, QIF, OFX, CAMT.053), with the column mapping and what to do when rows come in wrong: [docs/import.md](docs/import.md).
 - **Migrating from HomeBank**: [docs/migrate-from-homebank.md](docs/migrate-from-homebank.md).
 - **Automatic bank sync** (SimpleFIN, Enable Banking & Pluggy): [docs/bank-sync.md](docs/bank-sync.md).
