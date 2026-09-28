@@ -1374,7 +1374,7 @@
     "peopleHint": "Managing who can sign in belongs here, not in the main menu.",
     "navigationHint": "Which pages the sidebar lists, and in what order.",
     "signIn": "Signing in",
-    "signInHint": "A second step at sign-in, on top of your password.",
+    "signInHint": "The password you sign in with, and a second step on top of it.",
     "apiTokensHint": "Tokens let a script or another app act as you. Revoke one and it stops working immediately.",
     "notificationsHint": "Where CloudBank reaches you when something needs you.",
     "ai": "AI",
@@ -1752,5 +1752,18 @@
     "reload": "Reload the page",
     "home": "Go to the dashboard",
     "report": "Report the problem"
+  },
+  "password": {
+    "title": "Password",
+    "hint": "Change it whenever you like. Other devices will have to sign in again; this one stays signed in.",
+    "sso": "You sign in with single sign-on. If you have never set a CloudBank password, ask an administrator to set one for you.",
+    "current": "Current password",
+    "new": "New password",
+    "newHint": "At least {{n}} characters.",
+    "repeat": "Repeat the new password",
+    "submit": "Change password",
+    "changed": "Password changed. Other devices will have to sign in again.",
+    "wrongCurrent": "This is not your current password.",
+    "mismatch": "The two passwords do not match."
   }
 }
