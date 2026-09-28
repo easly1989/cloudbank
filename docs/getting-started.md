@@ -152,8 +152,8 @@ look at first:
   imports and bank sync arrive sorted.
 - **Reports.** Where the money went, what came in and went out, and what your
   accounts will hold.
-- **Backups.** A wallet backup (JSON) and a HomeBank `.xhb` export are one click
-  under **Settings → Import & export**.
+- **Backups.** Before you rely on CloudBank, set up backups: see
+  [Backups, upgrades and restoring](backup.md).
 - **On your phone.** CloudBank installs as an app: see
   [Install as an app](../README.md#install-as-an-app-pwa).
 - **Other people.** An administrator adds them under **Settings → People**. Each
