@@ -29,13 +29,14 @@ import {
   IconSquareCheck,
   IconTrash,
 } from "@tabler/icons-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { errorColor } from "../amountTone";
 import { useAuth } from "../auth/AuthProvider";
 import { useConfirm } from "./confirmContext";
+import { CreatableSelect } from "./CreatableSelect";
 import {
   type EntryField,
   type Placement,
@@ -49,10 +50,14 @@ import { StatusPicker } from "./StatusPicker";
 import {
   ApiError,
   type Account,
+  type Category,
+  type Payee,
   type Split,
   type Template,
   type Transaction,
   type TransactionInput,
+  createCategory,
+  createPayee,
   createTemplate,
   createTransaction,
   findDuplicateTransactions,
@@ -68,6 +73,7 @@ import {
   updateTransaction,
 } from "../api/client";
 import { minorToInput } from "../money";
+import { sameName } from "../sameName";
 import { PAYMENT_MODES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import { AttachmentsField } from "./AttachmentsField";
@@ -529,6 +535,60 @@ export function TransactionForm({
       })),
     [categoriesQuery.data],
   );
+  const categoryNames = (categoriesQuery.data ?? []).map((c) => c.name);
+  const payeeNames = (payeesQuery.data ?? []).map((p) => p.name);
+
+  // Creating from the sheet (#531): the new entry joins the list at once, so it
+  // can be selected, and the list is then refetched. When the server already
+  // has the name — typed in another case than the list shows, or added
+  // elsewhere meanwhile — the existing one is picked and the reader told.
+  const queryClient = useQueryClient();
+  const createFromSheet = async <T extends { id: number; name: string }>(
+    key: "categories" | "payees",
+    make: () => Promise<T>,
+    existing: (list: T[]) => T | undefined,
+  ): Promise<string | null> => {
+    try {
+      const made = await make();
+      queryClient.setQueryData<T[]>([key, walletId], (old) => [...(old ?? []), made]);
+      void queryClient.invalidateQueries({ queryKey: [key, walletId] });
+      return String(made.id);
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "duplicate") {
+        await queryClient.refetchQueries({ queryKey: [key, walletId] });
+        const found = existing(queryClient.getQueryData<T[]>([key, walletId]) ?? []);
+        if (found) {
+          notifications.show({
+            position: toastAt,
+            color: "gray",
+            message: t("transactions.alreadyExists", { name: found.name }),
+          });
+          return String(found.id);
+        }
+      }
+      notifications.show({
+        position: toastAt,
+        color: "red",
+        message: err instanceof ApiError ? err.message : String(err),
+      });
+      return null;
+    }
+  };
+  // A category made here is top level, and an expense or an income as the
+  // amount's sign says; subcategories are still made on the Categories page.
+  const addCategory = (name: string) =>
+    createFromSheet<Category>(
+      "categories",
+      () => createCategory(walletId, { name, isIncome: direction === "income" }),
+      (list) => list.find((c) => c.parentId == null && sameName(c.name, name)),
+    );
+  const addPayee = (name: string) =>
+    createFromSheet<Payee>(
+      "payees",
+      () => createPayee(walletId, { name }),
+      (list) => list.find((p) => sameName(p.name, name)),
+    );
+
   const vehicleOptions = (vehiclesQuery.data ?? []).map((v) => ({
     value: String(v.id),
     label: v.name,
@@ -617,15 +677,17 @@ export function TransactionForm({
     ),
     category: (
       <div>
-        <Select
+        <CreatableSelect
           label={t("transactions.category")}
           data={categoryOptions}
+          names={categoryNames}
+          createLabel={(name) => t("transactions.createCategory", { name })}
+          onCreate={addCategory}
           value={isSplit ? null : categoryId}
           onChange={setCategoryId}
           placeholder={isSplit ? t("transactions.split") : undefined}
           disabled={isSplit}
           clearable
-          searchable
         />
         {aiEnabled && !isSplit && (
           <Button
@@ -648,13 +710,15 @@ export function TransactionForm({
       </Input.Wrapper>
     ),
     payee: (
-      <Select
+      <CreatableSelect
         label={t("transactions.payee")}
         data={payeeOptions}
+        names={payeeNames}
+        createLabel={(name) => t("transactions.addPayee", { name })}
+        onCreate={addPayee}
         value={payeeId}
         onChange={setPayeeId}
         clearable
-        searchable
       />
     ),
     info: (
@@ -869,17 +933,19 @@ export function TransactionForm({
                   <Stack gap="xs">
                     {splits.map((s, i) => (
                       <Group key={i} gap={ENTRY_SHEET.pairGap} wrap="nowrap">
-                        <Select
+                        <CreatableSelect
                           placeholder={t("transactions.category")}
                           aria-label={t("transactions.category")}
                           data={categoryOptions}
+                          names={categoryNames}
+                          createLabel={(name) => t("transactions.createCategory", { name })}
+                          onCreate={addCategory}
                           value={s.categoryId}
                           onChange={(v) =>
                             setSplits((arr) =>
                               arr.map((x, j) => (j === i ? { ...x, categoryId: v } : x)),
                             )
                           }
-                          searchable
                           style={{ flex: 1, minWidth: 0 }}
                         />
                         <TextInput

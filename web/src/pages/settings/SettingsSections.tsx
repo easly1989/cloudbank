@@ -2,13 +2,21 @@ import { Anchor, Card, Group, Stack, Text } from "@mantine/core";
 import { IconExternalLink } from "@tabler/icons-react";
 import { Trans, useTranslation } from "react-i18next";
 
-import { API_DOCS_URL, DONATE_URL, HOMEBANK_URL, SOURCE_URL, useVersion } from "../../aboutLinks";
+import {
+  API_DOCS_URL,
+  DONATE_URL,
+  GUIDE_URL,
+  HOMEBANK_URL,
+  SOURCE_URL,
+  useVersion,
+} from "../../aboutLinks";
 
 import { AiSettingsCard } from "../../components/AiSettingsCard";
 import { EntryFieldsCard } from "../../components/EntryFieldsCard";
 import { Logo } from "../../components/Logo";
 import { NavLayoutEditor } from "../../components/NavLayoutEditor";
 import { NotificationsCard } from "../../components/NotificationsCard";
+import { PasswordCard } from "../../components/PasswordCard";
 import { TwoFactorCard } from "../../components/TwoFactorCard";
 import { ApiTokensPage } from "../ApiTokensPage";
 import { BankSyncSettings } from "../BankSyncPage";
@@ -59,6 +67,7 @@ export function SecuritySection() {
   return (
     <Stack gap="xl">
       <SettingsGroup title={t("settings.signIn")} hint={t("settings.signInHint")}>
+        {!__DEMO__ && <PasswordCard />}
         <TwoFactorCard />
       </SettingsGroup>
       <SettingsGroup title={t("settings.apiTokens")} hint={t("settings.apiTokensHint")}>
@@ -125,6 +134,7 @@ export function AboutSection() {
   const { t } = useTranslation();
   const version = useVersion();
   const links = [
+    { href: GUIDE_URL, label: t("app.guide"), hint: t("about.guideHint") },
     { href: SOURCE_URL, label: t("about.source"), hint: "github.com/easly1989/cloudbank" },
     { href: API_DOCS_URL, label: t("app.apiDocs"), hint: t("about.apiDocsHint") },
     { href: DONATE_URL, label: t("about.support"), hint: t("about.supportHint") },

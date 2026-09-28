@@ -119,6 +119,9 @@ export interface User {
   disabled: boolean;
   twoFactorEnabled: boolean;
   createdAt: string;
+  /** Only on /auth/me: an SSO identity is linked, so the password may be one
+   *  the user never chose. */
+  signsInWithSso?: boolean;
 }
 
 export interface Credentials {
@@ -206,6 +209,10 @@ export const enable2fa = (secret: string, code: string) =>
 
 export const disable2fa = (password: string) =>
   api.post<void>("/api/v1/auth/2fa/disable", { password });
+
+/** Change your own password (#530). Every other session is signed out. */
+export const changePassword = (currentPassword: string, newPassword: string) =>
+  api.post<void>("/api/v1/auth/me/password", { currentPassword, newPassword });
 
 // --- Integrity & backup ---
 

@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -176,6 +177,11 @@ func optionalIDParam(r *http.Request, name string) *int64 {
 
 // writeCategoryError maps service errors to responses; returns true when no error.
 func writeCategoryError(w http.ResponseWriter, err error) bool {
+	var dup *category.DuplicateError
+	if errors.As(err, &dup) {
+		writeError(w, http.StatusConflict, "duplicate", fmt.Sprintf("a category named “%s” already exists here", dup.Existing))
+		return false
+	}
 	return mapError(w, err, "could not save category",
 		errCase{category.ErrNotFound, http.StatusNotFound, "not_found", "category not found"},
 		errCase{category.ErrDuplicate, http.StatusConflict, "duplicate", "a category with that name already exists here"},

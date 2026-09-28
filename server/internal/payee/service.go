@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/easly1989/cloudbank/server/internal/store/db"
@@ -18,6 +19,32 @@ var (
 	ErrSelfReference = errors.New("payee: cannot merge a payee into itself")
 	ErrBadTarget     = errors.New("payee: invalid merge target")
 )
+
+// DuplicateError says which payee already has a name. Names are compared
+// without regard to case or surrounding spaces, so "bar Centrale" is refused
+// when "Bar Centrale" exists (#531). It matches ErrDuplicate.
+type DuplicateError struct{ Existing string }
+
+func (e *DuplicateError) Error() string {
+	return fmt.Sprintf("payee: %q already exists", e.Existing)
+}
+
+// Is makes errors.Is(err, ErrDuplicate) hold.
+func (e *DuplicateError) Is(target error) bool { return target == ErrDuplicate }
+
+// sameName finds another payee of the wallet with this name, ignoring case.
+func (s *Service) sameName(ctx context.Context, walletID, exceptID int64, name string) (*DuplicateError, error) {
+	rows, err := s.q.ListPayeesForWallet(ctx, walletID)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range rows {
+		if p.ID != exceptID && strings.EqualFold(strings.TrimSpace(p.Name), name) {
+			return &DuplicateError{Existing: p.Name}, nil
+		}
+	}
+	return nil, nil
+}
 
 // Payee is the public representation of a payee.
 type Payee struct {
@@ -94,6 +121,12 @@ func (s *Service) Get(ctx context.Context, id int64) (Payee, error) {
 
 // Create adds a payee.
 func (s *Service) Create(ctx context.Context, walletID int64, name string, defaultCategoryID, defaultPaymentMode *int64) (Payee, error) {
+	name = strings.TrimSpace(name)
+	if dup, err := s.sameName(ctx, walletID, 0, name); err != nil {
+		return Payee{}, err
+	} else if dup != nil {
+		return Payee{}, dup
+	}
 	p, err := s.q.InsertPayee(ctx, db.InsertPayeeParams{
 		WalletID: walletID, Name: name,
 		DefaultCategoryID: nullID(defaultCategoryID), DefaultPaymentMode: nullID(defaultPaymentMode),
@@ -109,6 +142,16 @@ func (s *Service) Create(ctx context.Context, walletID int64, name string, defau
 
 // Update changes a payee's name and defaults.
 func (s *Service) Update(ctx context.Context, id int64, name string, defaultCategoryID, defaultPaymentMode *int64) (Payee, error) {
+	name = strings.TrimSpace(name)
+	cur, err := s.Get(ctx, id)
+	if err != nil {
+		return Payee{}, err
+	}
+	if dup, err := s.sameName(ctx, cur.WalletID, id, name); err != nil {
+		return Payee{}, err
+	} else if dup != nil {
+		return Payee{}, dup
+	}
 	if err := s.q.UpdatePayee(ctx, db.UpdatePayeeParams{
 		Name: name, DefaultCategoryID: nullID(defaultCategoryID), DefaultPaymentMode: nullID(defaultPaymentMode), ID: id,
 	}); err != nil {

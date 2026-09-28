@@ -1,5 +1,6 @@
 {
   "app": {
+    "guide": "Guide",
     "name": "CloudBank",
     "tagline": "Self-hosted personal finance",
     "sourceCode": "Source code",
@@ -37,6 +38,9 @@
     }
   },
   "transactions": {
+    "createCategory": "Create “{{name}}”",
+    "addPayee": "Add “{{name}}”",
+    "alreadyExists": "“{{name}}” already exists, so that one is selected.",
     "title": "Transactions",
     "add": "Add transaction",
     "addShort": "Add",
@@ -1061,6 +1065,7 @@
     "emptyHint": "An account is where transactions live — a bank account, the cash in your pocket, a credit card."
   },
   "categories": {
+    "duplicate": "“{{name}}” already exists at this level. To keep just one, use Merge on the list.",
     "title": "Categories",
     "add": "Add category",
     "addSub": "Add subcategory",
@@ -1091,6 +1096,7 @@
     "emptyHint": "Group your spending the way you think about it, not the way the bank does."
   },
   "payees": {
+    "duplicate": "“{{name}}” already exists. To keep just one, use Merge on the list.",
     "title": "Payees",
     "add": "Add payee",
     "addTitle": "New payee",
@@ -1108,7 +1114,7 @@
     "confirmDeleteTitle": "Delete \"{{name}}\"?",
     "confirmDeleteBody": "Transactions that used this payee stay, but they are left without one.",
     "hint": "Who you pay and who pays you. Give one a default category and its transactions arrive sorted.",
-    "emptyHint": "Importing a file adds the payees it names. Add the ones you already know here, so you can pick them as you enter transactions."
+    "emptyHint": "Payees are added as you enter transactions, by typing a new name in the Payee field, and when you import a file. You can also add the ones you already know here."
   },
   "currencies": {
     "title": "Currencies",
@@ -1374,7 +1380,7 @@
     "peopleHint": "Managing who can sign in belongs here, not in the main menu.",
     "navigationHint": "Which pages the sidebar lists, and in what order.",
     "signIn": "Signing in",
-    "signInHint": "A second step at sign-in, on top of your password.",
+    "signInHint": "The password you sign in with, and a second step on top of it.",
     "apiTokensHint": "Tokens let a script or another app act as you. Revoke one and it stops working immediately.",
     "notificationsHint": "Where CloudBank reaches you when something needs you.",
     "ai": "AI",
@@ -1738,6 +1744,7 @@
     "bankName": "Demo Bank"
   },
   "about": {
+    "guideHint": "How to use CloudBank, step by step",
     "version": "version {{version}}",
     "licence": "CloudBank is free software under the <b>AGPL-3.0</b> licence: you can read its code, change it and share it on the same terms.",
     "source": "Source code",
@@ -1752,5 +1759,18 @@
     "reload": "Reload the page",
     "home": "Go to the dashboard",
     "report": "Report the problem"
+  },
+  "password": {
+    "title": "Password",
+    "hint": "Change it whenever you like. Other devices will have to sign in again; this one stays signed in.",
+    "sso": "You sign in with single sign-on. If you have never set a CloudBank password, ask an administrator to set one for you.",
+    "current": "Current password",
+    "new": "New password",
+    "newHint": "At least {{n}} characters.",
+    "repeat": "Repeat the new password",
+    "submit": "Change password",
+    "changed": "Password changed. Other devices will have to sign in again.",
+    "wrongCurrent": "This is not your current password.",
+    "mismatch": "The two passwords do not match."
   }
 }
