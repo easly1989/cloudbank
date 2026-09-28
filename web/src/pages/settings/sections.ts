@@ -1,6 +1,7 @@
 import {
   IconBuildingBank,
   IconDatabase,
+  IconInfoCircle,
   IconPalette,
   IconSettings,
   IconShieldLock,
@@ -20,7 +21,7 @@ export interface SettingsSection {
 }
 
 /**
- * The seven sections of the settings screen, in the tile's order.
+ * The eight sections of the settings screen, in the tile's order.
  *
  * The order is not alphabetical and not by size: it runs from what everyone
  * changes on day one to what most people never touch, so the thing you came for
@@ -62,6 +63,9 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     icon: IconUsers,
     adminOnly: true,
   },
+  // Last, and for everyone: what this installation is and where its source is
+  // (#513). The footer says the same, but the reader can turn the footer off.
+  { id: "about", labelKey: "settings.about", hintKey: "settings.aboutHint", icon: IconInfoCircle },
 ];
 
 /** Where an older `?tab=` bookmark now lands. */

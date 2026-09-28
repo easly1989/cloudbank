@@ -1,8 +1,12 @@
-import { Stack } from "@mantine/core";
-import { useTranslation } from "react-i18next";
+import { Anchor, Card, Group, Stack, Text } from "@mantine/core";
+import { IconExternalLink } from "@tabler/icons-react";
+import { Trans, useTranslation } from "react-i18next";
+
+import { API_DOCS_URL, DONATE_URL, HOMEBANK_URL, SOURCE_URL, useVersion } from "../../aboutLinks";
 
 import { AiSettingsCard } from "../../components/AiSettingsCard";
 import { EntryFieldsCard } from "../../components/EntryFieldsCard";
+import { Logo } from "../../components/Logo";
 import { NavLayoutEditor } from "../../components/NavLayoutEditor";
 import { NotificationsCard } from "../../components/NotificationsCard";
 import { TwoFactorCard } from "../../components/TwoFactorCard";
@@ -110,4 +114,62 @@ export function DataSection() {
 
 export function PeopleSection() {
   return <UsersPage />;
+}
+
+/**
+ * What this installation is (#513): the version, the licence in one sentence,
+ * and the links the footer carries. It exists so that turning the footer off
+ * hides nothing — the AGPL wants the source in reach of whoever uses the app.
+ */
+export function AboutSection() {
+  const { t } = useTranslation();
+  const version = useVersion();
+  const links = [
+    { href: SOURCE_URL, label: t("about.source"), hint: "github.com/easly1989/cloudbank" },
+    { href: API_DOCS_URL, label: t("app.apiDocs"), hint: t("about.apiDocsHint") },
+    { href: DONATE_URL, label: t("about.support"), hint: t("about.supportHint") },
+    { href: HOMEBANK_URL, label: "HomeBank", hint: t("about.homebankHint") },
+  ];
+  return (
+    <Stack gap="lg" maw={560}>
+      <Group gap="sm" wrap="nowrap">
+        <Logo size={40} />
+        <div>
+          <Text fw={700} fz="lg">
+            {t("app.name")}
+          </Text>
+          <Text ff="monospace" fz="sm" c="dimmed" data-testid="about-version">
+            {t("about.version", { version: version ?? "…" })}
+          </Text>
+        </div>
+      </Group>
+      <Text>
+        <Trans i18nKey="about.licence" components={{ b: <b /> }} />
+      </Text>
+      <Card withBorder p={0}>
+        {links.map((l, i) => (
+          <Anchor
+            key={l.href}
+            href={l.href}
+            target="_blank"
+            rel="noreferrer"
+            underline="never"
+            c="inherit"
+            className="cb-about-link"
+            style={
+              i > 0 ? { borderTop: "1px solid var(--mantine-color-default-border)" } : undefined
+            }
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Text fw={500}>{l.label}</Text>
+              <Text size="xs" c="dimmed" truncate>
+                {l.hint}
+              </Text>
+            </div>
+            <IconExternalLink size={16} style={{ opacity: 0.6, flexShrink: 0 }} />
+          </Anchor>
+        ))}
+      </Card>
+    </Stack>
+  );
 }

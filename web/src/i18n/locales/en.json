@@ -6,7 +6,8 @@
     "apiDocs": "API docs",
     "donate": "Donate",
     "basedOn": "a web port of HomeBank",
-    "support": "Support CloudBank"
+    "support": "Support CloudBank",
+    "links": "Links"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -1029,6 +1030,8 @@
     "closed": "Closed",
     "edit": "Edit",
     "delete": "Delete",
+    "actions": "Actions for {{name}}",
+    "deleteMenu": "Delete…",
     "cancel": "Cancel",
     "save": "Save",
     "empty": "No accounts yet.",
@@ -1375,7 +1378,9 @@
     "aiHint": "Used to suggest categories. Your key is stored encrypted and never leaves this server.",
     "bankSyncHint": "Connections to your banks, with their own state and history.",
     "importHint": "Statements, and the rules that file them.",
-    "backupHint": "A copy you can restore from, and a check that the database is sound."
+    "backupHint": "A copy you can restore from, and a check that the database is sound.",
+    "about": "About",
+    "aboutHint": "What this CloudBank is, and where to find its code."
   },
   "apiTokens": {
     "title": "Personal API tokens",
@@ -1429,7 +1434,9 @@
     "tourOffers": "Offer each page's tour",
     "tourOffersHint": "The first time you open a page, a card in the corner offers a short tour.",
     "resetTours": "Show all tours again",
-    "toursReset": "Each page will offer its tour again."
+    "toursReset": "Each page will offer its tour again.",
+    "showFooter": "Show the footer",
+    "showFooterHint": "Off, the version, the licence and the links stay in Settings › About."
   },
   "tour": {
     "skip": "Skip",
@@ -1726,5 +1733,14 @@
     "bankHint": "The demo reaches no real bank. Each sync, the pretend bank makes up a few days of card payments.",
     "bankConnect": "Connect the pretend bank",
     "bankName": "Demo Bank"
+  },
+  "about": {
+    "version": "version {{version}}",
+    "licence": "CloudBank is free software under the <b>AGPL-3.0</b> licence: you can read its code, change it and share it on the same terms.",
+    "source": "Source code",
+    "apiDocsHint": "The API of this installation",
+    "support": "Support CloudBank",
+    "supportHint": "Buy Me a Coffee and the other ways",
+    "homebankHint": "The desktop app CloudBank is a web port of"
   }
 }
