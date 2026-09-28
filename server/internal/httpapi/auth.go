@@ -73,6 +73,9 @@ type userResponse struct {
 	Disabled         bool            `json:"disabled"`
 	TwoFactorEnabled bool            `json:"twoFactorEnabled"`
 	CreatedAt        string          `json:"createdAt"`
+	// SignsInWithSSO is set on GET /auth/me only: the password card tells an
+	// SSO user that the password may not be one they know.
+	SignsInWithSSO bool `json:"signsInWithSso,omitempty"`
 }
 
 func toUserResponse(u auth.User) userResponse {
@@ -105,6 +108,7 @@ func (h *authHandlers) protectedRoutes(r chi.Router) {
 	}
 	h.tokenRoutes(r)
 	h.twoFactorRoutes(r)
+	r.Post("/auth/me/password", h.changePassword)
 
 	r.Group(func(r chi.Router) {
 		r.Use(h.requireAdmin)
@@ -188,7 +192,50 @@ func (h *authHandlers) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *authHandlers) me(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, toUserResponse(userFromContext(r.Context())))
+	u := userFromContext(r.Context())
+	out := toUserResponse(u)
+	sso, err := h.svc.SignsInWithSSO(r.Context(), u.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not load the account")
+		return
+	}
+	out.SignsInWithSSO = sso
+	writeJSON(w, http.StatusOK, out)
+}
+
+// changePassword lets the signed-in user replace their own password, knowing
+// the current one (#530). Every other session of theirs is signed out; this one
+// stays. From a browser session only: an API token cannot change a password.
+func (h *authHandlers) changePassword(w http.ResponseWriter, r *http.Request) {
+	if !h.requireSession(w, r) {
+		return
+	}
+	var in struct {
+		CurrentPassword string `json:"currentPassword"`
+		NewPassword     string `json:"newPassword"`
+	}
+	if !decodeJSON(w, r, &in) {
+		return
+	}
+	if len(in.NewPassword) < 8 {
+		writeError(w, http.StatusBadRequest, "invalid", "password must be at least 8 characters")
+		return
+	}
+	token := ""
+	if c, err := r.Cookie(sessionCookie); err == nil {
+		token = c.Value
+	}
+	u := userFromContext(r.Context())
+	err := h.svc.ChangePassword(r.Context(), u.ID, in.CurrentPassword, in.NewPassword, token)
+	switch {
+	case errors.Is(err, auth.ErrInvalidCredentials):
+		writeError(w, http.StatusForbidden, "invalid_password", "the current password is not correct")
+		return
+	case err != nil:
+		writeError(w, http.StatusInternalServerError, "internal", "could not change the password")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // updateMe persists the current user's language, theme and UI preferences.

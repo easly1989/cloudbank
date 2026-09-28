@@ -1374,7 +1374,7 @@
     "peopleHint": "Gestire chi può accedere sta qui, non nel menù principale.",
     "navigationHint": "Quali pagine elenca la barra laterale, e in che ordine.",
     "signIn": "Accesso",
-    "signInHint": "Un secondo passaggio all'accesso, oltre alla password.",
+    "signInHint": "La password con cui entri, e un secondo passaggio oltre a quella.",
     "apiTokensHint": "Un token permette a uno script o a un'altra app di agire come te. Revocarlo lo blocca all'istante.",
     "notificationsHint": "Dove CloudBank ti raggiunge quando qualcosa ti richiede.",
     "ai": "AI",
@@ -1752,5 +1752,18 @@
     "reload": "Ricarica la pagina",
     "home": "Vai al cruscotto",
     "report": "Segnala il problema"
+  },
+  "password": {
+    "title": "Password",
+    "hint": "Cambiala quando vuoi. Gli altri dispositivi dovranno accedere di nuovo; questo resta dentro.",
+    "sso": "Accedi con il single sign-on. Se non hai mai impostato una password di CloudBank, chiedi a un amministratore di impostartene una.",
+    "current": "Password attuale",
+    "new": "Nuova password",
+    "newHint": "Almeno {{n}} caratteri.",
+    "repeat": "Ripeti la nuova password",
+    "submit": "Cambia password",
+    "changed": "Password cambiata. Gli altri dispositivi dovranno accedere di nuovo.",
+    "wrongCurrent": "Non è la tua password attuale.",
+    "mismatch": "Le due password non coincidono."
   }
 }

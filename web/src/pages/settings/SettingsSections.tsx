@@ -9,6 +9,7 @@ import { EntryFieldsCard } from "../../components/EntryFieldsCard";
 import { Logo } from "../../components/Logo";
 import { NavLayoutEditor } from "../../components/NavLayoutEditor";
 import { NotificationsCard } from "../../components/NotificationsCard";
+import { PasswordCard } from "../../components/PasswordCard";
 import { TwoFactorCard } from "../../components/TwoFactorCard";
 import { ApiTokensPage } from "../ApiTokensPage";
 import { BankSyncSettings } from "../BankSyncPage";
@@ -59,6 +60,7 @@ export function SecuritySection() {
   return (
     <Stack gap="xl">
       <SettingsGroup title={t("settings.signIn")} hint={t("settings.signInHint")}>
+        {!__DEMO__ && <PasswordCard />}
         <TwoFactorCard />
       </SettingsGroup>
       <SettingsGroup title={t("settings.apiTokens")} hint={t("settings.apiTokensHint")}>

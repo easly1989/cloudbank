@@ -9,6 +9,17 @@ import (
 	"context"
 )
 
+const countOIDCIdentitiesForUser = `-- name: CountOIDCIdentitiesForUser :one
+SELECT COUNT(*) FROM user_oidc_identities WHERE user_id = ?
+`
+
+func (q *Queries) CountOIDCIdentitiesForUser(ctx context.Context, userID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countOIDCIdentitiesForUser, userID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getUserIDByOIDCIdentity = `-- name: GetUserIDByOIDCIdentity :one
 SELECT user_id FROM user_oidc_identities WHERE issuer = ? AND subject = ? LIMIT 1
 `
