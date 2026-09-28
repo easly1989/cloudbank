@@ -76,6 +76,7 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
   const [smartAmount, setSmartAmount] = useState(prefs.smartAmountInput ?? true);
   const [tourOffers, setTourOffers] = useState(prefs.tourOffers ?? true);
   const [accent, setAccent] = useState(prefs.themeAccent ?? "cloudbank");
+  const [showFooter, setShowFooter] = useState(prefs.showFooter ?? true);
   const [sidebarAccountIds, setSidebarAccountIds] = useState<number[]>(
     prefs.sidebarAccountIds ?? [],
   );
@@ -116,6 +117,7 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
           smartAmountInput: smartAmount,
           tourOffers,
           themeAccent: accent,
+          showFooter,
           sidebarAccountIds,
           registerBalances: balances,
         },
@@ -186,6 +188,14 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
                   ))}
                 </Group>
               </Input.Wrapper>
+            )}
+            {appearance && (
+              <Switch
+                label={t("preferences.showFooter")}
+                description={t("preferences.showFooterHint")}
+                checked={showFooter}
+                onChange={(e) => setShowFooter(e.currentTarget.checked)}
+              />
             )}
             {general && (
               <Select

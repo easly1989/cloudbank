@@ -5,6 +5,7 @@ import {
   Card,
   Checkbox,
   Group,
+  Menu,
   Modal,
   Select,
   Stack,
@@ -13,10 +14,11 @@ import {
   Text,
   TextInput,
   Title,
+  UnstyledButton,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconPencil, IconReportMoney, IconTrash, IconWallet } from "@tabler/icons-react";
+import { IconDots, IconPencil, IconReportMoney, IconTrash, IconWallet } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -72,6 +74,7 @@ export function AccountsPage() {
   const [editing, setEditing] = useState<Account | null>(null);
   const [modalOpened, modal] = useDisclosure(false);
   const [valuationsFor, setValuationsFor] = useState<Account | null>(null);
+  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
 
   const accountsQuery = useQuery({
     queryKey: ["accounts", walletId],
@@ -98,6 +101,16 @@ export function AccountsPage() {
     setEditing(a);
     modal.open();
   };
+  const askDelete = async (a: Account) => {
+    const ok = await confirm({
+      title: t("accounts.confirmDeleteTitle", { name: a.name }),
+      body: t("accounts.confirmDeleteBody"),
+      confirmLabel: t("accounts.confirmDeleteAction"),
+      danger: true,
+    });
+    if (ok) remove.mutate(a.id);
+  };
+  const hasValuations = (a: Account) => a.type === "asset" || a.type === "investment";
 
   if (!currentWallet) return null;
   const accounts = (accountsQuery.data ?? []).filter((a) => showClosed || !a.closed);
@@ -151,86 +164,96 @@ export function AccountsPage() {
             <Title order={4} mb="xs">
               {t(`accounts.types.${type}`)}
             </Title>
-            <Table verticalSpacing="xs">
-              <Table.Tbody>
+            {phone ? (
+              <Stack gap={0}>
                 {group.map((a) => (
-                  <Table.Tr key={a.id} {...rowEditProps(() => openEdit(a))}>
-                    <Table.Td>
-                      <Text fw={500}>{a.name}</Text>
-                      {a.institution && (
-                        <Text size="xs" c="dimmed">
-                          {a.institution}
+                  <PhoneAccountRow
+                    key={a.id}
+                    account={a}
+                    share={sharePct(a)}
+                    onEdit={() => openEdit(a)}
+                    onValuations={hasValuations(a) ? () => setValuationsFor(a) : undefined}
+                    onDelete={() => void askDelete(a)}
+                  />
+                ))}
+              </Stack>
+            ) : (
+              <Table verticalSpacing="xs">
+                <Table.Tbody>
+                  {group.map((a) => (
+                    <Table.Tr key={a.id} {...rowEditProps(() => openEdit(a))}>
+                      <Table.Td>
+                        <Text fw={500}>{a.name}</Text>
+                        {a.institution && (
+                          <Text size="xs" c="dimmed">
+                            {a.institution}
+                          </Text>
+                        )}
+                      </Table.Td>
+                      <Table.Td>
+                        {a.closed && (
+                          <Badge color="gray" size="sm">
+                            {t("accounts.closed")}
+                          </Badge>
+                        )}
+                      </Table.Td>
+                      <Table.Td ta="right">
+                        <Text
+                          fw={600}
+                          c={a.balance < a.minimumBalance ? attentionColor : undefined}
+                        >
+                          {formatMinor(a.balance, acctFmt(a))}
                         </Text>
-                      )}
-                    </Table.Td>
-                    <Table.Td>
-                      {a.closed && (
-                        <Badge color="gray" size="sm">
-                          {t("accounts.closed")}
-                        </Badge>
-                      )}
-                    </Table.Td>
-                    <Table.Td ta="right">
-                      <Text fw={600} c={a.balance < a.minimumBalance ? attentionColor : undefined}>
-                        {formatMinor(a.balance, acctFmt(a))}
-                      </Text>
-                      {a.value != null && (
-                        <Text size="xs" c="dimmed">
-                          {t("valuations.recorded")}
-                        </Text>
-                      )}
-                      {a.futureBalance !== a.balance && (
-                        <Text size="xs" c="dimmed">
-                          {t("register.future")}: {formatMinor(a.futureBalance, acctFmt(a))}
-                        </Text>
-                      )}
-                      {sharePct(a) !== null && (
-                        <Text size="xs" c="dimmed">
-                          {sharePct(a)}% {t("accounts.ofTotal")}
-                        </Text>
-                      )}
-                    </Table.Td>
-                    <Table.Td ta="right" w={90} {...stopRowEdit}>
-                      <Group gap={4} justify="flex-end" wrap="nowrap">
-                        {(a.type === "asset" || a.type === "investment") && (
+                        {a.value != null && (
+                          <Text size="xs" c="dimmed">
+                            {t("valuations.recorded")}
+                          </Text>
+                        )}
+                        {a.futureBalance !== a.balance && (
+                          <Text size="xs" c="dimmed">
+                            {t("register.future")}: {formatMinor(a.futureBalance, acctFmt(a))}
+                          </Text>
+                        )}
+                        {sharePct(a) !== null && (
+                          <Text size="xs" c="dimmed">
+                            {sharePct(a)}% {t("accounts.ofTotal")}
+                          </Text>
+                        )}
+                      </Table.Td>
+                      <Table.Td ta="right" w={90} {...stopRowEdit}>
+                        <Group gap={4} justify="flex-end" wrap="nowrap">
+                          {hasValuations(a) && (
+                            <ActionIcon
+                              variant="subtle"
+                              aria-label={t("valuations.manage")}
+                              title={t("valuations.manage")}
+                              onClick={() => setValuationsFor(a)}
+                            >
+                              <IconReportMoney size={16} />
+                            </ActionIcon>
+                          )}
                           <ActionIcon
                             variant="subtle"
-                            aria-label={t("valuations.manage")}
-                            title={t("valuations.manage")}
-                            onClick={() => setValuationsFor(a)}
+                            aria-label={t("accounts.edit")}
+                            onClick={() => openEdit(a)}
                           >
-                            <IconReportMoney size={16} />
+                            <IconPencil size={16} />
                           </ActionIcon>
-                        )}
-                        <ActionIcon
-                          variant="subtle"
-                          aria-label={t("accounts.edit")}
-                          onClick={() => openEdit(a)}
-                        >
-                          <IconPencil size={16} />
-                        </ActionIcon>
-                        <ActionIcon
-                          variant="subtle"
-                          color="red"
-                          aria-label={t("accounts.delete")}
-                          onClick={async () => {
-                            const ok = await confirm({
-                              title: t("accounts.confirmDeleteTitle", { name: a.name }),
-                              body: t("accounts.confirmDeleteBody"),
-                              confirmLabel: t("accounts.confirmDeleteAction"),
-                              danger: true,
-                            });
-                            if (ok) remove.mutate(a.id);
-                          }}
-                        >
-                          <IconTrash size={16} />
-                        </ActionIcon>
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
+                          <ActionIcon
+                            variant="subtle"
+                            color="red"
+                            aria-label={t("accounts.delete")}
+                            onClick={() => void askDelete(a)}
+                          >
+                            <IconTrash size={16} />
+                          </ActionIcon>
+                        </Group>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            )}
           </Card>
         );
       })}
@@ -265,6 +288,103 @@ export function AccountsPage() {
         />
       )}
     </Stack>
+  );
+}
+
+/**
+ * One account on a phone (#514): the table's four columns do not fit, so the
+ * name, the amount and the actions share one line. The amount never wraps and
+ * the ⋯ never shrinks; the name and its bank/share line give way, with an
+ * ellipsis. The row itself is a button that opens the account for editing.
+ */
+function PhoneAccountRow({
+  account: a,
+  share,
+  onEdit,
+  onValuations,
+  onDelete,
+}: {
+  account: Account;
+  share: number | null;
+  onEdit: () => void;
+  onValuations?: () => void;
+  onDelete: () => void;
+}) {
+  const { t } = useTranslation();
+  const sub = [
+    a.institution,
+    share !== null ? `${share}% ${t("accounts.ofTotal")}` : null,
+    a.value != null ? t("valuations.recorded") : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <Group gap={4} wrap="nowrap" className="cb-account-row" data-testid="account-row">
+      <UnstyledButton
+        onClick={onEdit}
+        aria-label={`${t("accounts.edit")} ${a.name}`}
+        style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8 }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Group gap={6} wrap="nowrap">
+            <Text fw={500} truncate>
+              {a.name}
+            </Text>
+            {a.closed && (
+              <Badge color="gray" size="xs" style={{ flexShrink: 0 }}>
+                {t("accounts.closed")}
+              </Badge>
+            )}
+          </Group>
+          {sub && (
+            <Text size="xs" c="dimmed" truncate>
+              {sub}
+            </Text>
+          )}
+        </div>
+        <div style={{ flexShrink: 0, textAlign: "right" }}>
+          <Text
+            fw={600}
+            style={{ whiteSpace: "nowrap" }}
+            c={a.balance < a.minimumBalance ? attentionColor : undefined}
+          >
+            {formatMinor(a.balance, acctFmt(a))}
+          </Text>
+          {a.futureBalance !== a.balance && (
+            <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>
+              {t("register.future")} {formatMinor(a.futureBalance, acctFmt(a))}
+            </Text>
+          )}
+        </div>
+      </UnstyledButton>
+      <Menu position="bottom-end" withinPortal>
+        <Menu.Target>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size={44}
+            aria-label={t("accounts.actions", { name: a.name })}
+            style={{ flexShrink: 0 }}
+          >
+            <IconDots size={20} />
+          </ActionIcon>
+        </Menu.Target>
+        <Menu.Dropdown>
+          <Menu.Item leftSection={<IconPencil size={16} />} onClick={onEdit}>
+            {t("accounts.edit")}
+          </Menu.Item>
+          {onValuations && (
+            <Menu.Item leftSection={<IconReportMoney size={16} />} onClick={onValuations}>
+              {t("valuations.manage")}
+            </Menu.Item>
+          )}
+          <Menu.Divider />
+          <Menu.Item color="red" leftSection={<IconTrash size={16} />} onClick={onDelete}>
+            {t("accounts.deleteMenu")}
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
+    </Group>
   );
 }
 

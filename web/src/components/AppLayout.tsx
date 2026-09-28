@@ -51,6 +51,9 @@ export function AppLayout() {
   // on a phone — 88px of permanent bar, where 36 was already cutting the second
   // line off. At the end of the page it costs nothing until it is reached.
   const touch = useMediaQuery("(pointer: coarse)");
+  // The reader can turn the footer off (Settings › Appearance, #513); what it
+  // carries is also in Settings › About, so nothing becomes unreachable.
+  const showFooter = user?.preferences?.showFooter ?? true;
   const persistCollapsed = useMutation({
     mutationFn: (next: boolean) =>
       updateMe({ preferences: { ...(user?.preferences ?? {}), sidebarCollapsed: next } }),
@@ -86,7 +89,7 @@ export function AppLayout() {
         breakpoint: "sm",
         collapsed: { mobile: !opened },
       }}
-      footer={{ height: 36, collapsed: !!touch }}
+      footer={{ height: 36, collapsed: !!touch || !showFooter }}
       padding="md"
     >
       <AppShell.Header hiddenFrom="sm">
@@ -129,14 +132,14 @@ export function AppLayout() {
         >
           <Outlet />
         </Suspense>
-        {touch && (
+        {touch && showFooter && (
           <Box component="footer" mt="xl" className="cb-footer-inline">
-            <AppFooter />
+            <AppFooter compact />
           </Box>
         )}
       </AppShell.Main>
 
-      {!touch && (
+      {!touch && showFooter && (
         <AppShell.Footer>
           <AppFooter />
         </AppShell.Footer>

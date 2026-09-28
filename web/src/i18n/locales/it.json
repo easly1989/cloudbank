@@ -6,7 +6,8 @@
     "apiDocs": "Documentazione API",
     "donate": "Dona",
     "basedOn": "un port web di HomeBank",
-    "support": "Sostieni CloudBank"
+    "support": "Sostieni CloudBank",
+    "links": "Link"
   },
   "nav": {
     "dashboard": "Cruscotto",
@@ -1029,6 +1030,8 @@
     "closed": "Chiuso",
     "edit": "Modifica",
     "delete": "Elimina",
+    "actions": "Azioni per {{name}}",
+    "deleteMenu": "Elimina…",
     "cancel": "Annulla",
     "save": "Salva",
     "empty": "Ancora nessun conto.",
@@ -1375,7 +1378,9 @@
     "aiHint": "Serve a proporre le categorie. La chiave è conservata cifrata e non lascia mai questo server.",
     "bankSyncHint": "Le connessioni alle tue banche, con il loro stato e la loro storia.",
     "importHint": "Gli estratti conto, e le regole che li archiviano.",
-    "backupHint": "Una copia da cui ripristinare, e un controllo che il database sia integro."
+    "backupHint": "Una copia da cui ripristinare, e un controllo che il database sia integro.",
+    "about": "Informazioni",
+    "aboutHint": "Cos'è questa installazione di CloudBank e dove trovarne il codice."
   },
   "apiTokens": {
     "title": "Token API personali",
@@ -1429,7 +1434,9 @@
     "tourOffers": "Proponi il tour di ogni pagina",
     "tourOffersHint": "La prima volta che apri una pagina, una card nell'angolo propone un breve giro.",
     "resetTours": "Mostra di nuovo tutti i tour",
-    "toursReset": "Ogni pagina proporrà di nuovo il suo tour."
+    "toursReset": "Ogni pagina proporrà di nuovo il suo tour.",
+    "showFooter": "Mostra il piè di pagina",
+    "showFooterHint": "Spento, versione, licenza e link restano in Impostazioni › Informazioni."
   },
   "tour": {
     "skip": "Salta",
@@ -1726,5 +1733,14 @@
     "bankHint": "La demo non si collega a nessuna banca reale. A ogni sincronizzazione la banca finta inventa qualche giorno di pagamenti con carta.",
     "bankConnect": "Collega la banca finta",
     "bankName": "Banca Demo"
+  },
+  "about": {
+    "version": "versione {{version}}",
+    "licence": "CloudBank è software libero sotto licenza <b>AGPL-3.0</b>: puoi leggerne il codice, modificarlo e ridistribuirlo alle stesse condizioni.",
+    "source": "Codice sorgente",
+    "apiDocsHint": "Le API di questa installazione",
+    "support": "Sostieni CloudBank",
+    "supportHint": "Buy Me a Coffee e gli altri modi",
+    "homebankHint": "L'app desktop di cui CloudBank è un port web"
   }
 }

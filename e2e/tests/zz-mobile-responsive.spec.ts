@@ -32,6 +32,7 @@ const PAGES = [
   "/categories",
   "/payees",
   "/settings",
+  "/settings/about",
 ];
 
 // ensureReady authenticates (setting up the admin on a fresh instance, else
