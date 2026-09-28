@@ -144,7 +144,8 @@ docker compose up -d
 That is the whole install — one container, no external database. Your data lives
 in the `cloudbank-data` volume (a SQLite database under `/data`). Back it up by
 copying that volume, or use the in-app **wallet backup** (Settings → Import &
-export) and the admin **full-database backup**.
+export) and the admin **full-database backup**: [docs/backup.md](docs/backup.md)
+says what each one holds and how to restore it.
 
 Then follow [Getting started](docs/getting-started.md): the administrator, a
 wallet, your accounts and categories, and your first transactions.
@@ -183,6 +184,7 @@ latest version on the next launch after you deploy a new image.
 - **API**: interactive Swagger UI is served by the app at **`/api/docs`** (the
   OpenAPI spec is at `/api/openapi.yaml`).
 - **The live demo** — what it is, what it switches off, when it forgets you: [docs/demo.md](docs/demo.md).
+- **Backups, upgrades and restoring** — what each backup holds, a routine that works, upgrading, and getting it all back: [docs/backup.md](docs/backup.md).
 - **Reverse proxy / HTTPS**: [docs/reverse-proxy.md](docs/reverse-proxy.md).
 - **Using CloudBank, page by page** — what each page is for and what it can do: [docs/pages.md](docs/pages.md).
 - **Importing transactions** (bank CSV, QIF, OFX, CAMT.053), with the column mapping and what to do when rows come in wrong: [docs/import.md](docs/import.md).
