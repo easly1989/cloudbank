@@ -3,7 +3,14 @@ import { IconChevronDown, IconExternalLink } from "@tabler/icons-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { API_DOCS_URL, DONATE_URL, HOMEBANK_URL, SOURCE_URL, useVersion } from "../aboutLinks";
+import {
+  API_DOCS_URL,
+  DONATE_URL,
+  GUIDE_URL,
+  HOMEBANK_URL,
+  SOURCE_URL,
+  useVersion,
+} from "../aboutLinks";
 
 /**
  * The footer. As a fixed bar (a mouse, a wide screen) its links fit one line.
@@ -20,6 +27,7 @@ export function AppFooter({ compact = false }: { compact?: boolean }) {
 
   if (compact) {
     const links = [
+      { href: GUIDE_URL, label: t("app.guide") },
       { href: SOURCE_URL, label: t("app.sourceCode") },
       { href: API_DOCS_URL, label: t("app.apiDocs") },
       { href: DONATE_URL, label: t("app.donate") },
@@ -74,6 +82,12 @@ export function AppFooter({ compact = false }: { compact?: boolean }) {
       <Text size="xs" c="dimmed">
         {label}
       </Text>
+      <Text size="xs" c="dimmed">
+        ·
+      </Text>
+      <Anchor size="xs" href={GUIDE_URL} target="_blank" rel="noreferrer">
+        {t("app.guide")}
+      </Anchor>
       <Text size="xs" c="dimmed">
         ·
       </Text>

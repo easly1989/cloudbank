@@ -1,5 +1,6 @@
 {
   "app": {
+    "guide": "Guida",
     "name": "CloudBank",
     "tagline": "Gestione delle finanze personali self-hosted",
     "sourceCode": "Codice sorgente",
@@ -1743,6 +1744,7 @@
     "bankName": "Banca Demo"
   },
   "about": {
+    "guideHint": "Come si usa CloudBank, passo per passo",
     "version": "versione {{version}}",
     "licence": "CloudBank è software libero sotto licenza <b>AGPL-3.0</b>: puoi leggerne il codice, modificarlo e ridistribuirlo alle stesse condizioni.",
     "source": "Codice sorgente",
