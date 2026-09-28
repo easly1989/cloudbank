@@ -143,6 +143,9 @@ matches the statement.
 
 ## What next
 
+Every page is described in [Using CloudBank, page by page](pages.md). A few to
+look at first:
+
 - **Budget.** Plan what you mean to spend in each category, and see it against
   what you actually spent.
 - **Rules.** Fill in the payee and category from what a transaction says, so
