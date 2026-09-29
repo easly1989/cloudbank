@@ -28,7 +28,7 @@
     "@tanstack/react-table": "^9.2.4",
     "@tanstack/react-virtual": "^3.14.13",
     "echarts": "^6.1.0",
-    "gridstack": "^13.3.0",
+    "gridstack": "^14.0.0",
     "i18next": "^26.4.2",
     "i18next-browser-languagedetector": "^8.0.0",
     "qrcode": "^1.5.4",
