@@ -36,7 +36,7 @@ const MOBILE_BREAKPOINT = 700;
  * Widgets **hug their content**: a per-item ResizeObserver (below) calls
  * gridstack's `resizeToContent` to size each item to its content's natural
  * height — so there is no manual vertical resize (the handles only change
- * width) — and `float: false` compacts everything upward so there are no gaps.
+ * width) — and `mode: "top"` compacts everything upward so there are no gaps.
  * (We drive this ourselves rather than the grid-level `sizeToContent` option,
  * whose auto-measure runs before the React portal has rendered any content.)
  *
@@ -95,7 +95,7 @@ export const GridDashboard = forwardRef<
         // that on each side. It is wide on purpose: with no borders left, the
         // gap is the only thing saying where one section ends.
         margin: WIDGETS.columnGap / 2,
-        float: false, // compact upward — no vertical gaps
+        mode: "top", // compact upward — no vertical gaps
         staticGrid: true, // toggled by the editing effect
         // Height is content-driven (see the resize observer below), so only
         // allow horizontal resize — the corner/bottom handles are dropped.
