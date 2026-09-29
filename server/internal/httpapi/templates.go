@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/template"
+	"github.com/easly1989/cloudbank/server/internal/walletref"
 )
 
 // templateHandlers serves wallet-scoped template endpoints (mounted inside the
@@ -161,6 +162,7 @@ func (h *templateHandlers) templateFromPath(w http.ResponseWriter, r *http.Reque
 func writeTemplateError(w http.ResponseWriter, err error) bool {
 	return mapError(w, err, "could not save template",
 		errCase{template.ErrNotFound, http.StatusNotFound, "not_found", "template not found"},
+		errCase{walletref.ErrForeign, http.StatusBadRequest, "invalid_reference", "a referenced record does not belong to this wallet"},
 		errCase{template.ErrNameRequired, http.StatusBadRequest, "name_required", "name is required"},
 		errCase{template.ErrInvalidAccount, http.StatusBadRequest, "invalid_account", "account does not belong to this wallet"},
 	)

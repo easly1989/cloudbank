@@ -41,7 +41,7 @@ var dateRe = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 
 // ParseEntry turns a free-text description into transaction fields using the
 // configured model. `today` (YYYY-MM-DD) grounds relative dates.
-func (s *Service) ParseEntry(ctx context.Context, userID, walletID int64, text, today string) (*ParsedEntry, error) {
+func (s *Service) ParseEntry(ctx context.Context, userID int64, admin bool, walletID int64, text, today string) (*ParsedEntry, error) {
 	cfg, err := s.load(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func (s *Service) ParseEntry(ctx context.Context, userID, walletID int64, text, 
 		"Example — input \"lunch with Anna 15\", today 2026-09-08, Categories include \"Dining\", Tags " +
 		"include \"friends\" → {\"amount\":15,\"direction\":\"expense\",\"date\":\"2026-09-08\"," +
 		"\"payee\":\"\",\"category\":\"Dining\",\"tags\":[\"friends\"],\"memo\":\"Lunch with Anna\"}"
-	reply, err := newClient(cfg.BaseUrl, cfg.ApiKey, cfg.Model, s.hc).chat(ctx, system, entryPrompt(text, today, catNames, payeeNames, tagNames))
+	reply, err := newClient(cfg.BaseUrl, cfg.ApiKey, cfg.Model, s.hc, admin).chat(ctx, system, entryPrompt(text, today, catNames, payeeNames, tagNames))
 	if err != nil {
 		return nil, err
 	}

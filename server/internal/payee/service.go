@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/easly1989/cloudbank/server/internal/store/db"
+	"github.com/easly1989/cloudbank/server/internal/walletref"
 )
 
 // Sentinel errors.
@@ -122,6 +123,9 @@ func (s *Service) Get(ctx context.Context, id int64) (Payee, error) {
 // Create adds a payee.
 func (s *Service) Create(ctx context.Context, walletID int64, name string, defaultCategoryID, defaultPaymentMode *int64) (Payee, error) {
 	name = strings.TrimSpace(name)
+	if err := walletref.Check(ctx, s.q, walletID, (&walletref.Refs{}).Category(defaultCategoryID)); err != nil {
+		return Payee{}, err
+	}
 	if dup, err := s.sameName(ctx, walletID, 0, name); err != nil {
 		return Payee{}, err
 	} else if dup != nil {
@@ -145,6 +149,9 @@ func (s *Service) Update(ctx context.Context, id int64, name string, defaultCate
 	name = strings.TrimSpace(name)
 	cur, err := s.Get(ctx, id)
 	if err != nil {
+		return Payee{}, err
+	}
+	if err := walletref.Check(ctx, s.q, cur.WalletID, (&walletref.Refs{}).Category(defaultCategoryID)); err != nil {
 		return Payee{}, err
 	}
 	if dup, err := s.sameName(ctx, cur.WalletID, id, name); err != nil {

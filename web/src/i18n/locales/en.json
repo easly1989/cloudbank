@@ -960,7 +960,7 @@
   },
   "ai": {
     "title": "AI (bring your own key)",
-    "hint": "Optional. Connect an AI provider to get category suggestions. Works with OpenAI-compatible services, including a local runtime (Ollama, LM Studio) via its URL. Your key stays on the server and is used only for your requests.",
+    "hint": "Optional. Connect an AI provider to get category suggestions. Works with OpenAI-compatible services, including a local runtime (Ollama, LM Studio) via its URL, which only an administrator can set. Your key stays on the server and is used only for your requests.",
     "enable": "Enable AI features",
     "baseUrl": "Base URL",
     "baseUrlHint": "OpenAI-compatible endpoint, e.g. https://api.openai.com/v1 or http://localhost:11434/v1",

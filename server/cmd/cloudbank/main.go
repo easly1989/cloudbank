@@ -232,6 +232,9 @@ func run() error {
 		Addr:              cfg.Addr,
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
+		// A keep-alive connection left idle is closed after two minutes instead
+		// of holding a socket forever (#543).
+		IdleTimeout: 2 * time.Minute,
 	}
 
 	// Run the server until a termination signal arrives.

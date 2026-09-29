@@ -5,14 +5,24 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
+	"github.com/easly1989/cloudbank/server/internal/netguard"
 	"github.com/easly1989/cloudbank/server/internal/secrets"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
 // ErrNotConfigured is returned when AI is disabled or missing a key/model/url.
 var ErrNotConfigured = errors.New("ai: not enabled or not fully configured")
+
+// ErrLocalURL means a user who is not an administrator named a provider on the
+// server's own network (#543).
+var ErrLocalURL = errors.New("ai: only an administrator can use a provider on the local network")
+
+// ErrBadURL means the provider URL is not an http(s) URL, or its name does not
+// resolve.
+var ErrBadURL = errors.New("ai: the provider URL must be an http(s) address that resolves")
 
 // Settings is the public (safe) view of a user's AI configuration — never the key.
 type Settings struct {
@@ -82,8 +92,12 @@ func (s *Service) Settings(ctx context.Context, userID int64) (Settings, error) 
 }
 
 // UpdateSettings persists the user's configuration, preserving the stored key
-// when the input key is nil.
-func (s *Service) UpdateSettings(ctx context.Context, userID int64, in SettingsInput) (Settings, error) {
+// when the input key is nil. A provider on the local network is refused unless
+// admin: the requests are the server's own.
+func (s *Service) UpdateSettings(ctx context.Context, userID int64, admin bool, in SettingsInput) (Settings, error) {
+	if err := checkBaseURL(ctx, strings.TrimSpace(in.BaseURL), admin); err != nil {
+		return Settings{}, err
+	}
 	row, err := s.load(ctx, userID)
 	if err != nil {
 		return Settings{}, err
@@ -105,10 +119,34 @@ func (s *Service) UpdateSettings(ctx context.Context, userID int64, in SettingsI
 	return s.Settings(ctx, userID)
 }
 
+// checkBaseURL vets a provider URL on save: empty is fine (AI stays off),
+// anything else must be http(s), and on the public internet unless admin.
+func checkBaseURL(ctx context.Context, raw string, admin bool) error {
+	if raw == "" {
+		return nil
+	}
+	if admin {
+		u, err := url.Parse(raw)
+		if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
+			return ErrBadURL
+		}
+		return nil
+	}
+	switch err := netguard.CheckURL(ctx, raw, false); {
+	case err == nil:
+		return nil
+	case errors.Is(err, netguard.ErrNotPublic):
+		return ErrLocalURL
+	default:
+		return ErrBadURL
+	}
+}
+
 // SuggestCategory asks the configured model to pick the best matching category
 // for the transaction from the wallet's categories. It returns nil (no error)
-// when the model declines or names nothing valid.
-func (s *Service) SuggestCategory(ctx context.Context, userID, walletID int64, in SuggestInput) (*Category, error) {
+// when the model declines or names nothing valid. admin is the caller's current
+// role: only an administrator's calls may reach a provider on the local network.
+func (s *Service) SuggestCategory(ctx context.Context, userID int64, admin bool, walletID int64, in SuggestInput) (*Category, error) {
 	cfg, err := s.load(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -131,7 +169,7 @@ func (s *Service) SuggestCategory(ctx context.Context, userID, walletID int64, i
 		"list, copied verbatim, or the single word none. Do not explain."
 	user := buildPrompt(in, names)
 
-	reply, err := newClient(cfg.BaseUrl, cfg.ApiKey, cfg.Model, s.hc).chat(ctx, system, user)
+	reply, err := newClient(cfg.BaseUrl, cfg.ApiKey, cfg.Model, s.hc, admin).chat(ctx, system, user)
 	if err != nil {
 		return nil, err
 	}
