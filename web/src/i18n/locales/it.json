@@ -25,6 +25,9 @@
     "budget": "Budget",
     "goals": "Obiettivi",
     "reports": "Report",
+    "categories": "Categorie",
+    "payees": "Beneficiari",
+    "currencies": "Valute",
     "settings": "Impostazioni",
     "import": "Importa",
     "toggleSidebar": "Comprimi/espandi menu",
@@ -34,7 +37,17 @@
       "banking": "Banca",
       "insights": "Analisi",
       "settings": "Impostazioni",
-      "other": "Altro"
+      "other": "Altro",
+      "wallet": "Dati del portafoglio"
+    },
+    "newPages": {
+      "title": "Novità nel menu",
+      "body_one": "{{pages}} ora può stare nel menu. Il tuo è personalizzato, quindi parte nascosta.",
+      "body_other": "{{pages}} ora possono stare nel menu. Il tuo è personalizzato, quindi partono nascoste.",
+      "show_one": "Mostrala",
+      "show_other": "Mostrale",
+      "keep_one": "Lasciala nascosta",
+      "keep_other": "Lasciale nascoste"
     }
   },
   "transactions": {
@@ -1342,7 +1355,6 @@
     "wallet": "Portafoglio",
     "navigation": "Navigazione",
     "apiTokens": "Token API",
-    "manage": "Gestisci dati",
     "section": "Sezione",
     "sectionGeneral": "Generali",
     "sectionImport": "Importa ed esporta",

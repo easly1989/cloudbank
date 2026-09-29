@@ -9,7 +9,20 @@
 
 import { NAV_GROUPS, NAV_ITEMS } from "./navItems";
 
-export const NAV_LAYOUT_VERSION = 1;
+// 2 (#537): Categories, Payees and Currencies joined the menu.
+export const NAV_LAYOUT_VERSION = 2;
+
+// The layout version each destination arrived in, when later than the first.
+// A layout saved before a destination existed did not leave it out; it never
+// saw it. A customised menu is the reader's, so such a page arrives hidden and
+// the sidebar offers it (unseenNavPages) rather than putting it there unasked.
+// Destinations older than a layout, but missing from it, still arrive visible,
+// as they always have: hiding them now would take away a page the reader sees.
+const ADDED_IN = new Map<string, number>([
+  ["/categories", 2],
+  ["/payees", 2],
+  ["/currencies", 2],
+]);
 
 // The Settings group and its members are locked (never movable/hideable).
 export const SETTINGS_GROUP_LABELKEY = "nav.group.settings";
@@ -44,6 +57,9 @@ export interface NavLayout {
 const KNOWN_DESTINATIONS = new Set(NAV_ITEMS.map((i) => i.to));
 
 const groupIdFromLabelKey = (labelKey: string) => labelKey.split(".").pop() ?? labelKey;
+const DEFAULT_GROUP_LABELKEY = new Map(
+  NAV_GROUPS.map((g) => [groupIdFromLabelKey(g.labelKey), g.labelKey]),
+);
 
 // Built-in groups a later release took away. A saved layout still holds them,
 // emptied of their pages; unless the reader put something of their own in
@@ -76,13 +92,37 @@ export function defaultNavLayout(): NavLayout {
   };
 }
 
-function isNavLayout(v: unknown): v is NavLayout {
-  return (
-    !!v &&
-    typeof v === "object" &&
-    (v as NavLayout).version === NAV_LAYOUT_VERSION &&
-    Array.isArray((v as NavLayout).groups)
+/** A layout as saved, by this release or an earlier one. */
+interface SavedLayout {
+  version: number;
+  groups: NavGroupLayout[];
+}
+
+function savedLayout(v: unknown): SavedLayout | null {
+  if (!v || typeof v !== "object") return null;
+  const { version, groups } = v as SavedLayout;
+  if (!Number.isInteger(version) || version < 1 || version > NAV_LAYOUT_VERSION) return null;
+  return Array.isArray(groups) ? { version, groups } : null;
+}
+
+const isUnseen = (to: string, saved: SavedLayout) => (ADDED_IN.get(to) ?? 1) > saved.version;
+
+/**
+ * The pages a saved layout has never seen: added to the menu in a release after
+ * it was saved, and missing from it. They are in the migrated layout, hidden;
+ * the sidebar says they exist until the reader shows them or keeps them hidden,
+ * which saves the layout and so empties this list. A reader who never
+ * customised the menu has no saved layout, gets the default, and is not asked.
+ */
+export function unseenNavPages(raw: unknown): string[] {
+  const saved = savedLayout(raw);
+  if (!saved) return [];
+  const present = new Set(
+    saved.groups.flatMap((g) =>
+      (Array.isArray(g.entries) ? g.entries : []).flatMap((e) => (e.kind === "item" ? [e.to] : [])),
+    ),
   );
+  return NAV_ITEMS.map((i) => i.to).filter((to) => isUnseen(to, saved) && !present.has(to));
 }
 
 /**
@@ -92,8 +132,9 @@ function isNavLayout(v: unknown): v is NavLayout {
  * added in a later release) to its default group. An invalid/absent layout yields
  * the default.
  */
-export function migrateNavLayout(saved: unknown): NavLayout {
-  if (!isNavLayout(saved)) return defaultNavLayout();
+export function migrateNavLayout(raw: unknown): NavLayout {
+  const saved = savedLayout(raw);
+  if (!saved) return defaultNavLayout();
 
   const seenItems = new Set<string>();
   const groups: NavGroupLayout[] = [];
@@ -136,11 +177,30 @@ export function migrateNavLayout(saved: unknown): NavLayout {
   }
 
   // Back-fill destinations missing from every group (new nav items, or ones the
-  // user's saved layout predates), into their default group when present.
+  // user's saved layout predates), into their default group when present. A page
+  // the layout has never seen arrives hidden (see ADDED_IN), in its default
+  // group — made for it at the end when the layout has none, where it shows
+  // nothing until the reader shows the page.
   for (const item of NAV_ITEMS) {
     const to = item.to;
     if (to === PINNED_HOME || LOCKED_ITEMS.has(to) || seenItems.has(to)) continue;
     const defId = DEFAULT_GROUP_OF.get(to);
+    if (isUnseen(to, saved) && defId) {
+      let home = groups.find((g) => g.id === defId);
+      if (!home) {
+        home = {
+          id: defId,
+          labelKey: DEFAULT_GROUP_LABELKEY.get(defId),
+          label: undefined,
+          hidden: false,
+          entries: [],
+        };
+        groups.push(home);
+      }
+      home.entries.push({ kind: "item", to, hidden: true });
+      seenItems.add(to);
+      continue;
+    }
     const target = groups.find((g) => g.id === defId) ?? groups[0];
     if (target) target.entries.push({ kind: "item", to });
     else
