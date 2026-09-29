@@ -3,6 +3,7 @@ import {
   Badge,
   Box,
   Button,
+  Center,
   Checkbox,
   Group,
   Kbd,
@@ -26,6 +27,7 @@ import {
   IconPencil,
   IconTrash,
 } from "@tabler/icons-react";
+import { useMediaQuery } from "@mantine/hooks";
 import { flexRender } from "@tanstack/react-table";
 import {
   getCoreRowModel,
@@ -80,7 +82,7 @@ import {
   ROW_TYPE,
 } from "./registerTheme";
 import { RegisterSidePanel } from "./RegisterSidePanel";
-import type { RegisterPanel } from "./RegisterToolbar";
+import type { PanelId, RegisterPanels } from "./registerPanels";
 import {
   isSortable,
   reconciledMarks,
@@ -161,9 +163,12 @@ export interface RegisterTableProps {
   // bottom of this element (the block above the table); collapsing sections above
   // reclaims their space for the ledger. Without it, a fixed height is used.
   fillRef?: React.RefObject<HTMLDivElement | null>;
-  /** Which side panel is open, if any. */
-  panel: RegisterPanel;
-  onPanel: (p: RegisterPanel) => void;
+  /** Which side panels are open: on a desktop both can be, one above the other. */
+  panels: RegisterPanels;
+  onTogglePanel: (id: PanelId) => void;
+  /** Shown instead of the ledger when the filters leave no row (#535): an empty
+      grid with a header says nothing the message does not. Desktop only. */
+  empty?: ReactNode;
   /** The filter controls, rendered inside the panel when it is showing them. */
   filtersPanel: ReactNode;
   /** Start a new transaction. Absent while reconciling, where entry is off. */
@@ -204,8 +209,9 @@ export function RegisterTable({
   onBulkEdit,
   onBulkDelete,
   fillRef,
-  panel,
-  onPanel,
+  panels,
+  onTogglePanel,
+  empty,
   filtersPanel,
   onNew,
   bulkBar,
@@ -219,6 +225,8 @@ export function RegisterTable({
   const qc = useQueryClient();
   const { user } = useAuth();
   const parentRef = useRef<HTMLDivElement>(null);
+  const emptyRef = useRef<HTMLDivElement>(null);
+  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
   const [cursorId, setCursorId] = useState<number | null>(null);
   // Right-click context menu, anchored at the cursor position.
   const [menu, setMenu] = useState<{ x: number; y: number; row: RegisterRow } | null>(null);
@@ -230,14 +238,24 @@ export function RegisterTable({
   // recomputing whenever the block above (fillRef) changes size — e.g. an
   // accordion collapses or the bulk bar appears — and on window resize.
   const [bodyHeight, setBodyHeight] = useState<number>();
+  const [emptyHeight, setEmptyHeight] = useState<number>();
   const footRef = useRef<HTMLDivElement>(null);
+  const isEmpty = empty != null;
   useLayoutEffect(() => {
     if (!fillRef) return;
     const scroll = parentRef.current;
-    if (!scroll) return;
+    const blank = emptyRef.current;
+    if (!scroll && !blank) return;
     // Footer (36) + Main bottom padding (md=16) + a little breathing room.
     const BOTTOM_GAP = 56;
     const measure = () => {
+      // The message that stands in for the ledger ends where the ledger's card
+      // would: its body's bottom, plus the card's border.
+      if (!scroll) {
+        const top = blank!.getBoundingClientRect().top;
+        setEmptyHeight(Math.max(240, Math.round(window.innerHeight - top - BOTTOM_GAP + 1)));
+        return;
+      }
       const top = scroll.getBoundingClientRect().top;
       // The selection bar sits below the body inside the same card, so the body
       // has to give up exactly its height. Without this the bar is pushed off
@@ -257,7 +275,7 @@ export function RegisterTable({
     };
     // bulkBar is in the deps because the foot appearing or leaving changes the
     // height the body may take, and it is the only signal that it did.
-  }, [fillRef, bulkBar]);
+  }, [fillRef, bulkBar, isEmpty]);
 
   // Column visibility is a per-user preference; resolve defaults for any unset.
   const savedColumns = user?.preferences?.registerColumns;
@@ -688,9 +706,33 @@ export function RegisterTable({
         >
           {t("register.columnsReset")}
         </Button>
-        <Button onClick={() => onPanel(null)}>{t("actions.done")}</Button>
+        <Button onClick={() => onTogglePanel("columns")}>{t("actions.done")}</Button>
       </Group>
     </Stack>
+  );
+
+  const filtersNode = (
+    <RegisterSidePanel
+      title={t("filters.section")}
+      onClose={() => onTogglePanel("filters")}
+      grow
+      footer={
+        <Button fullWidth onClick={() => onTogglePanel("filters")}>
+          {t("filters.showRows", { count: rows.length })}
+        </Button>
+      }
+    >
+      {filtersPanel}
+    </RegisterSidePanel>
+  );
+  const columnsNode = (
+    <RegisterSidePanel
+      title={t("register.columns")}
+      hint={t("register.columnsHint")}
+      onClose={() => onTogglePanel("columns")}
+    >
+      {columnsPanel}
+    </RegisterSidePanel>
   );
 
   return (
@@ -698,171 +740,188 @@ export function RegisterTable({
     // to unfold above the rows, and everything they took they took from the one
     // thing on the page worth looking at. On the side they cost width, which a
     // ledger has to spare, rather than height, which it does not.
-    <Group align="flex-start" wrap="wrap" gap="md">
-      <Box
-        style={{
-          overflowX: "auto",
-          flex: 1,
-          minWidth: 0,
-          // The width a reconciled line's text keeps to (see markLine).
-          containerType: "inline-size",
-          // The ledger is a card, and every band below sits inside it.
-          background: "var(--cb-ledger-surface)",
-          border: "1px solid var(--cb-ledger-border)",
-          borderRadius: "var(--mantine-radius-md)",
-        }}
-      >
-        <Box style={{ minWidth: minRowWidth }}>
-          {/* What the filter is hiding is said inside the ledger, because it is
+    //
+    // On a desktop the side column is as tall as the ledger beside it, and the
+    // two panels share it (#535): the filters take what the columns leave.
+    <Group align="stretch" wrap={phone ? "wrap" : "nowrap"} gap="md">
+      {empty ? (
+        <Center
+          ref={emptyRef}
+          className="cb-ledger-empty"
+          style={{ flex: 1, minWidth: 0, height: emptyHeight ?? "min(560px, 65vh)" }}
+        >
+          {empty}
+        </Center>
+      ) : (
+        <Box
+          style={{
+            overflowX: "auto",
+            flex: 1,
+            minWidth: 0,
+            // The width a reconciled line's text keeps to (see markLine).
+            containerType: "inline-size",
+            // The ledger is a card, and every band below sits inside it.
+            background: "var(--cb-ledger-surface)",
+            border: "1px solid var(--cb-ledger-border)",
+            borderRadius: "var(--mantine-radius-md)",
+          }}
+        >
+          <Box style={{ minWidth: minRowWidth }}>
+            {/* What the filter is hiding is said inside the ledger, because it is
               a fact about these rows and not a page-level announcement. */}
-          {notice}
-          <Box
-            style={{
-              display: "grid",
-              gridTemplateColumns: gridTemplate,
-              gap: ROW_GAP,
-              padding: `${BAND_PADDING.header}px ${BAND_INSET}px`,
-              background: "var(--cb-band-header)",
-              fontWeight: ROW_TYPE.header.fw,
-              fontSize: ROW_TYPE.header.fz,
-              borderBottom: "1px solid var(--cb-ledger-border)",
-            }}
-          >
-            {/* A label round it, like each row's, so the whole cell takes the
-                press and there is something to grow on a touch screen. */}
-            <Box component="label" className="cb-row-select">
-              <Checkbox
-                size="xs"
-                aria-label={t("register.selectAll")}
-                checked={allSelected}
-                indeterminate={!allSelected && display.some((r) => selected.has(r.id))}
-                onChange={(e) =>
-                  onToggleAll(
-                    display.map((r) => r.id),
-                    e.currentTarget.checked,
-                  )
-                }
-              />
-            </Box>
-            {table.getHeaderGroups()[0].headers.map((h) => (
-              <ColumnHeader
-                key={h.id}
-                id={h.id}
-                sort={sort}
-                onSort={toggleSort}
-                onResize={(width) => setDragWidths({ ...widths, [h.id]: width })}
-                onResizeEnd={() => {
-                  if (dragWidths) persistPrefs.mutate({ registerColumnWidths: dragWidths });
-                  setDragWidths(null);
-                }}
-              >
-                {flexRender(h.column.columnDef.header, h.getContext())}
-              </ColumnHeader>
-            ))}
-          </Box>
-          {/* The way in is the first line of the ledger, where the next
-              transaction will actually land — not a form above it. "N" is
-              offered because a ledger is somewhere people type, and reaching
-              for the mouse to start every entry is the slow way round. */}
-          {onNew && (
-            <UnstyledButton
-              onClick={onNew}
-              className="cb-new-entry"
-              data-tour="register-new"
-              aria-label={t("register.newEntry")}
+            {notice}
+            <Box
               style={{
                 display: "grid",
                 gridTemplateColumns: gridTemplate,
                 gap: ROW_GAP,
-                padding: `${BAND_PADDING.newEntry}px ${BAND_INSET}px`,
-                background: "var(--cb-band-new)",
+                padding: `${BAND_PADDING.header}px ${BAND_INSET}px`,
+                background: "var(--cb-band-header)",
+                fontWeight: ROW_TYPE.header.fw,
+                fontSize: ROW_TYPE.header.fz,
                 borderBottom: "1px solid var(--cb-ledger-border)",
-                textAlign: "left",
               }}
             >
-              <span />
-              {/* The date is in the accent, because this line is an invitation
+              {/* A label round it, like each row's, so the whole cell takes the
+                press and there is something to grow on a touch screen. */}
+              <Box component="label" className="cb-row-select">
+                <Checkbox
+                  size="xs"
+                  aria-label={t("register.selectAll")}
+                  checked={allSelected}
+                  indeterminate={!allSelected && display.some((r) => selected.has(r.id))}
+                  onChange={(e) =>
+                    onToggleAll(
+                      display.map((r) => r.id),
+                      e.currentTarget.checked,
+                    )
+                  }
+                />
+              </Box>
+              {table.getHeaderGroups()[0].headers.map((h) => (
+                <ColumnHeader
+                  key={h.id}
+                  id={h.id}
+                  sort={sort}
+                  onSort={toggleSort}
+                  onResize={(width) => setDragWidths({ ...widths, [h.id]: width })}
+                  onResizeEnd={() => {
+                    if (dragWidths) persistPrefs.mutate({ registerColumnWidths: dragWidths });
+                    setDragWidths(null);
+                  }}
+                >
+                  {flexRender(h.column.columnDef.header, h.getContext())}
+                </ColumnHeader>
+              ))}
+            </Box>
+            {/* The way in is the first line of the ledger, where the next
+              transaction will actually land — not a form above it. "N" is
+              offered because a ledger is somewhere people type, and reaching
+              for the mouse to start every entry is the slow way round. */}
+            {onNew && (
+              <UnstyledButton
+                onClick={onNew}
+                className="cb-new-entry"
+                data-tour="register-new"
+                aria-label={t("register.newEntry")}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: gridTemplate,
+                  gap: ROW_GAP,
+                  padding: `${BAND_PADDING.newEntry}px ${BAND_INSET}px`,
+                  background: "var(--cb-band-new)",
+                  borderBottom: "1px solid var(--cb-ledger-border)",
+                  textAlign: "left",
+                }}
+              >
+                <span />
+                {/* The date is in the accent, because this line is an invitation
                   rather than a record: it is the only date on the page that has
                   not happened yet. */}
-              <Text ff="monospace" c="var(--cb-accent-text)" fz={ROW_TYPE.date.fz} fw={500}>
-                {fmtDate(todayCivil())}
-              </Text>
-              <Text fz={ROW_TYPE.newEntry.fz} c="dimmed" truncate style={{ gridColumn: "span 2" }}>
-                {t("register.newEntry")}
-              </Text>
-              <span />
-              <span />
-              <Group justify="flex-end">
-                <Kbd size="xs">N</Kbd>
-              </Group>
-            </UnstyledButton>
-          )}
-          {/* Focusable, so it has to show focus. It used to set outline: none and
+                <Text ff="monospace" c="var(--cb-accent-text)" fz={ROW_TYPE.date.fz} fw={500}>
+                  {fmtDate(todayCivil())}
+                </Text>
+                <Text
+                  fz={ROW_TYPE.newEntry.fz}
+                  c="dimmed"
+                  truncate
+                  style={{ gridColumn: "span 2" }}
+                >
+                  {t("register.newEntry")}
+                </Text>
+                <span />
+                <span />
+                <Group justify="flex-end">
+                  <Kbd size="xs">N</Kbd>
+                </Group>
+              </UnstyledButton>
+            )}
+            {/* Focusable, so it has to show focus. It used to set outline: none and
               show nothing at all until the first arrow key — WCAG 2.4.7 — so a
               keyboard user tabbing in could not tell they had arrived. The ring
               is drawn inside the edge (app.css), where the scroll box cannot clip
               it. A region, so its name is one a screen reader will read out. */}
-          <div
-            ref={parentRef}
-            tabIndex={0}
-            role="region"
-            className="cb-ledger"
-            onKeyDown={onKeyDown}
-            style={{ height: bodyHeight ?? "min(560px, 65vh)", overflow: "auto" }}
-            aria-label={t("register.ledger")}
-          >
             <div
-              style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}
+              ref={parentRef}
+              tabIndex={0}
+              role="region"
+              className="cb-ledger"
+              onKeyDown={onKeyDown}
+              style={{ height: bodyHeight ?? "min(560px, 65vh)", overflow: "auto" }}
+              aria-label={t("register.ledger")}
             >
-              {virtualizer.getVirtualItems().map((vi) => {
-                const row = tableRows[vi.index];
-                const r = row.original;
-                const onCursor = r.id === cursorId;
-                const above = markAbove.get(vi.index);
-                const after = markAfter && vi.index === tableRows.length - 1 ? markAfter : null;
-                // A line above the row pushes it down; one after it sits below.
-                const rowTop = vi.start + (above ? DIVIDER_HEIGHT : 0);
-                return (
-                  <Fragment key={row.id}>
-                    {above && markLine(above, vi.start)}
-                    {after && markLine(after, rowTop + baseRowHeight(vi.index))}
-                    <div
-                      className={r.id === arrivedId ? "cb-row-arrived" : undefined}
-                      onClick={() => setCursorId(r.id)}
-                      onDoubleClick={() => onEdit(r)}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        setCursorId(r.id);
-                        setMenu({ x: e.clientX, y: e.clientY, row: r });
-                      }}
-                      style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        width: "100%",
-                        userSelect: "none",
-                        transform: `translateY(${rowTop}px)`,
-                        height: baseRowHeight(vi.index),
-                        display: "grid",
-                        gridTemplateColumns: gridTemplate,
-                        gap: ROW_GAP,
-                        alignItems: "center",
-                        padding: `0 ${BAND_INSET}px`,
-                        // A left accent marks future (scheduled) rows; transparent on
-                        // past/today rows keeps the content aligned.
-                        borderLeft:
-                          r.date > todayStr
-                            ? "3px solid var(--mantine-color-blue-5)"
-                            : "3px solid transparent",
-                        background: selected.has(r.id)
-                          ? "var(--mantine-color-blue-light)"
-                          : onCursor
-                            ? "var(--mantine-color-default-hover)"
-                            : undefined,
-                        borderBottom: "1px solid var(--cb-ledger-border)",
-                      }}
-                    >
-                      {/* The checkbox is 16px and sits in a row that moves the cursor
+              <div
+                style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}
+              >
+                {virtualizer.getVirtualItems().map((vi) => {
+                  const row = tableRows[vi.index];
+                  const r = row.original;
+                  const onCursor = r.id === cursorId;
+                  const above = markAbove.get(vi.index);
+                  const after = markAfter && vi.index === tableRows.length - 1 ? markAfter : null;
+                  // A line above the row pushes it down; one after it sits below.
+                  const rowTop = vi.start + (above ? DIVIDER_HEIGHT : 0);
+                  return (
+                    <Fragment key={row.id}>
+                      {above && markLine(above, vi.start)}
+                      {after && markLine(after, rowTop + baseRowHeight(vi.index))}
+                      <div
+                        className={r.id === arrivedId ? "cb-row-arrived" : undefined}
+                        onClick={() => setCursorId(r.id)}
+                        onDoubleClick={() => onEdit(r)}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          setCursorId(r.id);
+                          setMenu({ x: e.clientX, y: e.clientY, row: r });
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          userSelect: "none",
+                          transform: `translateY(${rowTop}px)`,
+                          height: baseRowHeight(vi.index),
+                          display: "grid",
+                          gridTemplateColumns: gridTemplate,
+                          gap: ROW_GAP,
+                          alignItems: "center",
+                          padding: `0 ${BAND_INSET}px`,
+                          // A left accent marks future (scheduled) rows; transparent on
+                          // past/today rows keeps the content aligned.
+                          borderLeft:
+                            r.date > todayStr
+                              ? "3px solid var(--mantine-color-blue-5)"
+                              : "3px solid transparent",
+                          background: selected.has(r.id)
+                            ? "var(--mantine-color-blue-light)"
+                            : onCursor
+                              ? "var(--mantine-color-default-hover)"
+                              : undefined,
+                          borderBottom: "1px solid var(--cb-ledger-border)",
+                        }}
+                      >
+                        {/* The checkbox is 16px and sits in a row that moves the cursor
                           when clicked, so a finger that misses it by a hair did
                           something else — under WCAG 2.5.8's 24px floor, with no
                           room around it. The whole select column takes the press
@@ -871,219 +930,220 @@ export function RegisterTable({
                           the shift key; so that is cancelled and the same click is
                           handed over instead, shift key and all, and range
                           selection behaves exactly as it does on the box itself. */}
-                      <Box
-                        component="label"
-                        className="cb-row-select"
-                        onClick={(e) => {
-                          if ((e.target as HTMLElement).tagName === "INPUT") return;
-                          e.preventDefault();
-                          e.stopPropagation();
-                          e.currentTarget.querySelector("input")?.dispatchEvent(
-                            new MouseEvent("click", {
-                              bubbles: true,
-                              cancelable: true,
-                              shiftKey: e.shiftKey,
-                            }),
-                          );
-                        }}
-                      >
-                        <Checkbox
-                          size="xs"
-                          aria-label={t("register.selectRow")}
-                          checked={selected.has(r.id)}
-                          onChange={() => onToggleSelect(r.id)}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // Shift+click selects the contiguous range from the anchor
-                            // row to this one (preventDefault stops the plain toggle).
-                            if (e.shiftKey && selectAnchorRef.current != null) {
-                              e.preventDefault();
-                              const from = Math.min(selectAnchorRef.current, vi.index);
-                              const to = Math.max(selectAnchorRef.current, vi.index);
-                              onToggleAll(
-                                tableRows.slice(from, to + 1).map((rr) => rr.original.id),
-                                true,
-                              );
-                            } else {
-                              selectAnchorRef.current = vi.index;
-                            }
-                          }}
-                        />
-                      </Box>
-                      {row.getVisibleCells().map((cell) => (
                         <Box
-                          key={cell.id}
-                          style={{ minWidth: 0 }}
-                          data-cb-sensitive={SENSITIVE_COLUMNS.has(cell.column.id) || undefined}
+                          component="label"
+                          className="cb-row-select"
+                          onClick={(e) => {
+                            if ((e.target as HTMLElement).tagName === "INPUT") return;
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.currentTarget.querySelector("input")?.dispatchEvent(
+                              new MouseEvent("click", {
+                                bubbles: true,
+                                cancelable: true,
+                                shiftKey: e.shiftKey,
+                              }),
+                            );
+                          }}
                         >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          <Checkbox
+                            size="xs"
+                            aria-label={t("register.selectRow")}
+                            checked={selected.has(r.id)}
+                            onChange={() => onToggleSelect(r.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Shift+click selects the contiguous range from the anchor
+                              // row to this one (preventDefault stops the plain toggle).
+                              if (e.shiftKey && selectAnchorRef.current != null) {
+                                e.preventDefault();
+                                const from = Math.min(selectAnchorRef.current, vi.index);
+                                const to = Math.max(selectAnchorRef.current, vi.index);
+                                onToggleAll(
+                                  tableRows.slice(from, to + 1).map((rr) => rr.original.id),
+                                  true,
+                                );
+                              } else {
+                                selectAnchorRef.current = vi.index;
+                              }
+                            }}
+                          />
                         </Box>
-                      ))}
-                      {/* Two actions at 30px, as the register board draws them. There
+                        {row.getVisibleCells().map((cell) => (
+                          <Box
+                            key={cell.id}
+                            style={{ minWidth: 0 }}
+                            data-cb-sensitive={SENSITIVE_COLUMNS.has(cell.column.id) || undefined}
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </Box>
+                        ))}
+                        {/* Two actions at 30px, as the register board draws them. There
                           were three at 22 — under WCAG 2.5.8's 24px floor, side by
                           side — and three at 30 do not fit the column. Saving a row
                           as a template is the rarest of the three and was already
                           in the row's menu, so that is where it lives now. */}
-                      <Group gap={ROW_ACTION.gap} justify="flex-end" wrap="nowrap" {...stopRowEdit}>
-                        <ActionIcon
-                          variant="subtle"
-                          size={ROW_ACTION.size}
-                          aria-label={t("transactions.edit")}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(r);
-                          }}
+                        <Group
+                          gap={ROW_ACTION.gap}
+                          justify="flex-end"
+                          wrap="nowrap"
+                          {...stopRowEdit}
                         >
-                          <IconPencil size={ROW_ACTION.icon} />
-                        </ActionIcon>
-                        <ActionIcon
-                          variant="subtle"
-                          size={ROW_ACTION.size}
-                          color="red"
-                          aria-label={t("transactions.delete")}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(r);
-                          }}
-                        >
-                          <IconTrash size={ROW_ACTION.icon} />
-                        </ActionIcon>
-                      </Group>
-                    </div>
-                  </Fragment>
-                );
-              })}
-            </div>
-          </div>
-          {/* The foot of the card. It stays put while the ledger scrolls, so
-              what you have picked and what it comes to never scroll away. */}
-          <div ref={footRef}>{bulkBar}</div>
-        </Box>
-
-        {/* Right-click context menu, anchored at the cursor. */}
-        <Menu
-          opened={menu != null}
-          onClose={() => setMenu(null)}
-          position="bottom-start"
-          withinPortal
-          shadow="md"
-          width={210}
-        >
-          <Menu.Target>
-            <div
-              aria-hidden
-              style={{
-                position: "fixed",
-                left: menu?.x ?? 0,
-                top: menu?.y ?? 0,
-                width: 0,
-                height: 0,
-              }}
-            />
-          </Menu.Target>
-          <Menu.Dropdown>
-            {menu &&
-              (() => {
-                const r = menu.row;
-                const run = (fn: () => void) => () => {
-                  setMenu(null);
-                  fn();
-                };
-                return (
-                  <>
-                    {selected.size > 1 && (onBulkEdit || onBulkDelete) && (
-                      <>
-                        <Menu.Label>{t("bulk.title", { count: selected.size })}</Menu.Label>
-                        {onBulkEdit && (
-                          <Menu.Item
-                            leftSection={<IconPencil size={15} />}
-                            onClick={run(onBulkEdit)}
+                          <ActionIcon
+                            variant="subtle"
+                            size={ROW_ACTION.size}
+                            aria-label={t("transactions.edit")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEdit(r);
+                            }}
                           >
-                            {t("bulk.edit")}
-                          </Menu.Item>
-                        )}
-                        {onBulkDelete && (
-                          <Menu.Item
+                            <IconPencil size={ROW_ACTION.icon} />
+                          </ActionIcon>
+                          <ActionIcon
+                            variant="subtle"
+                            size={ROW_ACTION.size}
                             color="red"
-                            leftSection={<IconTrash size={15} />}
-                            onClick={run(onBulkDelete)}
+                            aria-label={t("transactions.delete")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDelete(r);
+                            }}
                           >
-                            {t("bulk.delete")}
-                          </Menu.Item>
-                        )}
-                        <Menu.Divider />
-                      </>
-                    )}
-                    {r.payeeName ? <Menu.Label>{r.payeeName}</Menu.Label> : null}
-                    <Menu.Item
-                      leftSection={<IconPencil size={15} />}
-                      onClick={run(() => onEdit(r))}
-                    >
-                      {t("transactions.edit")}
-                    </Menu.Item>
-                    {r.transferId == null && (
-                      <Menu.Item
-                        leftSection={<IconCopy size={15} />}
-                        onClick={run(() => onDuplicate(r))}
-                      >
-                        {t("transactions.duplicate")}
-                      </Menu.Item>
-                    )}
-                    <Menu.Item
-                      leftSection={<IconCircleCheck size={15} />}
-                      onClick={run(() => onToggleStatus(r, r.status === 1 ? 0 : 1))}
-                    >
-                      {t("register.markCleared")}
-                    </Menu.Item>
-                    <Menu.Item
-                      leftSection={<IconLock size={15} />}
-                      onClick={run(() =>
-                        onToggleStatus(r, r.status === STATUS_RECONCILED ? 0 : STATUS_RECONCILED),
+                            <IconTrash size={ROW_ACTION.icon} />
+                          </ActionIcon>
+                        </Group>
+                      </div>
+                    </Fragment>
+                  );
+                })}
+              </div>
+            </div>
+            {/* The foot of the card. It stays put while the ledger scrolls, so
+              what you have picked and what it comes to never scroll away. */}
+            <div ref={footRef}>{bulkBar}</div>
+          </Box>
+
+          {/* Right-click context menu, anchored at the cursor. */}
+          <Menu
+            opened={menu != null}
+            onClose={() => setMenu(null)}
+            position="bottom-start"
+            withinPortal
+            shadow="md"
+            width={210}
+          >
+            <Menu.Target>
+              <div
+                aria-hidden
+                style={{
+                  position: "fixed",
+                  left: menu?.x ?? 0,
+                  top: menu?.y ?? 0,
+                  width: 0,
+                  height: 0,
+                }}
+              />
+            </Menu.Target>
+            <Menu.Dropdown>
+              {menu &&
+                (() => {
+                  const r = menu.row;
+                  const run = (fn: () => void) => () => {
+                    setMenu(null);
+                    fn();
+                  };
+                  return (
+                    <>
+                      {selected.size > 1 && (onBulkEdit || onBulkDelete) && (
+                        <>
+                          <Menu.Label>{t("bulk.title", { count: selected.size })}</Menu.Label>
+                          {onBulkEdit && (
+                            <Menu.Item
+                              leftSection={<IconPencil size={15} />}
+                              onClick={run(onBulkEdit)}
+                            >
+                              {t("bulk.edit")}
+                            </Menu.Item>
+                          )}
+                          {onBulkDelete && (
+                            <Menu.Item
+                              color="red"
+                              leftSection={<IconTrash size={15} />}
+                              onClick={run(onBulkDelete)}
+                            >
+                              {t("bulk.delete")}
+                            </Menu.Item>
+                          )}
+                          <Menu.Divider />
+                        </>
                       )}
-                    >
-                      {t("register.markReconciled")}
-                    </Menu.Item>
-                    <Menu.Item
-                      leftSection={<IconDeviceFloppy size={15} />}
-                      onClick={run(() => onSaveTemplate(r))}
-                    >
-                      {t("templates.saveAs")}
-                    </Menu.Item>
-                    <Menu.Divider />
-                    <Menu.Item
-                      color="red"
-                      leftSection={<IconTrash size={15} />}
-                      onClick={run(() => onDelete(r))}
-                    >
-                      {t("transactions.delete")}
-                    </Menu.Item>
-                  </>
-                );
-              })()}
-          </Menu.Dropdown>
-        </Menu>
-      </Box>
-      {panel === "filters" && (
-        <RegisterSidePanel
-          title={t("filters.section")}
-          onClose={() => onPanel(null)}
-          footer={
-            <Button fullWidth onClick={() => onPanel(null)}>
-              {t("filters.showRows", { count: rows.length })}
-            </Button>
-          }
-        >
-          {filtersPanel}
-        </RegisterSidePanel>
+                      {r.payeeName ? <Menu.Label>{r.payeeName}</Menu.Label> : null}
+                      <Menu.Item
+                        leftSection={<IconPencil size={15} />}
+                        onClick={run(() => onEdit(r))}
+                      >
+                        {t("transactions.edit")}
+                      </Menu.Item>
+                      {r.transferId == null && (
+                        <Menu.Item
+                          leftSection={<IconCopy size={15} />}
+                          onClick={run(() => onDuplicate(r))}
+                        >
+                          {t("transactions.duplicate")}
+                        </Menu.Item>
+                      )}
+                      <Menu.Item
+                        leftSection={<IconCircleCheck size={15} />}
+                        onClick={run(() => onToggleStatus(r, r.status === 1 ? 0 : 1))}
+                      >
+                        {t("register.markCleared")}
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconLock size={15} />}
+                        onClick={run(() =>
+                          onToggleStatus(r, r.status === STATUS_RECONCILED ? 0 : STATUS_RECONCILED),
+                        )}
+                      >
+                        {t("register.markReconciled")}
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconDeviceFloppy size={15} />}
+                        onClick={run(() => onSaveTemplate(r))}
+                      >
+                        {t("templates.saveAs")}
+                      </Menu.Item>
+                      <Menu.Divider />
+                      <Menu.Item
+                        color="red"
+                        leftSection={<IconTrash size={15} />}
+                        onClick={run(() => onDelete(r))}
+                      >
+                        {t("transactions.delete")}
+                      </Menu.Item>
+                    </>
+                  );
+                })()}
+            </Menu.Dropdown>
+          </Menu>
+        </Box>
       )}
-      {panel === "columns" && (
-        <RegisterSidePanel
-          title={t("register.columns")}
-          hint={t("register.columnsHint")}
-          onClose={() => onPanel(null)}
-        >
-          {columnsPanel}
-        </RegisterSidePanel>
+      {phone ? (
+        <>
+          {panels.filters && filtersNode}
+          {panels.columns && columnsNode}
+        </>
+      ) : (
+        (panels.filters || panels.columns) && (
+          // Positioned so that its content, however long, never makes the row
+          // taller than the ledger: the row's height is the ledger's.
+          <Box w={300} pos="relative" style={{ flexShrink: 0 }}>
+            <Stack gap="md" pos="absolute" style={{ inset: 0 }}>
+              {panels.filters && filtersNode}
+              {panels.columns && columnsNode}
+            </Stack>
+          </Box>
+        )
       )}
     </Group>
   );

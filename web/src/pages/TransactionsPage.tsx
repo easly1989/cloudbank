@@ -67,7 +67,8 @@ import { RegisterBankRow } from "./RegisterBankRow";
 import { RegisterFilters } from "./RegisterFilters";
 import { RegisterTable } from "./RegisterTable";
 import { clearedFacets, registerChips } from "./registerChips";
-import { RegisterToolbar, type RegisterPanel } from "./RegisterToolbar";
+import { noPanels, type PanelId, type RegisterPanels } from "./registerPanels";
+import { RegisterToolbar } from "./RegisterToolbar";
 import {
   applyFilters,
   hiddenNewerCount,
@@ -213,10 +214,24 @@ export function TransactionsPage() {
     });
 
   const balances = pickBalances(user?.preferences?.registerBalances);
-  // Filters and columns share one side panel: two of them open at once would
-  // leave the ledger a strip down the middle.
-  const [panel, setPanel] = useState<RegisterPanel>(null);
   const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
+  // Filters and columns open beside the ledger. On a desktop both can be open,
+  // one above the other (#535); on a phone each is a sheet, so one at a time.
+  const [panels, setPanels] = useState<RegisterPanels>(noPanels);
+  const togglePanel = (id: PanelId) =>
+    setPanels((p) => (phone ? { ...noPanels, [id]: !p[id] } : { ...p, [id]: !p[id] }));
+  // Every row is there and the filters hide them all.
+  const filteredOut = filteredRows.length === 0 && rows.length > 0;
+  const noMatch = (
+    <EmptyState
+      message={t("filters.noMatch")}
+      action={
+        <Button variant="default" onClick={() => setFilters(emptyFilters)}>
+          {t("filters.clear")}
+        </Button>
+      }
+    />
+  );
 
   // "N" starts a new transaction. A ledger is somewhere people type, so the
   // shortcut stands down whenever a field, a menu or the sheet already has the
@@ -479,6 +494,13 @@ export function TransactionsPage() {
         <PageHeader
           prominent
           tour="register"
+          // On a desktop the account's bank sits beside its name, where the
+          // row it used to take under the header goes back to the ledger (#535).
+          beside={
+            account && !phone ? (
+              <RegisterBankRow walletId={walletId} accountId={account.id} inline />
+            ) : undefined
+          }
           title={
             <Menu position="bottom-start" withinPortal>
               <Menu.Target>
@@ -587,7 +609,7 @@ export function TransactionsPage() {
             places, so it should not have two answers. */}
         {/* The account's bank and what it has to review, when it has
             either (#504, #505). */}
-        {account && <RegisterBankRow walletId={walletId} accountId={account.id} />}
+        {account && phone && <RegisterBankRow walletId={walletId} accountId={account.id} />}
 
         {/* On one line whatever the screen: when the three do not fit a
             phone, they step through a strip one figure high (#503). */}
@@ -628,25 +650,17 @@ export function TransactionsPage() {
           <RegisterToolbar
             filters={filters}
             onFilters={setFilters}
-            panel={panel}
-            onPanel={setPanel}
+            panels={panels}
+            onTogglePanel={togglePanel}
             privacy={privacy}
             onPrivacy={setPrivacy}
           />
         )}
 
         {/* Every row is there, the filters are hiding them: say that, and
-            offer the way back, rather than calling the account empty. */}
-        {account && filteredRows.length === 0 && rows.length > 0 && (
-          <EmptyState
-            message={t("filters.noMatch")}
-            action={
-              <Button variant="default" onClick={() => setFilters(emptyFilters)}>
-                {t("filters.clear")}
-              </Button>
-            }
-          />
-        )}
+            offer the way back, rather than calling the account empty. On a
+            desktop the message takes the ledger's place, beside the panel. */}
+        {account && phone && filteredOut && noMatch}
       </Stack>
 
       {/* Rendered even when the account is empty: the first row of the ledger
@@ -668,8 +682,9 @@ export function TransactionsPage() {
           onSaveTemplate={templateFromRow}
           onBulkEdit={() => setBulkEditOpen(true)}
           onBulkDelete={deleteSelected}
-          panel={panel}
-          onPanel={setPanel}
+          panels={panels}
+          onTogglePanel={togglePanel}
+          empty={!phone && filteredOut ? noMatch : undefined}
           notice={
             hiddenNewer > 0 ? (
               <HiddenNotice count={hiddenNewer} onShow={() => setFilters(emptyFilters)} />
@@ -699,15 +714,14 @@ export function TransactionsPage() {
           }
           filtersPanel={
             <Stack gap="sm">
-              {/* On a phone the toolbar keeps only the count (#502): the
-                  chips that say which filters are on head the panel. */}
-              {phone && (
-                <FilterChips
-                  chips={registerChips(filters, setFilters, t)}
-                  onClear={() => setFilters(clearedFacets(filters))}
-                />
-              )}
+              {/* The toolbar keeps only the count (#502, #535): the chips
+                  that say which filters are on head the panel. */}
+              <FilterChips
+                chips={registerChips(filters, setFilters, t)}
+                onClear={() => setFilters(clearedFacets(filters))}
+              />
               <RegisterFilters
+                stacked={!phone}
                 filters={filters}
                 onChange={setFilters}
                 payees={payeesQuery.data ?? []}

@@ -779,7 +779,8 @@
     "noMatch": "No transaction matches the filters.",
     "showRows_one": "Show {{count}} transaction",
     "showRows_other": "Show {{count}} transactions",
-    "section": "Filters & quick add",
+    "section": "Filters",
+    "clearAll": "Clear all filters",
     "activeCount": "Active filters",
     "presets": {
       "all": "All dates",
