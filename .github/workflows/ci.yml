@@ -65,6 +65,26 @@ jobs:
       - name: Build the demo
         run: CGO_ENABLED=0 go build -tags demo ./...
 
+  govulncheck:
+    name: Go vulnerabilities
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - name: govulncheck
+        # Known vulnerabilities in the modules and the standard library that the
+        # server actually calls, for both builds (#543). A finding in the standard
+        # library is fixed by bumping the go directive in go.mod.
+        run: |
+          go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+          go run golang.org/x/vuln/cmd/govulncheck@latest -tags demo ./...
+
   web:
     name: Web (React)
     runs-on: ubuntu-latest
