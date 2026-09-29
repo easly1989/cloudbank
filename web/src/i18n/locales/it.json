@@ -779,7 +779,8 @@
     "noMatch": "Nessuna transazione corrisponde ai filtri.",
     "showRows_one": "Mostra {{count}} transazione",
     "showRows_other": "Mostra {{count}} transazioni",
-    "section": "Filtri e inserimento rapido",
+    "section": "Filtri",
+    "clearAll": "Azzera tutti i filtri",
     "activeCount": "Filtri attivi",
     "presets": {
       "all": "Tutte le date",

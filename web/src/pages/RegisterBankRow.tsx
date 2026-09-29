@@ -25,7 +25,17 @@ import { notifications } from "@mantine/notifications";
  *   import and two hand-entered rows can need it just as well. The button
  *   opens Review on this account.
  */
-export function RegisterBankRow({ walletId, accountId }: { walletId: number; accountId: number }) {
+export function RegisterBankRow({
+  walletId,
+  accountId,
+  inline = false,
+}: {
+  walletId: number;
+  accountId: number;
+  /** Beside the account's name in the header (desktop, #535): no row of its
+      own, set off from the name by a rule. */
+  inline?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
 
@@ -69,7 +79,12 @@ export function RegisterBankRow({ walletId, accountId }: { walletId: number; acc
 
   const last = connection?.lastSyncAt ?? connection?.lastSyncedAt;
   return (
-    <Group gap="xs" wrap="nowrap" data-testid="register-bank-row">
+    <Group
+      gap="xs"
+      wrap="nowrap"
+      data-testid="register-bank-row"
+      className={inline ? "cb-bank-inline" : undefined}
+    >
       {connection && (
         <Tooltip
           label={`${connection.name || t("banksync.unnamed")} · ${
@@ -87,7 +102,7 @@ export function RegisterBankRow({ walletId, accountId }: { walletId: number; acc
           </Group>
         </Tooltip>
       )}
-      <span style={{ flex: 1 }} />
+      {!inline && <span style={{ flex: 1 }} />}
       {connection && (
         <Button
           size="compact-sm"

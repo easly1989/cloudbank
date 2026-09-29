@@ -28,6 +28,7 @@ export function PageHeader({
   actions,
   prominent = false,
   tour,
+  beside,
 }: {
   /** Usually the page's name; the register passes a control, because there the
       name of the account *is* the title and switching it is one click. */
@@ -44,6 +45,9 @@ export function PageHeader({
   /** The page's tour: offered the first time the page is opened, and replayed
       from a ? at the head of the actions (#421). */
   tour?: TourId;
+  /** Beside the title, on its line: a desktop only slot, for a fact about what
+      the title names (the register's bank line, #535). */
+  beside?: ReactNode;
 }) {
   usePageTour(tour);
   const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
@@ -80,7 +84,16 @@ export function PageHeader({
   return (
     <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
       <Stack gap={2} style={{ minWidth: 0, flex: "1 1 auto" }}>
-        <Title order={2}>{title}</Title>
+        {beside ? (
+          <Group gap="md" wrap="nowrap" align="center" mih={44}>
+            <Title order={2} style={{ flexShrink: 0 }}>
+              {title}
+            </Title>
+            {beside}
+          </Group>
+        ) : (
+          <Title order={2}>{title}</Title>
+        )}
         {hint && (
           <Text c="dimmed" size="sm" maw={680}>
             {hint}
