@@ -61,7 +61,7 @@ func TestCheckURL(t *testing.T) {
 // The transport refuses to connect to a loopback server, which a plain client
 // reaches.
 func TestTransportRefusesLoopback(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {}))
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	defer srv.Close()
 	if resp, err := http.Get(srv.URL); err != nil {
 		t.Fatalf("plain client: %v", err)

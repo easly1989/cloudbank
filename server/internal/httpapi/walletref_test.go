@@ -17,7 +17,7 @@ func TestSavesRefuseAnotherWalletsRecords(t *testing.T) {
 	a := "/api/v1/wallets/" + strconv.FormatInt(walletA, 10)
 	b := "/api/v1/wallets/" + strconv.FormatInt(walletB, 10)
 
-	created := func(path string, body map[string]any) int64 {
+	created := func(t *testing.T, path string, body map[string]any) int64 {
 		t.Helper()
 		resp := c.do(http.MethodPost, path, body, true)
 		defer resp.Body.Close()
@@ -32,15 +32,15 @@ func TestSavesRefuseAnotherWalletsRecords(t *testing.T) {
 		}
 		return out.ID
 	}
-	catA := created(a+"/categories", map[string]any{"name": "Food"})
-	catB := created(b+"/categories", map[string]any{"name": "Secret"})
-	payA := created(a+"/payees", map[string]any{"name": "Shop"})
-	payB := created(b+"/payees", map[string]any{"name": "Secret"})
-	vehB := created(b+"/vehicles", map[string]any{"name": "Van"})
-	ruleA := created(a+"/assignments", map[string]any{"matchField": "memo", "matchType": "contains", "pattern": "x"})
-	goalA := created(a+"/goals", map[string]any{"name": "Trip", "targetAmount": 1000})
+	catA := created(t, a+"/categories", map[string]any{"name": "Food"})
+	catB := created(t, b+"/categories", map[string]any{"name": "Secret"})
+	payA := created(t, a+"/payees", map[string]any{"name": "Shop"})
+	payB := created(t, b+"/payees", map[string]any{"name": "Secret"})
+	vehB := created(t, b+"/vehicles", map[string]any{"name": "Van"})
+	ruleA := created(t, a+"/assignments", map[string]any{"matchField": "memo", "matchType": "contains", "pattern": "x"})
+	goalA := created(t, a+"/goals", map[string]any{"name": "Trip", "targetAmount": 1000})
 
-	refused := func(method, path string, body map[string]any) {
+	refused := func(t *testing.T, method, path string, body map[string]any) {
 		t.Helper()
 		resp := c.do(method, path, body, true)
 		defer resp.Body.Close()
@@ -63,19 +63,19 @@ func TestSavesRefuseAnotherWalletsRecords(t *testing.T) {
 	}
 
 	t.Run("transactions", func(t *testing.T) {
-		refused(http.MethodPost, a+"/transactions", txn(map[string]any{"categoryId": catB}))
-		refused(http.MethodPost, a+"/transactions", txn(map[string]any{"payeeId": payB}))
-		refused(http.MethodPost, a+"/transactions", txn(map[string]any{"vehicleId": vehB}))
-		refused(http.MethodPost, a+"/transactions", txn(map[string]any{"splits": []map[string]any{
+		refused(t, http.MethodPost, a+"/transactions", txn(map[string]any{"categoryId": catB}))
+		refused(t, http.MethodPost, a+"/transactions", txn(map[string]any{"payeeId": payB}))
+		refused(t, http.MethodPost, a+"/transactions", txn(map[string]any{"vehicleId": vehB}))
+		refused(t, http.MethodPost, a+"/transactions", txn(map[string]any{"splits": []map[string]any{
 			{"categoryId": catA, "amount": -60}, {"categoryId": catB, "amount": -40},
 		}}))
-		own := created(a+"/transactions", txn(map[string]any{"categoryId": catA, "payeeId": payA}))
-		refused(http.MethodPatch, a+"/transactions/"+strconv.FormatInt(own, 10), txn(map[string]any{"categoryId": catB}))
+		own := created(t, a+"/transactions", txn(map[string]any{"categoryId": catA, "payeeId": payA}))
+		refused(t, http.MethodPatch, a+"/transactions/"+strconv.FormatInt(own, 10), txn(map[string]any{"categoryId": catB}))
 	})
 	t.Run("templates", func(t *testing.T) {
-		refused(http.MethodPost, a+"/templates", map[string]any{"name": "T", "accountId": accA, "categoryId": catB})
-		refused(http.MethodPost, a+"/templates", map[string]any{"name": "T", "accountId": accA, "payeeId": payB})
-		refused(http.MethodPost, a+"/templates", map[string]any{"name": "T", "accountId": accA, "amount": -100,
+		refused(t, http.MethodPost, a+"/templates", map[string]any{"name": "T", "accountId": accA, "categoryId": catB})
+		refused(t, http.MethodPost, a+"/templates", map[string]any{"name": "T", "accountId": accA, "payeeId": payB})
+		refused(t, http.MethodPost, a+"/templates", map[string]any{"name": "T", "accountId": accA, "amount": -100,
 			"splits": []map[string]any{{"categoryId": catB, "amount": -100}}})
 	})
 	t.Run("rules", func(t *testing.T) {
@@ -87,17 +87,17 @@ func TestSavesRefuseAnotherWalletsRecords(t *testing.T) {
 			}
 			return m
 		}
-		refused(http.MethodPost, a+"/assignments", with("matchAccountId", accB))
-		refused(http.MethodPost, a+"/assignments", with("setPayeeId", payB))
-		refused(http.MethodPost, a+"/assignments", with("setCategoryId", catB))
-		refused(http.MethodPatch, a+"/assignments/"+strconv.FormatInt(ruleA, 10), with("setCategoryId", catB))
+		refused(t, http.MethodPost, a+"/assignments", with("matchAccountId", accB))
+		refused(t, http.MethodPost, a+"/assignments", with("setPayeeId", payB))
+		refused(t, http.MethodPost, a+"/assignments", with("setCategoryId", catB))
+		refused(t, http.MethodPatch, a+"/assignments/"+strconv.FormatInt(ruleA, 10), with("setCategoryId", catB))
 	})
 	t.Run("payees", func(t *testing.T) {
-		refused(http.MethodPost, a+"/payees", map[string]any{"name": "Other", "defaultCategoryId": catB})
-		refused(http.MethodPatch, a+"/payees/"+strconv.FormatInt(payA, 10), map[string]any{"name": "Shop", "defaultCategoryId": catB})
+		refused(t, http.MethodPost, a+"/payees", map[string]any{"name": "Other", "defaultCategoryId": catB})
+		refused(t, http.MethodPatch, a+"/payees/"+strconv.FormatInt(payA, 10), map[string]any{"name": "Shop", "defaultCategoryId": catB})
 	})
 	t.Run("goals", func(t *testing.T) {
-		refused(http.MethodPost, a+"/goals", map[string]any{"name": "G", "targetAmount": 1000, "accountId": accB})
-		refused(http.MethodPatch, a+"/goals/"+strconv.FormatInt(goalA, 10), map[string]any{"name": "G", "targetAmount": 1000, "accountId": accB})
+		refused(t, http.MethodPost, a+"/goals", map[string]any{"name": "G", "targetAmount": 1000, "accountId": accB})
+		refused(t, http.MethodPatch, a+"/goals/"+strconv.FormatInt(goalA, 10), map[string]any{"name": "G", "targetAmount": 1000, "accountId": accB})
 	})
 }
