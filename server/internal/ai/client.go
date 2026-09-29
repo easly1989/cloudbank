@@ -8,11 +8,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/easly1989/cloudbank/server/internal/netguard"
 )
 
 // httpDoer is the subset of *http.Client the client needs; injectable for tests.
@@ -28,13 +31,20 @@ type client struct {
 	hc      httpDoer
 }
 
-func newClient(baseURL, apiKey, model string, hc httpDoer) *client {
+// newClient builds a client for the user's provider. Unless localOK, it can
+// reach only the public internet (#543): the URL is the user's, and only an
+// administrator may point the server at its own network (Ollama, LM Studio).
+func newClient(baseURL, apiKey, model string, hc httpDoer, localOK bool) *client {
 	if hc == nil {
 		// Free / self-hosted models can be slow to first token, so allow a generous
 		// timeout. (Callers on a reverse proxy should keep its read timeout at least
 		// this high, or a slow model surfaces as a proxy 5xx instead of a clean app
 		// error.)
-		hc = &http.Client{Timeout: 60 * time.Second}
+		c := &http.Client{Timeout: 60 * time.Second}
+		if !localOK {
+			c.Transport = netguard.Transport()
+		}
+		hc = c
 	}
 	return &client{baseURL: strings.TrimRight(baseURL, "/"), apiKey: apiKey, model: model, hc: hc}
 }
@@ -72,17 +82,21 @@ func (c *client) chat(ctx context.Context, system, user string) (string, error) 
 		req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	}
 	resp, err := c.hc.Do(req)
+	if errors.Is(err, netguard.ErrNotPublic) {
+		return "", ErrLocalURL
+	}
 	if err != nil {
 		return "", err
 	}
 	defer func() { _ = resp.Body.Close() }()
+	// Only the status goes back to the user, never the body: the URL is the
+	// user's, so whatever answers it must not be read back through the app (#543).
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
-		return "", fmt.Errorf("ai: provider returned %d: %s", resp.StatusCode, strings.TrimSpace(string(msg)))
+		return "", fmt.Errorf("ai: provider returned %d", resp.StatusCode)
 	}
 	var out chatResponse
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
-		return "", fmt.Errorf("ai: could not read provider response: %w", err)
+		return "", errors.New("ai: the provider's reply is not an OpenAI-compatible chat completion")
 	}
 	if len(out.Choices) == 0 {
 		return "", fmt.Errorf("ai: empty response from provider")
