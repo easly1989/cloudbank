@@ -77,7 +77,7 @@ test("a phone shows the filters' count, and their chips in the panel", async ({
   await page.goto(`/transactions?account=${accountId}&xf=none&hf=1&amin=-100`);
   const toolbar = page.locator('[data-tour="register-toolbar"]');
   const filters = toolbar.getByRole("button", {
-    name: /^Filters & quick add \(3\)$/,
+    name: /^Filters \(3\)$/,
   });
 
   await test.step("the toolbar keeps one line and the count", async () => {
@@ -95,7 +95,7 @@ test("a phone shows the filters' count, and their chips in the panel", async ({
 
   await test.step("the panel opens on screen, chips first", async () => {
     await filters.click();
-    const sheet = page.getByRole("dialog", { name: "Filters & quick add" });
+    const sheet = page.getByRole("dialog", { name: "Filters" });
     await expect(sheet).toBeVisible();
     const box = (await sheet.boundingBox())!;
     expect(box.y + box.height).toBeLessThanOrEqual(844 + 1);
@@ -110,7 +110,7 @@ test("a phone shows the filters' count, and their chips in the panel", async ({
     await sheet.getByRole("button", { name: "Show 1 transaction" }).click();
     await expect(sheet).toHaveCount(0);
     await expect(
-      toolbar.getByRole("button", { name: /^Filters & quick add \(2\)$/ }),
+      toolbar.getByRole("button", { name: /^Filters \(2\)$/ }),
     ).toBeVisible();
     await expect(page.getByText("Coffee")).toBeVisible();
   });

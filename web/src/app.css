@@ -655,9 +655,8 @@ body {
 .cb-register-search .mantine-Input-wrapper {
   --input-height-sm: 46px;
 }
-/* Search, the chips where there is room, then the panel buttons, which stay
-   together when the row wraps. On a phone the chips are in the filter panel
-   (#502), so search and buttons share one line. */
+/* Search, then the panel buttons, which stay together when the row wraps. The
+   chips naming the filters are in the filter panel (#502, #535). */
 .cb-register-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -671,6 +670,27 @@ body {
 .cb-register-toolbar-buttons {
   display: flex;
   gap: 8px;
+}
+/* Where the ledger would be when the filters leave no row (#535): an outline
+   the size of the ledger's card, so the page keeps its shape. */
+.cb-ledger-empty {
+  border: 1px dashed var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+}
+/* The register's bank line beside the account's name (#535). */
+.cb-bank-inline {
+  min-width: 0;
+  padding-left: var(--mantine-spacing-md);
+  border-left: 1px solid var(--mantine-color-default-border);
+}
+/* Clears every filter: on the Filters button's corner opposite its count, and
+   ringed in the page colour so it reads as a badge, not part of the icon. */
+.cb-filters-clear-all {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  z-index: 3;
+  box-shadow: 0 0 0 2px var(--mantine-color-body);
 }
 /* A label's short form, for the narrowest phones (components/ShortLabel). */
 .cb-label-short {
