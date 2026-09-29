@@ -85,6 +85,45 @@ func (q *Queries) InsertTag(ctx context.Context, arg InsertTagParams) (Tag, erro
 	return i, err
 }
 
+const listAccountTransactionTags = `-- name: ListAccountTransactionTags :many
+SELECT tt.transaction_id, t.name
+FROM transaction_tags tt
+JOIN tags t ON t.id = tt.tag_id
+JOIN transactions x ON x.id = tt.transaction_id
+WHERE x.account_id = ?
+ORDER BY tt.transaction_id, t.name
+`
+
+type ListAccountTransactionTagsRow struct {
+	TransactionID int64
+	Name          string
+}
+
+// Every tag on an account's transactions in one pass, for the exports: by
+// transaction, then by name, as ListTransactionTags orders one transaction's.
+func (q *Queries) ListAccountTransactionTags(ctx context.Context, accountID int64) ([]ListAccountTransactionTagsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAccountTransactionTags, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAccountTransactionTagsRow{}
+	for rows.Next() {
+		var i ListAccountTransactionTagsRow
+		if err := rows.Scan(&i.TransactionID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTagsForWallet = `-- name: ListTagsForWallet :many
 SELECT id, wallet_id, name FROM tags WHERE wallet_id = ? ORDER BY name
 `

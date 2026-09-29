@@ -109,9 +109,10 @@ type Service struct {
 	q  *db.Queries
 }
 
-// NewService builds a Service backed by the write connection pool.
-func NewService(write *sql.DB) *Service {
-	return &Service{db: write, q: db.New(write)}
+// NewService builds a Service on the given pool; the server passes the read
+// pool, since reports never write.
+func NewService(conn *sql.DB) *Service {
+	return &Service{db: conn, q: db.New(conn)}
 }
 
 // ValidGroupBy reports whether g is a supported dimension.

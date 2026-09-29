@@ -37,6 +37,16 @@ JOIN tags t ON t.id = tt.tag_id
 WHERE tt.transaction_id = ?
 ORDER BY t.name;
 
+-- name: ListAccountTransactionTags :many
+-- Every tag on an account's transactions in one pass, for the exports: by
+-- transaction, then by name, as ListTransactionTags orders one transaction's.
+SELECT tt.transaction_id, t.name
+FROM transaction_tags tt
+JOIN tags t ON t.id = tt.tag_id
+JOIN transactions x ON x.id = tt.transaction_id
+WHERE x.account_id = ?
+ORDER BY tt.transaction_id, t.name;
+
 -- name: AddTransactionTag :exec
 INSERT INTO transaction_tags (transaction_id, tag_id) VALUES (?, ?)
 ON CONFLICT DO NOTHING;
