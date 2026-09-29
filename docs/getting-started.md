@@ -64,14 +64,13 @@ your bank's export instead.
 Categories are how your spending is grouped, and every report is built from
 them.
 
-**Create categories before your first entry.** The entry sheet picks categories
-from a list; it cannot create one while you type.
+**Set up a few categories before your first entry.** The entry sheet can create
+a missing one as you type, but a list made in one go is easier to keep tidy.
 
-Categories live under **Settings**:
+Categories have their own page in the sidebar:
 
-1. Choose the section named after your wallet.
-2. Under **Manage data**, choose **Categories**.
-3. Use **Add category** for each one.
+1. Open **Categories**, in the **Wallet data** group.
+2. Use **Add category** for each one.
 
 Tips for the list:
 
@@ -86,9 +85,9 @@ Tips for the list:
   categories you don't have creates them.
 
 **Payees** (who you pay and who pays you) work the same way. They are optional:
-a transaction needs no payee. Manage them next to **Categories**, under
-**Manage data**. A payee can carry a default category, so its transactions arrive
-already sorted.
+a transaction needs no payee. Manage them on **Payees**, next to **Categories**
+in **Wallet data**. A payee can carry a default category, so its transactions
+arrive already sorted.
 
 ## 6. Record transactions
 

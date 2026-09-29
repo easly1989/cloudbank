@@ -3,8 +3,9 @@
 What each page is for and what it can do. New to CloudBank? Start with
 [Getting started](getting-started.md), which sets up a wallet from scratch.
 
-The sidebar groups the pages into **Money**, **Planning** and **Insights**. You
-can reorder, hide or regroup them under **Settings → Appearance → Navigation**.
+The sidebar groups the pages into **Money**, **Planning**, **Insights** and
+**Wallet data**. You can reorder, hide or regroup them under **Settings →
+Appearance → Navigation**.
 Every page also has a short tour: the **?** in its header plays it.
 
 - [Dashboard](#dashboard)
@@ -13,6 +14,7 @@ Every page also has a short tour: the **?** in its header plays it.
 - [Templates](#templates)
 - [Tags](#tags)
 - [Rules](#rules)
+- [Categories, payees and currencies](#categories-payees-and-currencies)
 - [Schedules](#schedules)
 - [Bills](#bills)
 - [Budget](#budget)
@@ -133,6 +135,21 @@ Rules fill in a transaction from what it says. For example: a payee containing
   to reorder.
 - **Test rule** shows how many transactions a rule would match.
 - **Apply to existing** runs the rules over transactions you already have.
+
+## Categories, payees and currencies
+
+Three lists in **Wallet data** that the rest of the wallet picks from.
+
+- **Categories.** Two levels: a category can have subcategories. Tick **Income
+  category** for money coming in. Reports are built from them.
+- **Payees.** Who you pay and who pays you. A payee can carry a default
+  category, so its transactions arrive already sorted.
+- **Currencies.** The currencies this wallet can use and the rates it converts
+  them at. **Update rates now** fetches them online; a currency the service does
+  not publish keeps a manual rate.
+
+The entry sheet can also create a category or a payee as you type one it does
+not know.
 
 ## Schedules
 
@@ -271,7 +288,7 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | --- | --- |
 | **General** | Language, date format, start screen, default account, tours; which fields the entry sheet shows |
 | **Appearance** | Theme and accent, the balances shown, account balances in the sidebar, the footer; the sidebar's navigation |
-| *Your wallet* | Name, owner, pre-registered schedules, bills category; **Manage data**: categories, payees, currencies |
+| *Your wallet* | Name, owner, pre-registered schedules, bills category |
 | **Security** | Two-factor sign-in, API tokens, notifications |
 | **Bank sync & AI** | Bank connections ([Automatic bank sync](bank-sync.md)) and the optional AI category suggestions |
 | **Import & export** | Imports ([Importing transactions](import.md)), exports, backups and a database check |
