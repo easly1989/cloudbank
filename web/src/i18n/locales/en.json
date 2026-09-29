@@ -25,6 +25,9 @@
     "budget": "Budget",
     "goals": "Goals",
     "reports": "Reports",
+    "categories": "Categories",
+    "payees": "Payees",
+    "currencies": "Currencies",
     "settings": "Settings",
     "import": "Import",
     "toggleSidebar": "Toggle sidebar",
@@ -34,7 +37,17 @@
       "banking": "Banking",
       "insights": "Insights",
       "settings": "Settings",
-      "other": "Other"
+      "other": "Other",
+      "wallet": "Wallet data"
+    },
+    "newPages": {
+      "title": "New in the menu",
+      "body_one": "{{pages}} can now sit in the menu. Yours is customised, so it starts hidden.",
+      "body_other": "{{pages}} can now sit in the menu. Yours is customised, so they start hidden.",
+      "show_one": "Show it",
+      "show_other": "Show them",
+      "keep_one": "Keep hidden",
+      "keep_other": "Keep hidden"
     }
   },
   "transactions": {
@@ -1342,7 +1355,6 @@
     "wallet": "Wallet",
     "navigation": "Navigation",
     "apiTokens": "API tokens",
-    "manage": "Manage data",
     "section": "Section",
     "sectionGeneral": "General",
     "sectionImport": "Import & export",

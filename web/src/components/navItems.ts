@@ -2,13 +2,16 @@ import {
   IconArrowsExchange,
   IconCalendarRepeat,
   IconCar,
+  IconCategory,
   IconChartBar,
+  IconCoin,
   IconLayoutDashboard,
   IconPigMoney,
   IconReceipt,
   IconReportMoney,
   IconTag,
   IconTemplate,
+  IconUserDollar,
   IconWallet,
   IconWand,
 } from "@tabler/icons-react";
@@ -54,6 +57,16 @@ export const NAV_ITEMS: NavItemDef[] = [
   { to: "/budget", labelKey: "nav.budget", icon: IconReportMoney, end: false, adminOnly: false },
   { to: "/goals", labelKey: "nav.goals", icon: IconPigMoney, end: false, adminOnly: false },
   { to: "/reports", labelKey: "nav.reports", icon: IconChartBar, end: false, adminOnly: false },
+  // Until #537 these three were reached only from Settings › wallet › Manage data.
+  {
+    to: "/categories",
+    labelKey: "nav.categories",
+    icon: IconCategory,
+    end: false,
+    adminOnly: false,
+  },
+  { to: "/payees", labelKey: "nav.payees", icon: IconUserDollar, end: false, adminOnly: false },
+  { to: "/currencies", labelKey: "nav.currencies", icon: IconCoin, end: false, adminOnly: false },
 ];
 
 export interface NavGroupDef {
@@ -65,11 +78,16 @@ export interface NavGroupDef {
 // Destinations organized into sections. The dashboard ("/") is rendered on its
 // own above the groups. Any destination not listed here (e.g. a future one) falls
 // into an "Other" group so it can never disappear from the nav.
+//
+// Money is where the work is done; "Wallet data" is what describes the wallet —
+// the lists a transaction picks from, and the rules and templates that fill one
+// in (#537). It comes last: those pages are set up once and visited now and then.
 export const NAV_GROUPS: NavGroupDef[] = [
-  {
-    labelKey: "nav.group.money",
-    items: ["/accounts", "/transactions", "/templates", "/tags", "/assignments"],
-  },
+  { labelKey: "nav.group.money", items: ["/accounts", "/transactions"] },
   { labelKey: "nav.group.planning", items: ["/schedules", "/bills", "/budget", "/goals"] },
   { labelKey: "nav.group.insights", items: ["/reports", "/vehicles"] },
+  {
+    labelKey: "nav.group.wallet",
+    items: ["/categories", "/payees", "/tags", "/assignments", "/templates", "/currencies"],
+  },
 ];
