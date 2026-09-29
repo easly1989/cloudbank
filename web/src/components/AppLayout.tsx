@@ -29,6 +29,7 @@ import {
   SIDEBAR_WIDTH,
 } from "./shellTheme";
 import { Logo } from "./Logo";
+import { NewNavPagesNotice } from "./NewNavPagesNotice";
 import { PageErrorBoundary } from "./PageErrorBoundary";
 import { SidebarFoot } from "./SidebarFoot";
 import { SidebarHead } from "./SidebarHead";
@@ -117,6 +118,8 @@ export function AppLayout() {
           <ScrollArea style={{ flex: 1, minHeight: 0 }} type="scroll">
             <SidebarNav railMode={railMode} onNavigate={close} />
           </ScrollArea>
+          {/* Pages added since a customised menu was saved (#537). */}
+          {!railMode && <NewNavPagesNotice />}
           <SidebarFoot railMode={railMode} onNavigate={close} onToggleCollapse={toggleCollapsed} />
         </Stack>
       </AppShell.Navbar>
