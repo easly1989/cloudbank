@@ -6,6 +6,12 @@ import (
 	"time"
 )
 
+// byAccountDate pins the balance queries to the account/date index, which holds
+// every column they read (#541). They name their accounts one by one, but with
+// no ANALYZE statistics SQLite would rather use the wallet_id index and then
+// fetch every row, several times slower on a large wallet.
+const byAccountDate = "INDEXED BY idx_transactions_account_date"
+
 // BalanceSeries is one account's running balance over time, in its own currency.
 type BalanceSeries struct {
 	AccountID      int64         `json:"accountId"`
@@ -124,7 +130,7 @@ func (s *Service) Balance(ctx context.Context, walletID int64, from, to, bucket 
 	}
 	// sumBy runs a per-account SUM(amount) query and adds each sum into dst.
 	sumBy := func(dst map[int64]int64, cond string, arg string) error {
-		q := "SELECT account_id, CAST(SUM(amount) AS INTEGER) FROM transactions WHERE wallet_id = ? AND account_id IN (" + idPH + ") AND " + cond + " GROUP BY account_id"
+		q := "SELECT account_id, CAST(SUM(amount) AS INTEGER) FROM transactions " + byAccountDate + " WHERE wallet_id = ? AND account_id IN (" + idPH + ") AND " + cond + " GROUP BY account_id"
 		rows, err := s.db.QueryContext(ctx, q, withIDs(arg)...)
 		if err != nil {
 			return err
@@ -162,9 +168,9 @@ func (s *Service) Balance(ctx context.Context, walletID int64, from, to, bucket 
 	}
 	{
 		q := fmt.Sprintf(`SELECT t.account_id, %s AS bucket, CAST(SUM(t.amount) AS INTEGER) AS delta
-FROM transactions t
+FROM transactions t %s
 WHERE t.wallet_id = ? AND t.account_id IN (%s) AND t.date >= ? AND t.date <= ?
-GROUP BY t.account_id, bucket`, bucketExpr(bucket), idPH)
+GROUP BY t.account_id, bucket`, bucketExpr(bucket), byAccountDate, idPH)
 		rows, err := s.db.QueryContext(ctx, q, withIDs(from, to)...)
 		if err != nil {
 			return BalanceResult{}, err
@@ -219,7 +225,7 @@ GROUP BY t.account_id, bucket`, bucketExpr(bucket), idPH)
 	days := map[int64][]dayDelta{}
 	spanEnd := min(to, asOf)
 	if from <= spanEnd {
-		q := "SELECT account_id, date, CAST(SUM(amount) AS INTEGER) FROM transactions WHERE wallet_id = ? AND account_id IN (" + idPH + ") AND date >= ? AND date <= ? GROUP BY account_id, date ORDER BY account_id, date"
+		q := "SELECT account_id, date, CAST(SUM(amount) AS INTEGER) FROM transactions " + byAccountDate + " WHERE wallet_id = ? AND account_id IN (" + idPH + ") AND date >= ? AND date <= ? GROUP BY account_id, date ORDER BY account_id, date"
 		rows, err := s.db.QueryContext(ctx, q, withIDs(from, spanEnd)...)
 		if err != nil {
 			return BalanceResult{}, err
