@@ -6,6 +6,63 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
+## [3.6.1] — 2026-09-29
+
+A round of daily use after the first feedback. The register's filters move into
+their side panel, the wallet's own lists get a menu group, a large wallet gets
+faster, and a sweep of the server tightens how requests are checked.
+
+### Added
+
+- **A "Wallet data" menu group.** Categories, Payees and Currencies become menu
+  pages; until now they were reached only from Settings › wallet › Manage data.
+  They sit with Tags, Rules and Templates in a new group after Insights, and
+  Money keeps Accounts and Transactions. A menu you have customised keeps its
+  shape: the three new pages arrive hidden, and a card at the foot of the menu
+  offers them once, with "Show them" or "Keep hidden".
+
+### Changed
+
+- **The register's header is one row.** On a desktop, the bank line (the last
+  sync and the Sync button) sits beside the account's name.
+- **Filters live in their side panel.** The chips no longer crowd the toolbar,
+  and a red × on the Filters button clears them all. The panel is now called
+  "Filters", runs the full height of the register, and on a desktop can be
+  open together with Columns, one above the other.
+- **When the filters match nothing**, the empty table goes and the message
+  stands beside the panel.
+- **Settings › wallet** no longer has Manage data: those pages are in the menu.
+- **Faster on a large wallet.** Measured on 100,000 transactions:
+  - the uncleared totals and the cash flow answer in milliseconds instead of a
+    third to half a second;
+  - the balance report takes under 200 ms instead of 400;
+  - the review behind the register's bank line takes about half the time;
+  - the CSV export takes under a second instead of nearly four.
+
+  Responses and the app itself are gzip-compressed, and a full register is
+  seven to nine times smaller on the wire. A migration rebuilds one index at
+  startup, in well under a second on that wallet.
+- **The server builds with Go 1.26.6.**
+
+### Security
+
+- **Saves check what they point at.** Transactions, templates, rules, payees and
+  goals refuse an account, category, payee or vehicle of another wallet. Before,
+  such a reference was stored, and names from another wallet could show through
+  it. Upgrading is recommended for every instance with more than one user.
+- **Requests to addresses a user gives stay on the public internet.**
+  - SimpleFIN setup tokens and push subscriptions reach only public `https`
+    addresses.
+  - An AI provider on the local network (Ollama, LM Studio) can be set and used
+    by an administrator only.
+  - When an AI provider fails, only its status is shown, never its reply.
+- **Idle connections close** after two minutes instead of staying open.
+- CI checks the Go modules and the standard library for known vulnerabilities.
+
+### Documentation
+
+- The guides point to the Wallet data group for categories and payees.
+
 ## [3.6.0] — 2026-09-28
 
 The first answers to the first public feedback. A reader found the
@@ -692,7 +749,8 @@ HomeBank feature parity, shipped as a single Docker container.
 - CI (lint, race tests, build, Docker smoke, Playwright e2e) and automated GHCR
   publishing (`:latest` nightly, `:main` stable, `:vX.Y.Z` per release).
 
-[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.6.0...HEAD
+[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.6.1...HEAD
+[3.6.1]: https://github.com/easly1989/cloudbank/compare/v3.6.0...v3.6.1
 [3.6.0]: https://github.com/easly1989/cloudbank/compare/v3.5.1...v3.6.0
 [3.5.1]: https://github.com/easly1989/cloudbank/compare/v3.5.0...v3.5.1
 [3.5.0]: https://github.com/easly1989/cloudbank/compare/v3.2.2...v3.5.0
