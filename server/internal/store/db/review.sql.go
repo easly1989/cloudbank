@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"strings"
 )
 
 const insertDuplicateDismissal = `-- name: InsertDuplicateDismissal :exec
@@ -24,6 +25,52 @@ type InsertDuplicateDismissalParams struct {
 func (q *Queries) InsertDuplicateDismissal(ctx context.Context, arg InsertDuplicateDismissalParams) error {
 	_, err := q.db.ExecContext(ctx, insertDuplicateDismissal, arg.WalletID, arg.TxnAID, arg.TxnBID)
 	return err
+}
+
+const listDuplicateCandidates = `-- name: ListDuplicateCandidates :many
+SELECT n.id, n.account_id, n.amount, n.date
+FROM accounts a
+JOIN transactions n ON n.account_id = a.id
+WHERE a.wallet_id = ?
+ORDER BY n.account_id, n.amount, n.date, n.id
+`
+
+type ListDuplicateCandidatesRow struct {
+	ID        int64
+	AccountID int64
+	Amount    int64
+	Date      string
+}
+
+// Every transaction of the wallet, reduced to what the duplicate finder compares
+// and ordered for it: by account, amount, then date. The account/date index
+// holds all four columns, so this reads no table rows (#541).
+func (q *Queries) ListDuplicateCandidates(ctx context.Context, walletID int64) ([]ListDuplicateCandidatesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listDuplicateCandidates, walletID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDuplicateCandidatesRow{}
+	for rows.Next() {
+		var i ListDuplicateCandidatesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccountID,
+			&i.Amount,
+			&i.Date,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listDuplicateDismissals = `-- name: ListDuplicateDismissals :many
@@ -109,29 +156,29 @@ func (q *Queries) ListImportedUncategorized(ctx context.Context, walletID int64)
 	return items, nil
 }
 
-const listPotentialDuplicates = `-- name: ListPotentialDuplicates :many
-SELECT t.id, t.wallet_id, t.account_id, t.date, t.amount, t.payment_mode, t.status, t.info, t.payee_id, t.category_id, t.memo, t.is_split, t.created_at, t.updated_at, t.template_id, t.import_ref, t.vehicle_id
-FROM transactions t
-JOIN (
-    SELECT g0.account_id AS account_id, g0.amount AS amount
-    FROM transactions g0
-    WHERE g0.wallet_id = ?
-    GROUP BY g0.account_id, g0.amount
-    HAVING COUNT(*) > 1
-) g ON t.account_id = g.account_id AND t.amount = g.amount
-WHERE t.wallet_id = ?
-ORDER BY t.account_id, t.amount, t.date, t.id
+const listTransactionsByIDs = `-- name: ListTransactionsByIDs :many
+SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id FROM transactions
+WHERE wallet_id = ?1 AND id IN (/*SLICE:ids*/?)
 `
 
-type ListPotentialDuplicatesParams struct {
-	WalletID   int64
-	WalletID_2 int64
+type ListTransactionsByIDsParams struct {
+	WalletID int64
+	Ids      []int64
 }
 
-// Transactions that share account + amount with at least one other in the wallet.
-// Pairing by date proximity and filtering out dismissed pairs is done in Go.
-func (q *Queries) ListPotentialDuplicates(ctx context.Context, arg ListPotentialDuplicatesParams) ([]Transaction, error) {
-	rows, err := q.db.QueryContext(ctx, listPotentialDuplicates, arg.WalletID, arg.WalletID_2)
+func (q *Queries) ListTransactionsByIDs(ctx context.Context, arg ListTransactionsByIDsParams) ([]Transaction, error) {
+	query := listTransactionsByIDs
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.WalletID)
+	if len(arg.Ids) > 0 {
+		for _, v := range arg.Ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(arg.Ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
