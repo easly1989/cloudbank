@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"sort"
 	"strings"
 
 	"github.com/easly1989/cloudbank/server/internal/account"
@@ -578,17 +577,16 @@ func (s *Service) exportContext(ctx context.Context, walletID, accountID int64) 
 	if err != nil {
 		return account.Account{}, nil, nil, err
 	}
-	txns, _, err := s.txn.List(ctx, accountID, 1_000_000, 0)
+	// The register reads the whole account in one query, oldest first (date,
+	// then id), the order the export wants.
+	rows, _, err := s.txn.Register(ctx, accountID)
 	if err != nil {
 		return account.Account{}, nil, nil, err
 	}
-	// List returns newest-first; export oldest-first for readability.
-	sort.SliceStable(txns, func(i, j int) bool {
-		if txns[i].Date != txns[j].Date {
-			return txns[i].Date < txns[j].Date
-		}
-		return txns[i].ID < txns[j].ID
-	})
+	txns := make([]transaction.Transaction, len(rows))
+	for i := range rows {
+		txns[i] = rows[i].Transaction
+	}
 	return acc, txns, idToCat, nil
 }
 
@@ -598,15 +596,25 @@ func (s *Service) ExportAccount(ctx context.Context, walletID, accountID int64) 
 	if err != nil {
 		return "", err
 	}
+	// Every tag of the account in one query, sorted by name within each
+	// transaction, rather than one query per transaction (#541).
+	tagRows, err := s.q.ListAccountTransactionTags(ctx, accountID)
+	if err != nil {
+		return "", err
+	}
+	tagsOf := make(map[int64][]string)
+	for _, r := range tagRows {
+		tagsOf[r.TransactionID] = append(tagsOf[r.TransactionID], r.Name)
+	}
 	rows := make([]ExportRow, 0, len(txns))
 	for _, t := range txns {
 		cat := ""
 		if t.CategoryID != nil {
 			cat = idToCat[*t.CategoryID]
 		}
-		tags, err := s.q.ListTransactionTags(ctx, t.ID)
-		if err != nil {
-			return "", err
+		tags := tagsOf[t.ID]
+		if tags == nil {
+			tags = []string{}
 		}
 		rows = append(rows, ExportRow{
 			Date: t.Date, PaymentMode: t.PaymentMode, Info: t.Info, Payee: t.PayeeName,

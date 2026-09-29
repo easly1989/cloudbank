@@ -15,6 +15,10 @@ import (
 // caught; a false positive is dismissed once and never shown again.
 const duplicateFinderWindowDays = 14
 
+// duplicateIDChunk bounds the ids of one ListTransactionsByIDs call, well under
+// SQLite's limit on bound parameters.
+const duplicateIDChunk = 500
+
 // ReviewTxn is the transaction shape the review surfaces: enough to judge a
 // duplicate or complete a category, including the import ref so the
 // bank-sourced row is distinguishable. A duplicate pair also carries the tags
@@ -126,9 +130,7 @@ func (s *Service) Review(ctx context.Context, walletID int64) (ReviewResult, err
 // duplicatePairs returns the current suspected-duplicate pairs (same account +
 // amount within the finder window), excluding any the user has dismissed.
 func (s *Service) duplicatePairs(ctx context.Context, walletID int64) ([]DuplicatePair, error) {
-	rows, err := s.rq.ListPotentialDuplicates(ctx, db.ListPotentialDuplicatesParams{
-		WalletID: walletID, WalletID_2: walletID,
-	})
+	rows, err := s.rq.ListDuplicateCandidates(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -142,11 +144,11 @@ func (s *Service) duplicatePairs(ctx context.Context, walletID int64) ([]Duplica
 		skip[[2]int64{a, b}] = true
 	}
 
-	pairs := []DuplicatePair{}
-	seen := map[int64]ReviewTxn{}
-	// rows are ordered by (account, amount, date). For each row pair within the
-	// same account+amount group and inside the date window, emit a suspected
-	// duplicate unless it was dismissed.
+	// rows are ordered by (account, amount, date). Each row pairs with the rows
+	// after it in its account+amount group that fall inside the date window,
+	// unless the pair was dismissed. Dates only grow along a group, so the first
+	// row past the window ends the search.
+	var found [][2]int64
 	for i := 0; i < len(rows); i++ {
 		for j := i + 1; j < len(rows); j++ {
 			a, b := rows[i], rows[j]
@@ -154,22 +156,56 @@ func (s *Service) duplicatePairs(ctx context.Context, walletID int64) ([]Duplica
 				break // ordered: the group for row i has ended
 			}
 			if daysApart(a.Date, b.Date) > duplicateFinderWindowDays {
-				continue
+				break
 			}
 			ka, kb := pairKey(a.ID, b.ID)
 			if skip[[2]int64{ka, kb}] {
 				continue
 			}
-			ta, err := s.pairTxn(ctx, a, seen)
-			if err != nil {
-				return nil, err
-			}
-			tb, err := s.pairTxn(ctx, b, seen)
-			if err != nil {
-				return nil, err
-			}
-			pairs = append(pairs, DuplicatePair{A: ta, B: tb})
+			found = append(found, [2]int64{a.ID, b.ID})
 		}
+	}
+	pairs := []DuplicatePair{}
+	if len(found) == 0 {
+		return pairs, nil
+	}
+
+	// Only the paired rows are read in full (#541): a large wallet shares an
+	// account and amount on half its rows, and nearly none of them pair.
+	ids := []int64{}
+	wanted := map[int64]bool{}
+	for _, p := range found {
+		for _, id := range p {
+			if !wanted[id] {
+				wanted[id] = true
+				ids = append(ids, id)
+			}
+		}
+	}
+	full := make(map[int64]db.Transaction, len(ids))
+	for start := 0; start < len(ids); start += duplicateIDChunk {
+		got, err := s.rq.ListTransactionsByIDs(ctx, db.ListTransactionsByIDsParams{
+			WalletID: walletID, Ids: ids[start:min(start+duplicateIDChunk, len(ids))],
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range got {
+			full[r.ID] = r
+		}
+	}
+
+	seen := map[int64]ReviewTxn{}
+	for _, p := range found {
+		ta, err := s.pairTxn(ctx, full[p[0]], seen)
+		if err != nil {
+			return nil, err
+		}
+		tb, err := s.pairTxn(ctx, full[p[1]], seen)
+		if err != nil {
+			return nil, err
+		}
+		pairs = append(pairs, DuplicatePair{A: ta, B: tb})
 	}
 	return pairs, nil
 }
