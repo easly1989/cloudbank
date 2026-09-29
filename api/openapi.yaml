@@ -297,6 +297,10 @@ paths:
     put:
       operationId: updateAISettings
       summary: Update AI configuration (omit apiKey to keep the stored key)
+      description: >-
+        baseUrl must be an http(s) URL. Only an administrator may name a provider on
+        the local network (loopback, private or link-local addresses): anyone else
+        gets 400 ai_local_url.
       requestBody:
         required: true
         content:
@@ -304,6 +308,7 @@ paths:
             schema: { $ref: "#/components/schemas/AISettingsInput" }
       responses:
         "200": { description: The updated settings., content: { application/json: { schema: { $ref: "#/components/schemas/AISettings" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
   /api/v1/wallets/{walletId}/ai/suggest-category:
     parameters:

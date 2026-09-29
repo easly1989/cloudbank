@@ -17,6 +17,7 @@ import (
 	webpush "github.com/SherClockHolmes/webpush-go"
 
 	"github.com/easly1989/cloudbank/server/internal/bills"
+	"github.com/easly1989/cloudbank/server/internal/netguard"
 	"github.com/easly1989/cloudbank/server/internal/secrets"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
@@ -47,7 +48,9 @@ type Service struct {
 	subject string
 	bills   *bills.Service
 	client  webpush.HTTPClient // nil → library default; injectable for tests
-	logger  *slog.Logger
+	// checkEndpoint vets a subscription's endpoint; tests without DNS swap it.
+	checkEndpoint func(ctx context.Context, endpoint string) error
+	logger        *slog.Logger
 }
 
 // NewService loads (or generates and persists) the VAPID keypair and returns a
@@ -67,6 +70,12 @@ func NewService(read, write *sql.DB, subject string, logger *slog.Logger) (*Serv
 	return &Service{
 		db: write, q: q, rq: db.New(read),
 		public: pub, private: priv, subject: subject, logger: logger,
+		// A subscription's endpoint comes from the user's browser: it may only
+		// reach the public internet, where every push service lives (#543).
+		client: &http.Client{Timeout: 30 * time.Second, Transport: netguard.Transport()},
+		checkEndpoint: func(ctx context.Context, endpoint string) error {
+			return netguard.CheckURL(ctx, endpoint, true)
+		},
 	}, nil
 }
 
@@ -104,6 +113,9 @@ func ensureVAPID(ctx context.Context, q *db.Queries) (pub, priv string, err erro
 func (s *Service) Subscribe(ctx context.Context, userID int64, endpoint, p256dh, auth string) error {
 	if endpoint == "" || p256dh == "" || auth == "" {
 		return errors.New("push: incomplete subscription")
+	}
+	if err := s.checkEndpoint(ctx, endpoint); err != nil {
+		return fmt.Errorf("push: endpoint: %w", err)
 	}
 	return s.q.UpsertPushSubscription(ctx, db.UpsertPushSubscriptionParams{
 		UserID: userID, Endpoint: endpoint, P256dh: p256dh, Auth: auth,

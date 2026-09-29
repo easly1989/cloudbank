@@ -12,9 +12,10 @@ import (
 )
 
 // aiErrorMessage renders an AI provider/parse error for the client. The user owns
-// the AI provider (bring-your-own-key), so surfacing the real reason (a provider
+// the AI provider (bring-your-own-key), so surfacing the reason (a provider
 // 429/5xx, a timeout, an unparseable reply) is far more useful than a fixed
-// string — matching how bank sync reports its failures.
+// string — matching how bank sync reports its failures. The provider's reply
+// itself is never part of it (#543).
 func aiErrorMessage(err error) string {
 	msg := strings.TrimPrefix(err.Error(), "ai: ")
 	if strings.TrimSpace(msg) == "" {
@@ -61,9 +62,17 @@ func (h *aiHandlers) putSettings(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &body) {
 		return
 	}
-	st, err := h.svc.UpdateSettings(r.Context(), u.ID, ai.SettingsInput{
+	st, err := h.svc.UpdateSettings(r.Context(), u.ID, u.IsAdmin, ai.SettingsInput{
 		Enabled: body.Enabled, BaseURL: body.BaseURL, Model: body.Model, APIKey: body.APIKey,
 	})
+	if errors.Is(err, ai.ErrLocalURL) {
+		writeError(w, http.StatusBadRequest, "ai_local_url", aiErrorMessage(err))
+		return
+	}
+	if errors.Is(err, ai.ErrBadURL) {
+		writeError(w, http.StatusBadRequest, "ai_bad_url", aiErrorMessage(err))
+		return
+	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not save AI settings")
 		return
@@ -82,7 +91,7 @@ func (h *aiHandlers) suggestCategory(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &body) {
 		return
 	}
-	cat, err := h.svc.SuggestCategory(r.Context(), u.ID, wl.ID, ai.SuggestInput{
+	cat, err := h.svc.SuggestCategory(r.Context(), u.ID, u.IsAdmin, wl.ID, ai.SuggestInput{
 		Payee: body.Payee, Memo: body.Memo, Amount: body.Amount,
 	})
 	if errors.Is(err, ai.ErrNotConfigured) {
@@ -106,7 +115,7 @@ func (h *aiHandlers) parseEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	today := time.Now().UTC().Format("2006-01-02")
-	entry, err := h.svc.ParseEntry(r.Context(), u.ID, wl.ID, body.Text, today)
+	entry, err := h.svc.ParseEntry(r.Context(), u.ID, u.IsAdmin, wl.ID, body.Text, today)
 	if errors.Is(err, ai.ErrNotConfigured) {
 		writeError(w, http.StatusBadRequest, "ai_disabled", "AI is not enabled")
 		return

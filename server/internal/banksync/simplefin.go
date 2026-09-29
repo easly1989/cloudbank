@@ -16,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/easly1989/cloudbank/server/internal/netguard"
 )
 
 // ErrTokenClaimed means the setup token was invalid or already used (HTTP 403).
@@ -35,8 +37,11 @@ func newSimplefinClient(hc httpDoer) *simplefinClient {
 		// Do not follow redirects: the claim POST and the /accounts GET both expect
 		// a direct response, so a redirect (e.g. a stale/relocated host) should
 		// surface as an error rather than silently downgrade the POST to a GET.
+		// The setup token is the user's, so its URLs may only reach the public
+		// internet (#543).
 		hc = &http.Client{
 			Timeout:       30 * time.Second,
+			Transport:     netguard.Transport(),
 			CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 		}
 	}
@@ -51,7 +56,7 @@ func (c *simplefinClient) claim(ctx context.Context, setupToken string) (string,
 		return "", ErrTokenClaimed
 	}
 	claimURL := strings.TrimSpace(string(dec))
-	if !strings.HasPrefix(claimURL, "https://") && !strings.HasPrefix(claimURL, "http://") {
+	if !strings.HasPrefix(claimURL, "https://") {
 		return "", ErrTokenClaimed
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, claimURL, nil)
@@ -71,7 +76,7 @@ func (c *simplefinClient) claim(ctx context.Context, setupToken string) (string,
 		return "", fmt.Errorf("banksync: claim failed (%d)", resp.StatusCode)
 	}
 	accessURL := strings.TrimSpace(string(body))
-	if !strings.HasPrefix(accessURL, "http") {
+	if !strings.HasPrefix(accessURL, "https://") {
 		return "", fmt.Errorf("banksync: claim returned no access url")
 	}
 	return accessURL, nil
