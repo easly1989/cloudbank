@@ -648,3 +648,60 @@ func TestDismissAllDuplicates(t *testing.T) {
 		t.Fatalf("second dismiss-all = %d, want 0", n2)
 	}
 }
+
+// The finder pairs rows of one account and amount at most
+// duplicateFinderWindowDays apart, and no others (#541 moved the date test into
+// SQL, where only a row's neighbours are compared).
+func TestDuplicateWindow(t *testing.T) {
+	s, q, wid, acc := newTestService(t)
+	ctx := context.Background()
+	first, err := q.GetAccount(ctx, acc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := q.InsertAccount(ctx, db.InsertAccountParams{
+		WalletID: wid, Name: "Savings", Type: "savings", CurrencyID: first.CurrencyID, Position: 2,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	add := func(account int64, date string, amount int64) int64 {
+		t.Helper()
+		tx, err := s.Create(ctx, wid, Input{AccountID: account, Date: date, Amount: amount})
+		if err != nil {
+			t.Fatalf("create %s: %v", date, err)
+		}
+		return tx.ID
+	}
+	edgeA := add(acc, "2026-03-01", -1400)
+	edgeB := add(acc, "2026-03-15", -1400) // exactly 14 days: a pair
+	add(acc, "2026-03-01", -1500)
+	add(acc, "2026-03-16", -1500) // 15 days: not a pair
+	c1 := add(acc, "2026-06-01", -900)
+	c2 := add(acc, "2026-06-11", -900)
+	c3 := add(acc, "2026-06-21", -900) // c1–c3 are 20 days apart: only c1–c2 and c2–c3
+	add(other.ID, "2026-03-02", -1400) // same amount, other account
+
+	rev, err := s.Review(ctx, wid)
+	if err != nil {
+		t.Fatalf("review: %v", err)
+	}
+	got := map[[2]int64]bool{}
+	for _, p := range rev.Duplicates {
+		a, b := pairKey(p.A.ID, p.B.ID)
+		got[[2]int64{a, b}] = true
+	}
+	want := map[[2]int64]bool{}
+	for _, p := range [][2]int64{{edgeA, edgeB}, {c1, c2}, {c2, c3}} {
+		a, b := pairKey(p[0], p[1])
+		want[[2]int64{a, b}] = true
+	}
+	if len(got) != len(want) {
+		t.Fatalf("pairs = %v, want %v", got, want)
+	}
+	for k := range want {
+		if !got[k] {
+			t.Errorf("missing pair %v; got %v", k, got)
+		}
+	}
+}

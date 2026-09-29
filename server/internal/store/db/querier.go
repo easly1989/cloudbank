@@ -155,6 +155,9 @@ type Querier interface {
 	// server-computed cumulative delta. The application adds the account's initial
 	// balance to produce each row's running balance.
 	ListAccountRegister(ctx context.Context, accountID int64) ([]ListAccountRegisterRow, error)
+	// Every tag on an account's transactions in one pass, for the exports: by
+	// transaction, then by name, as ListTransactionTags orders one transaction's.
+	ListAccountTransactionTags(ctx context.Context, accountID int64) ([]ListAccountTransactionTagsRow, error)
 	ListAccountsForWallet(ctx context.Context, walletID int64) ([]ListAccountsForWalletRow, error)
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
 	ListAllWalletIDs(ctx context.Context) ([]int64, error)
@@ -172,6 +175,10 @@ type Querier interface {
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
 	ListContributionsForGoal(ctx context.Context, goalID int64) ([]GoalContribution, error)
 	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)
+	// Every transaction of the wallet, reduced to what the duplicate finder compares
+	// and ordered for it: by account, amount, then date. The account/date index
+	// holds all four columns, so this reads no table rows (#541).
+	ListDuplicateCandidates(ctx context.Context, walletID int64) ([]ListDuplicateCandidatesRow, error)
 	ListDuplicateDismissals(ctx context.Context, walletID int64) ([]ListDuplicateDismissalsRow, error)
 	ListExchangeRates(ctx context.Context, currencyID int64) ([]ExchangeRate, error)
 	ListGoalsForWallet(ctx context.Context, walletID int64) ([]ListGoalsForWalletRow, error)
@@ -182,9 +189,6 @@ type Querier interface {
 	// transactions carry their categories on the splits, so they are excluded.
 	ListImportedUncategorized(ctx context.Context, walletID int64) ([]Transaction, error)
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
-	// Transactions that share account + amount with at least one other in the wallet.
-	// Pairing by date proximity and filtering out dismissed pairs is done in Go.
-	ListPotentialDuplicates(ctx context.Context, arg ListPotentialDuplicatesParams) ([]Transaction, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID int64) ([]ListPushSubscriptionsForUserRow, error)
 	ListPushUserIDs(ctx context.Context) ([]int64, error)
 	// Every schedule in the wallet with the template fields the Bills view needs:
@@ -198,6 +202,7 @@ type Querier interface {
 	ListTemplateSplits(ctx context.Context, templateID int64) ([]TemplateSplit, error)
 	ListTemplatesForWallet(ctx context.Context, walletID int64) ([]Template, error)
 	ListTransactionTags(ctx context.Context, transactionID int64) ([]string, error)
+	ListTransactionsByIDs(ctx context.Context, arg ListTransactionsByIDsParams) ([]Transaction, error)
 	ListTransactionsForAccount(ctx context.Context, arg ListTransactionsForAccountParams) ([]ListTransactionsForAccountRow, error)
 	ListTransfersForWallet(ctx context.Context, walletID int64) ([]Transfer, error)
 	ListUpcomingSchedules(ctx context.Context, arg ListUpcomingSchedulesParams) ([]ListUpcomingSchedulesRow, error)
