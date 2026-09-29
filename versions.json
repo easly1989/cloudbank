@@ -1,9 +1,9 @@
 {
   "nightly": {
     "image": "ghcr.io/easly1989/cloudbank:latest",
-    "sha": "0a5a749e2dcdae326f6a704dbb3f7b815e04a1a4",
-    "published": "2026-09-29T07:08:11Z",
-    "version": "nightly-0a5a749"
+    "sha": "e48e3999a97be430ca890f912148336331c13fdd",
+    "published": "2026-09-29T08:47:20Z",
+    "version": "nightly-e48e399"
   },
   "stable": {
     "image": "ghcr.io/easly1989/cloudbank:main",
