@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/goal"
+	"github.com/easly1989/cloudbank/server/internal/walletref"
 )
 
 // goalHandlers serve wallet-scoped savings-goal endpoints (mounted inside the
@@ -42,6 +43,7 @@ type contributionInput struct {
 func writeGoalError(w http.ResponseWriter, err error) bool {
 	return mapError(w, err, "could not save goal",
 		errCase{goal.ErrNotFound, http.StatusNotFound, "not_found", "goal not found"},
+		errCase{walletref.ErrForeign, http.StatusBadRequest, "invalid_reference", "a referenced record does not belong to this wallet"},
 		errCase{goal.ErrInvalid, http.StatusBadRequest, "invalid", "goal name and a positive target are required"},
 		errCase{goal.ErrBadContribution, http.StatusBadRequest, "invalid", "a contribution needs a date and a non-zero amount"},
 	)

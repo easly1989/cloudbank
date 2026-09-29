@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/assignment"
+	"github.com/easly1989/cloudbank/server/internal/walletref"
 )
 
 // assignmentHandlers serves wallet-scoped assignment-rule endpoints (mounted
@@ -77,6 +78,7 @@ func (h *assignmentHandlers) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *assignmentHandlers) update(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
 	id, ok := h.ownedID(w, r)
 	if !ok {
 		return
@@ -85,7 +87,7 @@ func (h *assignmentHandlers) update(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &in) {
 		return
 	}
-	def, err := h.svc.Update(r.Context(), id, in.toServiceInput())
+	def, err := h.svc.Update(r.Context(), wl.ID, id, in.toServiceInput())
 	if !writeAssignmentError(w, err) {
 		return
 	}
@@ -193,6 +195,7 @@ func (h *assignmentHandlers) ownedID(w http.ResponseWriter, r *http.Request) (in
 func writeAssignmentError(w http.ResponseWriter, err error) bool {
 	return mapError(w, err, "could not save rule",
 		errCase{assignment.ErrNotFound, http.StatusNotFound, "not_found", "rule not found"},
+		errCase{walletref.ErrForeign, http.StatusBadRequest, "invalid_reference", "a referenced record does not belong to this wallet"},
 		errCase{assignment.ErrInvalidField, http.StatusBadRequest, "invalid_field", "invalid match field"},
 		errCase{assignment.ErrInvalidType, http.StatusBadRequest, "invalid_type", "invalid match type"},
 		errCase{assignment.ErrEmptyPattern, http.StatusBadRequest, "empty_pattern", "pattern is required"},

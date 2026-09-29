@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/transaction"
+	"github.com/easly1989/cloudbank/server/internal/walletref"
 )
 
 // transactionHandlers serves wallet-scoped transaction and tag endpoints
@@ -430,6 +431,7 @@ func queryInt(r *http.Request, name string, def int64) int64 {
 func writeTransactionError(w http.ResponseWriter, err error) bool {
 	return mapError(w, err, "could not save transaction",
 		errCase{transaction.ErrNotFound, http.StatusNotFound, "not_found", "transaction not found"},
+		errCase{walletref.ErrForeign, http.StatusBadRequest, "invalid_reference", "a referenced record does not belong to this wallet"},
 		errCase{transaction.ErrInvalidAccount, http.StatusBadRequest, "invalid_account", "account does not belong to this wallet"},
 		errCase{transaction.ErrInvalidPaymentMode, http.StatusBadRequest, "invalid_payment_mode", "invalid payment mode"},
 		errCase{transaction.ErrInvalidStatus, http.StatusBadRequest, "invalid_status", "invalid status"},

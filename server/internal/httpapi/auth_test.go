@@ -22,6 +22,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/currency"
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
+	"github.com/easly1989/cloudbank/server/internal/goal"
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
@@ -73,6 +74,7 @@ func newTestAPI(t *testing.T) *testClient {
 	tsvc := transaction.NewService(st.Write())
 	tagsvc := tag.NewService(st.Write())
 	vehsvc := vehicle.NewService(st.Write())
+	goalsvc := goal.NewService(st.Write())
 	xsvc := transfer.NewService(st.Write())
 	dsvc := dashboard.NewService(st.Write())
 	tplsvc := template.NewService(st.Write())
@@ -89,7 +91,7 @@ func newTestAPI(t *testing.T) *testClient {
 	bksvc.SetAttachments(attsvc)
 	srv := httptest.NewServer(New(Options{
 		Auth: svc, Wallets: wsvc, Currencies: csvc, Accounts: asvc,
-		Categories: catsvc, Payees: psvc, Transactions: tsvc, Tags: tagsvc, Vehicles: vehsvc, Transfers: xsvc, Dashboard: dsvc, Templates: tplsvc, Schedules: ssvc, Assignments: asvc2, Budgets: bsvc, Reports: rsvc, Import: impsvc, CSV: csvsvc, RateProvider: stubRateProvider{},
+		Categories: catsvc, Payees: psvc, Transactions: tsvc, Tags: tagsvc, Vehicles: vehsvc, Goals: goalsvc, Transfers: xsvc, Dashboard: dsvc, Templates: tplsvc, Schedules: ssvc, Assignments: asvc2, Budgets: bsvc, Reports: rsvc, Import: impsvc, CSV: csvsvc, RateProvider: stubRateProvider{},
 		Integrity: intsvc, Backup: bksvc, Attachments: attsvc, HotBackup: st, DataDir: t.TempDir(), Health: st,
 	}))
 	t.Cleanup(srv.Close)

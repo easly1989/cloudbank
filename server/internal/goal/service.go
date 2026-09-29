@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/easly1989/cloudbank/server/internal/store/db"
+	"github.com/easly1989/cloudbank/server/internal/walletref"
 )
 
 // Sentinel errors.
@@ -152,6 +153,9 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Goal, e
 	if err := validate(in); err != nil {
 		return Goal{}, err
 	}
+	if err := walletref.Check(ctx, s.q, walletID, (&walletref.Refs{}).Account(in.AccountID)); err != nil {
+		return Goal{}, err
+	}
 	g, err := s.q.InsertGoal(ctx, db.InsertGoalParams{
 		WalletID: walletID, Name: strings.TrimSpace(in.Name), TargetAmount: in.TargetAmount,
 		TargetDate: nullStr(in.TargetDate), AccountID: nullID(in.AccountID), Note: in.Note, Position: 0,
@@ -165,6 +169,9 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Goal, e
 // Update edits a goal (position is preserved).
 func (s *Service) Update(ctx context.Context, walletID, id int64, in Input) (Goal, error) {
 	if err := validate(in); err != nil {
+		return Goal{}, err
+	}
+	if err := walletref.Check(ctx, s.q, walletID, (&walletref.Refs{}).Account(in.AccountID)); err != nil {
 		return Goal{}, err
 	}
 	cur, err := s.inWallet(ctx, walletID, id)

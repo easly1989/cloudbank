@@ -11,6 +11,7 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/dbconv"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
+	"github.com/easly1989/cloudbank/server/internal/walletref"
 )
 
 // Sentinel errors.
@@ -144,7 +145,11 @@ func (s *Service) validate(ctx context.Context, walletID int64, in *Input) error
 			}
 		}
 	}
-	return nil
+	refs := (&walletref.Refs{}).Payee(in.PayeeID).Category(in.CategoryID)
+	for i := range in.Splits {
+		refs.Category(in.Splits[i].CategoryID)
+	}
+	return walletref.Check(ctx, s.q, walletID, refs)
 }
 
 // Create stores a new template (with its split lines) in one transaction.
