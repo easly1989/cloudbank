@@ -21,6 +21,7 @@ export function RegisterSidePanel({
   hint,
   onClose,
   footer,
+  grow = false,
   children,
 }: {
   title: string;
@@ -28,6 +29,9 @@ export function RegisterSidePanel({
   onClose: () => void;
   /** Shown only in the phone's sheet, under the scrolling content. */
   footer?: ReactNode;
+  /** On a desktop: take whatever height the side column has left (the filters),
+      rather than only what the content needs (the columns). */
+  grow?: boolean;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -64,7 +68,17 @@ export function RegisterSidePanel({
   }
 
   return (
-    <Paper withBorder p="sm" w={{ base: "100%", md: 300 }} style={{ flexShrink: 0 }}>
+    <Paper
+      withBorder
+      p="sm"
+      data-testid="register-panel"
+      style={{
+        flex: grow ? "1 1 0" : "0 1 auto",
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       <Group justify="space-between" wrap="nowrap" mb={hint ? 2 : "xs"}>
         <Text fw={600} size="sm">
           {title}
@@ -78,9 +92,10 @@ export function RegisterSidePanel({
           {hint}
         </Text>
       )}
-      <ScrollArea.Autosize mah={480} type="auto">
+      {/* It scrolls inside, and only when the column is shorter than it. */}
+      <ScrollArea type="auto" style={{ flex: 1, minHeight: 0 }}>
         {children}
-      </ScrollArea.Autosize>
+      </ScrollArea>
     </Paper>
   );
 }

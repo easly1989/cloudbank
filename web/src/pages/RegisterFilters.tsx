@@ -36,6 +36,7 @@ export function RegisterFilters({
   tags,
   fmt,
   dates = true,
+  stacked = false,
 }: {
   filters: Filters;
   onChange: (f: Filters) => void;
@@ -45,6 +46,9 @@ export function RegisterFilters({
   fmt: MoneyFormat;
   /** The date range. The reports leave it out: their period bar sets it. */
   dates?: boolean;
+  /** One field per line, each as wide as the column: the register's side
+      panel. The reports keep them in a wrapping row. */
+  stacked?: boolean;
 }) {
   const { t } = useTranslation();
   const parseAmount = useAmountParser();
@@ -87,6 +91,8 @@ export function RegisterFilters({
   );
 
   const amountToMinor = (v: string) => (v.trim() === "" ? null : parseAmount(v, fd, dc));
+  // In the panel every field takes the column's width; in a row each keeps its own.
+  const w = (width: number) => (stacked ? "100%" : width);
 
   return (
     <Card withBorder padding="xs">
@@ -99,7 +105,7 @@ export function RegisterFilters({
               value={filters.preset}
               onChange={(v) => onChange({ ...filters, preset: (v as DatePreset) ?? "all" })}
               allowDeselect={false}
-              w={150}
+              w={w(150)}
             />
           )}
           {dates && filters.preset === "custom" && (
@@ -109,14 +115,14 @@ export function RegisterFilters({
                 label={t("filters.from")}
                 value={filters.from}
                 onChange={(e) => onChange({ ...filters, from: e.currentTarget.value })}
-                w={150}
+                w={w(150)}
               />
               <TextInput
                 type="date"
                 label={t("filters.to")}
                 value={filters.to}
                 onChange={(e) => onChange({ ...filters, to: e.currentTarget.value })}
-                w={150}
+                w={w(150)}
               />
             </>
           )}
@@ -126,7 +132,7 @@ export function RegisterFilters({
             value={filters.status === null ? null : String(filters.status)}
             onChange={(v) => onChange({ ...filters, status: v === null ? null : Number(v) })}
             clearable
-            w={130}
+            w={w(130)}
           />
           <Select
             label={t("transactions.payee")}
@@ -135,7 +141,7 @@ export function RegisterFilters({
             onChange={(v) => onChange({ ...filters, payeeId: v === null ? null : Number(v) })}
             clearable
             searchable
-            w={160}
+            w={w(160)}
           />
           <Select
             label={t("transactions.category")}
@@ -144,7 +150,7 @@ export function RegisterFilters({
             onChange={(v) => onChange({ ...filters, categoryId: v === null ? null : Number(v) })}
             clearable
             searchable
-            w={170}
+            w={w(170)}
           />
           <TagsInput
             label={t("transactions.tags")}
@@ -154,7 +160,7 @@ export function RegisterFilters({
             clearable
             // Same fixed-width, single-line scrolling-pills field as Quick Add so
             // the two behave identically (see tagPills.module.css).
-            style={{ flex: "0 0 170px", minWidth: 0 }}
+            style={{ flex: stacked ? "1 1 100%" : "0 0 170px", minWidth: 0 }}
             styles={{ input: { minWidth: 0 } }}
             classNames={{ pillsList: tagClasses.scrollPills }}
           />
@@ -168,21 +174,21 @@ export function RegisterFilters({
             value={filters.transfers}
             onChange={(v) => onChange({ ...filters, transfers: (v as TransferFilter) ?? "all" })}
             allowDeselect={false}
-            w={170}
+            w={w(170)}
           />
           <TextInput
             label={t("filters.amountMin")}
             value={amin}
             onChange={(e) => setAmin(e.currentTarget.value)}
             onBlur={() => onChange({ ...filters, amountMin: amountToMinor(amin) })}
-            w={110}
+            w={w(110)}
           />
           <TextInput
             label={t("filters.amountMax")}
             value={amax}
             onChange={(e) => setAmax(e.currentTarget.value)}
             onBlur={() => onChange({ ...filters, amountMax: amountToMinor(amax) })}
-            w={110}
+            w={w(110)}
           />
           <TextInput
             label={t("filters.search")}
@@ -192,7 +198,7 @@ export function RegisterFilters({
             onKeyDown={(e) => {
               if (e.key === "Enter") onChange({ ...filters, text });
             }}
-            w={180}
+            w={w(180)}
           />
         </Group>
         {/* The three toggles grouped together on their own row. Clear lives on

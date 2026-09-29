@@ -1,4 +1,4 @@
-import { ActionIcon, Indicator, TextInput, Tooltip } from "@mantine/core";
+import { ActionIcon, Box, Indicator, TextInput, Tooltip } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import {
   IconColumns3,
@@ -10,15 +10,11 @@ import {
 } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
-import { FilterChips } from "../components/FilterChips";
 import { clearedFacets, registerChips } from "./registerChips";
 import { type Filters } from "./registerFilterModel";
+import type { PanelId, RegisterPanels } from "./registerPanels";
 
-/** Which side panel is open, if any. */
-export type RegisterPanel = "filters" | "columns" | null;
-
-// One row above the ledger: search, what is currently narrowing it, and the two
-// buttons that open a panel.
+// One row above the ledger: search, and the buttons that open a panel.
 //
 // It is a row and not a block on purpose. Everything here used to stack
 // vertically — a collapsible section, a count badge, a clear button, a second
@@ -26,22 +22,22 @@ export type RegisterPanel = "filters" | "columns" | null;
 // worth looking at. A ledger you can see ten rows of is a different tool from
 // one you can see four rows of.
 //
-// On a phone even the chips were too much: six of them filled the screen
-// before the first row (#502). There the Filters button keeps only their count
-// and the chips move to the head of the filter panel, so search and the three
-// buttons share one line; the search box is what gives way.
+// The chips naming each filter live at the head of the filter panel, on every
+// screen (#535): in the row they took a second line as soon as there were a
+// few. The Filters button keeps their count, and on a desktop a red × on its
+// other corner clears them all without opening anything.
 export function RegisterToolbar({
   filters,
   onFilters,
-  panel,
-  onPanel,
+  panels,
+  onTogglePanel,
   privacy,
   onPrivacy,
 }: {
   filters: Filters;
   onFilters: (f: Filters) => void;
-  panel: RegisterPanel;
-  onPanel: (p: RegisterPanel) => void;
+  panels: RegisterPanels;
+  onTogglePanel: (id: PanelId) => void;
   privacy: boolean;
   onPrivacy: (v: boolean) => void;
 }) {
@@ -75,31 +71,55 @@ export function RegisterToolbar({
         onChange={(e) => onFilters({ ...filters, text: e.currentTarget.value })}
       />
 
-      {/* Each filter names itself and goes on its own. A badge reading "3" told
-          the reader that three were on without saying which, so the only way to
-          find out was to open the panel and read every control. The count on
-          the button is there as well, not instead. */}
-      {!phone && <FilterChips chips={chips} onClear={() => onFilters(clearedFacets(filters))} />}
-
       <div className="cb-register-toolbar-buttons">
-        <Tooltip label={t("filters.section")}>
-          <Indicator
-            label={chips.length}
-            size={18}
-            offset={4}
-            disabled={chips.length === 0}
-            data-testid="filters-count"
-          >
-            <ActionIcon
-              variant={panel === "filters" ? "filled" : "default"}
-              size={44}
-              aria-label={filtersLabel}
-              aria-pressed={panel === "filters"}
-              onClick={() => onPanel(panel === "filters" ? null : "filters")}
+        <Box pos="relative">
+          <Tooltip label={t("filters.section")}>
+            <Indicator
+              label={chips.length}
+              size={18}
+              offset={4}
+              disabled={chips.length === 0}
+              data-testid="filters-count"
             >
-              <IconFilter size={16} />
-            </ActionIcon>
-          </Indicator>
+              <ActionIcon
+                variant={panels.filters ? "filled" : "default"}
+                size={44}
+                aria-label={filtersLabel}
+                aria-pressed={panels.filters}
+                onClick={() => onTogglePanel("filters")}
+              >
+                <IconFilter size={16} />
+              </ActionIcon>
+            </Indicator>
+          </Tooltip>
+          {/* A 18px target is fine for a mouse and too small for a finger: the
+              phone's sheet has its own "Clear filters". */}
+          {!phone && chips.length > 0 && (
+            <Tooltip label={t("filters.clearAll")}>
+              <ActionIcon
+                className="cb-filters-clear-all"
+                variant="filled"
+                color="red"
+                radius="xl"
+                size={18}
+                aria-label={t("filters.clearAll")}
+                onClick={() => onFilters(clearedFacets(filters))}
+              >
+                <IconX size={12} stroke={3} />
+              </ActionIcon>
+            </Tooltip>
+          )}
+        </Box>
+        <Tooltip label={t("register.columns")}>
+          <ActionIcon
+            variant={panels.columns ? "filled" : "default"}
+            size={44}
+            aria-label={t("register.columns")}
+            aria-pressed={panels.columns}
+            onClick={() => onTogglePanel("columns")}
+          >
+            <IconColumns3 size={16} />
+          </ActionIcon>
         </Tooltip>
         <Tooltip label={privacyLabel}>
           <ActionIcon
@@ -110,17 +130,6 @@ export function RegisterToolbar({
             onClick={() => onPrivacy(!privacy)}
           >
             {privacy ? <IconEyeOff size={16} /> : <IconEye size={16} />}
-          </ActionIcon>
-        </Tooltip>
-        <Tooltip label={t("register.columns")}>
-          <ActionIcon
-            variant={panel === "columns" ? "filled" : "default"}
-            size={44}
-            aria-label={t("register.columns")}
-            aria-pressed={panel === "columns"}
-            onClick={() => onPanel(panel === "columns" ? null : "columns")}
-          >
-            <IconColumns3 size={16} />
           </ActionIcon>
         </Tooltip>
       </div>
