@@ -152,6 +152,7 @@ func New(opts Options) http.Handler {
 	r.Use(requestLogger(logger))
 	r.Use(middleware.Recoverer)
 	r.Use(securityHeaders(opts.SecureCookies))
+	r.Use(compress)
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Get("/healthz", healthHandler(opts.Health))
