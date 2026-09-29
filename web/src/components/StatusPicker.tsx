@@ -1,20 +1,8 @@
 import { SegmentedControl, Tooltip, VisuallyHidden } from "@mantine/core";
-import {
-  IconBan,
-  IconBell,
-  IconCheck,
-  IconCircleDashed,
-  IconLock,
-  type Icon,
-} from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
 import { STATUSES } from "../transactionEnums";
-
-// One icon per reconcile status, in code order: none, cleared, reconciled,
-// remind, void. The lock is the one the register already puts beside a
-// reconciled row, so the two read as the same thing.
-const STATUS_ICONS: Icon[] = [IconCircleDashed, IconCheck, IconLock, IconBell, IconBan];
+import { STATUS_ICONS } from "./statusIcons";
 
 /**
  * The status as a single choice drawn in icons. Each one is named for a screen
@@ -38,7 +26,7 @@ export function StatusPicker({
       value={value}
       onChange={onChange}
       data={STATUSES.map((s) => {
-        const StatusIcon = STATUS_ICONS[s] ?? IconCircleDashed;
+        const StatusIcon = STATUS_ICONS[s] ?? STATUS_ICONS[0];
         const name = t(`status.${s}`);
         return {
           value: String(s),

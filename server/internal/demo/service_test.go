@@ -103,6 +103,12 @@ func TestStartFillsAnAccountOfItsOwn(t *testing.T) {
 		}
 	}
 
+	// The year's salary, rent, internet, streaming and energy bills are the
+	// schedules' own (#546): about five a month, and nothing else.
+	if n := count(t, st, "SELECT COUNT(*) FROM transactions WHERE wallet_id = ? AND template_id IS NOT NULL", wid); n < 50 || n > 65 {
+		t.Errorf("%d transactions linked to a schedule's template, want the year's five bills a month", n)
+	}
+
 	// The review page opens without false alarms.
 	rev, err := transaction.NewService(st.Write()).Review(ctx, wid)
 	if err != nil {

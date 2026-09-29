@@ -256,6 +256,18 @@ func (s *Service) fill(ctx context.Context, userID int64, italian bool) error {
 		}
 	}
 
+	// The seeded bills were posted by their schedules, as far as the reader can
+	// tell; the schedules calendar (#546) finds them through that link.
+	templates, err := s.q.ListTemplatesForWallet(ctx, res.WalletID)
+	if err != nil {
+		return err
+	}
+	for _, tpl := range templates {
+		if _, err := s.q.LinkTemplateTransactions(ctx, sql.NullInt64{Int64: tpl.ID, Valid: true}); err != nil {
+			return err
+		}
+	}
+
 	conn, _, err := s.bank.ConnectDemo(ctx, res.WalletID, w("bank"))
 	if err != nil {
 		return err

@@ -7,7 +7,6 @@ import {
   IconCoin,
   IconLayoutDashboard,
   IconPigMoney,
-  IconReceipt,
   IconReportMoney,
   IconTag,
   IconTemplate,
@@ -49,7 +48,6 @@ export const NAV_ITEMS: NavItemDef[] = [
     end: false,
     adminOnly: false,
   },
-  { to: "/bills", labelKey: "nav.bills", icon: IconReceipt, end: false, adminOnly: false },
   { to: "/templates", labelKey: "nav.templates", icon: IconTemplate, end: false, adminOnly: false },
   { to: "/tags", labelKey: "nav.tags", icon: IconTag, end: false, adminOnly: false },
   { to: "/vehicles", labelKey: "nav.vehicles", icon: IconCar, end: false, adminOnly: false },
@@ -84,7 +82,7 @@ export interface NavGroupDef {
 // in (#537). It comes last: those pages are set up once and visited now and then.
 export const NAV_GROUPS: NavGroupDef[] = [
   { labelKey: "nav.group.money", items: ["/accounts", "/transactions"] },
-  { labelKey: "nav.group.planning", items: ["/schedules", "/bills", "/budget", "/goals"] },
+  { labelKey: "nav.group.planning", items: ["/schedules", "/budget", "/goals"] },
   { labelKey: "nav.group.insights", items: ["/reports", "/vehicles"] },
   {
     labelKey: "nav.group.wallet",
