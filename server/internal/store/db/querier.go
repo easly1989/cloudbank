@@ -29,7 +29,12 @@ type Querier interface {
 	ClearUserTOTP(ctx context.Context, id int64) error
 	ClearWalletBase(ctx context.Context, walletID int64) error
 	ConsumeRecoveryCode(ctx context.Context, arg ConsumeRecoveryCodeParams) (int64, error)
+	// Ownership checks for the ids a request names (#543): each counts how many of
+	// the given ids are rows of the wallet.
+	CountAccountsInWallet(ctx context.Context, arg CountAccountsInWalletParams) (int64, error)
+	CountCategoriesInWallet(ctx context.Context, arg CountCategoriesInWalletParams) (int64, error)
 	CountOIDCIdentitiesForUser(ctx context.Context, userID int64) (int64, error)
+	CountPayeesInWallet(ctx context.Context, arg CountPayeesInWalletParams) (int64, error)
 	CountPayeesWithCategory(ctx context.Context, defaultCategoryID sql.NullInt64) (int64, error)
 	CountSubcategories(ctx context.Context, parentID sql.NullInt64) (int64, error)
 	CountTransactionsForAccount(ctx context.Context, accountID int64) (int64, error)
@@ -38,6 +43,7 @@ type Querier interface {
 	CountUnusedRecoveryCodes(ctx context.Context, userID int64) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CountUsersByEmail(ctx context.Context, email string) (int64, error)
+	CountVehiclesInWallet(ctx context.Context, arg CountVehiclesInWalletParams) (int64, error)
 	CountWalletCurrencies(ctx context.Context, walletID int64) (int64, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)

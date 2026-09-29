@@ -7,6 +7,7 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/dbconv"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
+	"github.com/easly1989/cloudbank/server/internal/walletref"
 )
 
 // ErrNotFound is returned when a rule does not exist (engine ErrInvalid* errors
@@ -146,10 +147,20 @@ func toEngineRule(a db.Assignment) Rule {
 	}
 }
 
+// checkRefs rejects a rule whose account, payee or category is not the
+// wallet's own.
+func (s *Service) checkRefs(ctx context.Context, walletID int64, in Input) error {
+	return walletref.Check(ctx, s.q, walletID,
+		(&walletref.Refs{}).Account(in.MatchAccountID).Payee(in.SetPayeeID).Category(in.SetCategoryID))
+}
+
 // Create validates and stores a new rule (appended at the end).
 func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Definition, error) {
 	rule := in.toRule()
 	if err := rule.Compile(); err != nil {
+		return Definition{}, err
+	}
+	if err := s.checkRefs(ctx, walletID, in); err != nil {
 		return Definition{}, err
 	}
 	pos, err := s.q.NextAssignmentPosition(ctx, walletID)
@@ -207,9 +218,12 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]Definition, error
 }
 
 // Update validates and replaces a rule's configuration.
-func (s *Service) Update(ctx context.Context, id int64, in Input) (Definition, error) {
+func (s *Service) Update(ctx context.Context, walletID, id int64, in Input) (Definition, error) {
 	rule := in.toRule()
 	if err := rule.Compile(); err != nil {
+		return Definition{}, err
+	}
+	if err := s.checkRefs(ctx, walletID, in); err != nil {
 		return Definition{}, err
 	}
 	if err := s.q.UpdateAssignment(ctx, db.UpdateAssignmentParams{
