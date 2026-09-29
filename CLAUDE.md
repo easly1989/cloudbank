@@ -35,7 +35,7 @@ cd web && npm run check:i18n                   # locale key parity (CI gate)
 cd e2e && npm test                             # Playwright; needs the app on E2E_BASE_URL
 ```
 
-Prerequisites: Go 1.26+, Node 22+, Docker. `golangci-lint` v2.1.6 runs in CI but not in `make lint`.
+Prerequisites: Go 1.26.6+, Node 22+, Docker. `golangci-lint` v2.1.6 runs in CI but not in `make lint`.
 
 `make` is not available on Windows by default — `CONTRIBUTING.md` lists the direct command behind
 each target. Two constraints keep a Windows checkout honest: `.gitattributes` pins line endings to

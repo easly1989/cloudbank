@@ -960,7 +960,7 @@
   },
   "ai": {
     "title": "AI (con la tua chiave)",
-    "hint": "Opzionale. Collega un provider AI per ottenere suggerimenti di categoria. Funziona con servizi compatibili OpenAI, incluso un runtime locale (Ollama, LM Studio) tramite il suo URL. La tua chiave resta sul server e viene usata solo per le tue richieste.",
+    "hint": "Opzionale. Collega un provider AI per ottenere suggerimenti di categoria. Funziona con servizi compatibili OpenAI, incluso un runtime locale (Ollama, LM Studio) tramite il suo URL, che può impostare solo un amministratore. La tua chiave resta sul server e viene usata solo per le tue richieste.",
     "enable": "Abilita funzioni AI",
     "baseUrl": "URL base",
     "baseUrlHint": "Endpoint compatibile OpenAI, es. https://api.openai.com/v1 o http://localhost:11434/v1",

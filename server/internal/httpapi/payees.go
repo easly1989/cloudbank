@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/payee"
+	"github.com/easly1989/cloudbank/server/internal/walletref"
 )
 
 type payeeHandlers struct {
@@ -153,6 +154,7 @@ func writePayeeError(w http.ResponseWriter, err error) bool {
 	}
 	return mapError(w, err, "could not save payee",
 		errCase{payee.ErrNotFound, http.StatusNotFound, "not_found", "payee not found"},
+		errCase{walletref.ErrForeign, http.StatusBadRequest, "invalid_reference", "a referenced record does not belong to this wallet"},
 		errCase{payee.ErrDuplicate, http.StatusConflict, "duplicate", "a payee with that name already exists"},
 		errCase{payee.ErrSelfReference, http.StatusBadRequest, "self", "cannot merge a payee into itself"},
 		errCase{payee.ErrBadTarget, http.StatusBadRequest, "bad_target", "invalid target payee"},

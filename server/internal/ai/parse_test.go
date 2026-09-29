@@ -19,7 +19,7 @@ func TestParseEntry(t *testing.T) {
 	_, _ = q.InsertTag(ctx, db.InsertTagParams{WalletID: wid, Name: "Work"})
 
 	key := "k"
-	if _, err := svc.UpdateSettings(ctx, uid, SettingsInput{
+	if _, err := svc.UpdateSettings(ctx, uid, true, SettingsInput{
 		Enabled: true, BaseURL: "https://api.example/v1", Model: "m", APIKey: &key,
 	}); err != nil {
 		t.Fatalf("UpdateSettings: %v", err)
@@ -29,7 +29,7 @@ func TestParseEntry(t *testing.T) {
 	svc.hc = &mockDoer{reply: "```json\n{\"amount\": 12.4, \"direction\": \"expense\", " +
 		"\"date\": \"2026-06-14\", \"payee\": \"Bar Centrale\", \"category\": \"Food:Groceries\", " +
 		"\"tags\": [\"work\", \"lunch\"], \"memo\": \"coffee\"}\n```"}
-	got, err := svc.ParseEntry(ctx, uid, wid, "12.40 coffee at Bar Centrale yesterday", "2026-06-15")
+	got, err := svc.ParseEntry(ctx, uid, true, wid, "12.40 coffee at Bar Centrale yesterday", "2026-06-15")
 	if err != nil {
 		t.Fatalf("ParseEntry: %v", err)
 	}
@@ -50,7 +50,7 @@ func TestParseEntry(t *testing.T) {
 
 	// An unmatched payee/category are reported but never invented into an id.
 	svc.hc = &mockDoer{reply: `{"amount":9,"direction":"income","date":"nope","payee":"Unknown Shop","category":"Nonexistent","memo":""}`}
-	got2, err := svc.ParseEntry(ctx, uid, wid, "9 from unknown", "2026-06-15")
+	got2, err := svc.ParseEntry(ctx, uid, true, wid, "9 from unknown", "2026-06-15")
 	if err != nil {
 		t.Fatalf("ParseEntry(2): %v", err)
 	}
@@ -69,17 +69,17 @@ func TestParseEntry(t *testing.T) {
 
 	// A reply with no JSON object is an error.
 	svc.hc = &mockDoer{reply: "I could not understand that."}
-	if _, err := svc.ParseEntry(ctx, uid, wid, "gibberish", "2026-06-15"); err == nil {
+	if _, err := svc.ParseEntry(ctx, uid, true, wid, "gibberish", "2026-06-15"); err == nil {
 		t.Fatal("expected an error for a non-JSON reply")
 	}
 
 	// Disabled → ErrNotConfigured; blank text → nil, nil.
-	if _, err := svc.ParseEntry(ctx, uid, wid, "   ", "2026-06-15"); err != nil {
+	if _, err := svc.ParseEntry(ctx, uid, true, wid, "   ", "2026-06-15"); err != nil {
 		t.Fatalf("blank text err = %v, want nil", err)
 	}
 	blank := ""
-	_, _ = svc.UpdateSettings(ctx, uid, SettingsInput{Enabled: false, BaseURL: "u", Model: "m", APIKey: &blank})
-	if _, err := svc.ParseEntry(ctx, uid, wid, "x", "2026-06-15"); !errors.Is(err, ErrNotConfigured) {
+	_, _ = svc.UpdateSettings(ctx, uid, true, SettingsInput{Enabled: false, BaseURL: "https://api.example/v1", Model: "m", APIKey: &blank})
+	if _, err := svc.ParseEntry(ctx, uid, true, wid, "x", "2026-06-15"); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("disabled err = %v, want ErrNotConfigured", err)
 	}
 }

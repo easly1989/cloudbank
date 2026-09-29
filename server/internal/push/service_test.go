@@ -3,6 +3,7 @@ package push
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -43,7 +44,37 @@ func newFixture(t *testing.T) (*store.Store, *Service) {
 	if err != nil {
 		t.Fatalf("NewService: %v", err)
 	}
+	// The fixtures' push.example does not resolve; the scheme rule still holds.
+	svc.checkEndpoint = func(_ context.Context, endpoint string) error {
+		if !strings.HasPrefix(endpoint, "https://") {
+			return errors.New("not https")
+		}
+		return nil
+	}
 	return st, svc
+}
+
+// A subscription whose endpoint is not a public https URL is refused (#543).
+func TestSubscribeRefusesNonPublicEndpoints(t *testing.T) {
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	svc, err := NewService(st.Read(), st.Write(), "mailto:test@example.com", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	u, _ := db.New(st.Write()).CreateUser(ctx, db.CreateUserParams{Username: "u", PasswordHash: "x"})
+	for _, ep := range []string{
+		"https://127.0.0.1/push", "https://192.168.1.14/push", "https://169.254.169.254/latest",
+		"http://8.8.8.8/push", "https://[::1]/push",
+	} {
+		if err := svc.Subscribe(ctx, u.ID, ep, testP256dh, testAuth); err == nil {
+			t.Errorf("Subscribe(%s) accepted, want refused", ep)
+		}
+	}
 }
 
 func TestVAPIDPersistedAndStable(t *testing.T) {

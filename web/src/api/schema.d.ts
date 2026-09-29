@@ -304,7 +304,10 @@ export interface paths {
         };
         /** The current user's AI configuration (never the API key) */
         get: operations["getAISettings"];
-        /** Update AI configuration (omit apiKey to keep the stored key) */
+        /**
+         * Update AI configuration (omit apiKey to keep the stored key)
+         * @description baseUrl must be an http(s) URL. Only an administrator may name a provider on the local network (loopback, private or link-local addresses): anyone else gets 400 ai_local_url.
+         */
         put: operations["updateAISettings"];
         post?: never;
         delete?: never;
@@ -4436,6 +4439,7 @@ export interface operations {
                     "application/json": components["schemas"]["AISettings"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
         };
     };
