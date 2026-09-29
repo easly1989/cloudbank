@@ -12,7 +12,7 @@ export function BillsPanel({ walletId }: { walletId: number }) {
     <Card withBorder>
       <Group justify="space-between" mb="sm">
         <Title order={4}>{t("bills.title")}</Title>
-        <Anchor component={Link} to="/bills" size="sm">
+        <Anchor component={Link} to="/schedules" size="sm">
           {t("bills.viewAll")}
         </Anchor>
       </Group>

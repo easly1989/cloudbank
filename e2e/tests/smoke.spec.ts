@@ -145,7 +145,11 @@ test("full journey: setup → wallet → account → transaction → import → 
 
   await test.step("the imported schedule can be posted", async () => {
     await nav(page, "Schedules");
-    const postNow = page.getByRole("button", { name: "Post now" }).first();
+    // Every schedule, with its own menu (#546).
+    await page.goto("/schedules?view=list");
+    const list = page.getByTestId("schedules-list");
+    await list.getByRole("button", { name: "More" }).first().click();
+    const postNow = page.getByRole("menuitem", { name: "Post now" });
     await expect(postNow).toBeVisible();
     await postNow.click();
   });

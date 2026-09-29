@@ -41,17 +41,21 @@ func counts(t *testing.T, q *db.Queries, walletID int64) map[string]int {
 	m["budgets"] = len(budgets)
 	transfers, _ := q.ListTransfersForWallet(ctx, walletID)
 	m["transfers"] = len(transfers)
-	txns, splits := 0, 0
+	txns, splits, linked := 0, 0, 0
 	for _, a := range accts {
 		rows, _ := q.ListTransactionsForAccount(ctx, db.ListTransactionsForAccountParams{AccountID: a.ID, Limit: 1000, Offset: 0})
 		txns += len(rows)
 		for _, r := range rows {
+			if r.TemplateID.Valid {
+				linked++
+			}
 			sp, _ := q.ListSplits(ctx, r.ID)
 			splits += len(sp)
 		}
 	}
 	m["transactions"] = txns
 	m["splits"] = splits
+	m["linked"] = linked
 	return m
 }
 
@@ -98,6 +102,17 @@ func TestBackupRestoreRoundTrip(t *testing.T) {
 	}
 	origID := imp.WalletID
 
+	// A transaction a schedule posted keeps its template (#546); a HomeBank
+	// file records no such link, so one is made here.
+	tpls, _ := q.ListTemplatesForWallet(ctx, origID)
+	accts, _ := q.ListAccountsForWallet(ctx, origID)
+	rows, _ := q.ListTransactionsForAccount(ctx, db.ListTransactionsForAccountParams{AccountID: accts[0].ID, Limit: 1, Offset: 0})
+	if err := q.SetTransactionTemplate(ctx, db.SetTransactionTemplateParams{
+		TemplateID: sql.NullInt64{Int64: tpls[0].ID, Valid: true}, ID: rows[0].ID,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
 	svc := NewService(st.Write())
 	doc, err := svc.Export(ctx, origID)
 	if err != nil {
@@ -132,7 +147,7 @@ func TestBackupRestoreRoundTrip(t *testing.T) {
 	}
 	// Sanity: the fixture really did exercise every entity type.
 	for _, k := range []string{"currencies", "accounts", "payees", "categories", "tags",
-		"transactions", "transfers", "templates", "schedules", "assignments", "budgets", "splits"} {
+		"transactions", "transfers", "templates", "schedules", "assignments", "budgets", "splits", "linked"} {
 		if origCounts[k] == 0 {
 			t.Fatalf("fixture has no %s; round-trip is not meaningfully testing it", k)
 		}

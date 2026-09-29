@@ -96,3 +96,53 @@ func TestScheduleCrossUserIsolation(t *testing.T) {
 		t.Fatalf("bob post = %d, want 404", r.StatusCode)
 	}
 }
+
+// The calendar lists a month's occurrences; posting one can change its amount;
+// another wallet's calendar is out of reach (#546).
+func TestScheduleCalendar(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	tpl := makeTemplate(t, c, wid, acc)
+	sc := decodeTxn(t, c.do(http.MethodPost, base+"/schedules", map[string]any{
+		"templateId": tpl, "unit": "month", "everyN": 1, "nextDue": "2026-09-01",
+	}, true))
+	id := strconv.FormatInt(int64(sc["id"].(float64)), 10)
+
+	calendar := func(query string) (int, []map[string]any) {
+		t.Helper()
+		r := c.do(http.MethodGet, base+"/schedules/calendar?"+query, nil, false)
+		defer r.Body.Close()
+		var out struct {
+			Occurrences []map[string]any `json:"occurrences"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&out)
+		return r.StatusCode, out.Occurrences
+	}
+	code, occ := calendar("from=2026-09-01&to=2026-10-31&today=2026-09-10")
+	if code != http.StatusOK || len(occ) != 2 || occ[0]["state"] != "overdue" || occ[0]["next"] != true || occ[1]["state"] != "due" {
+		t.Fatalf("calendar = %d %+v", code, occ)
+	}
+
+	r := c.do(http.MethodPost, base+"/schedules/"+id+"/post", map[string]any{"amount": -125000, "status": 2}, true)
+	r.Body.Close()
+	if r.StatusCode != http.StatusNoContent {
+		t.Fatalf("post with a new amount = %d", r.StatusCode)
+	}
+	_, occ = calendar("from=2026-09-01&to=2026-09-30&today=2026-09-10")
+	if len(occ) != 1 || occ[0]["state"] != "registered" || occ[0]["amount"] != float64(-125000) || occ[0]["status"] != float64(2) {
+		t.Fatalf("after posting = %+v", occ)
+	}
+	r = c.do(http.MethodPost, base+"/schedules/"+id+"/post", map[string]any{"status": 9}, true)
+	r.Body.Close()
+	if r.StatusCode != http.StatusBadRequest {
+		t.Errorf("post with a bad status = %d, want 400", r.StatusCode)
+	}
+
+	if code, _ := calendar("from=2026-09-01&to=2027-09-01"); code != http.StatusBadRequest {
+		t.Errorf("a year's range = %d, want 400", code)
+	}
+	if code, _ := calendar("from=2026-09-01&to=2026-09-30&today=x"); code != http.StatusBadRequest {
+		t.Errorf("bad today = %d, want 400", code)
+	}
+}

@@ -168,7 +168,9 @@ export function TransactionsPage() {
   useEffect(() => {
     if (walletId <= 0 || restored.current) return;
     restored.current = true;
-    if (isActive(filters)) return; // an explicit URL/deep link wins
+    // An explicit URL/deep link wins, and so does arriving for one row (?txn=):
+    // saved filters could hide it.
+    if (isActive(filters) || searchParams.has("txn")) return;
     try {
       const saved = localStorage.getItem(filtersKey);
       if (saved) {
@@ -200,6 +202,9 @@ export function TransactionsPage() {
   // transaction lands wherever the date order puts it, which on a long register
   // is often nowhere near where the reader was looking.
   const [savedMark, setSavedMark] = useState<Arrival | null>(null);
+  // ?txn= opens the register on one transaction: the schedules calendar sends a
+  // registered bill here, where it is reconciled (#546).
+  const landOn = Number(searchParams.get("txn")) || null;
   const arrived = useArrival(savedMark);
 
   const invalidate = (id?: number) => {
@@ -691,6 +696,7 @@ export function TransactionsPage() {
             ) : undefined
           }
           arrivedId={arrived}
+          landOnId={landOn}
           bulkBar={
             !reconcile && selected.size > 0 ? (
               <BulkBar

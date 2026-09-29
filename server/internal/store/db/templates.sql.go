@@ -145,6 +145,26 @@ func (q *Queries) InsertTemplateSplit(ctx context.Context, arg InsertTemplateSpl
 	return err
 }
 
+const linkTemplateTransactions = `-- name: LinkTemplateTransactions :execrows
+UPDATE transactions SET template_id = ?1
+WHERE template_id IS NULL
+  AND wallet_id = (SELECT tpl.wallet_id FROM templates tpl WHERE tpl.id = ?1)
+  AND account_id = (SELECT tpl.account_id FROM templates tpl WHERE tpl.id = ?1)
+  AND payee_id = (SELECT tpl.payee_id FROM templates tpl WHERE tpl.id = ?1)
+  AND category_id = (SELECT tpl.category_id FROM templates tpl WHERE tpl.id = ?1)
+`
+
+// Ties to a template the transactions it stands for that were written without
+// the link: same account, payee and category. The demo's seeded year comes
+// from a HomeBank file, which does not record which schedule posted what.
+func (q *Queries) LinkTemplateTransactions(ctx context.Context, templateID sql.NullInt64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, linkTemplateTransactions, templateID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const listTemplateSplits = `-- name: ListTemplateSplits :many
 SELECT id, template_id, category_id, amount, memo, position FROM template_splits WHERE template_id = ? ORDER BY position, id
 `

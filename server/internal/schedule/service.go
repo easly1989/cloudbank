@@ -32,7 +32,17 @@ var (
 	ErrInvalidDate    = errors.New("schedule: invalid next-due date (want YYYY-MM-DD)")
 	ErrTemplate       = errors.New("schedule: template not found in this wallet")
 	ErrTemplateNoAcct = errors.New("schedule: template must target an account")
+	ErrSplitAmount    = errors.New("schedule: a split schedule's amount is changed in the schedule")
 )
+
+// Override changes what one posting registers, for a bill that differs from
+// its schedule this time: the amount, the date or the status. Nil fields keep
+// the template's value.
+type Override struct {
+	Amount *int64
+	Date   *string
+	Status *int
+}
 
 // Schedule is the public representation of a schedule with its template summary.
 type Schedule struct {
@@ -258,6 +268,22 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 // PostNow posts the current occurrence immediately (ignoring the due date and
 // auto-post flag) and advances the schedule.
 func (s *Service) PostNow(ctx context.Context, id int64) error {
+	return s.PostNowWith(ctx, id, nil)
+}
+
+// PostNowWith is PostNow with the posted transaction changed by ov.
+func (s *Service) PostNowWith(ctx context.Context, id int64, ov *Override) error {
+	if ov != nil && ov.Date != nil {
+		if _, err := ParseDate(*ov.Date); err != nil {
+			return ErrInvalidDate
+		}
+	}
+	// The scheduler posts without the transaction service's checks (its
+	// templates were checked when saved), so what the reader sends is checked
+	// here.
+	if ov != nil && ov.Status != nil && (*ov.Status < transaction.StatusNone || *ov.Status > transaction.StatusVoid) {
+		return transaction.ErrInvalidStatus
+	}
 	sc, err := s.q.GetSchedule(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ErrNotFound
@@ -265,7 +291,7 @@ func (s *Service) PostNow(ctx context.Context, id int64) error {
 	if err != nil {
 		return err
 	}
-	return s.postOnce(ctx, sc, true)
+	return s.postOnce(ctx, sc, true, ov)
 }
 
 // Skip advances the schedule past the current occurrence without posting.
@@ -277,7 +303,7 @@ func (s *Service) Skip(ctx context.Context, id int64) error {
 	if err != nil {
 		return err
 	}
-	return s.postOnce(ctx, sc, false)
+	return s.postOnce(ctx, sc, false, nil)
 }
 
 // RunDue auto-posts every due occurrence of every auto-post schedule (catching
@@ -310,7 +336,7 @@ func (s *Service) RunDue(ctx context.Context, now time.Time) (int, error) {
 			if !due {
 				break
 			}
-			if err := s.postOnce(ctx, sc, true); err != nil {
+			if err := s.postOnce(ctx, sc, true, nil); err != nil {
 				return posted, err
 			}
 			posted++
@@ -371,7 +397,7 @@ func walletScheduleMonths(settingsJSON string) int {
 // occurrence lands on a weekend with "skip" mode, or post is false, nothing is
 // inserted but the schedule still advances. An exhausted schedule (remaining
 // hits zero) is deleted.
-func (s *Service) postOnce(ctx context.Context, sc db.Schedule, post bool) error {
+func (s *Service) postOnce(ctx context.Context, sc db.Schedule, post bool, ov *Override) error {
 	due, err := ParseDate(sc.NextDue)
 	if err != nil {
 		return ErrInvalidDate
@@ -386,7 +412,11 @@ func (s *Service) postOnce(ctx context.Context, sc db.Schedule, post bool) error
 	qtx := s.q.WithTx(tx)
 
 	if post && !skip {
-		if err := s.materialize(ctx, qtx, sc, FormatDate(postDate)); err != nil {
+		date := FormatDate(postDate)
+		if ov != nil && ov.Date != nil {
+			date = *ov.Date
+		}
+		if err := s.materialize(ctx, qtx, sc, date, ov); err != nil {
 			return err
 		}
 	}
@@ -419,10 +449,22 @@ func (s *Service) postOnce(ctx context.Context, sc db.Schedule, post bool) error
 // on the given date and stamps it with the template id. All reads and writes go
 // through qtx: the caller already holds the single write connection, so using
 // s.q here would deadlock.
-func (s *Service) materialize(ctx context.Context, qtx *db.Queries, sc db.Schedule, date string) error {
+func (s *Service) materialize(ctx context.Context, qtx *db.Queries, sc db.Schedule, date string, ov *Override) error {
 	tpl, err := qtx.GetTemplate(ctx, sc.TemplateID)
 	if err != nil {
 		return err
+	}
+	if ov != nil && ov.Amount != nil && *ov.Amount != tpl.Amount {
+		// The splits add up to the template's amount; which of them a new
+		// total would change is not this call's to guess.
+		if tpl.IsSplit != 0 {
+			return ErrSplitAmount
+		}
+		// A transfer's template amount is what leaves the source account.
+		if tpl.IsTransfer != 0 && *ov.Amount >= 0 {
+			return transfer.ErrInvalidAmount
+		}
+		tpl.Amount = *ov.Amount
 	}
 	if !tpl.AccountID.Valid {
 		return ErrTemplateNoAcct
@@ -433,6 +475,9 @@ func (s *Service) materialize(ctx context.Context, qtx *db.Queries, sc db.Schedu
 	postStatus := int(tpl.Status)
 	if postStatus == transaction.StatusNone {
 		postStatus = transaction.StatusCleared
+	}
+	if ov != nil && ov.Status != nil {
+		postStatus = *ov.Status
 	}
 	if tpl.IsTransfer != 0 {
 		if !tpl.ToAccountID.Valid {
