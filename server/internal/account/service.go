@@ -51,6 +51,11 @@ type Account struct {
 	MinimumBalance int64
 	Balance        int64 // today's balance: initial_balance + sum(transactions dated on/before today)
 	FutureBalance  int64 // initial_balance + sum(all transactions, including future-dated)
+	// ReconciledBalance is what the bank has confirmed: initial_balance + the
+	// reconciled transactions dated on/before today. LastReconciled is the
+	// latest reconciled transaction's date, "" when there is none (#564).
+	ReconciledBalance int64
+	LastReconciled    string
 	// Value is the account's latest recorded valuation (asset accounts only). When
 	// set it replaces Balance/FutureBalance; nil for ordinary accounts.
 	Value              *int64
@@ -154,6 +159,7 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]Account, error) {
 			Institution: r.Institution, Number: r.Number,
 			InitialBalance: r.InitialBalance, MinimumBalance: r.MinimumBalance,
 			Balance: r.InitialBalance + d.TodayDelta, FutureBalance: r.InitialBalance + d.FutureDelta,
+			ReconciledBalance: r.InitialBalance + d.BankDelta, LastReconciled: d.LastReconciled,
 			Closed: r.Closed != 0, NoSummary: r.NoSummary != 0, NoBudget: r.NoBudget != 0, NoReport: r.NoReport != 0,
 			Position: r.Position, GroupName: r.GroupName, Notes: r.Notes, Website: r.Website,
 			DefaultPaymentMode: r.DefaultPaymentMode, CreatedAt: r.CreatedAt,
@@ -164,7 +170,7 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]Account, error) {
 		}
 		if v, ok := valuations[r.ID]; ok && (r.Type == "asset" || r.Type == "investment") {
 			val := v
-			acc.Balance, acc.FutureBalance, acc.Value = val, val, &val
+			acc.Balance, acc.FutureBalance, acc.ReconciledBalance, acc.Value = val, val, val, &val
 		}
 		out = append(out, acc)
 	}
@@ -194,6 +200,7 @@ func (s *Service) Get(ctx context.Context, accountID int64) (Account, error) {
 		Institution: a.Institution, Number: a.Number,
 		InitialBalance: a.InitialBalance, MinimumBalance: a.MinimumBalance,
 		Balance: a.InitialBalance + d.TodayDelta, FutureBalance: a.InitialBalance + d.FutureDelta,
+		ReconciledBalance: a.InitialBalance + d.BankDelta, LastReconciled: d.LastReconciled,
 		Closed: a.Closed != 0, NoSummary: a.NoSummary != 0, NoBudget: a.NoBudget != 0, NoReport: a.NoReport != 0,
 		Position: a.Position, GroupName: a.GroupName, Notes: a.Notes, Website: a.Website,
 		DefaultPaymentMode: a.DefaultPaymentMode, CreatedAt: a.CreatedAt,

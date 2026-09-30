@@ -1,0 +1,258 @@
+/* The Accounts page (#564), to the numbers of the approved mockup: a line on
+   what the three balances mean, then every account in the register's card,
+   a band per type with its subtotal, and the total at the foot. */
+
+.page {
+  container-type: inline-size;
+  font-variant-numeric: tabular-nums;
+}
+.mono {
+  font-family: var(--mantine-font-family-monospace);
+}
+.dim {
+  color: var(--mantine-color-dimmed);
+}
+.line {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+}
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.chip {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--cb-shell-card-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--mantine-color-text);
+}
+.chip:hover {
+  background: var(--mantine-color-default-hover);
+}
+.chip[aria-pressed="true"] {
+  border-color: var(--mantine-primary-color-filled);
+  background: var(--mantine-primary-color-light);
+}
+.chip em {
+  font-style: normal;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 12px;
+  color: var(--mantine-color-dimmed);
+}
+
+.card {
+  border: 1px solid var(--cb-ledger-border);
+  border-radius: 12px;
+  background: var(--cb-ledger-surface);
+  overflow: hidden;
+}
+
+/* Desktop rows. */
+.tr {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 170px 170px 170px 40px;
+  gap: 14px;
+  align-items: center;
+  padding: 0 16px;
+  min-height: 46px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 14px;
+}
+.tr[data-row] {
+  cursor: pointer;
+}
+.tr[data-row]:hover {
+  background: var(--mantine-color-default-hover);
+}
+.head {
+  border-top: 0;
+  min-height: 38px;
+  background: var(--cb-band-header);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+}
+/* A type's band: its name, and its subtotals in a quieter weight. */
+.group {
+  min-height: 36px;
+  font-size: 13px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--cb-band-header) 45%, transparent);
+}
+.group .r {
+  font-weight: 500;
+  color: var(--mantine-color-dimmed);
+}
+.total {
+  min-height: 48px;
+  font-weight: 600;
+  background: var(--cb-band-header);
+}
+.r {
+  text-align: right;
+  white-space: nowrap;
+}
+.nameCell {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+}
+.name {
+  min-width: 0;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: start;
+  color: inherit;
+  font-size: inherit;
+  align-self: flex-start;
+  max-width: 100%;
+  line-height: 20px;
+}
+.sub {
+  font-size: 12.5px;
+  line-height: 17px;
+  color: var(--mantine-color-dimmed);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.warn {
+  display: block;
+  font-size: 12px;
+  font-family: var(--mantine-font-family);
+  margin-top: 1px;
+}
+.closed .name,
+.closed .pt {
+  color: var(--mantine-color-dimmed);
+}
+
+/* A page too narrow for every column (a laptop with the menu open) drops the
+   reconciled balance; the sheet still has it. */
+@container (max-width: 899px) {
+  .tr {
+    grid-template-columns: minmax(160px, 1fr) 150px 150px 40px;
+  }
+  .tr > :nth-child(2) {
+    display: none;
+  }
+}
+
+/* The phone: a heading per type, one row per account, the total at the foot. */
+.phoneList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.phoneGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.h3 {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+}
+.h3 span {
+  font-weight: 500;
+  color: var(--mantine-color-dimmed);
+}
+.prow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px 0 14px;
+  min-height: 58px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 15px;
+  color: var(--mantine-color-text);
+}
+.card > .prow:first-child {
+  border-top: 0;
+}
+.pmain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  text-align: start;
+  color: inherit;
+}
+.pl {
+  flex: 1;
+  min-width: 0;
+}
+.pt {
+  display: block;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pm {
+  display: block;
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pa {
+  flex-shrink: 0;
+  text-align: right;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.pa small {
+  display: block;
+  font-size: 12px;
+  color: var(--mantine-color-dimmed);
+}
+/* The total card has no ⋯: its figure keeps the same right edge. */
+[data-testid="accounts-total"] .pa {
+  padding-right: 10px;
+}
+
+/* The sheet. */
+.section {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+  margin-top: 4px;
+}
+.figs {
+  border-top: 1px solid var(--cb-ledger-border);
+  padding-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.figs span {
+  display: block;
+  font-size: 12px;
+  color: var(--mantine-color-dimmed);
+}
+.figs b {
+  font-size: 16px;
+  font-weight: 500;
+}
+.link {
+  font-size: 14px;
+  align-self: flex-start;
+}

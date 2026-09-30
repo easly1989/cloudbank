@@ -40,13 +40,26 @@ Every page also has a short tour: the **?** in its header plays it.
 
 ## Accounts
 
-- **The list.** Every account with its balance, grouped by type. **Show closed**
-  brings back accounts you have closed.
-- **Adding and editing.** **Add account** creates one, and an account's **Edit**
-  action changes it. The fields are described in
-  [Getting started](getting-started.md#4-add-your-accounts).
+- **The list.** Every account, grouped by type, with three balances:
+  - **Reconciled**: what the bank has confirmed, the reconciled transactions;
+  - **Today**: that plus what you have entered up to today;
+  - **Future**: that plus what is dated ahead.
+
+  Under each name are the bank and the date the account was last reconciled.
+  Each type has a band with its subtotals, and the **Total** is at the foot, in
+  the wallet's base currency at the latest rates. A balance under the account's
+  minimum shows in amber; a minimum of 0 means none is set. The **Closed**
+  filter, there once you have closed an account, brings closed accounts back.
+- **Opening one.** A click on an account opens its register. Its **⋯** menu
+  also has **Edit account**, **Reconcile** (the register, reconciling) and
+  **Delete account**.
+- **Adding and editing.** **Add account** creates one, and **Edit account**
+  opens it in a sheet beside the page. Besides the fields described in
+  [Getting started](getting-started.md#4-add-your-accounts), the sheet can
+  leave the account out of the totals (here and on the dashboard), the budget
+  or the reports, and keeps notes.
 - **Valuations.** Asset and investment accounts, such as a house or a
-  portfolio, record what they are worth over time under **Valuations**.
+  portfolio, record what they are worth over time under **⋯ → Valuations**.
 - **Deleting.** Deleting an account deletes its transactions with it. To stop
   using an account but keep its history, tick **Closed** instead.
 

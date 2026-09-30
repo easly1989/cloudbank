@@ -12,7 +12,9 @@ import (
 const accountBalanceDelta = `-- name: AccountBalanceDelta :one
 SELECT
     CAST(COALESCE(SUM(amount), 0) AS INTEGER) AS future_delta,
-    CAST(COALESCE(SUM(CASE WHEN date <= ?1 THEN amount ELSE 0 END), 0) AS INTEGER) AS today_delta
+    CAST(COALESCE(SUM(CASE WHEN date <= ?1 THEN amount ELSE 0 END), 0) AS INTEGER) AS today_delta,
+    CAST(COALESCE(SUM(CASE WHEN status = 2 AND date <= ?1 THEN amount ELSE 0 END), 0) AS INTEGER) AS bank_delta,
+    CAST(COALESCE(MAX(CASE WHEN status = 2 THEN date END), '') AS TEXT) AS last_reconciled
 FROM transactions
 WHERE account_id = ?2
 `
@@ -23,8 +25,10 @@ type AccountBalanceDeltaParams struct {
 }
 
 type AccountBalanceDeltaRow struct {
-	FutureDelta int64
-	TodayDelta  int64
+	FutureDelta    int64
+	TodayDelta     int64
+	BankDelta      int64
+	LastReconciled string
 }
 
 // Today/future transaction sums for a single account; the caller adds the
@@ -32,7 +36,12 @@ type AccountBalanceDeltaRow struct {
 func (q *Queries) AccountBalanceDelta(ctx context.Context, arg AccountBalanceDeltaParams) (AccountBalanceDeltaRow, error) {
 	row := q.db.QueryRowContext(ctx, accountBalanceDelta, arg.Today, arg.AccountID)
 	var i AccountBalanceDeltaRow
-	err := row.Scan(&i.FutureDelta, &i.TodayDelta)
+	err := row.Scan(
+		&i.FutureDelta,
+		&i.TodayDelta,
+		&i.BankDelta,
+		&i.LastReconciled,
+	)
 	return i, err
 }
 

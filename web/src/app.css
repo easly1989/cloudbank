@@ -747,16 +747,6 @@ body {
   padding: 6px 14px;
 }
 
-/* An account on a phone (#514): one line per account, ruled like the table
-   rows it replaces, tall enough for a name over its bank and share. */
-.cb-account-row {
-  min-height: 56px;
-  padding-block: 4px;
-}
-.cb-account-row + .cb-account-row {
-  border-top: 1px solid var(--mantine-color-default-border);
-}
-
 /* On a touch screen, 44 is the floor (#403, #465). The boards are all drawn at
  * 1280px for a mouse; none of them is a phone, so growing a control there
  * contradicts nothing — and a finger is not a pointer. Every step of Mantine's

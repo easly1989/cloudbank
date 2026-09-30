@@ -2947,6 +2947,8 @@ components:
         minimumBalance: { type: integer, format: int64, description: "minor units" }
         balance: { type: integer, format: int64, description: "today's balance (initial + transactions dated on/before today), minor units" }
         futureBalance: { type: integer, format: int64, description: "initial + all transactions incl. future-dated, minor units" }
+        reconciledBalance: { type: integer, format: int64, description: "initial + reconciled transactions dated on/before today, minor units" }
+        lastReconciled: { type: string, format: date, description: "date of the latest reconciled transaction; absent when there is none" }
         value: { type: integer, format: int64, description: "latest recorded valuation (asset accounts only); replaces balance/futureBalance when present" }
         closed: { type: boolean }
         noSummary: { type: boolean }
@@ -2965,7 +2967,7 @@ components:
         currencyGroupChar: { type: string }
         currencyFracDigits: { type: integer }
       required:
-        [id, name, type, currencyId, initialBalance, minimumBalance, balance, futureBalance, closed, position,
+        [id, name, type, currencyId, initialBalance, minimumBalance, balance, futureBalance, reconciledBalance, closed, position,
          defaultPaymentMode,
          currencyCode, currencySymbol, currencySymbolPrefix, currencyDecimalChar, currencyGroupChar, currencyFracDigits]
     AccountInput:
