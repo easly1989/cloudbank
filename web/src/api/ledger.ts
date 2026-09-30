@@ -46,6 +46,8 @@ export interface TransactionInput {
   memo?: string;
   tags?: string[];
   splits?: Split[];
+  /** On create only: the template the entry was filled in from (#560). */
+  templateId?: number | null;
 }
 
 export interface TransactionPage {

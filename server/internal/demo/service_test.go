@@ -105,8 +105,12 @@ func TestStartFillsAnAccountOfItsOwn(t *testing.T) {
 
 	// The year's salary, rent, internet, streaming and energy bills are the
 	// schedules' own (#546): about five a month, and nothing else.
-	if n := count(t, st, "SELECT COUNT(*) FROM transactions WHERE wallet_id = ? AND template_id IS NOT NULL", wid); n < 50 || n > 65 {
+	if n := count(t, st, "SELECT COUNT(*) FROM transactions WHERE wallet_id = ? AND template_id IN (SELECT template_id FROM schedules)", wid); n < 50 || n > 65 {
 		t.Errorf("%d transactions linked to a schedule's template, want the year's five bills a month", n)
+	}
+	// The three quick-entry templates have uses to count too (#560).
+	if n := count(t, st, "SELECT COUNT(DISTINCT template_id) FROM transactions WHERE wallet_id = ? AND template_id NOT IN (SELECT template_id FROM schedules)", wid); n != 3 {
+		t.Errorf("%d quick-entry templates used, want 3", n)
 	}
 
 	// The review page opens without false alarms.

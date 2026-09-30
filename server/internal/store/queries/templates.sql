@@ -42,3 +42,20 @@ WHERE template_id IS NULL
   AND account_id = (SELECT tpl.account_id FROM templates tpl WHERE tpl.id = sqlc.arg(template_id))
   AND payee_id = (SELECT tpl.payee_id FROM templates tpl WHERE tpl.id = sqlc.arg(template_id))
   AND category_id = (SELECT tpl.category_id FROM templates tpl WHERE tpl.id = sqlc.arg(template_id));
+
+-- name: TemplateUsage :many
+-- How often each template was used: the transactions made from it dated in
+-- [from_date, to_date], and the latest on or before to_date (#560). A transfer
+-- counts once, by its leg on the template's own account.
+SELECT t.template_id AS template_id,
+       CAST(SUM(CASE WHEN t.date >= sqlc.arg(from_date) THEN 1 ELSE 0 END) AS INTEGER) AS txn_count,
+       CAST(MAX(t.date) AS TEXT) AS last_date
+FROM transactions t
+JOIN templates tpl ON tpl.id = t.template_id
+WHERE t.wallet_id = sqlc.arg(wallet_id)
+  AND t.date <= sqlc.arg(to_date)
+  AND (tpl.account_id IS NULL OR t.account_id = tpl.account_id)
+GROUP BY t.template_id;
+
+-- name: CountTemplateSchedules :one
+SELECT COUNT(*) FROM schedules WHERE template_id = ?;

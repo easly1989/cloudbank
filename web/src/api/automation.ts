@@ -59,6 +59,16 @@ export const createTemplateFromTransaction = (
 export const deleteTemplate = (walletId: number, id: number) =>
   api.del<void>(`/api/v1/wallets/${walletId}/templates/${id}`);
 
+/** How often a template was used: transactions made from it in [from, to], and the latest. */
+export interface TemplateUsage {
+  templateId: number;
+  count: number;
+  lastDate: string;
+}
+
+export const getTemplateUsage = (walletId: number, from: string, to: string) =>
+  api.get<TemplateUsage[]>(`/api/v1/wallets/${walletId}/templates/usage?from=${from}&to=${to}`);
+
 // --- Schedules ---
 
 export type ScheduleUnit = "day" | "week" | "month" | "year";

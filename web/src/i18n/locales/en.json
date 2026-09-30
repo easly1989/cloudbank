@@ -833,7 +833,47 @@
     "confirmDeleteTitle": "Delete \"{{name}}\"?",
     "confirmDeleteBody": "Transactions already created from it are unaffected.",
     "hint": "Transactions you enter more than once: fill one in, then reuse it.",
-    "emptyHint": "The weekly shop, the monthly transfer: the transactions you would otherwise retype."
+    "emptyHint": "The weekly shop, the monthly transfer: the transactions you would otherwise retype.",
+    "actionsFor": "Actions for {{name}}",
+    "openSchedule": "Open the schedule of {{name}}",
+    "transferTo": "Transfer to {{account}}",
+    "split": "Split",
+    "quick": "For quick entry",
+    "scheduled": "Behind a schedule",
+    "col": {
+      "what": "Payee and category",
+      "used": "Used",
+      "schedule": "Schedule"
+    },
+    "usedTimes_one": "Once · {{date}}",
+    "usedTimes_other": "{{count}} times · {{date}}",
+    "lastUsed": "Last used {{date}}",
+    "neverUsed": "Never",
+    "every": {
+      "day": "Every day",
+      "dayN": "Every {{n}} days",
+      "week": "Every week",
+      "weekN": "Every {{n}} weeks",
+      "month": "Every month",
+      "monthN": "Every {{n}} months",
+      "year": "Every year",
+      "yearN": "Every {{n}} years"
+    },
+    "everyNext": "{{every}} · next {{date}}",
+    "line": "Pick a template from the entry sheet's ⋯ menu and it fills the transaction in.",
+    "lineScheduled": "Pick a template from the entry sheet's ⋯ menu and it fills the transaction in. The ones behind a schedule are what the schedule posts: they open in Schedules.",
+    "sheet": {
+      "usedTimes_one": "Used once, on {{date}}",
+      "usedTimes_other": "Used {{count}} times, the last on {{date}}",
+      "lastUsed": "Not used in the last twelve months; the last time on {{date}}",
+      "neverUsed": "Not used yet"
+    },
+    "direction": "Out or in",
+    "out": "Out",
+    "in": "In",
+    "addTag": "Add a tag",
+    "changeNote": "Changing it changes what it fills in from now on; the transactions already made from it stay as they are.",
+    "newNote": "You can also save one from the entry sheet: ⋯ → Save as template."
   },
   "register": {
     "sync": "Sync",

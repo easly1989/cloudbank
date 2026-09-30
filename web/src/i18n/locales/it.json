@@ -833,7 +833,47 @@
     "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
     "confirmDeleteBody": "Le transazioni già create da questo modello non vengono toccate.",
     "hint": "Transazioni che inserisci più di una volta: compilane una e poi riusala.",
-    "emptyHint": "La spesa settimanale, il bonifico mensile: le transazioni che altrimenti riscriveresti."
+    "emptyHint": "La spesa settimanale, il bonifico mensile: le transazioni che altrimenti riscriveresti.",
+    "actionsFor": "Azioni per {{name}}",
+    "openSchedule": "Apri la programmazione di {{name}}",
+    "transferTo": "Giroconto verso {{account}}",
+    "split": "Suddivisa",
+    "quick": "Per l'inserimento rapido",
+    "scheduled": "Dietro una programmazione",
+    "col": {
+      "what": "Beneficiario e categoria",
+      "used": "Usato",
+      "schedule": "Programmazione"
+    },
+    "usedTimes_one": "1 volta · {{date}}",
+    "usedTimes_other": "{{count}} volte · {{date}}",
+    "lastUsed": "Ultimo uso {{date}}",
+    "neverUsed": "Mai",
+    "every": {
+      "day": "Ogni giorno",
+      "dayN": "Ogni {{n}} giorni",
+      "week": "Ogni settimana",
+      "weekN": "Ogni {{n}} settimane",
+      "month": "Ogni mese",
+      "monthN": "Ogni {{n}} mesi",
+      "year": "Ogni anno",
+      "yearN": "Ogni {{n}} anni"
+    },
+    "everyNext": "{{every}} · prossima {{date}}",
+    "line": "Scegli un modello dal menu ⋯ della scheda di inserimento e la transazione si compila da sola.",
+    "lineScheduled": "Scegli un modello dal menu ⋯ della scheda di inserimento e la transazione si compila da sola. Quelli dietro una programmazione sono ciò che la programmazione registra: si aprono nelle Programmate.",
+    "sheet": {
+      "usedTimes_one": "Usato una volta, il {{date}}",
+      "usedTimes_other": "Usato {{count}} volte, l'ultima il {{date}}",
+      "lastUsed": "Non usato negli ultimi dodici mesi; l'ultima volta il {{date}}",
+      "neverUsed": "Non ancora usato"
+    },
+    "direction": "Uscita o entrata",
+    "out": "Uscita",
+    "in": "Entrata",
+    "addTag": "Aggiungi un'etichetta",
+    "changeNote": "Cambiarlo cambia ciò che compilerà d'ora in poi; le transazioni già fatte con questo modello restano come sono.",
+    "newNote": "Puoi anche salvarne uno dalla scheda di inserimento: ⋯ → Salva come modello."
   },
   "register": {
     "sync": "Sincronizza",

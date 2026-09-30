@@ -1777,6 +1777,24 @@ paths:
       responses:
         "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Template" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/templates/usage:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getTemplateUsage
+      summary: How often each template was used in a period
+      description: >-
+        For each template a transaction was made from on or before `to`: how
+        many were made between `from` and `to` (both included), and the date of
+        the latest one on or before `to`. A transfer counts once, by its leg on
+        the template's account. A template never used is absent.
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200": { description: Usage., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/TemplateUsage" } } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/templates/from-transaction/{transactionId}:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -1821,10 +1839,11 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
     delete:
       operationId: deleteTemplate
-      summary: Delete a template
+      summary: Delete a template (not one a schedule posts)
       responses:
         "204": { description: Deleted. }
         "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: A schedule posts this template; delete the schedule instead., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
   /api/v1/wallets/{walletId}/schedules:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -3129,7 +3148,15 @@ components:
         memo: { type: string }
         tags: { type: array, items: { type: string } }
         splits: { type: array, items: { $ref: "#/components/schemas/Split" } }
+        templateId: { type: integer, format: int64, nullable: true, description: "the template it was filled in from; recorded on create only, and counted by /templates/usage" }
       required: [accountId, date, amount]
+    TemplateUsage:
+      type: object
+      properties:
+        templateId: { type: integer, format: int64 }
+        count: { type: integer, format: int64, description: "transactions made from it in the period" }
+        lastDate: { type: string, format: date, description: "the latest on or before the period's end" }
+      required: [templateId, count, lastDate]
     Attachment:
       type: object
       properties:

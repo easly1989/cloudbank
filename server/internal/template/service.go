@@ -19,7 +19,18 @@ var (
 	ErrNotFound       = errors.New("template: not found")
 	ErrNameRequired   = errors.New("template: name is required")
 	ErrInvalidAccount = errors.New("template: account does not belong to the wallet")
+	// ErrScheduled is a template a schedule posts: deleting it would take the
+	// schedule with it, so it is deleted from Schedules instead (#560).
+	ErrScheduled = errors.New("template: a schedule posts it")
 )
+
+// Usage is how often a template was used: the transactions made from it in a
+// period, and the date of the latest one however long ago.
+type Usage struct {
+	TemplateID int64  `json:"templateId"`
+	Count      int64  `json:"count"`
+	LastDate   string `json:"lastDate"`
+}
 
 // Split is one line of a split template.
 type Split struct {
@@ -297,7 +308,29 @@ func (s *Service) Update(ctx context.Context, walletID, id int64, in Input) (Tem
 
 // Delete removes a template (its split lines cascade).
 func (s *Service) Delete(ctx context.Context, id int64) error {
+	if n, err := s.q.CountTemplateSchedules(ctx, id); err != nil {
+		return err
+	} else if n > 0 {
+		return ErrScheduled
+	}
 	return s.q.DeleteTemplate(ctx, id)
+}
+
+// Usage returns, for each template ever used up to to, the transactions made
+// from it between from and to (civil dates, both included) and its latest.
+func (s *Service) Usage(ctx context.Context, walletID int64, from, to string) ([]Usage, error) {
+	rows, err := s.rq.TemplateUsage(ctx, db.TemplateUsageParams{FromDate: from, WalletID: walletID, ToDate: to})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Usage, 0, len(rows))
+	for _, r := range rows {
+		if !r.TemplateID.Valid {
+			continue
+		}
+		out = append(out, Usage{TemplateID: r.TemplateID.Int64, Count: r.TxnCount, LastDate: r.LastDate})
+	}
+	return out, nil
 }
 
 // CreateFromTransaction builds a template capturing every field of an existing

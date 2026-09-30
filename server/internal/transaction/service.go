@@ -95,6 +95,10 @@ type Input struct {
 	// re-importing the same file can detect already-imported rows. Empty for
 	// manual entry.
 	ImportRef string
+	// TemplateID is the template the transaction was filled in from, when it
+	// was (#560): the templates page counts how often each is used. Create
+	// records it; Update leaves the link as it is.
+	TemplateID *int64
 }
 
 // Service implements transaction management.
@@ -181,7 +185,7 @@ func (s *Service) validate(ctx context.Context, walletID int64, in *Input) error
 			return ErrSplitMismatch
 		}
 	}
-	refs := (&walletref.Refs{}).Payee(in.PayeeID).Category(in.CategoryID).Vehicle(in.VehicleID)
+	refs := (&walletref.Refs{}).Payee(in.PayeeID).Category(in.CategoryID).Vehicle(in.VehicleID).Template(in.TemplateID)
 	for i := range in.Splits {
 		refs.Category(in.Splits[i].CategoryID)
 	}
@@ -204,6 +208,13 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Transac
 	id, err := s.CreateInTx(ctx, qtx, walletID, in)
 	if err != nil {
 		return Transaction{}, err
+	}
+	if in.TemplateID != nil {
+		if err := qtx.SetTransactionTemplate(ctx, db.SetTransactionTemplateParams{
+			TemplateID: sql.NullInt64{Int64: *in.TemplateID, Valid: true}, ID: id,
+		}); err != nil {
+			return Transaction{}, err
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return Transaction{}, err
