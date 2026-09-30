@@ -17,6 +17,7 @@ type Querier interface {
 	// header: future = all, today = dated on/before today, bank = reconciled(2)
 	// dated on/before today. The application adds each account's initial balance.
 	AccountBalanceDeltas(ctx context.Context, arg AccountBalanceDeltasParams) ([]AccountBalanceDeltasRow, error)
+	AddAssignmentTag(ctx context.Context, arg AddAssignmentTagParams) error
 	AddTransactionTag(ctx context.Context, arg AddTransactionTagParams) error
 	AddWalletMember(ctx context.Context, arg AddWalletMemberParams) error
 	AdvanceSchedule(ctx context.Context, arg AdvanceScheduleParams) error
@@ -61,6 +62,7 @@ type Querier interface {
 	DeleteAPIToken(ctx context.Context, arg DeleteAPITokenParams) (int64, error)
 	DeleteAccount(ctx context.Context, id int64) error
 	DeleteAssignment(ctx context.Context, id int64) error
+	DeleteAssignmentTags(ctx context.Context, assignmentID int64) error
 	DeleteAttachment(ctx context.Context, id int64) error
 	DeleteBankConnection(ctx context.Context, arg DeleteBankConnectionParams) (int64, error)
 	DeleteBankLink(ctx context.Context, arg DeleteBankLinkParams) error
@@ -181,6 +183,8 @@ type Querier interface {
 	ListAccountsForWallet(ctx context.Context, walletID int64) ([]ListAccountsForWalletRow, error)
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
 	ListAllWalletIDs(ctx context.Context) ([]int64, error)
+	// The tags every rule of the wallet adds, by rule then name.
+	ListAssignmentTagsForWallet(ctx context.Context, walletID int64) ([]ListAssignmentTagsForWalletRow, error)
 	ListAssignmentsForWallet(ctx context.Context, walletID int64) ([]Assignment, error)
 	ListAttachmentsForTransaction(ctx context.Context, transactionID int64) ([]Attachment, error)
 	ListAttachmentsForWallet(ctx context.Context, walletID int64) ([]Attachment, error)
@@ -243,6 +247,9 @@ type Querier interface {
 	ListVehicleTransactions(ctx context.Context, arg ListVehicleTransactionsParams) ([]ListVehicleTransactionsRow, error)
 	ListVehiclesForWallet(ctx context.Context, walletID int64) ([]Vehicle, error)
 	ListWalletSettings(ctx context.Context) ([]ListWalletSettingsRow, error)
+	// Every transaction with what a rule can read (memo, payee, tags, account) and
+	// what it can fill in. The tags come joined by the unit separator (char 31),
+	// which no tag name holds.
 	ListWalletTransactionsForRules(ctx context.Context, walletID int64) ([]ListWalletTransactionsForRulesRow, error)
 	ListWalletsForUser(ctx context.Context, userID int64) ([]ListWalletsForUserRow, error)
 	// Per-month income (amount > 0) and expense (amount < 0) totals in a date range,
@@ -266,6 +273,9 @@ type Querier interface {
 	// "none" (0) left out.
 	PayeePaymentCounts(ctx context.Context, arg PayeePaymentCountsParams) ([]PayeePaymentCountsRow, error)
 	PruneBankSyncRuns(ctx context.Context, arg PruneBankSyncRunsParams) error
+	// A tag merge moves the rules too; OR IGNORE skips a rule that already adds
+	// the target (its row goes away with the source tag).
+	ReassignAssignmentTag(ctx context.Context, arg ReassignAssignmentTagParams) error
 	ReassignPayeeCategory(ctx context.Context, arg ReassignPayeeCategoryParams) error
 	ReassignSplitCategory(ctx context.Context, arg ReassignSplitCategoryParams) error
 	// Move tag references onto another tag; OR IGNORE skips rows where the target

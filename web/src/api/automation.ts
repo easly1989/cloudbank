@@ -202,7 +202,7 @@ export const deleteTransfer = (walletId: number, id: number) =>
 
 // --- Assignment rules ---
 
-export type MatchField = "memo" | "payee" | "both";
+export type MatchField = "memo" | "payee" | "both" | "tag";
 export type MatchType = "exact" | "contains" | "regex";
 
 export interface Assignment {
@@ -217,8 +217,14 @@ export interface Assignment {
   setCategoryId?: number | null;
   setPaymentMode?: number | null;
   setInfo?: string | null;
+  /** Added to the transactions it matches; a rule never removes a tag. */
+  setTags: string[];
   applyOnManual: boolean;
   applyOnImport: boolean;
+  /** List only: the transactions this rule is the first to match. */
+  matches?: number;
+  /** List only: the transactions it matches at all. */
+  reach?: number;
 }
 
 export interface AssignmentInput {
@@ -231,6 +237,7 @@ export interface AssignmentInput {
   setCategoryId?: number | null;
   setPaymentMode?: number | null;
   setInfo?: string | null;
+  setTags?: string[];
   applyOnManual?: boolean;
   applyOnImport?: boolean;
 }
@@ -241,6 +248,19 @@ export interface MatchedTransaction {
   date: string;
   memo: string;
   payeeName: string;
+  categoryId?: number | null;
+  tags: string[];
+}
+
+/** The rule tester's dry run: what a rule would match, changing nothing. */
+export interface RuleTest {
+  count: number;
+  /** Those a rule above it matches first. */
+  taken: number;
+  /** Those it would fill in that have no category. */
+  withoutCategory: number;
+  /** The most recent matches, newest first. */
+  latest: MatchedTransaction[];
 }
 
 export interface Suggestion {
@@ -249,6 +269,7 @@ export interface Suggestion {
   categoryId?: number | null;
   paymentMode?: number | null;
   info?: string | null;
+  tags?: string[];
 }
 
 export const listAssignments = (walletId: number) =>
@@ -266,17 +287,26 @@ export const deleteAssignment = (walletId: number, id: number) =>
 export const reorderAssignments = (walletId: number, ids: number[]) =>
   api.post<void>(`/api/v1/wallets/${walletId}/assignments/reorder`, { ids });
 
-export const testAssignment = (walletId: number, body: AssignmentInput) =>
-  api.post<MatchedTransaction[]>(`/api/v1/wallets/${walletId}/assignments/test`, body);
+/** id is the rule being edited (omit for a new one). */
+export const testAssignment = (walletId: number, body: AssignmentInput & { id?: number }) =>
+  api.post<RuleTest>(`/api/v1/wallets/${walletId}/assignments/test`, body);
 
+/** With assignmentId, only the transactions that rule matches first. */
 export const applyAssignments = (
   walletId: number,
-  opts: { accountId?: number | null; onlyFillEmpty: boolean },
+  opts: { accountId?: number | null; assignmentId?: number | null; onlyFillEmpty: boolean },
 ) => api.post<{ changed: number }>(`/api/v1/wallets/${walletId}/assignments/apply`, opts);
 
-export const suggestAssignment = (walletId: number, memo: string, payee: string, accountId = 0) =>
+export const suggestAssignment = (
+  walletId: number,
+  memo: string,
+  payee: string,
+  accountId = 0,
+  tags: string[] = [],
+) =>
   api.post<Suggestion>(`/api/v1/wallets/${walletId}/assignments/suggest`, {
     memo,
     payee,
+    tags,
     accountId,
   });

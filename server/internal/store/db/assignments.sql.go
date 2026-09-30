@@ -10,12 +10,36 @@ import (
 	"database/sql"
 )
 
+const addAssignmentTag = `-- name: AddAssignmentTag :exec
+INSERT INTO assignment_tags (assignment_id, tag_id) VALUES (?, ?)
+ON CONFLICT DO NOTHING
+`
+
+type AddAssignmentTagParams struct {
+	AssignmentID int64
+	TagID        int64
+}
+
+func (q *Queries) AddAssignmentTag(ctx context.Context, arg AddAssignmentTagParams) error {
+	_, err := q.db.ExecContext(ctx, addAssignmentTag, arg.AssignmentID, arg.TagID)
+	return err
+}
+
 const deleteAssignment = `-- name: DeleteAssignment :exec
 DELETE FROM assignments WHERE id = ?
 `
 
 func (q *Queries) DeleteAssignment(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, deleteAssignment, id)
+	return err
+}
+
+const deleteAssignmentTags = `-- name: DeleteAssignmentTags :exec
+DELETE FROM assignment_tags WHERE assignment_id = ?
+`
+
+func (q *Queries) DeleteAssignmentTags(ctx context.Context, assignmentID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteAssignmentTags, assignmentID)
 	return err
 }
 
@@ -108,6 +132,45 @@ func (q *Queries) InsertAssignment(ctx context.Context, arg InsertAssignmentPara
 	return i, err
 }
 
+const listAssignmentTagsForWallet = `-- name: ListAssignmentTagsForWallet :many
+SELECT at.assignment_id, g.id AS tag_id, g.name
+FROM assignment_tags at
+JOIN assignments a ON a.id = at.assignment_id
+JOIN tags g ON g.id = at.tag_id
+WHERE a.wallet_id = ?
+ORDER BY at.assignment_id, g.name
+`
+
+type ListAssignmentTagsForWalletRow struct {
+	AssignmentID int64
+	TagID        int64
+	Name         string
+}
+
+// The tags every rule of the wallet adds, by rule then name.
+func (q *Queries) ListAssignmentTagsForWallet(ctx context.Context, walletID int64) ([]ListAssignmentTagsForWalletRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAssignmentTagsForWallet, walletID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAssignmentTagsForWalletRow{}
+	for rows.Next() {
+		var i ListAssignmentTagsForWalletRow
+		if err := rows.Scan(&i.AssignmentID, &i.TagID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAssignmentsForWallet = `-- name: ListAssignmentsForWallet :many
 SELECT id, wallet_id, position, match_field, match_type, pattern, case_sensitive, set_payee_id, set_category_id, set_payment_mode, apply_on_manual, apply_on_import, created_at, match_account_id, set_info FROM assignments WHERE wallet_id = ? ORDER BY position, id
 `
@@ -153,7 +216,10 @@ func (q *Queries) ListAssignmentsForWallet(ctx context.Context, walletID int64) 
 
 const listWalletTransactionsForRules = `-- name: ListWalletTransactionsForRules :many
 SELECT t.id, t.account_id, t.date, t.memo, t.info, t.payee_id, t.category_id, t.payment_mode,
-       COALESCE(p.name, '') AS payee_name
+       COALESCE(p.name, '') AS payee_name,
+       CAST(COALESCE((SELECT group_concat(g.name, char(31))
+                      FROM transaction_tags tt JOIN tags g ON g.id = tt.tag_id
+                      WHERE tt.transaction_id = t.id), '') AS TEXT) AS tag_names
 FROM transactions t
 LEFT JOIN payees p ON p.id = t.payee_id
 WHERE t.wallet_id = ?
@@ -170,8 +236,12 @@ type ListWalletTransactionsForRulesRow struct {
 	CategoryID  sql.NullInt64
 	PaymentMode int64
 	PayeeName   string
+	TagNames    string
 }
 
+// Every transaction with what a rule can read (memo, payee, tags, account) and
+// what it can fill in. The tags come joined by the unit separator (char 31),
+// which no tag name holds.
 func (q *Queries) ListWalletTransactionsForRules(ctx context.Context, walletID int64) ([]ListWalletTransactionsForRulesRow, error) {
 	rows, err := q.db.QueryContext(ctx, listWalletTransactionsForRules, walletID)
 	if err != nil {
@@ -191,6 +261,7 @@ func (q *Queries) ListWalletTransactionsForRules(ctx context.Context, walletID i
 			&i.CategoryID,
 			&i.PaymentMode,
 			&i.PayeeName,
+			&i.TagNames,
 		); err != nil {
 			return nil, err
 		}
@@ -214,6 +285,22 @@ func (q *Queries) NextAssignmentPosition(ctx context.Context, walletID int64) (i
 	var column_1 int64
 	err := row.Scan(&column_1)
 	return column_1, err
+}
+
+const reassignAssignmentTag = `-- name: ReassignAssignmentTag :exec
+UPDATE OR IGNORE assignment_tags SET tag_id = ? WHERE tag_id = ?
+`
+
+type ReassignAssignmentTagParams struct {
+	TagID   int64
+	TagID_2 int64
+}
+
+// A tag merge moves the rules too; OR IGNORE skips a rule that already adds
+// the target (its row goes away with the source tag).
+func (q *Queries) ReassignAssignmentTag(ctx context.Context, arg ReassignAssignmentTagParams) error {
+	_, err := q.db.ExecContext(ctx, reassignAssignmentTag, arg.TagID, arg.TagID_2)
+	return err
 }
 
 const setAssignmentPosition = `-- name: SetAssignmentPosition :exec
