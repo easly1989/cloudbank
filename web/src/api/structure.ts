@@ -267,6 +267,34 @@ export const deletePayee = (walletId: number, id: number) =>
 export const mergePayee = (walletId: number, id: number, targetId: number) =>
   api.post<void>(`/api/v1/wallets/${walletId}/payees/${id}/merge`, { targetId });
 
+/** What one payee held in a period, and what it is usually given (#554). */
+export interface PayeeActivity {
+  payeeId: number;
+  count: number;
+  /** Their sum, in the base currency's minor units. */
+  amount: number;
+  /** The latest transaction on or before the period's end, however long ago. */
+  lastDate: string;
+  /** The category most of its plain transactions went to, how many did, and
+      how many had a category at all. */
+  usualCategoryId?: number;
+  usualCategoryCount: number;
+  categorisedCount: number;
+  /** The payment mode it was most often paid with, "none" aside. */
+  usualPaymentMode?: number;
+}
+
+export interface PayeeActivityResult {
+  from: string;
+  to: string;
+  /** Every payee with a transaction up to `to`; one never used is absent. */
+  payees: PayeeActivity[];
+  currency: CurrencyInfo | null;
+}
+
+export const getPayeeActivity = (walletId: number, from: string, to: string) =>
+  api.get<PayeeActivityResult>(`/api/v1/wallets/${walletId}/payees/activity?from=${from}&to=${to}`);
+
 export interface CurrencyInfo {
   code: string;
   symbol: string;

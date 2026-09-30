@@ -1,0 +1,257 @@
+/* The Payees page (#554), to the numbers of the approved mockup: the
+   Categories page's toolbar, then one row per payee in the register's card,
+   band and row sizes. */
+
+.page {
+  container-type: inline-size;
+  font-variant-numeric: tabular-nums;
+}
+.mono {
+  font-family: var(--mantine-font-family-monospace);
+}
+.dim {
+  color: var(--mantine-color-dimmed);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.search {
+  width: 280px;
+}
+@media (pointer: fine) {
+  .page .search :global(.mantine-Input-wrapper) {
+    --input-height-sm: 36px;
+  }
+}
+.chip {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--cb-shell-card-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--mantine-color-text);
+}
+.chip:hover {
+  background: var(--mantine-color-default-hover);
+}
+.chip[aria-pressed="true"] {
+  border-color: var(--mantine-primary-color-filled);
+  background: var(--mantine-primary-color-light);
+}
+.chip em {
+  font-style: normal;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 12px;
+  color: var(--mantine-color-dimmed);
+}
+.period {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+}
+
+.card {
+  border: 1px solid var(--cb-ledger-border);
+  border-radius: 12px;
+  background: var(--cb-ledger-surface);
+  overflow: hidden;
+}
+.none {
+  padding: 18px 16px;
+  font-size: 14px;
+  color: var(--mantine-color-dimmed);
+}
+
+/* Desktop rows. */
+.tr {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 260px 110px 120px 170px 40px;
+  gap: 14px;
+  align-items: center;
+  padding: 0 16px;
+  min-height: 46px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 14px;
+}
+.tr[data-row] {
+  cursor: pointer;
+}
+.tr[data-row]:hover {
+  background: var(--mantine-color-default-hover);
+}
+.head {
+  border-top: 0;
+  min-height: 38px;
+  background: var(--cb-band-header);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+}
+.r {
+  text-align: right;
+  white-space: nowrap;
+}
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: inherit;
+  color: inherit;
+}
+.r .sortButton {
+  justify-content: flex-end;
+}
+.sortButton[data-active] {
+  color: var(--mantine-color-text);
+}
+.name {
+  min-width: 0;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: start;
+  color: inherit;
+  font-size: inherit;
+}
+.cat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.cat > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.usual {
+  color: var(--mantine-color-dimmed);
+}
+.useIt {
+  visibility: hidden;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 7px;
+  border: 1px solid var(--cb-shell-card-border);
+  font-size: 12.5px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  color: var(--mantine-color-text);
+}
+.useIt:hover {
+  background: var(--mantine-color-default-hover);
+}
+.tr:hover .useIt,
+.useIt:focus-visible {
+  visibility: visible;
+}
+.last {
+  font-size: 13px;
+}
+.unused .name {
+  color: var(--mantine-color-dimmed);
+}
+
+/* A page too narrow for every column (a laptop with the menu open) drops the
+   last use; the sheet still has it. */
+@container (max-width: 899px) {
+  .tr {
+    grid-template-columns: minmax(120px, 1fr) minmax(150px, 1fr) 90px 140px 40px;
+  }
+  .tr > :nth-child(4) {
+    display: none;
+  }
+}
+
+/* The phone: one row per payee. */
+.phone .search {
+  width: 100%;
+}
+.prow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 15px;
+  text-align: start;
+  color: var(--mantine-color-text);
+}
+.card > .prow:first-child {
+  border-top: 0;
+}
+.pl {
+  flex: 1;
+  min-width: 0;
+}
+.pt {
+  display: block;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pm {
+  display: block;
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pa {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.prow.unused .pt {
+  color: var(--mantine-color-dimmed);
+}
+
+/* The sheet. */
+.suggest {
+  margin-top: 8px;
+  border: 1px dashed var(--cb-shell-card-border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.suggest > span {
+  flex: 1;
+}
+.use {
+  border-top: 1px solid var(--cb-ledger-border);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.useLabel {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+}
+.useValue {
+  font-size: 24px;
+  font-weight: 500;
+}
+.useLink {
+  font-size: 14px;
+  color: var(--cb-accent-text);
+  margin-top: 6px;
+  align-self: flex-start;
+}

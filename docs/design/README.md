@@ -183,3 +183,11 @@ Added since:
   the 396px sheet, where a subcategory can move to another group. The mockup's
   "Show them in the register" became "See it in the reports": the register is
   per account, and the reports filter by a category across all of them.
+- **Payees carry their figures** (#554), to an approved mockup, in the
+  Categories page's family: one row per payee in the register's card, with its
+  default category, transactions, last use and amount over 12 months, sorted by
+  amount and by any column's heading. A payee with no default shows the
+  category it usually gets when that holds at least half of its categorised
+  transactions, and "Use it" under the pointer makes it the default. The sheet
+  adds the default payment, which the old dialog neither showed nor kept.
+  Under 900px of content the last-use column goes.
