@@ -10,6 +10,83 @@ import (
 	"database/sql"
 )
 
+const categoryActivity = `-- name: CategoryActivity :many
+SELECT t.category_id AS category_id,
+       a.currency_id AS currency_id,
+       CAST(SUM(CASE WHEN t.date >= ?1 THEN 1 ELSE 0 END) AS INTEGER) AS line_count,
+       CAST(SUM(CASE WHEN t.date >= ?1 THEN t.amount ELSE 0 END) AS INTEGER) AS total,
+       CAST(MAX(t.date) AS TEXT) AS last_date
+FROM transactions t
+JOIN accounts a ON a.id = t.account_id
+WHERE t.wallet_id = ?2
+  AND t.is_split = 0
+  AND t.category_id IS NOT NULL
+  AND t.date <= ?3
+GROUP BY t.category_id, a.currency_id
+UNION ALL
+SELECT s.category_id AS category_id,
+       a.currency_id AS currency_id,
+       CAST(SUM(CASE WHEN t.date >= ?1 THEN 1 ELSE 0 END) AS INTEGER) AS line_count,
+       CAST(SUM(CASE WHEN t.date >= ?1 THEN s.amount ELSE 0 END) AS INTEGER) AS total,
+       CAST(MAX(t.date) AS TEXT) AS last_date
+FROM splits s
+JOIN transactions t ON t.id = s.transaction_id
+JOIN accounts a ON a.id = t.account_id
+WHERE t.wallet_id = ?2
+  AND s.category_id IS NOT NULL
+  AND t.date <= ?3
+GROUP BY s.category_id, a.currency_id
+`
+
+type CategoryActivityParams struct {
+	FromDate string
+	WalletID int64
+	ToDate   string
+}
+
+type CategoryActivityRow struct {
+	CategoryID sql.NullInt64
+	CurrencyID int64
+	LineCount  int64
+	Total      int64
+	LastDate   string
+}
+
+// What each category holds, per account currency: its lines dated in
+// [from_date, to_date], their sum, and the latest line on or before to_date.
+// Plain transactions and split lines are summed apart, so a category and
+// currency can come back twice; the caller adds them up. A split counts once
+// per line, under the line's own category. No category is left out, not even
+// one hidden from the reports.
+func (q *Queries) CategoryActivity(ctx context.Context, arg CategoryActivityParams) ([]CategoryActivityRow, error) {
+	rows, err := q.db.QueryContext(ctx, categoryActivity, arg.FromDate, arg.WalletID, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CategoryActivityRow{}
+	for rows.Next() {
+		var i CategoryActivityRow
+		if err := rows.Scan(
+			&i.CategoryID,
+			&i.CurrencyID,
+			&i.LineCount,
+			&i.Total,
+			&i.LastDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const countPayeesWithCategory = `-- name: CountPayeesWithCategory :one
 SELECT COUNT(*) FROM payees WHERE default_category_id = ?
 `
@@ -214,10 +291,11 @@ func (q *Queries) SetChildrenIncome(ctx context.Context, arg SetChildrenIncomePa
 }
 
 const updateCategory = `-- name: UpdateCategory :exec
-UPDATE categories SET name = ?, is_income = ?, no_budget = ?, no_report = ? WHERE id = ?
+UPDATE categories SET parent_id = ?, name = ?, is_income = ?, no_budget = ?, no_report = ? WHERE id = ?
 `
 
 type UpdateCategoryParams struct {
+	ParentID sql.NullInt64
 	Name     string
 	IsIncome int64
 	NoBudget int64
@@ -227,6 +305,7 @@ type UpdateCategoryParams struct {
 
 func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) error {
 	_, err := q.db.ExecContext(ctx, updateCategory,
+		arg.ParentID,
 		arg.Name,
 		arg.IsIncome,
 		arg.NoBudget,

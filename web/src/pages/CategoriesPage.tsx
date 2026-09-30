@@ -1,66 +1,134 @@
-import {
-  ActionIcon,
-  Badge,
-  Button,
-  Card,
-  Checkbox,
-  Group,
-  Menu,
-  Modal,
-  Select,
-  Stack,
-  Text,
-  TextInput,
-} from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { Button, SegmentedControl, Stack, TextInput, UnstyledButton } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconCategory, IconDots } from "@tabler/icons-react";
+import { IconCategory, IconLayoutColumns, IconLayoutList, IconSearch } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EmptyState } from "../components/EmptyState";
-import { PageHeader } from "../components/PageHeader";
 
 import {
   ApiError,
-  type Category,
-  createCategory,
   deleteCategory,
+  getCategoryActivity,
   listCategories,
   mergeCategory,
-  updateCategory,
+  type Category,
 } from "../api/client";
-import { rowEditProps, stopRowEdit } from "../rowEdit";
+import { savePreferences } from "../api/preferences";
+import { useAuth } from "../auth/AuthProvider";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
+import { formatMinor, type MoneyFormat } from "../money";
+import { useToday } from "../useToday";
 import { useWallet } from "../wallet/WalletProvider";
-import { sameName } from "../sameName";
+import classes from "./categories/categories.module.css";
+import { DeleteCategoryModal, MergeModal } from "./categories/CategoryModals";
+import { CategorySheet } from "./categories/CategorySheet";
+import {
+  buildSections,
+  countUnused,
+  filterSections,
+  lastTwelveMonths,
+  type CategoryNode,
+  type KindFilter,
+} from "./categories/categoryTree";
+import { CategoryIndex, CategoryPhoneList, CategoryRows } from "./categories/CategoryViews";
+import { useSince } from "./categories/labels";
 
+type View = "rows" | "index";
+
+/** Plain two-decimal numbers, for a wallet with no base currency yet. */
+const PLAIN: MoneyFormat = {
+  fracDigits: 2,
+  decimalChar: ".",
+  groupChar: ",",
+  symbol: "",
+  symbolPrefix: false,
+};
+
+/**
+ * Categories (#552): every category with what it held over the last twelve
+ * months, in two sections, spending and income. On a desktop they show as rows
+ * in the register's card, or as an index of the groups in columns; the reader's
+ * choice is kept with their preferences. A category opens in the sheet beside
+ * the page.
+ */
 export function CategoriesPage() {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const { user } = useAuth();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
+  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
+  const today = useToday();
+  const since = useSince(today);
+  const { from, to } = useMemo(() => lastTwelveMonths(today), [today]);
 
   const query = useQuery({
     queryKey: ["categories", walletId],
     queryFn: () => listCategories(walletId),
     enabled: walletId > 0,
   });
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["categories", walletId] });
+  const activityQuery = useQuery({
+    queryKey: ["category-activity", walletId, from, to],
+    queryFn: () => getCategoryActivity(walletId, from, to),
+    enabled: walletId > 0,
+  });
+  const categories = useMemo(() => query.data ?? [], [query.data]);
+  const sections = useMemo(
+    () => buildSections(categories, activityQuery.data?.categories ?? []),
+    [categories, activityQuery.data],
+  );
+  const format = useMemo(() => {
+    const fmt = activityQuery.data?.currency ?? PLAIN;
+    return (amount: number) => formatMinor(amount, fmt);
+  }, [activityQuery.data]);
+
+  const [kind, setKind] = useState<KindFilter>("all");
+  const [search, setSearch] = useState("");
+  const [unusedOnly, setUnusedOnly] = useState(false);
+  const unusedCount = countUnused([sections.expense, sections.income]);
+  const shown = useMemo(
+    () =>
+      filterSections(sections, {
+        kind,
+        query: search,
+        unusedOnly: unusedOnly && unusedCount > 0,
+      }),
+    [sections, kind, search, unusedOnly, unusedCount],
+  );
+  const [collapsed, setCollapsed] = useState<Set<number>>(() => new Set());
+  const toggle = (id: number) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+
+  // The view is the reader's, kept with their preferences; it shows at once and
+  // is saved behind. A phone always has the rows.
+  const [viewChoice, setViewChoice] = useState<View | null>(null);
+  const view: View = phone ? "rows" : (viewChoice ?? user?.preferences?.categoriesView ?? "rows");
   const onError = (err: unknown) =>
     notifications.show({
       color: "red",
       message: err instanceof ApiError ? err.message : String(err),
     });
+  const setView = (v: View) => {
+    setViewChoice(v);
+    savePreferences(qc, { categoriesView: v }).catch(onError);
+  };
 
-  const [formOpened, form] = useDisclosure(false);
+  const invalidate = () => {
+    for (const key of ["categories", "category-activity"])
+      void qc.invalidateQueries({ queryKey: [key, walletId] });
+  };
+
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
   const [presetParent, setPresetParent] = useState<Category | null>(null);
   const [mergeFrom, setMergeFrom] = useState<Category | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
-
-  const categories = query.data ?? [];
-  const tops = categories.filter((c) => !c.parentId);
-  const childrenOf = (id: number) => categories.filter((c) => c.parentId === id);
 
   const remove = useMutation({
     mutationFn: ({ id, reassignTo }: { id: number; reassignTo?: number }) =>
@@ -72,53 +140,152 @@ export function CategoriesPage() {
     onError,
   });
 
-  const openAdd = (parent: Category | null) => {
-    setEditing(null);
-    setPresetParent(parent);
-    form.open();
+  const nodeOf = (id: number): CategoryNode | null => {
+    for (const sec of [sections.expense, sections.income])
+      for (const g of sec.groups) {
+        if (g.category.id === id) return g;
+        const s = g.subs.find((x) => x.category.id === id);
+        if (s) return s;
+      }
+    return null;
   };
-  const openEdit = (c: Category) => {
-    setEditing(c);
+  const actions = {
+    onOpen: (c: Category) => {
+      setEditing(c);
+      setPresetParent(null);
+      setSheetOpen(true);
+    },
+    onAddSub: (g: Category) => {
+      setEditing(null);
+      setPresetParent(g);
+      setSheetOpen(true);
+    },
+    onMerge: (c: Category) => {
+      setSheetOpen(false);
+      setMergeFrom(c);
+    },
+    onDelete: (c: Category) => {
+      setSheetOpen(false);
+      setDeleteTarget(c);
+    },
+  };
+  const openAdd = () => {
+    setEditing(null);
     setPresetParent(null);
-    form.open();
+    setSheetOpen(true);
   };
 
   if (!currentWallet) return null;
 
-  const renderActions = (c: Category) => (
-    <span {...stopRowEdit}>
-      <Menu position="bottom-end" withinPortal>
-        <Menu.Target>
-          <ActionIcon variant="subtle" aria-label={t("categories.actions")}>
-            <IconDots size={16} />
-          </ActionIcon>
-        </Menu.Target>
-        <Menu.Dropdown>
-          <Menu.Item onClick={() => openEdit(c)}>{t("categories.edit")}</Menu.Item>
-          {!c.parentId && (
-            <Menu.Item onClick={() => openAdd(c)}>{t("categories.addSub")}</Menu.Item>
-          )}
-          <Menu.Item onClick={() => setMergeFrom(c)}>{t("categories.merge")}</Menu.Item>
-          <Menu.Item color="red" onClick={() => setDeleteTarget(c)}>
-            {t("categories.delete")}
-          </Menu.Item>
-        </Menu.Dropdown>
-      </Menu>
-    </span>
+  const tops = categories.filter((c) => !c.parentId);
+  // One button, shown in the header or in the empty state — never both.
+  const addButton = <Button onClick={openAdd}>{t("categories.add")}</Button>;
+
+  const count = (n: number) => <span className={classes.segCount}>{n}</span>;
+  const kinds = (
+    <SegmentedControl
+      value={kind}
+      onChange={(v) => setKind(v as KindFilter)}
+      aria-label={t("categories.filter.label")}
+      data={[
+        { value: "all", label: t("categories.filter.all") },
+        {
+          value: "expense",
+          label: (
+            <>
+              {t("categories.section.expense")}
+              {!phone && count(sections.expense.groups.length)}
+            </>
+          ),
+        },
+        {
+          value: "income",
+          label: (
+            <>
+              {t("categories.section.income")}
+              {!phone && count(sections.income.groups.length)}
+            </>
+          ),
+        },
+      ]}
+    />
+  );
+  const unusedChip = unusedCount > 0 && (
+    <UnstyledButton
+      className={classes.chip}
+      aria-pressed={unusedOnly}
+      onClick={() => setUnusedOnly((v) => !v)}
+    >
+      {phone ? t("categories.filter.unusedShort") : t("categories.filter.unused")}
+      <em>{unusedCount}</em>
+    </UnstyledButton>
+  );
+  const searchBox = (
+    <TextInput
+      className={classes.search}
+      leftSection={<IconSearch size={16} />}
+      placeholder={t("categories.find")}
+      aria-label={t("categories.find")}
+      value={search}
+      onChange={(e) => setSearch(e.currentTarget.value)}
+    />
+  );
+  const views = (
+    <SegmentedControl
+      value={view}
+      onChange={(v) => setView(v as View)}
+      aria-label={t("categories.view.label")}
+      data={[
+        {
+          value: "rows",
+          label: (
+            <span className={classes.viewLabel}>
+              <IconLayoutList size={15} aria-hidden />
+              {t("categories.view.rows")}
+            </span>
+          ),
+        },
+        {
+          value: "index",
+          label: (
+            <span className={classes.viewLabel}>
+              <IconLayoutColumns size={15} aria-hidden />
+              {t("categories.view.index")}
+            </span>
+          ),
+        },
+      ]}
+    />
   );
 
-  // One button, shown in the header or in the empty state — never both.
-  const addButton = <Button onClick={() => openAdd(null)}>{t("categories.add")}</Button>;
+  const viewProps = { sections: shown, format, since, actions };
+  const list =
+    shown.length === 0 ? (
+      <div className={classes.card}>
+        <div className={classes.none}>{t("categories.noMatch")}</div>
+      </div>
+    ) : phone ? (
+      <CategoryPhoneList {...viewProps} />
+    ) : view === "index" ? (
+      <CategoryIndex {...viewProps} />
+    ) : (
+      <CategoryRows
+        {...viewProps}
+        // A search shows every match, whatever was folded.
+        collapsed={search.trim() ? new Set() : collapsed}
+        onToggle={toggle}
+      />
+    );
 
   return (
-    <Stack maw={720}>
+    <Stack className={`${classes.page} ${phone ? classes.phone : ""}`} gap="md">
       <PageHeader
         title={t("categories.title")}
         hint={t("categories.hint")}
-        actions={tops.length > 0 ? addButton : undefined}
+        actions={categories.length > 0 ? addButton : undefined}
       />
 
-      {tops.length === 0 && (
+      {categories.length === 0 && query.isSuccess && (
         <EmptyState
           icon={IconCategory}
           message={t("categories.empty")}
@@ -127,43 +294,43 @@ export function CategoriesPage() {
         />
       )}
 
-      {tops.map((top) => (
-        <Card withBorder key={top.id} p="sm">
-          <Group justify="space-between" {...rowEditProps(() => openEdit(top))}>
-            <Group gap="xs">
-              <Text fw={600}>{top.name}</Text>
-              <Badge color={top.isIncome ? "teal" : "gray"} variant="dot" size="sm">
-                {top.isIncome ? t("categories.income") : t("categories.expense")}
-              </Badge>
-            </Group>
-            {renderActions(top)}
-          </Group>
-          {childrenOf(top.id).map((child) => (
-            <Group
-              key={child.id}
-              justify="space-between"
-              pl="lg"
-              mt={4}
-              {...rowEditProps(() => openEdit(child))}
-            >
-              <Text size="sm">{child.name}</Text>
-              {renderActions(child)}
-            </Group>
-          ))}
-        </Card>
-      ))}
+      {categories.length > 0 && (
+        <>
+          {phone ? (
+            <>
+              {searchBox}
+              <div className={classes.bar}>
+                {kinds}
+                {unusedChip}
+              </div>
+            </>
+          ) : (
+            <div className={classes.bar}>
+              {searchBox}
+              {kinds}
+              {unusedChip}
+              <span className={classes.period}>{t("categories.period")}</span>
+              {views}
+            </div>
+          )}
+          {list}
+        </>
+      )}
 
-      {/* Keyed so each opening mounts a fresh form. */}
-      <CategoryFormModal
-        key={`${editing?.id ?? "new"}-${presetParent?.id ?? ""}`}
-        opened={formOpened}
-        onClose={form.close}
+      <CategorySheet
+        opened={sheetOpen}
+        onClose={() => setSheetOpen(false)}
         walletId={walletId}
         editing={editing}
         presetParent={presetParent}
-        topLevel={tops}
-        all={categories}
+        categories={categories}
+        node={editing ? nodeOf(editing.id) : null}
+        today={today}
+        format={format}
         onSaved={invalidate}
+        onAddSub={actions.onAddSub}
+        onMerge={actions.onMerge}
+        onDelete={actions.onDelete}
       />
       <MergeModal
         key={`merge-${mergeFrom?.id ?? "none"}`}
@@ -185,7 +352,7 @@ export function CategoriesPage() {
       <DeleteCategoryModal
         key={`delete-${deleteTarget?.id ?? "none"}`}
         category={deleteTarget}
-        hasChildren={deleteTarget ? childrenOf(deleteTarget.id).length > 0 : false}
+        hasChildren={deleteTarget ? categories.some((c) => c.parentId === deleteTarget.id) : false}
         topLevelTargets={tops
           .filter((c) => c.id !== deleteTarget?.id)
           .map((c) => ({ value: String(c.id), label: c.name }))}
@@ -194,219 +361,5 @@ export function CategoriesPage() {
         pending={remove.isPending}
       />
     </Stack>
-  );
-}
-
-function CategoryFormModal({
-  opened,
-  onClose,
-  walletId,
-  editing,
-  presetParent,
-  topLevel,
-  all,
-  onSaved,
-}: {
-  opened: boolean;
-  onClose: () => void;
-  walletId: number;
-  editing: Category | null;
-  presetParent: Category | null;
-  topLevel: Category[];
-  /** Every category, so a name is not repeated at its level, whatever its case. */
-  all: Category[];
-  onSaved: () => void;
-}) {
-  const { t } = useTranslation();
-  // The form starts where the category is; the modal is mounted per opening.
-  const [name, setName] = useState(editing?.name ?? "");
-  const [isIncome, setIsIncome] = useState(editing?.isIncome ?? presetParent?.isIncome ?? false);
-  const [noBudget, setNoBudget] = useState(editing?.noBudget ?? false);
-  const [noReport, setNoReport] = useState(editing?.noReport ?? false);
-  const [parentId, setParentId] = useState<string | null>(
-    editing
-      ? editing.parentId
-        ? String(editing.parentId)
-        : null
-      : presetParent
-        ? String(presetParent.id)
-        : null,
-  );
-
-  const isSub = parentId != null;
-  const duplicate = all.find(
-    (c) =>
-      c.id !== editing?.id &&
-      (c.parentId ?? null) === (parentId ? Number(parentId) : null) &&
-      sameName(c.name, name),
-  );
-  const save = useMutation({
-    mutationFn: () => {
-      const body = {
-        name,
-        isIncome,
-        noBudget,
-        noReport,
-        parentId: parentId ? Number(parentId) : null,
-      };
-      return editing ? updateCategory(walletId, editing.id, body) : createCategory(walletId, body);
-    },
-    onSuccess: () => {
-      onSaved();
-      onClose();
-    },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
-  });
-
-  return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={editing ? t("categories.editTitle") : t("categories.addTitle")}
-    >
-      <Stack>
-        <TextInput
-          label={t("categories.name")}
-          required
-          value={name}
-          error={duplicate ? t("categories.duplicate", { name: duplicate.name }) : undefined}
-          onChange={(e) => setName(e.currentTarget.value)}
-        />
-        {!editing && (
-          <Select
-            label={t("categories.parent")}
-            placeholder={t("categories.topLevel")}
-            clearable
-            data={topLevel.map((c) => ({ value: String(c.id), label: c.name }))}
-            value={parentId}
-            onChange={setParentId}
-          />
-        )}
-        {!isSub && (
-          <Checkbox
-            label={t("categories.isIncome")}
-            checked={isIncome}
-            onChange={(e) => setIsIncome(e.currentTarget.checked)}
-          />
-        )}
-        <Checkbox
-          label={t("categories.excludeBudget")}
-          checked={noBudget}
-          onChange={(e) => setNoBudget(e.currentTarget.checked)}
-        />
-        <Checkbox
-          label={t("categories.excludeReport")}
-          checked={noReport}
-          onChange={(e) => setNoReport(e.currentTarget.checked)}
-        />
-        <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>
-            {t("categories.cancel")}
-          </Button>
-          <Button
-            onClick={() => save.mutate()}
-            loading={save.isPending}
-            disabled={!name.trim() || !!duplicate}
-          >
-            {t("categories.save")}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
-  );
-}
-
-export function MergeModal({
-  title,
-  source,
-  options,
-  onClose,
-  onMerge,
-}: {
-  title: string;
-  source: { id: number; name: string } | null;
-  options: { value: string; label: string }[];
-  onClose: () => void;
-  onMerge: (targetId: number) => void;
-}) {
-  const { t } = useTranslation();
-  // Mounted per source (see the key at the call site), so the choice starts
-  // empty for each merge without an effect to clear it.
-  const [target, setTarget] = useState<string | null>(null);
-
-  return (
-    <Modal opened={source !== null} onClose={onClose} title={title}>
-      <Stack>
-        <Text size="sm">{t("categories.mergeHint", { name: source?.name ?? "" })}</Text>
-        <Select data={options} value={target} onChange={setTarget} searchable />
-        <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>
-            {t("categories.cancel")}
-          </Button>
-          <Button
-            color="orange"
-            disabled={!target}
-            onClick={() => target && onMerge(Number(target))}
-          >
-            {t("categories.merge")}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
-  );
-}
-
-function DeleteCategoryModal({
-  category,
-  hasChildren,
-  topLevelTargets,
-  onClose,
-  onDelete,
-  pending,
-}: {
-  category: Category | null;
-  hasChildren: boolean;
-  topLevelTargets: { value: string; label: string }[];
-  onClose: () => void;
-  onDelete: (reassignTo?: number) => void;
-  pending: boolean;
-}) {
-  const { t } = useTranslation();
-  // Mounted per category (see the key at the call site).
-  const [reassignTo, setReassignTo] = useState<string | null>(null);
-
-  return (
-    <Modal opened={category !== null} onClose={onClose} title={t("categories.deleteTitle")}>
-      <Stack>
-        <Text size="sm">{t("categories.deleteHint", { name: category?.name ?? "" })}</Text>
-        {hasChildren && (
-          <Select
-            label={t("categories.reassignTo")}
-            description={t("categories.reassignHint")}
-            data={topLevelTargets}
-            value={reassignTo}
-            onChange={setReassignTo}
-            searchable
-          />
-        )}
-        <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>
-            {t("categories.cancel")}
-          </Button>
-          <Button
-            color="red"
-            loading={pending}
-            disabled={hasChildren && !reassignTo}
-            onClick={() => onDelete(reassignTo ? Number(reassignTo) : undefined)}
-          >
-            {t("categories.delete")}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
   );
 }

@@ -31,7 +31,7 @@ import {
 } from "../api/client";
 import { rowEditProps, stopRowEdit } from "../rowEdit";
 import { useWallet } from "../wallet/WalletProvider";
-import { MergeModal } from "./CategoriesPage";
+import { MergeModal } from "./categories/CategoryModals";
 import { sameName } from "../sameName";
 
 export function PayeesPage() {
