@@ -53,3 +53,43 @@ ON CONFLICT DO NOTHING;
 
 -- name: DeleteTransactionTags :exec
 DELETE FROM transaction_tags WHERE transaction_id = ?;
+
+-- name: TagActivity :many
+-- What each tag holds, per account currency: its transactions dated in
+-- [from_date, to_date], their sum, and the latest one on or before to_date.
+-- The caller adds the currencies up.
+SELECT tt.tag_id AS tag_id,
+       a.currency_id AS currency_id,
+       CAST(SUM(CASE WHEN t.date >= sqlc.arg(from_date) THEN 1 ELSE 0 END) AS INTEGER) AS txn_count,
+       CAST(SUM(CASE WHEN t.date >= sqlc.arg(from_date) THEN t.amount ELSE 0 END) AS INTEGER) AS total,
+       CAST(MAX(t.date) AS TEXT) AS last_date
+FROM transaction_tags tt
+JOIN transactions t ON t.id = tt.transaction_id
+JOIN accounts a ON a.id = t.account_id
+WHERE t.wallet_id = sqlc.arg(wallet_id)
+  AND t.date <= sqlc.arg(to_date)
+GROUP BY tt.tag_id, a.currency_id;
+
+-- name: TagCategoryCounts :many
+-- The categories a tag's transactions in the period went to, and how often:
+-- a plain transaction under its category, a split once per line under the
+-- line's. The two halves can name the same pair; the caller adds them up.
+SELECT tt.tag_id AS tag_id, t.category_id AS category_id, COUNT(*) AS txn_count
+FROM transaction_tags tt
+JOIN transactions t ON t.id = tt.transaction_id
+WHERE t.wallet_id = sqlc.arg(wallet_id)
+  AND t.is_split = 0
+  AND t.category_id IS NOT NULL
+  AND t.date >= sqlc.arg(from_date)
+  AND t.date <= sqlc.arg(to_date)
+GROUP BY tt.tag_id, t.category_id
+UNION ALL
+SELECT tt.tag_id AS tag_id, s.category_id AS category_id, COUNT(*) AS txn_count
+FROM transaction_tags tt
+JOIN transactions t ON t.id = tt.transaction_id
+JOIN splits s ON s.transaction_id = t.id
+WHERE t.wallet_id = sqlc.arg(wallet_id)
+  AND s.category_id IS NOT NULL
+  AND t.date >= sqlc.arg(from_date)
+  AND t.date <= sqlc.arg(to_date)
+GROUP BY tt.tag_id, s.category_id;

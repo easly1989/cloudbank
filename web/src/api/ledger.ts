@@ -1,4 +1,5 @@
 import { api, ApiError } from "./core";
+import type { CurrencyInfo } from "./structure";
 
 // --- Transactions ---
 
@@ -139,6 +140,33 @@ export interface TagInfo {
 
 export const listTagsWithCounts = (walletId: number) =>
   api.get<TagInfo[]>(`/api/v1/wallets/${walletId}/tags/manage`);
+
+/** Makes a tag no transaction carries yet (#556); a name in use is a 409. */
+export const createTag = (walletId: number, name: string) =>
+  api.post<TagInfo>(`/api/v1/wallets/${walletId}/tags`, { name });
+
+/** What one tag held in a period (#556). */
+export interface TagActivity {
+  tagId: number;
+  count: number;
+  /** Their net sum, money in and out together, in the base currency's minor units. */
+  amount: number;
+  /** The latest transaction on or before the period's end, however long ago. */
+  lastDate: string;
+  /** At most two, the most frequent first; a split counts once per line. */
+  categories: { categoryId: number; count: number }[];
+}
+
+export interface TagActivityResult {
+  from: string;
+  to: string;
+  /** Every tag on a transaction up to `to`; one never used is absent. */
+  tags: TagActivity[];
+  currency: CurrencyInfo | null;
+}
+
+export const getTagActivity = (walletId: number, from: string, to: string) =>
+  api.get<TagActivityResult>(`/api/v1/wallets/${walletId}/tags/activity?from=${from}&to=${to}`);
 
 export const renameTag = (walletId: number, tagId: number, name: string) =>
   api.patch<void>(`/api/v1/wallets/${walletId}/tags/${tagId}`, { name });

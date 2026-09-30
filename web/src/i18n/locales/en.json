@@ -521,16 +521,55 @@
     }
   },
   "tags": {
-    "renameAria": "Rename {{name}}",
     "title": "Tags",
-    "empty": "No tags yet. They are created as you tag transactions.",
-    "name": "Tag",
-    "count": "Used",
-    "mergeInto": "Merge into…",
-    "delete": "Delete tag",
+    "hint": "Free-form labels you put on a transaction. One transaction can carry several.",
+    "add": "Add tag",
+    "addTitle": "New tag",
+    "mergeTitle": "Merge tag",
+    "edit": "Edit",
+    "delete": "Delete",
+    "merge": "Merge",
+    "cancel": "Cancel",
+    "save": "Save",
+    "name": "Name",
+    "empty": "No tags yet.",
+    "emptyHint": "A tag is made as you type it on a transaction. You can also add one here, ready for when you need it.",
+    "duplicate": "“{{name}}” already exists. To keep just one, use Merge on the list.",
     "confirmDeleteTitle": "Delete \"{{name}}\"?",
     "confirmDeleteBody": "The tag is removed from every transaction that carries it. The transactions themselves stay.",
-    "hint": "Free-form labels you put on a transaction. One transaction can carry several."
+    "actionsFor": "Actions for {{name}}",
+    "never": "Never",
+    "mostly": "mostly {{name}}",
+    "transactions_one": "{{count}} transaction",
+    "transactions_other": "{{count}} transactions",
+    "notUsedSince": "Not used since {{date}}",
+    "neverUsed": "Never used",
+    "sortBy": "Sort by {{column}}",
+    "sortedAsc": "{{column}}, sorted from the smallest; click to turn round",
+    "sortedDesc": "{{column}}, sorted from the largest; click to turn round",
+    "find": "Find a tag",
+    "noMatch": "No tag matches.",
+    "period": "Figures cover the last 12 months",
+    "col": {
+      "tag": "Tag",
+      "mostlyIn": "Mostly in",
+      "transactions": "Transactions",
+      "lastUsed": "Last used",
+      "amount": "Amount"
+    },
+    "filter": {
+      "unused": "Unused in 12 months",
+      "unusedShort": "Unused"
+    },
+    "sheet": {
+      "lastUsed": "Last used on {{date}}",
+      "renameHint": "Renaming it renames it on every transaction.",
+      "newHint": "You can also make one as you type it on a transaction.",
+      "lastTwelve": "Last 12 months",
+      "usage_one": "{{count}} transaction, on {{date}}",
+      "usage_other": "{{count}} transactions, the last on {{date}}",
+      "seeReports": "See it in the reports"
+    }
   },
   "vehicles": {
     "title": "Vehicles",
