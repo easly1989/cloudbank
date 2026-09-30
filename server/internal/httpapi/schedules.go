@@ -9,6 +9,8 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/schedule"
+	"github.com/easly1989/cloudbank/server/internal/transaction"
+	"github.com/easly1989/cloudbank/server/internal/transfer"
 )
 
 // scheduleHandlers serves wallet-scoped schedule endpoints (mounted inside the
@@ -21,6 +23,7 @@ func (h *scheduleHandlers) walletRoutes(r chi.Router) {
 	r.Get("/schedules", h.list)
 	r.Post("/schedules", h.create)
 	r.Get("/schedules/upcoming", h.upcoming)
+	r.Get("/schedules/calendar", h.calendar)
 	r.Route("/schedules/{scheduleId}", func(r chi.Router) {
 		r.Get("/", h.get)
 		r.Patch("/", h.update)
@@ -68,6 +71,33 @@ func (h *scheduleHandlers) upcoming(w http.ResponseWriter, r *http.Request) {
 	out, err := h.svc.Upcoming(r.Context(), wl.ID, before)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not list schedules")
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// calendar lists the occurrences of the wallet's schedules between from and to.
+// today is the reader's civil date, which decides what is overdue; it defaults
+// to the server's.
+func (h *scheduleHandlers) calendar(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	q := r.URL.Query()
+	today := time.Now().UTC()
+	if s := q.Get("today"); s != "" {
+		d, err := schedule.ParseDate(s)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_date", "invalid today (want YYYY-MM-DD)")
+			return
+		}
+		today = d
+	}
+	out, err := h.svc.Calendar(r.Context(), wl.ID, q.Get("from"), q.Get("to"), today)
+	if errors.Is(err, schedule.ErrInvalidRange) {
+		writeError(w, http.StatusBadRequest, "invalid_range", "from and to must be dates at most 100 days apart")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not load the calendar")
 		return
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -128,8 +158,27 @@ func (h *scheduleHandlers) postNow(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := h.svc.PostNow(r.Context(), sc.ID); err != nil {
-		writeError(w, http.StatusInternalServerError, "internal", "could not post schedule")
+	// The body is optional: without one, the occurrence is posted as the
+	// schedule describes it.
+	var ov *schedule.Override
+	if r.ContentLength > 0 {
+		var in struct {
+			Amount *int64  `json:"amount"`
+			Date   *string `json:"date"`
+			Status *int    `json:"status"`
+		}
+		if !decodeJSON(w, r, &in) {
+			return
+		}
+		ov = &schedule.Override{Amount: in.Amount, Date: in.Date, Status: in.Status}
+	}
+	err := h.svc.PostNowWith(r.Context(), sc.ID, ov)
+	if !mapError(w, err, "could not post schedule",
+		errCase{schedule.ErrInvalidDate, http.StatusBadRequest, "invalid_date", "invalid date (want YYYY-MM-DD)"},
+		errCase{schedule.ErrSplitAmount, http.StatusBadRequest, "split_amount", "a split schedule's amount is changed in the schedule"},
+		errCase{transaction.ErrInvalidStatus, http.StatusBadRequest, "invalid_status", "invalid status"},
+		errCase{transfer.ErrInvalidAmount, http.StatusBadRequest, "invalid_amount", "a transfer's amount must be an outflow"},
+	) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

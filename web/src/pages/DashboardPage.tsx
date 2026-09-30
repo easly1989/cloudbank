@@ -43,6 +43,7 @@ import {
   defaultLayout,
   migrateLayout,
   newInstanceId,
+  sameLayout,
   tidyLayout,
 } from "../components/dashboard/layout";
 import { AccountBalanceCard } from "../components/dashboard/widgets/AccountBalanceCard";
@@ -100,15 +101,20 @@ export function DashboardPage() {
   // balance is not a period quantity — so this drives only the widgets that
   // actually cover a span of time, and each of those can pin its own.
   const pagePeriod = (user?.preferences?.dashboardPeriod ?? "all") as DatePreset;
+  // Written from the latest copy of the preferences, not the one this render
+  // saw: a layout save lands up to half a second later, and another preference
+  // may have been saved in between.
+  const latestPreferences = () =>
+    qc.getQueryData<User>(["me"])?.preferences ?? user?.preferences ?? {};
   const persistPeriod = useMutation({
     mutationFn: (period: DatePreset) =>
-      updateMe({ preferences: { ...(user?.preferences ?? {}), dashboardPeriod: period } }),
+      updateMe({ preferences: { ...latestPreferences(), dashboardPeriod: period } }),
     onSuccess: (u: User) => qc.setQueryData(["me"], u),
   });
 
   const persistLayout = useMutation({
     mutationFn: (next: DashboardLayoutV2) =>
-      updateMe({ preferences: { ...(user?.preferences ?? {}), dashboardLayout: next } }),
+      updateMe({ preferences: { ...latestPreferences(), dashboardLayout: next } }),
     onSuccess: (u: User) => qc.setQueryData(["me"], u),
   });
   // Debounce persistence so a drag/resize burst is a single network write.
@@ -117,7 +123,11 @@ export function DashboardPage() {
     layoutRef.current = next;
     setLayout(next);
     clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => persistLayout.mutate(next), 500);
+    // While the grid lays out it reports positions it passes through on the way
+    // to the saved ones; only a layout that differs from the saved one is written.
+    saveTimer.current = setTimeout(() => {
+      if (!sameLayout(next, latestPreferences().dashboardLayout)) persistLayout.mutate(next);
+    }, 500);
   };
   useEffect(() => () => clearTimeout(saveTimer.current), []);
 
@@ -293,6 +303,13 @@ export function DashboardPage() {
     positions: { id: string; x: number; y: number; w: number; h: number }[],
   ) => {
     const byId = new Map(positions.map((p) => [p.id, p]));
+    // The grid reports its positions when it first lays out, too; nothing
+    // moved then, and there is nothing to save.
+    const moved = layoutRef.current.widgets.some((wgt) => {
+      const p = byId.get(wgt.id);
+      return p && (p.x !== wgt.x || p.y !== wgt.y || p.w !== wgt.w || p.h !== wgt.h);
+    });
+    if (!moved) return;
     commitLayout({
       version: 2,
       widgets: layoutRef.current.widgets.map((wgt) => {

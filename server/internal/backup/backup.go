@@ -167,6 +167,9 @@ type Transaction struct {
 	Tags        []string `json:"tags,omitempty"`
 	Splits      []Split  `json:"splits,omitempty"`
 	VehicleID   *int64   `json:"vehicleId,omitempty"`
+	// TemplateID is the template of the schedule that posted it, which is how
+	// the schedules calendar finds it (#546).
+	TemplateID *int64 `json:"templateId,omitempty"`
 }
 
 // Transfer links two transactions as an internal transfer.
@@ -375,6 +378,7 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 				PaymentMode: r.PaymentMode, Status: r.Status, Info: r.Info,
 				PayeeID: dbconv.NullToPtr(r.PayeeID), CategoryID: dbconv.NullToPtr(r.CategoryID), Memo: r.Memo,
 				IsSplit: r.IsSplit != 0, ImportRef: r.ImportRef, VehicleID: dbconv.NullToPtr(r.VehicleID),
+				TemplateID: dbconv.NullToPtr(r.TemplateID),
 			}
 			if txn.Tags, err = q.ListTransactionTags(ctx, r.ID); err != nil {
 				return nil, err
@@ -762,6 +766,7 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 		}
 		return nil
 	}
+	tplMap := map[int64]int64{}
 	for _, t := range doc.Templates {
 		row, err := q.InsertTemplate(ctx, db.InsertTemplateParams{
 			WalletID: w.ID, Name: t.Name, AccountID: dbconv.PtrToNull(remapAcc(t.AccountID)), Amount: t.Amount,
@@ -781,6 +786,7 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 				return 0, err
 			}
 		}
+		tplMap[t.ID] = row.ID
 		for _, sc := range doc.Schedules {
 			if sc.TemplateID != t.ID {
 				continue
@@ -792,6 +798,24 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 			}); err != nil {
 				return 0, err
 			}
+		}
+	}
+
+	// The templates are in now, so the transactions they posted can point at
+	// them again. A backup made before #546 has no links, and loses nothing.
+	for _, t := range doc.Transactions {
+		if t.TemplateID == nil {
+			continue
+		}
+		tpl, ok1 := tplMap[*t.TemplateID]
+		txn, ok2 := txnMap[t.ID]
+		if !ok1 || !ok2 {
+			continue
+		}
+		if err := q.SetTransactionTemplate(ctx, db.SetTransactionTemplateParams{
+			TemplateID: sql.NullInt64{Int64: tpl, Valid: true}, ID: txn,
+		}); err != nil {
+			return 0, err
 		}
 	}
 

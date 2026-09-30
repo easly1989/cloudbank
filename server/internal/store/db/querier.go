@@ -156,6 +156,10 @@ type Querier interface {
 	// used to fold recorded values into net-worth totals.
 	LatestValuationsForWallet(ctx context.Context, walletID int64) ([]LatestValuationsForWalletRow, error)
 	LinkOIDCIdentity(ctx context.Context, arg LinkOIDCIdentityParams) error
+	// Ties to a template the transactions it stands for that were written without
+	// the link: same account, payee and category. The demo's seeded year comes
+	// from a HomeBank file, which does not record which schedule posted what.
+	LinkTemplateTransactions(ctx context.Context, templateID sql.NullInt64) (int64, error)
 	ListAPITokensForUser(ctx context.Context, userID int64) ([]ApiToken, error)
 	// The full account ledger ordered chronologically (date, then id) with a
 	// server-computed cumulative delta. The application adds the account's initial
@@ -201,6 +205,13 @@ type Querier interface {
 	// amount (signed), the target account and its currency (for base conversion),
 	// and the recurrence state used to enumerate occurrences and classify them.
 	ListScheduleBills(ctx context.Context, walletID int64) ([]ListScheduleBillsRow, error)
+	// The transactions schedules registered between two dates. A transfer is two
+	// rows with the same template; only the leg on the template's own account
+	// stands for the occurrence.
+	ListScheduledTransactionsInRange(ctx context.Context, arg ListScheduledTransactionsInRangeParams) ([]ListScheduledTransactionsInRangeRow, error)
+	// Every schedule of a wallet with what the calendar needs to project its
+	// occurrences: the cadence, and the template's name, amount and account.
+	ListSchedulesForCalendar(ctx context.Context, walletID int64) ([]ListSchedulesForCalendarRow, error)
 	ListSchedulesForWallet(ctx context.Context, walletID int64) ([]ListSchedulesForWalletRow, error)
 	ListSplits(ctx context.Context, transactionID int64) ([]Split, error)
 	ListTagsForWallet(ctx context.Context, walletID int64) ([]Tag, error)

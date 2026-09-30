@@ -152,10 +152,11 @@ try {
   for (let i = 0; i < 4; i++) await boxes.nth(i).click();
   await shoot(page, "register-bulk");
 
-  // Bills — one row per bill (last payment + next occurrence).
-  await page.goto(BASE + "/bills");
+  // Schedules — the month's bills on a calendar, and what needs you (#546).
+  await page.goto(BASE + "/schedules");
   await page.waitForLoadState("networkidle");
-  await shoot(page, "bills");
+  await page.getByTestId("schedules-calendar").waitFor();
+  await shoot(page, "schedules");
 
   // Bank-sync review — uncategorised imports + the duplicate finder.
   await page.goto(BASE + "/review");

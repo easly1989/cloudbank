@@ -39,3 +39,29 @@ UPDATE schedules SET next_due = ?, remaining = ?, last_posted = ? WHERE id = ?;
 
 -- name: DeleteSchedule :exec
 DELETE FROM schedules WHERE id = ?;
+
+-- name: ListSchedulesForCalendar :many
+-- Every schedule of a wallet with what the calendar needs to project its
+-- occurrences: the cadence, and the template's name, amount and account.
+SELECT sch.id, sch.template_id, sch.unit, sch.every_n, sch.next_due, sch.weekend_mode,
+       sch.remaining, sch.auto_post,
+       tpl.name AS template_name, tpl.amount AS template_amount,
+       tpl.is_transfer AS template_is_transfer, tpl.is_split AS template_is_split,
+       tpl.account_id AS account_id
+FROM schedules sch
+JOIN templates tpl ON tpl.id = sch.template_id
+WHERE sch.wallet_id = ?
+ORDER BY sch.id;
+
+-- name: ListScheduledTransactionsInRange :many
+-- The transactions schedules registered between two dates. A transfer is two
+-- rows with the same template; only the leg on the template's own account
+-- stands for the occurrence.
+SELECT t.id, t.template_id, t.account_id, t.date, t.amount, t.status,
+       tpl.name AS template_name, tpl.is_transfer AS template_is_transfer
+FROM templates tpl
+JOIN transactions t ON t.template_id = tpl.id AND t.wallet_id = tpl.wallet_id
+WHERE tpl.wallet_id = sqlc.arg(wallet_id)
+  AND t.date >= sqlc.arg(from_date) AND t.date <= sqlc.arg(to_date)
+  AND (tpl.is_transfer = 0 OR t.account_id = tpl.account_id)
+ORDER BY t.date, t.id;
