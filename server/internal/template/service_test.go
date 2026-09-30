@@ -141,3 +141,45 @@ func TestCreateFromTransactionCrossWallet(t *testing.T) {
 		t.Fatalf("cross-wallet = %v, want ErrNotFound", err)
 	}
 }
+
+func TestUsageAndScheduledDelete(t *testing.T) {
+	s, ts, _, q, wid, acc, other := newFixture(t)
+	ctx := context.Background()
+	shop, err := s.Create(ctx, wid, Input{Name: "Shop", AccountID: &acc, Amount: -500})
+	if err != nil {
+		t.Fatal(err)
+	}
+	idle, _ := s.Create(ctx, wid, Input{Name: "Idle", AccountID: &acc, Amount: -100})
+	for _, d := range []string{"2025-06-01", "2026-02-01", "2026-03-01"} {
+		if _, err := ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: d, Amount: -500, TemplateID: &shop.ID}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// On another account than the template's: not its own leg, not counted.
+	if _, err := ts.Create(ctx, wid, transaction.Input{AccountID: other, Date: "2026-03-02", Amount: 500, TemplateID: &shop.ID}); err != nil {
+		t.Fatal(err)
+	}
+	// After the period: only moves nothing.
+	if _, err := ts.Create(ctx, wid, transaction.Input{AccountID: acc, Date: "2026-12-01", Amount: -500, TemplateID: &shop.ID}); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := s.Usage(ctx, wid, "2026-01-01", "2026-06-30")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0] != (Usage{TemplateID: shop.ID, Count: 2, LastDate: "2026-03-01"}) {
+		t.Fatalf("usage = %+v, want Shop twice, last 2026-03-01", got)
+	}
+
+	// A template a schedule posts is not deleted here; one without is.
+	if _, err := q.InsertSchedule(ctx, db.InsertScheduleParams{WalletID: wid, TemplateID: shop.ID, Unit: "month", EveryN: 1, NextDue: "2026-10-01", AutoPost: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Delete(ctx, shop.ID); err != ErrScheduled {
+		t.Fatalf("delete scheduled = %v, want ErrScheduled", err)
+	}
+	if err := s.Delete(ctx, idle.ID); err != nil {
+		t.Fatalf("delete idle: %v", err)
+	}
+}

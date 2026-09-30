@@ -141,6 +141,7 @@ var words = map[string][2]string{
 	"tagChristmas": {"christmas", "natale"},
 	"tagHome":      {"home-office", "smart-working"},
 	"weekly":       {"Weekly shop", "Spesa settimanale"},
+	"coffee":       {"Coffee", "Caffè"},
 	"household":    {"Household items", "Articoli per la casa"},
 	"topUp":        {"Monthly saving", "Risparmio mensile"},
 	"payOff":       {"Card balance", "Saldo carta"},
@@ -388,6 +389,16 @@ func seedFile(today time.Time, italian bool) *importer.XHB {
 	fav(accChecking, -2990, modeDirect, payInternet, catInternet, s.w("internet"), next(5))
 	fav(accCard, -1299, modeCard, payStreaming, catSubscriptions, s.w("streaming"), next(15))
 	fav(accChecking, -7800, modeDirect, payEnergy, catUtilities, s.w("energy"), s.energyDue())
+	// Three for quick entry, which no schedule posts (#560). The demo ties each
+	// to the transactions it stands for, so the templates page has uses to count.
+	quick := func(account int, cents int64, mode, payee, category int, memo string) {
+		x.Favorites = append(x.Favorites, importer.XFav{
+			Account: account, Amount: amount(cents), Paymode: mode, Payee: payee, Category: category, Wording: memo,
+		})
+	}
+	quick(accChecking, -6500, modeDebit, paySupermarket, catGroceries, s.w("weekly"))
+	quick(accCash, -150, modeCash, payCafe, catRestaurants, s.w("coffee"))
+	quick(accCard, -6000, modeCard, payPetrol, catFuel, s.w("fuel"))
 	return x
 }
 

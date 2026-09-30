@@ -21,6 +21,7 @@ func (h *templateHandlers) walletRoutes(r chi.Router) {
 	r.Get("/templates", h.list)
 	r.Post("/templates", h.create)
 	r.Post("/templates/from-transaction/{transactionId}", h.fromTransaction)
+	r.Get("/templates/usage", h.usage)
 	r.Route("/templates/{templateId}", func(r chi.Router) {
 		r.Get("/", h.get)
 		r.Patch("/", h.update)
@@ -126,8 +127,7 @@ func (h *templateHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := h.svc.Delete(r.Context(), tpl.ID); err != nil {
-		writeError(w, http.StatusInternalServerError, "internal", "could not delete template")
+	if !writeTemplateError(w, h.svc.Delete(r.Context(), tpl.ID)) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -165,5 +165,23 @@ func writeTemplateError(w http.ResponseWriter, err error) bool {
 		errCase{walletref.ErrForeign, http.StatusBadRequest, "invalid_reference", "a referenced record does not belong to this wallet"},
 		errCase{template.ErrNameRequired, http.StatusBadRequest, "name_required", "name is required"},
 		errCase{template.ErrInvalidAccount, http.StatusBadRequest, "invalid_account", "account does not belong to this wallet"},
+		errCase{template.ErrScheduled, http.StatusConflict, "scheduled", "a schedule posts this template: delete the schedule in Schedules"},
 	)
+}
+
+// usage is how often each template was used between from and to, and when
+// last (#560).
+func (h *templateHandlers) usage(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	from, to := r.URL.Query().Get("from"), r.URL.Query().Get("to")
+	if !isCivilDate(from) || !isCivilDate(to) || from > to {
+		writeError(w, http.StatusBadRequest, "invalid_range", "from and to must be dates (YYYY-MM-DD), from no later than to")
+		return
+	}
+	out, err := h.svc.Usage(r.Context(), wl.ID, from, to)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not compute template usage")
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
 }

@@ -102,9 +102,19 @@ the monthly rent, saved to fill in the entry sheet.
   template**. You can also use **Save as template** in the entry sheet's **⋯**
   menu.
 - **Using one.** In the entry sheet, the **⋯** menu lists your templates; picking
-  one fills in the sheet. Schedules can also start from a template.
-- **The Templates page** lists them, and adds, renames or deletes them. Deleting
-  a template leaves the transactions made from it alone.
+  one fills in the sheet. The transaction you save remembers the template it
+  came from.
+- **The Templates page** shows them in two groups:
+  - **For quick entry**: the ones you pick yourself, the most used first, with
+    how many times each was used in the last twelve months and when last.
+    Clicking one opens it in a sheet beside the page, where every field it fills
+    in can be changed, tags and info included. Changing a template leaves the
+    transactions already made from it as they are. **⋯ → Delete** removes it.
+  - **Behind a schedule**: the ones a schedule posts, with how often it comes
+    round and when next. They open in [Schedules](#schedules), where the
+    schedule and its template are changed or deleted together.
+- **Add template** makes one from scratch. A template with splits, or a
+  transfer, only has its name and memo changed on this page.
 
 ## Tags
 

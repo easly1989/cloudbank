@@ -12,3 +12,6 @@ SELECT COUNT(*) FROM payees WHERE wallet_id = sqlc.arg(wallet_id) AND id IN (sql
 
 -- name: CountVehiclesInWallet :one
 SELECT COUNT(*) FROM vehicles WHERE wallet_id = sqlc.arg(wallet_id) AND id IN (sqlc.slice(ids));
+
+-- name: CountTemplatesInWallet :one
+SELECT COUNT(*) FROM templates WHERE wallet_id = sqlc.arg(wallet_id) AND id IN (sqlc.slice(ids));

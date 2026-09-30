@@ -167,6 +167,9 @@ export function TransactionForm({
   const [tags, setTags] = useState<string[]>([]);
   const [isSplit, setIsSplit] = useState(false);
   const [splits, setSplits] = useState<{ categoryId: string | null; amount: string }[]>([]);
+  // The template the fields were filled in from, recorded on the new
+  // transaction so the templates page can count its uses (#560).
+  const [templateId, setTemplateId] = useState<number | null>(null);
   // "Save and add another" keeps every field instead of clearing them. Off each
   // time the sheet opens: it is for a run of similar entries, not a setting.
   const [keepFields, setKeepFields] = useState(false);
@@ -308,6 +311,7 @@ export function TransactionForm({
       const init = initialValues(editing, duplicate, account, fd, dc, startDate(), startStatus);
       applyValues(init);
       setBaseline(JSON.stringify(init));
+      setTemplateId(null);
       setAccountId(String(account.id));
       setKeepFields(false);
       setMoreOpen(
@@ -353,6 +357,7 @@ export function TransactionForm({
             }))
           : [],
       };
+      if (!editing && templateId !== null) body.templateId = templateId;
       return editing
         ? updateTransaction(walletId, editing.id, body)
         : createTransaction(walletId, body);
@@ -407,6 +412,7 @@ export function TransactionForm({
     const init = initialValues(null, null, current, fd, dc, keepDate, startStatus);
     applyValues(init);
     setBaseline(JSON.stringify(init));
+    setTemplateId(null);
   };
 
   // Save, resolving the modal per mode (close / keep fields / clear fields).
@@ -474,6 +480,7 @@ export function TransactionForm({
         })) ?? [],
     };
     applyValues(next);
+    setTemplateId(tpl.id);
     if (hasDetails(next, place, current.defaultPaymentMode)) setMoreOpen(true);
   };
 

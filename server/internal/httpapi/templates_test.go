@@ -84,3 +84,69 @@ func TestTemplateCrossUserIsolation(t *testing.T) {
 		t.Fatalf("bob get = %d, want 404", r.StatusCode)
 	}
 }
+
+func TestTemplateUsageAndScheduledDelete(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	tpl := decodeTemplate(t, c.do(http.MethodPost, base+"/templates", map[string]any{
+		"name": "Coffee", "accountId": acc, "amount": -150,
+	}, true))
+	id := int64(tpl["id"].(float64))
+
+	// A transaction filled in from it remembers it.
+	for _, d := range []string{"2026-02-01", "2026-03-01"} {
+		r := c.do(http.MethodPost, base+"/transactions", map[string]any{
+			"accountId": acc, "date": d, "amount": -150, "templateId": id,
+		}, true)
+		if r.StatusCode != http.StatusCreated {
+			t.Fatalf("create from template = %d, want 201", r.StatusCode)
+		}
+		r.Body.Close()
+	}
+	// A template of another wallet is refused.
+	otherWallet, otherAcc := makeAccount(t, c)
+	other := decodeTemplate(t, c.do(http.MethodPost, "/api/v1/wallets/"+strconv.FormatInt(otherWallet, 10)+"/templates",
+		map[string]any{"name": "Theirs", "accountId": otherAcc}, true))
+	if r := c.do(http.MethodPost, base+"/transactions", map[string]any{
+		"accountId": acc, "date": "2026-03-02", "amount": -150, "templateId": other["id"],
+	}, true); r.StatusCode != http.StatusBadRequest {
+		t.Fatalf("foreign template = %d, want 400", r.StatusCode)
+	} else {
+		r.Body.Close()
+	}
+
+	resp := c.do(http.MethodGet, base+"/templates/usage?from=2026-01-01&to=2026-12-31", nil, false)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("usage = %d, want 200", resp.StatusCode)
+	}
+	var usage []struct {
+		TemplateID int64
+		Count      int64
+		LastDate   string
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&usage); err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if len(usage) != 1 || usage[0].TemplateID != id || usage[0].Count != 2 || usage[0].LastDate != "2026-03-01" {
+		t.Fatalf("usage = %+v", usage)
+	}
+	for _, q := range []string{"", "?from=2026-01-01", "?from=2026-12-31&to=2026-01-01"} {
+		r := c.do(http.MethodGet, base+"/templates/usage"+q, nil, false)
+		if r.StatusCode != http.StatusBadRequest {
+			t.Fatalf("usage%s = %d, want 400", q, r.StatusCode)
+		}
+		r.Body.Close()
+	}
+
+	// Once a schedule posts it, it is not deleted here.
+	c.do(http.MethodPost, base+"/schedules", map[string]any{
+		"templateId": id, "unit": "month", "everyN": 1, "nextDue": "2026-10-01",
+	}, true).Body.Close()
+	if r := c.do(http.MethodDelete, base+"/templates/"+strconv.FormatInt(id, 10), nil, true); r.StatusCode != http.StatusConflict {
+		t.Fatalf("delete scheduled = %d, want 409", r.StatusCode)
+	} else {
+		r.Body.Close()
+	}
+}
