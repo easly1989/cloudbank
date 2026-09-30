@@ -10,6 +10,17 @@ import (
 	"database/sql"
 )
 
+const countTemplateSchedules = `-- name: CountTemplateSchedules :one
+SELECT COUNT(*) FROM schedules WHERE template_id = ?
+`
+
+func (q *Queries) CountTemplateSchedules(ctx context.Context, templateID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countTemplateSchedules, templateID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteTemplate = `-- name: DeleteTemplate :exec
 DELETE FROM templates WHERE id = ?
 `
@@ -230,6 +241,56 @@ func (q *Queries) ListTemplatesForWallet(ctx context.Context, walletID int64) ([
 			&i.ToAccountID,
 			&i.CreatedAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const templateUsage = `-- name: TemplateUsage :many
+SELECT t.template_id AS template_id,
+       CAST(SUM(CASE WHEN t.date >= ?1 THEN 1 ELSE 0 END) AS INTEGER) AS txn_count,
+       CAST(MAX(t.date) AS TEXT) AS last_date
+FROM transactions t
+JOIN templates tpl ON tpl.id = t.template_id
+WHERE t.wallet_id = ?2
+  AND t.date <= ?3
+  AND (tpl.account_id IS NULL OR t.account_id = tpl.account_id)
+GROUP BY t.template_id
+`
+
+type TemplateUsageParams struct {
+	FromDate string
+	WalletID int64
+	ToDate   string
+}
+
+type TemplateUsageRow struct {
+	TemplateID sql.NullInt64
+	TxnCount   int64
+	LastDate   string
+}
+
+// How often each template was used: the transactions made from it dated in
+// [from_date, to_date], and the latest on or before to_date (#560). A transfer
+// counts once, by its leg on the template's own account.
+func (q *Queries) TemplateUsage(ctx context.Context, arg TemplateUsageParams) ([]TemplateUsageRow, error) {
+	rows, err := q.db.QueryContext(ctx, templateUsage, arg.FromDate, arg.WalletID, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TemplateUsageRow{}
+	for rows.Next() {
+		var i TemplateUsageRow
+		if err := rows.Scan(&i.TemplateID, &i.TxnCount, &i.LastDate); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

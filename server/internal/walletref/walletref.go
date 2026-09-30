@@ -22,7 +22,7 @@ const chunk = 500
 // Refs collects the ids to check, by kind. Nil pointers are skipped, so a
 // service can add every optional field as it is.
 type Refs struct {
-	accounts, categories, payees, vehicles []int64
+	accounts, categories, payees, vehicles, templates []int64
 }
 
 // Account adds an account id.
@@ -36,6 +36,9 @@ func (r *Refs) Payee(id *int64) *Refs { r.payees = appendID(r.payees, id); retur
 
 // Vehicle adds a vehicle id.
 func (r *Refs) Vehicle(id *int64) *Refs { r.vehicles = appendID(r.vehicles, id); return r }
+
+// Template adds a template id.
+func (r *Refs) Template(id *int64) *Refs { r.templates = appendID(r.templates, id); return r }
 
 func appendID(ids []int64, id *int64) []int64 {
 	if id == nil {
@@ -64,6 +67,9 @@ func Check(ctx context.Context, q *db.Queries, walletID int64, r *Refs) error {
 		}},
 		{r.vehicles, func(ctx context.Context, w int64, ids []int64) (int64, error) {
 			return q.CountVehiclesInWallet(ctx, db.CountVehiclesInWalletParams{WalletID: w, Ids: ids})
+		}},
+		{r.templates, func(ctx context.Context, w int64, ids []int64) (int64, error) {
+			return q.CountTemplatesInWallet(ctx, db.CountTemplatesInWalletParams{WalletID: w, Ids: ids})
 		}},
 	}
 	for _, k := range kinds {

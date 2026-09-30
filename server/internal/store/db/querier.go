@@ -45,6 +45,8 @@ type Querier interface {
 	CountPayeesInWallet(ctx context.Context, arg CountPayeesInWalletParams) (int64, error)
 	CountPayeesWithCategory(ctx context.Context, defaultCategoryID sql.NullInt64) (int64, error)
 	CountSubcategories(ctx context.Context, parentID sql.NullInt64) (int64, error)
+	CountTemplateSchedules(ctx context.Context, templateID int64) (int64, error)
+	CountTemplatesInWallet(ctx context.Context, arg CountTemplatesInWalletParams) (int64, error)
 	CountTransactionsForAccount(ctx context.Context, accountID int64) (int64, error)
 	CountTransactionsWithCategory(ctx context.Context, categoryID sql.NullInt64) (int64, error)
 	CountTransactionsWithPayee(ctx context.Context, payeeID sql.NullInt64) (int64, error)
@@ -307,6 +309,10 @@ type Querier interface {
 	// a plain transaction under its category, a split once per line under the
 	// line's. The two halves can name the same pair; the caller adds them up.
 	TagCategoryCounts(ctx context.Context, arg TagCategoryCountsParams) ([]TagCategoryCountsRow, error)
+	// How often each template was used: the transactions made from it dated in
+	// [from_date, to_date], and the latest on or before to_date (#560). A transfer
+	// counts once, by its leg on the template's own account.
+	TemplateUsage(ctx context.Context, arg TemplateUsageParams) ([]TemplateUsageRow, error)
 	TouchAPIToken(ctx context.Context, id string) error
 	TouchBankConnection(ctx context.Context, id int64) error
 	TouchSession(ctx context.Context, arg TouchSessionParams) error

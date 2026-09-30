@@ -223,6 +223,11 @@ export function ScheduleSheet({
       memo,
       isTransfer,
       toAccountId,
+      // Not edited here, and a save replaces the whole template: sent as they
+      // are, or they would be wiped (#560).
+      status: editingTemplate?.status,
+      info: editingTemplate?.info,
+      tags: editingTemplate?.tags,
     };
   };
 

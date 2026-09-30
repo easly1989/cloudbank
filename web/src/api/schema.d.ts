@@ -1769,6 +1769,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/templates/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * How often each template was used in a period
+         * @description For each template a transaction was made from on or before `to`: how many were made between `from` and `to` (both included), and the date of the latest one on or before `to`. A transfer counts once, by its leg on the template's account. A template never used is absent.
+         */
+        get: operations["getTemplateUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/templates/from-transaction/{transactionId}": {
         parameters: {
             query?: never;
@@ -1803,7 +1825,7 @@ export interface paths {
         get: operations["getTemplate"];
         put?: never;
         post?: never;
-        /** Delete a template */
+        /** Delete a template (not one a schedule posts) */
         delete: operations["deleteTemplate"];
         options?: never;
         head?: never;
@@ -3315,6 +3337,25 @@ export interface components {
             memo?: string;
             tags?: string[];
             splits?: components["schemas"]["Split"][];
+            /**
+             * Format: int64
+             * @description the template it was filled in from; recorded on create only, and counted by /templates/usage
+             */
+            templateId?: number | null;
+        };
+        TemplateUsage: {
+            /** Format: int64 */
+            templateId: number;
+            /**
+             * Format: int64
+             * @description transactions made from it in the period
+             */
+            count: number;
+            /**
+             * Format: date
+             * @description the latest on or before the period's end
+             */
+            lastDate: string;
         };
         Attachment: {
             /** Format: int64 */
@@ -7569,6 +7610,33 @@ export interface operations {
             400: components["responses"]["BadRequest"];
         };
     };
+    getTemplateUsage: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Usage. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateUsage"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     createTemplateFromTransaction: {
         parameters: {
             query?: never;
@@ -7644,6 +7712,15 @@ export interface operations {
                 content?: never;
             };
             404: components["responses"]["NotFound"];
+            /** @description A schedule posts this template; delete the schedule instead. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     updateTemplate: {

@@ -195,6 +195,16 @@ export function SchedulesPage() {
     setEditing(s);
     setSheetOpen(true);
   };
+  // ?schedule=ID opens that schedule's sheet: the templates page links here for
+  // a template a schedule posts (#560). Seeded during render, once the list has
+  // it; closing the sheet drops it from the URL.
+  const deepLink = Number(params.get("schedule")) || null;
+  const [linkOpened, setLinkOpened] = useState<number | null>(null);
+  if (deepLink !== null && deepLink !== linkOpened && schedulesQuery.isSuccess) {
+    setLinkOpened(deepLink);
+    const s = schedules.find((x) => x.id === deepLink);
+    if (s) openSchedule(s);
+  }
   const scheduleOf = (o: ScheduleOccurrence) =>
     schedules.find((s) => s.id === o.scheduleId) ?? null;
   // A registered occurrence is a transaction: it opens in the register, on its
@@ -493,7 +503,10 @@ export function SchedulesPage() {
       />
       <ScheduleSheet
         opened={sheetOpen}
-        onClose={() => setSheetOpen(false)}
+        onClose={() => {
+          setSheetOpen(false);
+          if (deepLink !== null) setParam("schedule", null);
+        }}
         walletId={walletId}
         editing={editing}
         onSaved={invalidate}

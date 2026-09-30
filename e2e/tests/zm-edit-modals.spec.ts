@@ -139,9 +139,11 @@ test("an edit modal opens on its own record, twice running, and blank for a new 
   await test.step("templates", async () => {
     await page.goto("/templates");
     for (const name of templates) {
+      // A template opens in the sheet beside the page from its name (#560).
       await page
-        .getByRole("row", { name: new RegExp(name) })
-        .getByRole("button", { name: "Edit template" })
+        .getByTestId("templates-quick")
+        .getByRole("button", { name, exact: true })
+        .first()
         .click();
       await expect(await field(page, "Name")).toHaveValue(name);
       await page.keyboard.press("Escape");

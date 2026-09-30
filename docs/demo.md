@@ -18,7 +18,8 @@ about into it.
   Christmas presents, and the bills of a home office.
   Budgets, bills, scheduled transactions and two savings goals are set up
   already, so the dashboard, the reports and the schedules calendar have
-  something to show.
+  something to show. Three templates for quick entry (the weekly shop, a coffee,
+  a tank of fuel) are ready in the entry sheet's **⋯** menu.
 - **Your own copy.** Nobody else sees your account, and you can change anything:
   add, edit and delete transactions, rearrange the dashboard, import a file.
 - **Your language.** The data comes in English or Italian, from your browser's

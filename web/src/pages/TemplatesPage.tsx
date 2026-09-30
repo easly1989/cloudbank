@@ -1,115 +1,175 @@
-import {
-  ActionIcon,
-  Alert,
-  Button,
-  Group,
-  Modal,
-  SegmentedControl,
-  Select,
-  Stack,
-  Table,
-  TextInput,
-} from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { Button, Stack } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconFileText, IconPencil, IconTrash } from "@tabler/icons-react";
+import { IconFileText } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useConfirm } from "../components/confirmContext";
-import { EmptyState } from "../components/EmptyState";
-import { PageHeader } from "../components/PageHeader";
+import { useNavigate } from "react-router-dom";
 
 import {
   ApiError,
-  type Account,
-  type Template,
-  type TemplateInput,
-  createTemplate,
   deleteTemplate,
-  listAccounts,
+  getTemplateUsage,
   listCategories,
   listPayees,
+  listSchedules,
+  listTags,
   listTemplates,
-  updateTemplate,
+  type Template,
 } from "../api/client";
-import { formatMinor, type MoneyFormat } from "../money";
-import { rowEditProps, stopRowEdit } from "../rowEdit";
-import { PAYMENT_MODES, STATUSES } from "../transactionEnums";
-import { useAmountParser } from "../useAmountParser";
+import { useConfirm } from "../components/confirmContext";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
+import { useToday } from "../useToday";
 import { useWallet } from "../wallet/WalletProvider";
-import { amountColor } from "../amountTone";
+import { lastTwelveMonths } from "./categories/categoryTree";
+import { useDayMonth } from "./categories/labels";
+import { useAccountMoney } from "./schedules/money";
+import { buildGroups, usedKey, type TemplateRow } from "./templates/templateList";
+import classes from "./templates/templates.module.css";
+import { TemplateSheet } from "./templates/TemplateSheet";
+import { TemplatePhoneList, TemplateTable } from "./templates/TemplateTable";
 
-const accountFormat = (a?: Account): MoneyFormat => ({
-  fracDigits: a?.currencyFracDigits ?? 2,
-  decimalChar: a?.currencyDecimalChar ?? ".",
-  groupChar: a?.currencyGroupChar ?? ",",
-  symbol: a?.currencySymbol ?? "",
-  symbolPrefix: a?.currencySymbolPrefix ?? false,
-});
-
-// TemplatesPage manages reusable transaction models: a template carries an
-// account, amount, payee/category, memo and payment mode, and is offered when
-// adding a transaction (and backs scheduled transactions).
+/**
+ * Templates (#560): the ones kept for quick entry, with how often each was
+ * used over the last twelve months, and the ones a schedule posts, which open
+ * in Schedules. A quick one opens in the sheet beside the page.
+ */
 export function TemplatesPage() {
   const { t } = useTranslation();
   const confirm = useConfirm();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
+  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
+  const today = useToday();
+  const day = useDayMonth(today);
+  const { from, to } = useMemo(() => lastTwelveMonths(today), [today]);
+  const money = useAccountMoney(walletId);
 
+  const enabled = walletId > 0;
   const templatesQuery = useQuery({
     queryKey: ["templates", walletId],
     queryFn: () => listTemplates(walletId),
-    enabled: walletId > 0,
+    enabled,
   });
-  const accountsQuery = useQuery({
-    queryKey: ["accounts", walletId],
-    queryFn: () => listAccounts(walletId),
-    enabled: walletId > 0,
+  const schedulesQuery = useQuery({
+    queryKey: ["schedules", walletId],
+    queryFn: () => listSchedules(walletId),
+    enabled,
   });
-  const accounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data]);
-  const accountById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
+  const usageQuery = useQuery({
+    queryKey: ["template-usage", walletId, from, to],
+    queryFn: () => getTemplateUsage(walletId, from, to),
+    enabled,
+  });
+  const payeesQuery = useQuery({
+    queryKey: ["payees", walletId],
+    queryFn: () => listPayees(walletId),
+    enabled,
+  });
+  const categoriesQuery = useQuery({
+    queryKey: ["categories", walletId],
+    queryFn: () => listCategories(walletId),
+    enabled,
+  });
+  const tagsQuery = useQuery({
+    queryKey: ["tags", walletId],
+    queryFn: () => listTags(walletId),
+    enabled,
+  });
 
-  const [formOpened, form] = useDisclosure(false);
-  const [editing, setEditing] = useState<Template | null>(null);
+  const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data]);
+  const groups = useMemo(
+    () => buildGroups(templates, schedulesQuery.data ?? [], usageQuery.data ?? []),
+    [templates, schedulesQuery.data, usageQuery.data],
+  );
+  const payees = useMemo(() => payeesQuery.data ?? [], [payeesQuery.data]);
+  const categories = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data]);
+  const names = useMemo(() => {
+    const payee = new Map(payees.map((p) => [p.id, p.name]));
+    const category = new Map(categories.map((c) => [c.id, c.name]));
+    return {
+      account: (id?: number | null) => (id != null ? (money.byId.get(id)?.name ?? "") : ""),
+      payee: (id?: number | null) => (id != null ? (payee.get(id) ?? "") : ""),
+      category: (id?: number | null) => (id != null ? (category.get(id) ?? "") : ""),
+    };
+  }, [payees, categories, money.byId]);
+  const format = (amount: number, accountId?: number | null) =>
+    money.format(amount, accountId ?? undefined);
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["templates", walletId] });
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const invalidate = () => {
+    for (const key of ["templates", "template-usage"])
+      void qc.invalidateQueries({ queryKey: [key, walletId] });
+  };
   const remove = useMutation({
     mutationFn: (id: number) => deleteTemplate(walletId, id),
     onSuccess: invalidate,
-    onError,
+    onError: (err: unknown) =>
+      notifications.show({
+        color: "red",
+        message: err instanceof ApiError ? err.message : String(err),
+      }),
   });
 
-  const openCreate = () => {
-    setEditing(null);
-    form.open();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editing, setEditing] = useState<Template | null>(null);
+
+  const actions = {
+    onOpen: (tpl: Template) => {
+      setEditing(tpl);
+      setSheetOpen(true);
+    },
+    onOpenSchedule: (r: TemplateRow) => navigate(`/schedules?view=list&schedule=${r.schedule!.id}`),
+    onDelete: (tpl: Template) => void askDelete(tpl),
   };
-  const openEdit = (tpl: Template) => {
-    setEditing(tpl);
-    form.open();
+  const askDelete = async (tpl: Template) => {
+    setSheetOpen(false);
+    const ok = await confirm({
+      title: t("templates.confirmDeleteTitle", { name: tpl.name }),
+      body: t("templates.confirmDeleteBody"),
+      confirmLabel: t("templates.delete"),
+      danger: true,
+    });
+    if (ok) remove.mutate(tpl.id);
   };
 
   if (!currentWallet) return null;
-  const templates = templatesQuery.data ?? [];
+
+  const editingRow = editing ? groups.quick.find((r) => r.template.id === editing.id) : undefined;
+  const usedText = (r?: TemplateRow) => {
+    if (!r) return "";
+    const u = usedKey(r);
+    return t(`templates.sheet.${u.key}`, {
+      count: u.count,
+      date: u.lastDate ? day(u.lastDate) : "",
+    });
+  };
 
   // One button, shown in the header or in the empty state — never both.
-  const addButton = <Button onClick={openCreate}>{t("templates.add")}</Button>;
+  const addButton = (
+    <Button
+      onClick={() => {
+        setEditing(null);
+        setSheetOpen(true);
+      }}
+    >
+      {t("templates.add")}
+    </Button>
+  );
+  const tableProps = { groups, names, format, day, actions };
 
   return (
-    <Stack maw={760}>
+    <Stack className={classes.page} gap="md">
       <PageHeader
         title={t("templates.title")}
         hint={t("templates.hint")}
         actions={templates.length > 0 ? addButton : undefined}
       />
 
-      {templates.length === 0 && (
+      {templates.length === 0 && templatesQuery.isSuccess && (
         <EmptyState
           icon={IconFileText}
           message={t("templates.empty")}
@@ -119,297 +179,27 @@ export function TemplatesPage() {
       )}
 
       {templates.length > 0 && (
-        <Table.ScrollContainer minWidth={480}>
-          {/* Scrolls inside itself on a phone: at 320px the actions column was pushed 48px past the edge, taking the whole page sideways with it. */}
-          <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>{t("templates.name")}</Table.Th>
-                <Table.Th>{t("transactions.account")}</Table.Th>
-                <Table.Th ta="right">{t("transactions.amount")}</Table.Th>
-                <Table.Th />
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {templates.map((tpl) => {
-                const acc = tpl.accountId != null ? accountById.get(tpl.accountId) : undefined;
-                return (
-                  <Table.Tr key={tpl.id} {...rowEditProps(() => openEdit(tpl))}>
-                    <Table.Td>{tpl.name}</Table.Td>
-                    <Table.Td>{acc?.name ?? "—"}</Table.Td>
-                    <Table.Td ta="right" c={amountColor(tpl.amount)}>
-                      {formatMinor(tpl.amount, accountFormat(acc))}
-                    </Table.Td>
-                    <Table.Td ta="right" {...stopRowEdit}>
-                      <Group gap={4} justify="flex-end" wrap="nowrap">
-                        <ActionIcon
-                          variant="subtle"
-                          aria-label={t("templates.edit")}
-                          onClick={() => openEdit(tpl)}
-                        >
-                          <IconPencil size={16} />
-                        </ActionIcon>
-                        <ActionIcon
-                          variant="subtle"
-                          color="red"
-                          aria-label={t("templates.delete")}
-                          onClick={async () => {
-                            const ok = await confirm({
-                              title: t("templates.confirmDeleteTitle", { name: tpl.name }),
-                              body: t("templates.confirmDeleteBody"),
-                              confirmLabel: t("templates.delete"),
-                              danger: true,
-                            });
-                            if (ok) remove.mutate(tpl.id);
-                          }}
-                        >
-                          <IconTrash size={16} />
-                        </ActionIcon>
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                );
-              })}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+        <>
+          <span className={classes.line}>
+            {t(groups.scheduled.length > 0 ? "templates.lineScheduled" : "templates.line")}
+          </span>
+          {phone ? <TemplatePhoneList {...tableProps} /> : <TemplateTable {...tableProps} />}
+        </>
       )}
 
-      {/* Keyed per record: the key gives every template — and the new-template
-          form — its own instance, so the fields start where the template is
-          instead of being reset back to it by an effect. It stays mounted while
-          closed, because a modal that is unmounted the moment it closes cannot
-          animate out. */}
-      <TemplateFormModal
-        key={editing?.id ?? "new"}
-        opened={formOpened}
-        onClose={form.close}
+      <TemplateSheet
+        opened={sheetOpen}
+        onClose={() => setSheetOpen(false)}
         walletId={walletId}
         editing={editing}
-        accounts={accounts}
-        onSaved={() => {
-          invalidate();
-          form.close();
-        }}
+        used={usedText(editingRow)}
+        accounts={[...money.byId.values()]}
+        payees={payees}
+        categories={categories}
+        tags={tagsQuery.data ?? []}
+        onSaved={invalidate}
+        onDelete={actions.onDelete}
       />
     </Stack>
-  );
-}
-
-function TemplateFormModal({
-  opened,
-  onClose,
-  walletId,
-  editing,
-  accounts,
-  onSaved,
-}: {
-  opened: boolean;
-  onClose: () => void;
-  walletId: number;
-  editing: Template | null;
-  accounts: Account[];
-  onSaved: () => void;
-}) {
-  const { t } = useTranslation();
-  const parseAmount = useAmountParser();
-  const payeesQuery = useQuery({
-    queryKey: ["payees", walletId],
-    queryFn: () => listPayees(walletId),
-  });
-  const categoriesQuery = useQuery({
-    queryKey: ["categories", walletId],
-    queryFn: () => listCategories(walletId),
-  });
-  const payees = payeesQuery.data ?? [];
-  const categories = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data]);
-
-  const [name, setName] = useState(editing?.name ?? "");
-  // The form starts where the template is; the modal is mounted per opening.
-  const startAccount =
-    editing?.accountId != null
-      ? accounts.find((a) => a.id === editing.accountId)
-      : (accounts[0] ?? undefined);
-  const [accountId, setAccountId] = useState<string | null>(
-    startAccount ? String(startAccount.id) : null,
-  );
-  const [direction, setDirection] = useState<"expense" | "income">(
-    (editing?.amount ?? 0) < 0 || !editing ? "expense" : "income",
-  );
-  const [amount, setAmount] = useState(() =>
-    editing && editing.amount !== 0
-      ? formatMinor(Math.abs(editing.amount), {
-          ...accountFormat(startAccount),
-          groupChar: "",
-          symbol: "",
-        })
-      : "",
-  );
-  const [payeeId, setPayeeId] = useState<string | null>(
-    editing?.payeeId != null ? String(editing.payeeId) : null,
-  );
-  const [categoryId, setCategoryId] = useState<string | null>(
-    editing?.categoryId != null ? String(editing.categoryId) : null,
-  );
-  const [memo, setMemo] = useState(editing?.memo ?? "");
-  const [paymentMode, setPaymentMode] = useState(String(editing?.paymentMode ?? 0));
-  const [status, setStatus] = useState(String(editing?.status ?? 0));
-
-  // A split or transfer template carries structure this form does not edit; we
-  // preserve those fields and only allow renaming / changing the memo.
-  const complex = !!(editing?.isSplit || editing?.isTransfer);
-
-  const onPayee = (v: string | null) => {
-    setPayeeId(v);
-    const p = payees.find((x) => String(x.id) === v);
-    if (p?.defaultCategoryId != null) setCategoryId(String(p.defaultCategoryId));
-  };
-
-  const categoryOptions = useMemo(
-    () =>
-      categories.map((c) => ({
-        value: String(c.id),
-        label: c.parentId
-          ? `   ${categories.find((p) => p.id === c.parentId)?.name ?? ""} › ${c.name}`
-          : c.name,
-      })),
-    [categories],
-  );
-
-  const save = useMutation({
-    mutationFn: () => {
-      let body: TemplateInput;
-      if (complex && editing) {
-        body = {
-          name,
-          accountId: editing.accountId,
-          amount: editing.amount,
-          paymentMode: editing.paymentMode,
-          status: editing.status,
-          info: editing.info,
-          payeeId: editing.payeeId,
-          categoryId: editing.categoryId,
-          memo,
-          tags: editing.tags,
-          isTransfer: editing.isTransfer,
-          toAccountId: editing.toAccountId,
-          splits: editing.splits,
-        };
-      } else {
-        const acc = accounts.find((a) => String(a.id) === accountId);
-        const fd = acc?.currencyFracDigits ?? 2;
-        const dc = acc?.currencyDecimalChar ?? ".";
-        body = {
-          name,
-          accountId: accountId ? Number(accountId) : null,
-          amount: (parseAmount(amount, fd, dc) ?? 0) * (direction === "expense" ? -1 : 1),
-          paymentMode: Number(paymentMode),
-          status: Number(status),
-          payeeId: payeeId ? Number(payeeId) : null,
-          categoryId: categoryId ? Number(categoryId) : null,
-          memo,
-        };
-      }
-      return editing ? updateTemplate(walletId, editing.id, body) : createTemplate(walletId, body);
-    },
-    onSuccess: onSaved,
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
-  });
-
-  return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={editing ? t("templates.edit") : t("templates.create")}
-    >
-      <Stack>
-        <TextInput
-          label={t("templates.name")}
-          value={name}
-          onChange={(e) => setName(e.currentTarget.value)}
-          required
-          data-autofocus
-        />
-        {complex && (
-          <Alert color="gray" variant="light">
-            {t("templates.complexNote")}
-          </Alert>
-        )}
-        {!complex && (
-          <>
-            <Select
-              label={t("transactions.account")}
-              data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
-              value={accountId}
-              onChange={setAccountId}
-              searchable
-            />
-            <Group align="flex-end" gap="xs">
-              <SegmentedControl
-                value={direction}
-                onChange={(v) => setDirection(v as "expense" | "income")}
-                data={[
-                  { value: "expense", label: "−" },
-                  { value: "income", label: "+" },
-                ]}
-              />
-              <TextInput
-                label={t("transactions.amount")}
-                value={amount}
-                onChange={(e) => setAmount(e.currentTarget.value)}
-                style={{ flex: 1 }}
-              />
-            </Group>
-            <Select
-              label={t("transactions.payee")}
-              data={payees.map((p) => ({ value: String(p.id), label: p.name }))}
-              value={payeeId}
-              onChange={onPayee}
-              clearable
-              searchable
-            />
-            <Select
-              label={t("transactions.category")}
-              data={categoryOptions}
-              value={categoryId}
-              onChange={setCategoryId}
-              clearable
-              searchable
-            />
-            <Select
-              label={t("transactions.paymentMode")}
-              data={PAYMENT_MODES.map((m) => ({ value: String(m), label: t(`paymentModes.${m}`) }))}
-              value={paymentMode}
-              onChange={(v) => v && setPaymentMode(v)}
-              allowDeselect={false}
-            />
-            <Select
-              label={t("transactions.status")}
-              data={STATUSES.map((s) => ({ value: String(s), label: t(`status.${s}`) }))}
-              value={status}
-              onChange={(v) => v && setStatus(v)}
-              allowDeselect={false}
-            />
-          </>
-        )}
-        <TextInput
-          label={t("transactions.memo")}
-          value={memo}
-          onChange={(e) => setMemo(e.currentTarget.value)}
-        />
-        <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>
-            {t("transactions.cancel")}
-          </Button>
-          <Button onClick={() => save.mutate()} loading={save.isPending} disabled={!name.trim()}>
-            {t("transactions.save")}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
   );
 }
