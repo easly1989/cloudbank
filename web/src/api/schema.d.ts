@@ -1968,7 +1968,7 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** List the wallet's assignment rules (first-match-wins order) */
+        /** List the wallet's assignment rules (first-match-wins order), each with how many transactions it matches */
         get: operations["listAssignments"];
         put?: never;
         /** Create an assignment rule (regex validated here) */
@@ -2009,7 +2009,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Preview which existing transactions a candidate rule would match */
+        /**
+         * Dry run of a candidate rule over the existing transactions (changes nothing)
+         * @description Counts what the rule would match and returns the five most recent
+         *     matches. `id` is the rule being edited, if any: the rules above it are
+         *     the ones that can take a match first (`taken`). A new rule goes last.
+         */
         post: operations["testAssignment"];
         delete?: never;
         options?: never;
@@ -2028,7 +2033,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Apply all rules to existing transactions (first match per transaction) */
+        /**
+         * Apply the rules to existing transactions (first match per transaction)
+         * @description With `assignmentId`, only the transactions that rule matches first are
+         *     changed. Tags are only ever added.
+         */
         post: operations["applyAssignments"];
         delete?: never;
         options?: never;
@@ -2047,7 +2056,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** First apply-on-manual rule matching the given memo/payee */
+        /** First apply-on-manual rule matching the given memo, payee or tags */
         post: operations["suggestAssignment"];
         delete?: never;
         options?: never;
@@ -3813,7 +3822,7 @@ export interface components {
             id: number;
             position: number;
             /** @enum {string} */
-            matchField: "memo" | "payee" | "both";
+            matchField: "memo" | "payee" | "both" | "tag";
             /** @enum {string} */
             matchType: "exact" | "contains" | "regex";
             pattern: string;
@@ -3826,12 +3835,18 @@ export interface components {
             setCategoryId?: number | null;
             setPaymentMode?: number | null;
             setInfo?: string | null;
+            /** @description tags added to the transactions it matches; never removes one */
+            setTags: string[];
             applyOnManual: boolean;
             applyOnImport: boolean;
+            /** @description list only: the transactions this rule is the first to match */
+            matches?: number;
+            /** @description list only: the transactions it matches at all */
+            reach?: number;
         };
         AssignmentInput: {
             /** @enum {string} */
-            matchField: "memo" | "payee" | "both";
+            matchField: "memo" | "payee" | "both" | "tag";
             /** @enum {string} */
             matchType: "exact" | "contains" | "regex";
             pattern: string;
@@ -3844,6 +3859,7 @@ export interface components {
             setCategoryId?: number | null;
             setPaymentMode?: number | null;
             setInfo?: string | null;
+            setTags?: string[];
             applyOnManual?: boolean;
             applyOnImport?: boolean;
         };
@@ -3855,6 +3871,9 @@ export interface components {
             date: string;
             memo: string;
             payeeName: string;
+            /** Format: int64 */
+            categoryId?: number | null;
+            tags: string[];
         };
         StatisticsGroup: {
             key: string;
@@ -8073,17 +8092,31 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AssignmentInput"];
+                "application/json": components["schemas"]["AssignmentInput"] & {
+                    /**
+                     * Format: int64
+                     * @description the rule being edited; omit for a new one
+                     */
+                    id?: number;
+                };
             };
         };
         responses: {
-            /** @description Matches. */
+            /** @description What the rule would match. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MatchedTransaction"][];
+                    "application/json": {
+                        /** @description every transaction the rule matches */
+                        count: number;
+                        /** @description those a rule above it matches first */
+                        taken: number;
+                        /** @description those it would fill in that have no category */
+                        withoutCategory: number;
+                        latest: components["schemas"]["MatchedTransaction"][];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -8103,6 +8136,11 @@ export interface operations {
                 "application/json": {
                     /** Format: int64 */
                     accountId?: number | null;
+                    /**
+                     * Format: int64
+                     * @description apply this rule only
+                     */
+                    assignmentId?: number | null;
                     onlyFillEmpty?: boolean;
                 };
             };
@@ -8135,6 +8173,7 @@ export interface operations {
                 "application/json": {
                     memo?: string;
                     payee?: string;
+                    tags?: string[];
                     /**
                      * Format: int64
                      * @description selected account, for account-conditioned rules
@@ -8158,6 +8197,8 @@ export interface operations {
                         categoryId?: number | null;
                         paymentMode?: number | null;
                         info?: string | null;
+                        /** @description tags to add */
+                        tags?: string[];
                     };
                 };
             };

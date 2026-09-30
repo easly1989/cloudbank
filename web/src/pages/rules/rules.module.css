@@ -1,0 +1,273 @@
+/* The Rules page (#566), to the numbers of the approved mockup: a line on how
+   rules are tried, then every rule in the register's card, each as the
+   sentence it is, with how many transactions it matches. */
+
+.page {
+  container-type: inline-size;
+  font-variant-numeric: tabular-nums;
+}
+.mono {
+  font-family: var(--mantine-font-family-monospace);
+}
+.dim {
+  color: var(--mantine-color-dimmed);
+}
+.line {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--mantine-color-dimmed);
+}
+
+.card {
+  border: 1px solid var(--cb-ledger-border);
+  border-radius: 12px;
+  background: var(--cb-ledger-surface);
+  overflow: hidden;
+}
+
+/* Desktop rows: the grip, the sentence, where and when it runs, the count,
+   Apply and ⋯. Two lines of text make a row 60px, as the board draws it. */
+.tr {
+  display: grid;
+  grid-template-columns: 20px minmax(300px, 1fr) 160px 150px 80px 30px 30px;
+  gap: 14px;
+  align-items: center;
+  padding: 0 16px;
+  min-height: 60px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 14px;
+}
+.tr[data-row] {
+  cursor: pointer;
+}
+.tr[data-row]:hover {
+  background: var(--mantine-color-default-hover);
+}
+.tr[data-dragging] {
+  opacity: 0.5;
+}
+.tr[data-drop] {
+  box-shadow: inset 0 2px 0 var(--mantine-primary-color-filled);
+}
+.head {
+  border-top: 0;
+  min-height: 38px;
+  background: var(--cb-band-header);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+}
+.r {
+  text-align: right;
+  white-space: nowrap;
+}
+.grip {
+  display: flex;
+  color: var(--mantine-color-dimmed);
+  opacity: 0.55;
+  cursor: grab;
+}
+.tr:hover .grip {
+  opacity: 1;
+}
+
+/* The sentence: what it looks for, then what it does. */
+.sentence {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 0;
+}
+.when {
+  font-size: 13px;
+  line-height: 17px;
+  color: var(--mantine-color-dimmed);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pattern {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 13px;
+  color: var(--mantine-color-text);
+  background: color-mix(in srgb, var(--mantine-color-text) 9%, transparent);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.shadow {
+  color: var(--cb-attention);
+}
+.does {
+  font-size: 14px;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 7px;
+  vertical-align: 2px;
+  background: var(--cb-negative);
+}
+.dot[data-tone="income"] {
+  background: var(--cb-positive);
+}
+.sep {
+  color: var(--mantine-color-dimmed);
+  margin: 0 7px;
+}
+.zero .does {
+  color: var(--mantine-color-dimmed);
+}
+.count {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 13px;
+}
+.count[data-zero] {
+  color: var(--cb-attention);
+}
+/* ▶ on a rule that matches nothing: there, but quiet. */
+.play:disabled,
+.play[data-disabled] {
+  background: transparent;
+  opacity: 0.35;
+}
+
+/* A page too narrow for every column (a laptop with the menu open) drops
+   "Used on"; the sheet still has it. */
+@container (max-width: 899px) {
+  .tr {
+    grid-template-columns: 20px minmax(200px, 1fr) 130px 70px 30px 30px;
+  }
+  .tr > :nth-child(4) {
+    display: none;
+  }
+}
+
+/* The phone: one row per rule, its sentence wrapping, the count and ⋯. */
+.prow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px 0 14px;
+  border-top: 1px solid var(--cb-ledger-border);
+  color: var(--mantine-color-text);
+}
+.card > .prow:first-child {
+  border-top: 0;
+}
+.pmain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 0;
+  text-align: start;
+  color: inherit;
+}
+.pmain .sentence {
+  flex: 1;
+  padding: 0;
+}
+.pmain .when,
+.pmain .does {
+  white-space: normal;
+  line-height: 1.5;
+}
+.pmain .does {
+  font-size: 15px;
+}
+.pmain .pattern {
+  white-space: nowrap;
+}
+
+/* Empty: what a rule does, two examples, and the button. */
+.empty {
+  border: 1px dashed var(--cb-shell-card-border);
+  border-radius: 12px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 640px;
+}
+.emptyTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.emptyBody {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--mantine-color-dimmed);
+}
+.examples {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--cb-ledger-surface);
+  border: 1px solid var(--cb-ledger-border);
+}
+.examples .sentence {
+  padding: 0;
+}
+
+/* The sheet. */
+.pair {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: start;
+}
+.section {
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.preview {
+  border-top: 1px solid var(--cb-ledger-border);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.previewCount {
+  font-size: 15px;
+  font-weight: 600;
+}
+.previewNote {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--mantine-color-dimmed);
+}
+.attention {
+  color: var(--cb-attention);
+}
+.hit {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 13px;
+}
+.hit > span:nth-child(2) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hit > span:last-child {
+  white-space: nowrap;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

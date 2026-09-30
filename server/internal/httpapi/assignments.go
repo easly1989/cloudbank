@@ -31,17 +31,18 @@ func (h *assignmentHandlers) walletRoutes(r chi.Router) {
 }
 
 type assignmentInput struct {
-	MatchField     string  `json:"matchField"`
-	MatchType      string  `json:"matchType"`
-	Pattern        string  `json:"pattern"`
-	CaseSensitive  bool    `json:"caseSensitive"`
-	MatchAccountID *int64  `json:"matchAccountId"`
-	SetPayeeID     *int64  `json:"setPayeeId"`
-	SetCategoryID  *int64  `json:"setCategoryId"`
-	SetPaymentMode *int    `json:"setPaymentMode"`
-	SetInfo        *string `json:"setInfo"`
-	ApplyOnManual  bool    `json:"applyOnManual"`
-	ApplyOnImport  bool    `json:"applyOnImport"`
+	MatchField     string   `json:"matchField"`
+	MatchType      string   `json:"matchType"`
+	Pattern        string   `json:"pattern"`
+	CaseSensitive  bool     `json:"caseSensitive"`
+	MatchAccountID *int64   `json:"matchAccountId"`
+	SetPayeeID     *int64   `json:"setPayeeId"`
+	SetCategoryID  *int64   `json:"setCategoryId"`
+	SetPaymentMode *int     `json:"setPaymentMode"`
+	SetInfo        *string  `json:"setInfo"`
+	SetTags        []string `json:"setTags"`
+	ApplyOnManual  bool     `json:"applyOnManual"`
+	ApplyOnImport  bool     `json:"applyOnImport"`
 }
 
 func (in assignmentInput) toServiceInput() assignment.Input {
@@ -49,7 +50,7 @@ func (in assignmentInput) toServiceInput() assignment.Input {
 		MatchField: in.MatchField, MatchType: in.MatchType, Pattern: in.Pattern,
 		CaseSensitive: in.CaseSensitive, MatchAccountID: in.MatchAccountID,
 		SetPayeeID: in.SetPayeeID, SetCategoryID: in.SetCategoryID,
-		SetPaymentMode: in.SetPaymentMode, SetInfo: in.SetInfo,
+		SetPaymentMode: in.SetPaymentMode, SetInfo: in.SetInfo, SetTags: in.SetTags,
 		ApplyOnManual: in.ApplyOnManual, ApplyOnImport: in.ApplyOnImport,
 	}
 }
@@ -121,29 +122,38 @@ func (h *assignmentHandlers) reorder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// test is the rule tester's dry run: what the rule in the body would match,
+// changing nothing. id is the rule being edited, if any; the rules above it
+// are the ones that can take a match first.
 func (h *assignmentHandlers) test(w http.ResponseWriter, r *http.Request) {
 	wl, _ := walletFromContext(r.Context())
-	var in assignmentInput
+	var in struct {
+		assignmentInput
+		ID int64 `json:"id"`
+	}
 	if !decodeJSON(w, r, &in) {
 		return
 	}
-	matches, err := h.svc.Test(r.Context(), wl.ID, in.toServiceInput(), 100)
+	res, err := h.svc.Test(r.Context(), wl.ID, in.ID, in.toServiceInput(), 5)
 	if !writeAssignmentError(w, err) {
 		return
 	}
-	writeJSON(w, http.StatusOK, matches)
+	writeJSON(w, http.StatusOK, res)
 }
 
 func (h *assignmentHandlers) apply(w http.ResponseWriter, r *http.Request) {
 	wl, _ := walletFromContext(r.Context())
 	var body struct {
 		AccountID     *int64 `json:"accountId"`
+		AssignmentID  *int64 `json:"assignmentId"`
 		OnlyFillEmpty bool   `json:"onlyFillEmpty"`
 	}
 	if !decodeJSON(w, r, &body) {
 		return
 	}
-	n, err := h.svc.ApplyToExisting(r.Context(), wl.ID, body.AccountID, body.OnlyFillEmpty)
+	// Only the wallet's own rules are loaded, so another wallet's rule id
+	// simply matches nothing.
+	n, err := h.svc.ApplyToExisting(r.Context(), wl.ID, body.AccountID, body.AssignmentID, body.OnlyFillEmpty)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not apply rules")
 		return
@@ -154,21 +164,24 @@ func (h *assignmentHandlers) apply(w http.ResponseWriter, r *http.Request) {
 func (h *assignmentHandlers) suggest(w http.ResponseWriter, r *http.Request) {
 	wl, _ := walletFromContext(r.Context())
 	var body struct {
-		Memo      string `json:"memo"`
-		Payee     string `json:"payee"`
-		AccountID int64  `json:"accountId"`
+		Memo      string   `json:"memo"`
+		Payee     string   `json:"payee"`
+		Tags      []string `json:"tags"`
+		AccountID int64    `json:"accountId"`
 	}
 	if !decodeJSON(w, r, &body) {
 		return
 	}
-	res, ok, err := h.svc.Suggest(r.Context(), wl.ID, body.Memo, body.Payee, body.AccountID)
+	res, ok, err := h.svc.Suggest(r.Context(), wl.ID, assignment.Subject{
+		Memo: body.Memo, Payee: body.Payee, Tags: body.Tags, AccountID: body.AccountID,
+	})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not evaluate rules")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"matched": ok, "payeeId": res.PayeeID, "categoryId": res.CategoryID,
-		"paymentMode": res.PaymentMode, "info": res.Info,
+		"paymentMode": res.PaymentMode, "info": res.Info, "tags": nonNilTags(res.Tags),
 	})
 }
 
@@ -201,4 +214,11 @@ func writeAssignmentError(w http.ResponseWriter, err error) bool {
 		errCase{assignment.ErrEmptyPattern, http.StatusBadRequest, "empty_pattern", "pattern is required"},
 		errCase{assignment.ErrInvalidRegex, http.StatusBadRequest, "invalid_regex", "invalid regular expression"},
 	)
+}
+
+func nonNilTags(t []string) []string {
+	if t == nil {
+		return []string{}
+	}
+	return t
 }

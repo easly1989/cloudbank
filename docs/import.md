@@ -179,7 +179,7 @@ something needs your attention:
 | --- | --- | --- |
 | **Duplicate** (yellow) | The account already has a transaction with the same date and amount | No: tick it if it is a genuine second transaction, like two identical coffees on one day |
 | **Already imported** (grey) | An OFX row whose bank id you imported before | No |
-| **Rule** (blue) | An [assignment rule](#assignment-rules) filled in the payee, category, payment mode or info | Yes |
+| **Rule** (blue) | An [assignment rule](#assignment-rules) filled in the payee, category, payment mode or info, or added tags | Yes |
 | **Merge** / **Merge into…** | This row settles a pending transaction imported earlier. **Merge into…** lists the candidates when there are several | Yes: it updates that transaction instead of adding a new one |
 | Red text | The row could not be read; the badge says why | No: fix the file, or the settings, and preview again |
 
@@ -190,8 +190,9 @@ button saves them all in one go: either every row is saved, or none is.
 
 **Apply import rules**, above the table, runs your rules on every row, and the
 preview updates at once. Rules are managed on the **Rules** page. Only rules
-with **On import** ticked run here. A rule matches text in the memo or the
-payee, and fills in the payee, category, payment mode or info.
+with **On import and bank sync** ticked run here. A rule matches text in the
+memo, the payee or the row's tags, fills in the payee, category, payment mode or
+info, and can add tags.
 
 Rules turn a bank's `PAGAMENTO POS BAR CENTRALE` into payee *Bar Centrale*,
 category *Food:Coffee*, so the next import needs no typing.
