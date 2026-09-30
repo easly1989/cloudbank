@@ -29,6 +29,8 @@ type currencyResponse struct {
 	IsBase        bool    `json:"isBase"`
 	Rate          float64 `json:"rate"`
 	RateUpdatedAt string  `json:"rateUpdatedAt,omitempty"`
+	RateDate      string  `json:"rateDate,omitempty"`
+	RateSource    string  `json:"rateSource,omitempty"`
 }
 
 func toCurrencyResponse(c currency.Currency) currencyResponse {
@@ -36,7 +38,33 @@ func toCurrencyResponse(c currency.Currency) currencyResponse {
 		ID: c.ID, IsoCode: c.IsoCode, Name: c.Name, Symbol: c.Symbol,
 		SymbolPrefix: c.SymbolPrefix, DecimalChar: c.DecimalChar, GroupChar: c.GroupChar,
 		FracDigits: c.FracDigits, IsBase: c.IsBase, Rate: c.Rate, RateUpdatedAt: c.RateUpdatedAt,
+		RateDate: c.RateDate, RateSource: c.RateSource,
 	}
+}
+
+// freshRates asks the provider for the wallet's rates after a change that
+// needs them: a currency just added, or a new base. A provider that cannot
+// help leaves the rates as they are; the caller answers all the same (#558).
+func (h *currencyHandlers) freshRates(r *http.Request, walletID int64) {
+	if h.provider == nil {
+		return
+	}
+	_, _ = h.svc.RefreshRates(r.Context(), walletID, h.provider)
+}
+
+// withLatest reloads a currency as the list shows it, with its latest rate's
+// date and source.
+func (h *currencyHandlers) withLatest(r *http.Request, walletID, id int64) (currency.Currency, error) {
+	list, err := h.svc.ListForWallet(r.Context(), walletID)
+	if err != nil {
+		return currency.Currency{}, err
+	}
+	for _, c := range list {
+		if c.ID == id {
+			return c, nil
+		}
+	}
+	return currency.Currency{}, currency.ErrNotFound
 }
 
 // catalog returns the embedded ISO 4217 catalog. It is not wallet-scoped.
@@ -106,6 +134,13 @@ func (h *currencyHandlers) add(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal", "could not add currency")
 		return
 	}
+	// Its rate comes at once, rather than starting at 1 until tomorrow's update.
+	if !c.IsBase {
+		h.freshRates(r, wl.ID)
+	}
+	if fresh, err := h.withLatest(r, wl.ID, c.ID); err == nil {
+		c = fresh
+	}
 	writeJSON(w, http.StatusCreated, toCurrencyResponse(c))
 }
 
@@ -166,6 +201,11 @@ func (h *currencyHandlers) update(w http.ResponseWriter, r *http.Request) {
 			frac = *in.FracDigits
 		}
 		if err := h.svc.UpdateFormat(r.Context(), c.ID, sym, pre, dec, grp, frac); err != nil {
+			if errors.Is(err, currency.ErrInvalidFormat) {
+				writeError(w, http.StatusBadRequest, "invalid_format",
+					"the decimal mark is one character, the thousands separator one or none and not the same, with 0 to 8 decimals")
+				return
+			}
 			writeError(w, http.StatusInternalServerError, "internal", "could not update currency")
 			return
 		}
@@ -180,7 +220,7 @@ func (h *currencyHandlers) update(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	updated, err := h.svc.Get(r.Context(), c.ID)
+	updated, err := h.withLatest(r, c.WalletID, c.ID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not load currency")
 		return
@@ -197,6 +237,9 @@ func (h *currencyHandlers) setBase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal", "could not set base currency")
 		return
 	}
+	// The rates were worked out again against the new base; the provider's
+	// own, where it has them, are better still.
+	h.freshRates(r, c.WalletID)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -208,6 +251,10 @@ func (h *currencyHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	if err := h.svc.Delete(r.Context(), c.ID); err != nil {
 		if errors.Is(err, currency.ErrBaseCurrency) {
 			writeError(w, http.StatusBadRequest, "base_currency", "the base currency cannot be deleted")
+			return
+		}
+		if errors.Is(err, currency.ErrInUse) {
+			writeError(w, http.StatusConflict, "in_use", "an account is kept in this currency: move it to another currency first")
 			return
 		}
 		writeError(w, http.StatusInternalServerError, "internal", "could not delete currency")

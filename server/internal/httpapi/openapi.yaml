@@ -897,6 +897,9 @@ paths:
     post:
       operationId: addCurrency
       summary: Add a currency to a wallet
+      description: >-
+        A currency that is not the base gets the provider's rate at once, when
+        the provider publishes it; otherwise it starts at 1 until one is typed.
       requestBody:
         required: true
         content:
@@ -942,11 +945,12 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
     delete:
       operationId: deleteCurrency
-      summary: Remove a currency (not the base)
+      summary: Remove a currency (not the base, nor one an account is kept in)
       responses:
         "204": { description: Deleted. }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: An account is kept in this currency., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
   /api/v1/wallets/{walletId}/currencies/refresh:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -969,6 +973,10 @@ paths:
     post:
       operationId: setBaseCurrency
       summary: Make a currency the wallet's base
+      description: >-
+        Every other rate is worked out again against the new base (divided by
+        the new base's old rate), so conversions mean the same after the switch;
+        the provider's rates are then fetched for the new base, where it has them.
       responses:
         "204": { description: Base currency set. }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -2878,8 +2886,10 @@ components:
         groupChar: { type: string }
         fracDigits: { type: integer }
         isBase: { type: boolean }
-        rate: { type: number }
+        rate: { type: number, description: "what one unit is worth in the base currency" }
         rateUpdatedAt: { type: string }
+        rateDate: { type: string, format: date, description: "the date of its latest recorded rate" }
+        rateSource: { type: string, description: "where its latest rate came from: manual, or the provider (frankfurter)" }
       required: [id, isoCode, name, symbol, symbolPrefix, decimalChar, groupChar, fracDigits, isBase, rate]
     AddCurrencyRequest:
       type: object
