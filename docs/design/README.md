@@ -191,3 +191,10 @@ Added since:
   transactions, and "Use it" under the pointer makes it the default. The sheet
   adds the default payment, which the old dialog neither showed nor kept.
   Under 900px of content the last-use column goes.
+- **Tags carry their figures** (#556), to an approved mockup, in the Payees
+  page's family: one row per tag, with the two categories its transactions were
+  mostly in, transactions, last use and net amount over 12 months, sorted the
+  same way. The board has no Add for tags; the app has one, which makes a tag
+  before any transaction carries it (`POST /tags`). Renaming happens in the
+  sheet, not in a field on the row. Under 900px of content the last-use column
+  goes.

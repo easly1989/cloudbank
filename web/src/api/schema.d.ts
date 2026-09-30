@@ -1360,6 +1360,29 @@ export interface paths {
         /** List a wallet's tags */
         get: operations["listTags"];
         put?: never;
+        /** Create a tag no transaction carries yet */
+        post: operations["createTag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/tags/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * What each tag held in a period
+         * @description For each tag that has been on a transaction dated on or before `to`: how many of its transactions fall between `from` and `to` (both included), their net sum in the base currency (money in and out together), the date of its latest one on or before `to`, however long ago, and the categories they mostly went to in the period (at most two, the most frequent first; a split counts once per line). A tag on no transaction is absent.
+         */
+        get: operations["getTagActivity"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -3150,6 +3173,44 @@ export interface components {
              * @description number of transactions using this tag
              */
             count: number;
+        };
+        TagCategory: {
+            /** Format: int64 */
+            categoryId: number;
+            /**
+             * Format: int64
+             * @description the tag's transactions (or split lines) in the period under it
+             */
+            count: number;
+        };
+        TagActivity: {
+            /** Format: int64 */
+            tagId: number;
+            /**
+             * Format: int64
+             * @description transactions in the period
+             */
+            count: number;
+            /**
+             * Format: int64
+             * @description their net sum, in the base currency's minor units
+             */
+            amount: number;
+            /**
+             * Format: date
+             * @description the latest transaction on or before the period's end
+             */
+            lastDate: string;
+            /** @description at most two, the most frequent first */
+            categories: components["schemas"]["TagCategory"][];
+        };
+        TagActivityResult: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            tags: components["schemas"]["TagActivity"][];
+            currency?: components["schemas"]["CurrencyInfo"] | null;
         };
         Payee: {
             /** Format: int64 */
@@ -6679,6 +6740,72 @@ export interface operations {
                     "application/json": string[];
                 };
             };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagInfo"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description A tag with that name already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getTagActivity: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Activity. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagActivityResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
         };
     };

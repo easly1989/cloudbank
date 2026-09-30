@@ -14,6 +14,8 @@ about into it.
 - **A year of made-up money.** A wallet called _Demo wallet_ with a checking
   account, savings, a credit card and cash, and a year of transactions: salary,
   rent, bills, groceries, a summer holiday, transfers between the accounts.
+  A few tags run through them: the car's fuel, work lunches to claim back,
+  Christmas presents, and the bills of a home office.
   Budgets, bills, scheduled transactions and two savings goals are set up
   already, so the dashboard, the reports and the schedules calendar have
   something to show.

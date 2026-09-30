@@ -1,7 +1,8 @@
 // Package tag implements management CRUD for transaction tags: listing (with
-// usage counts), renaming, merging and deleting. Tag *creation* happens where
-// transactions are written (the transaction service attaches tags during save);
-// this package owns the standalone tag lifecycle, split out for single
+// usage counts), creating, renaming, merging and deleting. Most tags are made
+// where transactions are written (the transaction service attaches tags during
+// save); Create makes one before any transaction carries it (#556). This
+// package owns the standalone tag lifecycle, split out for single
 // responsibility.
 package tag
 
@@ -71,6 +72,25 @@ func (s *Service) ListWithCounts(ctx context.Context, walletID int64) ([]Info, e
 		out = append(out, Info{ID: r.ID, Name: r.Name, Count: r.Count})
 	}
 	return out, nil
+}
+
+// Create adds a tag no transaction carries yet. A name already in use is
+// rejected, as Rename rejects it.
+func (s *Service) Create(ctx context.Context, walletID int64, name string) (Info, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return Info{}, ErrInvalid
+	}
+	if _, err := s.q.GetTagByName(ctx, db.GetTagByNameParams{WalletID: walletID, Name: name}); err == nil {
+		return Info{}, ErrDuplicate
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return Info{}, err
+	}
+	t, err := s.q.InsertTag(ctx, db.InsertTagParams{WalletID: walletID, Name: name})
+	if err != nil {
+		return Info{}, err
+	}
+	return Info{ID: t.ID, Name: t.Name}, nil
 }
 
 // inWallet loads a tag and verifies it belongs to the wallet.

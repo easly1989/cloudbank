@@ -95,3 +95,22 @@ func TestRenameMergeDelete(t *testing.T) {
 		t.Fatalf("after delete = %+v, want none", l)
 	}
 }
+
+func TestCreate(t *testing.T) {
+	_, s, wid, _ := newFixture(t)
+	ctx := context.Background()
+	got, err := s.Create(ctx, wid, "  trip ")
+	if err != nil || got.Name != "trip" || got.ID == 0 {
+		t.Fatalf("Create = %+v, %v", got, err)
+	}
+	// Listed with no transaction on it.
+	if l := tagsList(t, s, wid); len(l) != 1 || l[0].Name != "trip" || l[0].Count != 0 {
+		t.Fatalf("list = %+v", l)
+	}
+	if _, err := s.Create(ctx, wid, "trip"); err != ErrDuplicate {
+		t.Fatalf("second trip = %v, want ErrDuplicate", err)
+	}
+	if _, err := s.Create(ctx, wid, "   "); err != ErrInvalid {
+		t.Fatalf("blank = %v, want ErrInvalid", err)
+	}
+}
