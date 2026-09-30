@@ -20,7 +20,7 @@ function Suggestion({ text, label, onUse }: { text: string; label: string; onUse
   return (
     <div className={classes.suggest}>
       <span>{text}</span>
-      <UnstyledButton className={classes.useIt} style={{ visibility: "visible" }} onClick={onUse}>
+      <UnstyledButton className={classes.useIt} onClick={onUse}>
         <IconCheck size={13} />
         {label}
       </UnstyledButton>
