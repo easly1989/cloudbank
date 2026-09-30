@@ -27,6 +27,8 @@ type accountResponse struct {
 	MinimumBalance     int64  `json:"minimumBalance"`
 	Balance            int64  `json:"balance"`
 	FutureBalance      int64  `json:"futureBalance"`
+	ReconciledBalance  int64  `json:"reconciledBalance"`
+	LastReconciled     string `json:"lastReconciled,omitempty"`
 	Value              *int64 `json:"value,omitempty"`
 	Closed             bool   `json:"closed"`
 	NoSummary          bool   `json:"noSummary"`
@@ -53,6 +55,7 @@ func toAccountResponse(a account.Account) accountResponse {
 		Institution: a.Institution, Number: a.Number,
 		InitialBalance: a.InitialBalance, MinimumBalance: a.MinimumBalance, Balance: a.Balance,
 		FutureBalance: a.FutureBalance, Value: a.Value,
+		ReconciledBalance: a.ReconciledBalance, LastReconciled: a.LastReconciled,
 		Closed: a.Closed, NoSummary: a.NoSummary, NoBudget: a.NoBudget, NoReport: a.NoReport,
 		Position: a.Position, GroupName: a.GroupName, Notes: a.Notes, Website: a.Website,
 		DefaultPaymentMode: a.DefaultPaymentMode, CreatedAt: a.CreatedAt,

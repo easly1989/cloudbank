@@ -115,6 +115,10 @@ export interface Account {
   balance: number;
   /** Initial + all transactions, including future-dated. */
   futureBalance: number;
+  /** Initial + the reconciled transactions dated on/before today (#564). */
+  reconciledBalance: number;
+  /** The latest reconciled transaction's date; absent when there is none. */
+  lastReconciled?: string;
   /** Latest recorded valuation (asset accounts only); replaces balance when present. */
   value?: number;
   closed: boolean;

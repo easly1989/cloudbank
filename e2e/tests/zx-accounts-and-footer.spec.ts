@@ -117,20 +117,24 @@ test.describe("on a 320px phone", () => {
     );
     expect(box.height).toBeLessThan(lineHeight * 1.5);
 
-    // The ⋯ is inside the screen, and holds Edit and Delete.
+    // The ⋯ is inside the screen, and holds Edit and Delete (#564).
     const more = row.getByRole("button", { name: `Actions for ${name}` });
     const moreBox = (await more.boundingBox())!;
     expect(moreBox.x + moreBox.width).toBeLessThanOrEqual(320);
     await more.click();
-    await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
-    await expect(page.getByRole("menuitem", { name: "Delete…" })).toBeVisible();
+    await expect(
+      page.getByRole("menuitem", { name: "Edit account" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("menuitem", { name: "Delete account" }),
+    ).toBeVisible();
     await page.keyboard.press("Escape");
 
-    // A tap on the row opens the account.
-    await row.getByRole("button", { name: `Edit ${name}` }).click();
-    await expect(
-      page.getByRole("textbox", { name: "Account name" }),
-    ).toHaveValue(name);
+    // A tap on the row opens the account's register.
+    await row
+      .getByRole("button", { name: `Open the register of ${name}` })
+      .click();
+    await expect(page).toHaveURL(/\/transactions\?account=\d+/);
   });
 
   test("the footer is one line, and opens to its links", async ({ page }) => {

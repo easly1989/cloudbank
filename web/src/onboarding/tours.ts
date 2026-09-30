@@ -41,7 +41,7 @@ export const TOURS = {
   ],
   accounts: [
     step("accounts", "add", "accounts-add"),
-    step("accounts", "closed", "accounts-closed"),
+    step("accounts", "figures", "accounts-table"),
   ],
   budget: [step("budget", "tabs", "budget-tabs"), step("budget", "editor", "budget-editor")],
   reports: [

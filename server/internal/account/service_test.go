@@ -132,16 +132,20 @@ func TestBalancesReflectTransactions(t *testing.T) {
 	}
 
 	now := time.Now().UTC()
-	ins := func(date string, amount int64) {
+	if got, _ := s.Get(ctx, a.ID); got.ReconciledBalance != 1000 || got.LastReconciled != "" {
+		t.Fatalf("nothing reconciled yet: reconciled=%d last=%q", got.ReconciledBalance, got.LastReconciled)
+	}
+	ins := func(date string, amount, status int64) {
 		if _, err := q.InsertTransaction(ctx, db.InsertTransactionParams{
-			WalletID: w.ID, AccountID: a.ID, Date: date, Amount: amount,
+			WalletID: w.ID, AccountID: a.ID, Date: date, Amount: amount, Status: status,
 		}); err != nil {
 			t.Fatalf("insert txn: %v", err)
 		}
 	}
-	ins(now.AddDate(0, 0, -1).Format(dateLayout), 5000) // past
-	ins(now.Format(dateLayout), -2000)                  // today
-	ins(now.AddDate(0, 0, 1).Format(dateLayout), -1000) // future
+	yesterday := now.AddDate(0, 0, -1).Format(dateLayout)
+	ins(yesterday, 5000, 2)                                // past, reconciled
+	ins(now.Format(dateLayout), -2000, 0)                  // today
+	ins(now.AddDate(0, 0, 1).Format(dateLayout), -1000, 0) // future
 
 	// today = initial + past + today = 1000 + 5000 - 2000 = 4000
 	// future = today + future-dated = 4000 - 1000 = 3000
@@ -152,11 +156,16 @@ func TestBalancesReflectTransactions(t *testing.T) {
 	if got.Balance != 4000 || got.FutureBalance != 3000 {
 		t.Fatalf("Get balances: today=%d future=%d (want 4000/3000)", got.Balance, got.FutureBalance)
 	}
+	// reconciled = initial + the reconciled past = 1000 + 5000 (#564)
+	if got.ReconciledBalance != 6000 || got.LastReconciled != yesterday {
+		t.Fatalf("Get reconciled=%d last=%q (want 6000/%s)", got.ReconciledBalance, got.LastReconciled, yesterday)
+	}
 	list, err := s.List(ctx, w.ID)
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
-	if len(list) != 1 || list[0].Balance != 4000 || list[0].FutureBalance != 3000 {
+	if len(list) != 1 || list[0].Balance != 4000 || list[0].FutureBalance != 3000 ||
+		list[0].ReconciledBalance != 6000 || list[0].LastReconciled != yesterday {
 		t.Fatalf("List balances = %+v", list)
 	}
 }
