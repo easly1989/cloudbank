@@ -40,6 +40,7 @@ type Querier interface {
 	// the given ids are rows of the wallet.
 	CountAccountsInWallet(ctx context.Context, arg CountAccountsInWalletParams) (int64, error)
 	CountCategoriesInWallet(ctx context.Context, arg CountCategoriesInWalletParams) (int64, error)
+	CountCurrencyAccounts(ctx context.Context, currencyID int64) (int64, error)
 	CountOIDCIdentitiesForUser(ctx context.Context, userID int64) (int64, error)
 	CountPayeesInWallet(ctx context.Context, arg CountPayeesInWalletParams) (int64, error)
 	CountPayeesWithCategory(ctx context.Context, defaultCategoryID sql.NullInt64) (int64, error)
@@ -205,6 +206,8 @@ type Querier interface {
 	// category, so the review can prompt the user to complete them. Split
 	// transactions carry their categories on the splits, so they are excluded.
 	ListImportedUncategorized(ctx context.Context, walletID int64) ([]Transaction, error)
+	// Each currency's latest recorded rate: where it came from, and its date.
+	ListLatestRatesForWallet(ctx context.Context, walletID int64) ([]ListLatestRatesForWalletRow, error)
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID int64) ([]ListPushSubscriptionsForUserRow, error)
 	ListPushUserIDs(ctx context.Context) ([]int64, error)
@@ -273,6 +276,9 @@ type Querier interface {
 	RefreshEBankingConnectionSession(ctx context.Context, arg RefreshEBankingConnectionSessionParams) (BankConnection, error)
 	RenameTag(ctx context.Context, arg RenameTagParams) error
 	ReparentChildren(ctx context.Context, arg ReparentChildrenParams) error
+	// Rates are what one unit is worth in the base; a new base divides them all by
+	// its own old rate, so they read against it (#558).
+	ScaleWalletRates(ctx context.Context, arg ScaleWalletRatesParams) error
 	// Wallet-wide register search: case-insensitive substring match of @q against
 	// memo, info, payee name, category name and tag names (INSTR/LOWER, mirroring
 	// the client-side filter), with optional account / date / amount / status

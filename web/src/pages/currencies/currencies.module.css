@@ -1,0 +1,198 @@
+/* The Currencies page (#558), to the numbers of the approved mockup: the
+   Payees page's card and rows, one per currency, the base first. */
+
+.page {
+  container-type: inline-size;
+  font-variant-numeric: tabular-nums;
+}
+.mono {
+  font-family: var(--mantine-font-family-monospace);
+}
+.dim {
+  color: var(--mantine-color-dimmed);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.card {
+  border: 1px solid var(--cb-ledger-border);
+  border-radius: 12px;
+  background: var(--cb-ledger-surface);
+  overflow: hidden;
+}
+.none {
+  padding: 18px 16px;
+  font-size: 14px;
+  color: var(--mantine-color-dimmed);
+}
+
+/* Desktop rows. */
+.tr {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 240px 200px 130px 40px;
+  gap: 14px;
+  align-items: center;
+  padding: 0 16px;
+  min-height: 46px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 14px;
+}
+.tr[data-row] {
+  cursor: pointer;
+}
+.tr[data-row]:hover {
+  background: var(--mantine-color-default-hover);
+}
+.head {
+  border-top: 0;
+  min-height: 38px;
+  background: var(--cb-band-header);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+}
+.r {
+  text-align: right;
+  white-space: nowrap;
+}
+.name {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  white-space: nowrap;
+  text-align: start;
+  color: inherit;
+  font-size: inherit;
+}
+.code {
+  font-family: var(--mantine-font-family-monospace);
+  font-weight: 600;
+  width: 34px;
+  flex-shrink: 0;
+}
+.title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.baseNote {
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+}
+.origin {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.warn {
+  color: var(--mantine-color-yellow-text);
+}
+.menuNote {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--mantine-color-dimmed);
+  white-space: normal;
+}
+.notice {
+  font-size: 13px;
+  line-height: 1.45;
+}
+.line {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+}
+
+/* A page too narrow for every column (a laptop with the menu open) drops
+   where the rate came from; the sheet still has it. */
+@container (max-width: 899px) {
+  .tr {
+    grid-template-columns: minmax(160px, 1fr) 220px 110px 40px;
+  }
+  .tr > :nth-child(3) {
+    display: none;
+  }
+}
+
+/* The phone: one row per currency. */
+.prow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 15px;
+  text-align: start;
+  color: var(--mantine-color-text);
+}
+.card > .prow:first-child {
+  border-top: 0;
+}
+.pl {
+  flex: 1;
+  min-width: 0;
+}
+.pt {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-weight: 500;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pt .code {
+  width: auto;
+}
+.pm {
+  display: block;
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pa {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+  white-space: nowrap;
+}
+
+/* The sheet. */
+.format {
+  border-top: 1px solid var(--cb-ledger-border);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sectionLabel {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+}
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: end;
+}
+.preview {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 22px;
+  font-weight: 500;
+}
+.affix {
+  color: var(--mantine-color-dimmed);
+  font-size: 14px;
+  white-space: nowrap;
+}
