@@ -518,7 +518,10 @@
       "isExpense": "Money out: switch to money in",
       "isIncome": "Money in: switch to money out",
       "autoPostHint": "Register it on its date without asking."
-    }
+    },
+    "splitNote_one": "This transaction is split, so its amount and category can’t be changed here. The rest can.",
+    "splitNote_other": "This transaction is split between {{count}} categories, so its amount and categories can’t be changed here. The rest can.",
+    "splitCategories": "Split · {{names}}"
   },
   "tags": {
     "title": "Tags",
