@@ -147,3 +147,23 @@ Added since:
   the left, the amount on the right, never wrapped, and a ⋯ menu (Edit,
   Valuations for assets and investments, Delete) in place of the three icons.
   A tap on the row opens the account. The name gives way first.
+- **Bills became the Schedules page's calendar** (#546). The secondary pages
+  board draws Bills as a list, one row per bill with its next date. That list
+  showed each schedule's next unregistered occurrence, so a reader who registers
+  months ahead saw the bills after those months. The app merges Bills into
+  Schedules, one menu entry, with two views:
+  - **Calendar**: the month Monday first, each occurrence on its day with its
+    state (not registered, registered, cleared, reconciled, overdue) as the
+    status picker's icons, never colour alone. The figures open the page as on
+    the reports (still to pay 40px, overdue and coming in 28px). A 320px
+    "Needs you" column beside it registers or skips; under 900px of content it
+    drops below the calendar, and on a phone the month is a small grid with an
+    icon under each day, followed by the month's list.
+  - **All schedules**: the schedules themselves, one row each in the register's
+    band and row sizes.
+
+  An occurrence still to register opens in a sheet built like the entry sheet
+  (396px on the right, from the bottom on a phone); a registered one opens the
+  register on its row, which the cursor lands on and marks with the arrival
+  tint until it moves. The schedule form moved from a dialog into the same
+  sheet, which the other secondary pages will share.

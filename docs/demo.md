@@ -15,8 +15,8 @@ about into it.
   account, savings, a credit card and cash, and a year of transactions: salary,
   rent, bills, groceries, a summer holiday, transfers between the accounts.
   Budgets, bills, scheduled transactions and two savings goals are set up
-  already, so the dashboard, the reports and the Bills page have something to
-  show.
+  already, so the dashboard, the reports and the schedules calendar have
+  something to show.
 - **Your own copy.** Nobody else sees your account, and you can change anything:
   add, edit and delete transactions, rearrange the dashboard, import a file.
 - **Your language.** The data comes in English or Italian, from your browser's

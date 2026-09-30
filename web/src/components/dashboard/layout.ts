@@ -161,6 +161,23 @@ type LegacyLayout = { order?: string[]; hidden?: string[]; spans?: Record<string
  * converted by dropping hidden widgets, mapping the span to a width and packing
  * the rest in order.
  */
+// A value written with its object keys in order, so two layouts compare equal
+// whatever order their fields were written in.
+function canonical(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(canonical).join(",")}]`;
+  if (v && typeof v === "object")
+    return `{${Object.keys(v)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${canonical((v as Record<string, unknown>)[k])}`)
+      .join(",")}}`;
+  return JSON.stringify(v) ?? "null";
+}
+
+/** Whether a layout is the one already saved, so saving it would change nothing. */
+export function sameLayout(a: DashboardLayoutV2, saved: unknown): boolean {
+  return canonical(a) === canonical(saved);
+}
+
 export function migrateLayout(saved: unknown): DashboardLayoutV2 {
   if (
     saved &&

@@ -155,6 +155,136 @@ func (q *Queries) ListAllSchedules(ctx context.Context) ([]Schedule, error) {
 	return items, nil
 }
 
+const listScheduledTransactionsInRange = `-- name: ListScheduledTransactionsInRange :many
+SELECT t.id, t.template_id, t.account_id, t.date, t.amount, t.status,
+       tpl.name AS template_name, tpl.is_transfer AS template_is_transfer
+FROM templates tpl
+JOIN transactions t ON t.template_id = tpl.id AND t.wallet_id = tpl.wallet_id
+WHERE tpl.wallet_id = ?1
+  AND t.date >= ?2 AND t.date <= ?3
+  AND (tpl.is_transfer = 0 OR t.account_id = tpl.account_id)
+ORDER BY t.date, t.id
+`
+
+type ListScheduledTransactionsInRangeParams struct {
+	WalletID int64
+	FromDate string
+	ToDate   string
+}
+
+type ListScheduledTransactionsInRangeRow struct {
+	ID                 int64
+	TemplateID         sql.NullInt64
+	AccountID          int64
+	Date               string
+	Amount             int64
+	Status             int64
+	TemplateName       string
+	TemplateIsTransfer int64
+}
+
+// The transactions schedules registered between two dates. A transfer is two
+// rows with the same template; only the leg on the template's own account
+// stands for the occurrence.
+func (q *Queries) ListScheduledTransactionsInRange(ctx context.Context, arg ListScheduledTransactionsInRangeParams) ([]ListScheduledTransactionsInRangeRow, error) {
+	rows, err := q.db.QueryContext(ctx, listScheduledTransactionsInRange, arg.WalletID, arg.FromDate, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListScheduledTransactionsInRangeRow{}
+	for rows.Next() {
+		var i ListScheduledTransactionsInRangeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TemplateID,
+			&i.AccountID,
+			&i.Date,
+			&i.Amount,
+			&i.Status,
+			&i.TemplateName,
+			&i.TemplateIsTransfer,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSchedulesForCalendar = `-- name: ListSchedulesForCalendar :many
+SELECT sch.id, sch.template_id, sch.unit, sch.every_n, sch.next_due, sch.weekend_mode,
+       sch.remaining, sch.auto_post,
+       tpl.name AS template_name, tpl.amount AS template_amount,
+       tpl.is_transfer AS template_is_transfer, tpl.is_split AS template_is_split,
+       tpl.account_id AS account_id
+FROM schedules sch
+JOIN templates tpl ON tpl.id = sch.template_id
+WHERE sch.wallet_id = ?
+ORDER BY sch.id
+`
+
+type ListSchedulesForCalendarRow struct {
+	ID                 int64
+	TemplateID         int64
+	Unit               string
+	EveryN             int64
+	NextDue            string
+	WeekendMode        int64
+	Remaining          sql.NullInt64
+	AutoPost           int64
+	TemplateName       string
+	TemplateAmount     int64
+	TemplateIsTransfer int64
+	TemplateIsSplit    int64
+	AccountID          sql.NullInt64
+}
+
+// Every schedule of a wallet with what the calendar needs to project its
+// occurrences: the cadence, and the template's name, amount and account.
+func (q *Queries) ListSchedulesForCalendar(ctx context.Context, walletID int64) ([]ListSchedulesForCalendarRow, error) {
+	rows, err := q.db.QueryContext(ctx, listSchedulesForCalendar, walletID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSchedulesForCalendarRow{}
+	for rows.Next() {
+		var i ListSchedulesForCalendarRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TemplateID,
+			&i.Unit,
+			&i.EveryN,
+			&i.NextDue,
+			&i.WeekendMode,
+			&i.Remaining,
+			&i.AutoPost,
+			&i.TemplateName,
+			&i.TemplateAmount,
+			&i.TemplateIsTransfer,
+			&i.TemplateIsSplit,
+			&i.AccountID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSchedulesForWallet = `-- name: ListSchedulesForWallet :many
 SELECT sch.id, sch.wallet_id, sch.template_id, sch.unit, sch.every_n, sch.next_due, sch.weekend_mode, sch.remaining, sch.post_advance, sch.auto_post, sch.last_posted, sch.created_at, tpl.name AS template_name, tpl.amount AS template_amount,
        tpl.is_transfer AS template_is_transfer

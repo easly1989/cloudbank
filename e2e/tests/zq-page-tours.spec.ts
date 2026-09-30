@@ -93,7 +93,6 @@ test("a page offers its tour once, and the ? plays it again", async ({
       "accounts",
       "reports",
       "schedules",
-      "bills",
       "goals",
       "bankSync",
       "review",
@@ -166,7 +165,6 @@ test("skipping an offered tour can skip them all", async ({ page }) => {
       "accounts",
       "reports",
       "schedules",
-      "bills",
       "bankSync",
       "review",
       "settings",
@@ -224,6 +222,45 @@ test("every step of every tour points at something on its page", async ({
     tutorialSeen: true,
     tourOffers: false,
   });
+  // The schedules tour points at the calendar and at what needs the reader,
+  // which a wallet shows once it has a schedule (#546).
+  await page.evaluate(
+    async ({ H, accountId }) => {
+      const wallets = await (
+        await fetch("/api/v1/wallets", { credentials: "same-origin" })
+      ).json();
+      const base = `/api/v1/wallets/${wallets[0].id}`;
+      const existing = await (
+        await fetch(`${base}/schedules`, { credentials: "same-origin" })
+      ).json();
+      if (existing.length > 0) return;
+      const tpl = await (
+        await fetch(`${base}/templates`, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: H,
+          body: JSON.stringify({
+            name: "Tour rent",
+            accountId,
+            amount: -50000,
+          }),
+        })
+      ).json();
+      await fetch(`${base}/schedules`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: H,
+        body: JSON.stringify({
+          templateId: tpl.id,
+          unit: "month",
+          everyN: 1,
+          nextDue: new Date().toISOString().slice(0, 10),
+          autoPost: false,
+        }),
+      });
+    },
+    { H, accountId },
+  );
   const pages: [string, string][] = [
     ["dashboard", "/"],
     ["register", `/transactions?account=${accountId}`],
@@ -231,7 +268,6 @@ test("every step of every tour points at something on its page", async ({
     ["budget", "/budget"],
     ["reports", "/reports"],
     ["schedules", "/schedules"],
-    ["bills", "/bills"],
     ["goals", "/goals"],
     ["bankSync", "/settings/integrations"],
     ["review", "/review"],
