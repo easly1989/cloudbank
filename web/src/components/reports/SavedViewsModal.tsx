@@ -13,7 +13,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { type SavedReportView, type User, updateMe } from "../../api/client";
+import { type SavedReportView, savePreferences } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 import { VIEW_TAB, viewToSearch } from "./reportState";
 
@@ -45,9 +45,7 @@ export function SavedViewsModal({
   const views = all.filter((v) => v.walletId === walletId && viewToSearch(v) !== null);
 
   const persist = useMutation({
-    mutationFn: (next: SavedReportView[]) =>
-      updateMe({ preferences: { ...(user?.preferences ?? {}), reportViews: next } }),
-    onSuccess: (u: User) => qc.setQueryData(["me"], u),
+    mutationFn: (next: SavedReportView[]) => savePreferences(qc, { reportViews: next }),
   });
 
   const save = () => {

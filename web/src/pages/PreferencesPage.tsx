@@ -19,7 +19,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ApiError, listAccounts, updateMe, type User } from "../api/client";
+import { ApiError, listAccounts, saveMe, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { useTour } from "../onboarding/tourContext";
 import { supportedLanguages } from "../i18n";
@@ -104,13 +104,12 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
 
   const save = useMutation({
     mutationFn: () =>
-      updateMe({
+      saveMe(qc, {
         locale,
         theme,
-        // Spread the existing blob so keys this page doesn't manage (e.g.
-        // registerColumns, dashboard layout) are preserved.
+        // Merged over the stored preferences, so keys this page doesn't manage
+        // (e.g. registerColumns, dashboard layout) are preserved.
         preferences: {
-          ...prefs,
           dateFormat,
           startScreen,
           defaultAccountId: defaultAccount ? Number(defaultAccount) : undefined,
@@ -123,7 +122,6 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
         },
       }),
     onSuccess: (updated: User) => {
-      qc.setQueryData(["me"], updated);
       void i18n.changeLanguage(updated.locale);
       setColorScheme((updated.theme as "auto" | "light" | "dark") ?? "auto");
       notifications.show({ color: "teal", message: t("preferences.saved") });

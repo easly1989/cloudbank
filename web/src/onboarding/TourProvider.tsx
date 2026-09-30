@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { updateMe, type Preferences, type User } from "../api/client";
+import { savePreferences, type Preferences } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { TourContext, type TourContextValue } from "./tourContext";
 import { TourOffer, TourSkipAsk } from "./TourOffer";
@@ -49,14 +49,8 @@ export function OnboardingTourProvider({ children }: { children: ReactNode }) {
   const [fromOffer, setFromOffer] = useState(false);
   const [asking, setAsking] = useState(false);
 
-  // Written from the latest copy of the preferences, not the one this render
-  // saw: the reader may have changed another preference in between.
   const persist = useMutation({
-    mutationFn: (patch: Partial<Preferences>) => {
-      const latest = qc.getQueryData<User>(["me"])?.preferences ?? user?.preferences ?? {};
-      return updateMe({ preferences: { ...latest, ...patch } });
-    },
-    onSuccess: (u: User) => qc.setQueryData(["me"], u),
+    mutationFn: (patch: Partial<Preferences>) => savePreferences(qc, patch),
   });
   const { mutate } = persist;
 
