@@ -8,6 +8,7 @@ import {
   defaultLayout,
   migrateLayout,
   newInstanceId,
+  sameLayout,
 } from "./layout";
 
 const kpi = (id: string): PlacedWidget => ({ id, type: "kpi", x: 0, y: 0, w: 3, h: 2 });
@@ -103,5 +104,21 @@ describe("newInstanceId", () => {
     expect(newInstanceId("kpi", existing)).toBe("kpi-3");
     existing.push(kpi("kpi-3"));
     expect(newInstanceId("kpi", existing)).toBe("kpi-4");
+  });
+});
+
+describe("sameLayout", () => {
+  it("matches the saved layout whatever order its fields were written in", () => {
+    const l = { version: 2 as const, widgets: [kpi("kpi")] };
+    const saved = JSON.parse(
+      '{"widgets":[{"h":2,"w":3,"y":0,"x":0,"type":"kpi","id":"kpi"}],"version":2}',
+    );
+    expect(sameLayout(l, saved)).toBe(true);
+  });
+
+  it("tells a moved widget, and a missing saved layout, apart", () => {
+    const l = { version: 2 as const, widgets: [kpi("kpi")] };
+    expect(sameLayout(l, { version: 2, widgets: [{ ...kpi("kpi"), h: 3 }] })).toBe(false);
+    expect(sameLayout(l, undefined)).toBe(false);
   });
 });

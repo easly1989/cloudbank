@@ -107,8 +107,48 @@ export const updateSchedule = (walletId: number, id: number, body: ScheduleInput
 export const deleteSchedule = (walletId: number, id: number) =>
   api.del<void>(`/api/v1/wallets/${walletId}/schedules/${id}`);
 
-export const postScheduleNow = (walletId: number, id: number) =>
-  api.post<void>(`/api/v1/wallets/${walletId}/schedules/${id}/post`);
+/** Changes to one posting of a schedule; what is left out comes from the schedule. */
+export interface SchedulePostInput {
+  amount?: number;
+  date?: string;
+  status?: number;
+}
+
+export const postScheduleNow = (walletId: number, id: number, body?: SchedulePostInput) =>
+  api.post<void>(`/api/v1/wallets/${walletId}/schedules/${id}/post`, body);
+
+export type OccurrenceState = "registered" | "due" | "overdue";
+
+/** One date a schedule comes due on: registered already, or still to register. */
+export interface ScheduleOccurrence {
+  /** Null for a transaction whose schedule has since ended. */
+  scheduleId: number | null;
+  templateId: number;
+  name: string;
+  date: string;
+  amount: number;
+  accountId: number;
+  isTransfer: boolean;
+  isSplit: boolean;
+  autoPost: boolean;
+  state: OccurrenceState;
+  transactionId?: number;
+  status?: number;
+  /** The schedule's first unregistered occurrence: the one Register and Skip act on. */
+  next: boolean;
+}
+
+export interface ScheduleCalendar {
+  from: string;
+  to: string;
+  today: string;
+  occurrences: ScheduleOccurrence[];
+}
+
+export const getScheduleCalendar = (walletId: number, from: string, to: string, today: string) =>
+  api.get<ScheduleCalendar>(
+    `/api/v1/wallets/${walletId}/schedules/calendar?from=${from}&to=${to}&today=${today}`,
+  );
 
 export const skipSchedule = (walletId: number, id: number) =>
   api.post<void>(`/api/v1/wallets/${walletId}/schedules/${id}/skip`);

@@ -32,7 +32,7 @@ describe("buildAttentionItems", () => {
 
   it("sends each line somewhere it can be fixed", () => {
     const items = buildAttentionItems({ ...none, overdueBills: 1, overBudget: 1 });
-    expect(items.map((i) => i.to)).toEqual(["/bills", "/budget"]);
+    expect(items.map((i) => i.to)).toEqual(["/schedules", "/budget"]);
   });
 });
 

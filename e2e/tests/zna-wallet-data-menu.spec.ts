@@ -69,11 +69,16 @@ async function prefs(page: Page, navLayout?: unknown) {
         });
         wallets = await (await fetch("/api/v1/wallets")).json();
       }
+      // Only the menu changes: the rest stays as the reader left it, so the
+      // dashboard keeps the layout it measured and has nothing to save.
+      const me = await (await fetch("/api/v1/auth/me")).json();
+      const { navLayout: _old, ...rest } = me.preferences ?? {};
       await fetch("/api/v1/auth/me", {
         method: "PATCH",
         headers: H,
         body: JSON.stringify({
           preferences: {
+            ...rest,
             tutorialSeen: true,
             tourOffers: false,
             ...(navLayout ? { navLayout } : {}),
@@ -101,6 +106,24 @@ test("the wallet's pages get a menu group; a customised menu is asked", async ({
     await expect(nav.getByRole("link", { name: "Categories" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "Currencies" })).toBeVisible();
     await expect(notice).toHaveCount(0);
+  });
+
+  // The dashboard saves the heights it measures the first time it lays out.
+  // After that, opening it writes nothing: a save racing an answer to the card
+  // would put the old menu back.
+  await test.step("a dashboard already laid out writes no preference", async () => {
+    await page.waitForTimeout(1500);
+    const writes: string[] = [];
+    const onRequest = (r: { method(): string; url(): string }) => {
+      if (r.method() === "PATCH" && r.url().endsWith("/api/v1/auth/me"))
+        writes.push(r.url());
+    };
+    page.on("request", onRequest);
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(1500);
+    page.off("request", onRequest);
+    expect(writes).toEqual([]);
   });
 
   await test.step("a customised menu keeps its shape; Show them adds the pages", async () => {

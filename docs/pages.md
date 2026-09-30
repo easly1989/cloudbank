@@ -16,7 +16,6 @@ Every page also has a short tour: the **?** in its header plays it.
 - [Rules](#rules)
 - [Categories, payees and currencies](#categories-payees-and-currencies)
 - [Schedules](#schedules)
-- [Bills](#bills)
 - [Budget](#budget)
 - [Goals](#goals)
 - [Reports](#reports)
@@ -154,33 +153,48 @@ not know.
 ## Schedules
 
 Schedules are transactions that come round on their own: rent, a salary, a
-subscription. CloudBank posts each one when it comes due.
+subscription, the bills. The page has two views, **Calendar** and **All
+schedules**, and **All / Out / In** shows everything, only money going out, or
+only money coming in.
 
-- **Repeats.** Every *n* days, weeks, months or years, from the **Next due**
-  date. You can limit the number of occurrences.
+- **Calendar.** The month, with each occurrence on the day it falls and where it
+  stands:
+  - **Not registered**: the schedule has not posted it yet;
+  - **Registered**, **Cleared** or **Reconciled**: the status of the transaction
+    it became, even when it was registered months ahead;
+  - **Overdue**: its date has passed and it is not registered.
+
+  The figures above it give what is still to pay this month (everything not yet
+  reconciled), what is overdue, and what is coming in. Transfers between your
+  own accounts show on the calendar but are not counted as bills or income.
+- **Needs you.** Beside the calendar: occurrences that are overdue, or due within
+  the week and not set to post themselves. **Register** posts one as the
+  schedule describes it, and **Skip** passes over it. Under it, **Next up** lists
+  what comes after today.
+- **Opening an occurrence.**
+  - One still to register opens in a sheet, where you can change the amount, the
+    date or the status before registering it (a bill is rarely the same twice),
+    with the months before it for comparison.
+  - One already registered opens the register on its row, which is where it is
+    reconciled.
+- **All schedules.** One row per schedule: the amount, how it repeats, when it
+  is next due (and how far ahead it is registered), its mode, and where this
+  month's occurrence stands. The figures give what the schedules add up to per
+  month and per year. Click a row to edit it; its **⋯** menu posts now, skips,
+  edits or deletes it.
+- **Adding and editing.** **New schedule** opens a sheet beside the page: the
+  name, the amount, the account, how often and from when, and whether it posts
+  itself. **More details** holds the payee, category, memo, payment mode, the
+  weekend handling, **Post days early** and a limit on the number of occurrences.
 - **Weekend handling.** When a date falls on a weekend, keep it, move it to the
   Friday before or the Monday after, or skip it.
 - **Mode.**
   - **Post automatically** records the transaction on its date, or some days
     early with **Post days early**.
-  - **Remind** records nothing: it lists the transaction as due, for you to
-    **Post now** or **Skip**.
-- **Totals.** The totals at the top show what your schedules add up to per week,
-  per month and per year.
+  - **Remind** records nothing: the occurrence waits under **Needs you**.
 - **Posting months ahead.** The wallet setting **Pre-register scheduled
   transactions** posts upcoming ones up to three months in advance, the way
   HomeBank does. It is under **Settings →** *your wallet*.
-
-## Bills
-
-Bills are the schedules you pay, one row each, with the next date and how much
-is due. The overdue ones are marked.
-
-- **Mark paid** posts the scheduled transaction for that occurrence.
-- **Add bill** adds a new one; it is a schedule underneath.
-- **Which schedules count.** By default, every schedule that takes money out.
-  To show only one category's schedules, set **Bills category** under **Settings
-  →** *your wallet*.
 
 ## Budget
 
@@ -288,7 +302,7 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | --- | --- |
 | **General** | Language, date format, start screen, default account, tours; which fields the entry sheet shows |
 | **Appearance** | Theme and accent, the balances shown, account balances in the sidebar, the footer; the sidebar's navigation |
-| *Your wallet* | Name, owner, pre-registered schedules, bills category |
+| *Your wallet* | Name, owner, pre-registered schedules, the bills category the dashboard's Bills widget lists |
 | **Security** | Two-factor sign-in, API tokens, notifications |
 | **Bank sync & AI** | Bank connections ([Automatic bank sync](bank-sync.md)) and the optional AI category suggestions |
 | **Import & export** | Imports ([Importing transactions](import.md)), exports, backups and a database check |

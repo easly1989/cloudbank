@@ -22,7 +22,7 @@ const PAGES = [
   "/tags",
   "/assignments",
   "/schedules",
-  "/bills",
+  "/schedules?view=list",
   "/budget",
   "/goals",
   "/settings/integrations",
