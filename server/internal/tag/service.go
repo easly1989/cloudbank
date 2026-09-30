@@ -120,8 +120,8 @@ func (s *Service) Rename(ctx context.Context, walletID, tagID int64, name string
 	return s.q.RenameTag(ctx, db.RenameTagParams{Name: name, ID: tagID})
 }
 
-// Merge moves every transaction tagged with sourceID onto targetID and deletes
-// the source tag.
+// Merge moves every transaction tagged with sourceID, and every rule adding
+// it, onto targetID and deletes the source tag.
 func (s *Service) Merge(ctx context.Context, walletID, sourceID, targetID int64) error {
 	if sourceID == targetID {
 		return ErrInvalid
@@ -139,6 +139,10 @@ func (s *Service) Merge(ctx context.Context, walletID, sourceID, targetID int64)
 	defer func() { _ = tx.Rollback() }()
 	qtx := s.q.WithTx(tx)
 	if err := qtx.ReassignTag(ctx, db.ReassignTagParams{TagID: targetID, TagID_2: sourceID}); err != nil {
+		return err
+	}
+	// The rules that add the source tag add the target from now on.
+	if err := qtx.ReassignAssignmentTag(ctx, db.ReassignAssignmentTagParams{TagID: targetID, TagID_2: sourceID}); err != nil {
 		return err
 	}
 	if err := qtx.DeleteTag(ctx, sourceID); err != nil {

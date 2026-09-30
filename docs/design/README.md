@@ -221,3 +221,13 @@ Added since:
   sheet, which shows and sends the exclusions and notes the old dialog wiped.
   The group and the website are not edited on this page and are sent back as
   they are. Under 900px of content the reconciled column goes.
+- **Rules read as sentences** (#566), to an approved mockup and the board's
+  drawing of them: "When the payee contains `Supermarket`" over "● file it under
+  Food › Groceries", the dot red for spending and green for income, with the
+  count on the right ("72×"). The board's rows are 60px, and so are these, in
+  the register's card with the account, when the rule runs, ▶ (apply this rule)
+  and ⋯. The count is how many transactions the rule decides, the first to match
+  each; at 0× it is amber, and when a rule above takes every match the line says
+  so. The board does not draw ▶, the order controls (the grip, Move up / down,
+  a right click) or tags: the user asked for them. Under 900px of content the
+  "Used on" column goes.

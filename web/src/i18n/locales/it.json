@@ -329,52 +329,137 @@
     "hint": "Quanto avevi previsto di spendere, accanto a quanto hai speso davvero."
   },
   "assignments": {
-    "title": "Regole di assegnazione",
-    "add": "Nuova regola",
     "addTitle": "Nuova regola",
     "editTitle": "Modifica regola",
-    "empty": "Nessuna regola.",
-    "help": "Le regole vengono valutate dall'alto in basso; la prima corrispondenza compila la transazione. Trascina per riordinare.",
-    "match": "Corrispondenza",
-    "sets": "Imposta",
-    "applies": "Applica",
-    "matchField": "Cerca in",
-    "matchType": "Tipo di corrispondenza",
-    "pattern": "Modello",
-    "caseSensitive": "Distingui maiuscole",
-    "caseSensitiveShort": "maiuscole",
     "matchAccount": "Solo nel conto",
     "anyAccount": "Qualsiasi conto",
-    "setPayee": "Imposta beneficiario",
-    "setCategory": "Imposta categoria",
-    "setPaymentMode": "Imposta modalità di pagamento",
-    "setInfo": "Imposta numero / info",
     "setInfoPlaceholder": "es. numero assegno",
-    "onManual": "All'inserimento manuale",
-    "onImport": "All'importazione",
-    "test": "Prova regola",
-    "testResult": "{{count}} transazioni corrisponderebbero",
     "applyToExisting": "Applica alle esistenti",
-    "applied": "Aggiornate {{count}} transazioni",
-    "edit": "Modifica",
-    "delete": "Elimina",
     "save": "Salva",
     "cancel": "Annulla",
-    "fields": {
-      "memo": "note",
-      "payee": "beneficiario",
-      "both": "note o beneficiario"
-    },
-    "types": {
-      "exact": "uguale a",
-      "contains": "contiene",
-      "regex": "regex"
-    },
     "confirmApplyTitle": "Applicare tutte le regole alle transazioni esistenti?",
-    "confirmApplyBody": "Vengono riempiti solo i campi vuoti — nulla di già impostato viene sovrascritto.",
     "confirmDeleteTitle": "Eliminare questa regola?",
     "confirmDeleteBody": "Le transazioni già compilate mantengono i loro valori; cambia solo quello che inserirai da ora in poi.",
-    "emptyHint": "Una regola legge il testo che manda la banca e compila categoria, beneficiario o tag, così smetti di riscrivere le stesse cose ogni mese."
+    "title": "Regole",
+    "subtitle": "Compila categoria e beneficiario da quello che scrive la banca.",
+    "add": "Nuova regola",
+    "line": "Si provano dall'alto in basso: la prima regola che corrisponde compila la transazione. Il numero dice quante delle tue transazioni prende oggi ciascuna. Trascina per cambiare l'ordine.",
+    "linePhone": "Si provano dall'alto in basso. Il numero dice quante delle tue transazioni prende ciascuna regola.",
+    "position": "Regola {{n}} di {{count}}",
+    "positionFirst": "Regola 1 di {{count}}, provata per prima",
+    "col": {
+      "rule": "Regola",
+      "account": "Conto",
+      "usedOn": "Usata su",
+      "matches": "Corrispondenze"
+    },
+    "usedOn": {
+      "both": "Inserimento e importazione",
+      "import": "Solo importazione",
+      "manual": "Solo inserimento",
+      "off": "Spenta"
+    },
+    "when": {
+      "memo": {
+        "contains": "Quando le note contengono",
+        "exact": "Quando le note sono",
+        "regex": "Quando le note corrispondono all'espressione"
+      },
+      "payee": {
+        "contains": "Quando il beneficiario contiene",
+        "exact": "Quando il beneficiario è",
+        "regex": "Quando il beneficiario corrisponde all'espressione"
+      },
+      "both": {
+        "contains": "Quando le note o il beneficiario contengono",
+        "exact": "Quando le note o il beneficiario sono",
+        "regex": "Quando le note o il beneficiario corrispondono all'espressione"
+      },
+      "tag": {
+        "contains": "Quando un tag contiene",
+        "exact": "Quando un tag è",
+        "regex": "Quando un tag corrisponde all'espressione"
+      }
+    },
+    "sameCase": "(maiuscole esatte)",
+    "shadowed_one": "una regola sopra la prende prima",
+    "shadowed_other": "una regola sopra le prende tutte e {{count}} prima",
+    "does": {
+      "category": "archivia in {{name}}",
+      "payeeFirst": "imposta il beneficiario {{name}}",
+      "payee": "beneficiario {{name}}",
+      "mode": "pagato con {{mode}}",
+      "info": "info “{{info}}”",
+      "tags_one": "aggiungi il tag {{tags}}",
+      "tags_other": "aggiungi i tag {{tags}}",
+      "nothing": "non imposta ancora nulla"
+    },
+    "matchesTitle_one": "Prende una delle tue transazioni",
+    "matchesTitle_other": "Prende {{count}} delle tue transazioni",
+    "actions": "Azioni per la regola {{n}}",
+    "applyRule": "Applica la regola {{n}} alle sue transazioni",
+    "drag": "Trascina per cambiare l'ordine",
+    "menu": {
+      "edit": "Modifica regola",
+      "apply": "Applica alle sue transazioni",
+      "up": "Sposta su",
+      "down": "Sposta giù",
+      "delete": "Elimina regola"
+    },
+    "apply": "Applica",
+    "applied_one": "Aggiornata 1 transazione",
+    "applied_other": "Aggiornate {{count}} transazioni",
+    "confirmApplyOneTitle_one": "Applicare la regola alla sua transazione?",
+    "confirmApplyOneTitle_other": "Applicare la regola alle sue {{count}} transazioni?",
+    "confirmApplyBody": "Si compilano solo i campi vuoti e si aggiungono i tag: nulla di quello che hai già impostato viene sovrascritto.",
+    "sectionWhen": "Quando",
+    "sectionThen": "Allora",
+    "sectionUse": "Usala",
+    "lookIn": "Cerca in",
+    "lookInOpt": {
+      "memo": "Note",
+      "payee": "Beneficiario",
+      "both": "Entrambi",
+      "tag": "Tag"
+    },
+    "matchType": "Tipo",
+    "typeOpt": {
+      "contains": "contiene",
+      "exact": "è esattamente",
+      "regex": "espressione (regex)"
+    },
+    "pattern": "Testo",
+    "tagText": "Tag",
+    "badRegex": "L'espressione non è valida.",
+    "caseSensitive": "Maiuscole e minuscole come scritte",
+    "setCategory": "Categoria",
+    "setPayee": "Beneficiario",
+    "setPaymentMode": "Pagamento",
+    "leaveAsIs": "Lascia com'è",
+    "setInfo": "Info",
+    "setTags": "Aggiungi tag",
+    "setTagsHint": "Si aggiungono a quelli che la transazione ha già; nessuno viene tolto.",
+    "onManual": "Quando inserisco una transazione",
+    "onImport": "All'importazione e alla sincronizzazione bancaria",
+    "previewEmpty": "Scrivi il testo da cercare",
+    "previewEmptyHint": "Mentre scrivi, qui vedi quante delle tue transazioni prenderebbe la regola e le più recenti. Non cambia nulla finché non salvi.",
+    "previewNone": "Non prende nessuna delle tue transazioni",
+    "previewCount_one": "Prende 1 transazione",
+    "previewCount_other": "Prende {{count}} transazioni",
+    "previewTaken_one": "Una regola sopra ne prende 1 prima.",
+    "previewTaken_other": "Una regola sopra ne prende {{count}} prima.",
+    "previewNoCategory_one": "1 è ancora senza categoria.",
+    "previewNoCategory_other": "{{count}} sono ancora senza categoria.",
+    "previewNote": "È un'anteprima: salvando cambia quello che la regola compila da ora in poi, e Applica alle sue transazioni compila quelle che ci sono già.",
+    "noCategory": "Senza categoria",
+    "emptyTitle": "Smetti di archiviare a mano le stesse transazioni",
+    "emptyBody": "Una regola legge quello che scrive la banca e compila il resto, a ogni importazione, sincronizzazione e inserimento. Per esempio:",
+    "example": {
+      "supermarket": "Supermercato",
+      "groceries": "Alimentari › Spesa",
+      "salary": "Stipendio",
+      "employer": "Datore di lavoro"
+    }
   },
   "schedules": {
     "title": "Programmate",

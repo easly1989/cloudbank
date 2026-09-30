@@ -150,21 +150,34 @@ transaction can carry several, and reports can group spending by tag.
 ## Rules
 
 Rules fill in a transaction from what it says. For example: a payee containing
-*Supermarket* gets the category *Groceries*.
+*Supermarket* gets the category *Groceries*. Each rule is listed as the sentence
+it is, with how many of your transactions it matches today.
 
-- **Match.** A rule looks in the memo, the payee, or either. It matches text that
-  **equals**, **contains**, or matches a **regex**, optionally case-sensitive,
-  and optionally only in one account.
-- **Sets.** The rule sets a payee, a category, a payment mode and/or an info
-  field.
-- **Applies.** Choose when the rule runs:
-  - **On manual entry**, as you type in the entry sheet;
-  - **On import**, for files and bank sync. File imports run rules when you tick
-    **Apply import rules**.
+- **When.** A rule looks in the memo, the payee, either of them, or the tags. It
+  matches text that **contains**, **is exactly**, or matches a **pattern**
+  (a regular expression), optionally with the same upper and lower case, and
+  optionally only in one account. On tags, it matches when any one of the
+  transaction's tags does.
+- **Then.** The rule sets a category, a payee, a payment mode and/or the info
+  field, and can add tags. It only ever adds tags: a transaction keeps the ones
+  it has.
+- **Use it.** Choose when the rule runs:
+  - **When I enter a transaction**, in the entry sheet;
+  - **On import and bank sync**. File imports run rules when you tick **Apply
+    import rules**.
 - **Order.** Rules are tried top to bottom, and the first match wins. Drag them
-  to reorder.
-- **Test rule** shows how many transactions a rule would match.
-- **Apply to existing** runs the rules over transactions you already have.
+  by the grip, or use **Move up** and **Move down** in the ⋯ menu (a right click
+  on a rule opens it too).
+- **The count.** How many of your transactions each rule is the first to match.
+  At **0×** it turns amber: a rule that never fires is one to delete, or one a
+  rule above is taking every match from, which the rule's line then says.
+- **The preview.** While you edit a rule, the sheet shows how many transactions
+  it would match, how many of those have no category yet, and the latest ones.
+  It is only a preview: nothing changes until you save.
+- **Applying.** A saved rule fills in what you enter or import from then on. To
+  fill in transactions you already have, use ▶ on a rule (**Apply to its
+  transactions**), or **Apply to existing** for every rule at once. Both only
+  fill in empty fields and add tags; nothing you have set is overwritten.
 
 ## Categories, payees and currencies
 

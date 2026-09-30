@@ -241,7 +241,8 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 		pr.Amount = rescaleAmount(r.Amount, frac)
 
 		if applyRules {
-			if res, ok := assignment.MatchRow(importRules, r.Memo, r.Payee, accountID); ok {
+			subj := assignment.Subject{Memo: r.Memo, Payee: r.Payee, Tags: pr.Tags, AccountID: accountID}
+			if res, ok := assignment.MatchRow(importRules, subj); ok {
 				pr.RuleApplied = true
 				if res.PayeeID != nil {
 					if n, ok := idToPayee[*res.PayeeID]; ok {
@@ -259,6 +260,7 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 				if res.Info != nil {
 					pr.Info = *res.Info
 				}
+				pr.Tags = assignment.AddTags(pr.Tags, res.Tags)
 			}
 		}
 
