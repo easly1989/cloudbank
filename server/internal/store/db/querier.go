@@ -293,6 +293,14 @@ type Querier interface {
 	SetTransactionTemplate(ctx context.Context, arg SetTransactionTemplateParams) error
 	SetUserDisabled(ctx context.Context, arg SetUserDisabledParams) error
 	SetUserTOTP(ctx context.Context, arg SetUserTOTPParams) error
+	// What each tag holds, per account currency: its transactions dated in
+	// [from_date, to_date], their sum, and the latest one on or before to_date.
+	// The caller adds the currencies up.
+	TagActivity(ctx context.Context, arg TagActivityParams) ([]TagActivityRow, error)
+	// The categories a tag's transactions in the period went to, and how often:
+	// a plain transaction under its category, a split once per line under the
+	// line's. The two halves can name the same pair; the caller adds them up.
+	TagCategoryCounts(ctx context.Context, arg TagCategoryCountsParams) ([]TagCategoryCountsRow, error)
 	TouchAPIToken(ctx context.Context, id string) error
 	TouchBankConnection(ctx context.Context, id int64) error
 	TouchSession(ctx context.Context, arg TouchSessionParams) error

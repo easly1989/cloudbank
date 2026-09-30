@@ -105,3 +105,71 @@ func TestTagManagement(t *testing.T) {
 		r.Body.Close()
 	}
 }
+
+func TestTagCreateAndActivity(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	food := decodeCategory(t, c.do(http.MethodPost, base+"/categories", map[string]any{"name": "Food"}, true))
+
+	// A tag made before any transaction carries it (201), listed with no use.
+	resp := c.do(http.MethodPost, base+"/tags", map[string]any{"name": " car "}, true)
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("create = %d, want 201", resp.StatusCode)
+	}
+	var car tagInfo
+	if err := json.NewDecoder(resp.Body).Decode(&car); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	resp.Body.Close()
+	if car.ID == 0 || car.Name != "car" {
+		t.Fatalf("created = %+v", car)
+	}
+	for body, want := range map[string]int{"car": http.StatusConflict, "  ": http.StatusBadRequest} {
+		r := c.do(http.MethodPost, base+"/tags", map[string]any{"name": body}, true)
+		if r.StatusCode != want {
+			t.Fatalf("create %q = %d, want %d", body, r.StatusCode, want)
+		}
+		r.Body.Close()
+	}
+
+	for _, d := range []string{"2026-01-10", "2026-02-10"} {
+		c.do(http.MethodPost, base+"/transactions", map[string]any{
+			"accountId": acc, "date": d, "amount": -1000, "categoryId": food.ID, "tags": []string{"car"},
+		}, true).Body.Close()
+	}
+	resp = c.do(http.MethodGet, base+"/tags/activity?from=2026-01-01&to=2026-12-31", nil, false)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("activity = %d, want 200", resp.StatusCode)
+	}
+	defer resp.Body.Close()
+	var res struct {
+		Tags []struct {
+			TagID      int64
+			Count      int64
+			Amount     int64
+			LastDate   string
+			Categories []struct{ CategoryID, Count int64 }
+		}
+		Currency struct{ Code string }
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(res.Tags) != 1 {
+		t.Fatalf("activity = %+v", res)
+	}
+	a := res.Tags[0]
+	if a.TagID != car.ID || a.Count != 2 || a.Amount != -2000 || a.LastDate != "2026-02-10" ||
+		len(a.Categories) != 1 || a.Categories[0].CategoryID != food.ID || a.Categories[0].Count != 2 || res.Currency.Code != "EUR" {
+		t.Fatalf("activity = %+v", res)
+	}
+
+	for _, q := range []string{"", "?to=2026-01-01", "?from=2026-02-30&to=2026-12-31", "?from=2026-12-31&to=2026-01-01"} {
+		r := c.do(http.MethodGet, base+"/tags/activity"+q, nil, false)
+		if r.StatusCode != http.StatusBadRequest {
+			t.Fatalf("activity%s = %d, want 400", q, r.StatusCode)
+		}
+		r.Body.Close()
+	}
+}
