@@ -2,6 +2,7 @@
 // (see core.ts for the request/api/ApiError/downloadFile infrastructure).
 export * from "./core";
 export * from "./auth";
+export * from "./preferences";
 export * from "./structure";
 export * from "./ledger";
 export * from "./dashboard";

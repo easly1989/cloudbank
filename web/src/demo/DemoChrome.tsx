@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { updateMe, type User } from "../api/client";
+import { savePreferences } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 
 /**
@@ -22,11 +22,7 @@ export function DemoChrome() {
   const [dismissed, setDismissed] = useState(false);
 
   const seen = useMutation({
-    mutationFn: () => {
-      const latest = qc.getQueryData<User>(["me"])?.preferences ?? user?.preferences ?? {};
-      return updateMe({ preferences: { ...latest, demoNoticeSeen: true } });
-    },
-    onSuccess: (u: User) => qc.setQueryData(["me"], u),
+    mutationFn: () => savePreferences(qc, { demoNoticeSeen: true }),
   });
 
   const firstTime = !user?.preferences?.demoNoticeSeen && !dismissed;

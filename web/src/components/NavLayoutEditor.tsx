@@ -49,7 +49,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "./confirmContext";
 
-import { ApiError, updateMe, type User } from "../api/client";
+import { ApiError, savePreferences } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { NAV_ITEMS, type NavItemDef } from "./navItems";
 import {
@@ -92,9 +92,7 @@ export function NavLayoutEditor() {
   const beforeDrag = useRef<NavLayout | null>(null);
 
   const save = useMutation({
-    mutationFn: (next: NavLayout) =>
-      updateMe({ preferences: { ...(user?.preferences ?? {}), navLayout: next } }),
-    onSuccess: (u: User) => qc.setQueryData(["me"], u),
+    mutationFn: (next: NavLayout) => savePreferences(qc, { navLayout: next }),
     onError: (err: unknown) =>
       notifications.show({
         color: "red",
