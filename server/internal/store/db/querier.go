@@ -246,10 +246,20 @@ type Querier interface {
 	MonthlyIncomeExpense(ctx context.Context, arg MonthlyIncomeExpenseParams) ([]MonthlyIncomeExpenseRow, error)
 	NextAccountPosition(ctx context.Context, walletID int64) (int64, error)
 	NextAssignmentPosition(ctx context.Context, walletID int64) (int64, error)
+	// What each payee holds, per account currency: its transactions dated in
+	// [from_date, to_date], their sum, and the latest one on or before to_date.
+	// The caller adds the currencies up.
+	PayeeActivity(ctx context.Context, arg PayeeActivityParams) ([]PayeeActivityRow, error)
+	// How often each payee's plain transactions in the period went to each
+	// category. A split has no one category, so it is left out.
+	PayeeCategoryCounts(ctx context.Context, arg PayeeCategoryCountsParams) ([]PayeeCategoryCountsRow, error)
 	// Payee amounts in a date range. Payee is a per-transaction attribute, so split
 	// transactions contribute via their parent's total amount; each row carries the
 	// account currency so the app can convert to base.
 	PayeeExpenseTotals(ctx context.Context, arg PayeeExpenseTotalsParams) ([]PayeeExpenseTotalsRow, error)
+	// How often each payee's transactions in the period used each payment mode,
+	// "none" (0) left out.
+	PayeePaymentCounts(ctx context.Context, arg PayeePaymentCountsParams) ([]PayeePaymentCountsRow, error)
 	PruneBankSyncRuns(ctx context.Context, arg PruneBankSyncRunsParams) error
 	ReassignPayeeCategory(ctx context.Context, arg ReassignPayeeCategoryParams) error
 	ReassignSplitCategory(ctx context.Context, arg ReassignSplitCategoryParams) error

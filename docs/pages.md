@@ -150,8 +150,16 @@ Three lists in **Wallet data** that the rest of the wallet picks from.
   a group of its own), whether it counts in the budget and shows in the
   reports, and what it held in the last 12 months. **Merge** and **Delete** are
   in the panel's ⋯ menu. Reports are built from categories.
-- **Payees.** Who you pay and who pays you. A payee can carry a default
-  category, so its transactions arrive already sorted.
+- **Payees.** Who you pay and who pays you, each with its transactions, when it
+  was last used and its amount over the last 12 months. Click a column's
+  heading to sort by it. A payee can carry a default category and a default
+  payment, which a new transaction from it starts with. One without a default
+  category shows the category it usually gets ("Usually Groceries") when that
+  holds at least half of its transactions; **Use it** makes it the default.
+  Search by name, or show only the payees without a default category or unused
+  in 12 months. A payee opens in a panel beside the page, which offers the same
+  suggestions for the category and the payment; **Merge** and **Delete** are in
+  its ⋯ menu.
 - **Currencies.** The currencies this wallet can use and the rates it converts
   them at. **Update rates now** fetches them online; a currency the service does
   not publish keeps a manual rate.

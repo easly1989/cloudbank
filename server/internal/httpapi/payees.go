@@ -9,11 +9,14 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/payee"
+	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/walletref"
 )
 
 type payeeHandlers struct {
 	svc *payee.Service
+	// rep, when set, serves the payees' activity (#554).
+	rep *report.Service
 }
 
 type payeeResponse struct {
@@ -33,6 +36,9 @@ func toPayeeResponse(p payee.Payee) payeeResponse {
 func (h *payeeHandlers) walletRoutes(r chi.Router) {
 	r.Get("/payees", h.list)
 	r.Post("/payees", h.create)
+	if h.rep != nil {
+		r.Get("/payees/activity", h.activity)
+	}
 	r.Route("/payees/{payeeId}", func(r chi.Router) {
 		r.Patch("/", h.update)
 		r.Delete("/", h.delete)
@@ -95,6 +101,24 @@ func (h *payeeHandlers) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, toPayeeResponse(updated))
+}
+
+// activity is what each payee held between from and to: its transactions,
+// their sum in the base currency, the date of its latest one, and the
+// category and payment mode it is usually given (#554).
+func (h *payeeHandlers) activity(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	from, to := r.URL.Query().Get("from"), r.URL.Query().Get("to")
+	if !isCivilDate(from) || !isCivilDate(to) || from > to {
+		writeError(w, http.StatusBadRequest, "invalid_range", "from and to must be dates (YYYY-MM-DD), from no later than to")
+		return
+	}
+	out, err := h.rep.PayeeActivity(r.Context(), wl.ID, from, to)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not compute payee activity")
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (h *payeeHandlers) delete(w http.ResponseWriter, r *http.Request) {
