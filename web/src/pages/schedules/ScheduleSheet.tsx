@@ -29,6 +29,7 @@ import {
   type Schedule,
   type ScheduleInput,
   type ScheduleUnit,
+  type Split,
   type Template,
   type TemplateInput,
 } from "../../api/client";
@@ -104,6 +105,10 @@ export function ScheduleSheet({
   // A transfer template (e.g. imported) can only have its amount/memo edited here.
   const [isTransfer, setIsTransfer] = useState(false);
   const [toAccountId, setToAccountId] = useState<number | null>(null);
+  // A split template keeps its lines (#562): they are not edited here, so the
+  // amount and the category are locked and the lines go back as they are.
+  const [splits, setSplits] = useState<Split[]>([]);
+  const isSplit = splits.length > 0;
 
   // Cadence.
   const [unit, setUnit] = useState<ScheduleUnit>("month");
@@ -140,6 +145,7 @@ export function ScheduleSheet({
     setPaymentMode(String(tpl.paymentMode));
     setIsTransfer(tpl.isTransfer);
     setToAccountId(tpl.toAccountId ?? null);
+    setSplits(tpl.isSplit ? (tpl.splits ?? []) : []);
   };
 
   // Three things seed this sheet, and they do not all arrive at once: the
@@ -180,6 +186,7 @@ export function ScheduleSheet({
         setPaymentMode("0");
         setIsTransfer(false);
         setToAccountId(null);
+        setSplits([]);
       }
     }
   }
@@ -219,10 +226,11 @@ export function ScheduleSheet({
       amount: minor,
       paymentMode: Number(paymentMode),
       payeeId: payeeId ? Number(payeeId) : null,
-      categoryId: categoryId ? Number(categoryId) : null,
+      categoryId: isSplit ? null : categoryId ? Number(categoryId) : null,
       memo,
       isTransfer,
       toAccountId,
+      splits: isSplit ? splits : undefined,
       // Not edited here, and a save replaces the whole template: sent as they
       // are, or they would be wiped (#560).
       status: editingTemplate?.status,
@@ -271,6 +279,10 @@ export function ScheduleSheet({
       })),
     [categories],
   );
+  const splitNames = splits
+    .map((sp) => categories.find((c) => c.id === sp.categoryId)?.name)
+    .filter(Boolean)
+    .join(", ");
   const canSave = !!accountId && (parseAmount(amount, fd, dc) ?? 0) > 0 && !!nextDue;
   const sign = direction === "expense" ? -1 : 1;
 
@@ -309,6 +321,11 @@ export function ScheduleSheet({
           {t("schedules.transferNote")}
         </Text>
       )}
+      {isSplit && (
+        <Text size="xs" c="dimmed" data-testid="schedule-split-note">
+          {t("schedules.splitNote", { count: splits.length })}
+        </Text>
+      )}
       <TextInput
         label={t("schedules.form.name")}
         placeholder={t("schedules.form.namePlaceholder")}
@@ -322,11 +339,12 @@ export function ScheduleSheet({
         value={amount}
         onChange={(e) => setAmount(e.currentTarget.value)}
         inputMode="decimal"
+        disabled={isSplit}
         leftSection={
           <UnstyledButton
             className="cb-amount-sign"
             c={amountColor(sign)}
-            disabled={isTransfer}
+            disabled={isTransfer || isSplit}
             aria-label={t(
               direction === "expense" ? "schedules.form.isExpense" : "schedules.form.isIncome",
             )}
@@ -419,9 +437,12 @@ export function ScheduleSheet({
           <Select
             label={t("transactions.category")}
             data={categoryOptions}
-            value={categoryId}
+            value={isSplit ? null : categoryId}
             onChange={setCategoryId}
-            disabled={isTransfer}
+            placeholder={
+              isSplit ? t("schedules.splitCategories", { names: splitNames }) : undefined
+            }
+            disabled={isTransfer || isSplit}
             searchable
             clearable
           />
