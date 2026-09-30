@@ -330,6 +330,8 @@ type transactionInput struct {
 	Memo        string              `json:"memo"`
 	Tags        []string            `json:"tags"`
 	Splits      []transaction.Split `json:"splits"`
+	// TemplateID: the template it was filled in from, on create only.
+	TemplateID *int64 `json:"templateId"`
 }
 
 func (in transactionInput) toServiceInput() transaction.Input {
@@ -337,6 +339,7 @@ func (in transactionInput) toServiceInput() transaction.Input {
 		AccountID: in.AccountID, Date: in.Date, Amount: in.Amount, PaymentMode: in.PaymentMode,
 		Status: in.Status, Info: in.Info, PayeeID: in.PayeeID, CategoryID: in.CategoryID,
 		VehicleID: in.VehicleID, Memo: in.Memo, Tags: in.Tags, Splits: in.Splits,
+		TemplateID: in.TemplateID,
 	}
 }
 

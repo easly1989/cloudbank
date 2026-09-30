@@ -94,6 +94,33 @@ func (q *Queries) CountPayeesInWallet(ctx context.Context, arg CountPayeesInWall
 	return count, err
 }
 
+const countTemplatesInWallet = `-- name: CountTemplatesInWallet :one
+SELECT COUNT(*) FROM templates WHERE wallet_id = ?1 AND id IN (/*SLICE:ids*/?)
+`
+
+type CountTemplatesInWalletParams struct {
+	WalletID int64
+	Ids      []int64
+}
+
+func (q *Queries) CountTemplatesInWallet(ctx context.Context, arg CountTemplatesInWalletParams) (int64, error) {
+	query := countTemplatesInWallet
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.WalletID)
+	if len(arg.Ids) > 0 {
+		for _, v := range arg.Ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(arg.Ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countVehiclesInWallet = `-- name: CountVehiclesInWallet :one
 SELECT COUNT(*) FROM vehicles WHERE wallet_id = ?1 AND id IN (/*SLICE:ids*/?)
 `

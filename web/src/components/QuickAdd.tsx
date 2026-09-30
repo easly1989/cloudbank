@@ -109,6 +109,7 @@ export function QuickAdd({
         categoryId: categoryId ? Number(categoryId) : null,
         memo,
         tags,
+        templateId: templatePick ? Number(templatePick) : null,
       });
     },
     onSuccess: () => {

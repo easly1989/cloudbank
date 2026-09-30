@@ -205,3 +205,11 @@ Added since:
   which the API always allowed and the old page never showed. Symbols are set
   apart with Unicode isolates, so a right-to-left one keeps the line in order.
   Under 900px of content the source column goes.
+- **Templates come in two groups** (#560), to an approved mockup; the board has
+  no templates page. The ones kept for quick entry show how often each was used
+  over 12 months — a transaction saved from a template now records it — and
+  open in the sheet with every field, tags and info included (the old dialog
+  dropped both on save). The ones a schedule posts show its cadence and open
+  that schedule in Schedules (`?schedule=ID`); they are not deleted here, and the
+  server refuses to (`409 scheduled`), since deleting one used to delete its
+  schedule with it. Under 900px of content the account column goes.
