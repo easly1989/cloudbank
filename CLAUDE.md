@@ -88,7 +88,9 @@ Vite builds **into `server/internal/webui/dist`** so `//go:embed` picks it up â€
 without a frontend build serves a placeholder page, which is expected.
 
 **Other top-level dirs**: `e2e/` is Playwright against the real container, plus the audits and
-`screenshots.mjs`; `docs/` holds user-facing guides. The website lives in the separate
+`screenshots.mjs`; `docs/` holds user-facing guides, except `docs/research/`: maintainers' notes
+on what was investigated or measured before a technical decision (start there before re-opening
+one), with the scripts that produced the numbers. The website lives in the separate
 `easly1989.github.io` repo (this repo has no Pages site of its own). It reads the published
 versions from `versions.json` on this repo's `site-data` branch, which `release.yml` and
 `docker-nightly.yml` rewrite on every publish.
