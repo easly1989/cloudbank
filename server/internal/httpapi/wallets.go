@@ -114,7 +114,7 @@ func (h *walletHandlers) routes(r chi.Router) {
 			(&assetValuationHandlers{svc: h.assetVals}).walletRoutes(r)
 		}
 		if h.categories != nil {
-			(&categoryHandlers{svc: h.categories}).walletRoutes(r)
+			(&categoryHandlers{svc: h.categories, rep: h.reports}).walletRoutes(r)
 		}
 		if h.payees != nil {
 			(&payeeHandlers{svc: h.payees}).walletRoutes(r)

@@ -1179,6 +1179,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/categories/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * What each category held in a period
+         * @description For each category that has had a line on or before `to`: how many lines fall between `from` and `to` (both included), their sum in the base currency, and the date of its latest line on or before `to`, however long ago. A split counts once per line, under the line's own category. Categories hidden from the reports are included. A category that never had a line is absent.
+         */
+        get: operations["getCategoryActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/categories/{categoryId}": {
         parameters: {
             query?: never;
@@ -1196,7 +1218,10 @@ export interface paths {
         delete: operations["deleteCategory"];
         options?: never;
         head?: never;
-        /** Rename/retype a category */
+        /**
+         * Rename, retype or move a category
+         * @description `parentId` moves the category only when the body has it: an id puts it under that top-level category (it then takes that category's type), `null` makes it top-level, and leaving it out keeps it where it is. A top-level category with subcategories cannot move under another.
+         */
         patch: operations["updateCategory"];
         trace?: never;
     };
@@ -3011,6 +3036,33 @@ export interface components {
             isIncome?: boolean;
             noBudget?: boolean;
             noReport?: boolean;
+        };
+        CategoryActivity: {
+            /** Format: int64 */
+            categoryId: number;
+            /**
+             * Format: int64
+             * @description lines in the period
+             */
+            count: number;
+            /**
+             * Format: int64
+             * @description their sum, in the base currency's minor units
+             */
+            amount: number;
+            /**
+             * Format: date
+             * @description the latest line on or before the period's end
+             */
+            lastDate: string;
+        };
+        CategoryActivityResult: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            categories: components["schemas"]["CategoryActivity"][];
+            currency?: components["schemas"]["CurrencyInfo"] | null;
         };
         CategoryUsage: {
             /** Format: int64 */
@@ -6231,6 +6283,33 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+        };
+    };
+    getCategoryActivity: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Activity. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryActivityResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
         };
     };
     deleteCategory: {

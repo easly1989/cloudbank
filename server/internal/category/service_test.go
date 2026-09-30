@@ -177,10 +177,66 @@ func TestDuplicateIgnoresCasePerLevel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create Home: %v", err)
 	}
-	if _, err := s.Update(ctx, home.ID, "FOOD", false, false, false); !errors.Is(err, ErrDuplicate) {
+	if _, err := s.Update(ctx, home.ID, "FOOD", false, false, false, nil); !errors.Is(err, ErrDuplicate) {
 		t.Fatalf("rename Home to FOOD = %v, want ErrDuplicate", err)
 	}
-	if _, err := s.Update(ctx, food.ID, "food", false, false, false); err != nil {
+	if _, err := s.Update(ctx, food.ID, "food", false, false, false, nil); err != nil {
 		t.Fatalf("recase own name: %v", err)
+	}
+}
+
+func TestUpdateMovesBetweenLevels(t *testing.T) {
+	s, q, wid := newTestService(t)
+	ctx := context.Background()
+	food, _ := s.Create(ctx, wid, "Food", nil, false, false, false)
+	pay, _ := s.Create(ctx, wid, "Pay", nil, true, false, false)
+	groc, _ := s.Create(ctx, wid, "Groceries", &food.ID, false, false, false)
+	gifts, _ := s.Create(ctx, wid, "Gifts", nil, false, false, false)
+
+	// No move: it stays under Food, whatever the edit.
+	got, err := s.Update(ctx, groc.ID, "Groceries", true, true, false, nil)
+	if err != nil || got.ParentID == nil || *got.ParentID != food.ID || got.IsIncome || !got.NoBudget {
+		t.Fatalf("edit in place = %+v, %v", got, err)
+	}
+	// Under another group, it takes that group's type.
+	got, err = s.Update(ctx, groc.ID, "Groceries", false, false, false, &Move{ParentID: &pay.ID})
+	if err != nil || got.ParentID == nil || *got.ParentID != pay.ID || !got.IsIncome {
+		t.Fatalf("move under Pay = %+v, %v", got, err)
+	}
+	// To the top level, it keeps the type it is given.
+	got, err = s.Update(ctx, groc.ID, "Groceries", false, false, false, &Move{})
+	if err != nil || got.ParentID != nil || got.IsIncome {
+		t.Fatalf("move to the top = %+v, %v", got, err)
+	}
+	// A top-level category with no subcategories can go under another.
+	got, err = s.Update(ctx, gifts.ID, "Gifts", false, false, false, &Move{ParentID: &food.ID})
+	if err != nil || got.ParentID == nil || *got.ParentID != food.ID {
+		t.Fatalf("move Gifts under Food = %+v, %v", got, err)
+	}
+	// One with subcategories cannot: they would be three levels deep.
+	if _, err := s.Update(ctx, food.ID, "Food", false, false, false, &Move{ParentID: &pay.ID}); !errors.Is(err, ErrTooDeep) {
+		t.Fatalf("move Food (with Gifts) under Pay = %v, want ErrTooDeep", err)
+	}
+	// Nor under a subcategory, nor under itself, nor under another wallet's.
+	if _, err := s.Update(ctx, groc.ID, "Groceries", false, false, false, &Move{ParentID: &gifts.ID}); !errors.Is(err, ErrTooDeep) {
+		t.Fatalf("move under a subcategory = %v, want ErrTooDeep", err)
+	}
+	if _, err := s.Update(ctx, groc.ID, "Groceries", false, false, false, &Move{ParentID: &groc.ID}); !errors.Is(err, ErrBadTarget) {
+		t.Fatalf("move under itself = %v, want ErrBadTarget", err)
+	}
+	w2, err := q.CreateWallet(ctx, db.CreateWalletParams{Title: "Theirs"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	foreign, _ := s.Create(ctx, w2.ID, "Theirs", nil, false, false, false)
+	if _, err := s.Update(ctx, groc.ID, "Groceries", false, false, false, &Move{ParentID: &foreign.ID}); !errors.Is(err, ErrBadTarget) {
+		t.Fatalf("move under another wallet's = %v, want ErrBadTarget", err)
+	}
+	// A name already used at the new level is refused, whatever its case.
+	if _, err := s.Create(ctx, wid, "Groceries", &pay.ID, false, false, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Update(ctx, groc.ID, "groceries", false, false, false, &Move{ParentID: &pay.ID}); !errors.Is(err, ErrDuplicate) {
+		t.Fatalf("move beside a same-named one = %v, want ErrDuplicate", err)
 	}
 }
