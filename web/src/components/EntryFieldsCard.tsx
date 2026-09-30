@@ -16,7 +16,7 @@ import { Fragment, useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 
-import { ApiError, updateMe, type Preferences, type User } from "../api/client";
+import { ApiError, savePreferences, type Preferences, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { ENTRY_FIELDS, placements, type EntryField, type Placement } from "./entryFields";
 import { StatusPicker } from "./StatusPicker";
@@ -50,15 +50,17 @@ export function EntryFieldsCard() {
   }, [hash]);
 
   const persist = useMutation({
-    mutationFn: (patch: Partial<Preferences>) =>
-      updateMe({ preferences: { ...(user?.preferences ?? {}), ...patch } }),
-    // Shown at once; the server's answer then replaces it.
+    mutationFn: (patch: Partial<Preferences>) => savePreferences(qc, patch),
+    // Shown at once, over the latest copy; the server's answer then replaces it.
     onMutate: (patch) => {
-      if (user) qc.setQueryData(["me"], { ...user, preferences: { ...prefs, ...patch } });
+      qc.setQueryData<User | null>(["me"], (u) =>
+        u ? { ...u, preferences: { ...u.preferences, ...patch } } : u,
+      );
     },
-    onSuccess: (updated: User) => qc.setQueryData(["me"], updated),
     onError: (err: unknown) => {
-      if (user) qc.setQueryData(["me"], user);
+      // The server's copy, rather than this render's: another save may have
+      // landed since.
+      void qc.invalidateQueries({ queryKey: ["me"] });
       notifications.show({
         color: "red",
         message: err instanceof ApiError ? err.message : String(err),

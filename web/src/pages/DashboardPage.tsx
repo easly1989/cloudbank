@@ -25,7 +25,7 @@ import { Link } from "react-router-dom";
 import { ShortLabel } from "../components/ShortLabel";
 import { useConfirm } from "../components/confirmContext";
 
-import { type DashboardAccount, type User, getDashboard, updateMe } from "../api/client";
+import { type DashboardAccount, getDashboard, savePreferences } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { dateBounds, emptyFilters, type DatePreset } from "./registerFilterModel";
 import { GridDashboard, type GridDashboardHandle } from "../components/dashboard/GridDashboard";
@@ -101,15 +101,11 @@ export function DashboardPage() {
   // actually cover a span of time, and each of those can pin its own.
   const pagePeriod = (user?.preferences?.dashboardPeriod ?? "all") as DatePreset;
   const persistPeriod = useMutation({
-    mutationFn: (period: DatePreset) =>
-      updateMe({ preferences: { ...(user?.preferences ?? {}), dashboardPeriod: period } }),
-    onSuccess: (u: User) => qc.setQueryData(["me"], u),
+    mutationFn: (period: DatePreset) => savePreferences(qc, { dashboardPeriod: period }),
   });
 
   const persistLayout = useMutation({
-    mutationFn: (next: DashboardLayoutV2) =>
-      updateMe({ preferences: { ...(user?.preferences ?? {}), dashboardLayout: next } }),
-    onSuccess: (u: User) => qc.setQueryData(["me"], u),
+    mutationFn: (next: DashboardLayoutV2) => savePreferences(qc, { dashboardLayout: next }),
   });
   // Debounce persistence so a drag/resize burst is a single network write.
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);

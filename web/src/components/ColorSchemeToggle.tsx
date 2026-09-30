@@ -3,7 +3,7 @@ import { IconMoon, IconSun } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
-import { updateMe, type User } from "../api/client";
+import { saveMe } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 
 export function ColorSchemeToggle() {
@@ -21,8 +21,7 @@ export function ColorSchemeToggle() {
   // effect re-applies the same value instead of resetting it on refresh; guests
   // fall back to Mantine's localStorage persistence.
   const persist = useMutation({
-    mutationFn: (theme: string) => updateMe({ theme }),
-    onSuccess: (u: User) => qc.setQueryData(["me"], u),
+    mutationFn: (theme: string) => saveMe(qc, { theme }),
   });
 
   const dark = computed === "dark";

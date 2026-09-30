@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ApiError, updateMe, type User } from "../api/client";
+import { ApiError, savePreferences } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { NAV_ITEMS } from "./navItems";
 import { migrateNavLayout, unseenNavPages, type NavLayout } from "./navLayout";
@@ -25,9 +25,7 @@ export function NewNavPagesNotice() {
   const unseen = useMemo(() => unseenNavPages(saved), [saved]);
 
   const save = useMutation({
-    mutationFn: (next: NavLayout) =>
-      updateMe({ preferences: { ...(user?.preferences ?? {}), navLayout: next } }),
-    onSuccess: (u: User) => qc.setQueryData(["me"], u),
+    mutationFn: (next: NavLayout) => savePreferences(qc, { navLayout: next }),
     onError: (err: unknown) =>
       notifications.show({
         color: "red",
