@@ -17,6 +17,10 @@ var (
 	ErrUnknownCode  = errors.New("currency: unknown ISO code")
 	ErrDuplicate    = errors.New("currency: already added to this wallet")
 	ErrBaseCurrency = errors.New("currency: operation not allowed on the base currency")
+	// ErrInUse is a currency an account is kept in: it cannot be deleted.
+	ErrInUse = errors.New("currency: used by an account")
+	// ErrInvalidFormat is a symbol, separator or decimals that cannot format an amount.
+	ErrInvalidFormat = errors.New("currency: invalid format")
 )
 
 // Currency is the public representation of a wallet currency.
@@ -33,13 +37,17 @@ type Currency struct {
 	IsBase        bool
 	Rate          float64
 	RateUpdatedAt string
+	// RateDate and RateSource describe the latest recorded rate: its date, and
+	// "manual" or the provider's name. Empty when none was ever recorded.
+	RateDate   string
+	RateSource string
 }
 
 // Rate is one historical exchange-rate record.
 type Rate struct {
-	Date   string
-	Rate   float64
-	Source string
+	Date   string  `json:"date"`
+	Rate   float64 `json:"rate"`
+	Source string  `json:"source"`
 }
 
 func toCurrency(c db.Currency) Currency {
@@ -80,11 +88,28 @@ func (s *Service) ListForWallet(ctx context.Context, walletID int64) ([]Currency
 	if err != nil {
 		return nil, err
 	}
+	latest, err := s.rq.ListLatestRatesForWallet(ctx, walletID)
+	if err != nil {
+		return nil, err
+	}
+	byID := make(map[int64]db.ListLatestRatesForWalletRow, len(latest))
+	for _, r := range latest {
+		byID[r.CurrencyID] = r
+	}
 	out := make([]Currency, 0, len(rows))
 	for _, c := range rows {
-		out = append(out, toCurrency(c))
+		cur := toCurrency(c)
+		if r, ok := byID[c.ID]; ok {
+			cur.RateDate, cur.RateSource = r.Date, r.Source
+		}
+		out = append(out, cur)
 	}
 	return out, nil
+}
+
+// AccountCount is how many accounts are kept in a currency.
+func (s *Service) AccountCount(ctx context.Context, currencyID int64) (int64, error) {
+	return s.rq.CountCurrencyAccounts(ctx, currencyID)
 }
 
 // Get returns a currency by id.
@@ -149,7 +174,10 @@ func (s *Service) AddCurrency(ctx context.Context, walletID int64, isoCode strin
 	return toCurrency(c), nil
 }
 
-// SetBase makes a currency the wallet's base (its rate becomes 1).
+// SetBase makes a currency the wallet's base (its rate becomes 1). Every other
+// rate is worked out again against it, so a conversion means the same after
+// the switch as before (#558): the old base becomes 1/r, where r was the new
+// base's rate, and each other rate is divided by r.
 func (s *Service) SetBase(ctx context.Context, walletID, currencyID int64) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -158,6 +186,31 @@ func (s *Service) SetBase(ctx context.Context, walletID, currencyID int64) error
 	defer func() { _ = tx.Rollback() }()
 	qtx := s.q.WithTx(tx)
 
+	next, err := qtx.GetCurrency(ctx, currencyID)
+	if err != nil {
+		return err
+	}
+	// A rate of zero was never set: there is nothing to work the others out from.
+	if next.IsBase == 0 && next.Rate > 0 {
+		if err := qtx.ScaleWalletRates(ctx, db.ScaleWalletRatesParams{Divisor: next.Rate, WalletID: walletID}); err != nil {
+			return err
+		}
+		// The old base had no rate of its own: it gets 1/r, recorded as coming
+		// from where r came from, so the page says where it stands.
+		if old, err := qtx.GetBaseCurrency(ctx, walletID); err == nil {
+			source := "manual"
+			if hist, err := qtx.ListExchangeRates(ctx, next.ID); err == nil && len(hist) > 0 {
+				source = hist[0].Source
+			}
+			if err := qtx.UpsertExchangeRate(ctx, db.UpsertExchangeRateParams{
+				CurrencyID: old.ID, Date: time.Now().UTC().Format("2006-01-02"), Rate: 1 / next.Rate, Source: source,
+			}); err != nil {
+				return err
+			}
+		} else if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+	}
 	if err := qtx.ClearWalletBase(ctx, walletID); err != nil {
 		return err
 	}
@@ -279,15 +332,22 @@ func (s *Service) RefreshAll(ctx context.Context, provider RateProvider, log fun
 	return nil
 }
 
-// UpdateFormat changes a currency's display metadata.
+// UpdateFormat changes a currency's display metadata. The decimal mark is one
+// character, the thousands separator one or none and never the same as the
+// mark, and an amount has 0 to 8 decimals.
 func (s *Service) UpdateFormat(ctx context.Context, currencyID int64, symbol string, prefix bool, decimalChar, groupChar string, fracDigits int) error {
+	if len([]rune(decimalChar)) != 1 || len([]rune(groupChar)) > 1 || groupChar == decimalChar ||
+		fracDigits < 0 || fracDigits > 8 || len([]rune(symbol)) > 8 {
+		return ErrInvalidFormat
+	}
 	return s.q.UpdateCurrencyFormat(ctx, db.UpdateCurrencyFormatParams{
 		Symbol: symbol, SymbolPrefix: dbconv.B2i(prefix), DecimalChar: decimalChar,
 		GroupChar: groupChar, FracDigits: int64(fracDigits), ID: currencyID,
 	})
 }
 
-// Delete removes a currency. The base currency cannot be deleted.
+// Delete removes a currency. The base currency cannot be deleted, nor one an
+// account is kept in.
 func (s *Service) Delete(ctx context.Context, currencyID int64) error {
 	c, err := s.Get(ctx, currencyID)
 	if err != nil {
@@ -295,6 +355,11 @@ func (s *Service) Delete(ctx context.Context, currencyID int64) error {
 	}
 	if c.IsBase {
 		return ErrBaseCurrency
+	}
+	if n, err := s.q.CountCurrencyAccounts(ctx, currencyID); err != nil {
+		return err
+	} else if n > 0 {
+		return ErrInUse
 	}
 	return s.q.DeleteCurrency(ctx, currencyID)
 }
