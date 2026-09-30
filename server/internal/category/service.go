@@ -173,32 +173,64 @@ func (s *Service) Create(ctx context.Context, walletID int64, name string, paren
 	return toCategory(c), nil
 }
 
-// Update renames a category and toggles its budget flag. For a top-level
-// category the income/expense type can change and cascades to its children; a
-// subcategory keeps its parent's type.
-func (s *Service) Update(ctx context.Context, id int64, name string, isIncome, noBudget, noReport bool) (Category, error) {
+// Move asks Update to put a category under ParentID, or at the top level when
+// ParentID is nil (#552). Without one the category stays where it is.
+type Move struct{ ParentID *int64 }
+
+// Update renames a category and sets its flags. For a top-level category the
+// income/expense type can change and cascades to its children; a subcategory
+// takes its parent's type. With move it also changes level: a subcategory can
+// go under another top-level category or become one itself, and a top-level
+// category with no subcategories can go under another.
+func (s *Service) Update(ctx context.Context, id int64, name string, isIncome, noBudget, noReport bool, move *Move) (Category, error) {
 	cur, err := s.Get(ctx, id)
 	if err != nil {
 		return Category{}, err
 	}
-	if cur.ParentID != nil {
-		isIncome = cur.IsIncome // subcategory type is fixed by its parent
+	parentID := cur.ParentID
+	if move != nil {
+		parentID = move.ParentID
+	}
+	if parentID != nil {
+		if *parentID == id {
+			return Category{}, ErrBadTarget
+		}
+		parent, err := s.Get(ctx, *parentID)
+		if err != nil || parent.WalletID != cur.WalletID {
+			return Category{}, ErrBadTarget
+		}
+		if parent.ParentID != nil {
+			return Category{}, ErrTooDeep
+		}
+		if cur.ParentID == nil {
+			// A top-level category going under another must bring no
+			// subcategories with it: they would sit three levels deep.
+			subs, err := s.q.CountSubcategories(ctx, nullID(&id))
+			if err != nil {
+				return Category{}, err
+			}
+			if subs > 0 {
+				return Category{}, ErrTooDeep
+			}
+		}
+		isIncome = parent.IsIncome // a subcategory's type is its parent's
 	}
 	name = strings.TrimSpace(name)
-	if dup, err := s.sameName(ctx, cur.WalletID, id, cur.ParentID, name); err != nil {
+	if dup, err := s.sameName(ctx, cur.WalletID, id, parentID, name); err != nil {
 		return Category{}, err
 	} else if dup != nil {
 		return Category{}, dup
 	}
 	if err := s.q.UpdateCategory(ctx, db.UpdateCategoryParams{
-		Name: name, IsIncome: dbconv.B2i(isIncome), NoBudget: dbconv.B2i(noBudget), NoReport: dbconv.B2i(noReport), ID: id,
+		ParentID: nullID(parentID), Name: name, IsIncome: dbconv.B2i(isIncome),
+		NoBudget: dbconv.B2i(noBudget), NoReport: dbconv.B2i(noReport), ID: id,
 	}); err != nil {
 		if isUnique(err) {
 			return Category{}, ErrDuplicate
 		}
 		return Category{}, err
 	}
-	if cur.ParentID == nil {
+	if parentID == nil {
 		if err := s.q.SetChildrenIncome(ctx, db.SetChildrenIncomeParams{IsIncome: dbconv.B2i(isIncome), ParentID: nullID(&id)}); err != nil {
 			return Category{}, err
 		}

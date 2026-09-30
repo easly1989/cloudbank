@@ -1,18 +1,23 @@
 package httpapi
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/category"
+	"github.com/easly1989/cloudbank/server/internal/report"
 )
 
 type categoryHandlers struct {
 	svc *category.Service
+	// rep, when set, serves the categories' activity (#552).
+	rep *report.Service
 }
 
 type categoryResponse struct {
@@ -31,6 +36,9 @@ func toCategoryResponse(c category.Category) categoryResponse {
 func (h *categoryHandlers) walletRoutes(r chi.Router) {
 	r.Get("/categories", h.list)
 	r.Post("/categories", h.create)
+	if h.rep != nil {
+		r.Get("/categories/activity", h.activity)
+	}
 	r.Route("/categories/{categoryId}", func(r chi.Router) {
 		r.Patch("/", h.update)
 		r.Delete("/", h.delete)
@@ -78,12 +86,40 @@ func (h *categoryHandlers) create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, toCategoryResponse(c))
 }
 
+// optionalParent tells a parentId left out (the category stays where it is)
+// from one sent as null (it becomes top-level) or as an id (it moves there).
+type optionalParent struct {
+	set bool
+	id  *int64
+}
+
+func (o *optionalParent) UnmarshalJSON(b []byte) error {
+	o.set = true
+	if string(b) == "null" {
+		return nil
+	}
+	var id int64
+	if err := json.Unmarshal(b, &id); err != nil {
+		return err
+	}
+	o.id = &id
+	return nil
+}
+
+type categoryUpdateInput struct {
+	Name     string         `json:"name"`
+	ParentID optionalParent `json:"parentId"`
+	IsIncome bool           `json:"isIncome"`
+	NoBudget bool           `json:"noBudget"`
+	NoReport bool           `json:"noReport"`
+}
+
 func (h *categoryHandlers) update(w http.ResponseWriter, r *http.Request) {
 	c, ok := h.categoryFromPath(w, r)
 	if !ok {
 		return
 	}
-	var in categoryInput
+	var in categoryUpdateInput
 	if !decodeJSON(w, r, &in) {
 		return
 	}
@@ -91,7 +127,11 @@ func (h *categoryHandlers) update(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid", "name is required")
 		return
 	}
-	updated, err := h.svc.Update(r.Context(), c.ID, in.Name, in.IsIncome, in.NoBudget, in.NoReport)
+	var move *category.Move
+	if in.ParentID.set {
+		move = &category.Move{ParentID: in.ParentID.id}
+	}
+	updated, err := h.svc.Update(r.Context(), c.ID, in.Name, in.IsIncome, in.NoBudget, in.NoReport, move)
 	if !writeCategoryError(w, err) {
 		return
 	}
@@ -122,6 +162,29 @@ func (h *categoryHandlers) usage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, u)
+}
+
+// activity is what each category held between from and to: its lines, their
+// sum in the base currency and the date of its latest line (#552).
+func (h *categoryHandlers) activity(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	from, to := r.URL.Query().Get("from"), r.URL.Query().Get("to")
+	if !isCivilDate(from) || !isCivilDate(to) || from > to {
+		writeError(w, http.StatusBadRequest, "invalid_range", "from and to must be dates (YYYY-MM-DD), from no later than to")
+		return
+	}
+	out, err := h.rep.CategoryActivity(r.Context(), wl.ID, from, to)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not compute category activity")
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// isCivilDate reports whether s is a date written YYYY-MM-DD.
+func isCivilDate(s string) bool {
+	_, err := time.Parse("2006-01-02", s)
+	return err == nil && len(s) == 10
 }
 
 func (h *categoryHandlers) merge(w http.ResponseWriter, r *http.Request) {
