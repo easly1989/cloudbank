@@ -213,3 +213,11 @@ Added since:
   that schedule in Schedules (`?schedule=ID`); they are not deleted here, and the
   server refuses to (`409 scheduled`), since deleting one used to delete its
   schedule with it. Under 900px of content the account column goes.
+- **Accounts carry three balances** (#564), to an approved mockup; the board has
+  no accounts page. One card in the register's style: Reconciled · Today ·
+  Future, a band per type with its subtotals and the total at the foot, in the
+  base currency. The list now returns `reconciledBalance` and `lastReconciled`.
+  A click opens the register, not the edit form; editing is under ⋯, in the
+  sheet, which shows and sends the exclusions and notes the old dialog wiped.
+  The group and the website are not edited on this page and are sent back as
+  they are. Under 900px of content the reconciled column goes.

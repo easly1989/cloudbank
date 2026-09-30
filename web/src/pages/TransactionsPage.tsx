@@ -282,6 +282,14 @@ export function TransactionsPage() {
     setSelected(new Set());
     setReconcile(false);
   }
+  // ?reconcile=1 opens the register reconciling: the accounts page's ⋯ →
+  // Reconcile (#564). Once, when the account has loaded, after the reset above.
+  const reconcileLink = searchParams.get("reconcile") === "1";
+  const [reconcileLinked, setReconcileLinked] = useState(false);
+  if (reconcileLink && !reconcileLinked && account) {
+    setReconcileLinked(true);
+    setReconcile(true);
+  }
   const toggleSelect = (id: number) =>
     setSelected((s) => {
       const next = new Set(s);

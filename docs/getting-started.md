@@ -51,8 +51,8 @@ a credit card. Open **Accounts** and choose **Add account**.
 | **Currency** | The wallet's base currency unless the account is held in another one |
 | **Initial balance** | The balance on the day you start recording (see below) |
 
-The rest (minimum balance, institution, account number, group, default payment
-mode) is optional and can be filled in later.
+The rest (minimum balance, institution, account number, default payment mode,
+what to leave the account out of, notes) is optional and can be filled in later.
 
 **Start from today, not from the beginning.** Take the balance from your latest
 statement as the initial balance, and record from the day after. Entering years

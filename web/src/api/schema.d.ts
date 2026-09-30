@@ -3054,6 +3054,16 @@ export interface components {
             futureBalance: number;
             /**
              * Format: int64
+             * @description initial + reconciled transactions dated on/before today, minor units
+             */
+            reconciledBalance: number;
+            /**
+             * Format: date
+             * @description date of the latest reconciled transaction; absent when there is none
+             */
+            lastReconciled?: string;
+            /**
+             * Format: int64
              * @description latest recorded valuation (asset accounts only); replaces balance/futureBalance when present
              */
             value?: number;

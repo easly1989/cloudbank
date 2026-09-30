@@ -124,10 +124,12 @@ test("an edit modal opens on its own record, twice running, and blank for a new 
   await test.step("accounts", async () => {
     await page.goto("/accounts");
     for (const name of accounts) {
+      // A click on the row opens the register; editing is under ⋯ (#564).
       await page
-        .getByRole("row", { name: new RegExp(name) })
-        .getByRole("button", { name: "Edit", exact: true })
+        .getByRole("button", { name: `Actions for ${name}` })
+        .first()
         .click();
+      await page.getByRole("menuitem", { name: "Edit account" }).click();
       await expect(await field(page, "Account name")).toHaveValue(name);
       await page.keyboard.press("Escape");
     }

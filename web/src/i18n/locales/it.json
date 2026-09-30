@@ -1194,14 +1194,8 @@
     "title": "Conti",
     "add": "Aggiungi conto",
     "addTitle": "Nuovo conto",
-    "editTitle": "Modifica conto",
-    "showClosed": "Mostra chiusi",
-    "ofTotal": "del totale",
     "closed": "Chiuso",
-    "edit": "Modifica",
-    "delete": "Elimina",
     "actions": "Azioni per {{name}}",
-    "deleteMenu": "Elimina…",
     "cancel": "Annulla",
     "save": "Salva",
     "empty": "Ancora nessun conto.",
@@ -1212,9 +1206,7 @@
     "minimumBalance": "Saldo minimo",
     "institution": "Istituto",
     "number": "Numero di conto",
-    "group": "Gruppo",
     "defaultPaymentMode": "Metodo di pagamento predefinito",
-    "defaultPaymentModeHint": "Precompila le nuove transazioni di questo conto (il predefinito del beneficiario ha comunque la priorità).",
     "types": {
       "bank": "Banca",
       "cash": "Contanti",
@@ -1228,7 +1220,35 @@
     "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
     "confirmDeleteBody": "Tutte le transazioni del conto vengono eliminate con lui. L'operazione non è reversibile.",
     "confirmDeleteAction": "Elimina conto",
-    "emptyHint": "Un conto è dove vivono le transazioni — un conto in banca, i contanti che hai in tasca, una carta di credito."
+    "emptyHint": "Un conto è dove vivono le transazioni — un conto in banca, i contanti che hai in tasca, una carta di credito.",
+    "line": "Riconciliato è ciò che la banca ha confermato; Oggi aggiunge ciò che hai inserito da allora; Futuro aggiunge ciò che è datato più avanti. Un clic apre il registro del conto.",
+    "lineConverted": "I totali sono in {{code}}, ai cambi più recenti.",
+    "col": {
+      "account": "Conto",
+      "reconciled": "Riconciliato",
+      "today": "Oggi",
+      "future": "Futuro"
+    },
+    "total_one": "Totale · 1 conto",
+    "total_other": "Totale · {{count}} conti",
+    "totalShort": "Totale",
+    "counted_one": "1 conto",
+    "counted_other": "{{count}} conti",
+    "reconciledOn": "riconciliato il {{date}}",
+    "neverReconciled": "mai riconciliato",
+    "closedLower": "chiuso",
+    "leftOut": "fuori dai totali",
+    "underMinimum": "sotto il minimo di {{amount}}",
+    "futureShort": "futuro {{amount}}",
+    "openRegister": "Apri il registro",
+    "openRegisterOf": "Apri il registro di {{name}}",
+    "editAccount": "Modifica il conto",
+    "leaveOut": "Lascia fuori questo conto da",
+    "leaveOutTotals": "I totali, qui e nel cruscotto",
+    "leaveOutBudget": "Il budget",
+    "leaveOutReports": "I report",
+    "notes": "Note",
+    "closedHint": "Chiuso: sparisce dagli elenchi, con le sue transazioni conservate"
   },
   "categories": {
     "duplicate": "«{{name}}» esiste già a questo livello. Per tenerne una sola, usa Unisci nell'elenco.",
@@ -1913,9 +1933,9 @@
         "title": "Ogni conto che segui",
         "body": "Aggiungi ogni conto che vuoi tenere sotto controllo: conto corrente, contanti, carta, risparmi. Ognuno ha il suo registro e il suo saldo."
       },
-      "closed": {
-        "title": "Chiuso, non cancellato",
-        "body": "Un conto chiuso sparisce dagli elenchi ma conserva la sua storia. Attiva questo interruttore per rivedere i conti chiusi."
+      "figures": {
+        "title": "Riconciliato, oggi, futuro",
+        "body": "Il saldo di ogni conto in tre modi: ciò che la banca ha confermato, ciò che hai inserito fino a oggi, e con ciò che è datato più avanti. Un clic apre il suo registro, ⋯ lo modifica. Un conto chiuso sparisce dall'elenco ma conserva la sua storia: il filtro Chiusi lo riporta."
       }
     },
     "budget": {
