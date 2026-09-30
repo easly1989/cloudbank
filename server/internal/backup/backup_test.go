@@ -113,6 +113,24 @@ func TestBackupRestoreRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// A rule's account condition, info and tags (#566): HomeBank has none of
+	// them, so the first rule gets all three here.
+	asgs, _ := q.ListAssignmentsForWallet(ctx, origID)
+	a0 := asgs[0]
+	if err := q.UpdateAssignment(ctx, db.UpdateAssignmentParams{
+		MatchField: a0.MatchField, MatchType: a0.MatchType, Pattern: a0.Pattern, CaseSensitive: a0.CaseSensitive,
+		MatchAccountID: sql.NullInt64{Int64: accts[0].ID, Valid: true}, SetPayeeID: a0.SetPayeeID,
+		SetCategoryID: a0.SetCategoryID, SetPaymentMode: a0.SetPaymentMode,
+		SetInfo:       sql.NullString{String: "0042", Valid: true},
+		ApplyOnManual: a0.ApplyOnManual, ApplyOnImport: a0.ApplyOnImport, ID: a0.ID,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	tag, _ := q.InsertTag(ctx, db.InsertTagParams{WalletID: origID, Name: "rule-tag"})
+	if err := q.AddAssignmentTag(ctx, db.AddAssignmentTagParams{AssignmentID: a0.ID, TagID: tag.ID}); err != nil {
+		t.Fatal(err)
+	}
+
 	svc := NewService(st.Write())
 	doc, err := svc.Export(ctx, origID)
 	if err != nil {
@@ -151,6 +169,25 @@ func TestBackupRestoreRoundTrip(t *testing.T) {
 		if origCounts[k] == 0 {
 			t.Fatalf("fixture has no %s; round-trip is not meaningfully testing it", k)
 		}
+	}
+
+	// The first rule keeps its account (the restored one of the same name),
+	// its info and its tag.
+	newAsgs, _ := q.ListAssignmentsForWallet(ctx, newID)
+	newAccts, _ := q.ListAccountsForWallet(ctx, newID)
+	var sameAcc int64
+	for _, a := range newAccts {
+		if a.Name == accts[0].Name {
+			sameAcc = a.ID
+		}
+	}
+	n0 := newAsgs[0]
+	if !n0.MatchAccountID.Valid || n0.MatchAccountID.Int64 != sameAcc || n0.SetInfo.String != "0042" {
+		t.Fatalf("restored rule = account %v info %v, want %d and 0042", n0.MatchAccountID, n0.SetInfo, sameAcc)
+	}
+	ruleTags, _ := q.ListAssignmentTagsForWallet(ctx, newID)
+	if len(ruleTags) != 1 || ruleTags[0].AssignmentID != n0.ID || ruleTags[0].Name != "rule-tag" {
+		t.Fatalf("restored rule tags = %+v", ruleTags)
 	}
 
 	// Identical per-account balances.

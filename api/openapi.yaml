@@ -1950,7 +1950,7 @@ paths:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
     get:
       operationId: listAssignments
-      summary: List the wallet's assignment rules (first-match-wins order)
+      summary: List the wallet's assignment rules (first-match-wins order), each with how many transactions it matches
       responses:
         "200": { description: Rules., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Assignment" } } } } }
     post:
@@ -1985,21 +1985,44 @@ paths:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
     post:
       operationId: testAssignment
-      summary: Preview which existing transactions a candidate rule would match
+      summary: Dry run of a candidate rule over the existing transactions (changes nothing)
+      description: |
+        Counts what the rule would match and returns the five most recent
+        matches. `id` is the rule being edited, if any: the rules above it are
+        the ones that can take a match first (`taken`). A new rule goes last.
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/AssignmentInput" }
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/AssignmentInput"
+                - type: object
+                  properties:
+                    id: { type: integer, format: int64, description: "the rule being edited; omit for a new one" }
       responses:
-        "200": { description: Matches., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/MatchedTransaction" } } } } }
+        "200":
+          description: What the rule would match.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: integer, description: every transaction the rule matches }
+                  taken: { type: integer, description: those a rule above it matches first }
+                  withoutCategory: { type: integer, description: those it would fill in that have no category }
+                  latest: { type: array, items: { $ref: "#/components/schemas/MatchedTransaction" } }
+                required: [count, taken, withoutCategory, latest]
         "400": { $ref: "#/components/responses/BadRequest" }
   /api/v1/wallets/{walletId}/assignments/apply:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
     post:
       operationId: applyAssignments
-      summary: Apply all rules to existing transactions (first match per transaction)
+      summary: Apply the rules to existing transactions (first match per transaction)
+      description: |
+        With `assignmentId`, only the transactions that rule matches first are
+        changed. Tags are only ever added.
       requestBody:
         required: true
         content:
@@ -2008,6 +2031,7 @@ paths:
               type: object
               properties:
                 accountId: { type: integer, format: int64, nullable: true }
+                assignmentId: { type: integer, format: int64, nullable: true, description: "apply this rule only" }
                 onlyFillEmpty: { type: boolean }
       responses:
         "200": { description: Applied., content: { application/json: { schema: { type: object, properties: { changed: { type: integer } }, required: [changed] } } } }
@@ -2016,7 +2040,7 @@ paths:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
     post:
       operationId: suggestAssignment
-      summary: First apply-on-manual rule matching the given memo/payee
+      summary: First apply-on-manual rule matching the given memo, payee or tags
       requestBody:
         required: true
         content:
@@ -2026,6 +2050,7 @@ paths:
               properties:
                 memo: { type: string }
                 payee: { type: string }
+                tags: { type: array, items: { type: string } }
                 accountId: { type: integer, format: int64, description: "selected account, for account-conditioned rules" }
       responses:
         "200":
@@ -2040,6 +2065,7 @@ paths:
                   categoryId: { type: integer, format: int64, nullable: true }
                   paymentMode: { type: integer, nullable: true }
                   info: { type: string, nullable: true }
+                  tags: { type: array, items: { type: string }, description: tags to add }
                 required: [matched]
   /api/v1/wallets/{walletId}/assignments/{assignmentId}:
     parameters:
@@ -3504,7 +3530,7 @@ components:
       properties:
         id: { type: integer, format: int64 }
         position: { type: integer }
-        matchField: { type: string, enum: [memo, payee, both] }
+        matchField: { type: string, enum: [memo, payee, both, tag] }
         matchType: { type: string, enum: [exact, contains, regex] }
         pattern: { type: string }
         caseSensitive: { type: boolean }
@@ -3513,13 +3539,16 @@ components:
         setCategoryId: { type: integer, format: int64, nullable: true }
         setPaymentMode: { type: integer, nullable: true }
         setInfo: { type: string, nullable: true }
+        setTags: { type: array, items: { type: string }, description: tags added to the transactions it matches; never removes one }
         applyOnManual: { type: boolean }
         applyOnImport: { type: boolean }
-      required: [id, position, matchField, matchType, pattern, caseSensitive, applyOnManual, applyOnImport]
+        matches: { type: integer, description: "list only: the transactions this rule is the first to match" }
+        reach: { type: integer, description: "list only: the transactions it matches at all" }
+      required: [id, position, matchField, matchType, pattern, caseSensitive, setTags, applyOnManual, applyOnImport]
     AssignmentInput:
       type: object
       properties:
-        matchField: { type: string, enum: [memo, payee, both] }
+        matchField: { type: string, enum: [memo, payee, both, tag] }
         matchType: { type: string, enum: [exact, contains, regex] }
         pattern: { type: string }
         caseSensitive: { type: boolean }
@@ -3528,6 +3557,7 @@ components:
         setCategoryId: { type: integer, format: int64, nullable: true }
         setPaymentMode: { type: integer, nullable: true }
         setInfo: { type: string, nullable: true }
+        setTags: { type: array, items: { type: string } }
         applyOnManual: { type: boolean }
         applyOnImport: { type: boolean }
       required: [matchField, matchType, pattern]
@@ -3539,7 +3569,9 @@ components:
         date: { type: string }
         memo: { type: string }
         payeeName: { type: string }
-      required: [id, accountId, date, memo, payeeName]
+        categoryId: { type: integer, format: int64, nullable: true }
+        tags: { type: array, items: { type: string } }
+      required: [id, accountId, date, memo, payeeName, tags]
     StatisticsGroup:
       type: object
       properties:

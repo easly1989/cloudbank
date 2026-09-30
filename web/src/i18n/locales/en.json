@@ -329,52 +329,137 @@
     "hint": "What you planned to spend, next to what you actually spent."
   },
   "assignments": {
-    "title": "Assignment rules",
-    "add": "New rule",
     "addTitle": "New rule",
     "editTitle": "Edit rule",
-    "empty": "No rules yet.",
-    "help": "Rules are tried top to bottom; the first match fills the transaction. Drag to reorder.",
-    "match": "Match",
-    "sets": "Sets",
-    "applies": "Applies",
-    "matchField": "Match in",
-    "matchType": "Match type",
-    "pattern": "Pattern",
-    "caseSensitive": "Case sensitive",
-    "caseSensitiveShort": "case",
     "matchAccount": "Only in account",
     "anyAccount": "Any account",
-    "setPayee": "Set payee",
-    "setCategory": "Set category",
-    "setPaymentMode": "Set payment mode",
-    "setInfo": "Set number / info",
     "setInfoPlaceholder": "e.g. a cheque number",
-    "onManual": "On manual entry",
-    "onImport": "On import",
-    "test": "Test rule",
-    "testResult": "{{count}} transaction(s) would match",
     "applyToExisting": "Apply to existing",
-    "applied": "Updated {{count}} transaction(s)",
-    "edit": "Edit",
-    "delete": "Delete",
     "save": "Save",
     "cancel": "Cancel",
-    "fields": {
-      "memo": "memo",
-      "payee": "payee",
-      "both": "memo or payee"
-    },
-    "types": {
-      "exact": "equals",
-      "contains": "contains",
-      "regex": "regex"
-    },
     "confirmApplyTitle": "Apply all rules to existing transactions?",
-    "confirmApplyBody": "Only empty fields are filled in — nothing you have already set is overwritten.",
     "confirmDeleteTitle": "Delete this rule?",
     "confirmDeleteBody": "Transactions it has already filled in keep their values; only what you enter from now on changes.",
-    "emptyHint": "A rule reads the text your bank sends and fills in the category, payee or tags, so you stop typing the same thing every month."
+    "title": "Rules",
+    "subtitle": "Fill in the category and payee from what the bank writes.",
+    "add": "New rule",
+    "line": "Tried top to bottom: the first rule that matches fills in the transaction. The count is how many of your transactions each one matches today. Drag to change the order.",
+    "linePhone": "Tried top to bottom. The count is how many of your transactions each rule matches.",
+    "position": "Rule {{n}} of {{count}}",
+    "positionFirst": "Rule 1 of {{count}}, tried first",
+    "col": {
+      "rule": "Rule",
+      "account": "Account",
+      "usedOn": "Used on",
+      "matches": "Matches"
+    },
+    "usedOn": {
+      "both": "Entry and import",
+      "import": "Import only",
+      "manual": "Entry only",
+      "off": "Off"
+    },
+    "when": {
+      "memo": {
+        "contains": "When the memo contains",
+        "exact": "When the memo is",
+        "regex": "When the memo matches the pattern"
+      },
+      "payee": {
+        "contains": "When the payee contains",
+        "exact": "When the payee is",
+        "regex": "When the payee matches the pattern"
+      },
+      "both": {
+        "contains": "When the memo or payee contains",
+        "exact": "When the memo or payee is",
+        "regex": "When the memo or payee matches the pattern"
+      },
+      "tag": {
+        "contains": "When a tag contains",
+        "exact": "When a tag is",
+        "regex": "When a tag matches the pattern"
+      }
+    },
+    "sameCase": "(same case)",
+    "shadowed_one": "a rule above takes it first",
+    "shadowed_other": "a rule above takes all {{count}} first",
+    "does": {
+      "category": "file it under {{name}}",
+      "payeeFirst": "set the payee to {{name}}",
+      "payee": "payee {{name}}",
+      "mode": "paid by {{mode}}",
+      "info": "info “{{info}}”",
+      "tags_one": "add the tag {{tags}}",
+      "tags_other": "add the tags {{tags}}",
+      "nothing": "sets nothing yet"
+    },
+    "matchesTitle_one": "Matches 1 of your transactions",
+    "matchesTitle_other": "Matches {{count}} of your transactions",
+    "actions": "Actions for rule {{n}}",
+    "applyRule": "Apply rule {{n}} to its transactions",
+    "drag": "Drag to change the order",
+    "menu": {
+      "edit": "Edit rule",
+      "apply": "Apply to its transactions",
+      "up": "Move up",
+      "down": "Move down",
+      "delete": "Delete rule"
+    },
+    "apply": "Apply",
+    "applied_one": "Updated 1 transaction",
+    "applied_other": "Updated {{count}} transactions",
+    "confirmApplyOneTitle_one": "Apply this rule to its transaction?",
+    "confirmApplyOneTitle_other": "Apply this rule to its {{count}} transactions?",
+    "confirmApplyBody": "Only empty fields are filled in and tags are added: nothing you have already set is overwritten.",
+    "sectionWhen": "When",
+    "sectionThen": "Then",
+    "sectionUse": "Use it",
+    "lookIn": "Look in",
+    "lookInOpt": {
+      "memo": "Memo",
+      "payee": "Payee",
+      "both": "Either",
+      "tag": "Tag"
+    },
+    "matchType": "Match",
+    "typeOpt": {
+      "contains": "contains",
+      "exact": "is exactly",
+      "regex": "pattern (regex)"
+    },
+    "pattern": "Text",
+    "tagText": "Tag",
+    "badRegex": "That pattern is not a valid expression.",
+    "caseSensitive": "Same upper and lower case",
+    "setCategory": "Category",
+    "setPayee": "Payee",
+    "setPaymentMode": "Payment",
+    "leaveAsIs": "Leave as is",
+    "setInfo": "Info",
+    "setTags": "Add tags",
+    "setTagsHint": "Added to the tags it already has; none is taken away.",
+    "onManual": "When I enter a transaction",
+    "onImport": "On import and bank sync",
+    "previewEmpty": "Type the text to match",
+    "previewEmptyHint": "As you type, this shows how many of your transactions the rule would match, and the latest of them. Nothing changes until you save.",
+    "previewNone": "Matches none of your transactions",
+    "previewCount_one": "Matches 1 transaction",
+    "previewCount_other": "Matches {{count}} transactions",
+    "previewTaken_one": "A rule above takes 1 of them first.",
+    "previewTaken_other": "A rule above takes {{count}} of them first.",
+    "previewNoCategory_one": "1 has no category yet.",
+    "previewNoCategory_other": "{{count}} have no category yet.",
+    "previewNote": "This is a preview: saving changes what the rule fills in from now on, and Apply to its transactions fills in the ones already there.",
+    "noCategory": "No category",
+    "emptyTitle": "Stop filing the same transactions by hand",
+    "emptyBody": "A rule reads what the bank writes and fills in the rest, on every import, sync and entry. For example:",
+    "example": {
+      "supermarket": "Supermarket",
+      "groceries": "Food › Groceries",
+      "salary": "Salary",
+      "employer": "Employer"
+    }
   },
   "schedules": {
     "title": "Schedules",

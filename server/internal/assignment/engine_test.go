@@ -18,22 +18,27 @@ func TestMatches(t *testing.T) {
 		pattern       string
 		caseSensitive bool
 		memo, payee   string
+		tags          []string
 		want          bool
 	}{
-		{"contains memo ci", FieldMemo, TypeContains, "coffee", false, "Morning COFFEE run", "", true},
-		{"contains memo cs miss", FieldMemo, TypeContains, "coffee", true, "Morning COFFEE run", "", false},
-		{"exact payee ci", FieldPayee, TypeExact, "esso", false, "", "ESSO", true},
-		{"exact payee miss", FieldPayee, TypeExact, "esso", false, "", "ESSO Station", false},
-		{"regex memo", FieldMemo, TypeRegex, `inv\d+`, false, "INV4321 paid", "", true},
-		{"both matches payee", FieldBoth, TypeContains, "shell", false, "fuel", "Shell", true},
-		{"both matches memo", FieldBoth, TypeContains, "fuel", false, "fuel", "Shell", true},
-		{"both no match", FieldBoth, TypeContains, "rent", false, "fuel", "Shell", false},
+		{"contains memo ci", FieldMemo, TypeContains, "coffee", false, "Morning COFFEE run", "", nil, true},
+		{"contains memo cs miss", FieldMemo, TypeContains, "coffee", true, "Morning COFFEE run", "", nil, false},
+		{"exact payee ci", FieldPayee, TypeExact, "esso", false, "", "ESSO", nil, true},
+		{"exact payee miss", FieldPayee, TypeExact, "esso", false, "", "ESSO Station", nil, false},
+		{"regex memo", FieldMemo, TypeRegex, `inv\d+`, false, "INV4321 paid", "", nil, true},
+		{"both matches payee", FieldBoth, TypeContains, "shell", false, "fuel", "Shell", nil, true},
+		{"both matches memo", FieldBoth, TypeContains, "fuel", false, "fuel", "Shell", nil, true},
+		{"both no match", FieldBoth, TypeContains, "rent", false, "fuel", "Shell", nil, false},
+		{"tag exact", FieldTag, TypeExact, "car", false, "fuel", "Shell", []string{"home", "Car"}, true},
+		{"tag contains", FieldTag, TypeContains, "office", false, "", "", []string{"home-office"}, true},
+		{"tag does not read the memo", FieldTag, TypeContains, "car", false, "car wash", "", nil, false},
+		{"memo does not read the tags", FieldMemo, TypeContains, "car", false, "", "", []string{"car"}, false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			r := Rule{Field: c.field, Type: c.typ, Pattern: c.pattern, CaseSensitive: c.caseSensitive}
 			mustCompile(t, &r)
-			if got := r.Matches(c.memo, c.payee, 0); got != c.want {
+			if got := r.Matches(Subject{Memo: c.memo, Payee: c.payee, Tags: c.tags}); got != c.want {
 				t.Fatalf("Matches = %v, want %v", got, c.want)
 			}
 		})
@@ -71,11 +76,11 @@ func TestFirstMatchWins(t *testing.T) {
 		mustCompile(t, &rules[i])
 	}
 	// "uber eats" matches both; the first rule wins.
-	res, ok := FirstMatch(rules, "uber eats dinner", "", 0)
+	res, ok := FirstMatch(rules, Subject{Memo: "uber eats dinner"})
 	if !ok || res.RuleID != 1 || res.CategoryID == nil || *res.CategoryID != 10 {
 		t.Fatalf("FirstMatch = %+v, %v", res, ok)
 	}
-	if _, ok := FirstMatch(rules, "groceries", "", 0); ok {
+	if _, ok := FirstMatch(rules, Subject{Memo: "groceries"}); ok {
 		t.Fatalf("expected no match")
 	}
 }
@@ -87,14 +92,36 @@ func TestAccountConditionAndSetInfo(t *testing.T) {
 	}}
 	mustCompile(t, &rules[0])
 	// Right account → matches and sets the info field.
-	res, ok := FirstMatch(rules, "cheque to landlord", "", 7)
+	res, ok := FirstMatch(rules, Subject{Memo: "cheque to landlord", AccountID: 7})
 	if !ok || res.Info == nil || *res.Info != "0001" {
 		t.Fatalf("account 7 = %+v, %v", res, ok)
 	}
 	// Different account → the account-conditioned rule does not apply.
-	if _, ok := FirstMatch(rules, "cheque to landlord", "", 9); ok {
+	if _, ok := FirstMatch(rules, Subject{Memo: "cheque to landlord", AccountID: 9}); ok {
 		t.Fatalf("account 9 should not match an account-7 rule")
 	}
 }
 
 func sptr(s string) *string { return &s }
+
+func TestFirstMatchCarriesTags(t *testing.T) {
+	rules := []Rule{{ID: 1, Field: FieldPayee, Type: TypeContains, Pattern: "petrol", SetTags: []string{"car"}}}
+	mustCompile(t, &rules[0])
+	res, ok := FirstMatch(rules, Subject{Payee: "Petrol station"})
+	if !ok || len(res.Tags) != 1 || res.Tags[0] != "car" {
+		t.Fatalf("FirstMatch = %+v, %v", res, ok)
+	}
+}
+
+func TestAddTagsNeverRemoves(t *testing.T) {
+	got := AddTags([]string{"home", "car"}, []string{"car", "work", "work"})
+	want := []string{"home", "car", "work"}
+	if len(got) != len(want) {
+		t.Fatalf("AddTags = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("AddTags = %v, want %v", got, want)
+		}
+	}
+}

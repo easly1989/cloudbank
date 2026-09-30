@@ -1,5 +1,5 @@
 // Package assignment is a pure rule engine that auto-fills a transaction's
-// payee, category and/or payment mode from its memo/payee text. Rules are tried
+// payee, category, payment mode, info and tags from its memo, payee or tags. Rules are tried
 // in order (first match wins). The engine has no database dependency so the
 // importers can reuse it directly.
 package assignment
@@ -15,6 +15,7 @@ const (
 	FieldMemo  = "memo"
 	FieldPayee = "payee"
 	FieldBoth  = "both"
+	FieldTag   = "tag" // any one of the transaction's tags
 )
 
 // Match types.
@@ -44,7 +45,8 @@ type Rule struct {
 	SetPayeeID     *int64
 	SetCategoryID  *int64
 	SetPaymentMode *int
-	SetInfo        *string // nil = don't set the info / "number" field
+	SetInfo        *string  // nil = don't set the info / "number" field
+	SetTags        []string // added to the transaction's tags, never replacing them
 
 	re *regexp.Regexp // compiled when Type == regex
 }
@@ -54,7 +56,7 @@ type Rule struct {
 // so the caller can reject them at save time.
 func (r *Rule) Compile() error {
 	switch r.Field {
-	case FieldMemo, FieldPayee, FieldBoth:
+	case FieldMemo, FieldPayee, FieldBoth, FieldTag:
 	default:
 		return ErrInvalidField
 	}
@@ -80,20 +82,36 @@ func (r *Rule) Compile() error {
 	}
 }
 
-// Matches reports whether the rule matches the given memo/payee text and (when
-// the rule has an account condition) the transaction's account. The rule must
+// Subject is what a rule reads of a transaction. AccountID 0 means no account
+// yet, so a rule with an account condition does not match.
+type Subject struct {
+	Memo      string
+	Payee     string
+	Tags      []string
+	AccountID int64
+}
+
+// Matches reports whether the rule matches the transaction's memo, payee or
+// tags and (when the rule has an account condition) its account. The rule must
 // have been Compiled first.
-func (r *Rule) Matches(memo, payee string, accountID int64) bool {
-	if r.MatchAccountID != nil && *r.MatchAccountID != accountID {
+func (r *Rule) Matches(s Subject) bool {
+	if r.MatchAccountID != nil && *r.MatchAccountID != s.AccountID {
 		return false
 	}
 	switch r.Field {
 	case FieldMemo:
-		return r.matchText(memo)
+		return r.matchText(s.Memo)
 	case FieldPayee:
-		return r.matchText(payee)
+		return r.matchText(s.Payee)
+	case FieldTag:
+		for _, t := range s.Tags {
+			if r.matchText(t) {
+				return true
+			}
+		}
+		return false
 	default: // FieldBoth
-		return r.matchText(memo) || r.matchText(payee)
+		return r.matchText(s.Memo) || r.matchText(s.Payee)
 	}
 }
 
@@ -121,20 +139,37 @@ type Result struct {
 	CategoryID  *int64
 	PaymentMode *int
 	Info        *string
+	Tags        []string // to add; empty when the rule adds none
 }
 
 // FirstMatch returns the assignments of the first rule (in slice order) that
-// matches the memo/payee and account, and whether any rule matched. Rules must
-// be Compiled.
-func FirstMatch(rules []Rule, memo, payee string, accountID int64) (Result, bool) {
+// matches the transaction, and whether any rule matched. Rules must be
+// Compiled.
+func FirstMatch(rules []Rule, s Subject) (Result, bool) {
 	for i := range rules {
-		if rules[i].Matches(memo, payee, accountID) {
+		if rules[i].Matches(s) {
 			return Result{
 				RuleID: rules[i].ID, PayeeID: rules[i].SetPayeeID,
 				CategoryID: rules[i].SetCategoryID, PaymentMode: rules[i].SetPaymentMode,
-				Info: rules[i].SetInfo,
+				Info: rules[i].SetInfo, Tags: rules[i].SetTags,
 			}, true
 		}
 	}
 	return Result{}, false
+}
+
+// AddTags returns tags with every name of add that is not already there
+// appended, in add's order: a rule adds tags and never takes one away.
+func AddTags(tags, add []string) []string {
+	have := make(map[string]bool, len(tags))
+	for _, t := range tags {
+		have[t] = true
+	}
+	for _, t := range add {
+		if !have[t] {
+			have[t] = true
+			tags = append(tags, t)
+		}
+	}
+	return tags
 }

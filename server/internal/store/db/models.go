@@ -81,6 +81,11 @@ type Assignment struct {
 	SetInfo        sql.NullString
 }
 
+type AssignmentTag struct {
+	AssignmentID int64
+	TagID        int64
+}
+
 type Attachment struct {
 	ID            int64
 	WalletID      int64

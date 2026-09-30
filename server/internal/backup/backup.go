@@ -222,8 +222,13 @@ type Assignment struct {
 	SetPayeeID     *int64 `json:"setPayeeId,omitempty"`
 	SetCategoryID  *int64 `json:"setCategoryId,omitempty"`
 	SetPaymentMode *int64 `json:"setPaymentMode,omitempty"`
-	ApplyOnManual  bool   `json:"applyOnManual"`
-	ApplyOnImport  bool   `json:"applyOnImport"`
+	// The account condition, the info and the tags: a backup made before #566
+	// has none of them, and restores with none.
+	MatchAccountID *int64   `json:"matchAccountId,omitempty"`
+	SetInfo        *string  `json:"setInfo,omitempty"`
+	SetTags        []string `json:"setTags,omitempty"`
+	ApplyOnManual  bool     `json:"applyOnManual"`
+	ApplyOnImport  bool     `json:"applyOnImport"`
 }
 
 // Budget is a backed-up per-category budget entry.
@@ -447,11 +452,24 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 	if err != nil {
 		return nil, err
 	}
+	asgTags, err := q.ListAssignmentTagsForWallet(ctx, walletID)
+	if err != nil {
+		return nil, err
+	}
+	tagsOf := map[int64][]string{}
+	for _, t := range asgTags {
+		tagsOf[t.AssignmentID] = append(tagsOf[t.AssignmentID], t.Name)
+	}
 	for _, a := range asgs {
+		var info *string
+		if a.SetInfo.Valid {
+			info = &a.SetInfo.String
+		}
 		doc.Assignments = append(doc.Assignments, Assignment{
 			ID: a.ID, Position: a.Position, MatchField: a.MatchField, MatchType: a.MatchType,
 			Pattern: a.Pattern, CaseSensitive: a.CaseSensitive != 0, SetPayeeID: dbconv.NullToPtr(a.SetPayeeID),
 			SetCategoryID: dbconv.NullToPtr(a.SetCategoryID), SetPaymentMode: dbconv.NullToPtr(a.SetPaymentMode),
+			MatchAccountID: dbconv.NullToPtr(a.MatchAccountID), SetInfo: info, SetTags: tagsOf[a.ID],
 			ApplyOnManual: a.ApplyOnManual != 0, ApplyOnImport: a.ApplyOnImport != 0,
 		})
 	}
@@ -820,13 +838,26 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 	}
 
 	for _, a := range doc.Assignments {
-		if _, err := q.InsertAssignment(ctx, db.InsertAssignmentParams{
+		var info sql.NullString
+		if a.SetInfo != nil {
+			info = sql.NullString{String: *a.SetInfo, Valid: true}
+		}
+		row, err := q.InsertAssignment(ctx, db.InsertAssignmentParams{
 			WalletID: w.ID, Position: a.Position, MatchField: a.MatchField, MatchType: a.MatchType,
 			Pattern: a.Pattern, CaseSensitive: dbconv.B2i(a.CaseSensitive), SetPayeeID: dbconv.PtrToNull(remapPayee(a.SetPayeeID)),
 			SetCategoryID: dbconv.PtrToNull(remapCat(a.SetCategoryID)), SetPaymentMode: dbconv.PtrToNull(a.SetPaymentMode),
+			MatchAccountID: dbconv.PtrToNull(remapAcc(a.MatchAccountID)), SetInfo: info,
 			ApplyOnManual: dbconv.B2i(a.ApplyOnManual), ApplyOnImport: dbconv.B2i(a.ApplyOnImport),
-		}); err != nil {
+		})
+		if err != nil {
 			return 0, err
+		}
+		for _, name := range a.SetTags {
+			if tagID, ok := tagByName[name]; ok {
+				if err := q.AddAssignmentTag(ctx, db.AddAssignmentTagParams{AssignmentID: row.ID, TagID: tagID}); err != nil {
+					return 0, err
+				}
+			}
 		}
 	}
 

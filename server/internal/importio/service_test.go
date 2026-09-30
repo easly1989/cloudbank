@@ -170,6 +170,33 @@ func TestPreviewAppliesImportRules(t *testing.T) {
 	}
 }
 
+// A rule reads an incoming row's tags and adds its own, keeping the row's.
+func TestPreviewRulesReadAndAddTags(t *testing.T) {
+	s, _, rules, q, wid, acc := newTestService(t)
+	ctx := context.Background()
+	travel, _ := q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: wid, Name: "Travel"})
+	if _, err := rules.Create(ctx, wid, assignment.Input{
+		MatchField: assignment.FieldTag, MatchType: assignment.TypeExact, Pattern: "trip",
+		SetCategoryID: &travel.ID, SetTags: []string{"work", "trip"}, ApplyOnImport: true,
+	}); err != nil {
+		t.Fatalf("rule: %v", err)
+	}
+	content := "2026-02-03;0;;Hotel;stay;-80.00;;trip\n2026-02-04;0;;Bakery;bread;-3.00;;\n"
+	pv, err := s.Preview(ctx, wid, PreviewRequest{
+		AccountID: acc, Content: content, Dialect: DialectHomeBank, ApplyRules: true,
+	})
+	if err != nil {
+		t.Fatalf("Preview: %v", err)
+	}
+	r := pv.Rows[0]
+	if !r.RuleApplied || r.Category != "Travel" || len(r.Tags) != 2 || r.Tags[0] != "trip" || r.Tags[1] != "work" {
+		t.Fatalf("tag rule on the hotel: %+v", r)
+	}
+	if pv.Rows[1].RuleApplied || len(pv.Rows[1].Tags) != 0 {
+		t.Fatalf("tag rule on the bakery: %+v", pv.Rows[1])
+	}
+}
+
 func TestExportRoundTrip(t *testing.T) {
 	s, _, _, _, wid, acc := newTestService(t)
 	ctx := context.Background()

@@ -602,18 +602,22 @@ export function TransactionForm({
   }));
 
   // Apply-on-manual: when adding a transaction, the first matching rule fills
-  // any empty payee/category/payment-mode fields (the user can still override).
-  const runSuggest = async () => {
+  // any empty payee/category/payment-mode fields and adds its tags (the user
+  // can still override). A rule can read the tags too, so a tag just added
+  // asks again: withTags is the list as it is about to be.
+  const runSuggest = async (withTags: string[] = tags) => {
     if (editing) return;
     const name = (payeesQuery.data ?? []).find((p) => String(p.id) === payeeId)?.name ?? "";
-    if (!memo.trim() && !name) return;
+    if (!memo.trim() && !name && withTags.length === 0) return;
     try {
-      const res = await suggestAssignment(walletId, memo, name, current.id);
+      const res = await suggestAssignment(walletId, memo, name, current.id, withTags);
       if (!res.matched) return;
       if (!payeeId && res.payeeId != null) setPayeeId(String(res.payeeId));
       if (!isSplit && !categoryId && res.categoryId != null) setCategoryId(String(res.categoryId));
       if (paymentMode === "0" && res.paymentMode != null) setPaymentMode(String(res.paymentMode));
       if (!info && res.info != null) setInfo(res.info);
+      const add = (res.tags ?? []).filter((tg) => !withTags.includes(tg));
+      if (add.length > 0) setTags([...withTags, ...add]);
     } catch {
       // suggestion is best-effort; ignore failures
     }
@@ -751,7 +755,10 @@ export function TransactionForm({
         label={t("transactions.tags")}
         data={tagsQuery.data ?? []}
         value={tags}
-        onChange={setTags}
+        onChange={(v) => {
+          setTags(v);
+          if (v.length > tags.length) void runSuggest(v);
+        }}
       />
     ),
   };
