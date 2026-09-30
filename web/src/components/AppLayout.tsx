@@ -16,7 +16,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation } from "react-router-dom";
 
-import { updateMe, type User } from "../api/client";
+import { savePreferences } from "../api/client";
 import { DemoChrome } from "../demo/DemoChrome";
 import { useAuth } from "../auth/AuthProvider";
 import { useWallet } from "../wallet/WalletProvider";
@@ -58,9 +58,7 @@ export function AppLayout() {
   // carries is also in Settings › About, so nothing becomes unreachable.
   const showFooter = user?.preferences?.showFooter ?? true;
   const persistCollapsed = useMutation({
-    mutationFn: (next: boolean) =>
-      updateMe({ preferences: { ...(user?.preferences ?? {}), sidebarCollapsed: next } }),
-    onSuccess: (updated: User) => qc.setQueryData(["me"], updated),
+    mutationFn: (next: boolean) => savePreferences(qc, { sidebarCollapsed: next }),
   });
   const toggleCollapsed = () => {
     const next = !collapsed;

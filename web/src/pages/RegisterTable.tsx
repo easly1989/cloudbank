@@ -56,13 +56,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 
-import {
-  type Preferences,
-  updateMe,
-  type Account,
-  type RegisterRow,
-  type User,
-} from "../api/client";
+import { type Preferences, savePreferences, type Account, type RegisterRow } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { useDateFormat } from "../dates";
 import { todayCivil } from "../civilDate";
@@ -305,9 +299,7 @@ export function RegisterTable({
   const widths = dragWidths ?? savedWidths ?? {};
 
   const persistPrefs = useMutation({
-    mutationFn: (patch: Partial<Preferences>) =>
-      updateMe({ preferences: { ...(user?.preferences ?? {}), ...patch } }),
-    onSuccess: (updated: User) => qc.setQueryData(["me"], updated),
+    mutationFn: (patch: Partial<Preferences>) => savePreferences(qc, patch),
   });
 
   const toggleSort = (id: string) => {
@@ -319,13 +311,7 @@ export function RegisterTable({
 
   const persistColumns = useMutation({
     mutationFn: (next: VisibilityState) =>
-      updateMe({
-        preferences: {
-          ...(user?.preferences ?? {}),
-          registerColumns: next as Record<string, boolean>,
-        },
-      }),
-    onSuccess: (updated: User) => qc.setQueryData(["me"], updated),
+      savePreferences(qc, { registerColumns: next as Record<string, boolean> }),
   });
 
   // Newest-first display; each row keeps its chronological running balance.

@@ -25,7 +25,7 @@ import { Link } from "react-router-dom";
 import { ShortLabel } from "../components/ShortLabel";
 import { useConfirm } from "../components/confirmContext";
 
-import { type DashboardAccount, type User, getDashboard, updateMe } from "../api/client";
+import { type DashboardAccount, type User, getDashboard, savePreferences } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { dateBounds, emptyFilters, type DatePreset } from "./registerFilterModel";
 import { GridDashboard, type GridDashboardHandle } from "../components/dashboard/GridDashboard";
@@ -101,21 +101,14 @@ export function DashboardPage() {
   // balance is not a period quantity — so this drives only the widgets that
   // actually cover a span of time, and each of those can pin its own.
   const pagePeriod = (user?.preferences?.dashboardPeriod ?? "all") as DatePreset;
-  // Written from the latest copy of the preferences, not the one this render
-  // saw: a layout save lands up to half a second later, and another preference
-  // may have been saved in between.
-  const latestPreferences = () =>
-    qc.getQueryData<User>(["me"])?.preferences ?? user?.preferences ?? {};
+  // The stored layout, to tell whether a save would change anything.
+  const savedLayout = () => qc.getQueryData<User>(["me"])?.preferences?.dashboardLayout;
   const persistPeriod = useMutation({
-    mutationFn: (period: DatePreset) =>
-      updateMe({ preferences: { ...latestPreferences(), dashboardPeriod: period } }),
-    onSuccess: (u: User) => qc.setQueryData(["me"], u),
+    mutationFn: (period: DatePreset) => savePreferences(qc, { dashboardPeriod: period }),
   });
 
   const persistLayout = useMutation({
-    mutationFn: (next: DashboardLayoutV2) =>
-      updateMe({ preferences: { ...latestPreferences(), dashboardLayout: next } }),
-    onSuccess: (u: User) => qc.setQueryData(["me"], u),
+    mutationFn: (next: DashboardLayoutV2) => savePreferences(qc, { dashboardLayout: next }),
   });
   // Debounce persistence so a drag/resize burst is a single network write.
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -126,7 +119,7 @@ export function DashboardPage() {
     // While the grid lays out it reports positions it passes through on the way
     // to the saved ones; only a layout that differs from the saved one is written.
     saveTimer.current = setTimeout(() => {
-      if (!sameLayout(next, latestPreferences().dashboardLayout)) persistLayout.mutate(next);
+      if (!sameLayout(next, savedLayout())) persistLayout.mutate(next);
     }, 500);
   };
   useEffect(() => () => clearTimeout(saveTimer.current), []);
