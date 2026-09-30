@@ -518,7 +518,10 @@
       "isExpense": "Uscita: passa a entrata",
       "isIncome": "Entrata: passa a uscita",
       "autoPostHint": "La registra alla sua data senza chiedere."
-    }
+    },
+    "splitNote_one": "Questa transazione è suddivisa: qui non puoi cambiarne l'importo né la categoria. Il resto sì.",
+    "splitNote_other": "Questa transazione è suddivisa in {{count}} categorie: qui non puoi cambiarne l'importo né le categorie. Il resto sì.",
+    "splitCategories": "Suddivisa · {{names}}"
   },
   "tags": {
     "title": "Tag",
