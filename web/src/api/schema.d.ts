@@ -1285,6 +1285,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/payees/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * What each payee held in a period
+         * @description For each payee that has had a transaction on or before `to`: how many fall between `from` and `to` (both included), their sum in the base currency, the date of its latest one on or before `to`, however long ago, and what it is usually given in the period: the category most of its plain (not split) transactions went to, with how many did out of how many had one, and the payment mode it was most often paid with, "none" aside. A payee that never had a transaction is absent.
+         */
+        get: operations["getPayeeActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/payees/{payeeId}": {
         parameters: {
             query?: never;
@@ -3062,6 +3084,53 @@ export interface components {
             /** Format: date */
             to: string;
             categories: components["schemas"]["CategoryActivity"][];
+            currency?: components["schemas"]["CurrencyInfo"] | null;
+        };
+        PayeeActivity: {
+            /** Format: int64 */
+            payeeId: number;
+            /**
+             * Format: int64
+             * @description transactions in the period
+             */
+            count: number;
+            /**
+             * Format: int64
+             * @description their sum, in the base currency's minor units
+             */
+            amount: number;
+            /**
+             * Format: date
+             * @description the latest transaction on or before the period's end
+             */
+            lastDate: string;
+            /**
+             * Format: int64
+             * @description the category most of its plain transactions in the period went to
+             */
+            usualCategoryId?: number;
+            /**
+             * Format: int64
+             * @description how many went to it
+             */
+            usualCategoryCount: number;
+            /**
+             * Format: int64
+             * @description how many plain transactions in the period had a category
+             */
+            categorisedCount: number;
+            /**
+             * Format: int64
+             * @description the payment mode it was most often paid with, none aside
+             */
+            usualPaymentMode?: number;
+        };
+        PayeeActivityResult: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            payees: components["schemas"]["PayeeActivity"][];
             currency?: components["schemas"]["CurrencyInfo"] | null;
         };
         CategoryUsage: {
@@ -6483,6 +6552,33 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+        };
+    };
+    getPayeeActivity: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Activity. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayeeActivityResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
         };
     };
     deletePayee: {

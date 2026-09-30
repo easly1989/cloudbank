@@ -1260,6 +1260,27 @@ paths:
         "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Payee" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "409": { description: Duplicate name., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/wallets/{walletId}/payees/activity:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getPayeeActivity
+      summary: What each payee held in a period
+      description: >-
+        For each payee that has had a transaction on or before `to`: how many
+        fall between `from` and `to` (both included), their sum in the base
+        currency, the date of its latest one on or before `to`, however long
+        ago, and what it is usually given in the period: the category most of
+        its plain (not split) transactions went to, with how many did out of
+        how many had one, and the payment mode it was most often paid with,
+        "none" aside. A payee that never had a transaction is absent.
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200": { description: Activity., content: { application/json: { schema: { $ref: "#/components/schemas/PayeeActivityResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/payees/{payeeId}:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -2940,6 +2961,26 @@ components:
         categories: { type: array, items: { $ref: "#/components/schemas/CategoryActivity" } }
         currency: { allOf: [{ $ref: "#/components/schemas/CurrencyInfo" }], nullable: true }
       required: [from, to, categories]
+    PayeeActivity:
+      type: object
+      properties:
+        payeeId: { type: integer, format: int64 }
+        count: { type: integer, format: int64, description: "transactions in the period" }
+        amount: { type: integer, format: int64, description: "their sum, in the base currency's minor units" }
+        lastDate: { type: string, format: date, description: "the latest transaction on or before the period's end" }
+        usualCategoryId: { type: integer, format: int64, description: "the category most of its plain transactions in the period went to" }
+        usualCategoryCount: { type: integer, format: int64, description: "how many went to it" }
+        categorisedCount: { type: integer, format: int64, description: "how many plain transactions in the period had a category" }
+        usualPaymentMode: { type: integer, format: int64, description: "the payment mode it was most often paid with, none aside" }
+      required: [payeeId, count, amount, lastDate, usualCategoryCount, categorisedCount]
+    PayeeActivityResult:
+      type: object
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        payees: { type: array, items: { $ref: "#/components/schemas/PayeeActivity" } }
+        currency: { allOf: [{ $ref: "#/components/schemas/CurrencyInfo" }], nullable: true }
+      required: [from, to, payees]
     CategoryUsage:
       type: object
       properties:
