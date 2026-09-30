@@ -1,0 +1,429 @@
+/* The Categories page (#552), to the numbers of the approved mockup: a toolbar,
+   then either rows in the register's card, band and row sizes, or an index of
+   the groups in columns. */
+
+.page {
+  container-type: inline-size;
+  font-variant-numeric: tabular-nums;
+}
+
+.mono {
+  font-family: var(--mantine-font-family-monospace);
+}
+.dim {
+  color: var(--mantine-color-dimmed);
+}
+
+/* The toolbar. */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.search {
+  width: 280px;
+}
+/* The mockup draws the search at the segmented control's 36px; a touch
+   screen keeps the app's 44. */
+@media (pointer: fine) {
+  .page .search :global(.mantine-Input-wrapper) {
+    --input-height-sm: 36px;
+  }
+}
+.segCount {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 12px;
+  opacity: 0.8;
+  margin-left: 6px;
+}
+.chip {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--cb-shell-card-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--mantine-color-text);
+}
+.chip:hover {
+  background: var(--mantine-color-default-hover);
+}
+.chip[aria-pressed="true"] {
+  border-color: var(--mantine-primary-color-filled);
+  background: var(--mantine-primary-color-light);
+}
+.chip em {
+  font-style: normal;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 12px;
+  color: var(--mantine-color-dimmed);
+}
+.period {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+}
+.viewLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card {
+  border: 1px solid var(--cb-ledger-border);
+  border-radius: 12px;
+  background: var(--cb-ledger-surface);
+  overflow: hidden;
+}
+.none {
+  padding: 18px 16px;
+  font-size: 14px;
+  color: var(--mantine-color-dimmed);
+}
+
+/* A: rows. */
+.tr {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 280px 110px 190px 40px;
+  gap: 14px;
+  align-items: center;
+  padding: 0 16px;
+  min-height: 46px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 14px;
+}
+.tr[data-row] {
+  cursor: pointer;
+}
+.tr[data-row]:hover {
+  background: var(--mantine-color-default-hover);
+}
+.head {
+  border-top: 0;
+  min-height: 38px;
+  background: var(--cb-band-header);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+}
+.section {
+  min-height: 40px;
+  background: var(--cb-band-divider);
+  font-weight: 600;
+  font-size: 13px;
+}
+.r {
+  text-align: right;
+  white-space: nowrap;
+}
+.name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.nameButton {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit;
+  font: inherit;
+}
+.group .nameButton {
+  font-weight: 600;
+}
+.sub .name {
+  padding-left: 26px;
+}
+.subCount {
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+  font-weight: 400;
+}
+.chev {
+  width: 14px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mantine-color-dimmed);
+  flex-shrink: 0;
+}
+/* Only a group with subcategories has a chevron; the others line up without
+   its width, as the mockup draws them. */
+span.chev {
+  width: 0;
+}
+.chev svg {
+  transition: transform 150ms;
+}
+.chev[aria-expanded="false"] svg {
+  transform: rotate(-90deg);
+}
+.addSub {
+  visibility: hidden;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 7px;
+  border: 1px solid var(--cb-shell-card-border);
+  font-size: 12.5px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 6px;
+  flex-shrink: 0;
+  color: var(--mantine-color-text);
+}
+.addSub:hover {
+  background: var(--mantine-color-default-hover);
+}
+.tr:hover .addSub,
+.addSub:focus-visible {
+  visibility: visible;
+}
+
+.share {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--cb-track-bg);
+  overflow: hidden;
+}
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--mantine-color-dimmed);
+  opacity: 0.7;
+}
+.sub .fill {
+  opacity: 0.4;
+}
+.pct {
+  width: 36px;
+  text-align: right;
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+}
+.last {
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+  text-align: right;
+}
+.unused .nameButton {
+  color: var(--mantine-color-dimmed);
+}
+
+/* A page too narrow for the share (a laptop with the menu open) drops it. */
+@container (max-width: 959px) {
+  .tr {
+    grid-template-columns: minmax(180px, 1fr) 100px 170px 40px;
+  }
+  .tr > :nth-child(2) {
+    display: none;
+  }
+}
+
+/* B: an index. */
+.index {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.secHead {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 2px 8px;
+  border-bottom: 1px solid var(--cb-ledger-border);
+}
+.secHead h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.secMeta {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+}
+.secTotal {
+  margin-left: auto;
+  font-size: 15px;
+}
+.columns {
+  columns: 3 300px;
+  column-gap: 36px;
+}
+.g {
+  break-inside: avoid;
+  padding: 14px 0 10px;
+  position: relative;
+}
+.gHead,
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: calc(100% + 16px);
+  margin: 0 -8px;
+  padding: 7px 8px;
+  border-radius: 7px;
+  text-align: start;
+  color: var(--mantine-color-text);
+  font-size: 14px;
+}
+.gHead {
+  padding: 6px 8px;
+}
+.gHead:hover,
+.row:hover {
+  background: var(--mantine-color-default-hover);
+}
+.gName {
+  font-size: 15px;
+  font-weight: 600;
+}
+.gPct {
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+}
+.gTotal {
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.gBar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--cb-track-bg);
+  margin: 4px 0 6px;
+  overflow: hidden;
+}
+.gBar span {
+  display: block;
+  height: 100%;
+  background: var(--mantine-color-dimmed);
+  opacity: 0.7;
+}
+.rowCount {
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+}
+.rowAmount {
+  margin-left: auto;
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+.lastInline {
+  font-family: var(--mantine-font-family);
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+  font-weight: 400;
+}
+/* Under the group's last row, over its bottom padding: shown on hover, it
+   takes no room, so the columns never rebalance under the pointer. */
+.gAdd {
+  visibility: hidden;
+  position: absolute;
+  left: 0;
+  bottom: -9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--cb-accent-text);
+}
+.g:hover .gAdd,
+.gAdd:focus-visible {
+  visibility: visible;
+}
+.row.unused > span:first-child,
+.gHead.unused .gName {
+  color: var(--mantine-color-dimmed);
+}
+
+/* The phone: a card per section, a band per group, a row per subcategory. */
+.phone .search {
+  width: 100%;
+}
+.prow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 15px;
+  text-align: start;
+  color: var(--mantine-color-text);
+}
+.card > .prow:first-child {
+  border-top: 0;
+}
+.prow[data-group] {
+  background: var(--cb-band-divider);
+  font-weight: 600;
+}
+.prow[data-leaf] {
+  font-weight: 500;
+}
+.prow[data-sub] .pl {
+  padding-left: 14px;
+}
+.pl {
+  flex: 1;
+  min-width: 0;
+}
+.pt {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pm {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--mantine-color-dimmed);
+  margin-top: 2px;
+}
+.pa {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.prow.unused .pt {
+  color: var(--mantine-color-dimmed);
+}
+
+/* The sheet's usage block. */
+.use {
+  border-top: 1px solid var(--cb-ledger-border);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.useLabel {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+}
+.useValue {
+  font-size: 24px;
+  font-weight: 500;
+}
+.useLink {
+  font-size: 14px;
+  color: var(--cb-accent-text);
+  margin-top: 6px;
+  align-self: flex-start;
+}

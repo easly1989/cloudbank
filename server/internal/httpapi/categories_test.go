@@ -73,6 +73,83 @@ func TestCategoryCrudMergeAndIsolation(t *testing.T) {
 	}
 }
 
+// A PATCH moves a category only when it says where (#552): parentId left out
+// keeps it in place, null makes it top-level, an id puts it there.
+func TestCategoryUpdateMovesOnlyWhenAsked(t *testing.T) {
+	c := newTestAPI(t)
+	wid := createWalletWithBase(t, c, "EUR")
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10) + "/categories"
+	food := decodeCategory(t, c.do(http.MethodPost, base, map[string]any{"name": "Food"}, true))
+	pay := decodeCategory(t, c.do(http.MethodPost, base, map[string]any{"name": "Pay", "isIncome": true}, true))
+	groc := decodeCategory(t, c.do(http.MethodPost, base, map[string]any{"name": "Groceries", "parentId": food.ID}, true))
+	at := base + "/" + strconv.FormatInt(groc.ID, 10)
+
+	got := decodeCategory(t, c.do(http.MethodPatch, at, map[string]any{"name": "Grocery"}, true))
+	if got.ParentID == nil || *got.ParentID != food.ID || got.Name != "Grocery" {
+		t.Fatalf("rename without parentId = %+v, want still under Food", got)
+	}
+	got = decodeCategory(t, c.do(http.MethodPatch, at, map[string]any{"name": "Grocery", "parentId": pay.ID}, true))
+	if got.ParentID == nil || *got.ParentID != pay.ID || !got.IsIncome {
+		t.Fatalf("move under Pay = %+v, want under Pay, income", got)
+	}
+	got = decodeCategory(t, c.do(http.MethodPatch, at, map[string]any{"name": "Grocery", "parentId": nil}, true))
+	if got.ParentID != nil {
+		t.Fatalf("parentId null = %+v, want top-level", got)
+	}
+	// Food has no subcategory left, so it can go under Pay; Pay cannot then go
+	// under anything, since Food now sits under it.
+	resp := c.do(http.MethodPatch, base+"/"+strconv.FormatInt(food.ID, 10), map[string]any{"name": "Food", "parentId": pay.ID}, true)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("move Food under Pay = %d, want 200", resp.StatusCode)
+	}
+	resp.Body.Close()
+	resp = c.do(http.MethodPatch, base+"/"+strconv.FormatInt(pay.ID, 10), map[string]any{"name": "Pay", "parentId": groc.ID}, true)
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("move Pay (with Food) = %d, want 400", resp.StatusCode)
+	}
+	resp.Body.Close()
+}
+
+func TestCategoryActivity(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	food := decodeCategory(t, c.do(http.MethodPost, base+"/categories", map[string]any{"name": "Food"}, true))
+	c.do(http.MethodPost, base+"/transactions", map[string]any{"accountId": acc, "date": "2025-12-10", "amount": -500, "categoryId": food.ID}, true).Body.Close()
+	c.do(http.MethodPost, base+"/transactions", map[string]any{"accountId": acc, "date": "2026-01-10", "amount": -1000, "categoryId": food.ID}, true).Body.Close()
+	c.do(http.MethodPost, base+"/transactions", map[string]any{"accountId": acc, "date": "2026-02-10", "amount": -2000, "categoryId": food.ID}, true).Body.Close()
+
+	resp := c.do(http.MethodGet, base+"/categories/activity?from=2026-01-01&to=2026-12-31", nil, false)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("activity = %d, want 200", resp.StatusCode)
+	}
+	defer resp.Body.Close()
+	var res struct {
+		Categories []struct {
+			CategoryID int64
+			Count      int64
+			Amount     int64
+			LastDate   string
+		}
+		Currency struct{ Code string }
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(res.Categories) != 1 || res.Categories[0].CategoryID != food.ID || res.Categories[0].Count != 2 ||
+		res.Categories[0].Amount != -3000 || res.Categories[0].LastDate != "2026-02-10" || res.Currency.Code != "EUR" {
+		t.Fatalf("activity = %+v", res)
+	}
+
+	for _, q := range []string{"", "?from=2026-01-01", "?from=2026-13-01&to=2026-12-31", "?from=2026-12-31&to=2026-01-01"} {
+		r := c.do(http.MethodGet, base+"/categories/activity"+q, nil, false)
+		if r.StatusCode != http.StatusBadRequest {
+			t.Fatalf("activity%s = %d, want 400", q, r.StatusCode)
+		}
+		r.Body.Close()
+	}
+}
+
 func TestPayeeCrudAndMerge(t *testing.T) {
 	c := newTestAPI(t)
 	wid := createWalletWithBase(t, c, "EUR")

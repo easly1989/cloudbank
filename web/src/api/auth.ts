@@ -26,6 +26,8 @@ export interface Preferences {
   smartAmountInput?: boolean;
   /** Collapse the desktop sidebar to an icon-only rail. */
   sidebarCollapsed?: boolean;
+  /** How the categories page lays them out on a desktop (#552). Absent = rows. */
+  categoriesView?: "rows" | "index";
   /**
    * Which of the three balances to show — on the overview and above the
    * register, which are the same question asked in two places. Absent = today

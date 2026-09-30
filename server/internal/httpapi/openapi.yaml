@@ -1162,13 +1162,38 @@ paths:
               schema: { $ref: "#/components/schemas/Category" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "409": { description: Duplicate name., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/wallets/{walletId}/categories/activity:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getCategoryActivity
+      summary: What each category held in a period
+      description: >-
+        For each category that has had a line on or before `to`: how many lines
+        fall between `from` and `to` (both included), their sum in the base
+        currency, and the date of its latest line on or before `to`, however
+        long ago. A split counts once per line, under the line's own category.
+        Categories hidden from the reports are included. A category that never
+        had a line is absent.
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200": { description: Activity., content: { application/json: { schema: { $ref: "#/components/schemas/CategoryActivityResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/categories/{categoryId}:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
       - { name: categoryId, in: path, required: true, schema: { type: integer, format: int64 } }
     patch:
       operationId: updateCategory
-      summary: Rename/retype a category
+      summary: Rename, retype or move a category
+      description: >-
+        `parentId` moves the category only when the body has it: an id puts it
+        under that top-level category (it then takes that category's type),
+        `null` makes it top-level, and leaving it out keeps it where it is. A
+        top-level category with subcategories cannot move under another.
       requestBody:
         required: true
         content:
@@ -2899,6 +2924,22 @@ components:
         noBudget: { type: boolean }
         noReport: { type: boolean }
       required: [name]
+    CategoryActivity:
+      type: object
+      properties:
+        categoryId: { type: integer, format: int64 }
+        count: { type: integer, format: int64, description: "lines in the period" }
+        amount: { type: integer, format: int64, description: "their sum, in the base currency's minor units" }
+        lastDate: { type: string, format: date, description: "the latest line on or before the period's end" }
+      required: [categoryId, count, amount, lastDate]
+    CategoryActivityResult:
+      type: object
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        categories: { type: array, items: { $ref: "#/components/schemas/CategoryActivity" } }
+        currency: { allOf: [{ $ref: "#/components/schemas/CurrencyInfo" }], nullable: true }
+      required: [from, to, categories]
     CategoryUsage:
       type: object
       properties:

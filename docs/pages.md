@@ -139,8 +139,17 @@ Rules fill in a transaction from what it says. For example: a payee containing
 
 Three lists in **Wallet data** that the rest of the wallet picks from.
 
-- **Categories.** Two levels: a category can have subcategories. Tick **Income
-  category** for money coming in. Reports are built from them.
+- **Categories.** Two levels: a group, and the subcategories in it. The page
+  lists them in two sections, **Spending** and **Income**, each with its
+  transactions and its amount over the last 12 months and its share of the
+  section; one unused in that time says when it was last used. Search by name,
+  show one section, or show only the unused ones. On a computer **Rows / Index**
+  switches between rows and an index of the groups in columns, and the page
+  remembers your choice. A category opens in a panel beside the page: its name,
+  its group (move a subcategory to another group, or choose **None** to make it
+  a group of its own), whether it counts in the budget and shows in the
+  reports, and what it held in the last 12 months. **Merge** and **Delete** are
+  in the panel's ⋯ menu. Reports are built from categories.
 - **Payees.** Who you pay and who pays you. A payee can carry a default
   category, so its transactions arrive already sorted.
 - **Currencies.** The currencies this wallet can use and the rates it converts

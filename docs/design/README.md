@@ -156,9 +156,10 @@ Added since:
     state (not registered, registered, cleared, reconciled, overdue) as the
     status picker's icons, never colour alone. The figures open the page as on
     the reports (still to pay 40px, overdue and coming in 28px). A 320px
-    "Needs you" column beside it registers or skips; under 900px of content it
-    drops below the calendar, and on a phone the month is a small grid with an
-    icon under each day, followed by the month's list.
+    "Needs you" column beside it registers or skips; under 1000px of content it
+    drops below the calendar, under 760px the calendar takes the phone's form,
+    and on a phone the month is a small grid with an icon under each day,
+    followed by the month's list.
   - **All schedules**: the schedules themselves, one row each in the register's
     band and row sizes.
 
@@ -167,3 +168,18 @@ Added since:
   register on its row, which the cursor lands on and marks with the arrival
   tint until it moves. The schedule form moved from a dialog into the same
   sheet, which the other secondary pages will share.
+- **Categories carry their figures** (#552). The secondary pages board draws
+  the categories as a plain list. The app, to an approved mockup, gives each
+  its transactions, its amount and its share of the section over the last 12
+  months, in two sections, Spending and Income, full width:
+  - **Rows**: the register's card, band and 46px rows; a group folds its
+    subcategories away, and "+ Subcategory" shows on its row under the pointer.
+    Under 960px of content the share column goes.
+  - **Index**: each section under a heading with its total, the groups in
+    columns (`columns: 3 300px`), each with a 4px bar and its subcategories.
+
+  Rows / Index is a desktop choice, kept in the preferences; a phone has a card
+  per section, a band per group and a row per subcategory. A category opens in
+  the 396px sheet, where a subcategory can move to another group. The mockup's
+  "Show them in the register" became "See it in the reports": the register is
+  per account, and the reports filter by a category across all of them.

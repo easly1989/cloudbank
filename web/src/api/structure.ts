@@ -200,6 +200,37 @@ export const deleteCategory = (walletId: number, id: number, reassignTo?: number
   return api.del<void>(`/api/v1/wallets/${walletId}/categories/${id}${q}`);
 };
 
+/** What one category held in a period (#552). */
+export interface CategoryActivity {
+  categoryId: number;
+  /** Lines in the period: a split counts once per line. */
+  count: number;
+  /** Their sum, in the base currency's minor units. */
+  amount: number;
+  /** The latest line on or before the period's end, however long ago. */
+  lastDate: string;
+}
+
+export interface CategoryActivityResult {
+  from: string;
+  to: string;
+  /** Every category with a line up to `to`; one never used is absent. */
+  categories: CategoryActivity[];
+  currency: {
+    code: string;
+    symbol: string;
+    symbolPrefix: boolean;
+    decimalChar: string;
+    groupChar: string;
+    fracDigits: number;
+  } | null;
+}
+
+export const getCategoryActivity = (walletId: number, from: string, to: string) =>
+  api.get<CategoryActivityResult>(
+    `/api/v1/wallets/${walletId}/categories/activity?from=${from}&to=${to}`,
+  );
+
 export const getCategoryUsage = (walletId: number, id: number) =>
   api.get<CategoryUsage>(`/api/v1/wallets/${walletId}/categories/${id}/usage`);
 

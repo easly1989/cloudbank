@@ -265,12 +265,7 @@ func (s *Service) Statistics(ctx context.Context, walletID int64, f Filter, grou
 		out.Total += a.amount
 	}
 	sortGroups(out.Groups)
-	if base != nil {
-		out.Currency = &CurrencyInfo{
-			Code: base.IsoCode, Symbol: base.Symbol, SymbolPrefix: base.SymbolPrefix != 0,
-			DecimalChar: base.DecimalChar, GroupChar: base.GroupChar, FracDigits: int(base.FracDigits),
-		}
-	}
+	out.Currency = currencyInfo(base)
 	return out, nil
 }
 

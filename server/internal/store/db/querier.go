@@ -20,6 +20,13 @@ type Querier interface {
 	AddTransactionTag(ctx context.Context, arg AddTransactionTagParams) error
 	AddWalletMember(ctx context.Context, arg AddWalletMemberParams) error
 	AdvanceSchedule(ctx context.Context, arg AdvanceScheduleParams) error
+	// What each category holds, per account currency: its lines dated in
+	// [from_date, to_date], their sum, and the latest line on or before to_date.
+	// Plain transactions and split lines are summed apart, so a category and
+	// currency can come back twice; the caller adds them up. A split counts once
+	// per line, under the line's own category. No category is left out, not even
+	// one hidden from the reports.
+	CategoryActivity(ctx context.Context, arg CategoryActivityParams) ([]CategoryActivityRow, error)
 	// Category amounts in a date range (plain transactions + split lines), excluding
 	// accounts flagged no_budget, with each row's currency so the app can convert.
 	CategoryActualsForBudget(ctx context.Context, arg CategoryActualsForBudgetParams) ([]CategoryActualsForBudgetRow, error)
