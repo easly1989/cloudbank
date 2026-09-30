@@ -160,6 +160,14 @@ describe("navLayout", () => {
     });
   });
 
+  // #546: Bills became the Schedules page's calendar. A saved menu loses the
+  // entry and keeps the rest of Planning in its order.
+  it("drops Bills from a saved menu", () => {
+    const m = migrateNavLayout(V1_DEFAULT);
+    expect(paths(m, "planning")).toEqual(["/schedules", "/budget", "/goals"]);
+    expect(paths(defaultNavLayout(), "planning")).toEqual(["/schedules", "/budget", "/goals"]);
+  });
+
   // #537: the wallet's own lists get a group; Money keeps the two work pages.
   it("gives the wallet's data a group of its own by default", () => {
     const d = defaultNavLayout();

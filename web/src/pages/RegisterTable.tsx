@@ -180,6 +180,12 @@ export interface RegisterTableProps {
   hiddenReconciled?: RegisterRow[];
   /** A row that has just been saved, marked until the tint fades. */
   arrivedId?: number | null;
+  /**
+   * A row the reader came here for from another page (a registered bill on the
+   * schedules calendar, #546): the cursor lands on it, the ledger brings it to
+   * the middle, and it stays marked until the cursor moves.
+   */
+  landOnId?: number | null;
 }
 
 // RegisterTable renders the account ledger newest-first with a chronological
@@ -211,6 +217,7 @@ export function RegisterTable({
   bulkBar,
   notice,
   arrivedId,
+  landOnId,
   ledgerRows,
   hiddenReconciled,
 }: RegisterTableProps) {
@@ -632,6 +639,18 @@ export function RegisterTable({
     if (cursorId != null && !display.some((r) => r.id === cursorId)) setCursorId(null);
   }, [display, cursorId]);
 
+  // Once per arrival: the rows may load after the page, so this waits for the
+  // row to be there, then does not pull the cursor back if the reader moves it.
+  const landedFor = useRef<number | null>(null);
+  useEffect(() => {
+    if (landOnId == null || landedFor.current === landOnId) return;
+    const i = display.findIndex((r) => r.id === landOnId);
+    if (i < 0) return;
+    landedFor.current = landOnId;
+    setCursorId(landOnId);
+    virtualizer.scrollToIndex(i, { align: "center" });
+  }, [landOnId, display, virtualizer]);
+
   const columnsPanel = (
     <Stack gap={2}>
       {columnOrder.map((id, i) => {
@@ -863,6 +882,7 @@ export function RegisterTable({
                   const row = tableRows[vi.index];
                   const r = row.original;
                   const onCursor = r.id === cursorId;
+                  const landed = onCursor && r.id === landOnId;
                   const above = markAbove.get(vi.index);
                   const after = markAfter && vi.index === tableRows.length - 1 ? markAfter : null;
                   // A line above the row pushes it down; one after it sits below.
@@ -901,9 +921,14 @@ export function RegisterTable({
                               : "3px solid transparent",
                           background: selected.has(r.id)
                             ? "var(--mantine-color-blue-light)"
-                            : onCursor
-                              ? "var(--mantine-color-default-hover)"
-                              : undefined,
+                            : landed
+                              ? "var(--cb-arrival-tint)"
+                              : onCursor
+                                ? "var(--mantine-color-default-hover)"
+                                : undefined,
+                          boxShadow: landed
+                            ? "inset 0 0 0 1px var(--mantine-primary-color-filled)"
+                            : undefined,
                           borderBottom: "1px solid var(--cb-ledger-border)",
                         }}
                       >

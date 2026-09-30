@@ -15,7 +15,6 @@
     "accounts": "Accounts",
     "transactions": "Transactions",
     "schedules": "Schedules",
-    "bills": "Bills",
     "bankSync": "Bank sync",
     "review": "Review",
     "templates": "Templates",
@@ -378,7 +377,7 @@
     "emptyHint": "A rule reads the text your bank sends and fills in the category, payee or tags, so you stop typing the same thing every month."
   },
   "schedules": {
-    "title": "Scheduled transactions",
+    "title": "Schedules",
     "add": "New schedule",
     "addTitle": "New schedule",
     "editTitle": "Edit schedule",
@@ -431,8 +430,95 @@
     "untitled": "Scheduled",
     "confirmDeleteTitle": "Delete this schedule?",
     "confirmDeleteBody": "Transactions it has already posted stay; nothing further is scheduled.",
-    "hint": "Transactions CloudBank posts for you on the day they come due.",
-    "emptyHint": "Rent, a subscription, a salary — anything that comes round on its own."
+    "hint": "Bills, income and everything else that comes round: this month on a calendar, and the schedules behind it.",
+    "emptyHint": "Rent, a subscription, a salary — anything that comes round on its own.",
+    "view": {
+      "calendar": "Calendar",
+      "list": "All schedules"
+    },
+    "flow": {
+      "all": "All",
+      "out": "Out",
+      "in": "In"
+    },
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "today": "Today",
+    "fig": {
+      "toPay": "Still to pay",
+      "toPaySub": "of {{total}} due in {{month}}",
+      "overdue": "Overdue",
+      "overdueOne": "{{name}}, since {{date}}",
+      "overdueMany": "{{count}} bills",
+      "paidSub": "{{paid}} of {{count}} bills",
+      "in": "Coming in",
+      "allReceived": "all received",
+      "toCome": "{{amount}} still to come",
+      "net": "Net per month",
+      "inMonth": "In per month",
+      "outMonth": "Out per month",
+      "perYear": "{{amount}} a year",
+      "from_one": "from {{count}} schedule",
+      "from_other": "from {{count}} schedules"
+    },
+    "state": {
+      "overdue": "Overdue",
+      "todo": "Not registered",
+      "auto": "Registers itself",
+      "registered": "Registered"
+    },
+    "meta": {
+      "ahead": "{{date}} · registered in advance",
+      "auto": "{{date}} · registers itself",
+      "todo": "{{date}} · not registered yet",
+      "overdue": "Overdue since {{date}} · {{account}}",
+      "due": "Due {{date}} · {{account}}"
+    },
+    "needsYou": "Needs you",
+    "toRegister": "{{count}} to register",
+    "allDone": "Nothing waiting on you",
+    "nextUp": "Next up",
+    "register": "Register",
+    "more": "More",
+    "changeFirst": "Change before registering",
+    "editSchedule": "Edit the schedule",
+    "registered": "{{name}} registered",
+    "skipThisOne": "Skip this one",
+    "sheet": {
+      "auto": "Registers itself on {{date}}",
+      "due": "Due {{date}}",
+      "split": "A split: its amount is changed in the schedule.",
+      "amountHint": "The schedule's amount. Change it if this bill says otherwise.",
+      "notNext": "An earlier occurrence of this schedule is still to register: register or skip that one first.",
+      "earlier": "Earlier",
+      "overdue_one": "Due {{date}}, {{count}} day ago",
+      "overdue_other": "Due {{date}}, {{count}} days ago"
+    },
+    "list": {
+      "aheadTo": "registered to {{date}}",
+      "next": "Next {{date}}",
+      "schedule": "Schedule",
+      "nextHead": "Next",
+      "thisMonth": "This month",
+      "notRegistered": "not registered"
+    },
+    "repeat": {
+      "day": "Every day",
+      "dayN": "Every {{n}} days",
+      "week": "Weekly, on {{weekday}}",
+      "weekN": "Every {{n}} weeks, on {{weekday}}",
+      "month": "Monthly, on day {{day}}",
+      "monthN": "Every {{n}} months, on day {{day}}",
+      "year": "Yearly, on {{date}}",
+      "yearN": "Every {{n}} years, on {{date}}"
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Rent, electricity, salary…",
+      "isExpense": "Money out: switch to money in",
+      "isIncome": "Money in: switch to money out",
+      "autoPostHint": "Register it on its date without asking."
+    }
   },
   "tags": {
     "renameAria": "Rename {{name}}",
@@ -496,7 +582,6 @@
   },
   "bills": {
     "title": "Bills",
-    "hint": "One row per bill — its last payment and next occurrence. Mark one paid to post its scheduled transaction, or add a new bill.",
     "toPay": "to pay",
     "empty": "Nothing due right now.",
     "markPaid": "Mark paid",
@@ -508,21 +593,6 @@
     "more": "+{{count}} more",
     "next": "Next",
     "lastPaid": "Last paid",
-    "add": "Add bill",
-    "addTitle": "Add a bill",
-    "added": "Bill added",
-    "cancel": "Cancel",
-    "form": {
-      "name": "Name",
-      "amount": "Amount",
-      "amountHint": "The amount due each month (a positive number).",
-      "account": "Account",
-      "dayOfMonth": "Day of month",
-      "dayOfMonthHint": "The day the bill is due (1–31).",
-      "autoPost": "Post automatically",
-      "autoPostHint": "Register the payment on its due date without asking.",
-      "submit": "Add bill"
-    },
     "state": {
       "overdue": "Overdue",
       "due": "Due",
@@ -1648,24 +1718,17 @@
     },
     "schedules": {
       "offer": "New here? Take the schedules tour",
+      "views": {
+        "title": "The month, or every schedule",
+        "body": "The calendar shows the month: what is registered, cleared or reconciled, and what is still to register. All schedules lists the schedules themselves."
+      },
+      "needs": {
+        "title": "What needs you",
+        "body": "Bills that are late, or due this week and not registered: register or skip them here. A registered one opens in the register, where it is reconciled."
+      },
       "add": {
         "title": "Things that repeat",
-        "body": "Add a salary, the rent, a subscription: CloudBank posts it on the day it comes due."
-      },
-      "due": {
-        "title": "Early, or not at all",
-        "body": "Any schedule can be posted now or skipped once. The dates after it stay as they were."
-      }
-    },
-    "bills": {
-      "offer": "New here? Take the bills tour",
-      "list": {
-        "title": "What is due",
-        "body": "One row per bill, with its last payment and next due date. Mark a bill paid to post its transaction."
-      },
-      "add": {
-        "title": "Add a bill",
-        "body": "A bill is a schedule with a due date: add it once and it comes back every period."
+        "body": "Add a salary, the rent, a subscription: it comes back on its own, on the calendar and in the register."
       }
     },
     "goals": {

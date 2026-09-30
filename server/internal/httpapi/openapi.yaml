@@ -1766,6 +1766,23 @@ paths:
         - { name: before, in: query, required: false, schema: { type: string } }
       responses:
         "200": { description: Schedules., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Schedule" } } } } }
+  /api/v1/wallets/{walletId}/schedules/calendar:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getScheduleCalendar
+      summary: Occurrences of the wallet's schedules between two dates
+      description: >-
+        The transactions the schedules registered between from and to (in advance, on the
+        day or late), and the occurrences they have still to register, projected from each
+        schedule's next due date with its weekend rule and occurrence limit. At most 100 days.
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+        - { name: today, in: query, required: false, description: "The reader's civil date, which decides what is overdue. Defaults to the server's.", schema: { type: string, format: date } }
+      responses:
+        "200": { description: The calendar., content: { application/json: { schema: { $ref: "#/components/schemas/ScheduleCalendar" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
   /api/v1/wallets/{walletId}/schedules/{scheduleId}:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -1801,8 +1818,15 @@ paths:
     post:
       operationId: postScheduleNow
       summary: Post the current occurrence now and advance the schedule
+      description: >-
+        Without a body the occurrence is posted as the schedule describes it. A body changes
+        this one transaction only; the schedule still advances from its own due date.
+      requestBody:
+        required: false
+        content: { application/json: { schema: { $ref: "#/components/schemas/SchedulePostInput" } } }
       responses:
         "204": { description: Posted. }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/schedules/{scheduleId}/skip:
     parameters:
@@ -3253,6 +3277,38 @@ components:
         autoPost: { type: boolean }
         lastPosted: { type: string }
       required: [id, templateId, templateName, templateAmount, templateIsTransfer, unit, everyN, nextDue, weekendMode, postAdvance, autoPost]
+    ScheduleOccurrence:
+      type: object
+      properties:
+        scheduleId: { type: integer, format: int64, nullable: true, description: "Null for a transaction whose schedule has since ended." }
+        templateId: { type: integer, format: int64 }
+        name: { type: string }
+        date: { type: string, format: date }
+        amount: { type: integer, format: int64 }
+        accountId: { type: integer, format: int64 }
+        isTransfer: { type: boolean }
+        isSplit: { type: boolean }
+        autoPost: { type: boolean }
+        state: { type: string, enum: [registered, due, overdue] }
+        transactionId: { type: integer, format: int64 }
+        status: { type: integer, description: "The registered transaction's status." }
+        next: { type: boolean, description: "The schedule's first unregistered occurrence: the one posting now or skipping acts on." }
+      required: [scheduleId, templateId, name, date, amount, accountId, isTransfer, isSplit, autoPost, state, next]
+    ScheduleCalendar:
+      type: object
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        today: { type: string, format: date }
+        occurrences: { type: array, items: { $ref: "#/components/schemas/ScheduleOccurrence" } }
+      required: [from, to, today, occurrences]
+    SchedulePostInput:
+      type: object
+      additionalProperties: false
+      properties:
+        amount: { type: integer, format: int64, description: "Not for a split schedule; negative for a transfer." }
+        date: { type: string, format: date }
+        status: { type: integer, minimum: 0, maximum: 4 }
     ScheduleInput:
       type: object
       properties:

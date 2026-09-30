@@ -269,10 +269,12 @@ const CHECKS = [
 
   // Secondary pages board
   [
-    "secondary header: Add bill",
-    "/bills",
+    // The board draws Bills' "Add bill"; Bills is the Schedules page now
+    // (#546), and its header button is the same primary button.
+    "secondary header: New schedule",
+    "/schedules",
     null,
-    role("button", "Add bill"),
+    role("button", "New schedule"),
     { board: "secondary-pages", tag: "button", text: "Add bill" },
     true,
   ],

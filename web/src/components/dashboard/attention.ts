@@ -34,7 +34,7 @@ export interface AttentionInput {
 export function buildAttentionItems(input: AttentionInput): AttentionItem[] {
   const all: AttentionItem[] = [
     { key: "needsCategory", count: input.needsCategory, to: "/review" },
-    { key: "overdueBills", count: input.overdueBills, to: "/bills" },
+    { key: "overdueBills", count: input.overdueBills, to: "/schedules" },
     { key: "overBudget", count: input.overBudget, to: "/budget" },
     { key: "duplicates", count: input.duplicates, to: "/review" },
   ];

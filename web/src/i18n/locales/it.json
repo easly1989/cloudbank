@@ -14,8 +14,7 @@
     "dashboard": "Cruscotto",
     "accounts": "Conti",
     "transactions": "Transazioni",
-    "schedules": "Pianificazioni",
-    "bills": "Scadenze",
+    "schedules": "Programmate",
     "bankSync": "Sync bancario",
     "review": "Revisione",
     "templates": "Modelli",
@@ -378,11 +377,11 @@
     "emptyHint": "Una regola legge il testo che manda la banca e compila categoria, beneficiario o tag, così smetti di riscrivere le stesse cose ogni mese."
   },
   "schedules": {
-    "title": "Transazioni pianificate",
-    "add": "Nuova pianificazione",
-    "addTitle": "Nuova pianificazione",
-    "editTitle": "Modifica pianificazione",
-    "empty": "Nessuna transazione pianificata.",
+    "title": "Programmate",
+    "add": "Nuova programmata",
+    "addTitle": "Nuova programmata",
+    "editTitle": "Modifica programmata",
+    "empty": "Nessuna transazione programmata.",
     "template": "Modello",
     "noTemplates": "Crea prima un modello",
     "unit": "Unità",
@@ -427,12 +426,99 @@
     "transactionDetails": "Transazione",
     "fromTemplate": "Precompila da un modello salvato",
     "fromTemplatePlaceholder": "Facoltativo",
-    "transferNote": "È un trasferimento; qui puoi cambiare solo importo, note e pianificazione.",
-    "untitled": "Pianificata",
-    "confirmDeleteTitle": "Eliminare questa pianificazione?",
-    "confirmDeleteBody": "Le transazioni già registrate restano; non ne verranno pianificate altre.",
-    "hint": "Transazioni che CloudBank registra per te il giorno in cui scadono.",
-    "emptyHint": "Affitto, abbonamenti, stipendio — tutto ciò che torna da solo."
+    "transferNote": "È un trasferimento; qui puoi cambiare solo importo, note e ricorrenza.",
+    "untitled": "Programmata",
+    "confirmDeleteTitle": "Eliminare questa programmata?",
+    "confirmDeleteBody": "Le transazioni già registrate restano; non ne verranno registrate altre.",
+    "hint": "Bollette, entrate e tutto ciò che torna: il mese su un calendario, e le programmate che lo compongono.",
+    "emptyHint": "Affitto, abbonamenti, stipendio — tutto ciò che torna da solo.",
+    "view": {
+      "calendar": "Calendario",
+      "list": "Tutte le programmate"
+    },
+    "flow": {
+      "all": "Tutte",
+      "out": "Uscite",
+      "in": "Entrate"
+    },
+    "prevMonth": "Mese precedente",
+    "nextMonth": "Mese successivo",
+    "today": "Oggi",
+    "fig": {
+      "toPay": "Da pagare",
+      "toPaySub": "su {{total}} in scadenza a {{month}}",
+      "overdue": "In ritardo",
+      "overdueOne": "{{name}}, dal {{date}}",
+      "overdueMany": "{{count}} bollette",
+      "paidSub": "{{paid}} bollette su {{count}}",
+      "in": "In arrivo",
+      "allReceived": "tutto ricevuto",
+      "toCome": "{{amount}} ancora da ricevere",
+      "net": "Netto al mese",
+      "inMonth": "Entrate al mese",
+      "outMonth": "Uscite al mese",
+      "perYear": "{{amount}} all'anno",
+      "from_one": "da {{count}} programmata",
+      "from_other": "da {{count}} programmate"
+    },
+    "state": {
+      "overdue": "In ritardo",
+      "todo": "Non registrata",
+      "auto": "Si registra da sola",
+      "registered": "Registrata"
+    },
+    "meta": {
+      "ahead": "{{date}} · registrata in anticipo",
+      "auto": "{{date}} · si registra da sola",
+      "todo": "{{date}} · non ancora registrata",
+      "overdue": "In ritardo dal {{date}} · {{account}}",
+      "due": "Scade {{date}} · {{account}}"
+    },
+    "needsYou": "Da fare",
+    "toRegister": "{{count}} da registrare",
+    "allDone": "Niente in attesa",
+    "nextUp": "Prossime",
+    "register": "Registra",
+    "more": "Altro",
+    "changeFirst": "Modifica prima di registrare",
+    "editSchedule": "Modifica la programmata",
+    "registered": "{{name}} registrata",
+    "skipThisOne": "Salta questa",
+    "sheet": {
+      "auto": "Si registra da sola {{date}}",
+      "due": "Scade {{date}}",
+      "split": "È divisa: l'importo si cambia nella programmata.",
+      "amountHint": "L'importo della programmata. Cambialo se questa bolletta dice altro.",
+      "notNext": "C'è un'occorrenza precedente ancora da registrare: registrala o saltala prima.",
+      "earlier": "Mesi precedenti",
+      "overdue_one": "Scadeva {{date}}, {{count}} giorno fa",
+      "overdue_other": "Scadeva {{date}}, {{count}} giorni fa"
+    },
+    "list": {
+      "aheadTo": "registrata fino al {{date}}",
+      "next": "Prossima {{date}}",
+      "schedule": "Programmata",
+      "nextHead": "Prossima",
+      "thisMonth": "Questo mese",
+      "notRegistered": "non registrata"
+    },
+    "repeat": {
+      "day": "Ogni giorno",
+      "dayN": "Ogni {{n}} giorni",
+      "week": "Ogni settimana, di {{weekday}}",
+      "weekN": "Ogni {{n}} settimane, di {{weekday}}",
+      "month": "Ogni mese, il giorno {{day}}",
+      "monthN": "Ogni {{n}} mesi, il giorno {{day}}",
+      "year": "Ogni anno, il {{date}}",
+      "yearN": "Ogni {{n}} anni, il {{date}}"
+    },
+    "form": {
+      "name": "Nome",
+      "namePlaceholder": "Affitto, luce, stipendio…",
+      "isExpense": "Uscita: passa a entrata",
+      "isIncome": "Entrata: passa a uscita",
+      "autoPostHint": "La registra alla sua data senza chiedere."
+    }
   },
   "tags": {
     "renameAria": "Rinomina {{name}}",
@@ -496,7 +582,6 @@
   },
   "bills": {
     "title": "Scadenze",
-    "hint": "Una riga per scadenza — l'ultimo pagamento e la prossima occorrenza. Segna una scadenza come pagata per registrarne la transazione pianificata, oppure aggiungine una nuova.",
     "toPay": "da pagare",
     "empty": "Nessuna scadenza al momento.",
     "markPaid": "Segna pagata",
@@ -508,21 +593,6 @@
     "more": "+{{count}} altre",
     "next": "Prossima",
     "lastPaid": "Ultimo pagamento",
-    "add": "Aggiungi scadenza",
-    "addTitle": "Aggiungi una scadenza",
-    "added": "Scadenza aggiunta",
-    "cancel": "Annulla",
-    "form": {
-      "name": "Nome",
-      "amount": "Importo",
-      "amountHint": "L'importo dovuto ogni mese (numero positivo).",
-      "account": "Conto",
-      "dayOfMonth": "Giorno del mese",
-      "dayOfMonthHint": "Il giorno in cui scade (1–31).",
-      "autoPost": "Registra automaticamente",
-      "autoPostHint": "Registra il pagamento alla scadenza senza chiedere.",
-      "submit": "Aggiungi scadenza"
-    },
     "state": {
       "overdue": "In ritardo",
       "due": "In scadenza",
@@ -1018,8 +1088,8 @@
     "title": "Nome del portafoglio",
     "ownerName": "Nome del proprietario",
     "baseCurrency": "Valuta base",
-    "scheduleAhead": "Pre-registra transazioni pianificate",
-    "scheduleAheadHint": "Registra automaticamente le transazioni pianificate con questo anticipo (stile HomeBank).",
+    "scheduleAhead": "Pre-registra transazioni programmate",
+    "scheduleAheadHint": "Registra automaticamente le transazioni programmate con questo anticipo (stile HomeBank).",
     "scheduleAheadOff": "Disattivato",
     "scheduleAhead1": "1 mese in anticipo",
     "scheduleAhead2": "2 mesi in anticipo",
@@ -1265,7 +1335,7 @@
       "budgets": "Budget",
       "assignments": "Regole",
       "templates": "Modelli",
-      "schedules": "Pianificazioni"
+      "schedules": "Programmate"
     },
     "tabs": {
       "xhb": "File HomeBank",
@@ -1471,7 +1541,7 @@
     },
     "nav": {
       "title": "Navigazione",
-      "body": "Passa tra dashboard, conti, transazioni, pianificazioni, budget e report, raggruppati in sezioni. Comprimi una sezione che non usi."
+      "body": "Passa tra dashboard, conti, transazioni, programmate, budget e report, raggruppati in sezioni. Comprimi una sezione che non usi."
     },
     "wallet": {
       "title": "I tuoi portafogli",
@@ -1647,25 +1717,18 @@
       }
     },
     "schedules": {
-      "offer": "Prima volta qui? Fai il giro delle pianificazioni",
+      "offer": "Prima volta qui? Fai il giro delle programmate",
+      "views": {
+        "title": "Il mese, o tutte le programmate",
+        "body": "Il calendario mostra il mese: cosa è registrato, non riconciliato o riconciliato, e cosa è ancora da registrare. Tutte le programmate elenca le programmate stesse."
+      },
+      "needs": {
+        "title": "Da fare",
+        "body": "Le bollette in ritardo, o in scadenza questa settimana e non registrate: registrale o saltale da qui. Una registrata si apre nel registro, dove si riconcilia."
+      },
       "add": {
         "title": "Le cose che si ripetono",
-        "body": "Aggiungi lo stipendio, l'affitto, un abbonamento: CloudBank lo registra il giorno in cui scade."
-      },
-      "due": {
-        "title": "In anticipo, o per niente",
-        "body": "Ogni pianificazione si può registrare subito o saltare una volta. Le date successive restano com'erano."
-      }
-    },
-    "bills": {
-      "offer": "Prima volta qui? Fai il giro delle scadenze",
-      "list": {
-        "title": "Cosa scade",
-        "body": "Una riga per scadenza, con l'ultimo pagamento e la prossima data. Segnala come pagata per registrarne la transazione."
-      },
-      "add": {
-        "title": "Aggiungi una scadenza",
-        "body": "Una scadenza è una pianificazione con una data: la aggiungi una volta e torna a ogni periodo."
+        "body": "Aggiungi lo stipendio, l'affitto, un abbonamento: torna da solo, sul calendario e nel registro."
       }
     },
     "goals": {

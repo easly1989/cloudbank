@@ -1,0 +1,354 @@
+/* The Schedules page (#546), to the numbers of the approved mockup: a month
+   calendar and a column of what needs the reader beside it, then the same
+   family of card, band and row as the register. */
+
+.page {
+  container-type: inline-size;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.month {
+  font-size: 17px;
+  font-weight: 600;
+  min-width: 170px;
+  text-align: center;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+.gap {
+  width: 10px;
+}
+
+.main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+  align-items: start;
+}
+/* Needs you keeps its column only while the calendar beside it keeps days
+   wide enough for an amount (~94px). */
+@container (max-width: 999px) {
+  .main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.card {
+  border: 1px solid var(--cb-ledger-border);
+  border-radius: 12px;
+  background: var(--cb-ledger-surface);
+  overflow: hidden;
+}
+
+/* The calendar. */
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: var(--cb-band-header);
+  border-bottom: 1px solid var(--cb-ledger-border);
+}
+.weekdays div {
+  padding: 9px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+  text-transform: capitalize;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.day {
+  min-height: 104px;
+  min-width: 0;
+  padding: 8px 8px 10px;
+  border-right: 1px solid var(--cb-ledger-border);
+  border-bottom: 1px solid var(--cb-ledger-border);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  container-type: inline-size;
+}
+.day:nth-child(7n) {
+  border-right: 0;
+}
+.day[data-weekend] {
+  background: var(--cb-band-divider);
+}
+.dayNumber {
+  font-size: 13px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--mantine-color-dimmed);
+}
+.day[data-outside] .dayNumber {
+  opacity: 0.45;
+}
+.day[data-today] .dayNumber {
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+  font-weight: 600;
+}
+
+/* One occurrence in a day: its status icon, its name, and its amount under it. */
+.chip {
+  display: grid;
+  grid-template-columns: 13px minmax(0, 1fr);
+  column-gap: 6px;
+  row-gap: 1px;
+  align-items: center;
+  width: 100%;
+  padding: 5px 7px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  font-size: 12.5px;
+  text-align: start;
+  color: var(--mantine-color-text);
+}
+.chip:hover {
+  background: var(--mantine-color-default-hover);
+}
+.chipName {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chipAmount {
+  grid-column: 2;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A narrow day (a laptop with the menu open) gives the amount the chip's
+   whole width, under the icon as well as the name. */
+@container (max-width: 130px) {
+  .chip {
+    grid-template-columns: 12px minmax(0, 1fr);
+    column-gap: 4px;
+    padding: 4px 5px;
+  }
+  .chipAmount {
+    grid-column: 1 / -1;
+    font-size: 11px;
+  }
+}
+.chip[data-state="registered"] {
+  background: var(--cb-track-bg);
+}
+.chip[data-paid] {
+  background: transparent;
+  color: var(--mantine-color-dimmed);
+}
+.chip[data-paid] .chipAmount {
+  opacity: 0.7;
+}
+.chip[data-state="due"] {
+  border: 1px dashed var(--cb-shell-card-border);
+}
+.chip[data-state="overdue"] {
+  border-color: var(--cb-attention-border);
+  background: color-mix(in srgb, var(--cb-attention) 12%, transparent);
+}
+.chip[data-state="overdue"] svg {
+  color: var(--cb-attention);
+}
+.chip[data-outside] {
+  opacity: 0.75;
+}
+
+.legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+}
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.legend .late {
+  color: var(--cb-attention);
+}
+
+/* Needs you, and next up. */
+.sideTitle {
+  font-size: 15px;
+  font-weight: 600;
+  padding: 14px 16px 4px;
+}
+.sideSub {
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+  padding: 0 16px 8px;
+}
+.sideHeading {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+  padding: 14px 16px 6px;
+  border-top: 1px solid var(--cb-ledger-border);
+}
+.item {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--cb-ledger-border);
+  align-items: start;
+  width: 100%;
+  text-align: start;
+  color: var(--mantine-color-text);
+}
+.card > .item:first-child {
+  border-top: 0;
+}
+button.item:hover {
+  background: var(--mantine-color-default-hover);
+}
+.item > svg {
+  margin-top: 2px;
+}
+.item[data-state="overdue"] > svg {
+  color: var(--cb-attention);
+}
+.item[data-quiet] {
+  opacity: 0.85;
+}
+.itemName {
+  font-size: 14px;
+  font-weight: 500;
+}
+.itemMeta {
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+  margin-top: 2px;
+}
+.itemAmount {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 14px;
+  text-align: end;
+  white-space: nowrap;
+}
+.itemActions {
+  grid-column: 2 / 4;
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.empty {
+  padding: 8px 16px 16px;
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+}
+
+/* The month on a phone: the days in a small grid, a status icon under each
+   day that has something on it. */
+.mini {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  padding: 8px;
+}
+.miniWeekday {
+  font-size: 11px;
+  text-align: center;
+  color: var(--mantine-color-dimmed);
+  padding: 2px 0 6px;
+  text-transform: capitalize;
+}
+.miniDay {
+  height: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 13px;
+  padding-top: 4px;
+}
+.miniDay[data-outside] {
+  opacity: 0.4;
+}
+.miniDay[data-today] > span:first-child {
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+  border-radius: 11px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+.miniMark {
+  display: inline-flex;
+}
+.miniMark[data-state="overdue"] {
+  color: var(--cb-attention);
+}
+.miniMark[data-paid] {
+  color: var(--mantine-color-dimmed);
+}
+
+/* All schedules: one row each, in the register's band and row sizes. */
+.row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) 130px 190px 150px 110px 130px 44px;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 18px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 14px;
+  cursor: pointer;
+}
+.row:hover {
+  background: var(--mantine-color-default-hover);
+}
+.rowHead {
+  border-top: 0;
+  background: var(--cb-band-header);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+  padding: 10px 18px;
+  cursor: default;
+}
+.rowHead:hover {
+  background: var(--cb-band-header);
+}
+.rowSub {
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+  margin-top: 2px;
+}
+.rowAmount {
+  font-family: var(--mantine-font-family-monospace);
+  text-align: end;
+  white-space: nowrap;
+}
+.rowIcon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.scroll {
+  overflow-x: auto;
+}
+.scroll .row {
+  min-width: 900px;
+}

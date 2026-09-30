@@ -1774,6 +1774,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/schedules/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * Occurrences of the wallet's schedules between two dates
+         * @description The transactions the schedules registered between from and to (in advance, on the day or late), and the occurrences they have still to register, projected from each schedule's next due date with its weekend rule and occurrence limit. At most 100 days.
+         */
+        get: operations["getScheduleCalendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/schedules/{scheduleId}": {
         parameters: {
             query?: never;
@@ -1808,7 +1830,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Post the current occurrence now and advance the schedule */
+        /**
+         * Post the current occurrence now and advance the schedule
+         * @description Without a body the occurrence is posted as the schedule describes it. A body changes this one transaction only; the schedule still advances from its own due date.
+         */
         post: operations["postScheduleNow"];
         delete?: never;
         options?: never;
@@ -3469,6 +3494,52 @@ export interface components {
             postAdvance: number;
             autoPost: boolean;
             lastPosted?: string;
+        };
+        ScheduleOccurrence: {
+            /**
+             * Format: int64
+             * @description Null for a transaction whose schedule has since ended.
+             */
+            scheduleId: number | null;
+            /** Format: int64 */
+            templateId: number;
+            name: string;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            amount: number;
+            /** Format: int64 */
+            accountId: number;
+            isTransfer: boolean;
+            isSplit: boolean;
+            autoPost: boolean;
+            /** @enum {string} */
+            state: "registered" | "due" | "overdue";
+            /** Format: int64 */
+            transactionId?: number;
+            /** @description The registered transaction's status. */
+            status?: number;
+            /** @description The schedule's first unregistered occurrence: the one posting now or skipping acts on. */
+            next: boolean;
+        };
+        ScheduleCalendar: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            /** Format: date */
+            today: string;
+            occurrences: components["schemas"]["ScheduleOccurrence"][];
+        };
+        SchedulePostInput: {
+            /**
+             * Format: int64
+             * @description Not for a split schedule; negative for a transfer.
+             */
+            amount?: number;
+            /** Format: date */
+            date?: string;
+            status?: number;
         };
         ScheduleInput: {
             /** Format: int64 */
@@ -7352,6 +7423,34 @@ export interface operations {
             };
         };
     };
+    getScheduleCalendar: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                /** @description The reader's civil date, which decides what is overdue. Defaults to the server's. */
+                today?: string;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The calendar. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleCalendar"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
     getSchedule: {
         parameters: {
             query?: never;
@@ -7437,7 +7536,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SchedulePostInput"];
+            };
+        };
         responses: {
             /** @description Posted. */
             204: {
@@ -7446,6 +7549,7 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
         };
     };

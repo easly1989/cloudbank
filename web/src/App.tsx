@@ -49,7 +49,6 @@ const BudgetPage = lazy(() =>
   import("./pages/BudgetPage").then((m) => ({ default: m.BudgetPage })),
 );
 const GoalsPage = lazy(() => import("./pages/GoalsPage").then((m) => ({ default: m.GoalsPage })));
-const BillsPage = lazy(() => import("./pages/BillsPage").then((m) => ({ default: m.BillsPage })));
 const ReviewPage = lazy(() =>
   import("./pages/ReviewPage").then((m) => ({ default: m.ReviewPage })),
 );
@@ -167,7 +166,8 @@ function AuthenticatedApp() {
           <Route path="assignments" element={<AssignmentsPage />} />
           <Route path="budget" element={<BudgetPage />} />
           <Route path="goals" element={<GoalsPage />} />
-          <Route path="bills" element={<BillsPage />} />
+          {/* Bills became the Schedules page's calendar (#546); saved links still land. */}
+          <Route path="bills" element={<Navigate to="/schedules" replace />} />
           {/* The bank connections live in Settings now (#504); the old address
               still leads there. The callback keeps its path: it is the
               redirect URL people registered with Enable Banking. */}

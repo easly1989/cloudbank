@@ -31,3 +31,14 @@ SELECT * FROM template_splits WHERE template_id = ? ORDER BY position, id;
 
 -- name: DeleteTemplateSplits :exec
 DELETE FROM template_splits WHERE template_id = ?;
+
+-- name: LinkTemplateTransactions :execrows
+-- Ties to a template the transactions it stands for that were written without
+-- the link: same account, payee and category. The demo's seeded year comes
+-- from a HomeBank file, which does not record which schedule posted what.
+UPDATE transactions SET template_id = sqlc.arg(template_id)
+WHERE template_id IS NULL
+  AND wallet_id = (SELECT tpl.wallet_id FROM templates tpl WHERE tpl.id = sqlc.arg(template_id))
+  AND account_id = (SELECT tpl.account_id FROM templates tpl WHERE tpl.id = sqlc.arg(template_id))
+  AND payee_id = (SELECT tpl.payee_id FROM templates tpl WHERE tpl.id = sqlc.arg(template_id))
+  AND category_id = (SELECT tpl.category_id FROM templates tpl WHERE tpl.id = sqlc.arg(template_id));
