@@ -964,7 +964,10 @@ export interface paths {
         /** List a wallet's currencies */
         get: operations["listCurrencies"];
         put?: never;
-        /** Add a currency to a wallet */
+        /**
+         * Add a currency to a wallet
+         * @description A currency that is not the base gets the provider's rate at once, when the provider publishes it; otherwise it starts at 1 until one is typed.
+         */
         post: operations["addCurrency"];
         delete?: never;
         options?: never;
@@ -985,7 +988,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Remove a currency (not the base) */
+        /** Remove a currency (not the base, nor one an account is kept in) */
         delete: operations["deleteCurrency"];
         options?: never;
         head?: never;
@@ -1027,7 +1030,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Make a currency the wallet's base */
+        /**
+         * Make a currency the wallet's base
+         * @description Every other rate is worked out again against the new base (divided by the new base's old rate), so conversions mean the same after the switch; the provider's rates are then fetched for the new base, where it has them.
+         */
         post: operations["setBaseCurrency"];
         delete?: never;
         options?: never;
@@ -2966,8 +2972,16 @@ export interface components {
             groupChar: string;
             fracDigits: number;
             isBase: boolean;
+            /** @description what one unit is worth in the base currency */
             rate: number;
             rateUpdatedAt?: string;
+            /**
+             * Format: date
+             * @description the date of its latest recorded rate
+             */
+            rateDate?: string;
+            /** @description where its latest rate came from: manual, or the provider (frankfurter) */
+            rateSource?: string;
         };
         AddCurrencyRequest: {
             isoCode: string;
@@ -5976,6 +5990,15 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
+            /** @description An account is kept in this currency. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     updateCurrency: {

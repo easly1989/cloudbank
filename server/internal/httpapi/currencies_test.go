@@ -191,3 +191,63 @@ func decodeWalletCurrency(t *testing.T, resp *http.Response) currencyResponse {
 	}
 	return c
 }
+
+func TestCurrencyPageFlows(t *testing.T) {
+	c := newTestAPI(t)
+	wid := createWalletWithBase(t, c, "EUR")
+	wbase := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	base := wbase + "/currencies"
+
+	// Added, it comes with the provider's rate at once (the stub: 1 € = 1.10 $).
+	resp := c.do(http.MethodPost, base, map[string]any{"isoCode": "USD"}, true)
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("add USD = %d, want 201", resp.StatusCode)
+	}
+	usd := decodeWalletCurrency(t, resp)
+	if usd.Rate < 0.9 || usd.Rate > 0.92 || usd.RateSource != "frankfurter" || usd.RateDate == "" {
+		t.Fatalf("added USD = %+v, want the provider's rate", usd)
+	}
+	id := strconv.FormatInt(usd.ID, 10)
+
+	// Its history reads as the contract says.
+	resp = c.do(http.MethodGet, base+"/"+id+"/rates", nil, false)
+	var hist []map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&hist); err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if len(hist) != 1 || hist[0]["source"] != "frankfurter" || hist[0]["date"] == nil || hist[0]["rate"] == nil {
+		t.Fatalf("history = %+v", hist)
+	}
+
+	// A format that cannot show an amount is refused.
+	if r := c.do(http.MethodPatch, base+"/"+id, map[string]any{"decimalChar": ",", "groupChar": ","}, true); r.StatusCode != http.StatusBadRequest {
+		t.Fatalf("bad format = %d, want 400", r.StatusCode)
+	} else {
+		r.Body.Close()
+	}
+
+	// An account kept in dollars: the dollar cannot go.
+	c.do(http.MethodPost, wbase+"/accounts", map[string]any{"name": "Card", "type": "creditcard", "currencyId": usd.ID}, true).Body.Close()
+	if r := c.do(http.MethodDelete, base+"/"+id, nil, true); r.StatusCode != http.StatusConflict {
+		t.Fatalf("delete in use = %d, want 409", r.StatusCode)
+	} else {
+		r.Body.Close()
+	}
+
+	// The dollar becomes the base: the euro now reads against it (the stub
+	// has no dollar base, so the rate is the one worked out: 1.10).
+	if r := c.do(http.MethodPost, base+"/"+id+"/base", nil, true); r.StatusCode != http.StatusNoContent {
+		t.Fatalf("set base = %d, want 204", r.StatusCode)
+	} else {
+		r.Body.Close()
+	}
+	for _, cur := range decodeCurrencies(t, c.do(http.MethodGet, base, nil, false)) {
+		if cur.IsoCode == "EUR" && (cur.IsBase || cur.Rate < 1.09 || cur.Rate > 1.11) {
+			t.Fatalf("EUR after the switch = %+v, want 1.10 against the dollar", cur)
+		}
+		if cur.IsoCode == "USD" && (!cur.IsBase || cur.Rate != 1) {
+			t.Fatalf("USD after the switch = %+v", cur)
+		}
+	}
+}

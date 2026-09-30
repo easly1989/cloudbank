@@ -2,6 +2,7 @@ package currency
 
 import (
 	"context"
+	"math"
 	"testing"
 
 	"github.com/easly1989/cloudbank/server/internal/store"
@@ -143,5 +144,102 @@ func TestCatalogLoaded(t *testing.T) {
 	}
 	if _, ok := Lookup("ZZZ"); ok {
 		t.Fatal("ZZZ should not be in the catalog")
+	}
+}
+
+func TestSetBaseReworksRates(t *testing.T) {
+	s, q := newTestService(t)
+	ctx := context.Background()
+	wid := seedWallet(t, q)
+	eur, _ := s.AddCurrency(ctx, wid, "EUR", false) // base
+	usd, _ := s.AddCurrency(ctx, wid, "USD", false)
+	gbp, _ := s.AddCurrency(ctx, wid, "GBP", false)
+	// 1 $ = 0.8 €, 1 £ = 1.2 €.
+	if err := s.UpdateRate(ctx, usd.ID, 0.8); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpdateRate(ctx, gbp.ID, 1.2); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := s.SetBase(ctx, wid, usd.ID); err != nil {
+		t.Fatalf("SetBase: %v", err)
+	}
+	// Against the dollar: 1 € = 1.25 $, 1 £ = 1.5 $.
+	want := map[int64]float64{usd.ID: 1, eur.ID: 1.25, gbp.ID: 1.5}
+	list, _ := s.ListForWallet(ctx, wid)
+	for _, c := range list {
+		if math.Abs(c.Rate-want[c.ID]) > 1e-9 {
+			t.Errorf("%s rate = %v, want %v", c.IsoCode, c.Rate, want[c.ID])
+		}
+	}
+	// The old base now has a rate, recorded as where the dollar's came from.
+	for _, c := range list {
+		if c.ID == eur.ID && c.RateSource != "manual" {
+			t.Errorf("EUR source = %q, want manual", c.RateSource)
+		}
+	}
+}
+
+func TestDeleteInUseRejected(t *testing.T) {
+	s, q := newTestService(t)
+	ctx := context.Background()
+	wid := seedWallet(t, q)
+	_, _ = s.AddCurrency(ctx, wid, "EUR", false)
+	usd, _ := s.AddCurrency(ctx, wid, "USD", false)
+	if _, err := q.InsertAccount(ctx, db.InsertAccountParams{WalletID: wid, Name: "Card", Type: "creditcard", CurrencyID: usd.ID}); err != nil {
+		t.Fatal(err)
+	}
+	if n, _ := s.AccountCount(ctx, usd.ID); n != 1 {
+		t.Fatalf("AccountCount = %d, want 1", n)
+	}
+	if err := s.Delete(ctx, usd.ID); err != ErrInUse {
+		t.Fatalf("delete in use = %v, want ErrInUse", err)
+	}
+}
+
+func TestUpdateFormatChecks(t *testing.T) {
+	s, q := newTestService(t)
+	ctx := context.Background()
+	wid := seedWallet(t, q)
+	_, _ = s.AddCurrency(ctx, wid, "EUR", false)
+	usd, _ := s.AddCurrency(ctx, wid, "USD", false)
+	if err := s.UpdateFormat(ctx, usd.ID, "US$", true, ",", ".", 2); err != nil {
+		t.Fatalf("valid format: %v", err)
+	}
+	for _, bad := range []struct {
+		dec, grp string
+		frac     int
+	}{{"", ",", 2}, {".", ".", 2}, {".", ",,", 2}, {".", ",", 9}, {".", ",", -1}} {
+		if err := s.UpdateFormat(ctx, usd.ID, "$", true, bad.dec, bad.grp, bad.frac); err != ErrInvalidFormat {
+			t.Errorf("format %+v = %v, want ErrInvalidFormat", bad, err)
+		}
+	}
+}
+
+func TestListCarriesLatestRate(t *testing.T) {
+	s, q := newTestService(t)
+	ctx := context.Background()
+	wid := seedWallet(t, q)
+	_, _ = s.AddCurrency(ctx, wid, "EUR", false)
+	usd, _ := s.AddCurrency(ctx, wid, "USD", false)
+	if err := q.UpsertExchangeRate(ctx, db.UpsertExchangeRateParams{CurrencyID: usd.ID, Date: "2026-01-01", Rate: 0.9, Source: "frankfurter"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := q.UpsertExchangeRate(ctx, db.UpsertExchangeRateParams{CurrencyID: usd.ID, Date: "2026-02-01", Rate: 0.8, Source: "manual"}); err != nil {
+		t.Fatal(err)
+	}
+	list, _ := s.ListForWallet(ctx, wid)
+	for _, c := range list {
+		switch c.ID {
+		case usd.ID:
+			if c.RateDate != "2026-02-01" || c.RateSource != "manual" {
+				t.Errorf("USD latest = %q %q, want 2026-02-01 manual", c.RateDate, c.RateSource)
+			}
+		default:
+			if c.RateDate != "" || c.RateSource != "" {
+				t.Errorf("EUR latest = %q %q, want none", c.RateDate, c.RateSource)
+			}
+		}
 	}
 }

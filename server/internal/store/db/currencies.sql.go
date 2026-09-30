@@ -19,6 +19,17 @@ func (q *Queries) ClearWalletBase(ctx context.Context, walletID int64) error {
 	return err
 }
 
+const countCurrencyAccounts = `-- name: CountCurrencyAccounts :one
+SELECT COUNT(*) FROM accounts WHERE currency_id = ?
+`
+
+func (q *Queries) CountCurrencyAccounts(ctx context.Context, currencyID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countCurrencyAccounts, currencyID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countWalletCurrencies = `-- name: CountWalletCurrencies :one
 SELECT COUNT(*) FROM currencies WHERE wallet_id = ?
 `
@@ -211,6 +222,60 @@ func (q *Queries) ListExchangeRates(ctx context.Context, currencyID int64) ([]Ex
 		return nil, err
 	}
 	return items, nil
+}
+
+const listLatestRatesForWallet = `-- name: ListLatestRatesForWallet :many
+SELECT er.currency_id, er.date, er.source
+FROM exchange_rates er
+JOIN currencies c ON c.id = er.currency_id
+WHERE c.wallet_id = ?
+  AND er.date = (SELECT MAX(e2.date) FROM exchange_rates e2 WHERE e2.currency_id = er.currency_id)
+`
+
+type ListLatestRatesForWalletRow struct {
+	CurrencyID int64
+	Date       string
+	Source     string
+}
+
+// Each currency's latest recorded rate: where it came from, and its date.
+func (q *Queries) ListLatestRatesForWallet(ctx context.Context, walletID int64) ([]ListLatestRatesForWalletRow, error) {
+	rows, err := q.db.QueryContext(ctx, listLatestRatesForWallet, walletID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLatestRatesForWalletRow{}
+	for rows.Next() {
+		var i ListLatestRatesForWalletRow
+		if err := rows.Scan(&i.CurrencyID, &i.Date, &i.Source); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const scaleWalletRates = `-- name: ScaleWalletRates :exec
+UPDATE currencies SET rate = rate / ?1 WHERE wallet_id = ?2
+`
+
+type ScaleWalletRatesParams struct {
+	Divisor  float64
+	WalletID int64
+}
+
+// Rates are what one unit is worth in the base; a new base divides them all by
+// its own old rate, so they read against it (#558).
+func (q *Queries) ScaleWalletRates(ctx context.Context, arg ScaleWalletRatesParams) error {
+	_, err := q.db.ExecContext(ctx, scaleWalletRates, arg.Divisor, arg.WalletID)
+	return err
 }
 
 const setCurrencyBase = `-- name: SetCurrencyBase :exec

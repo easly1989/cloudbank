@@ -168,9 +168,17 @@ Three lists in **Wallet data** that the rest of the wallet picks from.
   in 12 months. A payee opens in a panel beside the page, which offers the same
   suggestions for the category and the payment; **Merge** and **Delete** are in
   its ⋯ menu.
-- **Currencies.** The currencies this wallet can use and the rates it converts
-  them at. **Update rates now** fetches them online; a currency the service does
-  not publish keeps a manual rate.
+- **Currencies.** The currencies this wallet can use, the base first. Each
+  shows its rate against the base ("1 $ = 0,8807 €"), where the rate came from
+  (the ECB and its date, or **Typed by you**) and how many accounts are kept in
+  it. The ECB's rates arrive every day, and **Update rates now** fetches them at
+  once. **Add currency** picks one from the list, and its rate comes straight
+  away; for one the ECB does not publish, the panel stays open for you to type
+  it. A currency opens in a panel beside the page: its rate (with the other
+  way round), and how its amounts look: symbol, before or after, decimal mark,
+  thousands separator and decimals, with a preview. In its ⋯ menu, **Make it the
+  base currency** works every other rate out again against the new base, so
+  amounts keep their value; **Delete** waits until no account is kept in it.
 
 The entry sheet can also create a category or a payee as you type one it does
 not know.

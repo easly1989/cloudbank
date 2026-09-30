@@ -198,3 +198,10 @@ Added since:
   before any transaction carries it (`POST /tags`). Renaming happens in the
   sheet, not in a field on the row. Under 900px of content the last-use column
   goes.
+- **Currencies carry their sources** (#558), to an approved mockup; the board
+  has no currencies page. One row per currency, the base first: its rate read
+  as "1 $ = 0,8807 €", where it came from (ECB and date, or "Typed by you" in
+  yellow) and the accounts kept in it. The sheet edits the rate and the format,
+  which the API always allowed and the old page never showed. Symbols are set
+  apart with Unicode isolates, so a right-to-left one keeps the line in order.
+  Under 900px of content the source column goes.

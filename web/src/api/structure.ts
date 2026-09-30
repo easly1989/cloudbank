@@ -52,8 +52,13 @@ export interface Currency {
   groupChar: string;
   fracDigits: number;
   isBase: boolean;
+  /** What one unit is worth in the base currency. */
   rate: number;
   rateUpdatedAt?: string;
+  /** The date of its latest recorded rate, and where it came from: "manual",
+      or the provider ("frankfurter", the ECB's rates). */
+  rateDate?: string;
+  rateSource?: string;
 }
 
 export interface CurrencyUpdate {
