@@ -135,8 +135,14 @@
 .usual {
   color: var(--mantine-color-dimmed);
 }
+/* Hidden, it takes no width, so the category keeps the whole cell; under the
+   pointer or the keyboard's focus it takes its room. */
 .useIt {
   visibility: hidden;
+  width: 0;
+  padding: 0;
+  border-width: 0;
+  overflow: hidden;
   height: 26px;
   padding: 0 9px;
   border-radius: 7px;
@@ -153,8 +159,12 @@
   background: var(--mantine-color-default-hover);
 }
 .tr:hover .useIt,
-.useIt:focus-visible {
+.useIt:focus-visible,
+.suggest .useIt {
   visibility: visible;
+  width: auto;
+  padding: 0 9px;
+  border-width: 1px;
 }
 .last {
   font-size: 13px;
