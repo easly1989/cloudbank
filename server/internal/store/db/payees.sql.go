@@ -111,6 +111,163 @@ func (q *Queries) ListPayeesForWallet(ctx context.Context, walletID int64) ([]Pa
 	return items, nil
 }
 
+const payeeActivity = `-- name: PayeeActivity :many
+SELECT t.payee_id AS payee_id,
+       a.currency_id AS currency_id,
+       CAST(SUM(CASE WHEN t.date >= ?1 THEN 1 ELSE 0 END) AS INTEGER) AS txn_count,
+       CAST(SUM(CASE WHEN t.date >= ?1 THEN t.amount ELSE 0 END) AS INTEGER) AS total,
+       CAST(MAX(t.date) AS TEXT) AS last_date
+FROM transactions t
+JOIN accounts a ON a.id = t.account_id
+WHERE t.wallet_id = ?2
+  AND t.payee_id IS NOT NULL
+  AND t.date <= ?3
+GROUP BY t.payee_id, a.currency_id
+`
+
+type PayeeActivityParams struct {
+	FromDate string
+	WalletID int64
+	ToDate   string
+}
+
+type PayeeActivityRow struct {
+	PayeeID    sql.NullInt64
+	CurrencyID int64
+	TxnCount   int64
+	Total      int64
+	LastDate   string
+}
+
+// What each payee holds, per account currency: its transactions dated in
+// [from_date, to_date], their sum, and the latest one on or before to_date.
+// The caller adds the currencies up.
+func (q *Queries) PayeeActivity(ctx context.Context, arg PayeeActivityParams) ([]PayeeActivityRow, error) {
+	rows, err := q.db.QueryContext(ctx, payeeActivity, arg.FromDate, arg.WalletID, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PayeeActivityRow{}
+	for rows.Next() {
+		var i PayeeActivityRow
+		if err := rows.Scan(
+			&i.PayeeID,
+			&i.CurrencyID,
+			&i.TxnCount,
+			&i.Total,
+			&i.LastDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const payeeCategoryCounts = `-- name: PayeeCategoryCounts :many
+SELECT payee_id, category_id, COUNT(*) AS txn_count
+FROM transactions
+WHERE wallet_id = ?1
+  AND payee_id IS NOT NULL
+  AND is_split = 0
+  AND category_id IS NOT NULL
+  AND date >= ?2
+  AND date <= ?3
+GROUP BY payee_id, category_id
+`
+
+type PayeeCategoryCountsParams struct {
+	WalletID int64
+	FromDate string
+	ToDate   string
+}
+
+type PayeeCategoryCountsRow struct {
+	PayeeID    sql.NullInt64
+	CategoryID sql.NullInt64
+	TxnCount   int64
+}
+
+// How often each payee's plain transactions in the period went to each
+// category. A split has no one category, so it is left out.
+func (q *Queries) PayeeCategoryCounts(ctx context.Context, arg PayeeCategoryCountsParams) ([]PayeeCategoryCountsRow, error) {
+	rows, err := q.db.QueryContext(ctx, payeeCategoryCounts, arg.WalletID, arg.FromDate, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PayeeCategoryCountsRow{}
+	for rows.Next() {
+		var i PayeeCategoryCountsRow
+		if err := rows.Scan(&i.PayeeID, &i.CategoryID, &i.TxnCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const payeePaymentCounts = `-- name: PayeePaymentCounts :many
+SELECT payee_id, payment_mode, COUNT(*) AS txn_count
+FROM transactions
+WHERE wallet_id = ?1
+  AND payee_id IS NOT NULL
+  AND payment_mode <> 0
+  AND date >= ?2
+  AND date <= ?3
+GROUP BY payee_id, payment_mode
+`
+
+type PayeePaymentCountsParams struct {
+	WalletID int64
+	FromDate string
+	ToDate   string
+}
+
+type PayeePaymentCountsRow struct {
+	PayeeID     sql.NullInt64
+	PaymentMode int64
+	TxnCount    int64
+}
+
+// How often each payee's transactions in the period used each payment mode,
+// "none" (0) left out.
+func (q *Queries) PayeePaymentCounts(ctx context.Context, arg PayeePaymentCountsParams) ([]PayeePaymentCountsRow, error) {
+	rows, err := q.db.QueryContext(ctx, payeePaymentCounts, arg.WalletID, arg.FromDate, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PayeePaymentCountsRow{}
+	for rows.Next() {
+		var i PayeePaymentCountsRow
+		if err := rows.Scan(&i.PayeeID, &i.PaymentMode, &i.TxnCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const reassignTransactionPayee = `-- name: ReassignTransactionPayee :exec
 UPDATE transactions SET payee_id = ? WHERE payee_id = ?
 `

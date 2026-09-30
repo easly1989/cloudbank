@@ -150,6 +150,61 @@ func TestCategoryActivity(t *testing.T) {
 	}
 }
 
+func TestPayeeActivity(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	food := decodeCategory(t, c.do(http.MethodPost, base+"/categories", map[string]any{"name": "Food"}, true))
+	resp := c.do(http.MethodPost, base+"/payees", map[string]any{"name": "Shop"}, true)
+	var shop struct{ ID int64 }
+	if err := json.NewDecoder(resp.Body).Decode(&shop); err != nil {
+		t.Fatalf("decode payee: %v", err)
+	}
+	resp.Body.Close()
+	for _, d := range []string{"2026-01-10", "2026-02-10"} {
+		c.do(http.MethodPost, base+"/transactions", map[string]any{
+			"accountId": acc, "date": d, "amount": -1000, "payeeId": shop.ID, "categoryId": food.ID, "paymentMode": 6,
+		}, true).Body.Close()
+	}
+
+	resp = c.do(http.MethodGet, base+"/payees/activity?from=2026-01-01&to=2026-12-31", nil, false)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("activity = %d, want 200", resp.StatusCode)
+	}
+	defer resp.Body.Close()
+	var res struct {
+		Payees []struct {
+			PayeeID          int64
+			Count            int64
+			Amount           int64
+			LastDate         string
+			UsualCategoryID  *int64
+			UsualPaymentMode *int64
+		}
+		Currency struct{ Code string }
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(res.Payees) != 1 {
+		t.Fatalf("activity = %+v", res)
+	}
+	p := res.Payees[0]
+	if p.PayeeID != shop.ID || p.Count != 2 || p.Amount != -2000 || p.LastDate != "2026-02-10" ||
+		p.UsualCategoryID == nil || *p.UsualCategoryID != food.ID || p.UsualPaymentMode == nil || *p.UsualPaymentMode != 6 ||
+		res.Currency.Code != "EUR" {
+		t.Fatalf("activity = %+v", res)
+	}
+
+	for _, q := range []string{"", "?to=2026-01-01", "?from=2026-02-30&to=2026-12-31", "?from=2026-12-31&to=2026-01-01"} {
+		r := c.do(http.MethodGet, base+"/payees/activity"+q, nil, false)
+		if r.StatusCode != http.StatusBadRequest {
+			t.Fatalf("activity%s = %d, want 400", q, r.StatusCode)
+		}
+		r.Body.Close()
+	}
+}
+
 func TestPayeeCrudAndMerge(t *testing.T) {
 	c := newTestAPI(t)
 	wid := createWalletWithBase(t, c, "EUR")
