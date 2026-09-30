@@ -6,7 +6,8 @@ SELECT
     account_id,
     CAST(SUM(amount) AS INTEGER) AS future_delta,
     CAST(SUM(CASE WHEN date <= sqlc.arg(today) THEN amount ELSE 0 END) AS INTEGER) AS today_delta,
-    CAST(SUM(CASE WHEN status = 2 AND date <= sqlc.arg(today) THEN amount ELSE 0 END) AS INTEGER) AS bank_delta
+    CAST(SUM(CASE WHEN status = 2 AND date <= sqlc.arg(today) THEN amount ELSE 0 END) AS INTEGER) AS bank_delta,
+    CAST(COALESCE(MAX(CASE WHEN status = 2 THEN date END), '') AS TEXT) AS last_reconciled
 FROM transactions
 WHERE wallet_id = sqlc.arg(wallet_id)
 GROUP BY account_id;

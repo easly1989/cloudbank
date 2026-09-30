@@ -69,7 +69,7 @@ test("full journey: setup → wallet → account → transaction → import → 
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel("Account name").fill("Checking");
     await dialog.getByRole("button", { name: "Save", exact: true }).click();
-    await expect(page.getByRole("cell", { name: "Checking" })).toBeVisible();
+    await expect(page.getByTestId("accounts-table")).toContainText("Checking");
   });
 
   await test.step("add a transaction from the first row of the ledger", async () => {

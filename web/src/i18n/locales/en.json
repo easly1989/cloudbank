@@ -1194,14 +1194,8 @@
     "title": "Accounts",
     "add": "Add account",
     "addTitle": "New account",
-    "editTitle": "Edit account",
-    "showClosed": "Show closed",
-    "ofTotal": "of total",
     "closed": "Closed",
-    "edit": "Edit",
-    "delete": "Delete",
     "actions": "Actions for {{name}}",
-    "deleteMenu": "Delete…",
     "cancel": "Cancel",
     "save": "Save",
     "empty": "No accounts yet.",
@@ -1212,9 +1206,7 @@
     "minimumBalance": "Minimum balance",
     "institution": "Institution",
     "number": "Account number",
-    "group": "Group",
     "defaultPaymentMode": "Default payment mode",
-    "defaultPaymentModeHint": "Pre-fills new transactions in this account (a payee's own default still wins).",
     "types": {
       "bank": "Bank",
       "cash": "Cash",
@@ -1228,7 +1220,35 @@
     "confirmDeleteTitle": "Delete \"{{name}}\"?",
     "confirmDeleteBody": "Every transaction in the account goes with it. This cannot be undone.",
     "confirmDeleteAction": "Delete account",
-    "emptyHint": "An account is where transactions live — a bank account, the cash in your pocket, a credit card."
+    "emptyHint": "An account is where transactions live — a bank account, the cash in your pocket, a credit card.",
+    "line": "Reconciled is what the bank has confirmed; Today adds what you entered since; Future adds what is dated ahead. A click opens the account's register.",
+    "lineConverted": "Totals are in {{code}}, at the latest rates.",
+    "col": {
+      "account": "Account",
+      "reconciled": "Reconciled",
+      "today": "Today",
+      "future": "Future"
+    },
+    "total_one": "Total · 1 account",
+    "total_other": "Total · {{count}} accounts",
+    "totalShort": "Total",
+    "counted_one": "1 account",
+    "counted_other": "{{count}} accounts",
+    "reconciledOn": "reconciled {{date}}",
+    "neverReconciled": "never reconciled",
+    "closedLower": "closed",
+    "leftOut": "left out of the totals",
+    "underMinimum": "under the {{amount}} minimum",
+    "futureShort": "future {{amount}}",
+    "openRegister": "Open the register",
+    "openRegisterOf": "Open the register of {{name}}",
+    "editAccount": "Edit account",
+    "leaveOut": "Leave this account out of",
+    "leaveOutTotals": "The totals, here and on the dashboard",
+    "leaveOutBudget": "The budget",
+    "leaveOutReports": "The reports",
+    "notes": "Notes",
+    "closedHint": "Closed: hidden from the lists, kept with its transactions"
   },
   "categories": {
     "duplicate": "“{{name}}” already exists at this level. To keep just one, use Merge on the list.",
@@ -1913,9 +1933,9 @@
         "title": "Every account you follow",
         "body": "Add each account you want to keep track of: a current account, cash, a card, savings. Each one has its own register and balance."
       },
-      "closed": {
-        "title": "Closed, not deleted",
-        "body": "A closed account leaves the lists but keeps its history. Switch this on to see closed accounts again."
+      "figures": {
+        "title": "Reconciled, today, future",
+        "body": "Each account's balance three ways: what the bank has confirmed, what you have entered up to today, and with what is dated ahead. A click opens its register, ⋯ edits it. A closed account leaves the list but keeps its history: the Closed filter brings it back."
       }
     },
     "budget": {
