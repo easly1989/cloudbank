@@ -135,17 +135,22 @@ var words = map[string][2]string{
 	"clothing":   {"Clothing", "Abbigliamento"},
 	"gifts":      {"Gifts", "Regali"},
 	"tagHoliday": {"holiday", "vacanza"},
-	"weekly":     {"Weekly shop", "Spesa settimanale"},
-	"household":  {"Household items", "Articoli per la casa"},
-	"topUp":      {"Monthly saving", "Risparmio mensile"},
-	"payOff":     {"Card balance", "Saldo carta"},
-	"withdraw":   {"Cash withdrawal", "Prelievo"},
-	"pass":       {"Monthly pass", "Abbonamento mensile"},
-	"bonus":      {"Bonus", "Premio"},
-	"refund":     {"Refund", "Rimborso"},
-	"goalTrip":   {"Summer trip", "Viaggio d'estate"},
-	"goalBuffer": {"Rainy-day fund", "Fondo imprevisti"},
-	"goalNote":   {"Made-up goal: change it, top it up, delete it.", "Obiettivo inventato: modificalo, aggiungi, eliminalo."},
+	// A tag is one word: HomeBank's file separates them with spaces.
+	"tagCar":       {"car", "auto"},
+	"tagRefund":    {"reimbursable", "rimborsabile"},
+	"tagChristmas": {"christmas", "natale"},
+	"tagHome":      {"home-office", "smart-working"},
+	"weekly":       {"Weekly shop", "Spesa settimanale"},
+	"household":    {"Household items", "Articoli per la casa"},
+	"topUp":        {"Monthly saving", "Risparmio mensile"},
+	"payOff":       {"Card balance", "Saldo carta"},
+	"withdraw":     {"Cash withdrawal", "Prelievo"},
+	"pass":         {"Monthly pass", "Abbonamento mensile"},
+	"bonus":        {"Bonus", "Premio"},
+	"refund":       {"Refund", "Rimborso"},
+	"goalTrip":     {"Summer trip", "Viaggio d'estate"},
+	"goalBuffer":   {"Rainy-day fund", "Fondo imprevisti"},
+	"goalNote":     {"Made-up goal: change it, top it up, delete it.", "Obiettivo inventato: modificalo, aggiungi, eliminalo."},
 }
 
 // seeder builds the file for one language.
@@ -404,7 +409,8 @@ func (s *seeder) month(start time.Time, back int) {
 		s.add(ope{date: on(18), account: accChecking, cents: 80000, mode: modeDeposit, payee: payEmployer, category: catOtherIncome, memo: s.w("bonus")})
 	}
 	s.add(ope{date: on(1), account: accChecking, cents: -75000, mode: modeStanding, payee: payLandlord, category: catRent, memo: s.w("rent")})
-	s.add(ope{date: on(5), account: accChecking, cents: -2990, mode: modeDirect, payee: payInternet, category: catInternet, memo: s.w("internet")})
+	// The line and the power a home office runs on (#556).
+	s.add(ope{date: on(5), account: accChecking, cents: -2990, mode: modeDirect, payee: payInternet, category: catInternet, memo: s.w("internet"), tags: s.w("tagHome")})
 	// The energy bill falls three days before today's day of the month; the
 	// latest one is left unpaid (see seedFile).
 	winter := start.Month() <= time.March || start.Month() >= time.November
@@ -414,7 +420,7 @@ func (s *seeder) month(start time.Time, back int) {
 	}
 	energy := s.energyDue()
 	if bill := on(energy.Day()); bill.Before(energy) {
-		s.add(ope{date: bill, account: accChecking, cents: -s.between(lo, hi), mode: modeDirect, payee: payEnergy, category: catUtilities, memo: s.w("energy")})
+		s.add(ope{date: bill, account: accChecking, cents: -s.between(lo, hi), mode: modeDirect, payee: payEnergy, category: catUtilities, memo: s.w("energy"), tags: s.w("tagHome")})
 	}
 	s.add(ope{date: on(15), account: accCard, cents: -1299, mode: modeCard, payee: payStreaming, category: catSubscriptions, memo: s.w("streaming")})
 	s.add(ope{date: on(3), account: accChecking, cents: -3900, mode: modeDebit, payee: payGym, category: catSport, memo: s.w("gym")})
@@ -428,11 +434,16 @@ func (s *seeder) month(start time.Time, back int) {
 	s.add(ope{date: on(13), account: accCash, cents: -s.between(1400, 3200), mode: modeCash, payee: payMarket, category: catGroceries})
 	s.split(on(20), s.between(3000, 5200), s.between(1500, 3500))
 
+	// Every other month the first meal out was a work lunch, to claim back.
 	for i, n := 0, 2+s.rng.IntN(3); i < n; i++ {
-		s.add(ope{date: on(6 + 7*i + s.rng.IntN(3)), account: accCard, cents: -s.between(2400, 6800), mode: modeCard, payee: payRestaurant, category: catRestaurants})
+		tags := ""
+		if i == 0 && back%2 == 0 {
+			tags = s.w("tagRefund")
+		}
+		s.add(ope{date: on(6 + 7*i + s.rng.IntN(3)), account: accCard, cents: -s.between(2400, 6800), mode: modeCard, payee: payRestaurant, category: catRestaurants, tags: tags})
 	}
 	for _, day := range []int{7, 21} {
-		s.add(ope{date: on(day), account: accCard, cents: -s.between(4500, 6900), mode: modeCard, payee: payPetrol, category: catFuel})
+		s.add(ope{date: on(day), account: accCard, cents: -s.between(4500, 6900), mode: modeCard, payee: payPetrol, category: catFuel, tags: s.w("tagCar")})
 	}
 	for i := 0; i < 4; i++ {
 		s.add(ope{date: on(3 + 6*i + s.rng.IntN(4)), account: accCash, cents: -s.between(150, 480), mode: modeCash, payee: payCafe, category: catRestaurants})
@@ -448,7 +459,7 @@ func (s *seeder) month(start time.Time, back int) {
 	}
 	if start.Month() == time.December {
 		for _, day := range []int{12, 19} {
-			s.add(ope{date: on(day), account: accCard, cents: -s.between(3000, 9000), mode: modeCard, payee: payClothes, category: catGifts})
+			s.add(ope{date: on(day), account: accCard, cents: -s.between(3000, 9000), mode: modeCard, payee: payClothes, category: catGifts, tags: s.w("tagChristmas")})
 		}
 	}
 	// One summer week away, tagged so the tag has something to find.
@@ -458,7 +469,7 @@ func (s *seeder) month(start time.Time, back int) {
 		for day := 10; day <= 15; day++ {
 			s.add(ope{date: on(day), account: accCard, cents: -s.between(3500, 7500), mode: modeCard, payee: payRestaurant, category: catRestaurants, tags: tag})
 		}
-		s.add(ope{date: on(9), account: accCard, cents: -6800, mode: modeCard, payee: payPetrol, category: catFuel, tags: tag})
+		s.add(ope{date: on(9), account: accCard, cents: -6800, mode: modeCard, payee: payPetrol, category: catFuel, tags: tag + " " + s.w("tagCar")})
 	}
 	if back == 4 {
 		s.add(ope{date: on(14), account: accChecking, cents: 4590, mode: modeTransfer, payee: payClothes, category: catClothing, memo: s.w("refund")})

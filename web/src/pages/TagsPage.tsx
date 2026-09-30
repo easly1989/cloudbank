@@ -1,175 +1,247 @@
-import { ActionIcon, Group, Select, Stack, Table, TextInput } from "@mantine/core";
+import { Button, Stack, TextInput, UnstyledButton } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconTags, IconTrash } from "@tabler/icons-react";
-import { PageHeader } from "../components/PageHeader";
-import { EmptyState } from "../components/EmptyState";
+import { IconSearch, IconTags } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useConfirm } from "../components/confirmContext";
 
 import {
   ApiError,
-  type TagInfo,
   deleteTag,
+  getTagActivity,
+  listCategories,
   listTagsWithCounts,
   mergeTag,
-  renameTag,
+  type TagInfo,
 } from "../api/client";
+import { useConfirm } from "../components/confirmContext";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
+import { formatMinor, type MoneyFormat } from "../money";
+import { useToday } from "../useToday";
 import { useWallet } from "../wallet/WalletProvider";
+import { MergeModal } from "./categories/CategoryModals";
+import { lastTwelveMonths } from "./categories/categoryTree";
+import { useDayMonth } from "./categories/labels";
+import { arrange, buildRows, DEFAULT_SORT, isUnused, type Sort } from "./tags/tagList";
+import classes from "./tags/tags.module.css";
+import { TagSheet } from "./tags/TagSheet";
+import { TagPhoneList, TagTable } from "./tags/TagTable";
 
+/** Plain two-decimal numbers, for a wallet with no base currency yet. */
+const PLAIN: MoneyFormat = {
+  fracDigits: 2,
+  decimalChar: ".",
+  groupChar: ",",
+  symbol: "",
+  symbolPrefix: false,
+};
+
+/**
+ * Tags (#556): every tag with what it held over the last twelve months and the
+ * categories its transactions were mostly in. A tag opens in the sheet beside
+ * the page, where it is renamed; Add makes one before any transaction has it.
+ */
 export function TagsPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
+  const qc = useQueryClient();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
-  const qc = useQueryClient();
+  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
+  const today = useToday();
+  const day = useDayMonth(today);
+  const { from, to } = useMemo(() => lastTwelveMonths(today), [today]);
 
   const tagsQuery = useQuery({
     queryKey: ["tagsManage", walletId],
     queryFn: () => listTagsWithCounts(walletId),
     enabled: walletId > 0,
   });
-  const tags = tagsQuery.data ?? [];
-
-  const invalidate = () => {
-    void qc.invalidateQueries({ queryKey: ["tagsManage", walletId] });
-    void qc.invalidateQueries({ queryKey: ["tags", walletId] }); // autocomplete list
-  };
-
-  if (!currentWallet) return null;
-
-  return (
-    <Stack>
-      <PageHeader title={t("tags.title")} hint={t("tags.hint")} />
-      {tags.length === 0 ? (
-        <EmptyState icon={IconTags} message={t("tags.empty")} />
-      ) : (
-        <Table.ScrollContainer minWidth={560}>
-          {/* Scrolls inside itself on a phone rather than pushing the whole page sideways, as the other tables in the app do. */}
-          <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>{t("tags.name")}</Table.Th>
-                <Table.Th ta="right">{t("tags.count")}</Table.Th>
-                <Table.Th />
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {tags.map((tag) => (
-                <TagRow
-                  key={tag.id}
-                  walletId={walletId}
-                  tag={tag}
-                  allTags={tags}
-                  onChanged={invalidate}
-                />
-              ))}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
-      )}
-    </Stack>
+  const categoriesQuery = useQuery({
+    queryKey: ["categories", walletId],
+    queryFn: () => listCategories(walletId),
+    enabled: walletId > 0,
+  });
+  const activityQuery = useQuery({
+    queryKey: ["tag-activity", walletId, from, to],
+    queryFn: () => getTagActivity(walletId, from, to),
+    enabled: walletId > 0,
+  });
+  const tags = useMemo(() => tagsQuery.data ?? [], [tagsQuery.data]);
+  const rows = useMemo(
+    () => buildRows(tags, activityQuery.data?.tags ?? [], categoriesQuery.data ?? []),
+    [tags, activityQuery.data, categoriesQuery.data],
   );
-}
+  const format = useMemo(() => {
+    const fmt = activityQuery.data?.currency ?? PLAIN;
+    return (amount: number) => formatMinor(amount, fmt);
+  }, [activityQuery.data]);
 
-function TagRow({
-  walletId,
-  tag,
-  allTags,
-  onChanged,
-}: {
-  walletId: number;
-  tag: TagInfo;
-  allTags: TagInfo[];
-  onChanged: () => void;
-}) {
-  const { t } = useTranslation();
-  const confirm = useConfirm();
-  // Follow a rename that came from somewhere else without an effect: React
-  // re-runs this render before painting, so the row never shows the old name.
-  const [name, setName] = useState(tag.name);
-  const [seen, setSeen] = useState(tag.name);
-  if (tag.name !== seen) {
-    setSeen(tag.name);
-    setName(tag.name);
-  }
+  const [search, setSearch] = useState("");
+  const [unusedOnly, setUnusedOnly] = useState(false);
+  const [sort, setSort] = useState<Sort>(DEFAULT_SORT);
+  const unusedCount = rows.filter(isUnused).length;
+  const shown = useMemo(
+    () => arrange(rows, { query: search, unusedOnly: unusedOnly && unusedCount > 0 }, sort),
+    [rows, search, unusedOnly, unusedCount, sort],
+  );
 
-  const onErr = (err: unknown) =>
+  // "tags" is the entry sheet's list of names to suggest.
+  const invalidate = () => {
+    for (const key of ["tagsManage", "tags", "tag-activity"])
+      void qc.invalidateQueries({ queryKey: [key, walletId] });
+  };
+  const onError = (err: unknown) =>
     notifications.show({
       color: "red",
       message: err instanceof ApiError ? err.message : String(err),
     });
 
-  const rename = useMutation({
-    mutationFn: () => renameTag(walletId, tag.id, name.trim()),
-    onSuccess: onChanged,
-    onError: onErr,
-  });
-  const merge = useMutation({
-    mutationFn: (targetId: number) => mergeTag(walletId, tag.id, targetId),
-    onSuccess: onChanged,
-    onError: onErr,
-  });
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editing, setEditing] = useState<TagInfo | null>(null);
+  const [mergeFrom, setMergeFrom] = useState<TagInfo | null>(null);
+
   const remove = useMutation({
-    mutationFn: () => deleteTag(walletId, tag.id),
-    onSuccess: onChanged,
-    onError: onErr,
+    mutationFn: (id: number) => deleteTag(walletId, id),
+    onSuccess: invalidate,
+    onError,
   });
 
+  const actions = {
+    onOpen: (tag: TagInfo) => {
+      setEditing(tag);
+      setSheetOpen(true);
+    },
+    onMerge: (tag: TagInfo) => {
+      setSheetOpen(false);
+      setMergeFrom(tag);
+    },
+    onDelete: (tag: TagInfo) => void askDelete(tag),
+  };
+  const askDelete = async (tag: TagInfo) => {
+    setSheetOpen(false);
+    const ok = await confirm({
+      title: t("tags.confirmDeleteTitle", { name: tag.name }),
+      body: t("tags.confirmDeleteBody"),
+      confirmLabel: t("tags.delete"),
+      danger: true,
+    });
+    if (ok) remove.mutate(tag.id);
+  };
+
+  if (!currentWallet) return null;
+
+  // One button, shown in the header or in the empty state — never both.
+  const addButton = (
+    <Button
+      onClick={() => {
+        setEditing(null);
+        setSheetOpen(true);
+      }}
+    >
+      {t("tags.add")}
+    </Button>
+  );
+  const searchBox = (
+    <TextInput
+      className={classes.search}
+      leftSection={<IconSearch size={16} />}
+      placeholder={t("tags.find")}
+      aria-label={t("tags.find")}
+      value={search}
+      onChange={(e) => setSearch(e.currentTarget.value)}
+    />
+  );
+  const chip =
+    unusedCount > 0 ? (
+      <UnstyledButton
+        className={classes.chip}
+        aria-pressed={unusedOnly}
+        onClick={() => setUnusedOnly((v) => !v)}
+      >
+        {phone ? t("tags.filter.unusedShort") : t("tags.filter.unused")}
+        <em>{unusedCount}</em>
+      </UnstyledButton>
+    ) : null;
+
+  const tableProps = { rows: shown, format, day, actions };
+  const editingRow = editing ? (rows.find((r) => r.tag.id === editing.id) ?? null) : null;
+
   return (
-    <Table.Tr>
-      <Table.Td>
-        <TextInput
-          size="xs"
-          w={220}
-          aria-label={t("tags.renameAria", { name: tag.name })}
-          value={name}
-          onChange={(e) => setName(e.currentTarget.value)}
-          onBlur={() => {
-            const next = name.trim();
-            if (next && next !== tag.name) rename.mutate();
-            else setName(tag.name);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") e.currentTarget.blur();
-          }}
+    <Stack className={`${classes.page} ${phone ? classes.phone : ""}`} gap="md">
+      <PageHeader
+        title={t("tags.title")}
+        hint={t("tags.hint")}
+        actions={tags.length > 0 ? addButton : undefined}
+      />
+
+      {tags.length === 0 && tagsQuery.isSuccess && (
+        <EmptyState
+          icon={IconTags}
+          message={t("tags.empty")}
+          hint={t("tags.emptyHint")}
+          action={addButton}
         />
-      </Table.Td>
-      <Table.Td ta="right">{tag.count}</Table.Td>
-      <Table.Td>
-        <Group gap="xs" justify="flex-end" wrap="nowrap">
-          <Select
-            size="xs"
-            w={180}
-            placeholder={t("tags.mergeInto")}
-            clearable
-            searchable
-            data={allTags
-              .filter((x) => x.id !== tag.id)
-              .map((x) => ({ value: String(x.id), label: x.name }))}
-            value={null}
-            onChange={(v) => {
-              if (v) merge.mutate(Number(v));
-            }}
-          />
-          <ActionIcon
-            variant="subtle"
-            color="red"
-            aria-label={t("tags.delete")}
-            onClick={async () => {
-              const ok = await confirm({
-                title: t("tags.confirmDeleteTitle", { name: tag.name }),
-                body: t("tags.confirmDeleteBody"),
-                confirmLabel: t("tags.delete"),
-                danger: true,
-              });
-              if (ok) remove.mutate();
-            }}
-          >
-            <IconTrash size={16} />
-          </ActionIcon>
-        </Group>
-      </Table.Td>
-    </Table.Tr>
+      )}
+
+      {tags.length > 0 && (
+        <>
+          {phone ? (
+            <>
+              {searchBox}
+              {chip && <div className={classes.bar}>{chip}</div>}
+            </>
+          ) : (
+            <div className={classes.bar}>
+              {searchBox}
+              {chip}
+              <span className={classes.period}>{t("tags.period")}</span>
+            </div>
+          )}
+          {shown.length === 0 ? (
+            <div className={classes.card}>
+              <div className={classes.none}>{t("tags.noMatch")}</div>
+            </div>
+          ) : phone ? (
+            <TagPhoneList {...tableProps} />
+          ) : (
+            <TagTable {...tableProps} sort={sort} onSort={setSort} />
+          )}
+        </>
+      )}
+
+      <TagSheet
+        opened={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        walletId={walletId}
+        editing={editing}
+        row={editingRow}
+        others={tags.filter((x) => x.id !== editing?.id).map((x) => x.name)}
+        format={format}
+        day={day}
+        onSaved={invalidate}
+        onMerge={actions.onMerge}
+        onDelete={actions.onDelete}
+      />
+      <MergeModal
+        key={`merge-${mergeFrom?.id ?? "none"}`}
+        title={t("tags.mergeTitle")}
+        source={mergeFrom}
+        options={tags
+          .filter((x) => x.id !== mergeFrom?.id)
+          .map((x) => ({ value: String(x.id), label: x.name }))}
+        onClose={() => setMergeFrom(null)}
+        onMerge={(targetId) =>
+          mergeTag(walletId, mergeFrom!.id, targetId)
+            .then(() => {
+              setMergeFrom(null);
+              invalidate();
+            })
+            .catch(onError)
+        }
+      />
+    </Stack>
   );
 }

@@ -1328,6 +1328,40 @@ paths:
       responses:
         "200": { description: Tags., content: { application/json: { schema: { type: array, items: { type: string } } } } }
         "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: createTag
+      summary: Create a tag no transaction carries yet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [name], properties: { name: { type: string } } }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/TagInfo" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: A tag with that name already exists., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/wallets/{walletId}/tags/activity:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getTagActivity
+      summary: What each tag held in a period
+      description: >-
+        For each tag that has been on a transaction dated on or before `to`:
+        how many of its transactions fall between `from` and `to` (both
+        included), their net sum in the base currency (money in and out
+        together), the date of its latest one on or before `to`, however long
+        ago, and the categories they mostly went to in the period (at most
+        two, the most frequent first; a split counts once per line). A tag
+        on no transaction is absent.
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200": { description: Activity., content: { application/json: { schema: { $ref: "#/components/schemas/TagActivityResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/tags/manage:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -2995,6 +3029,29 @@ components:
         name: { type: string }
         count: { type: integer, format: int64, description: "number of transactions using this tag" }
       required: [id, name, count]
+    TagCategory:
+      type: object
+      properties:
+        categoryId: { type: integer, format: int64 }
+        count: { type: integer, format: int64, description: "the tag's transactions (or split lines) in the period under it" }
+      required: [categoryId, count]
+    TagActivity:
+      type: object
+      properties:
+        tagId: { type: integer, format: int64 }
+        count: { type: integer, format: int64, description: "transactions in the period" }
+        amount: { type: integer, format: int64, description: "their net sum, in the base currency's minor units" }
+        lastDate: { type: string, format: date, description: "the latest transaction on or before the period's end" }
+        categories: { type: array, items: { $ref: "#/components/schemas/TagCategory" }, description: "at most two, the most frequent first" }
+      required: [tagId, count, amount, lastDate, categories]
+    TagActivityResult:
+      type: object
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        tags: { type: array, items: { $ref: "#/components/schemas/TagActivity" } }
+        currency: { allOf: [{ $ref: "#/components/schemas/CurrencyInfo" }], nullable: true }
+      required: [from, to, tags]
     Payee:
       type: object
       properties:

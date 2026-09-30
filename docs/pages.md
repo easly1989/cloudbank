@@ -111,9 +111,17 @@ the monthly rent, saved to fill in the entry sheet.
 Tags are free labels on a transaction, such as *holiday* or *work*. A
 transaction can carry several, and reports can group spending by tag.
 
-- **Creating.** Tags are created as you type them on a transaction.
-- **The Tags page.** Lists every tag with how many transactions carry it. There
-  you can rename a tag, merge it into another, or delete it. Deleting a tag
+- **Creating.** Tags are created as you type them on a transaction, or with
+  **Add tag** on the Tags page, ready for when you need one. Keep a tag to one
+  word if your data goes to or from HomeBank: its file separates tags with
+  spaces.
+- **The Tags page.** Every tag with the categories its transactions were mostly
+  in, how many there were, when it was last used and their amount over the last
+  12 months: money in and out together, as the reports by tag add them. Click a
+  column's heading to sort by it. Search by name, or show only the tags unused
+  in 12 months. A tag opens in a panel beside the page, where renaming it
+  renames it on every transaction; **See it in the reports** opens the reports
+  on that tag. **Merge** and **Delete** are in the ⋯ menu. Deleting a tag
   removes it from its transactions but keeps the transactions.
 
 ## Rules

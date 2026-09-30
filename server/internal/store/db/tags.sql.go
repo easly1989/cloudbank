@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const addTransactionTag = `-- name: AddTransactionTag :exec
@@ -249,4 +250,124 @@ type RenameTagParams struct {
 func (q *Queries) RenameTag(ctx context.Context, arg RenameTagParams) error {
 	_, err := q.db.ExecContext(ctx, renameTag, arg.Name, arg.ID)
 	return err
+}
+
+const tagActivity = `-- name: TagActivity :many
+SELECT tt.tag_id AS tag_id,
+       a.currency_id AS currency_id,
+       CAST(SUM(CASE WHEN t.date >= ?1 THEN 1 ELSE 0 END) AS INTEGER) AS txn_count,
+       CAST(SUM(CASE WHEN t.date >= ?1 THEN t.amount ELSE 0 END) AS INTEGER) AS total,
+       CAST(MAX(t.date) AS TEXT) AS last_date
+FROM transaction_tags tt
+JOIN transactions t ON t.id = tt.transaction_id
+JOIN accounts a ON a.id = t.account_id
+WHERE t.wallet_id = ?2
+  AND t.date <= ?3
+GROUP BY tt.tag_id, a.currency_id
+`
+
+type TagActivityParams struct {
+	FromDate string
+	WalletID int64
+	ToDate   string
+}
+
+type TagActivityRow struct {
+	TagID      int64
+	CurrencyID int64
+	TxnCount   int64
+	Total      int64
+	LastDate   string
+}
+
+// What each tag holds, per account currency: its transactions dated in
+// [from_date, to_date], their sum, and the latest one on or before to_date.
+// The caller adds the currencies up.
+func (q *Queries) TagActivity(ctx context.Context, arg TagActivityParams) ([]TagActivityRow, error) {
+	rows, err := q.db.QueryContext(ctx, tagActivity, arg.FromDate, arg.WalletID, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TagActivityRow{}
+	for rows.Next() {
+		var i TagActivityRow
+		if err := rows.Scan(
+			&i.TagID,
+			&i.CurrencyID,
+			&i.TxnCount,
+			&i.Total,
+			&i.LastDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const tagCategoryCounts = `-- name: TagCategoryCounts :many
+SELECT tt.tag_id AS tag_id, t.category_id AS category_id, COUNT(*) AS txn_count
+FROM transaction_tags tt
+JOIN transactions t ON t.id = tt.transaction_id
+WHERE t.wallet_id = ?1
+  AND t.is_split = 0
+  AND t.category_id IS NOT NULL
+  AND t.date >= ?2
+  AND t.date <= ?3
+GROUP BY tt.tag_id, t.category_id
+UNION ALL
+SELECT tt.tag_id AS tag_id, s.category_id AS category_id, COUNT(*) AS txn_count
+FROM transaction_tags tt
+JOIN transactions t ON t.id = tt.transaction_id
+JOIN splits s ON s.transaction_id = t.id
+WHERE t.wallet_id = ?1
+  AND s.category_id IS NOT NULL
+  AND t.date >= ?2
+  AND t.date <= ?3
+GROUP BY tt.tag_id, s.category_id
+`
+
+type TagCategoryCountsParams struct {
+	WalletID int64
+	FromDate string
+	ToDate   string
+}
+
+type TagCategoryCountsRow struct {
+	TagID      int64
+	CategoryID sql.NullInt64
+	TxnCount   int64
+}
+
+// The categories a tag's transactions in the period went to, and how often:
+// a plain transaction under its category, a split once per line under the
+// line's. The two halves can name the same pair; the caller adds them up.
+func (q *Queries) TagCategoryCounts(ctx context.Context, arg TagCategoryCountsParams) ([]TagCategoryCountsRow, error) {
+	rows, err := q.db.QueryContext(ctx, tagCategoryCounts, arg.WalletID, arg.FromDate, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TagCategoryCountsRow{}
+	for rows.Next() {
+		var i TagCategoryCountsRow
+		if err := rows.Scan(&i.TagID, &i.CategoryID, &i.TxnCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

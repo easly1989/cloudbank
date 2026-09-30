@@ -521,16 +521,55 @@
     }
   },
   "tags": {
-    "renameAria": "Rinomina {{name}}",
     "title": "Tag",
-    "empty": "Nessun tag. Vengono creati taggando le transazioni.",
-    "name": "Tag",
-    "count": "Usato",
-    "mergeInto": "Unisci a…",
-    "delete": "Elimina tag",
+    "hint": "Etichette libere da mettere su una transazione. Una transazione può portarne più di una.",
+    "add": "Aggiungi tag",
+    "addTitle": "Nuovo tag",
+    "mergeTitle": "Unisci tag",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "merge": "Unisci",
+    "cancel": "Annulla",
+    "save": "Salva",
+    "name": "Nome",
+    "empty": "Nessun tag.",
+    "emptyHint": "Un tag nasce quando lo scrivi su una transazione. Puoi anche aggiungerlo qui, pronto per quando ti serve.",
+    "duplicate": "«{{name}}» esiste già. Per tenerne uno solo, usa Unisci nell'elenco.",
     "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
     "confirmDeleteBody": "Il tag viene rimosso da tutte le transazioni che lo portano. Le transazioni restano.",
-    "hint": "Etichette libere da mettere su una transazione. Una transazione può portarne più di una."
+    "actionsFor": "Azioni per {{name}}",
+    "never": "Mai",
+    "mostly": "soprattutto {{name}}",
+    "transactions_one": "{{count}} transazione",
+    "transactions_other": "{{count}} transazioni",
+    "notUsedSince": "Non usato dal {{date}}",
+    "neverUsed": "Mai usato",
+    "sortBy": "Ordina per {{column}}",
+    "sortedAsc": "{{column}}, dal più piccolo; clicca per invertire",
+    "sortedDesc": "{{column}}, dal più grande; clicca per invertire",
+    "find": "Cerca un tag",
+    "noMatch": "Nessun tag corrisponde.",
+    "period": "Le cifre coprono gli ultimi 12 mesi",
+    "col": {
+      "tag": "Tag",
+      "mostlyIn": "Soprattutto in",
+      "transactions": "Transazioni",
+      "lastUsed": "Ultimo uso",
+      "amount": "Importo"
+    },
+    "filter": {
+      "unused": "Non usati da 12 mesi",
+      "unusedShort": "Non usati"
+    },
+    "sheet": {
+      "lastUsed": "Usato l'ultima volta il {{date}}",
+      "renameHint": "Rinominarlo lo rinomina su tutte le transazioni.",
+      "newHint": "Puoi anche crearlo scrivendolo su una transazione.",
+      "lastTwelve": "Ultimi 12 mesi",
+      "usage_one": "{{count}} transazione, il {{date}}",
+      "usage_other": "{{count}} transazioni, l'ultima il {{date}}",
+      "seeReports": "Vedilo nei report"
+    }
   },
   "vehicles": {
     "title": "Veicoli",
