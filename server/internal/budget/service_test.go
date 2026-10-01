@@ -80,7 +80,7 @@ func TestSetAndListSameMode(t *testing.T) {
 	}
 }
 
-func TestReportSameOverPeriodWithSplitsAndRollup(t *testing.T) {
+func TestReportParentBudgetCoversItsSubcategories(t *testing.T) {
 	f := newFixture(t)
 	ctx := context.Background()
 	food := f.category(t, "Food", nil, false)
@@ -98,8 +98,8 @@ func TestReportSameOverPeriodWithSplitsAndRollup(t *testing.T) {
 	// Excluded-category spend must not appear.
 	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-01-20", Amount: -1000, CategoryID: iptr(excluded)})
 
-	// Rolled up: Food gets Groceries' actual; budget = -100 * 2 months.
-	rep, err := f.s.Report(ctx, f.wid, "2026-01-01", "2026-02-28", true)
+	// Food's budget covers Groceries, which has none of its own: one line.
+	rep, err := f.s.Report(ctx, f.wid, "2026-01-01", "2026-02-28", "2026-02-28")
 	if err != nil {
 		t.Fatalf("Report: %v", err)
 	}
@@ -112,11 +112,103 @@ func TestReportSameOverPeriodWithSplitsAndRollup(t *testing.T) {
 	if rep.Rows[0].Actual != -7000 {
 		t.Fatalf("actual = %d, want -7000 (Groceries -3000 + Food split -4000)", rep.Rows[0].Actual)
 	}
+	if !rep.Rows[0].Budgeted || rep.TotalBudget != -20000 || rep.TotalActual != -7000 {
+		t.Fatalf("report = %+v", rep)
+	}
 
-	// Not rolled up: Food and Groceries are separate rows.
-	rep2, _ := f.s.Report(ctx, f.wid, "2026-01-01", "2026-02-28", false)
-	if len(rep2.Rows) != 2 {
-		t.Fatalf("non-rollup rows = %+v", rep2.Rows)
+	// A budget of its own takes Groceries out of Food's line.
+	_ = f.s.SetCategoryBudget(ctx, f.wid, groceries, 0, Input{Mode: ModeSame, Same: -2000})
+	rep2, _ := f.s.Report(ctx, f.wid, "2026-01-01", "2026-02-28", "2026-02-28")
+	if len(rep2.Rows) != 2 || rep2.Rows[0].Actual != -4000 || rep2.Rows[1].Actual != -3000 {
+		t.Fatalf("rows with Groceries budgeted = %+v", rep2.Rows)
+	}
+}
+
+func TestReportUnbudgetedIncomeAndComing(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	home := f.category(t, "Home", nil, false)
+	rent := f.category(t, "Rent", iptr(home), false)
+	bills := f.category(t, "Bills", iptr(home), false)
+	health := f.category(t, "Health", nil, false)
+	sal, err := f.q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: f.wid, Name: "Salary", IsIncome: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	salary := sal.ID
+
+	_ = f.s.SetCategoryBudget(ctx, f.wid, bills, 0, Input{Mode: ModeSame, Same: -10000})
+	_ = f.s.SetCategoryBudget(ctx, f.wid, salary, 0, Input{Mode: ModeSame, Same: 200000})
+
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-09-01", Amount: -80000, CategoryID: iptr(rent)})
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-09-05", Amount: -4000, CategoryID: iptr(bills)})
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-09-25", Amount: -8500, CategoryID: iptr(bills)})
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-09-12", Amount: -6479, CategoryID: iptr(health)})
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-09-27", Amount: 245000, CategoryID: iptr(salary)})
+
+	rep, err := f.s.Report(ctx, f.wid, "2026-09-01", "2026-09-30", "2026-09-15")
+	if err != nil {
+		t.Fatal(err)
+	}
+	by := map[int64]ReportRow{}
+	for _, r := range rep.Rows {
+		by[r.CategoryID] = r
+	}
+	if len(rep.Rows) != 4 {
+		t.Fatalf("rows = %+v", rep.Rows)
+	}
+	// Bills is budgeted; the September 25 one is still to come.
+	if b := by[bills]; !b.Budgeted || b.Actual != -12500 || b.Coming != -8500 {
+		t.Fatalf("bills = %+v", b)
+	}
+	// Rent and Health have no budget: listed, not budgeted, not in the totals.
+	if r := by[rent]; r.Budgeted || r.Actual != -80000 {
+		t.Fatalf("rent = %+v", r)
+	}
+	if h := by[health]; h.Budgeted || h.Actual != -6479 {
+		t.Fatalf("health = %+v", h)
+	}
+	if s := by[salary]; !s.Budgeted || !s.IsIncome || s.Budget != 200000 || s.Actual != 245000 || s.Coming != 245000 {
+		t.Fatalf("salary = %+v", s)
+	}
+	if _, ok := by[home]; ok {
+		t.Fatal("Home has neither a budget nor spending of its own")
+	}
+	if rep.TotalBudget != -10000 || rep.TotalActual != -12500 || rep.TotalComing != -8500 {
+		t.Fatalf("totals = %d %d %d, want the budgeted spending only", rep.TotalBudget, rep.TotalActual, rep.TotalComing)
+	}
+}
+
+func TestHistory(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	food := f.category(t, "Food", nil, false)
+	groceries := f.category(t, "Groceries", iptr(food), false)
+	dining := f.category(t, "Dining", iptr(food), false)
+	_ = f.s.SetCategoryBudget(ctx, f.wid, dining, 0, Input{Mode: ModeSame, Same: -5000})
+
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-07-03", Amount: -1000, CategoryID: iptr(food)})
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-07-20", Amount: -2000, CategoryID: iptr(groceries)})
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-08-20", Amount: -3000, CategoryID: iptr(dining)})
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-09-10", Amount: -4000, CategoryID: iptr(groceries)})
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-09-20", Amount: -9000, CategoryID: iptr(groceries)}) // after today
+	_, _ = f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: "2026-06-30", Amount: -9000, CategoryID: iptr(groceries)}) // before the window
+
+	h, err := f.s.History(ctx, f.wid, food, 3, "2026-09-15")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []MonthAmount{{"2026-07", -3000}, {"2026-08", 0}, {"2026-09", -4000}}
+	if len(h) != 3 {
+		t.Fatalf("history = %+v", h)
+	}
+	for i := range want {
+		if h[i] != want[i] {
+			t.Fatalf("history = %+v, want %+v", h, want)
+		}
+	}
+	if _, err := f.s.History(ctx, f.wid, 99999, 12, "2026-09-15"); err != ErrInvalidCategory {
+		t.Fatalf("unknown category: %v", err)
 	}
 }
 
@@ -130,12 +222,12 @@ func TestReportPerYearBudget(t *testing.T) {
 	_ = f.s.SetCategoryBudget(ctx, f.wid, food, 2026, Input{Mode: ModeSame, Same: -30000})
 
 	// 2026 uses the year-specific budget: -300 × 2 months.
-	rep, _ := f.s.Report(ctx, f.wid, "2026-01-01", "2026-02-28", false)
+	rep, _ := f.s.Report(ctx, f.wid, "2026-01-01", "2026-02-28", "2026-02-28")
 	if rep.Rows[0].Budget != -60000 {
 		t.Fatalf("2026 budget = %d, want -60000 (year override)", rep.Rows[0].Budget)
 	}
 	// 2025 falls back to the every-year default: -100 × 2 months.
-	rep25, _ := f.s.Report(ctx, f.wid, "2025-01-01", "2025-02-28", false)
+	rep25, _ := f.s.Report(ctx, f.wid, "2025-01-01", "2025-02-28", "2026-02-28")
 	if rep25.Rows[0].Budget != -20000 {
 		t.Fatalf("2025 budget = %d, want -20000 (every-year default)", rep25.Rows[0].Budget)
 	}
@@ -161,7 +253,7 @@ func TestReportMonthlyBudget(t *testing.T) {
 	monthly[2] = -30000 // Mar
 	_ = f.s.SetCategoryBudget(ctx, f.wid, food, 0, Input{Mode: ModeMonthly, Monthly: monthly})
 
-	rep, _ := f.s.Report(ctx, f.wid, "2026-01-01", "2026-02-28", false)
+	rep, _ := f.s.Report(ctx, f.wid, "2026-01-01", "2026-02-28", "2026-02-28")
 	if rep.Rows[0].Budget != -30000 { // Jan -100 + Feb -200
 		t.Fatalf("monthly budget = %d, want -30000", rep.Rows[0].Budget)
 	}

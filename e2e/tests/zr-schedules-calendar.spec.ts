@@ -132,9 +132,12 @@ test("the calendar shows what is due and registers it", async ({ page }) => {
   });
 
   await test.step("a registered bill opens the register on its row", async () => {
+    // The registered one: early in a month the grid's trailing days can show
+    // the next occurrence too.
     await page
       .getByTestId("schedules-calendar")
       .getByRole("button", { name: new RegExp(`^${gym}`) })
+      .and(page.locator('[data-state="registered"]'))
       .click();
     await expect(page).toHaveURL(
       new RegExp(`/transactions\\?account=${accountId}&txn=\\d+`),

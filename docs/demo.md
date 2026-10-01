@@ -16,8 +16,8 @@ about into it.
   rent, bills, groceries, a summer holiday, transfers between the accounts.
   A few tags run through them: the car's fuel, work lunches to claim back,
   Christmas presents, and the bills of a home office.
-  Budgets, bills, scheduled transactions and two savings goals are set up
-  already, so the dashboard, the reports and the schedules calendar have
+  Budgets (six on spending, one on the salary coming in), bills, scheduled
+  transactions and two savings goals are set up already, so the dashboard, the reports and the schedules calendar have
   something to show. Three templates for quick entry (the weekly shop, a coffee,
   a tank of fuel) are ready in the entry sheet's **⋯** menu.
 - **Your own copy.** Nobody else sees your account, and you can change anything:

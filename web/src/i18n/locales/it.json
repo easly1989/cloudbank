@@ -286,28 +286,85 @@
     }
   },
   "budget": {
-    "amountFor": "Budget per {{name}}",
     "title": "Budget",
-    "editor": "Budget",
-    "report": "Report",
-    "category": "Categoria",
-    "mode": "Modalità",
-    "amounts": "Importi",
-    "same": "Fisso",
-    "monthly": "Mensile",
+    "hint": "Quanto avevi previsto di spendere, accanto a quanto hai speso davvero.",
+    "add": "Aggiungi al budget",
+    "month": "Mese",
     "year": "Anno",
-    "everyYear": "Ogni anno",
-    "yearHint": "Sovrascrive il default \"ogni anno\" per questo anno.",
-    "noCategories": "Crea prima delle categorie.",
-    "from": "Da",
-    "to": "A",
-    "rollup": "Raggruppa sottocategorie",
+    "periodKind": "Mese o anno",
+    "previous": "Precedente",
+    "next": "Successivo",
+    "more": "Altro",
     "exportCsv": "Esporta CSV",
-    "empty": "Nessun budget o spesa in questo periodo.",
-    "budgeted": "Budget",
-    "actual": "Effettivo",
-    "difference": "Differenza",
-    "total": "Totale",
+    "spent": "Speso",
+    "left": "Rimasto",
+    "overLabel": "Sforato",
+    "ofPlanned": "su {{amount}} previsti",
+    "stillToCome": "{{amount}} in arrivo",
+    "daysToGo_one": "manca {{count}} giorno",
+    "daysToGo_other": "mancano {{count}} giorni",
+    "lastDay": "oggi è l'ultimo giorno",
+    "overCount_one": "{{count}} categoria sforata",
+    "overCount_other": "{{count}} categorie sforate",
+    "noneOver": "nessuna sforata",
+    "col": {
+      "category": "Categoria",
+      "planned": "Previsto",
+      "spent": "Speso",
+      "coming": "In arrivo",
+      "left": "Rimasto"
+    },
+    "inBudget": "Nel budget",
+    "notInBudget": "Non a budget",
+    "expectedIncome": "Entrate previste",
+    "toCome": "+ {{amount}} in arrivo",
+    "over": "{{amount}} sforati",
+    "toGo": "{{amount}} da ricevere",
+    "toGoOf": "{{left}} da ricevere su {{plan}}",
+    "allIn": "tutto arrivato",
+    "above": "{{amount}} oltre il previsto",
+    "leftOf": "{{left}} rimasti di {{plan}}",
+    "monthByMonth": "mese per mese",
+    "lineMonth": "La tacca su ogni barra segna dove cade oggi nel mese: una barra oltre la tacca vuol dire che stai spendendo più in fretta del previsto. Il budget di una categoria copre le sue sottocategorie che non ne hanno uno loro. Le categorie e i conti esclusi dal budget non vengono contati.",
+    "lineYear": "La tacca su ogni barra segna dove cade oggi nell'anno: una barra oltre la tacca vuol dire che stai spendendo più in fretta del previsto. Il budget di una categoria copre le sue sottocategorie che non ne hanno uno loro. Le categorie e i conti esclusi dal budget non vengono contati.",
+    "actionsFor": "Azioni per {{name}}",
+    "menu": {
+      "edit": "Modifica budget",
+      "transactions": "Vedi le sue transazioni",
+      "remove": "Togli dal budget"
+    },
+    "confirmRemoveTitle": "Togliere {{name}} dal budget?",
+    "confirmRemoveBody": "Il suo piano sparisce, per ogni anno. Quello che ha speso resta dov'è.",
+    "emptyTitle": "Pianifica quanto vuoi spendere",
+    "emptyBody": "Dai a una categoria un importo mensile e questa pagina ti mostra, mese per mese, quanto ne è uscito e quanto ne resta. Le tue spese più grandi degli ultimi 12 mesi, per cominciare:",
+    "emptyBodyNone": "Dai a una categoria un importo mensile e questa pagina ti mostra, mese per mese, quanto ne è uscito e quanto ne resta.",
+    "aMonth": "{{amount}} al mese",
+    "addOne": "Aggiungi",
+    "sheet": {
+      "addTitle": "Aggiungi al budget",
+      "category": "Categoria",
+      "pickCategory": "Scegli una categoria",
+      "spending": "Uscite",
+      "income": "Entrate",
+      "subtitleOf": "{{kind}} · {{spent}} su {{plan}} in {{period}}",
+      "subtitleSpent": "{{kind}} · {{spent}} in {{period}}",
+      "plan": "Piano",
+      "same": "Uguale ogni mese",
+      "monthly": "Mese per mese",
+      "eachMonth": "Ogni mese",
+      "for": "Per",
+      "everyYear": "Ogni anno",
+      "yearOnly": "Solo {{year}}",
+      "yearNote": "Solo {{year}} lascia com'è il piano degli altri anni: per un anno che costa di più, o di meno.",
+      "history": "Gli ultimi 12 mesi",
+      "historyNote_one": "{{total}} spesi: {{average}} al mese in media, oltre il piano in {{count}} mese su 12. La linea tratteggiata è il piano.",
+      "historyNote_other": "{{total}} spesi: {{average}} al mese in media, oltre il piano in {{count}} mesi su 12. La linea tratteggiata è il piano.",
+      "historyNoteIncome": "{{total}} ricevuti: {{average}} al mese in media. La linea tratteggiata è il piano.",
+      "historyNone": "Niente negli ultimi 12 mesi.",
+      "use": "Prevedi {{amount}} al mese",
+      "cancel": "Annulla",
+      "save": "Salva"
+    },
     "spentOf": "{{spent}} di {{budget}}",
     "remaining": "{{amount}} rimanenti",
     "overBy": "{{amount}} oltre",
@@ -325,8 +382,7 @@
       "9": "Ott",
       "10": "Nov",
       "11": "Dic"
-    },
-    "hint": "Quanto avevi previsto di spendere, accanto a quanto hai speso davvero."
+    }
   },
   "assignments": {
     "addTitle": "Nuova regola",
@@ -2025,13 +2081,17 @@
     },
     "budget": {
       "offer": "Prima volta qui? Fai il giro del budget",
-      "tabs": {
-        "title": "Pianifica, poi confronta",
-        "body": "Nella prima scheda pianifichi quanto spendere; il report lo mette a confronto con quanto hai speso davvero."
+      "figures": {
+        "title": "Prima la risposta",
+        "body": "Quanto del piano è già uscito, quanto ne resta e quanti giorni mancano alla fine del periodo. Una categoria oltre il suo piano è in ambra."
       },
-      "editor": {
-        "title": "Un importo per categoria",
-        "body": "Dai a ogni categoria lo stesso importo ogni mese, oppure un importo per mese. \"Ogni anno\" è il valore di base; scegliendo un anno lo sostituisci solo per quell'anno."
+      "period": {
+        "title": "Un mese o un anno",
+        "body": "Passa dal mese all'anno, e vai avanti o indietro con le frecce. ⋯ esporta la pagina in CSV."
+      },
+      "table": {
+        "title": "Una riga per budget",
+        "body": "Previsto, speso e rimasto per ogni categoria a budget. La tacca sulla barra è oggi; la parte più chiara è già inserita ma datata più avanti. Un clic apre il suo piano; le spese senza budget sono elencate a parte, non come sforamenti."
       }
     },
     "reports": {

@@ -24,18 +24,33 @@ export interface BudgetReportRow {
   categoryId: number;
   name: string;
   isIncome: boolean;
+  /** False for a category with spending but no budget: it is not over anything. */
+  budgeted: boolean;
   budget: number;
   actual: number;
+  /** The part of actual dated after today: entered, not yet gone. */
+  coming: number;
 }
 
+/**
+ * Budget vs actual per budget line. A parent's budget also covers its
+ * subcategories without a budget of their own; the totals are over the
+ * budgeted spending lines only.
+ */
 export interface BudgetReport {
   rows: BudgetReportRow[];
   totalBudget: number;
   totalActual: number;
+  totalComing: number;
   from: string;
   to: string;
-  rollup: boolean;
+  today: string;
   currency: CurrencyInfo | null;
+}
+
+export interface BudgetMonth {
+  month: string; // YYYY-MM
+  amount: number;
 }
 
 export const listBudgets = (walletId: number, year = 0) =>
@@ -47,9 +62,13 @@ export const setCategoryBudget = (walletId: number, categoryId: number, body: Bu
 export const clearCategoryBudget = (walletId: number, categoryId: number, year = 0) =>
   api.del<void>(`/api/v1/wallets/${walletId}/budgets/${categoryId}?year=${year}`);
 
-export const getBudgetReport = (walletId: number, from: string, to: string, rollup: boolean) =>
-  api.get<BudgetReport>(
-    `/api/v1/wallets/${walletId}/budgets/report?from=${from}&to=${to}&rollup=${rollup}`,
+export const getBudgetReport = (walletId: number, from: string, to: string) =>
+  api.get<BudgetReport>(`/api/v1/wallets/${walletId}/budgets/report?from=${from}&to=${to}`);
+
+/** What a category took month by month, as its budget line counts it, up to today. */
+export const getBudgetHistory = (walletId: number, categoryId: number, months = 12) =>
+  api.get<{ months: BudgetMonth[] }>(
+    `/api/v1/wallets/${walletId}/budgets/${categoryId}/history?months=${months}`,
   );
 
 // --- Reports ---

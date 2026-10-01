@@ -267,20 +267,41 @@ only money coming in.
 
 ## Budget
 
-A budget is how much you plan to spend in each category, compared with what you
-actually spent.
+A budget is how much you plan to spend in each category, set against what has
+actually gone.
 
-- **Budget tab.** Set an amount per category.
-  - **Same** is one amount for every month.
-  - **Monthly** is twelve amounts, one per month, for spending that changes with
-    the seasons.
-  - A budget applies **Every year** unless you set one for a particular year,
-    which then takes over for that year.
-- **Report tab.** Budget, actual and difference per category over the months
-  you pick. **Roll up subcategories** adds subcategories into their parent.
-  **Export CSV** downloads the table.
+- **The period.** **Month** or **Year**, and ‹ › to step back or ahead. **⋯**
+  exports the page as CSV.
+- **The answer first.** What you have spent of what you planned, what is left,
+  the days to go, and how many categories are past their plan. The bar under it
+  is the whole budget.
+- **A line per budget.** Planned, spent and left, largest plan first, with a bar
+  each. A line past its plan shows in amber. The tick on the bars is where today
+  falls in the period: a bar past it is spending ahead of plan.
+  - **A budget on a parent** (Food) covers its subcategories that have no budget
+    of their own; one with its own budget (Food › Restaurants) is a line apart.
+  - **Still to come.** A transaction entered but dated after today counts
+    against the plan, since the money is committed, but shows lighter on the
+    bar and as "+ … to come" under what is spent.
+  - **Not in the budget.** Spending in categories with no budget is listed
+    apart, with **Add to budget** on each. It is not over anything and is not
+    added into the plan.
+  - **Expected income.** Budgets on income categories, when there are any, show
+    in a group of their own: what has come in and what is still to come.
+- **Editing a budget.** Click a line, or **Add to budget**, to open the sheet
+  beside the page.
+  - **The same every month** is one amount; **Month by month** is twelve, for
+    spending that changes with the seasons.
+  - **Every year**, or **only** the year on the page, for a year that costs more
+    or less. The other years keep their plan.
+  - **The last 12 months** shows what the category took each month against the
+    plan, and **Plan … a month** sets the average, rounded to 5.
+  - The line's **⋯** also opens its transactions in the reports, or removes it
+    from the budget.
+- **Categories and accounts** set to stay out of the budget are not counted.
 
-The dashboard's **Budget** widget shows this month at a glance.
+The dashboard's **Budget** widget shows this month at a glance, and the overview
+says when a category has gone past its plan.
 
 ## Goals
 

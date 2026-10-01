@@ -36,7 +36,7 @@ func TestBudgetSetListAndReport(t *testing.T) {
 	}, true).Body.Close()
 
 	// Report for Jan-Mar: budget = 3 × -100 = -300, actual = -40.
-	rr := c.do(http.MethodGet, base+"/budgets/report?from=2026-01-01&to=2026-03-31&rollup=true", nil, false)
+	rr := c.do(http.MethodGet, base+"/budgets/report?from=2026-01-01&to=2026-03-31", nil, false)
 	defer rr.Body.Close()
 	var rep struct {
 		Rows []struct {
@@ -54,6 +54,24 @@ func TestBudgetSetListAndReport(t *testing.T) {
 	}
 	if rep.Currency == nil || rep.Currency.Code != "EUR" {
 		t.Fatalf("currency = %+v", rep.Currency)
+	}
+
+	// The history counts what is dated up to today.
+	hr := c.do(http.MethodGet, base+"/budgets/"+strconv.FormatInt(cat.ID, 10)+"/history?months=3", nil, false)
+	defer hr.Body.Close()
+	var hist struct {
+		Months []struct {
+			Month  string `json:"month"`
+			Amount int64  `json:"amount"`
+		} `json:"months"`
+	}
+	if err := json.NewDecoder(hr.Body).Decode(&hist); err != nil || len(hist.Months) != 3 {
+		t.Fatalf("history = %+v (%v)", hist, err)
+	}
+	if nf := c.do(http.MethodGet, base+"/budgets/999999/history", nil, false); nf.StatusCode != http.StatusNotFound {
+		t.Fatalf("history of an unknown category = %d, want 404", nf.StatusCode)
+	} else {
+		nf.Body.Close()
 	}
 
 	// Clear the budget.

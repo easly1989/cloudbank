@@ -53,9 +53,9 @@ export function countOverBudget(rows: readonly BudgetReportRow[] | undefined): n
   if (!rows) return 0;
   let n = 0;
   for (const r of rows) {
-    if (r.isIncome || r.budget <= 0) continue;
-    // Both figures are magnitudes for expenses, so a plain comparison holds.
-    if (r.actual > r.budget) n++;
+    if (r.isIncome || !r.budgeted || r.budget >= 0) continue;
+    // Spending is negative: past the budget is below it.
+    if (r.actual < r.budget) n++;
   }
   return n;
 }

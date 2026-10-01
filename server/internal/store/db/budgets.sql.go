@@ -11,7 +11,7 @@ import (
 )
 
 const categoryActualsForBudget = `-- name: CategoryActualsForBudget :many
-SELECT t.category_id AS category_id, t.amount AS amount, a.currency_id AS currency_id
+SELECT t.category_id AS category_id, t.amount AS amount, a.currency_id AS currency_id, t.date AS date
 FROM transactions t
 JOIN accounts a ON a.id = t.account_id
 WHERE t.wallet_id = ?1
@@ -21,7 +21,7 @@ WHERE t.wallet_id = ?1
   AND t.date >= ?2
   AND t.date <= ?3
 UNION ALL
-SELECT s.category_id AS category_id, s.amount AS amount, a.currency_id AS currency_id
+SELECT s.category_id AS category_id, s.amount AS amount, a.currency_id AS currency_id, t.date AS date
 FROM splits s
 JOIN transactions t ON t.id = s.transaction_id
 JOIN accounts a ON a.id = t.account_id
@@ -42,10 +42,12 @@ type CategoryActualsForBudgetRow struct {
 	CategoryID sql.NullInt64
 	Amount     int64
 	CurrencyID int64
+	Date       string
 }
 
 // Category amounts in a date range (plain transactions + split lines), excluding
-// accounts flagged no_budget, with each row's currency so the app can convert.
+// accounts flagged no_budget, with each row's currency so the app can convert
+// and its date, so the report can tell what is still to come.
 func (q *Queries) CategoryActualsForBudget(ctx context.Context, arg CategoryActualsForBudgetParams) ([]CategoryActualsForBudgetRow, error) {
 	rows, err := q.db.QueryContext(ctx, categoryActualsForBudget, arg.WalletID, arg.FromDate, arg.ToDate)
 	if err != nil {
@@ -55,7 +57,12 @@ func (q *Queries) CategoryActualsForBudget(ctx context.Context, arg CategoryActu
 	items := []CategoryActualsForBudgetRow{}
 	for rows.Next() {
 		var i CategoryActualsForBudgetRow
-		if err := rows.Scan(&i.CategoryID, &i.Amount, &i.CurrencyID); err != nil {
+		if err := rows.Scan(
+			&i.CategoryID,
+			&i.Amount,
+			&i.CurrencyID,
+			&i.Date,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

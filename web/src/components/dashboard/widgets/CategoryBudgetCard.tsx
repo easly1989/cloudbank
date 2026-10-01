@@ -8,7 +8,7 @@ import { BudgetGauge } from "../../BudgetGauge";
 
 // CategoryBudgetCard shows this month's budget vs actual for one chosen category
 // as an over/under gauge. The category is picked per instance (defaults to the
-// first budgeted one). Reuses the budget report (per-category, not rolled up).
+// first budgeted one). Reuses the budget report, one row per budget line.
 export function CategoryBudgetCard({
   walletId,
   base,
@@ -30,12 +30,12 @@ export function CategoryBudgetCard({
     return { from: `${y}-${pad(m + 1)}-01`, to: `${y}-${pad(m + 1)}-${pad(lastDay)}` };
   }, []);
   const query = useQuery({
-    queryKey: ["budgetReport", walletId, from, to, false],
-    queryFn: () => getBudgetReport(walletId, from, to, false),
+    queryKey: ["budgetReport", walletId, from, to],
+    queryFn: () => getBudgetReport(walletId, from, to),
     enabled: walletId > 0,
   });
   // Only categories with a budget configured are selectable.
-  const budgeted = (query.data?.rows ?? []).filter((r) => r.budget !== 0);
+  const budgeted = (query.data?.rows ?? []).filter((r) => r.budgeted);
   const row = budgeted.find((r) => r.categoryId === config.categoryId) ?? budgeted[0];
 
   return (
