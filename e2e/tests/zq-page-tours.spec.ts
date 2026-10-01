@@ -96,6 +96,20 @@ async function ready(
           body: JSON.stringify({ name: "Tour probe", type: "bank" }),
         })
       ).json();
+      // The review's tour points at its two cards, which a wallet with
+      // nothing to review replaces with its end (#570): a duplicate pair.
+      for (let i = 0; i < 2; i++)
+        await fetch(`${wbase}/transactions`, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: H,
+          body: JSON.stringify({
+            accountId: acc.id,
+            date: "2026-09-10",
+            amount: -1234,
+            memo: "Tour duplicate",
+          }),
+        });
       return acc.id as number;
     },
     { H, preferences },

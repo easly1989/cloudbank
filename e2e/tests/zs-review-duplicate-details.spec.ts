@@ -4,7 +4,9 @@ import { expect, test, type Page } from "@playwright/test";
 //
 //   - a suspected duplicate pair is compared field by field (#484);
 //   - a row that needs a category keeps its whole memo, and on a phone its
-//     category picker goes underneath instead of being squeezed (#486).
+//     category picker goes underneath instead of being squeezed (#486);
+//   - opened from a register, it leads back there, and says when nothing is
+//     left (#570).
 //
 // Named "zs-" so it runs after the main journey, whose admin it reuses; it also
 // sets itself up when run alone.
@@ -19,10 +21,14 @@ const MEMO =
 
 // Signs in, makes an account of its own, and imports one bank row with `memo`
 // and no category; with `manual`, the same movement entered by hand first.
-async function seed(page: Page, memo: string, manual: boolean): Promise<void> {
+async function seed(
+  page: Page,
+  memo: string,
+  manual: boolean,
+): Promise<{ account: number; name: string }> {
   await page.goto("/");
   await page.waitForLoadState("networkidle");
-  await page.evaluate(
+  return page.evaluate(
     async ({ h, memo, manual }) => {
       const needsSetup = (await (await fetch("/api/v1/setup/status")).json())
         .needsSetup as boolean;
@@ -59,7 +65,7 @@ async function seed(page: Page, memo: string, manual: boolean): Promise<void> {
           headers: h,
           body: JSON.stringify({ name: `Review ${Date.now()}`, type: "bank" }),
         })
-      ).json()) as { id: number };
+      ).json()) as { id: number; name: string };
       if (manual) {
         // By hand, then the bank's row for the same movement, a few days off.
         await fetch(`/api/v1/wallets/${wid}/transactions`, {
@@ -91,6 +97,7 @@ async function seed(page: Page, memo: string, manual: boolean): Promise<void> {
           ],
         }),
       });
+      return { account: acc.id, name: acc.name };
     },
     { h: H, memo, manual },
   );
@@ -142,4 +149,56 @@ test("a row that needs a category keeps its whole memo, on a phone too", async (
   ]);
   expect(picker!.y).toBeGreaterThan(desc!.y + desc!.height - 1);
   expect(picker!.width).toBeGreaterThan(300);
+});
+
+test("opened from a register, the review leads back to it", async ({
+  page,
+}) => {
+  const memo = `CARD PAYMENT BAKERY ${Date.now()}`;
+  const { account, name } = await seed(page, memo, false);
+  const category = `Bakery ${Date.now()}`;
+  await page.evaluate(
+    async ({ h, category }) => {
+      const wid = localStorage.getItem("cb.currentWalletId");
+      await fetch(`/api/v1/wallets/${wid}/categories`, {
+        method: "POST",
+        headers: h,
+        body: JSON.stringify({ name: category }),
+      });
+    },
+    { h: H, category },
+  );
+
+  await page.goto(`/transactions?account=${account}`);
+  await page.getByRole("link", { name: "1 to review" }).click();
+  const back = page.getByTestId("review-back");
+  await expect(back).toHaveText(name);
+
+  // Showing every account keeps the way back.
+  await page.getByRole("button", { name: "Show all accounts" }).click();
+  await expect(back).toHaveText(name);
+  // It replaced the page in the history, so back is the register.
+  await page.goBack();
+  await page.getByRole("link", { name: "1 to review" }).click();
+
+  // The last row given a category: the end, and the button back.
+  const row = page.getByTestId("needs-category-row").filter({ hasText: memo });
+  await row.getByRole("combobox", { name: "Category" }).fill(category);
+  await page.getByRole("option", { name: category }).click();
+  const done = page.getByTestId("review-done");
+  await expect(done).toContainText("Nothing left to review");
+  await expect(done).toContainText(`Every transaction in ${name}`);
+  await done.getByRole("link", { name: `Back to ${name}` }).click();
+  await expect(page).toHaveURL(
+    new RegExp(`/transactions\\?account=${account}$`),
+  );
+});
+
+test("opened from the menu, the review offers no way back", async ({
+  page,
+}) => {
+  await seed(page, `MENU ${Date.now()}`, false);
+  await page.goto("/review");
+  await expect(page.getByTestId("needs-category-row").first()).toBeVisible();
+  await expect(page.getByTestId("review-back")).toHaveCount(0);
 });

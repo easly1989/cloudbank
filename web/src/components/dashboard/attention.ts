@@ -33,10 +33,10 @@ export interface AttentionInput {
  */
 export function buildAttentionItems(input: AttentionInput): AttentionItem[] {
   const all: AttentionItem[] = [
-    { key: "needsCategory", count: input.needsCategory, to: "/review" },
+    { key: "needsCategory", count: input.needsCategory, to: "/review?from=dashboard" },
     { key: "overdueBills", count: input.overdueBills, to: "/schedules" },
     { key: "overBudget", count: input.overBudget, to: "/budget" },
-    { key: "duplicates", count: input.duplicates, to: "/review" },
+    { key: "duplicates", count: input.duplicates, to: "/review?from=dashboard" },
   ];
   return all.filter((i) => i.count > 0);
 }
