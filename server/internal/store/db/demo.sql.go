@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const demoCountUserWallets = `-- name: DemoCountUserWallets :one
@@ -63,4 +64,24 @@ DELETE FROM wallets WHERE id IN (
 func (q *Queries) DemoDeleteWalletsOfIdleUsers(ctx context.Context, expiresAt string) error {
 	_, err := q.db.ExecContext(ctx, demoDeleteWalletsOfIdleUsers, expiresAt)
 	return err
+}
+
+const demoLinkFills = `-- name: DemoLinkFills :execrows
+UPDATE transactions SET vehicle_id = ?1
+WHERE wallet_id = ?2 AND memo LIKE 'd=%'
+`
+
+type DemoLinkFillsParams struct {
+	VehicleID sql.NullInt64
+	WalletID  int64
+}
+
+// Ties the seeded fuel payments to the demo's car: the HomeBank file the seed
+// comes from has no vehicles, only the fills' memos (d= the odometer).
+func (q *Queries) DemoLinkFills(ctx context.Context, arg DemoLinkFillsParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, demoLinkFills, arg.VehicleID, arg.WalletID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }

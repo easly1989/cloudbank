@@ -362,9 +362,23 @@ PNG.
 
 ## Vehicles
 
-Vehicles feed the **Vehicle** report: what a car costs to run and what it uses.
+What each car, motorbike or van costs to run. A row per vehicle shows its last
+12 months:
 
-1. **Add the vehicle** on the Vehicles page.
+- what its fuel cost, and how many fills;
+- the kilometres driven, and what one cost;
+- the litres per 100 km;
+- the last fill: when, and the odometer then.
+
+Click a row to edit the vehicle's name, plate and notes, next to the same
+figures and its five latest fills. **Report** opens the **Vehicle** tab of the
+Reports page on it, fill by fill. The button gives way first when the page is
+narrow; ⋯ and a right click on the row have it too. Deleting a vehicle says
+how many payments it was linked to: they stay in the register, with no vehicle.
+
+To get a vehicle's fuel onto the page:
+
+1. **Add the vehicle** with **Add vehicle**. A name is enough.
 2. **Record each fill-up** as an ordinary transaction and pick the vehicle in
    the entry sheet's **Vehicle** field, under **More details**. The field shows
    once you have a vehicle.

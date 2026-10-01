@@ -22,3 +22,9 @@ SELECT COUNT(*) FROM transactions WHERE wallet_id = ?;
 
 -- name: DemoCountUserWallets :one
 SELECT COUNT(*) FROM wallet_members WHERE user_id = ?;
+
+-- name: DemoLinkFills :execrows
+-- Ties the seeded fuel payments to the demo's car: the HomeBank file the seed
+-- comes from has no vehicles, only the fills' memos (d= the odometer).
+UPDATE transactions SET vehicle_id = sqlc.arg(vehicle_id)
+WHERE wallet_id = sqlc.arg(wallet_id) AND memo LIKE 'd=%';

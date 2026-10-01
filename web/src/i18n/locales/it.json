@@ -717,20 +717,63 @@
   },
   "vehicles": {
     "title": "Veicoli",
-    "hint": "Traccia auto, moto o qualsiasi veicolo per costruire report sui costi del carburante. Assegna un veicolo a una transazione per includerla.",
-    "empty": "Nessun veicolo.",
+    "hint": "Quanto ti costa ogni auto, moto o furgone, dai pagamenti di carburante che gli colleghi.",
     "add": "Aggiungi veicolo",
     "addTitle": "Nuovo veicolo",
-    "editTitle": "Modifica veicolo",
     "name": "Nome",
     "plate": "Targa",
     "notes": "Note",
-    "edit": "Modifica veicolo",
-    "delete": "Elimina veicolo",
     "cancel": "Annulla",
     "save": "Salva",
+    "duplicate": "Esiste già un veicolo chiamato {{name}}.",
+    "col": {
+      "vehicle": "Veicolo",
+      "fuel": "Carburante",
+      "distance": "Distanza",
+      "perKm": "Al km",
+      "per100": "Per 100 km",
+      "lastFill": "Ultimo rifornimento"
+    },
+    "fills_one": "{{count}} rifornimento",
+    "fills_other": "{{count}} rifornimenti",
+    "today": "oggi",
+    "daysAgo_one": "{{count}} giorno fa",
+    "daysAgo_other": "{{count}} giorni fa",
+    "onTheClock": "{{distance}} sul contachilometri",
+    "noFills": "Nessun pagamento di carburante collegato. Scegli “{{name}}” nel campo Veicolo di un pagamento per iniziare.",
+    "noFillsShort": "Nessun pagamento di carburante collegato",
+    "noneLately": "Nessun pagamento di carburante negli ultimi 12 mesi",
+    "report": "Report",
+    "reportFor": "Apri il report di {{name}}",
+    "actionsFor": "Azioni per {{name}}",
+    "menu": {
+      "edit": "Modifica veicolo",
+      "report": "Apri il report",
+      "delete": "Elimina veicolo"
+    },
+    "line": "Gli ultimi 12 mesi. Distanza e consumo vengono dal memo di ogni pagamento collegato: <code>d=</code> i km sul contachilometri, <code>v=</code> i litri; un rifornimento senza <code>v=</code> è parziale.",
+    "phoneLine": "Gli ultimi 12 mesi.",
+    "sheet": {
+      "subtitle_one": "{{count}} pagamento di carburante negli ultimi 12 mesi",
+      "subtitle_other": "{{count}} pagamenti di carburante negli ultimi 12 mesi",
+      "lastTwelve": "Ultimi 12 mesi",
+      "recent": "Ultimi rifornimenti",
+      "howTo": "Sceglilo nel campo Veicolo di un pagamento di carburante, sotto Altri dettagli nel foglio di inserimento, e scrivi nel memo i km e i litri: <code>d=41250 v=32.5</code>."
+    },
+    "empty": {
+      "title": "Scopri quanto costa un veicolo",
+      "body": "Aggiungi un veicolo, poi collegagli i pagamenti di carburante. La pagina calcola quanto spendi al chilometro e quanto consuma, e la pagina Report lo mostra rifornimento per rifornimento.",
+      "step1": "Aggiungi il veicolo",
+      "step1Sub": "Basta un nome; targa e note sono per te.",
+      "step2": "Sceglilo quando inserisci un pagamento di carburante",
+      "step2Sub": "Nel foglio di inserimento, sotto Altri dettagli → Veicolo.",
+      "step3": "Scrivi nel memo i km e i litri",
+      "step3Sub": "<code>d=41250 v=32.5</code>: chilometri e litri. Togli <code>v=</code> quando non hai fatto il pieno."
+    },
     "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
-    "confirmDeleteBody": "I rifornimenti restano nel registro, ma non sono più collegati a un veicolo."
+    "confirmDeleteBody_one": "Il suo pagamento di carburante resta nel registro, ma non sarà più collegato a un veicolo.",
+    "confirmDeleteBody_other": "I suoi {{count}} pagamenti di carburante restano nel registro, ma non saranno più collegati a nessun veicolo.",
+    "confirmDeleteNone": "Non ha pagamenti di carburante collegati."
   },
   "goals": {
     "title": "Obiettivi di risparmio",
@@ -2241,6 +2284,21 @@
       "add": {
         "title": "Metti da parte per qualcosa",
         "body": "Un obiettivo è un importo e, se vuoi, una data: una vacanza, una bici nuova, un cuscinetto per gli imprevisti."
+      }
+    },
+    "vehicles": {
+      "offer": "Prima volta qui? Fai il tour dei veicoli",
+      "table": {
+        "title": "Una riga per veicolo",
+        "body": "Quanto è costato il carburante negli ultimi 12 mesi, i chilometri, il costo di uno e i litri per 100 km. Clicca una riga per modificarla e vedere gli ultimi rifornimenti."
+      },
+      "memo": {
+        "title": "Il conto lo fa il memo",
+        "body": "Collega un pagamento di carburante al veicolo e scrivi nel memo i km e i litri, come d=41250 v=32.5. Senza, la pagina conosce il costo ma non i chilometri."
+      },
+      "add": {
+        "title": "Aggiungi un veicolo",
+        "body": "Un'auto, una moto, un furgone: basta un nome per iniziare a collegargli i pagamenti di carburante."
       }
     },
     "bankSync": {

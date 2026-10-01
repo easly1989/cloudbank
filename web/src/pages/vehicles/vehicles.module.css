@@ -1,0 +1,319 @@
+/* The Vehicles page (#574), to the numbers of the approved mockup: a row per
+   vehicle in the register's card, what it cost to run over the last twelve
+   months, and the explanation of the memo under it. */
+
+.page {
+  container-type: inline-size;
+  font-variant-numeric: tabular-nums;
+}
+.mono {
+  font-family: var(--mantine-font-family-monospace);
+}
+.dim {
+  color: var(--mantine-color-dimmed);
+}
+.line {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--mantine-color-dimmed);
+}
+/* A memo token, as typed: d=41250. */
+.code {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 12.5px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--mantine-color-text) 8%, transparent);
+  color: var(--mantine-color-text);
+}
+
+.card {
+  border: 1px solid var(--cb-ledger-border);
+  border-radius: 12px;
+  background: var(--cb-ledger-surface);
+  overflow: hidden;
+}
+
+/* Desktop rows: the vehicle, fuel, distance, a km, 100 km, the last fill,
+   Report, ⋯. */
+.tr {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 120px 110px 100px 110px 190px 104px 40px;
+  gap: 14px;
+  align-items: center;
+  padding: 0 16px;
+  min-height: 64px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 14px;
+}
+.tr[data-row] {
+  cursor: pointer;
+}
+.tr[data-row]:hover {
+  background: var(--mantine-color-default-hover);
+}
+.head {
+  border-top: 0;
+  min-height: 38px;
+  background: var(--cb-band-header);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+}
+.r {
+  text-align: right;
+  white-space: nowrap;
+}
+.name {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nameTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.nameText {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.plate {
+  flex-shrink: 0;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--cb-shell-card-border);
+  color: var(--mantine-color-dimmed);
+  white-space: nowrap;
+}
+.sub {
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.two {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: nowrap;
+  min-width: 0;
+}
+.r.two {
+  align-items: flex-end;
+}
+.two > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* A vehicle with nothing linked says what to do, across the figures and,
+   having no last fill either, across that too. */
+.none[data-wide] {
+  grid-column: 2 / span 5;
+}
+.none {
+  grid-column: 2 / span 4;
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+  min-width: 0;
+}
+.rowButton {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  justify-self: start;
+}
+
+/* A page too narrow for every column gives up Report first (it waits in ⋯
+   and the right-click menu), then the last fill (the sheet lists the fills). */
+@container (max-width: 1139px) {
+  .tr {
+    grid-template-columns: minmax(180px, 1fr) 115px 100px 85px 95px 180px 40px;
+  }
+  .tr > .report {
+    display: none;
+  }
+}
+@container (max-width: 919px) {
+  .tr {
+    grid-template-columns: minmax(160px, 1fr) 120px 100px 90px 100px 40px;
+  }
+  .tr > .last {
+    display: none;
+  }
+  .none,
+  .none[data-wide] {
+    grid-column: 2 / span 4;
+  }
+}
+
+/* The phone: a row per vehicle, its figures in one line under its name. */
+.prow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--cb-ledger-border);
+  width: 100%;
+  text-align: start;
+  color: var(--mantine-color-text);
+}
+.card > .prow:first-child {
+  border-top: 0;
+}
+.prowTop,
+.prowMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.prowTop {
+  font-size: 15px;
+}
+.prowTop .nameText {
+  font-weight: 500;
+}
+.prowMeta {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+}
+.prowMeta > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prowMeta > span:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Empty: what the page does, the three steps, and the button. */
+.empty {
+  border: 1px dashed var(--cb-shell-card-border);
+  border-radius: 12px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 660px;
+}
+.emptyTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.emptyBody {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--mantine-color-dimmed);
+}
+.steps {
+  align-self: stretch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--cb-ledger-border);
+  border-radius: 10px;
+  background: var(--cb-ledger-surface);
+}
+.step {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  padding: 11px 14px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.step:first-child {
+  border-top: 0;
+}
+.stepNumber {
+  width: 22px;
+  height: 22px;
+  border-radius: 99px;
+  border: 1px solid var(--cb-shell-card-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+.stepSub {
+  display: block;
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+  margin-top: 2px;
+}
+
+/* The sheet. */
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.sectionLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cb-accent-text);
+}
+.figs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+  border: 1px solid var(--cb-ledger-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: var(--cb-ledger-surface);
+}
+.figLabel {
+  display: block;
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+}
+.figValue {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 16px;
+  font-weight: 500;
+}
+.fills {
+  display: flex;
+  flex-direction: column;
+}
+.fill {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+  min-height: 34px;
+  border-top: 1px solid var(--cb-ledger-border);
+}
+.fill:first-child {
+  border-top: 0;
+}
+.note {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--mantine-color-dimmed);
+}
