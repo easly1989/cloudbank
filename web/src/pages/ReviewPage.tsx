@@ -13,11 +13,17 @@ import {
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
-import { IconArrowsLeftRight, IconGitMerge, IconPencil, IconTrash } from "@tabler/icons-react";
+import {
+  IconArrowLeft,
+  IconArrowsLeftRight,
+  IconGitMerge,
+  IconPencil,
+  IconTrash,
+} from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useConfirm } from "../components/confirmContext";
 
 import {
@@ -122,6 +128,18 @@ export function ReviewPage() {
     (p) => !onlyAccount || p.a.accountId === onlyAccount || p.b.accountId === onlyAccount,
   );
   const accountById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
+  // Where the page was opened from, and so where its way out goes (#570):
+  // ?from=N is the register of account N, ?from=dashboard the overview. Opened
+  // from the menu there is neither, and no link: the menu is right there. It
+  // is kept apart from ?account, which "Show all accounts" takes away.
+  const from = params.get("from");
+  const fromAccount = from && from !== "dashboard" ? accountById.get(Number(from)) : undefined;
+  const back =
+    from === "dashboard"
+      ? { to: "/", name: t("dashboard.title") }
+      : fromAccount
+        ? { to: `/transactions?account=${fromAccount.id}`, name: fromAccount.name }
+        : null;
   const categoryOptions = useMemo(() => {
     const cats = categoriesQuery.data ?? [];
     return cats.map((c) => ({
@@ -410,9 +428,28 @@ export function ReviewPage() {
     );
   };
 
+  const done = review.isSuccess && needs.length === 0 && dups.length === 0;
+  const scopeName = onlyAccount ? accountById.get(onlyAccount)?.name : undefined;
+
   return (
     <Stack>
-      <PageHeader tour="review" title={t("review.title")} hint={t("review.hint")} />
+      <Stack gap={6}>
+        {back && (
+          // One way out, and it says where it goes, as Settings' does.
+          <Text
+            component={Link}
+            to={back.to}
+            c="dimmed"
+            fz={13}
+            data-testid="review-back"
+            style={{ display: "flex", alignItems: "center", gap: 6, width: "fit-content" }}
+          >
+            <IconArrowLeft size={14} />
+            {back.name}
+          </Text>
+        )}
+        <PageHeader tour="review" title={t("review.title")} hint={t("review.hint")} />
+      </Stack>
 
       {onlyAccount && (
         <Group gap="xs" data-testid="review-account-filter">
@@ -434,110 +471,146 @@ export function ReviewPage() {
 
       {review.isError && <Text c={errorColor}>{t("review.error")}</Text>}
 
-      <Card withBorder data-tour="review-categories">
-        <Stack gap="sm">
-          <Text fw={600}>{t("review.needsCategory", { count: needs.length })}</Text>
-          {needs.length === 0 ? (
-            <Text c="dimmed" size="sm">
-              {t("review.needsCategoryEmpty")}
-            </Text>
-          ) : (
-            needs.map((tx) => {
-              const acc = accountById.get(tx.accountId);
-              return (
-                // The bank's description is what the category is chosen from, so it
-                // is shown whole (#486). The picker keeps one width beside it; on
-                // a phone it goes underneath, full width, instead of being squeezed.
-                <Box
-                  key={tx.id}
-                  data-testid="needs-category-row"
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: phone ? "minmax(0, 1fr)" : "minmax(0, 1fr) 240px",
-                    gap: "8px 20px",
-                    alignItems: "start",
-                    paddingTop: 12,
-                    borderTop: ROW_RULE,
+      {/* Nothing left: an end, with the way back, instead of two empty cards.
+          It does not leave by itself: the reader may want another account. */}
+      {done && (
+        <Box
+          data-testid="review-done"
+          maw={640}
+          p={28}
+          style={{
+            border: "1px dashed var(--cb-shell-card-border)",
+            borderRadius: 12,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: 12,
+          }}
+        >
+          <Text component="h3" m={0} fz={16} fw={600}>
+            {t("review.doneTitle")}
+          </Text>
+          <Text m={0} fz={14} c="dimmed" lh={1.5}>
+            {scopeName ? t("review.doneBodyAccount", { name: scopeName }) : t("review.doneBody")}
+          </Text>
+          {back && (
+            <Button component={Link} to={back.to}>
+              {t("review.backTo", { name: back.name })}
+            </Button>
+          )}
+        </Box>
+      )}
+
+      {!done && (
+        <Card withBorder data-tour="review-categories">
+          <Stack gap="sm">
+            <Text fw={600}>{t("review.needsCategory", { count: needs.length })}</Text>
+            {needs.length === 0 ? (
+              <Text c="dimmed" size="sm">
+                {t("review.needsCategoryEmpty")}
+              </Text>
+            ) : (
+              needs.map((tx) => {
+                const acc = accountById.get(tx.accountId);
+                return (
+                  // The bank's description is what the category is chosen from, so it
+                  // is shown whole (#486). The picker keeps one width beside it; on
+                  // a phone it goes underneath, full width, instead of being squeezed.
+                  <Box
+                    key={tx.id}
+                    data-testid="needs-category-row"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: phone ? "minmax(0, 1fr)" : "minmax(0, 1fr) 240px",
+                      gap: "8px 20px",
+                      alignItems: "start",
+                      paddingTop: 12,
+                      borderTop: ROW_RULE,
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <Text size="sm" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                        {tx.memo || t("review.noMemo")}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {fmtDate(tx.date)}
+                        {acc ? ` · ${acc.name}` : ""} · {formatMinor(tx.amount, fmtFor(acc))}
+                      </Text>
+                    </div>
+                    <Select
+                      placeholder={t("transactions.category")}
+                      aria-label={t("transactions.category")}
+                      data={categoryOptions}
+                      value={tx.categoryId ? String(tx.categoryId) : null}
+                      onChange={(v) =>
+                        v && setCategory.mutate({ id: tx.id, categoryId: Number(v) })
+                      }
+                      searchable
+                    />
+                  </Box>
+                );
+              })
+            )}
+          </Stack>
+        </Card>
+      )}
+
+      {!done && (
+        <Card withBorder data-tour="review-duplicates">
+          <Stack gap="sm">
+            {/* Wraps on a phone, where the title and the button do not fit one line. */}
+            <Group justify="space-between" gap="xs">
+              <Text fw={600}>{t("review.duplicates", { count: dups.length })}</Text>
+              {dups.length > 0 && (
+                <Button
+                  size="xs"
+                  variant="light"
+                  color="gray"
+                  loading={dismissAll.isPending}
+                  onClick={async () => {
+                    const ok = await confirm({
+                      title: t("review.confirmDismissAllTitle", { count: dups.length }),
+                      body: t("review.confirmDismissAllBody"),
+                      confirmLabel: t("review.dismissAll"),
+                    });
+                    if (ok) dismissAll.mutate();
                   }}
                 >
-                  <div style={{ minWidth: 0 }}>
-                    <Text size="sm" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-                      {tx.memo || t("review.noMemo")}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      {fmtDate(tx.date)}
-                      {acc ? ` · ${acc.name}` : ""} · {formatMinor(tx.amount, fmtFor(acc))}
-                    </Text>
-                  </div>
-                  <Select
-                    placeholder={t("transactions.category")}
-                    aria-label={t("transactions.category")}
-                    data={categoryOptions}
-                    value={tx.categoryId ? String(tx.categoryId) : null}
-                    onChange={(v) => v && setCategory.mutate({ id: tx.id, categoryId: Number(v) })}
-                    searchable
-                  />
-                </Box>
-              );
-            })
-          )}
-        </Stack>
-      </Card>
-
-      <Card withBorder data-tour="review-duplicates">
-        <Stack gap="sm">
-          {/* Wraps on a phone, where the title and the button do not fit one line. */}
-          <Group justify="space-between" gap="xs">
-            <Text fw={600}>{t("review.duplicates", { count: dups.length })}</Text>
-            {dups.length > 0 && (
-              <Button
-                size="xs"
-                variant="light"
-                color="gray"
-                loading={dismissAll.isPending}
-                onClick={async () => {
-                  const ok = await confirm({
-                    title: t("review.confirmDismissAllTitle", { count: dups.length }),
-                    body: t("review.confirmDismissAllBody"),
-                    confirmLabel: t("review.dismissAll"),
-                  });
-                  if (ok) dismissAll.mutate();
-                }}
-              >
-                {t("review.dismissAll")}
-              </Button>
+                  {t("review.dismissAll")}
+                </Button>
+              )}
+            </Group>
+            {dups.length === 0 ? (
+              <Text c="dimmed" size="sm">
+                {t("review.duplicatesEmpty")}
+              </Text>
+            ) : (
+              dups.map((p) => (
+                <Card
+                  key={`${p.a.id}:${p.b.id}`}
+                  withBorder
+                  padding="sm"
+                  bg="var(--mantine-color-body)"
+                >
+                  {comparison(p.a, p.b)}
+                  <Divider my="xs" />
+                  <Group justify="flex-end">
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      color="gray"
+                      onClick={() => dismiss.mutate({ aId: p.a.id, bId: p.b.id })}
+                      loading={dismiss.isPending}
+                    >
+                      {t("review.notDuplicate")}
+                    </Button>
+                  </Group>
+                </Card>
+              ))
             )}
-          </Group>
-          {dups.length === 0 ? (
-            <Text c="dimmed" size="sm">
-              {t("review.duplicatesEmpty")}
-            </Text>
-          ) : (
-            dups.map((p) => (
-              <Card
-                key={`${p.a.id}:${p.b.id}`}
-                withBorder
-                padding="sm"
-                bg="var(--mantine-color-body)"
-              >
-                {comparison(p.a, p.b)}
-                <Divider my="xs" />
-                <Group justify="flex-end">
-                  <Button
-                    size="xs"
-                    variant="subtle"
-                    color="gray"
-                    onClick={() => dismiss.mutate({ aId: p.a.id, bId: p.b.id })}
-                    loading={dismiss.isPending}
-                  >
-                    {t("review.notDuplicate")}
-                  </Button>
-                </Group>
-              </Card>
-            ))
-          )}
-        </Stack>
-      </Card>
+          </Stack>
+        </Card>
+      )}
 
       {editTx && (
         <TransactionForm

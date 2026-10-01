@@ -122,7 +122,7 @@ export function RegisterBankRow({
           color="orange"
           style={{ flexShrink: 0 }}
           component={Link}
-          to={`/review?account=${accountId}`}
+          to={`/review?account=${accountId}&from=${accountId}`}
         >
           {t("register.toReview", { count: toReview })}
         </Button>
