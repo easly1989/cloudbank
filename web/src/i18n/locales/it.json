@@ -784,6 +784,10 @@
     "auto": "auto"
   },
   "review": {
+    "doneTitle": "Niente da rivedere",
+    "doneBody": "Ogni transazione importata ha una categoria, e non ce ne sono due che sembrano la stessa.",
+    "doneBodyAccount": "Ogni transazione di {{name}} ha una categoria, e non ce ne sono due che sembrano la stessa.",
+    "backTo": "Torna a {{name}}",
     "oneAccount": "Un conto",
     "allAccounts": "Mostra tutti i conti",
     "title": "Revisione sync bancario",
