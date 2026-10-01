@@ -231,3 +231,14 @@ Added since:
   so. The board does not draw ▶, the order controls (the grip, Move up / down,
   a right click) or tags: the user asked for them. Under 900px of content the
   "Used on" column goes.
+- **Budget answers first** (#568), to an approved mockup; the board has no
+  budget page. One view in place of the Budget and Report tabs: Month | Year
+  with ‹ period ›, then Spent and Left (28 and 22px mono) over one 8px bar, then
+  the register's card: Category · Planned · Spent · Left · a 6px bar · ⋯, rows
+  46px, bands 36px for In the budget, Not in the budget and Expected income. A
+  bar is amber past its plan, lighter for what is entered but dated after
+  today, and ticked where today falls in the period (not on its last day).
+  Spending with no budget is listed, never amber. The sheet (396px) holds the
+  plan, the same or month by month, every year or this one only, and the last
+  twelve months as bars against a dashed plan line. The period is not in the
+  URL.

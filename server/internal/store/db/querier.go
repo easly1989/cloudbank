@@ -29,7 +29,8 @@ type Querier interface {
 	// one hidden from the reports.
 	CategoryActivity(ctx context.Context, arg CategoryActivityParams) ([]CategoryActivityRow, error)
 	// Category amounts in a date range (plain transactions + split lines), excluding
-	// accounts flagged no_budget, with each row's currency so the app can convert.
+	// accounts flagged no_budget, with each row's currency so the app can convert
+	// and its date, so the report can tell what is still to come.
 	CategoryActualsForBudget(ctx context.Context, arg CategoryActualsForBudgetParams) ([]CategoryActualsForBudgetRow, error)
 	// Category amounts in a date range, from both plain transactions and split
 	// lines, with each row's account currency so the app can convert to base.

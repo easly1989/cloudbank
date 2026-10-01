@@ -58,6 +58,28 @@ async function ready(
           await fetch("/api/v1/wallets", { credentials: "same-origin" })
         ).json();
       }
+      // The budget's tour points at its figures and its table, which a
+      // wallet shows once it has a budget (#568).
+      const wbase = `/api/v1/wallets/${wallets[0].id}`;
+      const cats = await (
+        await fetch(`${wbase}/categories`, { credentials: "same-origin" })
+      ).json();
+      let cat = cats.find((c: { name: string }) => c.name === "Tour groceries");
+      if (!cat)
+        cat = await (
+          await fetch(`${wbase}/categories`, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: H,
+            body: JSON.stringify({ name: "Tour groceries" }),
+          })
+        ).json();
+      await fetch(`${wbase}/budgets/${cat.id}`, {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: H,
+        body: JSON.stringify({ mode: "same", same: -10000 }),
+      });
       const base = `/api/v1/wallets/${wallets[0].id}/accounts`;
       const accounts = await (
         await fetch(base, { credentials: "same-origin" })
@@ -109,17 +131,19 @@ test("a page offers its tour once, and the ? plays it again", async ({
     await expect(offer).toContainText("New here? Take the budget tour");
     // The page stays usable under the offer: it is not a dialog.
     await expect(page.getByRole("dialog")).toHaveCount(0);
-    await offer.getByRole("button", { name: "Show me · 2 steps" }).click();
-    await expect(card).toContainText("Plan, then compare");
+    await offer.getByRole("button", { name: "Show me · 3 steps" }).click();
+    await expect(card).toContainText("The answer first");
     await card.getByRole("button", { name: "Next" }).click();
-    await expect(card).toContainText("An amount per category");
+    await expect(card).toContainText("A month or a year");
+    await card.getByRole("button", { name: "Next" }).click();
+    await expect(card).toContainText("A line per budget");
     await card.getByRole("button", { name: "Done" }).click();
     await expect(card).toHaveCount(0);
   });
 
   await test.step("the second does not", async () => {
     await page.goto("/budget");
-    await expect(page.getByRole("tab", { name: "Report" })).toBeVisible();
+    await expect(page.getByTestId("budget-table")).toBeVisible();
     // Longer than the page is given to settle before an offer is made.
     await page.waitForTimeout(2000);
     await expect(offer).toHaveCount(0);
@@ -127,7 +151,7 @@ test("a page offers its tour once, and the ? plays it again", async ({
 
   await test.step("the ? in the header plays it again", async () => {
     await page.getByRole("button", { name: "Tour of this page" }).click();
-    await expect(card).toContainText("Plan, then compare");
+    await expect(card).toContainText("The answer first");
     await page.keyboard.press("Escape");
     await expect(card).toHaveCount(0);
     // Left early, but the reader asked for it: no question about the others.
@@ -177,8 +201,8 @@ test("skipping an offered tour can skip them all", async ({ page }) => {
 
   await test.step("leaving an offered tour asks", async () => {
     await page.goto("/budget");
-    await offer.getByRole("button", { name: "Show me · 2 steps" }).click();
-    await expect(card).toContainText("Plan, then compare");
+    await offer.getByRole("button", { name: "Show me · 3 steps" }).click();
+    await expect(card).toContainText("The answer first");
     await card.getByRole("button", { name: "Skip" }).click();
     await expect(card).toHaveCount(0);
     await expect(ask).toContainText("Skip the other pages' tours too?");
