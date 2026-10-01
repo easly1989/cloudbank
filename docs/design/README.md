@@ -253,3 +253,12 @@ Added since:
   history and do not. The goal and the money in and out open in the 396px
   sheet. The user asked for the set-aside line on the Accounts page and the
   register, the overview's reminder and the dashboard widget.
+- **Vehicles say what they cost to run** (#574), to an approved mockup; the
+  board has no vehicles page. The register's card: Vehicle (name, the plate as
+  an 11.5px mono tag, the notes under it) · Fuel (and the fills) · Distance ·
+  Per km · Per 100 km · Last fill (when, days ago, the odometer) · Report · ⋯,
+  rows 64px, over the last twelve months. A vehicle with nothing linked says
+  how to link it across the figures. Report gives way first under 1140px of
+  content (⋯ and a right click keep it), the last fill under 920px. The 396px
+  sheet holds name, plate and notes, the same four figures and the five newest
+  fills. Empty is the three steps, the memo's `d=` and `v=` among them.

@@ -21,6 +21,9 @@ about into it.
   something to show. The goals come in every state: two under way, one reached
   and waiting to be closed, and two in the history (one reached, one given up on). Three templates for quick entry (the weekly shop, a coffee,
   a tank of fuel) are ready in the entry sheet's **⋯** menu.
+  Two vehicles: a family car, whose fuel payments carry the odometer and the
+  litres in their memos, so the Vehicles page and the Vehicle report have a
+  year to show; and a scooter with nothing linked, to show how a vehicle starts.
 - **Your own copy.** Nobody else sees your account, and you can change anything:
   add, edit and delete transactions, rearrange the dashboard, import a file.
 - **Your language.** The data comes in English or Italian, from your browser's

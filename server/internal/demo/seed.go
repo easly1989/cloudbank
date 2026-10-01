@@ -155,6 +155,9 @@ var words = map[string][2]string{
 	"goalBike":     {"New bike", "Bici nuova"},
 	"goalSofa":     {"New sofa", "Divano nuovo"},
 	"goalNote":     {"Made-up goal: change it, top it up, delete it.", "Obiettivo inventato: modificalo, aggiungi, eliminalo."},
+	"car":          {"Family car", "Auto di famiglia"},
+	"carNotes":     {"Petrol · service every 15,000 km", "Benzina · tagliando ogni 15.000 km"},
+	"scooter":      {"Scooter", "Scooter"},
 }
 
 // seeder builds the file for one language.
@@ -244,6 +247,32 @@ type ope struct {
 	category int
 	memo     string
 	tags     string
+	fill     fill
+}
+
+// fill marks a tank of fuel, whose memo carries the car's odometer and litres.
+type fill int
+
+const (
+	noFill fill = iota
+	fullFill
+	partialFill // the tank was not filled up: no litres in the memo
+)
+
+// fuelMemo writes a fill as HomeBank's fuel memo: d= the odometer, v= the
+// litres (left out of a partial fill), p= the price of a litre. The odometer
+// follows the date, about 41 km a day, so the fills read in order whatever
+// order they were added in; the price wanders between 1.769 and 1.849.
+func (s *seeder) fuelMemo(d time.Time, cents int64, f fill) string {
+	start := time.Date(s.today.Year(), s.today.Month()-11, 1, 0, 0, 0, 0, time.UTC)
+	days := int(d.Sub(start).Hours() / 24)
+	odometer := 38400 + days*41 + (d.Day()*37)%23
+	price := 1769 + ((d.Day()*13+int(d.Month())*7)%17)*5 // thousandths of a euro
+	if f == partialFill {
+		return fmt.Sprintf("d=%d p=%.3f", odometer, float64(price)/1000)
+	}
+	litres := float64(-cents) * 10 / float64(price)
+	return fmt.Sprintf("d=%d v=%.2f p=%.3f", odometer, litres, float64(price)/1000)
 }
 
 func (s *seeder) add(o ope) {
@@ -251,6 +280,9 @@ func (s *seeder) add(o ope) {
 		return
 	}
 	o.cents = s.unique(o.account, o.date, o.cents)
+	if o.fill != noFill {
+		o.memo = s.fuelMemo(o.date, o.cents, o.fill)
+	}
 	if o.account == accCard {
 		s.cardSpend[o.date.Month()] += o.cents
 	}
@@ -456,8 +488,14 @@ func (s *seeder) month(start time.Time, back int) {
 		}
 		s.add(ope{date: on(6 + 7*i + s.rng.IntN(3)), account: accCard, cents: -s.between(2400, 6800), mode: modeCard, payee: payRestaurant, category: catRestaurants, tags: tags})
 	}
+	// The family car's fuel (#574), a tank a fortnight; now and then a top-up
+	// that did not fill it.
 	for _, day := range []int{7, 21} {
-		s.add(ope{date: on(day), account: accCard, cents: -s.between(4500, 6900), mode: modeCard, payee: payPetrol, category: catFuel, tags: s.w("tagCar")})
+		f := fullFill
+		if day == 21 && back%4 == 1 {
+			f = partialFill
+		}
+		s.add(ope{date: on(day), account: accCard, cents: -s.between(4500, 6900), mode: modeCard, payee: payPetrol, category: catFuel, tags: s.w("tagCar"), fill: f})
 	}
 	for i := 0; i < 4; i++ {
 		s.add(ope{date: on(3 + 6*i + s.rng.IntN(4)), account: accCash, cents: -s.between(150, 480), mode: modeCash, payee: payCafe, category: catRestaurants})
@@ -483,7 +521,7 @@ func (s *seeder) month(start time.Time, back int) {
 		for day := 10; day <= 15; day++ {
 			s.add(ope{date: on(day), account: accCard, cents: -s.between(3500, 7500), mode: modeCard, payee: payRestaurant, category: catRestaurants, tags: tag})
 		}
-		s.add(ope{date: on(9), account: accCard, cents: -6800, mode: modeCard, payee: payPetrol, category: catFuel, tags: tag + " " + s.w("tagCar")})
+		s.add(ope{date: on(9), account: accCard, cents: -6800, mode: modeCard, payee: payPetrol, category: catFuel, tags: tag + " " + s.w("tagCar"), fill: fullFill})
 	}
 	if back == 4 {
 		s.add(ope{date: on(14), account: accChecking, cents: 4590, mode: modeTransfer, payee: payClothes, category: catClothing, memo: s.w("refund")})

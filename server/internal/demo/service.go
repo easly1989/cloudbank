@@ -285,6 +285,19 @@ func (s *Service) fill(ctx context.Context, userID int64, italian bool) error {
 		}
 	}
 
+	// Two vehicles (#574): the car its fuel payments are linked to, and a
+	// scooter with none, so the vehicles page shows both.
+	car, err := s.q.InsertVehicle(ctx, db.InsertVehicleParams{WalletID: res.WalletID, Name: w("car"), Notes: w("carNotes"), Plate: "AB 123 CD"})
+	if err != nil {
+		return err
+	}
+	if _, err := s.q.InsertVehicle(ctx, db.InsertVehicleParams{WalletID: res.WalletID, Name: w("scooter")}); err != nil {
+		return err
+	}
+	if _, err := s.q.DemoLinkFills(ctx, db.DemoLinkFillsParams{VehicleID: sql.NullInt64{Int64: car.ID, Valid: true}, WalletID: res.WalletID}); err != nil {
+		return err
+	}
+
 	conn, _, err := s.bank.ConnectDemo(ctx, res.WalletID, w("bank"))
 	if err != nil {
 		return err
