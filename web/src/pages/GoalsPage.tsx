@@ -1,566 +1,313 @@
-import {
-  ActionIcon,
-  Button,
-  Card,
-  Collapse,
-  Group,
-  Modal,
-  Progress,
-  SegmentedControl,
-  Select,
-  SimpleGrid,
-  Stack,
-  Text,
-  TextInput,
-  Textarea,
-} from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { Button, Stack } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import {
-  IconChevronDown,
-  IconMinus,
-  IconPencil,
-  IconPigMoney,
-  IconPlus,
-  IconTrash,
-} from "@tabler/icons-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useConfirm } from "../components/confirmContext";
 
 import {
   ApiError,
-  type Currency,
-  type Goal,
-  addGoalContribution,
-  createGoal,
+  closeGoal,
   deleteGoal,
-  deleteGoalContribution,
+  getDashboard,
   listAccounts,
   listCurrencies,
   listGoalContributions,
   listGoals,
-  updateGoal,
+  reopenGoal,
 } from "../api/client";
-import { useDateFormat } from "../dates";
-import { type MoneyFormat, formatMinor, minorToInput } from "../money";
-import { useAmountParser } from "../useAmountParser";
-import { useWallet } from "../wallet/WalletProvider";
+import { useConfirm } from "../components/confirmContext";
 import { PageHeader } from "../components/PageHeader";
-import { EmptyState } from "../components/EmptyState";
-import { todayCivil } from "../civilDate";
-import { amountColor } from "../amountTone";
+import { baseFmt } from "../components/reports/reportUtils";
+import { formatMinor } from "../money";
+import { useToday } from "../useToday";
+import { useWallet } from "../wallet/WalletProvider";
+import { type GoalLine, monthIndex, monthStart, percentOf, viewOf } from "./goals/goalList";
+import classes from "./goals/goals.module.css";
+import { type GoalPreset, GoalSheet } from "./goals/GoalSheet";
+import {
+  type GoalExample,
+  GoalsEmpty,
+  GoalsPhoneList,
+  GoalsTable,
+  Figures,
+} from "./goals/GoalsTable";
+import type { GoalActions } from "./goals/goalWords";
+import { type Direction, MoneySheet } from "./goals/MoneySheet";
 
-const baseFmt = (currencies: Currency[]): MoneyFormat => {
-  const base = currencies.find((c) => c.isBase);
-  return base
-    ? {
-        fracDigits: base.fracDigits,
-        decimalChar: base.decimalChar,
-        groupChar: base.groupChar,
-        symbol: base.symbol,
-        symbolPrefix: base.symbolPrefix,
-      }
-    : { fracDigits: 2, decimalChar: ".", groupChar: ",", symbol: "", symbolPrefix: false };
-};
-
-function onError(err: unknown) {
-  notifications.show({
-    color: "red",
-    message: err instanceof ApiError ? err.message : String(err),
-  });
-}
-
+/**
+ * Savings goals (#572): what is set aside, what a month gets every goal there
+ * by its date, and what is left free to spend; then a row per goal, reached
+ * ones waiting to be closed, and the history of the closed ones, folded away.
+ * Goals are notes about money, not money: nothing here moves a balance.
+ */
 export function GoalsPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const qc = useQueryClient();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
-  const [editing, setEditing] = useState<Goal | null>(null);
-  const [opened, modal] = useDisclosure(false);
+  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
+  const today = useToday();
 
-  const currenciesQuery = useQuery({
+  const currencies = useQuery({
     queryKey: ["currencies", walletId],
     queryFn: () => listCurrencies(walletId),
     enabled: walletId > 0,
   });
-  const fmt = useMemo(() => baseFmt(currenciesQuery.data ?? []), [currenciesQuery.data]);
+  const fmt = useMemo(() => baseFmt(currencies.data?.find((c) => c.isBase)), [currencies.data]);
+  const money = (minor: number) => formatMinor(minor, fmt);
 
   const goalsQuery = useQuery({
     queryKey: ["goals", walletId],
     queryFn: () => listGoals(walletId),
     enabled: walletId > 0,
   });
-  const goals = goalsQuery.data ?? [];
-  const invalidate = () => void qc.invalidateQueries({ queryKey: ["goals", walletId] });
+  const goals = useMemo(() => goalsQuery.data ?? [], [goalsQuery.data]);
+  const accountsQuery = useQuery({
+    queryKey: ["accounts", walletId],
+    queryFn: () => listAccounts(walletId),
+    enabled: walletId > 0,
+  });
+  const accounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data]);
+  // The same query the sidebar runs for the wallet's balance.
+  const summary = useQuery({
+    queryKey: ["dashboard", walletId, "0001-01-01", "9999-12-31", "category", 12],
+    queryFn: () => getDashboard(walletId, "0001-01-01", "9999-12-31", "category", 12),
+    enabled: walletId > 0,
+  });
 
-  const openCreate = () => {
-    setEditing(null);
-    modal.open();
+  // The pace needs each goal's movements; closed goals need none.
+  const live = goals.filter((g) => g.closedOn == null);
+  const movesQueries = useQueries({
+    queries: live.map((g) => ({
+      queryKey: ["goalContributions", walletId, g.id],
+      queryFn: () => listGoalContributions(walletId, g.id),
+      enabled: walletId > 0,
+    })),
+  });
+  const moves = new Map(live.map((g, i) => [g.id, movesQueries[i]?.data ?? []]));
+  const view = viewOf(goals, moves, today, fmt.fracDigits);
+  const lineById = (id: number | null) =>
+    id == null
+      ? null
+      : ([...view.open, ...view.reached, ...view.history].find((l) => l.id === id) ?? null);
+
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  const invalidate = () => {
+    void qc.invalidateQueries({ queryKey: ["goals", walletId] });
+    void qc.invalidateQueries({ queryKey: ["goalContributions", walletId] });
   };
-  const openEdit = (g: Goal) => {
-    setEditing(g);
-    modal.open();
+  const showError = (err: unknown) =>
+    notifications.show({
+      color: "red",
+      message: err instanceof ApiError ? err.message : String(err),
+    });
+
+  // The goal's sheet, and the sheet for money in and out. Each keeps the goal
+  // it opened on, so it can close without losing its content.
+  const [goalSheet, setGoalSheet] = useState<{
+    open: boolean;
+    id: number | null;
+    preset: GoalPreset | null;
+  }>({ open: false, id: null, preset: null });
+  const [moneySheet, setMoneySheet] = useState<{
+    open: boolean;
+    id: number | null;
+    direction: Direction;
+  }>({ open: false, id: null, direction: "in" });
+  const openGoal = (id: number | null, preset: GoalPreset | null = null) =>
+    setGoalSheet({ open: true, id, preset });
+  const openMoney = (id: number, direction: Direction) =>
+    setMoneySheet({ open: true, id, direction });
+  const closeSheets = () => {
+    setGoalSheet((s) => ({ ...s, open: false }));
+    setMoneySheet((s) => ({ ...s, open: false }));
   };
+
+  const close = useMutation({
+    mutationFn: (id: number) => closeGoal(walletId, id, today),
+    onSuccess: invalidate,
+    onError: showError,
+  });
+  const reopen = useMutation({
+    mutationFn: (id: number) => reopenGoal(walletId, id),
+    onSuccess: invalidate,
+    onError: showError,
+  });
+  const remove = useMutation({
+    mutationFn: (id: number) => deleteGoal(walletId, id),
+    onSuccess: invalidate,
+    onError: showError,
+  });
+
+  const askClose = async (l: GoalLine) => {
+    const ok = await confirm({
+      title: t("goals.confirmCloseTitle", { name: l.name }),
+      body: t("goals.confirmCloseBody", { saved: money(l.saved), target: money(l.targetAmount) }),
+      confirmLabel: t("goals.confirmClose"),
+    });
+    if (ok) {
+      closeSheets();
+      close.mutate(l.id);
+    }
+  };
+  const askGiveUp = async (l: GoalLine) => {
+    const ok = await confirm({
+      title: t("goals.confirmGiveUpTitle", { name: l.name }),
+      body: t("goals.confirmGiveUpBody", {
+        saved: money(l.saved),
+        target: money(l.targetAmount),
+        percent: percentOf(l),
+      }),
+      confirmLabel: t("goals.confirmGiveUp"),
+    });
+    if (ok) {
+      closeSheets();
+      close.mutate(l.id);
+    }
+  };
+  const askDelete = async (l: GoalLine) => {
+    const ok = await confirm({
+      title: t("goals.confirmDeleteTitle", { name: l.name }),
+      body: t("goals.confirmDeleteBody"),
+      confirmLabel: t("goals.menu.delete"),
+      danger: true,
+    });
+    if (ok) {
+      closeSheets();
+      remove.mutate(l.id);
+    }
+  };
+
+  const actions: GoalActions = {
+    onOpen: (l) => openGoal(l.id),
+    onPutIn: (l) => openMoney(l.id, "in"),
+    onTakeOut: (l) => openMoney(l.id, "out"),
+    onClose: (l) => void askClose(l),
+    onGiveUp: (l) => void askGiveUp(l),
+    onReopen: (l) => reopen.mutate(l.id),
+    onDelete: (l) => void askDelete(l),
+  };
+
+  // Empty: three goals to start from, dated where a date makes sense.
+  const examples = useMemo((): GoalExample[] => {
+    const unit = 10 ** fmt.fracDigits;
+    const now = monthIndex(today);
+    const next = (m: number) => {
+      const year = Math.floor(now / 12);
+      const i = year * 12 + m;
+      return i > now ? i : i + 12;
+    };
+    const june = next(5);
+    const spring = next(2);
+    const trip = 1800 * unit;
+    const bike = 600 * unit;
+    return [
+      {
+        key: "trip",
+        sub: t("goals.empty.tripSub", {
+          amount: money(trip),
+          monthly: money(Math.ceil(trip / Math.max(1, june - now) / unit) * unit),
+        }),
+        onUse: () =>
+          openGoal(null, {
+            name: t("goals.empty.trip"),
+            targetAmount: trip,
+            targetDate: monthStart(june),
+          }),
+      },
+      {
+        key: "fund",
+        sub: t("goals.empty.fundSub"),
+        onUse: () => openGoal(null, { name: t("goals.empty.fund") }),
+      },
+      {
+        key: "bike",
+        sub: t("goals.empty.bikeSub", { amount: money(bike) }),
+        onUse: () =>
+          openGoal(null, {
+            name: t("goals.empty.bike"),
+            targetAmount: bike,
+            targetDate: monthStart(spring),
+          }),
+      },
+    ];
+    // money follows fmt.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fmt, today, t]);
 
   if (!currentWallet) return null;
 
-  // One button, shown in the header or in the empty state — never both.
-  const addButton = (
-    <Button onClick={openCreate} data-tour="goals-add">
-      {t("goals.add")}
-    </Button>
-  );
+  const empty = goalsQuery.isSuccess && goals.length === 0;
+  const listProps = {
+    view,
+    money,
+    today,
+    accountName: (id: number) => accounts.find((a) => a.id === id)?.name,
+    historyOpen,
+    onToggleHistory: () => setHistoryOpen((v) => !v),
+    actions,
+  };
 
   return (
-    <Stack>
+    <Stack className={classes.page} gap="md">
       <PageHeader
         tour="goals"
         title={t("goals.title")}
         hint={t("goals.hint")}
-        actions={goals.length > 0 ? addButton : undefined}
+        actions={
+          !empty && (
+            <Button onClick={() => openGoal(null)} data-tour="goals-add">
+              {t("goals.add")}
+            </Button>
+          )
+        }
       />
-      {goals.length === 0 ? (
-        <EmptyState icon={IconPigMoney} message={t("goals.empty")} action={addButton} />
+
+      {empty ? (
+        <GoalsEmpty examples={examples} onAdd={() => openGoal(null)} />
       ) : (
-        <SimpleGrid cols={{ base: 1, md: 2 }}>
-          {goals.map((g) => (
-            <GoalCard
-              key={g.id}
-              goal={g}
-              walletId={walletId}
-              fmt={fmt}
-              onEdit={() => openEdit(g)}
-              onChanged={invalidate}
-            />
-          ))}
-        </SimpleGrid>
+        goals.length > 0 && (
+          <>
+            <Figures view={view} wallet={summary.data?.totals.today ?? null} money={money} />
+            {phone ? (
+              <GoalsPhoneList {...listProps} />
+            ) : (
+              <>
+                <GoalsTable {...listProps} />
+                <span className={classes.line}>{t("goals.line")}</span>
+              </>
+            )}
+          </>
+        )
       )}
-      {/* Keyed so each opening mounts a fresh form. */}
-      <GoalModal
-        key={editing?.id ?? "new"}
-        opened={opened}
-        onClose={modal.close}
+
+      <GoalSheet
+        opened={goalSheet.open}
+        onClose={() => setGoalSheet((s) => ({ ...s, open: false }))}
         walletId={walletId}
-        goal={editing}
+        goal={lineById(goalSheet.id)}
+        preset={goalSheet.preset}
+        accounts={accounts}
         fmt={fmt}
+        money={money}
+        today={today}
+        onSaved={invalidate}
+        actions={actions}
+      />
+      <MoneySheet
+        opened={moneySheet.open}
+        onClose={() => setMoneySheet((s) => ({ ...s, open: false }))}
+        walletId={walletId}
+        goal={lineById(moneySheet.id)}
+        direction={moneySheet.direction}
+        fmt={fmt}
+        money={money}
+        today={today}
         onSaved={invalidate}
       />
     </Stack>
-  );
-}
-
-function GoalCard({
-  goal,
-  walletId,
-  fmt,
-  onEdit,
-  onChanged,
-}: {
-  goal: Goal;
-  walletId: number;
-  fmt: MoneyFormat;
-  onEdit: () => void;
-  onChanged: () => void;
-}) {
-  const { t } = useTranslation();
-  const confirm = useConfirm();
-  const qc = useQueryClient();
-  const [historyOpen, history] = useDisclosure(false);
-  const [contribOpened, contribModal] = useDisclosure(false);
-  const [withdraw, setWithdraw] = useState(false);
-
-  const pct = goal.targetAmount > 0 ? Math.min(100, (goal.saved / goal.targetAmount) * 100) : 0;
-  const reached = goal.saved >= goal.targetAmount && goal.targetAmount > 0;
-  const remaining = Math.max(0, goal.targetAmount - goal.saved);
-
-  const contributionsQuery = useQuery({
-    queryKey: ["goalContributions", walletId, goal.id],
-    queryFn: () => listGoalContributions(walletId, goal.id),
-    enabled: historyOpen && walletId > 0,
-  });
-
-  const afterContribChange = () => {
-    onChanged();
-    void qc.invalidateQueries({ queryKey: ["goalContributions", walletId, goal.id] });
-  };
-
-  const remove = useMutation({
-    mutationFn: () => deleteGoal(walletId, goal.id),
-    onSuccess: onChanged,
-    onError,
-  });
-  const removeContribution = useMutation({
-    mutationFn: (id: number) => deleteGoalContribution(walletId, goal.id, id),
-    onSuccess: afterContribChange,
-    onError,
-  });
-
-  const openContribution = (isWithdraw: boolean) => {
-    setWithdraw(isWithdraw);
-    contribModal.open();
-  };
-
-  return (
-    <Card withBorder padding="md">
-      <Stack gap="xs">
-        <Group justify="space-between" wrap="nowrap" align="flex-start">
-          <Group gap="xs" wrap="nowrap">
-            <IconPigMoney size={20} style={{ flexShrink: 0, opacity: 0.7 }} />
-            <div>
-              <Text fw={600}>{goal.name}</Text>
-              {goal.targetDate && (
-                <Text size="xs" c="dimmed">
-                  {t("goals.by")} <GoalDate iso={goal.targetDate} />
-                </Text>
-              )}
-            </div>
-          </Group>
-          <Group gap={2} wrap="nowrap">
-            <ActionIcon variant="subtle" aria-label={t("goals.edit")} onClick={onEdit}>
-              <IconPencil size={16} />
-            </ActionIcon>
-            <ActionIcon
-              variant="subtle"
-              color="red"
-              aria-label={t("goals.delete")}
-              onClick={async () => {
-                const ok = await confirm({
-                  title: t("goals.confirmDeleteTitle", { name: goal.name }),
-                  body: t("goals.confirmDeleteBody"),
-                  confirmLabel: t("goals.delete"),
-                  danger: true,
-                });
-                if (ok) remove.mutate();
-              }}
-            >
-              <IconTrash size={16} />
-            </ActionIcon>
-          </Group>
-        </Group>
-
-        <Progress
-          value={pct}
-          color={reached ? "teal" : undefined}
-          size="lg"
-          radius="sm"
-          aria-label={goal.name}
-        />
-        <Group justify="space-between" gap="xs">
-          <Text size="sm" fw={500}>
-            {formatMinor(goal.saved, fmt)}{" "}
-            <Text span size="sm" c="dimmed">
-              / {formatMinor(goal.targetAmount, fmt)}
-            </Text>
-          </Text>
-          <Text size="sm" c={reached ? "teal" : "dimmed"}>
-            {reached
-              ? t("goals.reached")
-              : t("goals.remaining", { amount: formatMinor(remaining, fmt) })}
-          </Text>
-        </Group>
-
-        <Group gap="xs">
-          <Button
-            size="xs"
-            variant="light"
-            leftSection={<IconPlus size={14} />}
-            onClick={() => openContribution(false)}
-          >
-            {t("goals.addMoney")}
-          </Button>
-          <Button
-            size="xs"
-            variant="default"
-            leftSection={<IconMinus size={14} />}
-            disabled={goal.saved <= 0}
-            onClick={() => openContribution(true)}
-          >
-            {t("goals.withdraw")}
-          </Button>
-          <Button
-            size="xs"
-            variant="subtle"
-            color="gray"
-            ml="auto"
-            rightSection={
-              <IconChevronDown
-                size={14}
-                style={{
-                  transform: historyOpen ? "rotate(180deg)" : "none",
-                  transition: "transform 150ms",
-                }}
-              />
-            }
-            onClick={history.toggle}
-          >
-            {t("goals.history")}
-          </Button>
-        </Group>
-
-        <Collapse expanded={historyOpen}>
-          <Stack gap={4} pt="xs">
-            {(contributionsQuery.data ?? []).length === 0 ? (
-              <Text size="xs" c="dimmed">
-                {t("goals.noContributions")}
-              </Text>
-            ) : (
-              (contributionsQuery.data ?? []).map((c) => (
-                <Group key={c.id} justify="space-between" gap="xs" wrap="nowrap">
-                  <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
-                    <Text size="xs" c="dimmed">
-                      <GoalDate iso={c.date} />
-                    </Text>
-                    {c.note && (
-                      <Text size="xs" truncate>
-                        {c.note}
-                      </Text>
-                    )}
-                  </Group>
-                  <Group gap={4} wrap="nowrap">
-                    <Text size="xs" fw={500} c={amountColor(c.amount)}>
-                      {c.amount < 0 ? "−" : "+"}
-                      {formatMinor(Math.abs(c.amount), fmt)}
-                    </Text>
-                    <ActionIcon
-                      size="xs"
-                      variant="subtle"
-                      color="red"
-                      aria-label={t("goals.deleteContribution")}
-                      onClick={() => removeContribution.mutate(c.id)}
-                    >
-                      <IconTrash size={13} />
-                    </ActionIcon>
-                  </Group>
-                </Group>
-              ))
-            )}
-          </Stack>
-        </Collapse>
-      </Stack>
-
-      {/* Keyed on the direction too: adding and withdrawing start from
-          different defaults, and they are different openings. */}
-      <ContributionModal
-        key={withdraw ? "withdraw" : "add"}
-        opened={contribOpened}
-        onClose={contribModal.close}
-        walletId={walletId}
-        goalId={goal.id}
-        withdraw={withdraw}
-        fmt={fmt}
-        onSaved={afterContribChange}
-      />
-    </Card>
-  );
-}
-
-function GoalDate({ iso }: { iso: string }) {
-  const fmt = useDateFormat();
-  return <>{fmt(iso)}</>;
-}
-
-function GoalModal({
-  opened,
-  onClose,
-  walletId,
-  goal,
-  fmt,
-  onSaved,
-}: {
-  opened: boolean;
-  onClose: () => void;
-  walletId: number;
-  goal: Goal | null;
-  fmt: MoneyFormat;
-  onSaved: () => void;
-}) {
-  const { t } = useTranslation();
-  const parseAmount = useAmountParser();
-  const accountsQuery = useQuery({
-    queryKey: ["accounts", walletId],
-    queryFn: () => listAccounts(walletId),
-    enabled: walletId > 0 && opened,
-  });
-
-  // The form starts where the goal is; the modal is mounted per opening.
-  const [name, setName] = useState(goal?.name ?? "");
-  const [target, setTarget] = useState(() =>
-    goal ? minorToInput(goal.targetAmount, fmt.fracDigits, fmt.decimalChar) : "",
-  );
-  const [targetDate, setTargetDate] = useState(goal?.targetDate ?? "");
-  const [accountId, setAccountId] = useState<string | null>(
-    goal?.accountId != null ? String(goal.accountId) : null,
-  );
-  const [note, setNote] = useState(goal?.note ?? "");
-
-  const targetMinor = parseAmount(target, fmt.fracDigits, fmt.decimalChar) ?? 0;
-
-  const save = useMutation({
-    mutationFn: () => {
-      const body = {
-        name,
-        targetAmount: targetMinor,
-        targetDate: targetDate || null,
-        accountId: accountId ? Number(accountId) : null,
-        note,
-      };
-      return goal ? updateGoal(walletId, goal.id, body) : createGoal(walletId, body);
-    },
-    onSuccess: () => {
-      onSaved();
-      onClose();
-    },
-    onError,
-  });
-
-  return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={goal ? t("goals.editTitle") : t("goals.addTitle")}
-    >
-      <Stack>
-        <TextInput
-          label={t("goals.name")}
-          required
-          value={name}
-          onChange={(e) => setName(e.currentTarget.value)}
-        />
-        <Group grow align="flex-start">
-          <TextInput
-            label={t("goals.target")}
-            value={target}
-            onChange={(e) => setTarget(e.currentTarget.value)}
-            rightSection={<Text size="xs">{fmt.symbol || ""}</Text>}
-          />
-          <TextInput
-            type="date"
-            label={t("goals.targetDate")}
-            value={targetDate}
-            onChange={(e) => setTargetDate(e.currentTarget.value)}
-          />
-        </Group>
-        <Select
-          label={t("goals.account")}
-          description={t("goals.accountHint")}
-          data={(accountsQuery.data ?? []).map((a) => ({ value: String(a.id), label: a.name }))}
-          value={accountId}
-          onChange={setAccountId}
-          clearable
-          searchable
-        />
-        <Textarea
-          label={t("goals.note")}
-          value={note}
-          onChange={(e) => setNote(e.currentTarget.value)}
-          autosize
-          minRows={2}
-        />
-        <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>
-            {t("goals.cancel")}
-          </Button>
-          <Button
-            onClick={() => save.mutate()}
-            loading={save.isPending}
-            disabled={!name.trim() || targetMinor <= 0}
-          >
-            {t("goals.save")}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
-  );
-}
-
-function ContributionModal({
-  opened,
-  onClose,
-  walletId,
-  goalId,
-  withdraw,
-  fmt,
-  onSaved,
-}: {
-  opened: boolean;
-  onClose: () => void;
-  walletId: number;
-  goalId: number;
-  withdraw: boolean;
-  fmt: MoneyFormat;
-  onSaved: () => void;
-}) {
-  const { t } = useTranslation();
-  const parseAmount = useAmountParser();
-  // Mounted per opening, so today's date and the direction are simply the
-  // starting values rather than something an effect has to put back.
-  const [direction, setDirection] = useState<"add" | "withdraw">(withdraw ? "withdraw" : "add");
-  const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(todayCivil);
-  const [note, setNote] = useState("");
-
-  const magnitude = parseAmount(amount, fmt.fracDigits, fmt.decimalChar) ?? 0;
-
-  const save = useMutation({
-    mutationFn: () =>
-      addGoalContribution(walletId, goalId, {
-        date,
-        amount: magnitude * (direction === "withdraw" ? -1 : 1),
-        note,
-      }),
-    onSuccess: () => {
-      onSaved();
-      onClose();
-    },
-    onError,
-  });
-
-  return (
-    <Modal opened={opened} onClose={onClose} title={t("goals.contributionTitle")} size="sm">
-      <Stack>
-        <SegmentedControl
-          fullWidth
-          value={direction}
-          onChange={(v) => setDirection(v as "add" | "withdraw")}
-          data={[
-            { value: "add", label: t("goals.addMoney") },
-            { value: "withdraw", label: t("goals.withdraw") },
-          ]}
-        />
-        <Group grow align="flex-start">
-          <TextInput
-            label={t("goals.amount")}
-            value={amount}
-            onChange={(e) => setAmount(e.currentTarget.value)}
-            rightSection={<Text size="xs">{fmt.symbol || ""}</Text>}
-            data-autofocus
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && magnitude > 0) save.mutate();
-            }}
-          />
-          <TextInput
-            type="date"
-            label={t("goals.date")}
-            value={date}
-            onChange={(e) => setDate(e.currentTarget.value)}
-          />
-        </Group>
-        <TextInput
-          label={t("goals.note")}
-          value={note}
-          onChange={(e) => setNote(e.currentTarget.value)}
-        />
-        <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>
-            {t("goals.cancel")}
-          </Button>
-          <Button onClick={() => save.mutate()} loading={save.isPending} disabled={magnitude <= 0}>
-            {t("goals.save")}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
   );
 }

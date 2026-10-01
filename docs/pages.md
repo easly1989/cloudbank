@@ -306,15 +306,31 @@ says when a category has gone past its plan.
 ## Goals
 
 A goal is money you are putting aside for something, such as a holiday or a
-rainy-day fund.
+rainy-day fund. It is a note about money, not money: nothing here moves a
+balance, and the account a goal is kept in is only a reference.
 
-- **Setting one up.** Give it a target, and optionally a date and a linked
-  account.
-- **Filling it.** **Add** and **Withdraw** record money going in and out;
-  **History** lists every change.
+- **The figures.** What is set aside, across the goals still open; **To put
+  aside each month**, the monthly shares together, against what you put in
+  lately (in amber when it falls short); and **Free to spend**, the wallet's
+  balance less what is set aside.
+- **A row per goal.** Saved, the target and a bar, soonest date first.
+  **Getting there** says what a month makes its date, in amber when the last
+  three months fall short, and when you would get there at that pace. A goal
+  with no date says when you would get there, or that nothing went in lately.
+- **Putting money in.** **Put in** opens the sheet beside the page, starting
+  from this month's share; **Take out** is the same sheet the other way. Money
+  that reaches the target can close the goal with it.
+- **Reached goals** wait in a band of their own, still counted as set aside,
+  with **Close** on each. The overview reminds you of them.
+- **The history.** A closed goal, reached or given up on from its **⋯**, moves
+  to the history under the table and stops counting as set aside. Its money
+  stays as it was; **Reopen goal** brings it back.
+- **Editing a goal.** Click its row: its name, target, date, the account it is
+  kept in and a note, and every movement in and out, each deletable.
 
-A goal is a piggy bank you fill by hand: it moves no real money, and the linked
-account is only a reference.
+Outside the page, the **Accounts** page and the register say how much an account
+holds for goals, in amber when it holds less, and the dashboard can carry a
+**Goals** widget from **Customise**.
 
 ## Reports
 

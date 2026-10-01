@@ -80,6 +80,18 @@ async function ready(
         headers: H,
         body: JSON.stringify({ mode: "same", same: -10000 }),
       });
+      // The goals' tour points at their figures and their table, which a
+      // wallet shows once it has a goal (#572).
+      const goals = await (
+        await fetch(`${wbase}/goals`, { credentials: "same-origin" })
+      ).json();
+      if (goals.length === 0)
+        await fetch(`${wbase}/goals`, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: H,
+          body: JSON.stringify({ name: "Tour goal", targetAmount: 10000 }),
+        });
       const base = `/api/v1/wallets/${wallets[0].id}/accounts`;
       const accounts = await (
         await fetch(base, { credentials: "same-origin" })

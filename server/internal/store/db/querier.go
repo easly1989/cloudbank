@@ -304,6 +304,7 @@ type Querier interface {
 	SetBankConnectionSchedule(ctx context.Context, arg SetBankConnectionScheduleParams) (int64, error)
 	SetChildrenIncome(ctx context.Context, arg SetChildrenIncomeParams) error
 	SetCurrencyBase(ctx context.Context, id int64) error
+	SetGoalClosed(ctx context.Context, arg SetGoalClosedParams) error
 	SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error
 	SetTransactionImportRef(ctx context.Context, arg SetTransactionImportRefParams) error
 	SetTransactionInfo(ctx context.Context, arg SetTransactionInfoParams) error

@@ -24,6 +24,7 @@ export const WIDGET_TYPES = [
   "uncleared",
   "cashflow",
   "bills",
+  "goals",
 ] as const;
 export type WidgetType = (typeof WIDGET_TYPES)[number];
 
@@ -88,6 +89,7 @@ export const WIDGET_SIZES: Record<
   uncleared: { w: 4, h: 3, minW: 2, minH: 2 },
   cashflow: { w: 6, h: 3, minW: 3, minH: 3 },
   bills: { w: 6, h: 4, minW: 3, minH: 3 },
+  goals: { w: 6, h: 3, minW: 3, minH: 2 },
 };
 
 const isWidgetType = (t: string): t is WidgetType =>

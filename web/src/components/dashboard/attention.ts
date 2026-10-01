@@ -22,6 +22,8 @@ export interface AttentionInput {
   overdueBills: number;
   overBudget: number;
   duplicates: number;
+  /** Goals reached and waiting to be closed (#572). */
+  goalsReached: number;
 }
 
 /**
@@ -37,6 +39,7 @@ export function buildAttentionItems(input: AttentionInput): AttentionItem[] {
     { key: "overdueBills", count: input.overdueBills, to: "/schedules" },
     { key: "overBudget", count: input.overBudget, to: "/budget" },
     { key: "duplicates", count: input.duplicates, to: "/review?from=dashboard" },
+    { key: "goalsReached", count: input.goalsReached, to: "/goals" },
   ];
   return all.filter((i) => i.count > 0);
 }

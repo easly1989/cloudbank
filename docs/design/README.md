@@ -242,3 +242,14 @@ Added since:
   plan, the same or month by month, every year or this one only, and the last
   twelve months as bars against a dashed plan line. The period is not in the
   URL.
+- **Goals say whether you get there** (#572), to an approved mockup; the board
+  has no goals page. Saved (28px mono), To put aside each month and Free to
+  spend (22px), then the register's card: Goal · Saved · Target · an 8px bar ·
+  Getting there · Put in · ⋯, rows 64px, bands 36px for Reached and the
+  History, which is folded. Getting there is the month's share to make the
+  date, amber when the last three months' pace is short of it, with when the
+  pace gets there. A reached goal shows Close in place of Put in and still
+  counts as set aside; closed ones (reached, or given up) are grey in the
+  history and do not. The goal and the money in and out open in the 396px
+  sheet. The user asked for the set-aside line on the Accounts page and the
+  register, the overview's reminder and the dashboard widget.

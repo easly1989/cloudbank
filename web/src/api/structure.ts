@@ -351,6 +351,8 @@ export interface Goal {
   note: string;
   position: number;
   saved: number;
+  /** The civil date it was closed (reached and done with, or given up on); null while open. */
+  closedOn: string | null;
 }
 
 export interface GoalInput {
@@ -385,6 +387,13 @@ export const updateGoal = (walletId: number, id: number, body: GoalInput) =>
 
 export const deleteGoal = (walletId: number, id: number) =>
   api.del<void>(`/api/v1/wallets/${walletId}/goals/${id}`);
+
+/** Close a goal into the history on the reader's civil date. */
+export const closeGoal = (walletId: number, id: number, date: string) =>
+  api.post<Goal>(`/api/v1/wallets/${walletId}/goals/${id}/close`, { date });
+
+export const reopenGoal = (walletId: number, id: number) =>
+  api.post<Goal>(`/api/v1/wallets/${walletId}/goals/${id}/reopen`);
 
 export const listGoalContributions = (walletId: number, goalId: number) =>
   api.get<GoalContribution[]>(`/api/v1/wallets/${walletId}/goals/${goalId}/contributions`);

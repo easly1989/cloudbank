@@ -1,0 +1,356 @@
+/* The Goals page (#572), to the numbers of the approved mockup: three figures,
+   then a row per goal in the register's card (under way, reached, and the
+   history folded away), and the explanation under it. */
+
+.page {
+  container-type: inline-size;
+  font-variant-numeric: tabular-nums;
+}
+.mono {
+  font-family: var(--mantine-font-family-monospace);
+}
+.dim {
+  color: var(--mantine-color-dimmed);
+}
+.amber {
+  color: var(--cb-attention);
+}
+.ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--cb-positive);
+  font-weight: 500;
+}
+.line {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--mantine-color-dimmed);
+}
+
+/* The bar: what is in, green once reached, grey once closed. */
+.bar {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 8px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--mantine-color-text) 10%, transparent);
+}
+.bar[data-size="small"] {
+  height: 6px;
+}
+.bar > span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 99px;
+  background: var(--mantine-primary-color-filled);
+}
+.bar[data-state="reached"] > span {
+  background: var(--cb-positive);
+}
+.bar[data-state="closed"] > span {
+  background: color-mix(in srgb, var(--mantine-color-text) 28%, transparent);
+}
+
+/* The three figures. */
+.top {
+  display: flex;
+  align-items: flex-end;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+.fig {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.figLabel,
+.figSub {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+}
+.figValue {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.15;
+}
+.figValue[data-small] {
+  font-size: 22px;
+}
+
+.card {
+  border: 1px solid var(--cb-ledger-border);
+  border-radius: 12px;
+  background: var(--cb-ledger-surface);
+  overflow: hidden;
+}
+
+/* Desktop rows: the goal, saved, target, the bar, getting there, the button, ⋯. */
+.tr {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 110px 110px minmax(100px, 160px) 270px 92px 40px;
+  gap: 14px;
+  align-items: center;
+  padding: 0 16px;
+  min-height: 64px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 14px;
+}
+.tr[data-row] {
+  cursor: pointer;
+}
+.tr[data-row]:hover {
+  background: var(--mantine-color-default-hover);
+}
+.head {
+  border-top: 0;
+  min-height: 38px;
+  background: var(--cb-band-header);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+}
+.group {
+  min-height: 36px;
+  font-size: 13px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--cb-band-header) 45%, transparent);
+}
+/* The history's band is a button: as wide as the card, its label at the start. */
+.foldRow {
+  width: 100%;
+  text-align: start;
+  color: var(--mantine-color-text);
+}
+.fold {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mantine-color-text);
+}
+.foldCount {
+  font-weight: 400;
+  color: var(--mantine-color-dimmed);
+}
+.r {
+  text-align: right;
+  white-space: nowrap;
+}
+.name {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nameText {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sub {
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+}
+.acc {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: bottom;
+}
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: nowrap;
+  min-width: 0;
+}
+.status > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.closed .nameText,
+.closed .mono {
+  color: var(--mantine-color-dimmed);
+}
+.closed .ok {
+  opacity: 0.75;
+}
+/* Put in, and Close on a reached goal: smaller than a page action. */
+.rowButton {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  justify-self: start;
+}
+.rowButton[data-close] {
+  border-color: var(--cb-positive);
+  color: var(--cb-positive);
+}
+
+/* A page too narrow for every column (a laptop with the menu open) gives the
+   bar and the status less room. */
+@container (max-width: 999px) {
+  .tr {
+    grid-template-columns: minmax(160px, 1fr) 100px 100px 80px 210px 84px 40px;
+  }
+}
+
+/* The phone: a row per goal with its bar under it, the bands as headings. */
+.prow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--cb-ledger-border);
+  width: 100%;
+  text-align: start;
+  color: var(--mantine-color-text);
+}
+.card > .prow:first-child {
+  border-top: 0;
+}
+.prowTop,
+.prowMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.prowTop {
+  font-size: 15px;
+}
+.prowTop b {
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prowMeta {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+}
+.prowMeta > span:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+.pband {
+  padding: 9px 14px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 13px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--cb-band-header) 45%, transparent);
+  width: 100%;
+  text-align: start;
+  color: var(--mantine-color-text);
+}
+
+/* Empty: what a goal is, three to start from, and the button. */
+.empty {
+  border: 1px dashed var(--cb-shell-card-border);
+  border-radius: 12px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 640px;
+}
+.emptyTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.emptyBody {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--mantine-color-dimmed);
+}
+.examples {
+  align-self: stretch;
+  border: 1px solid var(--cb-ledger-border);
+  border-radius: 10px;
+  background: var(--cb-ledger-surface);
+}
+.example {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 10px 14px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 14px;
+}
+.example:first-child {
+  border-top: 0;
+}
+.exampleSub {
+  display: block;
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+}
+
+/* The sheets. */
+.note {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--mantine-color-dimmed);
+}
+.note[data-ok] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cb-positive);
+}
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.movesHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.chips {
+  display: flex;
+  gap: 6px;
+}
+.moves {
+  border-top: 1px solid var(--cb-ledger-border);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+}
+.move {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) auto 28px;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+  min-height: 34px;
+}
+.move > span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.share {
+  align-self: flex-start;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+}

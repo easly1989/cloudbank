@@ -314,6 +314,9 @@ func TestBackupRestoreGoals(t *testing.T) {
 	if _, err := gs.AddContribution(ctx, w.ID, g.ID, "2026-03-01", -10000, "oops"); err != nil {
 		t.Fatalf("withdraw contribution: %v", err)
 	}
+	if _, err := gs.Close(ctx, w.ID, g.ID, "2026-04-01"); err != nil {
+		t.Fatalf("close goal: %v", err)
+	}
 
 	svc := NewService(st.Write())
 	doc, err := svc.Export(ctx, w.ID)
@@ -347,6 +350,9 @@ func TestBackupRestoreGoals(t *testing.T) {
 	}
 	if rg.TargetDate == nil || *rg.TargetDate != date {
 		t.Fatalf("restored targetDate = %v, want %s", rg.TargetDate, date)
+	}
+	if rg.ClosedOn == nil || *rg.ClosedOn != "2026-04-01" {
+		t.Fatalf("restored closedOn = %v, want 2026-04-01", rg.ClosedOn)
 	}
 	// Saved total = 60000 − 10000: both contributions survived with their signs.
 	if rg.Saved != 50000 {
