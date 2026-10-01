@@ -224,6 +224,7 @@ type Goal struct {
 	AccountID    sql.NullInt64
 	Note         string
 	Position     int64
+	ClosedOn     sql.NullString
 }
 
 type GoalContribution struct {

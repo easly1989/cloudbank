@@ -21,6 +21,8 @@ func (h *goalHandlers) walletRoutes(r chi.Router) {
 	r.Post("/goals", h.create)
 	r.Patch("/goals/{goalId}", h.update)
 	r.Delete("/goals/{goalId}", h.delete)
+	r.Post("/goals/{goalId}/close", h.close)
+	r.Post("/goals/{goalId}/reopen", h.reopen)
 	r.Get("/goals/{goalId}/contributions", h.listContributions)
 	r.Post("/goals/{goalId}/contributions", h.addContribution)
 	r.Delete("/goals/{goalId}/contributions/{contribId}", h.deleteContribution)
@@ -32,6 +34,10 @@ type goalInput struct {
 	TargetDate   *string `json:"targetDate"`
 	AccountID    *int64  `json:"accountId"`
 	Note         string  `json:"note"`
+}
+
+type closeGoalInput struct {
+	Date string `json:"date"`
 }
 
 type contributionInput struct {
@@ -46,6 +52,8 @@ func writeGoalError(w http.ResponseWriter, err error) bool {
 		errCase{walletref.ErrForeign, http.StatusBadRequest, "invalid_reference", "a referenced record does not belong to this wallet"},
 		errCase{goal.ErrInvalid, http.StatusBadRequest, "invalid", "goal name and a positive target are required"},
 		errCase{goal.ErrBadContribution, http.StatusBadRequest, "invalid", "a contribution needs a date and a non-zero amount"},
+		errCase{goal.ErrBadDate, http.StatusBadRequest, "invalid", "closing a goal needs a date (YYYY-MM-DD)"},
+		errCase{goal.ErrClosed, http.StatusConflict, "goal_closed", "the goal is closed; reopen it to change its money"},
 	)
 }
 
@@ -114,6 +122,38 @@ func (h *goalHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// close moves a goal to the history on the client's civil date, reached or
+// given up on.
+func (h *goalHandlers) close(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := idParam(w, r, "goalId", "goal not found")
+	if !ok {
+		return
+	}
+	var in closeGoalInput
+	if !decodeJSON(w, r, &in) {
+		return
+	}
+	g, err := h.svc.Close(r.Context(), wl.ID, id, in.Date)
+	if !writeGoalError(w, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, g)
+}
+
+func (h *goalHandlers) reopen(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := idParam(w, r, "goalId", "goal not found")
+	if !ok {
+		return
+	}
+	g, err := h.svc.Reopen(r.Context(), wl.ID, id)
+	if !writeGoalError(w, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, g)
 }
 
 func (h *goalHandlers) listContributions(w http.ResponseWriter, r *http.Request) {

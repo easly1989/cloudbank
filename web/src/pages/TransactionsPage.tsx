@@ -63,6 +63,7 @@ import { TransactionForm } from "../components/TransactionForm";
 import { TransferForm } from "../components/TransferForm";
 import { useWallet } from "../wallet/WalletProvider";
 import { useAuth } from "../auth/AuthProvider";
+import { RegisterGoalsFigure } from "./goals/RegisterGoalsFigure";
 import { RegisterBankRow } from "./RegisterBankRow";
 import { RegisterFilters } from "./RegisterFilters";
 import { RegisterTable } from "./RegisterTable";
@@ -638,6 +639,7 @@ export function TransactionsPage() {
                 lead={i === 0}
               />
             ))}
+            <RegisterGoalsFigure walletId={walletId} account={account} />
           </FigureStrip>
         )}
 

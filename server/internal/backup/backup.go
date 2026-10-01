@@ -251,6 +251,7 @@ type Goal struct {
 	AccountID     *int64             `json:"accountId,omitempty"`
 	Note          string             `json:"note"`
 	Position      int64              `json:"position"`
+	ClosedOn      string             `json:"closedOn,omitempty"`
 	Contributions []GoalContribution `json:"contributions,omitempty"`
 }
 
@@ -495,6 +496,9 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 		}
 		if g.TargetDate.Valid {
 			gd.TargetDate = g.TargetDate.String
+		}
+		if g.ClosedOn.Valid {
+			gd.ClosedOn = g.ClosedOn.String
 		}
 		contribs, err := q.ListContributionsForGoal(ctx, g.ID)
 		if err != nil {
@@ -876,6 +880,7 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 			WalletID: w.ID, Name: g.Name, TargetAmount: g.TargetAmount,
 			TargetDate: sql.NullString{String: g.TargetDate, Valid: g.TargetDate != ""},
 			AccountID:  dbconv.PtrToNull(remapAcc(g.AccountID)), Note: g.Note, Position: g.Position,
+			ClosedOn: sql.NullString{String: g.ClosedOn, Valid: g.ClosedOn != ""},
 		})
 		if err != nil {
 			return 0, err

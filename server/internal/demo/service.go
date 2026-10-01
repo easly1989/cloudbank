@@ -205,8 +205,9 @@ func (s *Service) Start(ctx context.Context, ip, acceptLanguage, userAgent strin
 	return u, token, nil
 }
 
-// fill gives a new demo account its wallet: the seeded year, two savings goals,
-// and a connection to the pretend bank linked to the checking account.
+// fill gives a new demo account its wallet: the seeded year, savings goals in
+// each state (two open, one reached and waiting to be closed, two in the
+// history), and a connection to the pretend bank linked to the checking account.
 func (s *Service) fill(ctx context.Context, userID int64, italian bool) error {
 	today := s.now().UTC()
 	res, err := s.imp.ImportXHB(ctx, userID, seedFile(today, italian))
@@ -232,15 +233,26 @@ func (s *Service) fill(ctx context.Context, userID int64, italian bool) error {
 		return today.AddDate(0, -monthsBack, 0).Format("2006-01-02")
 	}
 	savings := byName[w("savings")]
-	tripDate := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.UTC).AddDate(0, 5, 0).Format("2006-01-02")
+	firstOf := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.UTC)
+	tripDate := firstOf.AddDate(0, 5, 0).Format("2006-01-02")
+	sofaDate := firstOf.AddDate(0, -4, 0).Format("2006-01-02")
 	goals := []struct {
-		in    goal.Input
-		added map[int]int64 // months back → cents
+		in       goal.Input
+		added    map[int]int64 // months back → cents
+		closedOn int           // months back it was closed; 0 = still open
 	}{
 		{goal.Input{Name: w("goalTrip"), TargetAmount: 180000, TargetDate: &tripDate, Note: w("goalNote")},
-			map[int]int64{3: 15000, 2: 15000, 1: 20000}},
+			map[int]int64{3: 15000, 2: 15000, 1: 20000}, 0},
 		{goal.Input{Name: w("goalBuffer"), TargetAmount: 500000, AccountID: &savings, Note: w("goalNote")},
-			map[int]int64{8: 120000, 4: 40000}},
+			map[int]int64{8: 120000, 4: 40000}, 0},
+		// Reached, and waiting for its owner to close it.
+		{goal.Input{Name: w("goalTickets"), TargetAmount: 12000, Note: w("goalNote")},
+			map[int]int64{2: 6000, 1: 6000}, 0},
+		// The history: one reached, one given up on.
+		{goal.Input{Name: w("goalBike"), TargetAmount: 60000, Note: w("goalNote")},
+			map[int]int64{5: 25000, 4: 20000, 3: 15000}, 2},
+		{goal.Input{Name: w("goalSofa"), TargetAmount: 90000, TargetDate: &sofaDate, Note: w("goalNote")},
+			map[int]int64{9: 20000, 7: 16000}, 3},
 	}
 	for _, g := range goals {
 		made, err := s.goals.Create(ctx, res.WalletID, g.in)
@@ -252,6 +264,11 @@ func (s *Service) fill(ctx context.Context, userID int64, italian bool) error {
 				if _, err := s.goals.AddContribution(ctx, res.WalletID, made.ID, day(back), cents, ""); err != nil {
 					return err
 				}
+			}
+		}
+		if g.closedOn > 0 {
+			if _, err := s.goals.Close(ctx, res.WalletID, made.ID, day(g.closedOn)); err != nil {
+				return err
 			}
 		}
 	}

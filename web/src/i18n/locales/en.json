@@ -734,34 +734,120 @@
   },
   "goals": {
     "title": "Savings goals",
-    "hint": "Set a target and top it up by hand — a piggy bank you fill over time. Amounts are in your base currency.",
-    "empty": "No savings goals yet. Add one to start putting money aside.",
+    "hint": "Money you are putting aside for something, and whether you will get there in time.",
     "add": "Add goal",
-    "addTitle": "New goal",
-    "editTitle": "Edit goal",
-    "name": "Name",
-    "target": "Target",
-    "targetDate": "Target date",
-    "account": "Linked account",
-    "accountHint": "Optional — for reference only; doesn't move real money.",
-    "note": "Note",
-    "by": "by",
-    "reached": "Reached 🎉",
-    "remaining": "{{amount}} to go",
-    "addMoney": "Add",
-    "withdraw": "Withdraw",
+    "saved": "Saved",
+    "savedOf_one": "of {{target}} in {{count}} goal",
+    "savedOf_other": "of {{target}} across {{count}} goals",
+    "monthly": "To put aside each month",
+    "monthlySub": "to make every date",
+    "monthlyNone": "no goal has a date",
+    "lately": "you put in {{amount}} a month lately",
+    "free": "Free to spend",
+    "freeSub": "{{wallet}} in the wallet, less what is set aside",
+    "col": {
+      "goal": "Goal",
+      "saved": "Saved",
+      "target": "Target",
+      "gettingThere": "Getting there"
+    },
+    "by": "By {{month}}",
+    "monthsToGo_one": "{{count}} month to go",
+    "monthsToGo_other": "{{count}} months to go",
+    "wasDue": "Was due {{month}}",
+    "noDate": "No date",
+    "reachedOn": "Reached on {{date}}",
+    "closedReached": "Reached · closed {{date}}",
+    "closedGivenUp": "Given up · closed {{date}}, at {{percent}}%",
+    "needed": "{{amount}} a month needed",
+    "aMonth": "{{amount}} a month",
+    "atYourPace": "at your {{amount}} a month: {{month}}",
+    "nothingLately": "Nothing put in lately",
+    "onTrack": "on track at {{amount}} a month",
+    "stillToGo": "{{amount}} still to go",
+    "atPace": "at {{amount}} a month",
+    "ofTarget": "of {{amount}}",
+    "reached": "Reached",
+    "closeWhenDone": "Close it when you are done",
+    "givenUp": "Given up",
+    "putIn": "Put in",
+    "close": "Close",
+    "groupReached": "Reached",
     "history": "History",
-    "noContributions": "No contributions yet.",
-    "contributionTitle": "Update goal",
-    "amount": "Amount",
-    "date": "Date",
-    "edit": "Edit goal",
-    "delete": "Delete goal",
-    "deleteContribution": "Delete contribution",
-    "cancel": "Cancel",
-    "save": "Save",
-    "confirmDeleteTitle": "Delete \"{{name}}\"?",
-    "confirmDeleteBody": "The goal and the contributions recorded against it are removed. Your transactions stay."
+    "historyCount_one": "{{count}} goal, closed",
+    "historyCount_other": "{{count}} goals, closed",
+    "line": "A month's share is what is left divided by the months to the date. \"Lately\" is the last three months. Closed goals stay in the history and no longer count as set aside. Amounts are in your base currency; putting money in here does not move it between accounts.",
+    "actionsFor": "Actions for {{name}}",
+    "menu": {
+      "putIn": "Put money in",
+      "takeOut": "Take money out",
+      "edit": "Edit goal",
+      "close": "Close goal",
+      "giveUp": "Give up",
+      "reopen": "Reopen goal",
+      "delete": "Delete goal"
+    },
+    "confirmCloseTitle": "Close {{name}}?",
+    "confirmCloseBody": "It reached {{saved}} of {{target}}. Closing moves it to the history, where it stops counting as money set aside. Nothing moves between accounts, and you can reopen it from the history.",
+    "confirmClose": "Close goal",
+    "confirmGiveUpTitle": "Give up on {{name}}?",
+    "confirmGiveUpBody": "{{saved}} of {{target}} put in, {{percent}}%. Giving up moves it to the history, where it stops counting as money set aside. Nothing moves between accounts, and you can reopen it from the history.",
+    "confirmGiveUp": "Give up",
+    "confirmDeleteTitle": "Delete {{name}}?",
+    "confirmDeleteBody": "The goal and the money recorded in and out of it are removed. Your transactions stay.",
+    "confirmDeleteMoveTitle": "Delete this movement?",
+    "confirmDeleteMoveBody": "{{amount}} on {{date}} comes off the goal. Your transactions stay.",
+    "confirmDeleteMove": "Delete",
+    "sheet": {
+      "addTitle": "New goal",
+      "name": "Name",
+      "target": "Target",
+      "by": "By",
+      "keptIn": "Kept in",
+      "noAccount": "No account",
+      "keptInNote": "Which account holds the money, for reference: nothing moves between accounts.",
+      "note": "Note",
+      "moves": "Money in and out",
+      "noMoves": "Nothing put in yet.",
+      "deleteMove": "Delete this movement",
+      "closedNote": "Closed on {{date}}: reopen it to change its money.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "subtitle": "{{saved}} of {{target}}",
+      "subtitleBy": "{{saved}} of {{target}} · by {{month}}"
+    },
+    "money": {
+      "titleIn": "Put money into {{name}}",
+      "titleOut": "Take money out of {{name}}",
+      "subtitleShare": "{{saved}} of {{target}} · {{need}} a month to get there by {{month}}",
+      "subtitle": "{{saved}} of {{target}} · {{left}} to go",
+      "subtitleReached": "{{saved}} of {{target}} · reached",
+      "putIn": "Put in",
+      "takeOut": "Take out",
+      "direction": "Put in or take out",
+      "amount": "Amount",
+      "share": "This month's share: {{amount}}",
+      "date": "Date",
+      "note": "Note",
+      "after": "After this: {{saved}} of {{target}}, {{left}} to go.",
+      "afterReached": "After this: {{saved}} of {{target}}.",
+      "reaches": "This reaches the target: {{target}}.",
+      "closeOnceIn": "Close the goal once it is in",
+      "closeOnceInNote": "Closing moves it to the history, where it stops counting as money set aside. Leave it unticked to close it later.",
+      "putInAndClose": "Put in and close",
+      "cancel": "Cancel"
+    },
+    "empty": {
+      "title": "Put money aside for something",
+      "body": "A goal is an amount and, if you like, a date. Each time you set money aside, add it here: the page says how much a month gets you there in time, and whether you are on pace.",
+      "trip": "A summer trip",
+      "tripSub": "{{amount}} by June · {{monthly}} a month",
+      "fund": "A rainy-day fund",
+      "fundSub": "Three months of spending, no date",
+      "bike": "A new bike",
+      "bikeSub": "{{amount}} by spring",
+      "use": "Use"
+    }
   },
   "bills": {
     "title": "Bills",
@@ -1066,7 +1152,10 @@
     "needsCategory": "Needs a category",
     "reconciledRun_one": "{{count}} reconciled",
     "reconciledRun_other": "{{count}} reconciled",
-    "reconciledAll": "everything reconciled up to here"
+    "reconciledAll": "everything reconciled up to here",
+    "setAside": "Set aside for goals",
+    "setAsideFree": "{{amount}} free",
+    "setAsideShort": "{{amount}} more than the account holds"
   },
   "figureStrip": {
     "show": "Show figure {{n}} of {{count}}"
@@ -1393,7 +1482,9 @@
     "leaveOutBudget": "The budget",
     "leaveOutReports": "The reports",
     "notes": "Notes",
-    "closedHint": "Closed: hidden from the lists, kept with its transactions"
+    "closedHint": "Closed: hidden from the lists, kept with its transactions",
+    "setAside": "{{amount}} set aside for goals",
+    "setAsideShort": "{{amount}} set aside for goals, more than it holds"
   },
   "categories": {
     "duplicate": "“{{name}}” already exists at this level. To keep just one, use Merge on the list.",
@@ -1705,7 +1796,13 @@
     "confirmResetTitle": "Reset the dashboard?",
     "confirmResetBody": "The widgets and their arrangement go back to the defaults. Your current layout is lost.",
     "confirmResetAction": "Reset layout",
-    "chartRows": "Rows"
+    "chartRows": "Rows",
+    "goals": "Goals",
+    "goalsOpen": "Open goals",
+    "goalsSetAside_one": "set aside in {{count}} goal",
+    "goalsSetAside_other": "set aside in {{count}} goals",
+    "goalsThisMonth": "this month {{amount}}",
+    "goalsNone": "No goals under way."
   },
   "import": {
     "title": "Import",
@@ -1994,7 +2091,10 @@
     "overBudgetAction": "Open budget",
     "duplicates_one": "pair looks like a duplicate",
     "duplicates_other": "pairs look like duplicates",
-    "duplicatesAction": "Check them"
+    "duplicatesAction": "Check them",
+    "goalsReached_one": "goal reached its target",
+    "goalsReached_other": "goals reached their target",
+    "goalsReachedAction": "Review goals"
   },
   "common": {
     "cancel": "Cancel",
@@ -2130,13 +2230,17 @@
     },
     "goals": {
       "offer": "New here? Take the goals tour",
+      "figures": {
+        "title": "Where you stand",
+        "body": "What is set aside, what a month gets every goal there by its date, and what is left free to spend. Nothing here changes an account's balance."
+      },
+      "table": {
+        "title": "A row per goal",
+        "body": "Each goal says how much a month it needs, amber when lately you put in less. Reached goals wait to be closed; closed ones go to the history."
+      },
       "add": {
         "title": "Save towards something",
-        "body": "Set a target, like a holiday or a new bike, and how much you want to put aside for it."
-      },
-      "topUp": {
-        "title": "Fill it by hand",
-        "body": "A goal is a piggy bank: top it up whenever you set money aside. Amounts are in your base currency."
+        "body": "A goal is an amount and, if you like, a date: a holiday, a new bike, a cushion for the unexpected."
       }
     },
     "bankSync": {

@@ -102,3 +102,61 @@ func TestGoalCRUDAndContributions(t *testing.T) {
 		}
 	}
 }
+
+// A closed goal moves to the history: it keeps its money, takes no new
+// movements, and comes back when reopened (#572).
+func TestGoalCloseAndReopen(t *testing.T) {
+	s, _, wid := newFixture(t)
+	ctx := context.Background()
+	g, err := s.Create(ctx, wid, Input{Name: "Sofa", TargetAmount: 90000})
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	c, err := s.AddContribution(ctx, wid, g.ID, "2026-02-01", 36000, "")
+	if err != nil {
+		t.Fatalf("add: %v", err)
+	}
+	if g.ClosedOn != nil {
+		t.Fatalf("a new goal is open, got closedOn %v", *g.ClosedOn)
+	}
+
+	for _, bad := range []string{"", "1 Jun", "2026-13-01"} {
+		if _, err := s.Close(ctx, wid, g.ID, bad); err != ErrBadDate {
+			t.Fatalf("close on %q = %v, want ErrBadDate", bad, err)
+		}
+	}
+	if _, err := s.Close(ctx, wid+999, g.ID, "2026-06-10"); err != ErrNotFound {
+		t.Fatalf("cross-wallet close = %v, want ErrNotFound", err)
+	}
+
+	// Given up before the target: closed all the same, its money kept.
+	closed, err := s.Close(ctx, wid, g.ID, "2026-06-10")
+	if err != nil {
+		t.Fatalf("close: %v", err)
+	}
+	if closed.ClosedOn == nil || *closed.ClosedOn != "2026-06-10" || closed.Saved != 36000 {
+		t.Fatalf("closed = %+v", closed)
+	}
+	if l, _ := s.List(ctx, wid); len(l) != 1 || l[0].ClosedOn == nil {
+		t.Fatalf("list after close = %+v", l)
+	}
+
+	// Its money is frozen until it is reopened.
+	if _, err := s.AddContribution(ctx, wid, g.ID, "2026-06-11", 1000, ""); err != ErrClosed {
+		t.Fatalf("add to closed = %v, want ErrClosed", err)
+	}
+	if err := s.DeleteContribution(ctx, wid, g.ID, c.ID); err != ErrClosed {
+		t.Fatalf("delete from closed = %v, want ErrClosed", err)
+	}
+
+	open, err := s.Reopen(ctx, wid, g.ID)
+	if err != nil || open.ClosedOn != nil {
+		t.Fatalf("reopen = %+v, err %v", open, err)
+	}
+	if _, err := s.AddContribution(ctx, wid, g.ID, "2026-06-11", 1000, ""); err != nil {
+		t.Fatalf("add after reopen: %v", err)
+	}
+	if _, err := s.Reopen(ctx, wid+999, g.ID); err != ErrNotFound {
+		t.Fatalf("cross-wallet reopen = %v, want ErrNotFound", err)
+	}
+}

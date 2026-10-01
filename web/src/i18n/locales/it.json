@@ -734,34 +734,120 @@
   },
   "goals": {
     "title": "Obiettivi di risparmio",
-    "hint": "Imposta un obiettivo e riempilo a mano — un salvadanaio che alimenti nel tempo. Gli importi sono nella tua valuta base.",
-    "empty": "Nessun obiettivo di risparmio. Aggiungine uno per iniziare a mettere da parte.",
+    "hint": "I soldi che metti da parte per qualcosa, e se ci arriverai in tempo.",
     "add": "Aggiungi obiettivo",
-    "addTitle": "Nuovo obiettivo",
-    "editTitle": "Modifica obiettivo",
-    "name": "Nome",
-    "target": "Obiettivo",
-    "targetDate": "Data obiettivo",
-    "account": "Conto collegato",
-    "accountHint": "Facoltativo — solo di riferimento; non sposta denaro reale.",
-    "note": "Nota",
-    "by": "entro il",
-    "reached": "Raggiunto 🎉",
-    "remaining": "mancano {{amount}}",
-    "addMoney": "Aggiungi",
-    "withdraw": "Preleva",
+    "saved": "Messo da parte",
+    "savedOf_one": "di {{target}} in {{count}} obiettivo",
+    "savedOf_other": "di {{target}} in {{count}} obiettivi",
+    "monthly": "Da mettere da parte ogni mese",
+    "monthlySub": "per rispettare ogni data",
+    "monthlyNone": "nessun obiettivo ha una data",
+    "lately": "di recente hai messo {{amount}} al mese",
+    "free": "Liberi da spendere",
+    "freeSub": "{{wallet}} nel portafoglio, meno quanto è messo da parte",
+    "col": {
+      "goal": "Obiettivo",
+      "saved": "Messo da parte",
+      "target": "Obiettivo",
+      "gettingThere": "Per arrivarci"
+    },
+    "by": "Entro {{month}}",
+    "monthsToGo_one": "manca {{count}} mese",
+    "monthsToGo_other": "mancano {{count}} mesi",
+    "wasDue": "Scadeva a {{month}}",
+    "noDate": "Senza data",
+    "reachedOn": "Raggiunto il {{date}}",
+    "closedReached": "Raggiunto · chiuso il {{date}}",
+    "closedGivenUp": "Abbandonato · chiuso il {{date}}, al {{percent}}%",
+    "needed": "servono {{amount}} al mese",
+    "aMonth": "{{amount}} al mese",
+    "atYourPace": "al tuo ritmo di {{amount}} al mese: {{month}}",
+    "nothingLately": "Niente messo di recente",
+    "onTrack": "in linea, a {{amount}} al mese",
+    "stillToGo": "mancano ancora {{amount}}",
+    "atPace": "a {{amount}} al mese",
+    "ofTarget": "di {{amount}}",
+    "reached": "Raggiunto",
+    "closeWhenDone": "Chiudilo quando hai finito",
+    "givenUp": "Abbandonato",
+    "putIn": "Versa",
+    "close": "Chiudi",
+    "groupReached": "Raggiunti",
     "history": "Storico",
-    "noContributions": "Ancora nessun versamento.",
-    "contributionTitle": "Aggiorna obiettivo",
-    "amount": "Importo",
-    "date": "Data",
-    "edit": "Modifica obiettivo",
-    "delete": "Elimina obiettivo",
-    "deleteContribution": "Elimina versamento",
-    "cancel": "Annulla",
-    "save": "Salva",
-    "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
-    "confirmDeleteBody": "L'obiettivo e i versamenti registrati su di esso vengono rimossi. Le tue transazioni restano."
+    "historyCount_one": "{{count}} obiettivo chiuso",
+    "historyCount_other": "{{count}} obiettivi chiusi",
+    "line": "La quota del mese è quanto manca diviso per i mesi che restano alla data. \"Di recente\" sono gli ultimi tre mesi. Gli obiettivi chiusi restano nello storico e non contano più come messi da parte. Gli importi sono nella tua valuta base; versare qui non sposta soldi tra i conti.",
+    "actionsFor": "Azioni per {{name}}",
+    "menu": {
+      "putIn": "Versa",
+      "takeOut": "Preleva",
+      "edit": "Modifica obiettivo",
+      "close": "Chiudi obiettivo",
+      "giveUp": "Abbandona",
+      "reopen": "Riapri obiettivo",
+      "delete": "Elimina obiettivo"
+    },
+    "confirmCloseTitle": "Chiudere {{name}}?",
+    "confirmCloseBody": "Ha raggiunto {{saved}} di {{target}}. Chiudendolo passa nello storico e non conta più come messo da parte. Nessun soldo si sposta tra i conti, e puoi riaprirlo dallo storico.",
+    "confirmClose": "Chiudi obiettivo",
+    "confirmGiveUpTitle": "Abbandonare {{name}}?",
+    "confirmGiveUpBody": "Messi {{saved}} di {{target}}, il {{percent}}%. Abbandonandolo passa nello storico e non conta più come messo da parte. Nessun soldo si sposta tra i conti, e puoi riaprirlo dallo storico.",
+    "confirmGiveUp": "Abbandona",
+    "confirmDeleteTitle": "Eliminare {{name}}?",
+    "confirmDeleteBody": "L'obiettivo e i soldi versati e prelevati vengono rimossi. Le tue transazioni restano.",
+    "confirmDeleteMoveTitle": "Eliminare questo movimento?",
+    "confirmDeleteMoveBody": "{{amount}} del {{date}} viene tolto dall'obiettivo. Le tue transazioni restano.",
+    "confirmDeleteMove": "Elimina",
+    "sheet": {
+      "addTitle": "Nuovo obiettivo",
+      "name": "Nome",
+      "target": "Obiettivo",
+      "by": "Entro",
+      "keptIn": "Tenuto in",
+      "noAccount": "Nessun conto",
+      "keptInNote": "Quale conto contiene i soldi, come riferimento: nessun soldo si sposta tra i conti.",
+      "note": "Nota",
+      "moves": "Versamenti e prelievi",
+      "noMoves": "Ancora niente versato.",
+      "deleteMove": "Elimina questo movimento",
+      "closedNote": "Chiuso il {{date}}: riaprilo per cambiare i suoi soldi.",
+      "cancel": "Annulla",
+      "save": "Salva",
+      "subtitle": "{{saved}} di {{target}}",
+      "subtitleBy": "{{saved}} di {{target}} · entro {{month}}"
+    },
+    "money": {
+      "titleIn": "Versa in {{name}}",
+      "titleOut": "Preleva da {{name}}",
+      "subtitleShare": "{{saved}} di {{target}} · {{need}} al mese per arrivarci entro {{month}}",
+      "subtitle": "{{saved}} di {{target}} · mancano {{left}}",
+      "subtitleReached": "{{saved}} di {{target}} · raggiunto",
+      "putIn": "Versa",
+      "takeOut": "Preleva",
+      "direction": "Versa o preleva",
+      "amount": "Importo",
+      "share": "Quota di questo mese: {{amount}}",
+      "date": "Data",
+      "note": "Nota",
+      "after": "Dopo: {{saved}} di {{target}}, mancano {{left}}.",
+      "afterReached": "Dopo: {{saved}} di {{target}}.",
+      "reaches": "Così raggiungi l'obiettivo: {{target}}.",
+      "closeOnceIn": "Chiudi l'obiettivo dopo il versamento",
+      "closeOnceInNote": "Chiudendolo passa nello storico e non conta più come messo da parte. Lascia la casella vuota per chiuderlo più tardi.",
+      "putInAndClose": "Versa e chiudi",
+      "cancel": "Annulla"
+    },
+    "empty": {
+      "title": "Metti da parte per qualcosa",
+      "body": "Un obiettivo è un importo e, se vuoi, una data. Ogni volta che metti da parte dei soldi, registralo qui: la pagina ti dice quanto al mese serve per arrivarci in tempo, e se sei in linea.",
+      "trip": "Un viaggio d'estate",
+      "tripSub": "{{amount}} entro giugno · {{monthly}} al mese",
+      "fund": "Un fondo imprevisti",
+      "fundSub": "Tre mesi di spese, senza data",
+      "bike": "Una bici nuova",
+      "bikeSub": "{{amount}} entro la primavera",
+      "use": "Usa"
+    }
   },
   "bills": {
     "title": "Scadenze",
@@ -1066,7 +1152,10 @@
     "needsCategory": "Serve una categoria",
     "reconciledRun_one": "{{count}} riconciliato",
     "reconciledRun_other": "{{count}} riconciliati",
-    "reconciledAll": "tutto riconciliato fino a qui"
+    "reconciledAll": "tutto riconciliato fino a qui",
+    "setAside": "Messo da parte per obiettivi",
+    "setAsideFree": "{{amount}} liberi",
+    "setAsideShort": "{{amount}} più di quanto contiene il conto"
   },
   "figureStrip": {
     "show": "Mostra il valore {{n}} di {{count}}"
@@ -1393,7 +1482,9 @@
     "leaveOutBudget": "Il budget",
     "leaveOutReports": "I report",
     "notes": "Note",
-    "closedHint": "Chiuso: sparisce dagli elenchi, con le sue transazioni conservate"
+    "closedHint": "Chiuso: sparisce dagli elenchi, con le sue transazioni conservate",
+    "setAside": "{{amount}} messi da parte per obiettivi",
+    "setAsideShort": "{{amount}} messi da parte per obiettivi, più di quanto contiene"
   },
   "categories": {
     "duplicate": "«{{name}}» esiste già a questo livello. Per tenerne una sola, usa Unisci nell'elenco.",
@@ -1705,7 +1796,13 @@
     "confirmResetTitle": "Ripristinare la dashboard?",
     "confirmResetBody": "I widget e la loro disposizione tornano ai valori predefiniti. La disposizione attuale va persa.",
     "confirmResetAction": "Ripristina disposizione",
-    "chartRows": "Righe"
+    "chartRows": "Righe",
+    "goals": "Obiettivi",
+    "goalsOpen": "Apri gli obiettivi",
+    "goalsSetAside_one": "messi da parte in {{count}} obiettivo",
+    "goalsSetAside_other": "messi da parte in {{count}} obiettivi",
+    "goalsThisMonth": "questo mese {{amount}}",
+    "goalsNone": "Nessun obiettivo in corso."
   },
   "import": {
     "title": "Importa",
@@ -1994,7 +2091,10 @@
     "overBudgetAction": "Apri il budget",
     "duplicates_one": "coppia sembra un duplicato",
     "duplicates_other": "coppie sembrano duplicati",
-    "duplicatesAction": "Controllale"
+    "duplicatesAction": "Controllale",
+    "goalsReached_one": "obiettivo ha raggiunto il traguardo",
+    "goalsReached_other": "obiettivi hanno raggiunto il traguardo",
+    "goalsReachedAction": "Vai agli obiettivi"
   },
   "common": {
     "cancel": "Annulla",
@@ -2130,13 +2230,17 @@
     },
     "goals": {
       "offer": "Prima volta qui? Fai il giro degli obiettivi",
+      "figures": {
+        "title": "A che punto sei",
+        "body": "Quanto è messo da parte, quanto al mese porta ogni obiettivo alla sua data, e quanto resta libero da spendere. Niente qui cambia il saldo di un conto."
+      },
+      "table": {
+        "title": "Una riga per obiettivo",
+        "body": "Ogni obiettivo dice quanto gli serve al mese, in ambra quando di recente hai messo meno. I raggiunti aspettano di essere chiusi; i chiusi vanno nello storico."
+      },
       "add": {
         "title": "Metti da parte per qualcosa",
-        "body": "Scegli un obiettivo, come una vacanza o una bici nuova, e quanto vuoi mettere da parte."
-      },
-      "topUp": {
-        "title": "Riempilo a mano",
-        "body": "Un obiettivo è un salvadanaio: lo ricarichi ogni volta che metti da parte qualcosa. Gli importi sono nella valuta di base."
+        "body": "Un obiettivo è un importo e, se vuoi, una data: una vacanza, una bici nuova, un cuscinetto per gli imprevisti."
       }
     },
     "bankSync": {

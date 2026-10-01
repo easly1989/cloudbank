@@ -1,6 +1,6 @@
 -- name: InsertGoal :one
-INSERT INTO goals (wallet_id, name, target_amount, target_date, account_id, note, position)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO goals (wallet_id, name, target_amount, target_date, account_id, note, position, closed_on)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetGoal :one
@@ -21,6 +21,9 @@ SELECT CAST(COALESCE(SUM(amount), 0) AS INTEGER) FROM goal_contributions WHERE g
 UPDATE goals
 SET name = ?, target_amount = ?, target_date = ?, account_id = ?, note = ?, position = ?
 WHERE id = ?;
+
+-- name: SetGoalClosed :exec
+UPDATE goals SET closed_on = ? WHERE id = ?;
 
 -- name: DeleteGoal :exec
 DELETE FROM goals WHERE id = ?;

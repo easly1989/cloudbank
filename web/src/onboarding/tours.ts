@@ -58,7 +58,11 @@ export const TOURS = {
     step("schedules", "needs", "schedules-needs"),
     step("schedules", "add", "schedules-add"),
   ],
-  goals: [step("goals", "add", "goals-add"), step("goals", "topUp")],
+  goals: [
+    step("goals", "figures", "goals-figures"),
+    step("goals", "table", "goals-table"),
+    step("goals", "add", "goals-add"),
+  ],
   bankSync: [
     step("bankSync", "providers", "banksync-providers"),
     step("bankSync", "connections", "banksync-connections"),

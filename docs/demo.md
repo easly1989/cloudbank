@@ -17,8 +17,9 @@ about into it.
   A few tags run through them: the car's fuel, work lunches to claim back,
   Christmas presents, and the bills of a home office.
   Budgets (six on spending, one on the salary coming in), bills, scheduled
-  transactions and two savings goals are set up already, so the dashboard, the reports and the schedules calendar have
-  something to show. Three templates for quick entry (the weekly shop, a coffee,
+  transactions and savings goals are set up already, so the dashboard, the reports and the schedules calendar have
+  something to show. The goals come in every state: two under way, one reached
+  and waiting to be closed, and two in the history (one reached, one given up on). Three templates for quick entry (the weekly shop, a coffee,
   a tank of fuel) are ready in the entry sheet's **⋯** menu.
 - **Your own copy.** Nobody else sees your account, and you can change anything:
   add, edit and delete transactions, rearrange the dashboard, import a file.

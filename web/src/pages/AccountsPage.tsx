@@ -7,7 +7,14 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { ApiError, deleteAccount, listAccounts, listCurrencies, type Account } from "../api/client";
+import {
+  ApiError,
+  deleteAccount,
+  listAccounts,
+  listCurrencies,
+  listGoals,
+  type Account,
+} from "../api/client";
 import { AssetValuationsModal } from "../components/AssetValuationsModal";
 import { useConfirm } from "../components/confirmContext";
 import { EmptyState } from "../components/EmptyState";
@@ -20,6 +27,7 @@ import classes from "./accounts/accounts.module.css";
 import { AccountSheet } from "./accounts/AccountSheet";
 import { AccountPhoneList, AccountTable, type AccountActions } from "./accounts/AccountTable";
 import { useDayMonth } from "./categories/labels";
+import { asideByAccount } from "./goals/goalList";
 
 /**
  * Accounts (#564): every account with what the bank has confirmed, today's
@@ -45,6 +53,12 @@ export function AccountsPage() {
   const currenciesQuery = useQuery({
     queryKey: ["currencies", walletId],
     queryFn: () => listCurrencies(walletId),
+    enabled: walletId > 0,
+  });
+  // What the goals keep in each account, beside its line (#572).
+  const goalsQuery = useQuery({
+    queryKey: ["goals", walletId],
+    queryFn: () => listGoals(walletId),
     enabled: walletId > 0,
   });
   const accounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data]);
@@ -120,7 +134,14 @@ export function AccountsPage() {
       {t("accounts.add")}
     </Button>
   );
-  const tableProps = { data, baseFormat, day, actions };
+  const tableProps = {
+    data,
+    baseFormat,
+    day,
+    actions,
+    aside: asideByAccount(goalsQuery.data ?? []),
+    baseCurrencyId: base?.id,
+  };
 
   return (
     <Stack className={classes.page} gap="md">
