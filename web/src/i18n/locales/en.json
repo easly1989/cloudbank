@@ -784,6 +784,10 @@
     "auto": "auto"
   },
   "review": {
+    "doneTitle": "Nothing left to review",
+    "doneBody": "Every imported transaction has a category, and no two look like the same one.",
+    "doneBodyAccount": "Every transaction in {{name}} has a category, and no two look like the same one.",
+    "backTo": "Back to {{name}}",
     "oneAccount": "One account",
     "allAccounts": "Show all accounts",
     "title": "Bank sync review",

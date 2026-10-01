@@ -377,6 +377,8 @@ Review collects the imported and bank-synced transactions that need you:
 Review has no place in the sidebar. You reach it from the **to review** button in
 an account's register, and from the dashboard's list of what wants your
 attention.
+The link above its title takes you back there: to the register, or to the
+dashboard. When nothing is left to review, the page says so, with a button back.
 
 ## Search
 
