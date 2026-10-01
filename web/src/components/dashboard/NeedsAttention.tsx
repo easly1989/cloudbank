@@ -4,7 +4,8 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { getBills, getBudgetReport, getTransactionReview } from "../../api/client";
+import { getBills, getBudgetReport, getTransactionReview, listGoals } from "../../api/client";
+import { countReachedOpen } from "../../pages/goals/goalList";
 import { buildAttentionItems, countOverBudget, monthRange } from "./attention";
 import { ATTENTION } from "../../pages/overviewTheme";
 
@@ -13,7 +14,8 @@ import { ATTENTION } from "../../pages/overviewTheme";
  *
  * A dashboard that only reports what happened leaves the reader to work out
  * what to do about it. This does that part — uncategorised transactions,
- * overdue bills, budgets gone past, possible duplicates — each with the one
+ * overdue bills, budgets gone past, possible duplicates, goals reached and
+ * waiting to be closed — each with the one
  * link that fixes it.
  *
  * It renders nothing at all when there is nothing to do, which is the point:
@@ -43,11 +45,18 @@ export function NeedsAttention({ walletId }: { walletId: number }) {
     enabled: walletId > 0,
   });
 
+  const goals = useQuery({
+    queryKey: ["goals", walletId],
+    queryFn: () => listGoals(walletId),
+    enabled: walletId > 0,
+  });
+
   const items = buildAttentionItems({
     needsCategory: review.data?.needsCategory.length ?? 0,
     duplicates: review.data?.duplicates.length ?? 0,
     overdueBills: bills.data?.overdue ?? 0,
     overBudget: countOverBudget(budget.data?.rows),
+    goalsReached: countReachedOpen(goals.data),
   });
 
   if (items.length === 0) return null;

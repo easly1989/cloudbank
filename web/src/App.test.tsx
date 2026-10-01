@@ -158,13 +158,14 @@ describe("App routing", () => {
           upcoming: [],
         },
       },
-      // The overview also asks what needs attention. Without these the three
+      // The overview also asks what needs attention. Without these the four
       // queries fail and the page settles into an error state that happens to
       // look close enough to pass a loose assertion.
       "/api/v1/wallets/1/transactions/review": { body: { needsCategory: [], duplicates: [] } },
       "/api/v1/wallets/1/bills": {
         body: { from: "", to: "", baseCurrency: eur, bills: [], totalDue: 0, overdue: 0, due: 0 },
       },
+      "/api/v1/wallets/1/goals": { body: [] },
       // Widgets on the default dashboard ask for these; empty lists are enough,
       // but leaving them out would put those widgets into an error state.
       "/api/v1/wallets/1/accounts": { body: [] },
