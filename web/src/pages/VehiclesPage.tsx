@@ -1,42 +1,105 @@
-import { ActionIcon, Button, Group, Modal, Stack, Table, TextInput, Textarea } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { Button, Stack } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconCar, IconPencil, IconTrash } from "@tabler/icons-react";
-import { PageHeader } from "../components/PageHeader";
-import { EmptyState } from "../components/EmptyState";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useConfirm } from "../components/confirmContext";
+import { useNavigate } from "react-router-dom";
 
 import {
   ApiError,
-  type Vehicle,
-  createVehicle,
   deleteVehicle,
+  getVehicleReport,
+  listCurrencies,
   listVehicles,
-  updateVehicle,
 } from "../api/client";
-import { rowEditProps, stopRowEdit } from "../rowEdit";
+import { useConfirm } from "../components/confirmContext";
+import { PageHeader } from "../components/PageHeader";
+import { baseFmt } from "../components/reports/reportUtils";
+import { formatMinor, formatNumber } from "../money";
+import { useToday } from "../useToday";
 import { useWallet } from "../wallet/WalletProvider";
+import { lastTwelveMonths } from "./categories/categoryTree";
+import { useDayMonth } from "./categories/labels";
+import { lineOf, reportLink, type VehicleLine } from "./vehicles/vehicleList";
+import classes from "./vehicles/vehicles.module.css";
+import { VehicleSheet } from "./vehicles/VehicleSheet";
+import {
+  VehiclePhoneList,
+  VehiclesEmpty,
+  VehiclesLine,
+  VehicleTable,
+} from "./vehicles/VehicleTable";
+import type { VehicleActions, VehicleFormat } from "./vehicles/vehicleWords";
 
+/**
+ * Vehicles (#574): what each car, motorbike or van cost to run over the last
+ * twelve months — fuel, kilometres, the cost of one, litres per 100 km — from
+ * the fuel payments linked to it and the odometer and litres in their memos.
+ * The figures come from the same report as the Reports page's Vehicle tab.
+ */
 export function VehiclesPage() {
   const { t } = useTranslation();
   const confirm = useConfirm();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
-  const [editing, setEditing] = useState<Vehicle | null>(null);
-  const [opened, modal] = useDisclosure(false);
+  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
+  const today = useToday();
+  const day = useDayMonth(today);
+  const year = lastTwelveMonths(today);
+
+  const currencies = useQuery({
+    queryKey: ["currencies", walletId],
+    queryFn: () => listCurrencies(walletId),
+    enabled: walletId > 0,
+  });
+  const fmt = useMemo(() => baseFmt(currencies.data?.find((c) => c.isBase)), [currencies.data]);
+  const format: VehicleFormat = {
+    money: (minor) => formatMinor(minor, fmt),
+    num: (value, digits = 1) => formatNumber(value, digits, fmt),
+    day,
+    today,
+  };
 
   const vehiclesQuery = useQuery({
     queryKey: ["vehicles", walletId],
     queryFn: () => listVehicles(walletId),
     enabled: walletId > 0,
   });
-  const vehicles = vehiclesQuery.data ?? [];
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["vehicles", walletId] });
+  const vehicles = useMemo(() => vehiclesQuery.data ?? [], [vehiclesQuery.data]);
 
+  // Two reports a vehicle: the last twelve months for its figures, and every
+  // fill ever for its latest ones and for what deleting it would unlink.
+  const reports = useQueries({
+    queries: vehicles.flatMap((v) => [
+      {
+        queryKey: ["vehicle", walletId, v.id, year.from, year.to],
+        queryFn: () => getVehicleReport(walletId, v.id, year.from, year.to),
+        enabled: walletId > 0,
+      },
+      {
+        queryKey: ["vehicle", walletId, v.id, null, null],
+        queryFn: () => getVehicleReport(walletId, v.id),
+        enabled: walletId > 0,
+      },
+    ]),
+  });
+  const ready = reports.every((q) => !q.isPending);
+  const lines = vehicles.map((v, i) => lineOf(v, reports[2 * i]?.data, reports[2 * i + 1]?.data));
+
+  const [sheet, setSheet] = useState<{ open: boolean; id: number | null }>({
+    open: false,
+    id: null,
+  });
+  const sheetLine = lines.find((l) => l.vehicle.id === sheet.id) ?? null;
+  const closeSheet = () => setSheet((s) => ({ ...s, open: false }));
+
+  const invalidate = () => {
+    void qc.invalidateQueries({ queryKey: ["vehicles", walletId] });
+    void qc.invalidateQueries({ queryKey: ["vehicle", walletId] });
+  };
   const remove = useMutation({
     mutationFn: (id: number) => deleteVehicle(walletId, id),
     onSuccess: invalidate,
@@ -47,159 +110,78 @@ export function VehiclesPage() {
       }),
   });
 
-  const openCreate = () => {
-    setEditing(null);
-    modal.open();
+  const askDelete = async (l: VehicleLine) => {
+    const ok = await confirm({
+      title: t("vehicles.confirmDeleteTitle", { name: l.vehicle.name }),
+      body:
+        l.linked > 0
+          ? t("vehicles.confirmDeleteBody", { count: l.linked })
+          : t("vehicles.confirmDeleteNone"),
+      confirmLabel: t("vehicles.menu.delete"),
+      danger: true,
+    });
+    if (ok) {
+      closeSheet();
+      remove.mutate(l.vehicle.id);
+    }
   };
-  const openEdit = (v: Vehicle) => {
-    setEditing(v);
-    modal.open();
+
+  const actions: VehicleActions = {
+    onOpen: (l) => setSheet({ open: true, id: l.vehicle.id }),
+    onReport: (l) => navigate(reportLink(l.vehicle.id)),
+    onDelete: (l) => void askDelete(l),
   };
+  const openNew = () => setSheet({ open: true, id: null });
 
   if (!currentWallet) return null;
 
-  // One button, shown in the header or in the empty state — never both.
-  const addButton = <Button onClick={openCreate}>{t("vehicles.add")}</Button>;
+  const empty = vehiclesQuery.isSuccess && vehicles.length === 0;
+  const listProps = { lines, format, actions };
 
   return (
-    <Stack>
+    <Stack className={classes.page} gap="md">
       <PageHeader
+        tour="vehicles"
         title={t("vehicles.title")}
         hint={t("vehicles.hint")}
-        actions={vehicles.length > 0 ? addButton : undefined}
+        actions={
+          !empty && (
+            <Button onClick={openNew} data-tour="vehicles-add">
+              {t("vehicles.add")}
+            </Button>
+          )
+        }
       />
-      {vehicles.length === 0 ? (
-        <EmptyState icon={IconCar} message={t("vehicles.empty")} action={addButton} />
+
+      {empty ? (
+        <VehiclesEmpty onAdd={openNew} />
       ) : (
-        <Table verticalSpacing="xs">
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>{t("vehicles.name")}</Table.Th>
-              <Table.Th>{t("vehicles.plate")}</Table.Th>
-              <Table.Th>{t("vehicles.notes")}</Table.Th>
-              <Table.Th />
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {vehicles.map((v) => (
-              <Table.Tr key={v.id} {...rowEditProps(() => openEdit(v))}>
-                <Table.Td fw={500}>{v.name}</Table.Td>
-                <Table.Td>{v.plate}</Table.Td>
-                <Table.Td c="dimmed">{v.notes}</Table.Td>
-                <Table.Td ta="right" w={90} {...stopRowEdit}>
-                  <Group gap={4} justify="flex-end" wrap="nowrap">
-                    <ActionIcon
-                      variant="subtle"
-                      aria-label={t("vehicles.edit")}
-                      onClick={() => openEdit(v)}
-                    >
-                      <IconPencil size={16} />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      aria-label={t("vehicles.delete")}
-                      onClick={async () => {
-                        const ok = await confirm({
-                          title: t("vehicles.confirmDeleteTitle", { name: v.name }),
-                          body: t("vehicles.confirmDeleteBody"),
-                          confirmLabel: t("vehicles.delete"),
-                          danger: true,
-                        });
-                        if (ok) remove.mutate(v.id);
-                      }}
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  </Group>
-                </Table.Td>
-              </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+        vehicles.length > 0 &&
+        ready &&
+        (phone ? (
+          <>
+            <VehiclePhoneList {...listProps} />
+            <VehiclesLine short />
+          </>
+        ) : (
+          <>
+            <VehicleTable {...listProps} />
+            <VehiclesLine />
+          </>
+        ))
       )}
-      {/* Keyed so each opening mounts a fresh form. */}
-      <VehicleModal
-        key={editing?.id ?? "new"}
-        opened={opened}
-        onClose={modal.close}
+
+      <VehicleSheet
+        opened={sheet.open}
+        onClose={closeSheet}
         walletId={walletId}
-        vehicle={editing}
+        line={sheetLine}
+        others={vehicles.filter((v) => v.id !== sheet.id).map((v) => v.name)}
+        format={format}
         onSaved={invalidate}
+        onReport={actions.onReport}
+        onDelete={actions.onDelete}
       />
     </Stack>
-  );
-}
-
-function VehicleModal({
-  opened,
-  onClose,
-  walletId,
-  vehicle,
-  onSaved,
-}: {
-  opened: boolean;
-  onClose: () => void;
-  walletId: number;
-  vehicle: Vehicle | null;
-  onSaved: () => void;
-}) {
-  const { t } = useTranslation();
-  // The form starts where the vehicle is; the modal is mounted per opening.
-  const [name, setName] = useState(vehicle?.name ?? "");
-  const [plate, setPlate] = useState(vehicle?.plate ?? "");
-  const [notes, setNotes] = useState(vehicle?.notes ?? "");
-
-  const save = useMutation({
-    mutationFn: () => {
-      const body = { name, plate, notes };
-      return vehicle ? updateVehicle(walletId, vehicle.id, body) : createVehicle(walletId, body);
-    },
-    onSuccess: () => {
-      onSaved();
-      onClose();
-    },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
-  });
-
-  return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={vehicle ? t("vehicles.editTitle") : t("vehicles.addTitle")}
-    >
-      <Stack>
-        <TextInput
-          label={t("vehicles.name")}
-          required
-          value={name}
-          onChange={(e) => setName(e.currentTarget.value)}
-        />
-        <TextInput
-          label={t("vehicles.plate")}
-          value={plate}
-          onChange={(e) => setPlate(e.currentTarget.value)}
-        />
-        <Textarea
-          label={t("vehicles.notes")}
-          value={notes}
-          onChange={(e) => setNotes(e.currentTarget.value)}
-          autosize
-          minRows={2}
-        />
-        <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>
-            {t("vehicles.cancel")}
-          </Button>
-          <Button onClick={() => save.mutate()} loading={save.isPending} disabled={!name.trim()}>
-            {t("vehicles.save")}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
   );
 }

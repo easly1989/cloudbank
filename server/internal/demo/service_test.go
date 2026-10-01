@@ -16,6 +16,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/goal"
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/importio"
+	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/transaction"
@@ -106,6 +107,35 @@ func TestStartFillsAnAccountOfItsOwn(t *testing.T) {
 	// The goals page shows every state (#572): two goals in the history.
 	if n := count(t, st, "SELECT COUNT(*) FROM goals WHERE wallet_id = ? AND closed_on IS NOT NULL", wid); n != 2 {
 		t.Errorf("%d closed goals, want 2 in the history", n)
+	}
+
+	// The vehicles page shows a car with its fuel and a scooter without (#574),
+	// and the car's memos make a believable consumption.
+	if n := count(t, st, "SELECT COUNT(*) FROM vehicles WHERE wallet_id = ?", wid); n != 2 {
+		t.Errorf("%d vehicles, want the car and the scooter", n)
+	}
+	var carID int64
+	if err := st.Read().QueryRow("SELECT id FROM vehicles WHERE wallet_id = ? AND name = 'Auto di famiglia'", wid).Scan(&carID); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, st, "SELECT COUNT(*) FROM transactions WHERE wallet_id = ? AND vehicle_id IS NOT NULL AND vehicle_id <> ?", wid, carID); n != 0 {
+		t.Errorf("%d payments on the scooter, want none", n)
+	}
+	car, err := report.NewService(st.Read()).Vehicle(ctx, wid, carID, "0000-01-01", "9999-12-31")
+	if err != nil {
+		t.Fatal(err)
+	}
+	partial := 0
+	for _, e := range car.Entries {
+		if e.Partial {
+			partial++
+		}
+	}
+	if len(car.Entries) < 20 || partial == 0 || partial > 4 {
+		t.Errorf("%d fills, %d partial: want a year of fortnightly tanks, a few of them top-ups", len(car.Entries), partial)
+	}
+	if car.AvgConsumption < 4 || car.AvgConsumption > 8 || car.TotalDistance < 12000 {
+		t.Errorf("car: %.1f L/100 km over %.0f km, want a family car's year", car.AvgConsumption, car.TotalDistance)
 	}
 
 	// The year's salary, rent, internet, streaming and energy bills are the

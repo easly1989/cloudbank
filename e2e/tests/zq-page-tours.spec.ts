@@ -92,6 +92,18 @@ async function ready(
           headers: H,
           body: JSON.stringify({ name: "Tour goal", targetAmount: 10000 }),
         });
+      // The vehicles' tour points at their table, which a wallet shows once
+      // it has a vehicle (#574).
+      const vehicles = await (
+        await fetch(`${wbase}/vehicles`, { credentials: "same-origin" })
+      ).json();
+      if (vehicles.length === 0)
+        await fetch(`${wbase}/vehicles`, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: H,
+          body: JSON.stringify({ name: "Tour car", plate: "", notes: "" }),
+        });
       const base = `/api/v1/wallets/${wallets[0].id}/accounts`;
       const accounts = await (
         await fetch(base, { credentials: "same-origin" })
@@ -142,6 +154,7 @@ test("a page offers its tour once, and the ? plays it again", async ({
       "reports",
       "schedules",
       "goals",
+      "vehicles",
       "bankSync",
       "review",
       "settings",
@@ -215,6 +228,7 @@ test("skipping an offered tour can skip them all", async ({ page }) => {
       "accounts",
       "reports",
       "schedules",
+      "vehicles",
       "bankSync",
       "review",
       "settings",
@@ -319,6 +333,7 @@ test("every step of every tour points at something on its page", async ({
     ["reports", "/reports"],
     ["schedules", "/schedules"],
     ["goals", "/goals"],
+    ["vehicles", "/vehicles"],
     ["bankSync", "/settings/integrations"],
     ["review", "/review"],
     ["settings", "/settings/general"],

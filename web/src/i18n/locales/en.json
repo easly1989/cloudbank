@@ -717,20 +717,63 @@
   },
   "vehicles": {
     "title": "Vehicles",
-    "hint": "Track cars, bikes or any vehicle to build fuel-cost reports. Assign a vehicle to a transaction to include it.",
-    "empty": "No vehicles yet.",
+    "hint": "What each car, motorbike or van costs you to run, from the fuel payments you link to it.",
     "add": "Add vehicle",
     "addTitle": "New vehicle",
-    "editTitle": "Edit vehicle",
     "name": "Name",
     "plate": "Plate",
     "notes": "Notes",
-    "edit": "Edit vehicle",
-    "delete": "Delete vehicle",
     "cancel": "Cancel",
     "save": "Save",
+    "duplicate": "There is already a vehicle called {{name}}.",
+    "col": {
+      "vehicle": "Vehicle",
+      "fuel": "Fuel",
+      "distance": "Distance",
+      "perKm": "Per km",
+      "per100": "Per 100 km",
+      "lastFill": "Last fill"
+    },
+    "fills_one": "{{count}} fill",
+    "fills_other": "{{count}} fills",
+    "today": "today",
+    "daysAgo_one": "{{count}} day ago",
+    "daysAgo_other": "{{count}} days ago",
+    "onTheClock": "{{distance}} on the clock",
+    "noFills": "No fuel payments linked yet. Pick “{{name}}” in a payment's Vehicle field to start.",
+    "noFillsShort": "No fuel payments linked yet",
+    "noneLately": "No fuel payments in the last 12 months",
+    "report": "Report",
+    "reportFor": "Open the report for {{name}}",
+    "actionsFor": "Actions for {{name}}",
+    "menu": {
+      "edit": "Edit vehicle",
+      "report": "Open the report",
+      "delete": "Delete vehicle"
+    },
+    "line": "The last 12 months. Distance and consumption come from the memo of each linked payment: <code>d=</code> the odometer, <code>v=</code> the litres; a fill without <code>v=</code> is a partial one.",
+    "phoneLine": "The last 12 months.",
+    "sheet": {
+      "subtitle_one": "{{count}} fuel payment in the last 12 months",
+      "subtitle_other": "{{count}} fuel payments in the last 12 months",
+      "lastTwelve": "Last 12 months",
+      "recent": "Recent fills",
+      "howTo": "Pick it in a fuel payment's Vehicle field, under More details in the entry sheet, and write the odometer and the litres in the memo: <code>d=41250 v=32.5</code>."
+    },
+    "empty": {
+      "title": "See what a vehicle costs to run",
+      "body": "Add a vehicle, then link its fuel payments to it. The page works out what you spend per kilometre and how much fuel it uses, and the Reports page draws it fill by fill.",
+      "step1": "Add the vehicle",
+      "step1Sub": "A name is enough; the plate and notes are for you.",
+      "step2": "Pick it when you enter a fuel payment",
+      "step2Sub": "In the entry sheet, under More details → Vehicle.",
+      "step3": "Write the odometer and the litres in the memo",
+      "step3Sub": "<code>d=41250 v=32.5</code>: kilometres and litres. Leave out <code>v=</code> when you did not fill the tank."
+    },
     "confirmDeleteTitle": "Delete \"{{name}}\"?",
-    "confirmDeleteBody": "Its fuel-ups stay in the ledger, but they are no longer linked to a vehicle."
+    "confirmDeleteBody_one": "Its fuel payment stays in the register, no longer linked to a vehicle.",
+    "confirmDeleteBody_other": "Its {{count}} fuel payments stay in the register, no longer linked to any vehicle.",
+    "confirmDeleteNone": "No fuel payments are linked to it."
   },
   "goals": {
     "title": "Savings goals",
@@ -2241,6 +2284,21 @@
       "add": {
         "title": "Save towards something",
         "body": "A goal is an amount and, if you like, a date: a holiday, a new bike, a cushion for the unexpected."
+      }
+    },
+    "vehicles": {
+      "offer": "New here? Take the vehicles tour",
+      "table": {
+        "title": "A row per vehicle",
+        "body": "What its fuel cost over the last 12 months, the kilometres, the cost of one and the litres per 100 km. Click a row to edit it and see its latest fills."
+      },
+      "memo": {
+        "title": "The memo does the counting",
+        "body": "Link a fuel payment to the vehicle and write the odometer and the litres in its memo, like d=41250 v=32.5. Without them the page knows the cost, not the kilometres."
+      },
+      "add": {
+        "title": "Add a vehicle",
+        "body": "A car, a motorbike, a van: a name is enough to start linking its fuel payments."
       }
     },
     "bankSync": {
