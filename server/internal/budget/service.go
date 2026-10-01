@@ -85,6 +85,9 @@ type Report struct {
 	Currency    *CurrencyInfo `json:"currency"`
 }
 
+// maxHistoryMonths bounds how far back History reaches.
+const maxHistoryMonths = 60
+
 // MonthAmount is one month of a category's history (base currency, signed).
 type MonthAmount struct {
 	Month  string `json:"month"` // YYYY-MM
@@ -289,7 +292,7 @@ func (s *Service) History(ctx context.Context, walletID, categoryID int64, month
 	if _, ok := w.meta[categoryID]; !ok {
 		return nil, ErrInvalidCategory
 	}
-	if months < 1 || months > 60 {
+	if months < 1 || months > maxHistoryMonths {
 		months = 12
 	}
 	t, err := time.Parse(dateLayout, today)
@@ -297,11 +300,12 @@ func (s *Service) History(ctx context.Context, walletID, categoryID int64, month
 		return nil, err
 	}
 	first := time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC).AddDate(0, -(months - 1), 0)
-	out := make([]MonthAmount, months)
+	// A fixed capacity: the length comes from the request.
+	out := make([]MonthAmount, 0, maxHistoryMonths)
 	index := map[string]int{}
-	for i := range out {
+	for i := 0; i < months; i++ {
 		m := first.AddDate(0, i, 0).Format("2006-01")
-		out[i] = MonthAmount{Month: m}
+		out = append(out, MonthAmount{Month: m})
 		index[m] = i
 	}
 	counts := func(id int64) bool {
