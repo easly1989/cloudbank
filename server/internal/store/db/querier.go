@@ -105,6 +105,9 @@ type Querier interface {
 	// A demo user is idle once no session of theirs outlives the cutoff. Their
 	// wallets go first: wallets are not tied to users by a cascade.
 	DemoDeleteWalletsOfIdleUsers(ctx context.Context, expiresAt string) error
+	// Ties the seeded fuel payments to the demo's car: the HomeBank file the seed
+	// comes from has no vehicles, only the fills' memos (d= the odometer).
+	DemoLinkFills(ctx context.Context, arg DemoLinkFillsParams) (int64, error)
 	FindDuplicateTransactions(ctx context.Context, arg FindDuplicateTransactionsParams) ([]Transaction, error)
 	GetAISettings(ctx context.Context, userID int64) (GetAISettingsRow, error)
 	GetAPIToken(ctx context.Context, id string) (ApiToken, error)
