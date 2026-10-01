@@ -151,6 +151,9 @@ var words = map[string][2]string{
 	"refund":       {"Refund", "Rimborso"},
 	"goalTrip":     {"Summer trip", "Viaggio d'estate"},
 	"goalBuffer":   {"Rainy-day fund", "Fondo imprevisti"},
+	"goalTickets":  {"Concert tickets", "Biglietti del concerto"},
+	"goalBike":     {"New bike", "Bici nuova"},
+	"goalSofa":     {"New sofa", "Divano nuovo"},
 	"goalNote":     {"Made-up goal: change it, top it up, delete it.", "Obiettivo inventato: modificalo, aggiungi, eliminalo."},
 }
 

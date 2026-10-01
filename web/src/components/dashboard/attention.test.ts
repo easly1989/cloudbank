@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { BudgetReportRow } from "../../api/client";
 import { buildAttentionItems, countOverBudget, monthRange } from "./attention";
 
-const none = { needsCategory: 0, overdueBills: 0, overBudget: 0, duplicates: 0 };
+const none = { needsCategory: 0, overdueBills: 0, overBudget: 0, duplicates: 0, goalsReached: 0 };
 
 describe("buildAttentionItems", () => {
   it("says nothing when there is nothing to do", () => {
@@ -21,18 +21,20 @@ describe("buildAttentionItems", () => {
       overdueBills: 2,
       overBudget: 3,
       duplicates: 4,
+      goalsReached: 5,
     });
     expect(items.map((i) => i.key)).toEqual([
       "needsCategory",
       "overdueBills",
       "overBudget",
       "duplicates",
+      "goalsReached",
     ]);
   });
 
   it("sends each line somewhere it can be fixed", () => {
-    const items = buildAttentionItems({ ...none, overdueBills: 1, overBudget: 1 });
-    expect(items.map((i) => i.to)).toEqual(["/schedules", "/budget"]);
+    const items = buildAttentionItems({ ...none, overdueBills: 1, overBudget: 1, goalsReached: 1 });
+    expect(items.map((i) => i.to)).toEqual(["/schedules", "/budget", "/goals"]);
   });
 });
 

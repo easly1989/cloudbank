@@ -103,6 +103,11 @@ func TestStartFillsAnAccountOfItsOwn(t *testing.T) {
 		}
 	}
 
+	// The goals page shows every state (#572): two goals in the history.
+	if n := count(t, st, "SELECT COUNT(*) FROM goals WHERE wallet_id = ? AND closed_on IS NOT NULL", wid); n != 2 {
+		t.Errorf("%d closed goals, want 2 in the history", n)
+	}
+
 	// The year's salary, rent, internet, streaming and energy bills are the
 	// schedules' own (#546): about five a month, and nothing else.
 	if n := count(t, st, "SELECT COUNT(*) FROM transactions WHERE wallet_id = ? AND template_id IN (SELECT template_id FROM schedules)", wid); n < 50 || n > 65 {

@@ -2349,6 +2349,30 @@ paths:
       responses:
         "204": { description: Deleted. }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/goals/{goalId}/close:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: goalId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: closeGoal
+      summary: Close a goal into the history (reached, or given up on); it keeps its money and takes no new movements
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/GoalCloseInput" } } }
+      responses:
+        "200": { description: Closed., content: { application/json: { schema: { $ref: "#/components/schemas/Goal" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/goals/{goalId}/reopen:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: goalId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: reopenGoal
+      summary: Bring a closed goal back from the history
+      responses:
+        "200": { description: Reopened., content: { application/json: { schema: { $ref: "#/components/schemas/Goal" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/goals/{goalId}/contributions:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -2369,6 +2393,7 @@ paths:
         "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/GoalContribution" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: The goal is closed; reopen it first., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
   /api/v1/wallets/{walletId}/goals/{goalId}/contributions/{contribId}:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -2380,6 +2405,7 @@ paths:
       responses:
         "204": { description: Deleted. }
         "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: The goal is closed; reopen it first., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
   /api/v1/wallets/{walletId}/dashboard:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -3236,7 +3262,13 @@ components:
         note: { type: string }
         position: { type: integer, format: int64 }
         saved: { type: integer, format: int64, description: "sum of contributions (minor units)" }
-      required: [id, name, targetAmount, note, position, saved]
+        closedOn: { type: string, nullable: true, description: "YYYY-MM-DD the goal was closed (reached and done with, or given up on); null while open" }
+      required: [id, name, targetAmount, note, position, saved, closedOn]
+    GoalCloseInput:
+      type: object
+      properties:
+        date: { type: string, description: "YYYY-MM-DD, the user's civil date" }
+      required: [date]
     GoalInput:
       type: object
       properties:

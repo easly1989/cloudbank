@@ -46,7 +46,7 @@ func (q *Queries) GetContribution(ctx context.Context, id int64) (GoalContributi
 }
 
 const getGoal = `-- name: GetGoal :one
-SELECT id, wallet_id, name, target_amount, target_date, account_id, note, position FROM goals WHERE id = ? LIMIT 1
+SELECT id, wallet_id, name, target_amount, target_date, account_id, note, position, closed_on FROM goals WHERE id = ? LIMIT 1
 `
 
 func (q *Queries) GetGoal(ctx context.Context, id int64) (Goal, error) {
@@ -61,6 +61,7 @@ func (q *Queries) GetGoal(ctx context.Context, id int64) (Goal, error) {
 		&i.AccountID,
 		&i.Note,
 		&i.Position,
+		&i.ClosedOn,
 	)
 	return i, err
 }
@@ -108,9 +109,9 @@ func (q *Queries) InsertContribution(ctx context.Context, arg InsertContribution
 }
 
 const insertGoal = `-- name: InsertGoal :one
-INSERT INTO goals (wallet_id, name, target_amount, target_date, account_id, note, position)
-VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, wallet_id, name, target_amount, target_date, account_id, note, position
+INSERT INTO goals (wallet_id, name, target_amount, target_date, account_id, note, position, closed_on)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, wallet_id, name, target_amount, target_date, account_id, note, position, closed_on
 `
 
 type InsertGoalParams struct {
@@ -121,6 +122,7 @@ type InsertGoalParams struct {
 	AccountID    sql.NullInt64
 	Note         string
 	Position     int64
+	ClosedOn     sql.NullString
 }
 
 func (q *Queries) InsertGoal(ctx context.Context, arg InsertGoalParams) (Goal, error) {
@@ -132,6 +134,7 @@ func (q *Queries) InsertGoal(ctx context.Context, arg InsertGoalParams) (Goal, e
 		arg.AccountID,
 		arg.Note,
 		arg.Position,
+		arg.ClosedOn,
 	)
 	var i Goal
 	err := row.Scan(
@@ -143,6 +146,7 @@ func (q *Queries) InsertGoal(ctx context.Context, arg InsertGoalParams) (Goal, e
 		&i.AccountID,
 		&i.Note,
 		&i.Position,
+		&i.ClosedOn,
 	)
 	return i, err
 }
@@ -182,7 +186,7 @@ func (q *Queries) ListContributionsForGoal(ctx context.Context, goalID int64) ([
 
 const listGoalsForWallet = `-- name: ListGoalsForWallet :many
 SELECT
-    g.id, g.wallet_id, g.name, g.target_amount, g.target_date, g.account_id, g.note, g.position,
+    g.id, g.wallet_id, g.name, g.target_amount, g.target_date, g.account_id, g.note, g.position, g.closed_on,
     CAST(COALESCE((SELECT SUM(amount) FROM goal_contributions c WHERE c.goal_id = g.id), 0) AS INTEGER) AS saved
 FROM goals g
 WHERE g.wallet_id = ?
@@ -198,6 +202,7 @@ type ListGoalsForWalletRow struct {
 	AccountID    sql.NullInt64
 	Note         string
 	Position     int64
+	ClosedOn     sql.NullString
 	Saved        int64
 }
 
@@ -219,6 +224,7 @@ func (q *Queries) ListGoalsForWallet(ctx context.Context, walletID int64) ([]Lis
 			&i.AccountID,
 			&i.Note,
 			&i.Position,
+			&i.ClosedOn,
 			&i.Saved,
 		); err != nil {
 			return nil, err
@@ -232,6 +238,20 @@ func (q *Queries) ListGoalsForWallet(ctx context.Context, walletID int64) ([]Lis
 		return nil, err
 	}
 	return items, nil
+}
+
+const setGoalClosed = `-- name: SetGoalClosed :exec
+UPDATE goals SET closed_on = ? WHERE id = ?
+`
+
+type SetGoalClosedParams struct {
+	ClosedOn sql.NullString
+	ID       int64
+}
+
+func (q *Queries) SetGoalClosed(ctx context.Context, arg SetGoalClosedParams) error {
+	_, err := q.db.ExecContext(ctx, setGoalClosed, arg.ClosedOn, arg.ID)
+	return err
 }
 
 const updateGoal = `-- name: UpdateGoal :exec

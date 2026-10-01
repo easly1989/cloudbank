@@ -3,6 +3,10 @@
 // signed contributions; progress = saved / target. Amounts are in the wallet's
 // base currency. Split out as a first-class entity, mirroring the vehicle
 // package's shape.
+//
+// A goal is open until the user closes it (#572): once it is reached and done
+// with, or when they give up on it. A closed goal keeps its contributions as
+// history, takes no new ones, and can be reopened.
 package goal
 
 import (
@@ -10,6 +14,7 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/walletref"
@@ -20,6 +25,8 @@ var (
 	ErrNotFound        = errors.New("goal: not found")
 	ErrInvalid         = errors.New("goal: name and a positive target are required")
 	ErrBadContribution = errors.New("goal: a contribution needs a date and a non-zero amount")
+	ErrBadDate         = errors.New("goal: closing needs a date (YYYY-MM-DD)")
+	ErrClosed          = errors.New("goal: closed; reopen it to change its money")
 )
 
 // Goal is a savings goal with its current saved total.
@@ -32,6 +39,8 @@ type Goal struct {
 	Note         string  `json:"note"`
 	Position     int64   `json:"position"`
 	Saved        int64   `json:"saved"`
+	// ClosedOn is the civil date the goal was closed; nil while it is open.
+	ClosedOn *string `json:"closedOn"`
 }
 
 // Contribution is a signed movement toward a goal (+ added / − withdrawn).
@@ -83,6 +92,7 @@ func toGoal(g db.Goal, saved int64) Goal {
 	return Goal{
 		ID: g.ID, Name: g.Name, TargetAmount: g.TargetAmount, TargetDate: strPtr(g.TargetDate),
 		AccountID: idPtr(g.AccountID), Note: g.Note, Position: g.Position, Saved: saved,
+		ClosedOn: strPtr(g.ClosedOn),
 	}
 }
 func toContribution(c db.GoalContribution) Contribution {
@@ -122,6 +132,7 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]Goal, error) {
 		out = append(out, Goal{
 			ID: r.ID, Name: r.Name, TargetAmount: r.TargetAmount, TargetDate: strPtr(r.TargetDate),
 			AccountID: idPtr(r.AccountID), Note: r.Note, Position: r.Position, Saved: r.Saved,
+			ClosedOn: strPtr(r.ClosedOn),
 		})
 	}
 	return out, nil
@@ -159,6 +170,7 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Goal, e
 	g, err := s.q.InsertGoal(ctx, db.InsertGoalParams{
 		WalletID: walletID, Name: strings.TrimSpace(in.Name), TargetAmount: in.TargetAmount,
 		TargetDate: nullStr(in.TargetDate), AccountID: nullID(in.AccountID), Note: in.Note, Position: 0,
+		ClosedOn: sql.NullString{},
 	})
 	if err != nil {
 		return Goal{}, err
@@ -182,6 +194,34 @@ func (s *Service) Update(ctx context.Context, walletID, id int64, in Input) (Goa
 		Name: strings.TrimSpace(in.Name), TargetAmount: in.TargetAmount, TargetDate: nullStr(in.TargetDate),
 		AccountID: nullID(in.AccountID), Note: in.Note, Position: cur.Position, ID: id,
 	}); err != nil {
+		return Goal{}, err
+	}
+	return s.Get(ctx, walletID, id)
+}
+
+// Close moves a goal to the history on the given civil date, whether it was
+// reached or given up on. Closing a closed goal moves its date.
+func (s *Service) Close(ctx context.Context, walletID, id int64, date string) (Goal, error) {
+	if _, err := time.Parse(time.DateOnly, date); err != nil {
+		return Goal{}, ErrBadDate
+	}
+	if _, err := s.inWallet(ctx, walletID, id); err != nil {
+		return Goal{}, err
+	}
+	if err := s.q.SetGoalClosed(ctx, db.SetGoalClosedParams{
+		ClosedOn: sql.NullString{String: date, Valid: true}, ID: id,
+	}); err != nil {
+		return Goal{}, err
+	}
+	return s.Get(ctx, walletID, id)
+}
+
+// Reopen brings a closed goal back from the history.
+func (s *Service) Reopen(ctx context.Context, walletID, id int64) (Goal, error) {
+	if _, err := s.inWallet(ctx, walletID, id); err != nil {
+		return Goal{}, err
+	}
+	if err := s.q.SetGoalClosed(ctx, db.SetGoalClosedParams{ClosedOn: sql.NullString{}, ID: id}); err != nil {
 		return Goal{}, err
 	}
 	return s.Get(ctx, walletID, id)
@@ -211,10 +251,14 @@ func (s *Service) Contributions(ctx context.Context, walletID, goalID int64) ([]
 	return out, nil
 }
 
-// AddContribution records a signed movement toward a goal.
+// AddContribution records a signed movement toward an open goal.
 func (s *Service) AddContribution(ctx context.Context, walletID, goalID int64, date string, amount int64, note string) (Contribution, error) {
-	if _, err := s.inWallet(ctx, walletID, goalID); err != nil {
+	g, err := s.inWallet(ctx, walletID, goalID)
+	if err != nil {
 		return Contribution{}, err
+	}
+	if g.ClosedOn.Valid {
+		return Contribution{}, ErrClosed
 	}
 	if strings.TrimSpace(date) == "" || amount == 0 {
 		return Contribution{}, ErrBadContribution
@@ -228,10 +272,14 @@ func (s *Service) AddContribution(ctx context.Context, walletID, goalID int64, d
 	return toContribution(c), nil
 }
 
-// DeleteContribution removes one contribution from a goal.
+// DeleteContribution removes one contribution from an open goal.
 func (s *Service) DeleteContribution(ctx context.Context, walletID, goalID, contribID int64) error {
-	if _, err := s.inWallet(ctx, walletID, goalID); err != nil {
+	g, err := s.inWallet(ctx, walletID, goalID)
+	if err != nil {
 		return err
+	}
+	if g.ClosedOn.Valid {
+		return ErrClosed
 	}
 	c, err := s.q.GetContribution(ctx, contribID)
 	if errors.Is(err, sql.ErrNoRows) || (err == nil && c.GoalID != goalID) {

@@ -2382,6 +2382,46 @@ export interface paths {
         patch: operations["updateGoal"];
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/goals/{goalId}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                goalId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a goal into the history (reached, or given up on); it keeps its money and takes no new movements */
+        post: operations["closeGoal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/goals/{goalId}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                goalId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bring a closed goal back from the history */
+        post: operations["reopenGoal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/goals/{goalId}/contributions": {
         parameters: {
             query?: never;
@@ -3449,6 +3489,12 @@ export interface components {
              * @description sum of contributions (minor units)
              */
             saved: number;
+            /** @description YYYY-MM-DD the goal was closed (reached and done with, or given up on); null while open */
+            closedOn: string | null;
+        };
+        GoalCloseInput: {
+            /** @description YYYY-MM-DD, the user's civil date */
+            date: string;
         };
         GoalInput: {
             name: string;
@@ -8877,6 +8923,59 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    closeGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                goalId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalCloseInput"];
+            };
+        };
+        responses: {
+            /** @description Closed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goal"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    reopenGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                goalId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reopened. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goal"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
     listGoalContributions: {
         parameters: {
             query?: never;
@@ -8928,6 +9027,15 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
+            /** @description The goal is closed; reopen it first. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     deleteGoalContribution: {
@@ -8951,6 +9059,15 @@ export interface operations {
                 content?: never;
             };
             404: components["responses"]["NotFound"];
+            /** @description The goal is closed; reopen it first. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     getDashboard: {

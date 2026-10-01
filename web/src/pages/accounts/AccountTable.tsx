@@ -29,6 +29,9 @@ export interface AccountTableProps {
   baseFormat: MoneyFormat;
   day: (date: string) => string;
   actions: AccountActions;
+  /** What the goals still set aside keep in each account, in the base currency (#572). */
+  aside?: ReadonlyMap<number, { amount: number }>;
+  baseCurrencyId?: number;
 }
 
 const stop = (fn: () => void) => (e: MouseEvent) => {
@@ -55,6 +58,37 @@ function useSubLine(day: (date: string) => string) {
     ]
       .filter(Boolean)
       .join(" · ");
+}
+
+/**
+ * What the goals keep in an account, after its line (#572): amber when the
+ * account holds less, which can only be told when it is in the base currency.
+ */
+function useAsideNote(
+  aside: AccountTableProps["aside"],
+  baseFormat: MoneyFormat,
+  baseCurrencyId: number | undefined,
+) {
+  const { t } = useTranslation();
+  return (a: Account) => {
+    const amount = aside?.get(a.id)?.amount ?? 0;
+    if (amount <= 0) return null;
+    const short = a.currencyId === baseCurrencyId && a.balance < amount;
+    return (
+      <>
+        {" · "}
+        <span
+          data-testid={`account-aside-${a.id}`}
+          data-short={short || undefined}
+          style={short ? { color: attentionColor } : undefined}
+        >
+          {t(short ? "accounts.setAsideShort" : "accounts.setAside", {
+            amount: formatMinor(amount, baseFormat),
+          })}
+        </span>
+      </>
+    );
+  };
 }
 
 export function AccountMenu({
@@ -103,9 +137,17 @@ export function AccountMenu({
  * and the future balance, a band per type with its subtotal, and the total
  * under them. A click opens the account's register; ⋯ edits it.
  */
-export function AccountTable({ data, baseFormat, day, actions }: AccountTableProps) {
+export function AccountTable({
+  data,
+  baseFormat,
+  day,
+  actions,
+  aside,
+  baseCurrencyId,
+}: AccountTableProps) {
   const { t } = useTranslation();
   const sub = useSubLine(day);
+  const asideNote = useAsideNote(aside, baseFormat, baseCurrencyId);
   const base = (n: number) => formatMinor(n, baseFormat);
   const sums = (f: Figures) => (
     <>
@@ -152,7 +194,10 @@ export function AccountTable({ data, baseFormat, day, actions }: AccountTablePro
                   >
                     {a.name}
                   </UnstyledButton>
-                  <span className={classes.sub}>{sub(a)}</span>
+                  <span className={classes.sub}>
+                    {sub(a)}
+                    {asideNote(a)}
+                  </span>
                 </span>
                 <span className={`${classes.r} ${classes.mono} ${classes.dim}`}>
                   {formatMinor(a.reconciledBalance, fmt)}
@@ -191,9 +236,17 @@ export function AccountTable({ data, baseFormat, day, actions }: AccountTablePro
 }
 
 /** The phone: a heading per type with its subtotal, a row per account, the total at the foot. */
-export function AccountPhoneList({ data, baseFormat, day, actions }: AccountTableProps) {
+export function AccountPhoneList({
+  data,
+  baseFormat,
+  day,
+  actions,
+  aside,
+  baseCurrencyId,
+}: AccountTableProps) {
   const { t } = useTranslation();
   const sub = useSubLine(day);
+  const asideNote = useAsideNote(aside, baseFormat, baseCurrencyId);
   const base = (n: number) => formatMinor(n, baseFormat);
   return (
     <div data-tour="accounts-table" className={classes.phoneList}>
@@ -219,7 +272,10 @@ export function AccountPhoneList({ data, baseFormat, day, actions }: AccountTabl
                   >
                     <span className={classes.pl}>
                       <span className={classes.pt}>{a.name}</span>
-                      <span className={classes.pm}>{sub(a) || t(`accounts.types.${a.type}`)}</span>
+                      <span className={classes.pm}>
+                        {sub(a) || t(`accounts.types.${a.type}`)}
+                        {asideNote(a)}
+                      </span>
                     </span>
                     <span className={classes.pa}>
                       <span className={classes.mono} style={{ color: todayColor(a) }}>
