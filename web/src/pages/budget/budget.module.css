@@ -1,0 +1,375 @@
+/* The Budget page (#568), to the numbers of the approved mockup: the period,
+   the answer (spent, left, one bar), then every budget line in the register's
+   card, with spending that has no budget apart. */
+
+.page {
+  container-type: inline-size;
+  font-variant-numeric: tabular-nums;
+}
+.mono {
+  font-family: var(--mantine-font-family-monospace);
+}
+.dim {
+  color: var(--mantine-color-dimmed);
+}
+.amber {
+  color: var(--cb-attention);
+}
+.line {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--mantine-color-dimmed);
+}
+
+/* The bar: what has gone in the ink, what is coming lighter, amber past the
+   plan, a notch where the plan ends when the bar runs past it, and a tick
+   where today stands in the period. */
+.bar {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 6px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--mantine-color-text) 10%, transparent);
+}
+.bar[data-size="big"] {
+  height: 8px;
+}
+.fill,
+.coming {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 99px;
+  background: var(--mantine-primary-color-filled);
+}
+.coming {
+  background: color-mix(in srgb, var(--mantine-primary-color-filled) 40%, transparent);
+  border-radius: 0 99px 99px 0;
+}
+.bar[data-over] .fill {
+  background: var(--cb-attention);
+}
+.bar[data-over] .coming {
+  background: color-mix(in srgb, var(--cb-attention) 45%, transparent);
+}
+.pace,
+.planEnd {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+}
+.pace {
+  background: var(--mantine-color-text);
+  opacity: 0.55;
+}
+.planEnd {
+  background: var(--mantine-color-body);
+}
+
+/* The period and the answer. */
+.top {
+  display: flex;
+  align-items: flex-end;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+.fig {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.figLabel,
+.figSub {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+}
+.figValue {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.15;
+}
+.figValue[data-small] {
+  font-size: 22px;
+}
+.period {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.navName {
+  min-width: 132px;
+  text-align: center;
+}
+.totalBar {
+  padding-top: 10px;
+}
+/* Add to budget, on a line with no budget: smaller than a page action. */
+.addLine {
+  height: 26px;
+  padding: 0 9px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.card {
+  border: 1px solid var(--cb-ledger-border);
+  border-radius: 12px;
+  background: var(--cb-ledger-surface);
+  overflow: hidden;
+}
+
+/* Desktop rows: the category, planned, spent, left, the bar and ⋯. */
+.tr {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 130px 130px 150px 220px 40px;
+  gap: 14px;
+  align-items: center;
+  padding: 0 16px;
+  min-height: 46px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 14px;
+}
+.tr[data-row] {
+  cursor: pointer;
+}
+.tr[data-row]:hover {
+  background: var(--mantine-color-default-hover);
+}
+.head {
+  border-top: 0;
+  min-height: 38px;
+  background: var(--cb-band-header);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+}
+.group {
+  min-height: 36px;
+  font-size: 13px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--cb-band-header) 45%, transparent);
+}
+.group .r {
+  font-weight: 500;
+  color: var(--mantine-color-dimmed);
+}
+.r {
+  text-align: right;
+  white-space: nowrap;
+}
+.sub {
+  display: block;
+  font-size: 12px;
+  color: var(--mantine-color-dimmed);
+}
+.name {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.nameText {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.parent {
+  color: var(--mantine-color-dimmed);
+  font-weight: 400;
+}
+.nameSub {
+  font-size: 12.5px;
+  color: var(--mantine-color-dimmed);
+}
+.loose .nameText {
+  color: var(--mantine-color-dimmed);
+}
+
+/* A page too narrow for every column (a laptop with the menu open) gives the
+   bar less room. */
+@container (max-width: 899px) {
+  .tr {
+    grid-template-columns: minmax(160px, 1fr) 110px 120px 130px 120px 40px;
+  }
+}
+
+/* The phone: the period on its own line, the two figures, then a row per
+   line with its bar under it. */
+.phonePeriod {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.phonePeriod .nav {
+  flex: 1;
+  justify-content: center;
+}
+.phonePeriod .navName {
+  min-width: 0;
+  white-space: nowrap;
+}
+.h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 4px 0 -6px;
+  display: flex;
+  justify-content: space-between;
+}
+.h3 > span {
+  font-weight: 500;
+  color: var(--mantine-color-dimmed);
+}
+.prow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--cb-ledger-border);
+  width: 100%;
+  text-align: start;
+  color: var(--mantine-color-text);
+}
+.card > .prow:first-child {
+  border-top: 0;
+}
+.prowTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 15px;
+}
+.prowTop b {
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prowMeta {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Empty: what a budget does, where the money went, and the button. */
+.empty {
+  border: 1px dashed var(--cb-shell-card-border);
+  border-radius: 12px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 640px;
+}
+.emptyTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.emptyBody {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--mantine-color-dimmed);
+}
+.suggestions {
+  align-self: stretch;
+  border: 1px solid var(--cb-ledger-border);
+  border-radius: 10px;
+  background: var(--cb-ledger-surface);
+}
+.suggestion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 9px 14px;
+  border-top: 1px solid var(--cb-ledger-border);
+  font-size: 14px;
+}
+.suggestion:first-child {
+  border-top: 0;
+}
+
+/* The sheet. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.note {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--mantine-color-dimmed);
+}
+.history {
+  border-top: 1px solid var(--cb-ledger-border);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.historyTitle {
+  font-size: 13px;
+  font-weight: 600;
+}
+.spark {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 4px;
+  align-items: end;
+  height: 64px;
+}
+.col {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+.col > span {
+  width: 100%;
+  background: color-mix(in srgb, var(--mantine-color-text) 22%, transparent);
+  border-radius: 2px 2px 0 0;
+}
+.col[data-over] > span {
+  background: color-mix(in srgb, var(--cb-attention) 70%, transparent);
+}
+.col > i,
+.planLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1.5px dashed var(--mantine-primary-color-filled);
+}
+.use {
+  align-self: flex-start;
+  height: 30px;
+  padding: 0 11px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.months {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 4px;
+  font-size: 10.5px;
+  color: var(--mantine-color-dimmed);
+  text-align: center;
+}

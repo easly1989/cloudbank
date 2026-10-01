@@ -38,8 +38,8 @@ export function NeedsAttention({ walletId }: { walletId: number }) {
     enabled: walletId > 0,
   });
   const budget = useQuery({
-    queryKey: ["budgetReport", walletId, from, to, true],
-    queryFn: () => getBudgetReport(walletId, from, to, true),
+    queryKey: ["budgetReport", walletId, from, to],
+    queryFn: () => getBudgetReport(walletId, from, to),
     enabled: walletId > 0,
   });
 

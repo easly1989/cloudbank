@@ -20,6 +20,7 @@ type budgetHandlers struct {
 func (h *budgetHandlers) walletRoutes(r chi.Router) {
 	r.Get("/budgets", h.list)
 	r.Get("/budgets/report", h.report)
+	r.Get("/budgets/{categoryId}/history", h.history)
 	r.Put("/budgets/{categoryId}", h.set)
 	r.Delete("/budgets/{categoryId}", h.clear)
 }
@@ -94,11 +95,31 @@ func (h *budgetHandlers) report(w http.ResponseWriter, r *http.Request) {
 		from = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
 		to = time.Date(now.Year(), 12, 31, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
 	}
-	rollup := r.URL.Query().Get("rollup") != "false"
-	rep, err := h.svc.Report(r.Context(), wl.ID, from, to, rollup)
+	today := time.Now().UTC().Format("2006-01-02")
+	rep, err := h.svc.Report(r.Context(), wl.ID, from, to, today)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not build budget report")
 		return
 	}
 	writeJSON(w, http.StatusOK, rep)
+}
+
+func (h *budgetHandlers) history(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	categoryID, err := strconv.ParseInt(chi.URLParam(r, "categoryId"), 10, 64)
+	if err != nil || categoryID <= 0 {
+		writeError(w, http.StatusNotFound, "not_found", "category not found")
+		return
+	}
+	months, _ := strconv.Atoi(r.URL.Query().Get("months"))
+	today := time.Now().UTC().Format("2006-01-02")
+	out, err := h.svc.History(r.Context(), wl.ID, categoryID, months, today)
+	switch {
+	case err == nil:
+		writeJSON(w, http.StatusOK, map[string]any{"months": out})
+	case errors.Is(err, budget.ErrInvalidCategory):
+		writeError(w, http.StatusNotFound, "not_found", "category not found")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", "could not build budget history")
+	}
 }

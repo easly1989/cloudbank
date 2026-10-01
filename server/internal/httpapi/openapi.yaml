@@ -2104,13 +2104,28 @@ paths:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
     get:
       operationId: getBudgetReport
-      summary: Budget vs actual per category over a period
+      summary: Budget vs actual per budget line over a period
+      description: >-
+        A line is a category with a budget in the period; a parent's budget also covers
+        its subcategories without a budget of their own. Categories with spending but no
+        budget are listed with budgeted false. Totals are over the budgeted spending lines.
       parameters:
         - { name: from, in: query, required: false, schema: { type: string }, description: "defaults to the current year" }
         - { name: to, in: query, required: false, schema: { type: string } }
-        - { name: rollup, in: query, required: false, schema: { type: boolean }, description: "roll subcategories into parents (default true)" }
       responses:
         "200": { description: The report., content: { application/json: { schema: { $ref: "#/components/schemas/BudgetReport" } } } }
+  /api/v1/wallets/{walletId}/budgets/{categoryId}/history:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: categoryId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getBudgetHistory
+      summary: What a category took month by month, counted as its budget line, up to today
+      parameters:
+        - { name: months, in: query, required: false, schema: { type: integer }, description: "how many months up to the current one (default 12, at most 60)" }
+      responses:
+        "200": { description: The history., content: { application/json: { schema: { $ref: "#/components/schemas/BudgetHistory" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/budgets/{categoryId}:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -3706,20 +3721,35 @@ components:
         categoryId: { type: integer, format: int64 }
         name: { type: string }
         isIncome: { type: boolean }
+        budgeted: { type: boolean, description: "false for a category with spending but no budget" }
         budget: { type: integer, format: int64 }
         actual: { type: integer, format: int64 }
-      required: [categoryId, name, isIncome, budget, actual]
+        coming: { type: integer, format: int64, description: "the part of actual dated after today" }
+      required: [categoryId, name, isIncome, budgeted, budget, actual, coming]
     BudgetReport:
       type: object
       properties:
         rows: { type: array, items: { $ref: "#/components/schemas/BudgetReportRow" } }
         totalBudget: { type: integer, format: int64 }
         totalActual: { type: integer, format: int64 }
+        totalComing: { type: integer, format: int64 }
         from: { type: string }
         to: { type: string }
-        rollup: { type: boolean }
+        today: { type: string }
         currency: { $ref: "#/components/schemas/CurrencyInfo", nullable: true }
-      required: [rows, totalBudget, totalActual, from, to, rollup]
+      required: [rows, totalBudget, totalActual, totalComing, from, to, today]
+    BudgetHistory:
+      type: object
+      properties:
+        months:
+          type: array
+          items:
+            type: object
+            properties:
+              month: { type: string, description: "YYYY-MM" }
+              amount: { type: integer, format: int64 }
+            required: [month, amount]
+      required: [months]
     Transfer:
       type: object
       properties:

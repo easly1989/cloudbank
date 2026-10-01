@@ -54,24 +54,44 @@ type Input struct {
 	Monthly [12]int64
 }
 
-// ReportRow is one category line of the budget report (base currency, signed).
+// ReportRow is one line of the budget report (base currency, signed).
+//
+// A line is a category with a budget in the period. A parent's budget covers
+// the parent and those of its subcategories without a budget of their own
+// (#568), so "Food 500" covers everything under Food but what has a budget of
+// its own. A category with spending but no budget, its own or its parent's,
+// is a line too, with Budgeted false: it is not over anything.
 type ReportRow struct {
 	CategoryID int64  `json:"categoryId"`
 	Name       string `json:"name"`
 	IsIncome   bool   `json:"isIncome"`
+	Budgeted   bool   `json:"budgeted"`
 	Budget     int64  `json:"budget"`
 	Actual     int64  `json:"actual"`
+	// Coming is the part of Actual dated after today: entered, not yet gone.
+	Coming int64 `json:"coming"`
 }
 
-// Report is budget vs actual over a period.
+// Report is budget vs actual over a period. The totals are over the budgeted
+// spending lines only: income and unbudgeted spending are not added in.
 type Report struct {
 	Rows        []ReportRow   `json:"rows"`
 	TotalBudget int64         `json:"totalBudget"`
 	TotalActual int64         `json:"totalActual"`
+	TotalComing int64         `json:"totalComing"`
 	From        string        `json:"from"`
 	To          string        `json:"to"`
-	Rollup      bool          `json:"rollup"`
+	Today       string        `json:"today"`
 	Currency    *CurrencyInfo `json:"currency"`
+}
+
+// maxHistoryMonths bounds how far back History reaches.
+const maxHistoryMonths = 60
+
+// MonthAmount is one month of a category's history (base currency, signed).
+type MonthAmount struct {
+	Month  string `json:"month"` // YYYY-MM
+	Amount int64  `json:"amount"`
 }
 
 // Service implements budget management and reporting.
@@ -171,136 +191,216 @@ func (s *Service) SetCategoryBudget(ctx context.Context, walletID, categoryID, y
 	return tx.Commit()
 }
 
-// Report computes budget vs actual per category over [from, to]. When rollup is
-// true, subcategory budgets and actuals roll up into their parent.
-func (s *Service) Report(ctx context.Context, walletID int64, from, to string, rollup bool) (Report, error) {
-	categories, err := s.rq.ListCategoriesForWallet(ctx, walletID)
+// Report computes budget vs actual per budget line over [from, to] (see
+// ReportRow). What is dated after today is counted in Actual and, apart, in
+// Coming.
+func (s *Service) Report(ctx context.Context, walletID int64, from, to, today string) (Report, error) {
+	w, err := s.load(ctx, walletID)
 	if err != nil {
 		return Report{}, err
 	}
-	type catMeta struct {
-		parent   *int64
-		name     string
-		isIncome bool
-		noBudget bool
+	cells, err := coveredCells(from, to)
+	if err != nil {
+		return Report{}, err
 	}
-	meta := make(map[int64]catMeta, len(categories))
+	plan := map[int64]int64{}
+	for id, m := range w.meta {
+		if !m.noBudget {
+			if b := budgetForPeriodYear(w.budgets[id], cells); b != 0 {
+				plan[id] = b
+			}
+		}
+	}
+	lineOf := func(id int64) (int64, bool) {
+		m, ok := w.meta[id]
+		if !ok || m.noBudget {
+			return 0, false
+		}
+		if _, ok := plan[id]; ok {
+			return id, true
+		}
+		if m.parent != nil {
+			if _, ok := plan[*m.parent]; ok {
+				return *m.parent, true
+			}
+		}
+		return id, true
+	}
+
+	actualRows, err := s.rq.CategoryActualsForBudget(ctx, db.CategoryActualsForBudgetParams{WalletID: walletID, FromDate: from, ToDate: to})
+	if err != nil {
+		return Report{}, err
+	}
+	actual := map[int64]int64{}
+	coming := map[int64]int64{}
+	for _, r := range actualRows {
+		if !r.CategoryID.Valid {
+			continue
+		}
+		line, ok := lineOf(r.CategoryID.Int64)
+		if !ok {
+			continue
+		}
+		amt := w.toBase(r.Amount, r.CurrencyID)
+		actual[line] += amt
+		if r.Date > today {
+			coming[line] += amt
+		}
+	}
+
+	rep := Report{From: from, To: to, Today: today, Rows: []ReportRow{}, Currency: w.currency()}
+	seen := map[int64]bool{}
+	add := func(id int64) {
+		if seen[id] {
+			return
+		}
+		seen[id] = true
+		m := w.meta[id]
+		_, budgeted := plan[id]
+		row := ReportRow{
+			CategoryID: id, Name: m.name, IsIncome: m.isIncome, Budgeted: budgeted,
+			Budget: plan[id], Actual: actual[id], Coming: coming[id],
+		}
+		rep.Rows = append(rep.Rows, row)
+		if budgeted && !m.isIncome {
+			rep.TotalBudget += row.Budget
+			rep.TotalActual += row.Actual
+			rep.TotalComing += row.Coming
+		}
+	}
+	for id := range plan {
+		add(id)
+	}
+	for id, a := range actual {
+		if a != 0 {
+			add(id)
+		}
+	}
+	sortRows(rep.Rows)
+	return rep, nil
+}
+
+// History returns what a category took, month by month, over the `months`
+// months up to the one `today` falls in, counted as its budget line would be:
+// the category and those of its subcategories without a budget of their own.
+// Only what is dated up to today counts.
+func (s *Service) History(ctx context.Context, walletID, categoryID int64, months int, today string) ([]MonthAmount, error) {
+	w, err := s.load(ctx, walletID)
+	if err != nil {
+		return nil, err
+	}
+	if _, ok := w.meta[categoryID]; !ok {
+		return nil, ErrInvalidCategory
+	}
+	if months < 1 || months > maxHistoryMonths {
+		months = 12
+	}
+	t, err := time.Parse(dateLayout, today)
+	if err != nil {
+		return nil, err
+	}
+	first := time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC).AddDate(0, -(months - 1), 0)
+	// A fixed capacity: the length comes from the request.
+	out := make([]MonthAmount, 0, maxHistoryMonths)
+	index := map[string]int{}
+	for i := 0; i < months; i++ {
+		m := first.AddDate(0, i, 0).Format("2006-01")
+		out = append(out, MonthAmount{Month: m})
+		index[m] = i
+	}
+	counts := func(id int64) bool {
+		if id == categoryID {
+			return true
+		}
+		m, ok := w.meta[id]
+		return ok && !m.noBudget && m.parent != nil && *m.parent == categoryID && len(w.budgets[id]) == 0
+	}
+	rows, err := s.rq.CategoryActualsForBudget(ctx, db.CategoryActualsForBudgetParams{
+		WalletID: walletID, FromDate: first.Format(dateLayout), ToDate: today,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range rows {
+		if !r.CategoryID.Valid || !counts(r.CategoryID.Int64) {
+			continue
+		}
+		if i, ok := index[r.Date[:7]]; ok {
+			out[i].Amount += w.toBase(r.Amount, r.CurrencyID)
+		}
+	}
+	return out, nil
+}
+
+type catMeta struct {
+	parent   *int64
+	name     string
+	isIncome bool
+	noBudget bool
+}
+
+// walletData is what the report and the history read of a wallet: its
+// categories, its budget entries and its currencies.
+type walletData struct {
+	meta    map[int64]catMeta
+	budgets map[int64]map[[2]int64]int64 // category → (year, month) → amount
+	curByID map[int64]db.Currency
+	base    *db.Currency
+}
+
+func (s *Service) load(ctx context.Context, walletID int64) (walletData, error) {
+	w := walletData{meta: map[int64]catMeta{}, budgets: map[int64]map[[2]int64]int64{}, curByID: map[int64]db.Currency{}}
+	categories, err := s.rq.ListCategoriesForWallet(ctx, walletID)
+	if err != nil {
+		return w, err
+	}
 	for _, c := range categories {
 		var p *int64
 		if c.ParentID.Valid {
 			v := c.ParentID.Int64
 			p = &v
 		}
-		meta[c.ID] = catMeta{parent: p, name: c.Name, isIncome: c.IsIncome != 0, noBudget: c.NoBudget != 0}
+		w.meta[c.ID] = catMeta{parent: p, name: c.Name, isIncome: c.IsIncome != 0, noBudget: c.NoBudget != 0}
 	}
-
-	// Currencies for converting actuals to the base currency.
 	currencies, err := s.rq.ListCurrenciesForWallet(ctx, walletID)
 	if err != nil {
-		return Report{}, err
+		return w, err
 	}
-	curByID := make(map[int64]db.Currency, len(currencies))
-	var base *db.Currency
 	for i := range currencies {
-		curByID[currencies[i].ID] = currencies[i]
+		w.curByID[currencies[i].ID] = currencies[i]
 		if currencies[i].IsBase != 0 {
-			base = &currencies[i]
+			w.base = &currencies[i]
 		}
 	}
-
-	// Budgets per category and month.
 	budgetRows, err := s.rq.ListBudgetsForWallet(ctx, walletID)
 	if err != nil {
-		return Report{}, err
+		return w, err
 	}
-	budgetByCat := map[int64]map[[2]int64]int64{}
 	for _, b := range budgetRows {
-		if budgetByCat[b.CategoryID] == nil {
-			budgetByCat[b.CategoryID] = map[[2]int64]int64{}
+		if w.budgets[b.CategoryID] == nil {
+			w.budgets[b.CategoryID] = map[[2]int64]int64{}
 		}
-		budgetByCat[b.CategoryID][[2]int64{b.Year, b.Month}] = b.Amount
+		w.budgets[b.CategoryID][[2]int64{b.Year, b.Month}] = b.Amount
 	}
+	return w, nil
+}
 
-	// Actuals in the period, converted to base.
-	actualRows, err := s.rq.CategoryActualsForBudget(ctx, db.CategoryActualsForBudgetParams{WalletID: walletID, FromDate: from, ToDate: to})
-	if err != nil {
-		return Report{}, err
+func (w walletData) toBase(amount, currencyID int64) int64 {
+	if w.base == nil {
+		return amount
 	}
-	actualByCat := map[int64]int64{}
-	for _, r := range actualRows {
-		if !r.CategoryID.Valid {
-			continue
-		}
-		amt := r.Amount
-		if base != nil {
-			amt = convertToBase(r.Amount, curByID[r.CurrencyID], *base)
-		}
-		actualByCat[r.CategoryID.Int64] += amt
-	}
+	return convertToBase(amount, w.curByID[currencyID], *w.base)
+}
 
-	cells, err := coveredCells(from, to)
-	if err != nil {
-		return Report{}, err
+func (w walletData) currency() *CurrencyInfo {
+	if w.base == nil {
+		return nil
 	}
-
-	// Aggregate per reporting key (the category, or its parent when rolling up),
-	// skipping categories flagged no_budget.
-	type agg struct {
-		name     string
-		isIncome bool
-		budget   int64
-		actual   int64
+	b := w.base
+	return &CurrencyInfo{
+		Code: b.IsoCode, Symbol: b.Symbol, SymbolPrefix: b.SymbolPrefix != 0,
+		DecimalChar: b.DecimalChar, GroupChar: b.GroupChar, FracDigits: int(b.FracDigits),
 	}
-	keyOf := func(id int64) int64 {
-		if rollup {
-			if p := meta[id].parent; p != nil {
-				return *p
-			}
-		}
-		return id
-	}
-	out := map[int64]*agg{}
-	ensure := func(id int64) *agg {
-		a, ok := out[id]
-		if !ok {
-			m := meta[id]
-			a = &agg{name: m.name, isIncome: m.isIncome}
-			out[id] = a
-		}
-		return a
-	}
-	for id, m := range meta {
-		if m.noBudget {
-			continue
-		}
-		b := budgetForPeriodYear(budgetByCat[id], cells)
-		act := actualByCat[id]
-		if b == 0 && act == 0 {
-			continue
-		}
-		key := keyOf(id)
-		if meta[key].noBudget {
-			continue
-		}
-		a := ensure(key)
-		a.budget += b
-		a.actual += act
-	}
-
-	rep := Report{From: from, To: to, Rollup: rollup, Rows: []ReportRow{}}
-	for id, a := range out {
-		rep.Rows = append(rep.Rows, ReportRow{CategoryID: id, Name: a.name, IsIncome: a.isIncome, Budget: a.budget, Actual: a.actual})
-		rep.TotalBudget += a.budget
-		rep.TotalActual += a.actual
-	}
-	sortRows(rep.Rows)
-	if base != nil {
-		rep.Currency = &CurrencyInfo{
-			Code: base.IsoCode, Symbol: base.Symbol, SymbolPrefix: base.SymbolPrefix != 0,
-			DecimalChar: base.DecimalChar, GroupChar: base.GroupChar, FracDigits: int(base.FracDigits),
-		}
-	}
-	return rep, nil
 }
 
 // cell is one (year, month) bucket covered by a report range.
@@ -355,8 +455,7 @@ func convertToBase(amount int64, cur, base db.Currency) int64 {
 }
 
 func sortRows(rows []ReportRow) {
-	// Income rows first, then by name (stable, simple insertion sort — lists are
-	// small).
+	// Income rows first, then by name (simple insertion sort — lists are small).
 	for i := 1; i < len(rows); i++ {
 		for j := i; j > 0 && less(rows[j], rows[j-1]); j-- {
 			rows[j], rows[j-1] = rows[j-1], rows[j]

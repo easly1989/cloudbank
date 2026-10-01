@@ -334,7 +334,7 @@ func seedFile(today time.Time, italian bool) *importer.XHB {
 		x.Categories = append(x.Categories, c)
 	}
 	cat(catIncome, 0, flagIncome, "income", 0)
-	cat(catSalary, catIncome, flagIncome, "salary", 0)
+	cat(catSalary, catIncome, flagIncome, "salary", 245000)
 	cat(catOtherIncome, catIncome, flagIncome, "other", 0)
 	cat(catHome, 0, 0, "home", 0)
 	cat(catRent, catHome, 0, "rent", 0)
