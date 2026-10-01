@@ -2113,8 +2113,31 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Budget vs actual per category over a period */
+        /**
+         * Budget vs actual per budget line over a period
+         * @description A line is a category with a budget in the period; a parent's budget also covers its subcategories without a budget of their own. Categories with spending but no budget are listed with budgeted false. Totals are over the budgeted spending lines.
+         */
         get: operations["getBudgetReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/budgets/{categoryId}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                categoryId: number;
+            };
+            cookie?: never;
+        };
+        /** What a category took month by month, counted as its budget line, up to today */
+        get: operations["getBudgetHistory"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4026,10 +4049,17 @@ export interface components {
             categoryId: number;
             name: string;
             isIncome: boolean;
+            /** @description false for a category with spending but no budget */
+            budgeted: boolean;
             /** Format: int64 */
             budget: number;
             /** Format: int64 */
             actual: number;
+            /**
+             * Format: int64
+             * @description the part of actual dated after today
+             */
+            coming: number;
         };
         BudgetReport: {
             rows: components["schemas"]["BudgetReportRow"][];
@@ -4037,10 +4067,20 @@ export interface components {
             totalBudget: number;
             /** Format: int64 */
             totalActual: number;
+            /** Format: int64 */
+            totalComing: number;
             from: string;
             to: string;
-            rollup: boolean;
+            today: string;
             currency?: components["schemas"]["CurrencyInfo"];
+        };
+        BudgetHistory: {
+            months: {
+                /** @description YYYY-MM */
+                month: string;
+                /** Format: int64 */
+                amount: number;
+            }[];
         };
         Transfer: {
             /** Format: int64 */
@@ -8286,8 +8326,6 @@ export interface operations {
                 /** @description defaults to the current year */
                 from?: string;
                 to?: string;
-                /** @description roll subcategories into parents (default true) */
-                rollup?: boolean;
             };
             header?: never;
             path: {
@@ -8306,6 +8344,33 @@ export interface operations {
                     "application/json": components["schemas"]["BudgetReport"];
                 };
             };
+        };
+    };
+    getBudgetHistory: {
+        parameters: {
+            query?: {
+                /** @description how many months up to the current one (default 12, at most 60) */
+                months?: number;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+                categoryId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The history. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetHistory"];
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
     };
     setCategoryBudget: {

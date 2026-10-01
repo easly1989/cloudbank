@@ -42,24 +42,28 @@ describe("countOverBudget", () => {
       categoryId: 1,
       name: "x",
       isIncome: false,
-      budget: 100,
+      budgeted: true,
+      budget: -100,
       actual: 0,
+      coming: 0,
       ...over,
     }) as BudgetReportRow;
 
   it("counts a category that has gone past its budget", () => {
-    expect(countOverBudget([row({ actual: 150 })])).toBe(1);
-    expect(countOverBudget([row({ actual: 100 })])).toBe(0);
+    expect(countOverBudget([row({ actual: -150 })])).toBe(1);
+    expect(countOverBudget([row({ actual: -100 })])).toBe(0);
+    // A refund is not spending.
+    expect(countOverBudget([row({ actual: 150 })])).toBe(0);
   });
 
   it("ignores income: earning more than planned is not a problem", () => {
-    expect(countOverBudget([row({ isIncome: true, actual: 9999 })])).toBe(0);
+    expect(countOverBudget([row({ isIncome: true, budget: 100, actual: 9999 })])).toBe(0);
   });
 
   it("ignores a category with no budget set", () => {
     // You cannot overspend a budget that does not exist, and counting these
     // would drag every unbudgeted corner of the wallet into the warning.
-    expect(countOverBudget([row({ budget: 0, actual: 500 })])).toBe(0);
+    expect(countOverBudget([row({ budgeted: false, budget: 0, actual: -500 })])).toBe(0);
   });
 
   it("handles missing data", () => {

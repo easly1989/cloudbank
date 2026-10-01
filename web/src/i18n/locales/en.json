@@ -286,28 +286,85 @@
     }
   },
   "budget": {
-    "amountFor": "Budget for {{name}}",
     "title": "Budget",
-    "editor": "Budget",
-    "report": "Report",
-    "category": "Category",
-    "mode": "Mode",
-    "amounts": "Amounts",
-    "same": "Same",
-    "monthly": "Monthly",
+    "hint": "What you planned to spend, next to what you actually spent.",
+    "add": "Add to budget",
+    "month": "Month",
     "year": "Year",
-    "everyYear": "Every year",
-    "yearHint": "Overrides the every-year default for this year.",
-    "noCategories": "Create categories first.",
-    "from": "From",
-    "to": "To",
-    "rollup": "Roll up subcategories",
+    "periodKind": "Month or year",
+    "previous": "Previous",
+    "next": "Next",
+    "more": "More",
     "exportCsv": "Export CSV",
-    "empty": "No budget or spending in this period.",
-    "budgeted": "Budget",
-    "actual": "Actual",
-    "difference": "Difference",
-    "total": "Total",
+    "spent": "Spent",
+    "left": "Left",
+    "overLabel": "Over",
+    "ofPlanned": "of {{amount}} planned",
+    "stillToCome": "{{amount}} still to come",
+    "daysToGo_one": "{{count}} day to go",
+    "daysToGo_other": "{{count}} days to go",
+    "lastDay": "today is the last day",
+    "overCount_one": "{{count}} category over",
+    "overCount_other": "{{count}} categories over",
+    "noneOver": "none over",
+    "col": {
+      "category": "Category",
+      "planned": "Planned",
+      "spent": "Spent",
+      "coming": "To come",
+      "left": "Left"
+    },
+    "inBudget": "In the budget",
+    "notInBudget": "Not in the budget",
+    "expectedIncome": "Expected income",
+    "toCome": "+ {{amount}} to come",
+    "over": "{{amount}} over",
+    "toGo": "{{amount}} to go",
+    "toGoOf": "{{left}} to go of {{plan}}",
+    "allIn": "all in",
+    "above": "{{amount}} above plan",
+    "leftOf": "{{left}} left of {{plan}}",
+    "monthByMonth": "month by month",
+    "lineMonth": "The line on each bar is where today falls in the month: a bar past it is spending ahead of plan. A budget on a category covers its subcategories without one of their own. Categories and accounts left out of the budget are not counted.",
+    "lineYear": "The line on each bar is where today falls in the year: a bar past it is spending ahead of plan. A budget on a category covers its subcategories without one of their own. Categories and accounts left out of the budget are not counted.",
+    "actionsFor": "Actions for {{name}}",
+    "menu": {
+      "edit": "Edit budget",
+      "transactions": "See its transactions",
+      "remove": "Remove from budget"
+    },
+    "confirmRemoveTitle": "Remove {{name}} from the budget?",
+    "confirmRemoveBody": "Its plan goes, for every year. What it spent stays where it is.",
+    "emptyTitle": "Plan what you mean to spend",
+    "emptyBody": "Give a category a monthly amount and this page shows, month by month, how much of it is gone and how much is left. Your largest spending over the last 12 months, to start from:",
+    "emptyBodyNone": "Give a category a monthly amount and this page shows, month by month, how much of it is gone and how much is left.",
+    "aMonth": "{{amount}} a month",
+    "addOne": "Add",
+    "sheet": {
+      "addTitle": "Add to budget",
+      "category": "Category",
+      "pickCategory": "Choose a category",
+      "spending": "Spending",
+      "income": "Income",
+      "subtitleOf": "{{kind}} · {{spent}} of {{plan}} in {{period}}",
+      "subtitleSpent": "{{kind}} · {{spent}} in {{period}}",
+      "plan": "Plan",
+      "same": "The same every month",
+      "monthly": "Month by month",
+      "eachMonth": "Each month",
+      "for": "For",
+      "everyYear": "Every year",
+      "yearOnly": "{{year}} only",
+      "yearNote": "{{year}} only keeps the other years as they are: for a year that costs more, or less.",
+      "history": "The last 12 months",
+      "historyNote_one": "{{total}} spent: {{average}} a month on average, over the plan in {{count}} month of 12. The dashed line is the plan.",
+      "historyNote_other": "{{total}} spent: {{average}} a month on average, over the plan in {{count}} months of 12. The dashed line is the plan.",
+      "historyNoteIncome": "{{total}} received: {{average}} a month on average. The dashed line is the plan.",
+      "historyNone": "Nothing in the last 12 months.",
+      "use": "Plan {{amount}} a month",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
     "spentOf": "{{spent}} of {{budget}}",
     "remaining": "{{amount}} left",
     "overBy": "{{amount}} over",
@@ -325,8 +382,7 @@
       "9": "Oct",
       "10": "Nov",
       "11": "Dec"
-    },
-    "hint": "What you planned to spend, next to what you actually spent."
+    }
   },
   "assignments": {
     "addTitle": "New rule",
@@ -2025,13 +2081,17 @@
     },
     "budget": {
       "offer": "New here? Take the budget tour",
-      "tabs": {
-        "title": "Plan, then compare",
-        "body": "The first tab is where you plan what to spend; the report sets that against what you actually spent."
+      "figures": {
+        "title": "The answer first",
+        "body": "How much of the plan has gone, how much is left, and how many days the period still has. A category past its plan shows in amber."
       },
-      "editor": {
-        "title": "An amount per category",
-        "body": "Give each category the same amount every month, or one amount per month. \"Every year\" is the default; picking a year overrides it for that year only."
+      "period": {
+        "title": "A month or a year",
+        "body": "Switch between the month and the year, and step back or ahead with the arrows. ⋯ exports the page as CSV."
+      },
+      "table": {
+        "title": "A line per budget",
+        "body": "Planned, spent and left for each category with a budget. The tick on the bar is today; the lighter part is entered but dated later. A click opens its plan; spending with no budget is listed apart, not as over."
       }
     },
     "reports": {

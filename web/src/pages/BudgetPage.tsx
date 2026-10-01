@@ -1,213 +1,164 @@
-import {
-  Button,
-  Group,
-  SegmentedControl,
-  Select,
-  Stack,
-  Switch,
-  Table,
-  Tabs,
-  Text,
-  TextInput,
-} from "@mantine/core";
+import { Button, Stack } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EmptyState } from "../components/EmptyState";
-import { IconChartPie } from "@tabler/icons-react";
-import { PageHeader } from "../components/PageHeader";
+import { useNavigate } from "react-router-dom";
 
 import {
   ApiError,
-  type BudgetMode,
-  type Category,
-  type CategoryBudget,
   clearCategoryBudget,
   getBudgetReport,
   listBudgets,
   listCategories,
   listCurrencies,
-  setCategoryBudget,
 } from "../api/client";
-import { BudgetGauge } from "../components/BudgetGauge";
-import { type MoneyFormat, formatMinor } from "../money";
-import { rowFocusProps } from "../rowEdit";
-import { useAmountParser } from "../useAmountParser";
+import { useConfirm } from "../components/confirmContext";
+import { PageHeader } from "../components/PageHeader";
+import { baseFmt } from "../components/reports/reportUtils";
+import { formatMinor } from "../money";
+import { useToday } from "../useToday";
 import { useWallet } from "../wallet/WalletProvider";
-import { attentionColor } from "../amountTone";
+import {
+  type BudgetLine,
+  daysLeft,
+  leftOf,
+  paceOf,
+  pathOf,
+  type Period,
+  periodAt,
+  periodOf,
+  shiftPeriod,
+  viewOf,
+} from "./budget/budgetList";
+import classes from "./budget/budget.module.css";
+import { BudgetSheet, type SheetTarget } from "./budget/BudgetSheet";
+import {
+  type BudgetActions,
+  BudgetEmpty,
+  BudgetPhoneList,
+  BudgetTable,
+  Figures,
+  PeriodBar,
+} from "./budget/BudgetTable";
 
+/**
+ * Budget (#568): the answer first — how much of the month's plan is gone and
+ * how much is left — then every budget line, with what is entered but still to
+ * come apart and the spending that has no budget beside it, not over anything.
+ * A parent's budget covers its subcategories without one of their own. Plans
+ * are edited in the sheet beside the page.
+ */
 export function BudgetPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const confirm = useConfirm();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
+  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
+  const today = useToday();
 
-  const currenciesQuery = useQuery({
+  const [period, setPeriod] = useState<Period>(() => periodAt("month", today));
+
+  const currencies = useQuery({
     queryKey: ["currencies", walletId],
     queryFn: () => listCurrencies(walletId),
     enabled: walletId > 0,
   });
-  const base = (currenciesQuery.data ?? []).find((c) => c.isBase);
-  const fmt: MoneyFormat = base
-    ? {
-        fracDigits: base.fracDigits,
-        decimalChar: base.decimalChar,
-        groupChar: base.groupChar,
-        symbol: base.symbol,
-        symbolPrefix: base.symbolPrefix,
-      }
-    : { fracDigits: 2, decimalChar: ".", groupChar: ",", symbol: "", symbolPrefix: false };
+  const fmt = useMemo(() => baseFmt(currencies.data?.find((c) => c.isBase)), [currencies.data]);
+  const money = (minor: number) => formatMinor(minor, fmt);
 
-  if (!currentWallet) return null;
-
-  return (
-    <Stack>
-      <PageHeader tour="budget" title={t("budget.title")} hint={t("budget.hint")} />
-      <Tabs defaultValue="editor">
-        <Tabs.List data-tour="budget-tabs">
-          <Tabs.Tab value="editor">{t("budget.editor")}</Tabs.Tab>
-          <Tabs.Tab value="report">{t("budget.report")}</Tabs.Tab>
-        </Tabs.List>
-        <Tabs.Panel value="editor" pt="md" data-tour="budget-editor">
-          <BudgetEditor walletId={walletId} fmt={fmt} />
-        </Tabs.Panel>
-        <Tabs.Panel value="report" pt="md">
-          <BudgetReportView walletId={walletId} fmt={fmt} />
-        </Tabs.Panel>
-      </Tabs>
-    </Stack>
-  );
-}
-
-function BudgetEditor({ walletId, fmt }: { walletId: number; fmt: MoneyFormat }) {
-  const { t } = useTranslation();
-  const [year, setYear] = useState(0);
   const categoriesQuery = useQuery({
     queryKey: ["categories", walletId],
     queryFn: () => listCategories(walletId),
+    enabled: walletId > 0,
   });
-  const budgetsQuery = useQuery({
-    queryKey: ["budgets", walletId, year],
-    queryFn: () => listBudgets(walletId, year),
+  const categories = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data]);
+  const everyQuery = useQuery({
+    queryKey: ["budgets", walletId, 0],
+    queryFn: () => listBudgets(walletId, 0),
+    enabled: walletId > 0,
   });
+  const yearQuery = useQuery({
+    queryKey: ["budgets", walletId, period.year],
+    queryFn: () => listBudgets(walletId, period.year),
+    enabled: walletId > 0,
+  });
+  const every = useMemo(() => everyQuery.data ?? [], [everyQuery.data]);
+  const thisYear = useMemo(() => yearQuery.data ?? [], [yearQuery.data]);
+  const noBudgets =
+    everyQuery.isSuccess && yearQuery.isSuccess && every.length === 0 && thisYear.length === 0;
 
-  const budgetByCat = useMemo(() => {
-    const m = new Map<number, CategoryBudget>();
-    for (const b of budgetsQuery.data ?? []) m.set(b.categoryId, b);
-    return m;
-  }, [budgetsQuery.data]);
+  const report = useQuery({
+    queryKey: ["budgetReport", walletId, period.from, period.to],
+    queryFn: () => getBudgetReport(walletId, period.from, period.to),
+    enabled: walletId > 0,
+  });
+  const view = useMemo(() => viewOf(report.data, categories), [report.data, categories]);
+  const pace = paceOf(period, report.data?.today ?? today);
+  const days = daysLeft(period, today);
 
-  const categories = (categoriesQuery.data ?? []).filter((c) => !c.noBudget);
+  // Empty: where the money went over the last twelve complete months.
+  const lastYear = useMemo(() => {
+    const end = shiftPeriod(periodAt("month", today), -1);
+    return { from: shiftPeriod(end, -11).from, to: end.to };
+  }, [today]);
+  const pastReport = useQuery({
+    queryKey: ["budgetReport", walletId, lastYear.from, lastYear.to],
+    queryFn: () => getBudgetReport(walletId, lastYear.from, lastYear.to),
+    enabled: walletId > 0 && noBudgets,
+  });
+  const suggestions = useMemo(() => {
+    const five = 5 * 10 ** fmt.fracDigits;
+    return viewOf(pastReport.data, categories)
+      .loose.slice(0, 4)
+      .map((line) => ({ line, monthly: Math.round(line.spent / 12 / five) * five }))
+      .filter((s) => s.monthly > 0);
+  }, [pastReport.data, categories, fmt.fracDigits]);
 
-  // "Every year" (0) plus a small window of calendar years around now.
-  const thisYear = new Date().getFullYear();
-  const yearOptions = [
-    { value: "0", label: t("budget.everyYear") },
-    ...Array.from({ length: 5 }, (_, i) => thisYear - 1 + i).map((y) => ({
-      value: String(y),
-      label: String(y),
-    })),
-  ];
+  // The categories whose plan in this period's year changes month by month.
+  const monthly = useMemo(() => {
+    const s = new Set<number>();
+    for (const b of every) if (b.mode === "monthly") s.add(b.categoryId);
+    for (const b of thisYear)
+      if (b.mode === "monthly") s.add(b.categoryId);
+      else s.delete(b.categoryId);
+    return s;
+  }, [every, thisYear]);
 
-  if (categories.length === 0) {
-    return <Text c="dimmed">{t("budget.noCategories")}</Text>;
-  }
+  const periodName = useMemo(() => {
+    if (period.kind === "year") return String(period.year);
+    // A phone has room for "Sep 2026" beside the arrows, not "September".
+    const s = new Intl.DateTimeFormat(i18n.language, {
+      month: phone ? "short" : "long",
+      year: "numeric",
+      timeZone: "UTC",
+    }).format(new Date(Date.UTC(period.year, period.month - 1, 1)));
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }, [period, i18n.language, phone]);
 
-  return (
-    <Stack>
-      <Group>
-        <Select
-          label={t("budget.year")}
-          data={yearOptions}
-          value={String(year)}
-          onChange={(v) => setYear(Number(v ?? 0))}
-          allowDeselect={false}
-          w={160}
-        />
-        {year !== 0 && (
-          <Text size="sm" c="dimmed" mt={24}>
-            {t("budget.yearHint")}
-          </Text>
-        )}
-      </Group>
-      <Table.ScrollContainer minWidth={480}>
-        <Table>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>{t("budget.category")}</Table.Th>
-              <Table.Th>{t("budget.mode")}</Table.Th>
-              <Table.Th>{t("budget.amounts")}</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {categories.map((cat) => (
-              <BudgetRow
-                key={`${cat.id}-${year}`}
-                walletId={walletId}
-                category={cat}
-                year={year}
-                existing={budgetByCat.get(cat.id)}
-                fmt={fmt}
-              />
-            ))}
-          </Table.Tbody>
-        </Table>
-      </Table.ScrollContainer>
-    </Stack>
-  );
-}
+  const invalidate = () => {
+    void qc.invalidateQueries({ queryKey: ["budgets", walletId] });
+    void qc.invalidateQueries({ queryKey: ["budgetReport", walletId] });
+    void qc.invalidateQueries({ queryKey: ["budgetHistory", walletId] });
+  };
 
-function BudgetRow({
-  walletId,
-  category,
-  year,
-  existing,
-  fmt,
-}: {
-  walletId: number;
-  category: Category;
-  year: number;
-  existing?: CategoryBudget;
-  fmt: MoneyFormat;
-}) {
-  const { t } = useTranslation();
-  const parseAmount = useAmountParser();
-  const qc = useQueryClient();
-  const sign = category.isIncome ? 1 : -1;
-  const toInput = (v: number) => (v === 0 ? "" : magnitude(v, fmt));
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [target, setTarget] = useState<SheetTarget | null>(null);
+  const open = (next: SheetTarget | null) => {
+    setTarget(next);
+    setSheetOpen(true);
+  };
 
-  const [mode, setMode] = useState<BudgetMode>(existing?.mode ?? "same");
-  const [same, setSame] = useState<string>(toInput(existing?.same ?? 0));
-  const [monthly, setMonthly] = useState<string[]>(
-    (existing?.monthly ?? Array(12).fill(0)).map(toInput),
-  );
-
-  // Follow a budget that changed underneath us — a save elsewhere, a different
-  // month — without an effect. React re-runs this render before painting, so
-  // the fields never show the previous category's figures.
-  const [seen, setSeen] = useState(existing);
-  if (existing !== seen) {
-    setSeen(existing);
-    setMode(existing?.mode ?? "same");
-    setSame(toInput(existing?.same ?? 0));
-    setMonthly((existing?.monthly ?? Array(12).fill(0)).map(toInput));
-  }
-
-  const save = useMutation({
-    mutationFn: () => {
-      const parse = (s: string) => (parseAmount(s, fmt.fracDigits, fmt.decimalChar) ?? 0) * sign;
-      const sameVal = parse(same);
-      const monthlyVals = monthly.map(parse);
-      const empty = mode === "same" ? sameVal === 0 : monthlyVals.every((v) => v === 0);
-      if (empty) return clearCategoryBudget(walletId, category.id, year);
-      return setCategoryBudget(walletId, category.id, {
-        year,
-        mode,
-        same: sameVal,
-        monthly: monthlyVals,
-      });
+  const remove = useMutation({
+    mutationFn: async (id: number) => {
+      await clearCategoryBudget(walletId, id, 0);
+      if (thisYear.some((b) => b.categoryId === id))
+        await clearCategoryBudget(walletId, id, period.year);
     },
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["budgets", walletId] }),
+    onSuccess: invalidate,
     onError: (err: unknown) =>
       notifications.show({
         color: "red",
@@ -215,195 +166,141 @@ function BudgetRow({
       }),
   });
 
-  // Switching mode preserves the entered amount.
-  const switchMode = (next: BudgetMode) => {
-    if (next === mode) return;
-    if (next === "monthly") {
-      setMonthly(Array(12).fill(same));
-    } else {
-      setSame(monthly.find((m) => m.trim() !== "") ?? "");
-    }
-    setMode(next);
+  const transactions = (id: number) => {
+    const income = categories.find((c) => c.id === id)?.isIncome;
+    navigate(`/reports?cat=${id}&p=${period.kind}&at=${period.from}${income ? "&ty=income" : ""}`);
+  };
+  const removeBudget = async (id: number) => {
+    setSheetOpen(false);
+    const c = categories.find((x) => x.id === id);
+    const ok = await confirm({
+      title: t("budget.confirmRemoveTitle", { name: c?.name ?? "" }),
+      body: t("budget.confirmRemoveBody"),
+      confirmLabel: t("budget.menu.remove"),
+      danger: true,
+    });
+    if (ok) remove.mutate(id);
   };
 
-  return (
-    <Table.Tr {...rowFocusProps()}>
-      <Table.Td>{category.parentId ? `› ${category.name}` : category.name}</Table.Td>
-      <Table.Td>
-        <SegmentedControl
-          size="xs"
-          value={mode}
-          onChange={(v) => switchMode(v as BudgetMode)}
-          data={[
-            { value: "same", label: t("budget.same") },
-            { value: "monthly", label: t("budget.monthly") },
-          ]}
-        />
-      </Table.Td>
-      <Table.Td>
-        {mode === "same" ? (
-          <TextInput
-            size="xs"
-            w={120}
-            aria-label={t("budget.amountFor", { name: category.name })}
-            value={same}
-            onChange={(e) => setSame(e.currentTarget.value)}
-            onBlur={() => save.mutate()}
-            rightSection={<Text size="xs">{fmt.symbol}</Text>}
-          />
-        ) : (
-          <Group gap={4} wrap="wrap">
-            {monthly.map((v, i) => (
-              <TextInput
-                key={i}
-                size="xs"
-                w={68}
-                placeholder={t(`budget.months.${i}`)}
-                aria-label={t(`budget.months.${i}`)}
-                value={v}
-                onChange={(e) =>
-                  setMonthly((arr) => arr.map((x, j) => (j === i ? e.currentTarget.value : x)))
-                }
-                onBlur={() => save.mutate()}
-              />
-            ))}
-          </Group>
-        )}
-      </Table.Td>
-    </Table.Tr>
-  );
-}
-
-function BudgetReportView({ walletId, fmt }: { walletId: number; fmt: MoneyFormat }) {
-  const { t } = useTranslation();
-  const year = new Date().getFullYear();
-  const [from, setFrom] = useState(`${year}-01-01`);
-  const [to, setTo] = useState(`${year}-12-31`);
-  const [rollup, setRollup] = useState(true);
-
-  const query = useQuery({
-    queryKey: ["budgetReport", walletId, from, to, rollup],
-    queryFn: () => getBudgetReport(walletId, from, to, rollup),
-    enabled: walletId > 0 && !!from && !!to,
-  });
-  const report = query.data;
-
-  // Combined expense budget vs actual (magnitudes) for the over/under gauge.
-  const expense = useMemo(() => {
-    let budget = 0;
-    let actual = 0;
-    for (const r of report?.rows ?? []) {
-      if (r.isIncome) continue;
-      budget += Math.abs(r.budget);
-      actual += Math.abs(r.actual);
-    }
-    return { budget, actual };
-  }, [report]);
+  const actions: BudgetActions = {
+    onEdit: (l) => open({ categoryId: l.id, line: l }),
+    onTransactions: (l) => transactions(l.id),
+    onRemove: (l) => void removeBudget(l.id),
+  };
 
   const exportCsv = () => {
-    if (!report) return;
-    const head = ["Category", "Budget", "Actual", "Difference"];
-    const lines = report.rows.map((r) =>
+    const plain = (v: number) =>
+      formatMinor(v, { ...fmt, groupChar: "", symbol: "", symbolPrefix: false });
+    const cell = (s: string) => (/[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
+    const lines = [...view.spending, ...view.loose, ...view.income].map((l: BudgetLine) =>
       [
-        r.name,
-        minorToPlain(r.budget, fmt),
-        minorToPlain(r.actual, fmt),
-        minorToPlain(r.actual - r.budget, fmt),
-      ].join(","),
+        pathOf(l),
+        l.budgeted ? plain(l.plan) : "",
+        plain(l.spent),
+        plain(l.coming),
+        l.budgeted ? plain(leftOf(l)) : "",
+      ]
+        .map(cell)
+        .join(","),
     );
-    const csv = [head.join(","), ...lines].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const head = [
+      t("budget.col.category"),
+      t("budget.col.planned"),
+      t("budget.col.spent"),
+      t("budget.col.coming"),
+      t("budget.col.left"),
+    ]
+      .map(cell)
+      .join(",");
+    const blob = new Blob([[head, ...lines].join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `budget-${from}_${to}.csv`;
+    a.download = `budget-${period.from}_${period.to}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
+  if (!currentWallet) return null;
+
+  const periodBar = (
+    <PeriodBar
+      period={period}
+      name={periodName}
+      phone={phone}
+      onKind={(k) => setPeriod(periodOf(k, period.year, period.month))}
+      onShift={(d) => setPeriod(shiftPeriod(period, d))}
+      onExport={exportCsv}
+    />
+  );
+
   return (
-    <Stack>
-      <Group align="flex-end">
-        <TextInput
-          type="date"
-          label={t("budget.from")}
-          value={from}
-          onChange={(e) => setFrom(e.currentTarget.value)}
-        />
-        <TextInput
-          type="date"
-          label={t("budget.to")}
-          value={to}
-          onChange={(e) => setTo(e.currentTarget.value)}
-        />
-        <Switch
-          label={t("budget.rollup")}
-          checked={rollup}
-          onChange={(e) => setRollup(e.currentTarget.checked)}
-        />
-        <Button
-          variant="default"
-          onClick={exportCsv}
-          disabled={!report || report.rows.length === 0}
-        >
-          {t("budget.exportCsv")}
-        </Button>
-      </Group>
+    <Stack className={classes.page} gap="md">
+      <PageHeader
+        tour="budget"
+        title={t("budget.title")}
+        hint={t("budget.hint")}
+        actions={
+          !noBudgets && (
+            <Button onClick={() => open(null)} data-tour="budget-add">
+              {t("budget.add")}
+            </Button>
+          )
+        }
+      />
 
-      {expense.budget > 0 && (
-        <BudgetGauge budget={expense.budget} actual={expense.actual} base={fmt} />
+      {noBudgets ? (
+        <BudgetEmpty
+          suggestions={suggestions}
+          money={money}
+          onAdd={(l, amount) => open(l ? { categoryId: l.id, amount } : null)}
+        />
+      ) : (
+        <>
+          {phone && periodBar}
+          <Figures
+            view={view}
+            pace={pace}
+            days={days}
+            money={money}
+            period={phone ? undefined : periodBar}
+          />
+          {phone ? (
+            <BudgetPhoneList view={view} pace={pace} money={money} actions={actions} />
+          ) : (
+            <>
+              <BudgetTable
+                view={view}
+                pace={pace}
+                money={money}
+                monthly={monthly}
+                actions={actions}
+              />
+              <span className={classes.line}>
+                {period.kind === "year" ? t("budget.lineYear") : t("budget.lineMonth")}
+              </span>
+            </>
+          )}
+        </>
       )}
 
-      {report && report.rows.length === 0 && (
-        <EmptyState icon={IconChartPie} message={t("budget.empty")} />
-      )}
-
-      {report && report.rows.length > 0 && (
-        <Table striped>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>{t("budget.category")}</Table.Th>
-              <Table.Th ta="right">{t("budget.budgeted")}</Table.Th>
-              <Table.Th ta="right">{t("budget.actual")}</Table.Th>
-              <Table.Th ta="right">{t("budget.difference")}</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {report.rows.map((r) => {
-              const over = r.actual < r.budget; // worse than planned (both signs)
-              return (
-                <Table.Tr key={r.categoryId}>
-                  <Table.Td>{r.name}</Table.Td>
-                  <Table.Td ta="right">{formatMinor(r.budget, fmt)}</Table.Td>
-                  <Table.Td ta="right" c={over ? attentionColor : undefined}>
-                    {formatMinor(r.actual, fmt)}
-                  </Table.Td>
-                  <Table.Td ta="right" c={over ? attentionColor : undefined}>
-                    {formatMinor(r.actual - r.budget, fmt)}
-                  </Table.Td>
-                </Table.Tr>
-              );
-            })}
-            <Table.Tr fw={700}>
-              <Table.Td>{t("budget.total")}</Table.Td>
-              <Table.Td ta="right">{formatMinor(report.totalBudget, fmt)}</Table.Td>
-              <Table.Td ta="right">{formatMinor(report.totalActual, fmt)}</Table.Td>
-              <Table.Td ta="right">
-                {formatMinor(report.totalActual - report.totalBudget, fmt)}
-              </Table.Td>
-            </Table.Tr>
-          </Table.Tbody>
-        </Table>
-      )}
+      <BudgetSheet
+        opened={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        walletId={walletId}
+        target={target}
+        year={period.year}
+        periodName={periodName}
+        today={today}
+        categories={categories}
+        every={every}
+        thisYear={thisYear}
+        fmt={fmt}
+        money={money}
+        onSaved={invalidate}
+        onTransactions={transactions}
+        onRemove={(id) => void removeBudget(id)}
+      />
     </Stack>
   );
-}
-
-// magnitude formats a signed minor amount as a plain positive input string.
-function magnitude(amount: number, fmt: MoneyFormat): string {
-  return minorToPlain(Math.abs(amount), fmt);
-}
-
-function minorToPlain(amount: number, fmt: MoneyFormat): string {
-  return formatMinor(amount, { ...fmt, groupChar: "", symbol: "", symbolPrefix: false });
 }
