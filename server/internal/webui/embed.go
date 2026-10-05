@@ -50,6 +50,14 @@ func Handler() http.Handler {
 	if _, err := fs.Stat(sub, "index.html"); err != nil {
 		return placeholderHandler()
 	}
+	return handler(sub)
+}
+
+// immutable is for the files under assets/: Vite puts a hash of the content in
+// each name, so a name never changes meaning and the browser can keep it.
+const immutable = "public, max-age=31536000, immutable"
+
+func handler(sub fs.FS) http.Handler {
 	fileServer := http.FileServer(http.FS(sub))
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -58,11 +66,28 @@ func Handler() http.Handler {
 			upath = "index.html"
 		}
 		if _, err := fs.Stat(sub, upath); err != nil {
+			// A missing file is a 404, never the app shell: a page left open on
+			// an older build asks for chunks the new one no longer has, and HTML
+			// served as a script breaks it where a 404 lets it reload (#578).
+			// Client-side routes have no extension.
+			if path.Ext(upath) != "" {
+				w.Header().Set("Cache-Control", "no-store")
+				http.NotFound(w, r)
+				return
+			}
 			// Not a real asset: hand off to the SPA entry point.
 			r2 := r.Clone(r.Context())
 			r2.URL.Path = "/"
+			w.Header().Set("Cache-Control", "no-cache")
 			fileServer.ServeHTTP(w, r2)
 			return
+		}
+		// The shell, the service worker and the manifest name the build that is
+		// live, so the browser asks again every time; everything hashed is kept.
+		if strings.HasPrefix(upath, "assets/") {
+			w.Header().Set("Cache-Control", immutable)
+		} else {
+			w.Header().Set("Cache-Control", "no-cache")
 		}
 		fileServer.ServeHTTP(w, r)
 	})
