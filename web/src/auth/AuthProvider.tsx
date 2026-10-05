@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 
 import {
   ApiError,
@@ -11,6 +11,7 @@ import {
   type Credentials,
   type User,
 } from "../api/client";
+import { followOtherTabs } from "../api/preferences";
 
 interface AuthContextValue {
   user: User | null;
@@ -20,6 +21,9 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const qc = useQueryClient();
+  // A save in another tab reaches this one as it happens (#576).
+  useEffect(() => followOtherTabs(qc), [qc]);
   const meQuery = useQuery({
     queryKey: ["me"],
     queryFn: async (): Promise<User | null> => {

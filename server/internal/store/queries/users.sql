@@ -27,5 +27,11 @@ UPDATE users SET disabled = ? WHERE id = ?;
 -- name: UpdateUserPassword :exec
 UPDATE users SET password_hash = ? WHERE id = ?;
 
--- name: UpdateUserSettings :exec
-UPDATE users SET locale = ?, theme = ?, preferences = ? WHERE id = ?;
+-- name: UpdateUserSettings :execrows
+-- Every save moves the revision on. With a revision given, the save only lands
+-- when the stored one still matches: no row changed means someone saved first.
+UPDATE users
+SET locale = sqlc.arg(locale), theme = sqlc.arg(theme), preferences = sqlc.arg(preferences),
+    preferences_rev = preferences_rev + 1
+WHERE id = sqlc.arg(id)
+  AND (CAST(sqlc.narg(rev) AS INTEGER) IS NULL OR preferences_rev = CAST(sqlc.narg(rev) AS INTEGER));
