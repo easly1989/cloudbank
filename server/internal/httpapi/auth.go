@@ -63,16 +63,19 @@ type authHandlers struct {
 // userResponse is the JSON shape returned for an account. It never contains the
 // password hash.
 type userResponse struct {
-	ID               int64           `json:"id"`
-	Username         string          `json:"username"`
-	Email            string          `json:"email"`
-	IsAdmin          bool            `json:"isAdmin"`
-	Locale           string          `json:"locale"`
-	Theme            string          `json:"theme"`
-	Preferences      json.RawMessage `json:"preferences"`
-	Disabled         bool            `json:"disabled"`
-	TwoFactorEnabled bool            `json:"twoFactorEnabled"`
-	CreatedAt        string          `json:"createdAt"`
+	ID          int64           `json:"id"`
+	Username    string          `json:"username"`
+	Email       string          `json:"email"`
+	IsAdmin     bool            `json:"isAdmin"`
+	Locale      string          `json:"locale"`
+	Theme       string          `json:"theme"`
+	Preferences json.RawMessage `json:"preferences"`
+	// PreferencesRevision is sent back on PATCH /auth/me as the revision the
+	// change started from (#576).
+	PreferencesRevision int64  `json:"preferencesRevision"`
+	Disabled            bool   `json:"disabled"`
+	TwoFactorEnabled    bool   `json:"twoFactorEnabled"`
+	CreatedAt           string `json:"createdAt"`
 	// SignsInWithSSO is set on GET /auth/me only: the password card tells an
 	// SSO user that the password may not be one they know.
 	SignsInWithSSO bool `json:"signsInWithSso,omitempty"`
@@ -85,7 +88,8 @@ func toUserResponse(u auth.User) userResponse {
 	}
 	return userResponse{
 		ID: u.ID, Username: u.Username, Email: u.Email, IsAdmin: u.IsAdmin,
-		Locale: u.Locale, Theme: u.Theme, Preferences: prefs, Disabled: u.Disabled,
+		Locale: u.Locale, Theme: u.Theme, Preferences: prefs, PreferencesRevision: u.PreferencesRevision,
+		Disabled:         u.Disabled,
 		TwoFactorEnabled: u.TwoFactorEnabled, CreatedAt: u.CreatedAt,
 	}
 }
@@ -238,13 +242,16 @@ func (h *authHandlers) changePassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// updateMe persists the current user's language, theme and UI preferences.
+// updateMe persists the current user's language, theme and UI preferences. A
+// client that sends preferencesRevision gets 409 stale_preferences, and no
+// write, when another tab or device saved since it read them (#576).
 func (h *authHandlers) updateMe(w http.ResponseWriter, r *http.Request) {
 	user := userFromContext(r.Context())
 	var in struct {
-		Locale      string          `json:"locale"`
-		Theme       string          `json:"theme"`
-		Preferences json.RawMessage `json:"preferences"`
+		Locale              string          `json:"locale"`
+		Theme               string          `json:"theme"`
+		Preferences         json.RawMessage `json:"preferences"`
+		PreferencesRevision *int64          `json:"preferencesRevision"`
 	}
 	if !decodeJSON(w, r, &in) {
 		return
@@ -261,7 +268,11 @@ func (h *authHandlers) updateMe(w http.ResponseWriter, r *http.Request) {
 	if prefs == "" {
 		prefs = user.Preferences
 	}
-	updated, err := h.svc.UpdateSettings(r.Context(), user.ID, locale, theme, prefs)
+	updated, err := h.svc.UpdateSettingsAt(r.Context(), user.ID, locale, theme, prefs, in.PreferencesRevision)
+	if errors.Is(err, auth.ErrStalePreferences) {
+		writeError(w, http.StatusConflict, "stale_preferences", "the preferences were saved elsewhere since; read them again")
+		return
+	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not update preferences")
 		return

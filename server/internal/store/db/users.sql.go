@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const countUsers = `-- name: CountUsers :one
@@ -34,7 +35,7 @@ func (q *Queries) CountUsersByEmail(ctx context.Context, email string) (int64, e
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (username, email, password_hash, is_admin, locale, theme)
 VALUES (?, ?, ?, ?, ?, ?)
-RETURNING id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences, totp_secret, totp_enabled
+RETURNING id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences, totp_secret, totp_enabled, preferences_rev
 `
 
 type CreateUserParams struct {
@@ -69,12 +70,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Preferences,
 		&i.TotpSecret,
 		&i.TotpEnabled,
+		&i.PreferencesRev,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences, totp_secret, totp_enabled FROM users WHERE email = ? LIMIT 1
+SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences, totp_secret, totp_enabled, preferences_rev FROM users WHERE email = ? LIMIT 1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -93,12 +95,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Preferences,
 		&i.TotpSecret,
 		&i.TotpEnabled,
+		&i.PreferencesRev,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences, totp_secret, totp_enabled FROM users WHERE id = ? LIMIT 1
+SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences, totp_secret, totp_enabled, preferences_rev FROM users WHERE id = ? LIMIT 1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
@@ -117,12 +120,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.Preferences,
 		&i.TotpSecret,
 		&i.TotpEnabled,
+		&i.PreferencesRev,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences, totp_secret, totp_enabled FROM users WHERE username = ? LIMIT 1
+SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences, totp_secret, totp_enabled, preferences_rev FROM users WHERE username = ? LIMIT 1
 `
 
 func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
@@ -141,12 +145,13 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.Preferences,
 		&i.TotpSecret,
 		&i.TotpEnabled,
+		&i.PreferencesRev,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences, totp_secret, totp_enabled FROM users ORDER BY username
+SELECT id, username, email, password_hash, is_admin, locale, theme, disabled, created_at, preferences, totp_secret, totp_enabled, preferences_rev FROM users ORDER BY username
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -171,6 +176,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.Preferences,
 			&i.TotpSecret,
 			&i.TotpEnabled,
+			&i.PreferencesRev,
 		); err != nil {
 			return nil, err
 		}
@@ -213,8 +219,12 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPassword
 	return err
 }
 
-const updateUserSettings = `-- name: UpdateUserSettings :exec
-UPDATE users SET locale = ?, theme = ?, preferences = ? WHERE id = ?
+const updateUserSettings = `-- name: UpdateUserSettings :execrows
+UPDATE users
+SET locale = ?1, theme = ?2, preferences = ?3,
+    preferences_rev = preferences_rev + 1
+WHERE id = ?4
+  AND (CAST(?5 AS INTEGER) IS NULL OR preferences_rev = CAST(?5 AS INTEGER))
 `
 
 type UpdateUserSettingsParams struct {
@@ -222,14 +232,21 @@ type UpdateUserSettingsParams struct {
 	Theme       string
 	Preferences string
 	ID          int64
+	Rev         sql.NullInt64
 }
 
-func (q *Queries) UpdateUserSettings(ctx context.Context, arg UpdateUserSettingsParams) error {
-	_, err := q.db.ExecContext(ctx, updateUserSettings,
+// Every save moves the revision on. With a revision given, the save only lands
+// when the stored one still matches: no row changed means someone saved first.
+func (q *Queries) UpdateUserSettings(ctx context.Context, arg UpdateUserSettingsParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, updateUserSettings,
 		arg.Locale,
 		arg.Theme,
 		arg.Preferences,
 		arg.ID,
+		arg.Rev,
 	)
-	return err
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }

@@ -189,6 +189,11 @@ paths:
     patch:
       operationId: updateMe
       summary: Update the current user's language, theme and UI preferences
+      description: >-
+        The preferences object replaces the stored one. Send preferencesRevision,
+        the revision the change started from, and the write is refused with 409
+        stale_preferences when another tab or device saved since: read them
+        again and reapply the change. Without it the write always lands.
       requestBody:
         required: true
         content:
@@ -197,6 +202,12 @@ paths:
       responses:
         "200": { description: The updated user., content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "409":
+          description: The preferences were saved since preferencesRevision (stale_preferences).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /api/v1/auth/me/password:
     post:
       operationId: changePassword
@@ -2680,6 +2691,7 @@ components:
         locale: { type: string }
         theme: { type: string }
         preferences: { type: object, additionalProperties: true, description: "opaque UI preferences blob" }
+        preferencesRevision: { type: integer, format: int64, description: "goes up with every save of the settings; send it back on PATCH /auth/me" }
         disabled: { type: boolean }
         twoFactorEnabled: { type: boolean }
         createdAt: { type: string }
@@ -2691,6 +2703,7 @@ components:
         locale: { type: string }
         theme: { type: string }
         preferences: { type: object, additionalProperties: true }
+        preferencesRevision: { type: integer, format: int64, description: "the revision the change started from; omit to write regardless" }
     AISettings:
       type: object
       description: A user's AI configuration. The API key is never returned; only hasKey.

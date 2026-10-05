@@ -118,6 +118,8 @@ export interface User {
   locale: string;
   theme: string;
   preferences: Preferences;
+  /** Goes up with every save of the settings; a save sends it back (#576). */
+  preferencesRevision?: number;
   disabled: boolean;
   twoFactorEnabled: boolean;
   createdAt: string;
@@ -164,8 +166,13 @@ export const startDemo = (language: string) =>
 
 export const getMe = () => api.get<User>("/api/v1/auth/me");
 
-export const updateMe = (body: { locale?: string; theme?: string; preferences?: Preferences }) =>
-  api.patch<User>("/api/v1/auth/me", body);
+export const updateMe = (body: {
+  locale?: string;
+  theme?: string;
+  preferences?: Preferences;
+  /** The revision the change started from: refused with 409 when stale. */
+  preferencesRevision?: number;
+}) => api.patch<User>("/api/v1/auth/me", body);
 
 // --- Personal API tokens ---
 

@@ -347,7 +347,9 @@ type Querier interface {
 	UpdateTransaction(ctx context.Context, arg UpdateTransactionParams) error
 	UpdateTransactionStatus(ctx context.Context, arg UpdateTransactionStatusParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
-	UpdateUserSettings(ctx context.Context, arg UpdateUserSettingsParams) error
+	// Every save moves the revision on. With a revision given, the save only lands
+	// when the stored one still matches: no row changed means someone saved first.
+	UpdateUserSettings(ctx context.Context, arg UpdateUserSettingsParams) (int64, error)
 	UpdateValuation(ctx context.Context, arg UpdateValuationParams) error
 	UpdateVehicle(ctx context.Context, arg UpdateVehicleParams) error
 	UpdateWallet(ctx context.Context, arg UpdateWalletParams) error
