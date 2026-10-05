@@ -169,7 +169,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update the current user's language, theme and UI preferences */
+        /**
+         * Update the current user's language, theme and UI preferences
+         * @description The preferences object replaces the stored one. Send preferencesRevision, the revision the change started from, and the write is refused with 409 stale_preferences when another tab or device saved since: read them again and reapply the change. Without it the write always lands.
+         */
         patch: operations["updateMe"];
         trace?: never;
     };
@@ -2764,6 +2767,11 @@ export interface components {
             preferences?: {
                 [key: string]: unknown;
             };
+            /**
+             * Format: int64
+             * @description goes up with every save of the settings; send it back on PATCH /auth/me
+             */
+            preferencesRevision?: number;
             disabled: boolean;
             twoFactorEnabled?: boolean;
             createdAt: string;
@@ -2776,6 +2784,11 @@ export interface components {
             preferences?: {
                 [key: string]: unknown;
             };
+            /**
+             * Format: int64
+             * @description the revision the change started from; omit to write regardless
+             */
+            preferencesRevision?: number;
         };
         /** @description A user's AI configuration. The API key is never returned; only hasKey. */
         AISettings: {
@@ -4629,6 +4642,15 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            /** @description The preferences were saved since preferencesRevision (stale_preferences). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     changePassword: {

@@ -365,18 +365,19 @@ type Transfer struct {
 }
 
 type User struct {
-	ID           int64
-	Username     string
-	Email        string
-	PasswordHash string
-	IsAdmin      int64
-	Locale       string
-	Theme        string
-	Disabled     int64
-	CreatedAt    string
-	Preferences  string
-	TotpSecret   string
-	TotpEnabled  int64
+	ID             int64
+	Username       string
+	Email          string
+	PasswordHash   string
+	IsAdmin        int64
+	Locale         string
+	Theme          string
+	Disabled       int64
+	CreatedAt      string
+	Preferences    string
+	TotpSecret     string
+	TotpEnabled    int64
+	PreferencesRev int64
 }
 
 type UserOidcIdentity struct {
