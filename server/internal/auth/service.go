@@ -26,6 +26,9 @@ var (
 	// ErrTOTPEnabled / ErrTOTPNotEnabled guard the enrollment transitions.
 	ErrTOTPEnabled    = errors.New("auth: two-factor already enabled")
 	ErrTOTPNotEnabled = errors.New("auth: two-factor not enabled")
+	// ErrStalePreferences means the settings were saved since the revision
+	// the caller started from (#576).
+	ErrStalePreferences = errors.New("auth: preferences saved since")
 )
 
 // sessionTTL is the default sliding lifetime of a session; each authenticated
@@ -34,16 +37,18 @@ const sessionTTL = 7 * 24 * time.Hour
 
 // User is the public representation of an account — never includes the hash.
 type User struct {
-	ID               int64
-	Username         string
-	Email            string
-	IsAdmin          bool
-	Locale           string
-	Theme            string
-	Preferences      string // opaque JSON blob of UI preferences
-	Disabled         bool
-	TwoFactorEnabled bool
-	CreatedAt        string
+	ID          int64
+	Username    string
+	Email       string
+	IsAdmin     bool
+	Locale      string
+	Theme       string
+	Preferences string // opaque JSON blob of UI preferences
+	// PreferencesRevision goes up with every save of the settings (#576).
+	PreferencesRevision int64
+	Disabled            bool
+	TwoFactorEnabled    bool
+	CreatedAt           string
 }
 
 func toUser(u db.User) User {
@@ -52,28 +57,46 @@ func toUser(u db.User) User {
 		prefs = "{}"
 	}
 	return User{
-		ID:               u.ID,
-		Username:         u.Username,
-		Email:            u.Email,
-		IsAdmin:          u.IsAdmin != 0,
-		Locale:           u.Locale,
-		Theme:            u.Theme,
-		Preferences:      prefs,
-		Disabled:         u.Disabled != 0,
-		TwoFactorEnabled: u.TotpEnabled != 0,
-		CreatedAt:        u.CreatedAt,
+		ID:                  u.ID,
+		Username:            u.Username,
+		Email:               u.Email,
+		IsAdmin:             u.IsAdmin != 0,
+		Locale:              u.Locale,
+		Theme:               u.Theme,
+		Preferences:         prefs,
+		PreferencesRevision: u.PreferencesRev,
+		Disabled:            u.Disabled != 0,
+		TwoFactorEnabled:    u.TotpEnabled != 0,
+		CreatedAt:           u.CreatedAt,
 	}
 }
 
-// UpdateSettings updates the current user's locale, theme and preferences blob.
+// UpdateSettings updates the current user's locale, theme and preferences blob,
+// whatever was saved in between.
 func (s *Service) UpdateSettings(ctx context.Context, userID int64, locale, theme, preferences string) (User, error) {
+	return s.UpdateSettingsAt(ctx, userID, locale, theme, preferences, nil)
+}
+
+// UpdateSettingsAt is UpdateSettings for a caller that read the settings at
+// revision rev: when they have been saved since, nothing is written and
+// ErrStalePreferences comes back, so the caller can start again from the
+// stored ones (#576). A nil rev writes regardless, as before revisions.
+func (s *Service) UpdateSettingsAt(ctx context.Context, userID int64, locale, theme, preferences string, rev *int64) (User, error) {
 	if preferences == "" {
 		preferences = "{}"
 	}
-	if err := s.q.UpdateUserSettings(ctx, db.UpdateUserSettingsParams{
-		Locale: locale, Theme: theme, Preferences: preferences, ID: userID,
-	}); err != nil {
+	at := sql.NullInt64{}
+	if rev != nil {
+		at = sql.NullInt64{Int64: *rev, Valid: true}
+	}
+	n, err := s.q.UpdateUserSettings(ctx, db.UpdateUserSettingsParams{
+		Locale: locale, Theme: theme, Preferences: preferences, ID: userID, Rev: at,
+	})
+	if err != nil {
 		return User{}, err
+	}
+	if n == 0 {
+		return User{}, ErrStalePreferences
 	}
 	u, err := s.q.GetUserByID(ctx, userID)
 	if err != nil {
