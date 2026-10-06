@@ -10,7 +10,7 @@
 # reset.
 
 # --- Stage 1: build the web SPA ---
-FROM node:26-bookworm-slim AS web
+FROM node:26-trixie-slim AS web
 WORKDIR /src/web
 # Install dependencies first for better layer caching.
 COPY web/package.json web/package-lock.json ./
@@ -23,7 +23,7 @@ ARG DEMO=
 RUN npm run gen:api && CB_DEMO="${DEMO}" npm run build
 
 # --- Stage 2: build the Go binary (with the SPA embedded) ---
-FROM golang:1.27-bookworm AS build
+FROM golang:1.27-trixie AS build
 WORKDIR /src/server
 COPY server/go.mod server/go.sum ./
 RUN go mod download
@@ -41,7 +41,7 @@ RUN tags=""; if [ "${DEMO}" = "1" ]; then tags="demo"; fi; \
     -o /out/cloudbank ./cmd/cloudbank
 
 # --- Stage 3: minimal runtime ---
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM gcr.io/distroless/static-debian13:nonroot
 LABEL org.opencontainers.image.title="CloudBank" \
       org.opencontainers.image.description="Self-hosted web port of HomeBank" \
       org.opencontainers.image.source="https://github.com/easly1989/cloudbank" \

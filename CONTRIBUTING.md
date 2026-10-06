@@ -64,7 +64,7 @@ personal statement as a fixture — redact it to a couple of fabricated rows.
 
 ## Local development
 
-Prerequisites: **Go 1.26.6+**, **Node 22+**, and Docker (for the container build).
+Prerequisites: **Go 1.27.1+**, **Node 22+** (CI and the image build with Node 26), and Docker (for the container build).
 
 ```bash
 # Backend
