@@ -2,6 +2,11 @@ import { Select } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 
 import { supportedLanguages } from "../i18n";
+import {
+  PrototypeLoginSwitcher,
+  PrototypeSwitcher,
+  usePrototypeVariant,
+} from "../prototype/LanguageSelectorPrototype";
 
 const labels: Record<string, string> = {
   en: "English",
@@ -11,6 +16,15 @@ const labels: Record<string, string> = {
 export function LanguageSwitcher() {
   const { i18n, t } = useTranslation();
   const current = i18n.resolvedLanguage ?? "en";
+  const variant = usePrototypeVariant(); // PROTOTYPE (#595)
+
+  if (variant)
+    return (
+      <>
+        <PrototypeLoginSwitcher variant={variant} />
+        <PrototypeSwitcher current={variant} />
+      </>
+    );
 
   return (
     <Select

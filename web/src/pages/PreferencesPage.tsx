@@ -23,6 +23,11 @@ import { ApiError, listAccounts, saveMe, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { useTour } from "../onboarding/tourContext";
 import { supportedLanguages } from "../i18n";
+import {
+  PrototypeSettingsLanguage,
+  PrototypeSwitcher,
+  usePrototypeVariant,
+} from "../prototype/LanguageSelectorPrototype";
 import { SIDEBAR_ACCOUNTS_MAX } from "../components/sidebarAccounts";
 import {
   ALL_BALANCES,
@@ -134,6 +139,7 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
   });
 
   const general = section === "general";
+  const variant = usePrototypeVariant(); // PROTOTYPE (#595)
   const appearance = section === "appearance";
 
   return (
@@ -141,7 +147,13 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
       <Card withBorder>
         <Stack>
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
-            {general && (
+            {general && variant && (
+              <>
+                <PrototypeSettingsLanguage variant={variant} label={t("preferences.language")} />
+                <PrototypeSwitcher current={variant} />
+              </>
+            )}
+            {general && !variant && (
               <Select
                 label={t("preferences.language")}
                 data={supportedLanguages.map((l) => ({ value: l, label: langLabels[l] ?? l }))}
