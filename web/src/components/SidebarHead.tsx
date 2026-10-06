@@ -14,6 +14,8 @@ import { formatMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
 import { GlobalSearch } from "./GlobalSearch";
 import { Logo } from "./Logo";
+import { TotalsBreakdown } from "./TotalsBreakdown";
+import { accountsLabel } from "./totalsCount";
 import { BRAND, WALLET_CARD } from "./shellTheme";
 
 // The head of the sidebar: the product, the wallet you are in, and the way to
@@ -26,7 +28,9 @@ import { BRAND, WALLET_CARD } from "./shellTheme";
 // rather than floating above it.
 //
 // The card carries the wallet's balance, because "which wallet am I in" and
-// "how much is in it" are the same question asked twice.
+// "how much is in it" are the same question asked twice. That balance is the
+// sum of the wallet's accounts, so the label says how many, and the menu the
+// card opens shows them one by one (#579).
 export function SidebarHead({
   railMode,
   onToggleCollapse,
@@ -50,6 +54,7 @@ export function SidebarHead({
   });
   const base = summary.data?.baseCurrency;
   const balance = summary.data?.totals.today;
+  const accounts = summary.data?.accounts ?? [];
 
   if (railMode) {
     return (
@@ -83,7 +88,12 @@ export function SidebarHead({
       </Group>
 
       {currentWallet && (
-        <Menu position="bottom-start" withinPortal width="target">
+        <Menu
+          position="bottom-start"
+          withinPortal
+          width="target"
+          styles={{ dropdown: { minWidth: 260 } }}
+        >
           <Menu.Target>
             <UnstyledButton
               aria-label={t("wallet.switch")}
@@ -93,7 +103,9 @@ export function SidebarHead({
             >
               <Stack gap={WALLET_CARD.gap}>
                 <Text fz={WALLET_CARD.label.fz} c="dimmed" lh={1.2}>
-                  {t("wallet.label")}
+                  {accounts.length > 0
+                    ? `${t("wallet.label")} · ${accountsLabel(t, accounts)}`
+                    : t("wallet.label")}
                 </Text>
                 <Group justify="space-between" wrap="nowrap" gap="xs" align="baseline">
                   <Group gap={4} wrap="nowrap" style={{ minWidth: 0 }}>
@@ -118,6 +130,19 @@ export function SidebarHead({
             </UnstyledButton>
           </Menu.Target>
           <Menu.Dropdown>
+            {base && balance != null && accounts.length > 0 && (
+              <>
+                <div style={{ padding: "6px 12px 4px" }}>
+                  <TotalsBreakdown
+                    accounts={accounts}
+                    balance="today"
+                    total={balance}
+                    base={base}
+                  />
+                </div>
+                <Menu.Divider />
+              </>
+            )}
             <Menu.Label>{t("wallet.switch")}</Menu.Label>
             {wallets.map((w) => (
               <Menu.Item
