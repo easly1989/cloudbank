@@ -118,14 +118,23 @@ test.describe("without a service worker", () => {
  */
 async function startProxy(target: string) {
   let nextBuild = false;
+  // Only ever the app under test: the host is fixed, the request gives the path.
+  const app = new URL(target);
   const server = http.createServer((req, res) => {
-    const url = new URL(req.url ?? "/", target);
+    const path =
+      req.url?.startsWith("/") && !req.url.startsWith("//") ? req.url : "/";
     const headers = { ...req.headers, "accept-encoding": "identity" };
     const upstream = http.request(
-      url,
-      { method: req.method, headers },
+      {
+        protocol: app.protocol,
+        hostname: app.hostname,
+        port: app.port,
+        path,
+        method: req.method,
+        headers,
+      },
       (up) => {
-        if (!(nextBuild && url.pathname === "/sw.js")) {
+        if (!(nextBuild && path === "/sw.js")) {
           res.writeHead(up.statusCode ?? 502, up.headers);
           up.pipe(res);
           return;
