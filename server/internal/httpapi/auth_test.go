@@ -35,6 +35,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/template"
 	"github.com/easly1989/cloudbank/server/internal/transaction"
 	"github.com/easly1989/cloudbank/server/internal/transfer"
+	"github.com/easly1989/cloudbank/server/internal/updates"
 	"github.com/easly1989/cloudbank/server/internal/vehicle"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
@@ -93,6 +94,8 @@ func newTestAPI(t *testing.T) *testClient {
 		Auth: svc, Wallets: wsvc, Currencies: csvc, Accounts: asvc,
 		Categories: catsvc, Payees: psvc, Transactions: tsvc, Tags: tagsvc, Vehicles: vehsvc, Goals: goalsvc, Transfers: xsvc, Dashboard: dsvc, Templates: tplsvc, Schedules: ssvc, Assignments: asvc2, Budgets: bsvc, Reports: rsvc, Import: impsvc, CSV: csvsvc, RateProvider: stubRateProvider{},
 		Integrity: intsvc, Backup: bksvc, Attachments: attsvc, HotBackup: st, DataDir: t.TempDir(), Health: st,
+		// A local build: the check follows no channel, so it never goes online.
+		Updates: updates.New(st.Write(), "dev", true),
 	}))
 	t.Cleanup(srv.Close)
 
