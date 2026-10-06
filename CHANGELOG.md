@@ -6,6 +6,83 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
+## [3.7.0] — 2026-10-06
+
+The secondary pages are rebuilt. Every page outside the register and the
+overview now answers a question first, lists its entries full width and edits
+them in a panel beside the list. Bills and Schedules become one calendar, and
+CloudBank says when a newer version is out.
+
+### Added
+
+- **Schedules is a calendar of the month.** Bills joins Schedules. Each
+  occurrence sits on its day as not registered, registered, cleared,
+  reconciled or overdue, and occurrences registered months ahead land in their
+  own month. Above it: what is still to pay, what is overdue, and what is
+  coming in. Beside it, **Needs you** registers or skips in one click, with a
+  sheet to change a bill's amount first. **All schedules** keeps the list.
+- **Told when a newer CloudBank is out.** Once a day the server reads the
+  published versions and tells administrators, in a card in the menu and in
+  Settings › About, when a newer release (or a newer nightly, on `:latest`) is
+  out, with the steps to update. Nothing is sent. Dismissing a release hides
+  it until the next one (a nightly, for a week). An administrator can turn the
+  check off in Settings › About, and `CB_UPDATE_CHECK=false` turns it off for
+  the whole installation.
+- **The wallet's total says what it adds up.** The balance beside the wallet and
+  at the head of the dashboard names how many accounts it sums ("4 of 6
+  accounts" when some are closed or left out of the totals), and opens a
+  breakdown of them.
+- **Rules can add tags and match on tags.** The rule's sheet previews, as a
+  dry run, what it would match, and a rule's ▶ applies just that rule to the
+  transactions it is the first to match.
+- **Add a tag** before any transaction carries it.
+- **Transactions remember the template** they were filled in from, so a
+  template shows how often it is used.
+
+### Changed
+
+- **The secondary pages are rebuilt**, each in the register's style, with a
+  396px side sheet (a bottom sheet on a phone) in place of the old dialogs:
+  - **Categories**: each category's transactions, amount and share over the
+    last 12 months, in two sections; Rows or Index view; a subcategory can move
+    to another group or become a group of its own.
+  - **Payees**: the default category and payment, and the category a payee
+    usually gets, made the default in one click.
+  - **Tags**: the categories each tag was mostly in, and its net amount.
+  - **Currencies**: each rate with where it came from and when, which accounts
+    use it, and how its amounts look, with a live preview.
+  - **Templates**: those for quick entry and those behind a schedule, apart.
+  - **Accounts**: reconciled, today and future balances, grouped by type, with
+    the last reconciled date; a row opens its register.
+  - **Rules**: each rule as a sentence with how many transactions it fills in.
+  - **Budget**: one view, the month's (or year's) answer first: spent, left and
+    days to go, then what is in the budget, what is not, and expected income.
+  - **Goals**: what is saved, what to put aside each month, and what is free to
+    spend; reached goals close into a history you can reopen.
+  - **Vehicles**: what each vehicle costs to run over the last year, per
+    kilometre and per 100 km, and its last fill.
+- **Review leads back** to the register or the overview it was opened from.
+- **A new version of the app is offered, not swapped in.** An open page shows
+  a notice when a new build is installed, and switches only when you choose
+  Update. A page whose code went missing in an update reloads once instead of
+  breaking.
+- **The server builds with Go 1.27.1**, the images run on Debian 13, and CI
+  uses Node 26. Two migrations run at startup, in well under a second: one for
+  the settings' revision, one for the instance's own settings.
+
+### Fixed
+
+- **Saving a split schedule keeps its lines.** The Schedules sheet dropped a
+  split template's lines on save, so every posting after it came in
+  uncategorised. The amount and categories of a split are now locked there, as
+  for a transfer.
+- **Settings no longer undo each other.** Two settings saved at the same moment,
+  or from two tabs or two devices, could silently put one of them back. Saves
+  now queue, and a save built from an older copy is retried over the newer one.
+- **Missing files are a 404.** A request for a file that does not exist got the
+  app's page instead, so a page left open across an update broke instead of
+  loading the new build.
+
 ## [3.6.1] — 2026-09-29
 
 A round of daily use after the first feedback. The register's filters move into
@@ -749,7 +826,8 @@ HomeBank feature parity, shipped as a single Docker container.
 - CI (lint, race tests, build, Docker smoke, Playwright e2e) and automated GHCR
   publishing (`:latest` nightly, `:main` stable, `:vX.Y.Z` per release).
 
-[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.6.1...HEAD
+[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.7.0...HEAD
+[3.7.0]: https://github.com/easly1989/cloudbank/compare/v3.6.1...v3.7.0
 [3.6.1]: https://github.com/easly1989/cloudbank/compare/v3.6.0...v3.6.1
 [3.6.0]: https://github.com/easly1989/cloudbank/compare/v3.5.1...v3.6.0
 [3.5.1]: https://github.com/easly1989/cloudbank/compare/v3.5.0...v3.5.1
