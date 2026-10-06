@@ -235,6 +235,11 @@ type GoalContribution struct {
 	Note   string
 }
 
+type InstanceSetting struct {
+	Key   string
+	Value string
+}
+
 type MfaRecoveryCode struct {
 	ID        int64
 	UserID    int64

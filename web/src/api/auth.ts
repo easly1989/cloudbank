@@ -89,6 +89,9 @@ export interface Preferences {
   toursSeen?: string[];
   /** Whether a page offers its tour the first time it is opened. Default on. */
   tourOffers?: boolean;
+  /** The new version whose card an admin closed, and when (#582): a stable
+      release stays hidden until the next one, a nightly for a week. */
+  updateDismissed?: { version: string; at: string };
   /** Whether the reader has been asked, after turning a tour down, if the
       other pages should stop offering theirs (#501). Asked once. */
   tourSkipAsked?: boolean;

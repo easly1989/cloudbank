@@ -46,6 +46,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/template"
 	"github.com/easly1989/cloudbank/server/internal/transaction"
 	"github.com/easly1989/cloudbank/server/internal/transfer"
+	"github.com/easly1989/cloudbank/server/internal/updates"
 	"github.com/easly1989/cloudbank/server/internal/vehicle"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
@@ -216,6 +217,7 @@ func run() error {
 		HotBackup:         st,
 		DataDir:           cfg.DataDir,
 		Version:           version,
+		Updates:           updates.New(st.Write(), version, cfg.UpdateCheck),
 		SecureCookies:     cfg.SecureCookies,
 		OIDC:              oidcSvc,
 		OIDCAutoProvision: cfg.OIDCAutoProvision,
@@ -264,6 +266,11 @@ func run() error {
 	// every night.
 	if runDemo != nil {
 		go runDemo(ctx)
+	}
+
+	// Look for a newer CloudBank a minute after start, then once a day (#582).
+	if opts.Updates != nil {
+		go opts.Updates.Run(ctx, logger)
 	}
 
 	// Background bank sync: keep auto-sync connections up to date on a schedule.

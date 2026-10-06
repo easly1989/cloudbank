@@ -157,3 +157,44 @@ func TestAdminHotBackup(t *testing.T) {
 		t.Fatalf("bob admin backup = %d, want 403", resp.StatusCode)
 	}
 }
+
+func TestAdminUpdateCheck(t *testing.T) {
+	c := newTestAPI(t)
+	setupAdmin(c)
+
+	read := func(resp *http.Response) map[string]any {
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("status = %d, want 200", resp.StatusCode)
+		}
+		var out map[string]any
+		_ = json.NewDecoder(resp.Body).Decode(&out)
+		return out
+	}
+	st := read(c.do(http.MethodGet, "/api/v1/admin/updates", nil, false))
+	if st["enabled"] != true || st["current"] != "dev" || st["channel"] != "" || st["available"] != false {
+		t.Fatalf("status = %v", st)
+	}
+	st = read(c.do(http.MethodPut, "/api/v1/admin/updates", map[string]any{"enabled": false}, true))
+	if st["enabled"] != false {
+		t.Fatalf("after turning off = %v", st)
+	}
+	st = read(c.do(http.MethodPost, "/api/v1/admin/updates/check", nil, true))
+	if st["enabled"] != false || st["checkedAt"] != nil {
+		t.Fatalf("a check while off = %v", st)
+	}
+
+	// Only an admin can update the server, so only an admin is told.
+	c.do(http.MethodPost, "/api/v1/admin/users",
+		map[string]any{"username": "bob", "password": "bobssecret", "isAdmin": false}, true).Body.Close()
+	c.do(http.MethodPost, "/api/v1/auth/logout", nil, true).Body.Close()
+	c.do(http.MethodPost, "/api/v1/auth/login",
+		map[string]any{"username": "bob", "password": "bobssecret"}, true).Body.Close()
+	for _, m := range []string{http.MethodGet, http.MethodPut} {
+		resp := c.do(m, "/api/v1/admin/updates", map[string]any{"enabled": true}, m != http.MethodGet)
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusForbidden {
+			t.Errorf("bob %s = %d, want 403", m, resp.StatusCode)
+		}
+	}
+}

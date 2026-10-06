@@ -30,6 +30,7 @@ func applyDemo(ctx context.Context, cfg config.Config, st *store.Store, opts *ht
 	opts.AI = nil
 	opts.Attachments = nil
 	opts.HotBackup = nil
+	opts.Updates = nil
 
 	svc := demo.New(cfg.Demo, st.Write(), opts.Auth, opts.Import, opts.Goals, opts.BankSync)
 	opts.Demo = svc

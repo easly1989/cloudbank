@@ -18,6 +18,8 @@ import { NavLayoutEditor } from "../../components/NavLayoutEditor";
 import { NotificationsCard } from "../../components/NotificationsCard";
 import { PasswordCard } from "../../components/PasswordCard";
 import { TwoFactorCard } from "../../components/TwoFactorCard";
+import { UpdateStatusCard } from "../../components/updates/UpdateStatusCard";
+import { useAuth } from "../../auth/AuthProvider";
 import { ApiTokensPage } from "../ApiTokensPage";
 import { BankSyncSettings } from "../BankSyncPage";
 import { PreferencesPage } from "../PreferencesPage";
@@ -133,6 +135,7 @@ export function PeopleSection() {
 export function AboutSection() {
   const { t } = useTranslation();
   const version = useVersion();
+  const { user } = useAuth();
   const links = [
     { href: GUIDE_URL, label: t("app.guide"), hint: t("about.guideHint") },
     { href: SOURCE_URL, label: t("about.source"), hint: "github.com/easly1989/cloudbank" },
@@ -153,6 +156,8 @@ export function AboutSection() {
           </Text>
         </div>
       </Group>
+      {/* Admins only, and never in the demo (#582). */}
+      {!__DEMO__ && user?.isAdmin && <UpdateStatusCard />}
       <Text>
         <Trans i18nKey="about.licence" components={{ b: <b /> }} />
       </Text>
