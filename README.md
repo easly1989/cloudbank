@@ -62,6 +62,10 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 | :------------------------------------------------------: | :---------------------------------------------------------: |
 | ![Schedules calendar](docs/img/schedules.png)            | ![Bank-sync review](docs/img/review.png)                    |
 
+|      Budget — planned against spent, the answer first      |      Categories — every list edited in a panel beside it      |
+| :--------------------------------------------------------: | :----------------------------------------------------------: |
+| ![Budget](docs/img/budget.png)                              | ![Categories](docs/img/categories.png)                        |
+
 |                 Interactive reports                 |            Appearance — theme, accent, sidebar            |
 | :-------------------------------------------------: | :------------------------------------------------: |
 | ![Reports](docs/img/reports.png)                    | ![Settings](docs/img/settings.png)                 |
@@ -80,12 +84,15 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 - **Entering a transaction** happens in a sheet beside the ledger, so the rows and the running balance stay in view. You choose which fields it shows and which wait under **More details**, and **Save and keep** carries the fields over to the next entry.
 - **Scheduled transactions** with automatic posting (optionally **pre-registering up to 3 months ahead**, HomeBank style), a **per-week/month/year income & expense summary**, the recurring **amount** shown in the schedules grid, **templates** (a dedicated management area, and offered when entering a transaction), and **assignment rules** for auto-categorization.
 - **Budgets** and **reports** that answer first: where the money went, what came in and went out, what your accounts hold and will hold with what is scheduled, and what a car costs — for any month, quarter or year, with saved views and CSV/PNG downloads.
-- **Savings goals** — manual piggy-bank goals with contribute / withdraw, a progress bar and an optional target date (included in wallet backup/restore).
+- **Savings goals** — what you have set aside, what to put aside each month to meet every date, and what is free to spend once it is set aside; put money in or take it out, and close a goal, reached or given up on, into a history you can reopen (included in wallet backup/restore).
+- **Vehicles** — what each car, motorbike or van costs to run over the last year: fuel, kilometres, cost per kilometre and consumption, from the fuel payments linked to it (HomeBank's `d=` / `v=` memo readings), with a fill-by-fill report.
+- **The wallet's lists** — categories, payees, tags, rules, templates and currencies each get a page of their own: what every entry did over the last 12 months (amounts, counts, the category a payee usually gets, how many transactions a rule matches today) and a panel beside the list to edit it, with merge and delete where they make sense.
 - **A calendar of what comes round** — the month's bills and income on the day each falls, marked **not registered**, **registered**, **cleared**, **reconciled** or **overdue** (occurrences registered months ahead land in their own month), with what is still to pay, a **Needs you** column to register or skip in one click, and a sheet to change a bill's amount before registering it. A registered one opens the register on its row, to reconcile it.
 - **Import**: HomeBank `.xhb`, QIF, OFX/QFX, CSV, **ISO 20022 CAMT.053** — with an import assistant ([how to import](docs/import.md)). **Export**: HomeBank `.xhb`, QIF, CSV.
 - **Automatic bank sync** — pull new transactions straight from your bank, run through your assignment rules and **reconciled against what you already have**: a bank row that matches an existing manual or scheduled transaction (amount + nearby date) is **merged** into it instead of duplicated, imported with the right status (booked → reconciled, pending → cleared) and a sensible default payment mode. Three providers, all **bring-your-own-credentials** so CloudBank never sees your bank login: **[SimpleFIN](https://www.simplefin.org/)** (worldwide; a ~$15/year SimpleFIN Bridge subscription) and **[Enable Banking](https://enablebanking.com/)** (EU/EEA + UK via PSD2 — a free sandbox to test, your own production application for real accounts). Plus **[Pluggy](https://pluggy.ai/)** (Latin America — free for personal use via [Meu Pluggy](https://meu.pluggy.ai), where you link the banks and CloudBank just reads them). **Pluggy is experimental and needs real-world testing** — it follows the published API but has not been run against a live Latin American bank by the maintainers, so if you use it, please [open an issue](https://github.com/easly1989/cloudbank/issues/new) with anything that looks wrong, however small. A **personal (restricted)** Enable Banking production app can only sync accounts you **link** to it in its panel — the [bank-sync guide](docs/bank-sync.md) walks through it.
 - **Review** — lists imported transactions still **needing a category** (set it inline) and finds **possible duplicates** that slipped through, with per-pair **merge**, edit, delete, or **"not a duplicate"** (remembered, so it isn't shown again). An account with something to review says so in its register ("3 to review"), and the button opens Review on that account; a linked account also shows when it last synced, with a **Sync** button. The connections themselves are set up in **Settings → Bank sync & AI**.
 - **Multi-currency** with manual and online (ECB / frankfurter.app) exchange rates.
+- **Totals that say what they add up** — the balance beside the wallet and at the head of the dashboard names how many accounts it sums ("4 of 6 accounts" when some are closed or kept out of the totals) and opens them one by one.
 - Multi-user (managed by the admin from **Settings → People**; each user changes their own password), responsive UI, English and Italian.
 
 ### Make it yours
@@ -105,6 +112,7 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 - **Installable PWA** — a web-app manifest, icons and an offline app shell, so CloudBank installs to your phone's home screen or your desktop.
 - **Web push notifications** — opt-in browser push for schedule / bill due reminders.
 - **Encrypted secrets at rest** — set `CB_SECRET_KEY` to encrypt bank credentials, AI keys and other secrets in the database (see [Configuration](#configuration)).
+- **Told when to update** — an open page offers a new build of the app instead of swapping it in under you, and admins are told when a newer CloudBank is published, with the steps to update ([turn it off](docs/backup.md#upgrading) if you prefer).
 
 ### Optional AI (bring-your-own-key)
 
@@ -168,8 +176,10 @@ To install, open your CloudBank URL in a browser and:
 - **Android (Chrome)** — menu → **Add to Home screen / Install app**.
 - **iOS/iPadOS (Safari)** — **Share** → **Add to Home Screen**.
 
-It then launches in its own window like a native app, and updates itself to the
-latest version on the next launch after you deploy a new image.
+It then launches in its own window like a native app. After you deploy a new
+image, an open app says **A new version of CloudBank is ready** and switches
+when you choose **Update**, so nothing you are typing is lost; closed and
+opened again, it starts on the new version.
 
 > **Requires HTTPS.** Browsers only register a service worker and offer
 > installation over a **secure context** — i.e. HTTPS (plain `http://localhost` is
