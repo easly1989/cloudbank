@@ -15,13 +15,16 @@ export default defineConfig({
   plugins: [
     react(),
     // Installable PWA: a web manifest plus a Workbox service worker that
-    // precaches the built app shell so it loads offline. `autoUpdate` swaps in a
-    // new build seamlessly on the next load. The SW never serves the SPA shell
+    // precaches the built app shell so it loads offline. A new build waits
+    // (`prompt`) until the person chooses Update in the notice main.tsx
+    // registers it with: swapping it in under an open page broke it (#578).
+    // The SW never serves the SPA shell
     // for /api or /healthz, and it deliberately does NOT cache API responses —
     // stale financial data is worse than an honest offline error, so the shell
     // loads offline while data still needs the network.
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
+      injectRegister: false,
       includeAssets: ["logo.svg", "apple-touch-icon-180x180.png"],
       manifest: {
         id: "/",

@@ -19,17 +19,24 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
+import { registerSW } from "virtual:pwa-register";
 
 import { App } from "./App";
+import { reloadOnStaleChunk, startAppUpdate } from "./appUpdate";
 import { ThemedMantineProvider } from "./ThemedMantineProvider";
 import { AuthProvider } from "./auth/AuthProvider";
 import { ConfirmProvider } from "./components/confirm";
 import { PageErrorBoundary } from "./components/PageErrorBoundary";
+import { UpdateNotice } from "./components/UpdateNotice";
 import "./i18n";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 });
+
+// A new build is offered, never swapped in under an open page (#578).
+reloadOnStaleChunk();
+const appUpdate = "serviceWorker" in navigator ? startAppUpdate(registerSW) : null;
 
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("root element not found");
@@ -44,6 +51,7 @@ createRoot(rootElement).render(
           <PageErrorBoundary fullPage>
             <ConfirmProvider>
               <Notifications />
+              <UpdateNotice update={appUpdate} />
               <BrowserRouter>
                 <App />
               </BrowserRouter>

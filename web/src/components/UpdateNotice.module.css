@@ -1,0 +1,29 @@
+.notice {
+  position: fixed;
+  z-index: 400;
+  bottom: 24px;
+  /* Past the sidebar when there is one; the shell sets this on :root. */
+  left: calc(var(--app-shell-navbar-offset, 0px) + 24px);
+  width: 360px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 12px;
+  padding: 14px 16px 12px;
+  background: var(--mantine-color-body);
+  border: 1px solid var(--cb-shell-card-border);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+.icon {
+  margin-top: 1px;
+}
+
+@media (max-width: 48em) {
+  .notice {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}
