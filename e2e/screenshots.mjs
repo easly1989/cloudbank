@@ -158,6 +158,21 @@ try {
   await page.getByTestId("schedules-calendar").waitFor();
   await shoot(page, "schedules");
 
+  // Budget — planned against spent, the answer first (#568).
+  await page.goto(BASE + "/budget");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("heading", { name: "Budget" }).waitFor();
+  await shoot(page, "budget");
+
+  // Categories — a list of the wallet's, with a category open in the panel
+  // beside it, as every list page now edits (#552).
+  await page.goto(BASE + "/categories");
+  await page.waitForLoadState("networkidle");
+  await page.getByText("Groceries", { exact: true }).first().click();
+  await page.getByRole("dialog").waitFor();
+  await shoot(page, "categories");
+  await page.keyboard.press("Escape");
+
   // Bank-sync review — uncategorised imports + the duplicate finder.
   await page.goto(BASE + "/review");
   await page.waitForLoadState("networkidle");

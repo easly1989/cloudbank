@@ -85,15 +85,17 @@ switches between them.
   category, payee, payment mode, tags or status on all of them. **Delete**
   removes them.
 - **Filters.**
-  - The filter button narrows the register by:
+  - The **Filters** button opens a panel beside the register (a sheet on a
+    phone) that narrows it by:
     - dates and amounts;
     - payee, category and tags;
     - text;
     - status, or uncategorised only;
     - transfers;
     - whether future rows show.
-  - Active filters show as chips you can remove one by one. On a phone, the
-    button shows how many are on.
+  - The button shows how many filters are on, and its red **×** clears them
+    all. At the top of the panel, each active filter is a chip you can remove
+    on its own.
 - **Columns.** The columns button chooses which columns show. Drag a column's
   edge to resize it. CloudBank remembers your choice.
 - **Privacy.** The eye button hides names and amounts, for when someone is
@@ -433,4 +435,4 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | **Bank sync & AI** | Bank connections ([Automatic bank sync](bank-sync.md)) and the optional AI category suggestions |
 | **Import & export** | Imports ([Importing transactions](import.md)), exports, backups and a database check |
 | **People** | Administrators only: the people who can sign in |
-| **About** | The version, the licence and the source code |
+| **About** | The version, the licence and the source code; for administrators, whether a newer CloudBank is out and the switch for the daily check ([Upgrading](backup.md#upgrading)) |
