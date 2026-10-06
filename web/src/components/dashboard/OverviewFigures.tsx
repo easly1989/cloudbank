@@ -1,14 +1,18 @@
-import { Group, Stack, Text } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
+import { Group, Popover, Stack, Text, UnstyledButton } from "@mantine/core";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
+import { IconChevronDown } from "@tabler/icons-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { CurrencyInfo, MonthPoint } from "../../api/client";
+import type { CurrencyInfo, DashboardAccount, MonthPoint } from "../../api/client";
 import { expenseColor, incomeColor, negativeOnlyColor } from "../../amountTone";
 import { formatMinor } from "../../money";
 import { periodTotals, type BalanceKey } from "./overviewFigureModel";
 import { FIGURES } from "../../pages/overviewTheme";
 import { useCountUp } from "../../motion";
 import { FigureStrip } from "../FigureStrip";
+import { TotalsBreakdown } from "../TotalsBreakdown";
+import { accountsLabel } from "../totalsCount";
 
 /**
  * The figures at the head of the overview: what you have, and what the period
@@ -17,6 +21,9 @@ import { FigureStrip } from "../FigureStrip";
  * The balance is the loudest thing on the page because it is the thing people
  * open the app to read. Earned and spent sit beside it at half its size: they
  * explain the balance rather than compete with it.
+ *
+ * The balance is the sum of the wallet's accounts: its label says how many,
+ * and opens them one by one (#579).
  */
 export function OverviewFigures({
   balances,
@@ -24,12 +31,14 @@ export function OverviewFigures({
   base,
   points,
   locale,
+  accounts = [],
 }: {
   balances: BalanceKey[];
   totals?: { bank: number; today: number; future: number };
   base?: CurrencyInfo;
   points: readonly MonthPoint[];
   locale: string;
+  accounts?: readonly DashboardAccount[];
 }) {
   const { t } = useTranslation();
   const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
@@ -56,7 +65,19 @@ export function OverviewFigures({
         <MoneyFigure
           base={base}
           amount={totals[lead]}
-          label={label[lead]}
+          label={
+            accounts.length > 0 ? (
+              <BreakdownLabel
+                label={`${label[lead]} · ${accountsLabel(t, accounts)}`}
+                accounts={accounts}
+                balance={lead}
+                total={totals[lead]}
+                base={base}
+              />
+            ) : (
+              label[lead]
+            )
+          }
           headline
           colour={negativeOnlyColor(totals[lead])}
         />
@@ -101,13 +122,54 @@ export function OverviewFigures({
   );
 }
 
+/** The headline's label, which opens the accounts its figure adds up. */
+function BreakdownLabel({
+  label,
+  ...breakdown
+}: {
+  label: string;
+  accounts: readonly DashboardAccount[];
+  balance: BalanceKey;
+  total: number;
+  base: CurrencyInfo;
+}) {
+  const [opened, { toggle, close }] = useDisclosure(false);
+  return (
+    <Popover
+      opened={opened}
+      onClose={close}
+      position="bottom-start"
+      width={290}
+      shadow="md"
+      withinPortal
+    >
+      <Popover.Target>
+        <UnstyledButton
+          onClick={toggle}
+          aria-expanded={opened}
+          fz="inherit"
+          c="inherit"
+          lh="inherit"
+          style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+        >
+          {label}
+          <IconChevronDown size={12} opacity={0.6} />
+        </UnstyledButton>
+      </Popover.Target>
+      <Popover.Dropdown>
+        <TotalsBreakdown {...breakdown} withLink onNavigate={close} />
+      </Popover.Dropdown>
+    </Popover>
+  );
+}
+
 function Figure({
   label,
   value,
   headline = false,
   colour,
 }: {
-  label: string;
+  label: ReactNode;
   value: string;
   /** The one figure the page is about; everything else explains it. */
   headline?: boolean;
@@ -150,7 +212,7 @@ function MoneyFigure({
   headline,
   colour,
 }: {
-  label: string;
+  label: ReactNode;
   amount: number;
   base: CurrencyInfo;
   sign?: string;

@@ -2401,6 +2401,23 @@
     "update": "Aggiorna",
     "later": "Più tardi"
   },
+  "totals": {
+    "accounts_one": "{{count}} conto",
+    "accounts_other": "{{count}} conti",
+    "accountsOf_one": "{{count}} di {{total}} conti",
+    "accountsOf_other": "{{count}} di {{total}} conti",
+    "across": {
+      "bank_one": "Riconciliato, su {{count}} conto",
+      "bank_other": "Riconciliato, su {{count}} conti",
+      "today_one": "Oggi, su {{count}} conto",
+      "today_other": "Oggi, su {{count}} conti",
+      "future_one": "Futuro, su {{count}} conto",
+      "future_other": "Futuro, su {{count}} conti"
+    },
+    "total": "Totale",
+    "note": "Non sono contati i conti chiusi e quelli impostati per restare fuori dai totali.",
+    "seeAccounts": "Vedi i conti"
+  },
   "password": {
     "title": "Password",
     "hint": "Cambiala quando vuoi. Gli altri dispositivi dovranno accedere di nuovo; questo resta dentro.",

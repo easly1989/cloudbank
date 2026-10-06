@@ -29,6 +29,10 @@ Every page also has a short tour: the **?** in its header plays it.
 - **The overview.** The period buttons (Month to All time) set the span for the
   figures at the top: the balance today, what came in, what went out, and the
   share you kept.
+- **What the balance adds up.** The balance, here and beside the wallet in the
+  sidebar, is the sum of the wallet's accounts. Its label says how many ("4 of 6
+  accounts" when some are closed or set to stay out of the totals); click it, or
+  the wallet, to see each account's share.
 - **What wants your attention.** When something needs you, like an overdue bill
   or bank transactions to review, a card says so and links to it.
 - **Widgets.** Below the overview, widgets show your accounts, the budget, where
