@@ -2395,6 +2395,12 @@
     "home": "Go to the dashboard",
     "report": "Report the problem"
   },
+  "appUpdate": {
+    "title": "A new version of CloudBank is ready",
+    "body": "Finish what you're doing, then update. The page reloads.",
+    "update": "Update",
+    "later": "Later"
+  },
   "password": {
     "title": "Password",
     "hint": "Change it whenever you like. Other devices will have to sign in again; this one stays signed in.",

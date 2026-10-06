@@ -2395,6 +2395,12 @@
     "home": "Vai al cruscotto",
     "report": "Segnala il problema"
   },
+  "appUpdate": {
+    "title": "È pronta una nuova versione di CloudBank",
+    "body": "Finisci quello che stai facendo, poi aggiorna: la pagina si ricarica.",
+    "update": "Aggiorna",
+    "later": "Più tardi"
+  },
   "password": {
     "title": "Password",
     "hint": "Cambiala quando vuoi. Gli altri dispositivi dovranno accedere di nuovo; questo resta dentro.",
