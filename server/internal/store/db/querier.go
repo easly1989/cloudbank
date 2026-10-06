@@ -123,6 +123,7 @@ type Querier interface {
 	GetEBankingAuth(ctx context.Context, state string) (BankEbankingAuth, error)
 	GetEBankingConfig(ctx context.Context, walletID int64) (BankEbankingConfig, error)
 	GetGoal(ctx context.Context, id int64) (Goal, error)
+	GetInstanceSetting(ctx context.Context, key string) (string, error)
 	GetPayee(ctx context.Context, id int64) (Payee, error)
 	GetPluggyConfig(ctx context.Context, walletID int64) (BankPluggyConfig, error)
 	GetSchedule(ctx context.Context, id int64) (Schedule, error)
@@ -308,6 +309,7 @@ type Querier interface {
 	SetChildrenIncome(ctx context.Context, arg SetChildrenIncomeParams) error
 	SetCurrencyBase(ctx context.Context, id int64) error
 	SetGoalClosed(ctx context.Context, arg SetGoalClosedParams) error
+	SetInstanceSetting(ctx context.Context, arg SetInstanceSettingParams) error
 	SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error
 	SetTransactionImportRef(ctx context.Context, arg SetTransactionImportRefParams) error
 	SetTransactionInfo(ctx context.Context, arg SetTransactionInfoParams) error

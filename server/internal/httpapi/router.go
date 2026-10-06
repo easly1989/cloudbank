@@ -38,6 +38,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/template"
 	"github.com/easly1989/cloudbank/server/internal/transaction"
 	"github.com/easly1989/cloudbank/server/internal/transfer"
+	"github.com/easly1989/cloudbank/server/internal/updates"
 	"github.com/easly1989/cloudbank/server/internal/vehicle"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 	"github.com/easly1989/cloudbank/server/internal/webui"
@@ -129,6 +130,9 @@ type Options struct {
 	OIDCAutoProvision bool
 	// Version is the running build version, surfaced at GET /api/v1/version.
 	Version string
+	// Updates, if non-nil, mounts the admin endpoints of the new-version check
+	// (#582). The demo build leaves it nil.
+	Updates *updates.Service
 	// Demo, if non-nil, makes this the public demo: a one-click start in place
 	// of setup and login; no admin, API tokens, two-factor or backup restore;
 	// the pretend bank in place of the real providers; and the demo's limits on
@@ -213,6 +217,12 @@ func New(opts Options) http.Handler {
 				}
 				if opts.AI != nil {
 					(&aiHandlers{svc: opts.AI}).routes(pr)
+				}
+				if opts.Updates != nil {
+					pr.Group(func(ar chi.Router) {
+						ar.Use(ah.requireAdmin)
+						(&updateHandlers{svc: opts.Updates}).routes(ar)
+					})
 				}
 				if opts.HotBackup != nil {
 					pr.With(ah.requireAdmin).Get("/admin/backup",

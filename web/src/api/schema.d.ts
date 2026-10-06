@@ -754,6 +754,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/updates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The new-version check, as last answered (admin only)
+         * @description Once a day the server reads the published versions and compares them with its own build (#582). Nothing is sent.
+         */
+        get: operations["getUpdateStatus"];
+        /** Turn the new-version check on or off (admin only) */
+        put: operations["setUpdateCheck"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/updates/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Look for a newer CloudBank now (admin only) */
+        post: operations["checkForUpdates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/backup/restore": {
         parameters: {
             query?: never;
@@ -2789,6 +2827,30 @@ export interface components {
              * @description the revision the change started from; omit to write regardless
              */
             preferencesRevision?: number;
+        };
+        UpdateStatus: {
+            /** @description the admin's choice (on unless turned off) */
+            enabled: boolean;
+            /** @description false when CB_UPDATE_CHECK=false turns the check off for the installation */
+            allowed: boolean;
+            /**
+             * @description read from the build's version; empty for a local build, which is never checked
+             * @enum {string}
+             */
+            channel: "stable" | "nightly" | "";
+            /** @description this build's version, e.g. v3.6.1 or nightly-33f8c80 */
+            current: string;
+            /** @description the newest version published on the channel, once a check has answered */
+            latest?: string;
+            available: boolean;
+            /** @description RFC3339 time the latest version was published */
+            published?: string;
+            /** @description the release notes (stable) or the commits since this build (nightly) */
+            releaseUrl?: string;
+            /** @description RFC3339 time of the last check */
+            checkedAt?: string;
+            /** @description why the last check had no answer */
+            error?: string;
         };
         /** @description A user's AI configuration. The API key is never returned; only hasKey. */
         AISettings: {
@@ -5687,6 +5749,76 @@ export interface operations {
                 };
                 content: {
                     "application/octet-stream": string;
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getUpdateStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The check. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateStatus"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    setUpdateCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    enabled: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description The check after the change; turning it on runs it. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateStatus"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    checkForUpdates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The check. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateStatus"];
                 };
             };
             403: components["responses"]["Forbidden"];
