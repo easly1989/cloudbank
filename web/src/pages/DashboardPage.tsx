@@ -441,6 +441,7 @@ export function DashboardPage() {
       <OverviewFigures
         balances={balances}
         totals={data?.totals}
+        accounts={data?.accounts}
         base={base}
         points={periodQuery.data?.incomeExpense ?? []}
         locale={i18n.resolvedLanguage ?? "en"}
