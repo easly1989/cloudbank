@@ -8,6 +8,7 @@ question comes back, start here instead of from scratch.
 |---|---|---|
 | [sqlite-load-test.md](sqlite-load-test.md) | Does SQLite hold up at 100k transactions, and where does the time go? | Keep SQLite; the slow reports were one non-covering index (#541, #542). |
 | [turso-libsql.md](turso-libsql.md) | Would turso or libSQL be a better engine than `modernc.org/sqlite`? | Not now: turso lacks explicit window frames and is pre-1.0; libSQL's Go driver needs cgo and has no Windows build. |
+| [i18n-terms.md](i18n-terms.md) | Which terms do personal-finance apps and banks use for CloudBank's concepts in es / fr / de / pt-BR? | Terms confirmed for all 22 concepts; 5 open ambiguities (wallet concept, es cleared status, de schedule breadth, fr pointée vs rapprochée, pt-BR lançamento vs transação) need native-speaker review before translation starts. |
 
 ## Writing one
 
