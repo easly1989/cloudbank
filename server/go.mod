@@ -1,6 +1,6 @@
 module github.com/easly1989/cloudbank/server
 
-go 1.26.6
+go 1.27.1
 
 require (
 	github.com/SherClockHolmes/webpush-go v1.4.0
