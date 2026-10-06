@@ -13,3 +13,4 @@ export * from "./banksync";
 export * from "./automation";
 export * from "./finance";
 export * from "./imports";
+export * from "./updates";

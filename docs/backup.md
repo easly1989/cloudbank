@@ -81,6 +81,19 @@ import or a rule applied to everything. It is not a replacement for the above.
 
 ## Upgrading
 
+**Knowing when.** Once a day CloudBank looks up the latest published version
+and, when yours is older, tells admins: a card at the foot of the menu, and the
+same news in **Settings → About**. Its **How to update** button shows the steps
+below. Only the version number is fetched; nothing about you is sent. Turn it
+off in **Settings → About**, or for the whole server with
+`CB_UPDATE_CHECK=false`.
+
+CloudBank does not update itself. Replacing its own container would need
+access to the Docker socket, and whoever holds that socket controls the whole
+host. If you want updates to happen on their own, a tool outside CloudBank,
+such as [Watchtower](https://containrrr.dev/watchtower/), can pull new images
+for you.
+
 1. **Read what changed:** the release notes on
    [GitHub](https://github.com/easly1989/cloudbank/releases), or
    [CHANGELOG.md](../CHANGELOG.md).

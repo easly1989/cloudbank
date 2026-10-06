@@ -4,6 +4,7 @@ import {
   Burger,
   Center,
   Group,
+  Indicator,
   Loader,
   ScrollArea,
   Stack,
@@ -33,6 +34,8 @@ import { NewNavPagesNotice } from "./NewNavPagesNotice";
 import { PageErrorBoundary } from "./PageErrorBoundary";
 import { SidebarFoot } from "./SidebarFoot";
 import { SidebarHead } from "./SidebarHead";
+import { UpdateCard } from "./updates/UpdateCard";
+import { useUpdateCard } from "./updates/updateModel";
 import { SidebarNav } from "./SidebarNav";
 
 export function AppLayout() {
@@ -43,6 +46,7 @@ export function AppLayout() {
   const qc = useQueryClient();
   const { setColorScheme } = useMantineColorScheme();
   const location = useLocation();
+  const updateCard = useUpdateCard();
 
   // Desktop sidebar collapse to an icon-only rail, remembered per user. The rail
   // only applies on desktop; the mobile drawer always shows full labels.
@@ -95,7 +99,16 @@ export function AppLayout() {
     >
       <AppShell.Header hiddenFrom="sm">
         <Group h="100%" px="md" gap="xs" wrap="nowrap">
-          <Burger opened={opened} onClick={toggle} size="sm" aria-label={t("nav.toggleSidebar")} />
+          {/* On a phone the menu hides the update card, so its button says
+              there is something in it (#582). */}
+          <Indicator inline disabled={!updateCard.visible || opened} size={8} offset={12}>
+            <Burger
+              opened={opened}
+              onClick={toggle}
+              size="sm"
+              aria-label={t("nav.toggleSidebar")}
+            />
+          </Indicator>
           <Logo size={22} />
           <Text fw={700} truncate>
             {currentWallet?.title ?? t("app.name")}
@@ -118,6 +131,8 @@ export function AppLayout() {
           </ScrollArea>
           {/* Pages added since a customised menu was saved (#537). */}
           {!railMode && <NewNavPagesNotice />}
+          {/* A newer CloudBank is out, for admins (#582). */}
+          {!railMode && <UpdateCard />}
           <SidebarFoot railMode={railMode} onNavigate={close} onToggleCollapse={toggleCollapsed} />
         </Stack>
       </AppShell.Navbar>

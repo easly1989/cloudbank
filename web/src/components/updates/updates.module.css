@@ -1,0 +1,46 @@
+.card {
+  position: relative;
+  padding: 10px 12px;
+  border: 1px solid var(--mantine-primary-color-filled);
+  border-radius: 8px;
+  background: var(--mantine-primary-color-light);
+}
+
+.close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.command {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 2px 4px 2px 0;
+  border-radius: 6px;
+  background: var(--mantine-color-default-hover);
+}
+
+.code {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  white-space: pre-wrap;
+}
+
+.status {
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: 8px;
+}
+
+.statusRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.statusRow + .statusRow {
+  border-top: 1px solid var(--mantine-color-default-border);
+}

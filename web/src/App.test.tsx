@@ -130,6 +130,10 @@ describe("App routing", () => {
       "/api/v1/auth/me": { body: admin },
       "/api/v1/wallets": { body: [wallet] },
       "/api/v1/version": { body: { version: "test" } },
+      // The admin's new-version check (#582): a local build, never checked.
+      "/api/v1/admin/updates": {
+        body: { enabled: true, allowed: true, channel: "", current: "test", available: false },
+      },
       "/api/v1/wallets/1/dashboard": {
         body: {
           // One real account, so the assertion below proves the response was

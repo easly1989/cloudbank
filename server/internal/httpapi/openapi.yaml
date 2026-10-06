@@ -667,6 +667,37 @@ paths:
       responses:
         "200": { description: A SQLite database file., content: { application/octet-stream: { schema: { type: string, format: binary } } } }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/admin/updates:
+    get:
+      operationId: getUpdateStatus
+      summary: The new-version check, as last answered (admin only)
+      description: Once a day the server reads the published versions and compares them with its own build (#582). Nothing is sent.
+      responses:
+        "200": { description: The check., content: { application/json: { schema: { $ref: "#/components/schemas/UpdateStatus" } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      operationId: setUpdateCheck
+      summary: Turn the new-version check on or off (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled: { type: boolean }
+              required: [enabled]
+      responses:
+        "200": { description: The check after the change; turning it on runs it., content: { application/json: { schema: { $ref: "#/components/schemas/UpdateStatus" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/admin/updates/check:
+    post:
+      operationId: checkForUpdates
+      summary: Look for a newer CloudBank now (admin only)
+      responses:
+        "200": { description: The check., content: { application/json: { schema: { $ref: "#/components/schemas/UpdateStatus" } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /api/v1/backup/restore:
     post:
       operationId: restoreBackup
@@ -2704,6 +2735,20 @@ components:
         theme: { type: string }
         preferences: { type: object, additionalProperties: true }
         preferencesRevision: { type: integer, format: int64, description: "the revision the change started from; omit to write regardless" }
+    UpdateStatus:
+      type: object
+      properties:
+        enabled: { type: boolean, description: "the admin's choice (on unless turned off)" }
+        allowed: { type: boolean, description: "false when CB_UPDATE_CHECK=false turns the check off for the installation" }
+        channel: { type: string, enum: [stable, nightly, ""], description: "read from the build's version; empty for a local build, which is never checked" }
+        current: { type: string, description: "this build's version, e.g. v3.6.1 or nightly-33f8c80" }
+        latest: { type: string, description: "the newest version published on the channel, once a check has answered" }
+        available: { type: boolean }
+        published: { type: string, description: "RFC3339 time the latest version was published" }
+        releaseUrl: { type: string, description: "the release notes (stable) or the commits since this build (nightly)" }
+        checkedAt: { type: string, description: "RFC3339 time of the last check" }
+        error: { type: string, description: "why the last check had no answer" }
+      required: [enabled, allowed, channel, current, available]
     AISettings:
       type: object
       description: A user's AI configuration. The API key is never returned; only hasKey.

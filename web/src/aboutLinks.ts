@@ -11,6 +11,9 @@ export const DONATE_URL = "https://easly1989.github.io/donate.html";
 // The user guides live with the code; the link is to main, since the guides
 // are newer than some releases still running (#522).
 export const GUIDE_URL = "https://github.com/easly1989/cloudbank/blob/main/docs/README.md";
+// How to update the server, and what to do before (#582).
+export const UPGRADE_URL =
+  "https://github.com/easly1989/cloudbank/blob/main/docs/backup.md#upgrading";
 export const HOMEBANK_URL = "http://homebank.free.fr";
 export const API_DOCS_URL = "/api/docs";
 

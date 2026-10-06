@@ -38,6 +38,10 @@ type Config struct {
 	// so this only bounds how promptly a due connection is picked up. Zero disables
 	// background bank sync entirely (manual "Sync now" still works).
 	BankSyncInterval time.Duration
+	// UpdateCheck lets the server look, once a day, for a newer CloudBank and
+	// tell admins (#582). CB_UPDATE_CHECK=false turns it off for the whole
+	// installation, whatever an admin chooses in Settings.
+	UpdateCheck bool
 
 	// OIDC/SSO login. When Issuer, ClientID, ClientSecret and RedirectURL are all
 	// set (see OIDCEnabled), a "Sign in with <OIDCName>" button is offered on the
@@ -99,6 +103,7 @@ func Load() Config {
 		VAPIDSubject:     getenv("CB_VAPID_SUBJECT", "mailto:cloudbank@localhost"),
 		SecretKey:        getenv("CB_SECRET_KEY", ""),
 		BankSyncInterval: getDurationEnv("CB_BANK_SYNC_INTERVAL", time.Hour),
+		UpdateCheck:      getBoolEnv("CB_UPDATE_CHECK", true),
 
 		OIDCIssuer:        getenv("CB_OIDC_ISSUER", ""),
 		OIDCClientID:      getenv("CB_OIDC_CLIENT_ID", ""),
