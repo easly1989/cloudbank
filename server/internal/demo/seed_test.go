@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/importer"
+	"github.com/easly1989/cloudbank/server/internal/locale"
 )
 
 func cents(t *testing.T, s string) int64 {
@@ -33,8 +34,8 @@ func TestSeedHoldsOnEveryDay(t *testing.T) {
 	start := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	for day := 0; day < 540; day++ {
 		today := start.AddDate(0, 0, day)
-		for _, italian := range []bool{false, true} {
-			x := seedFile(today, italian)
+		for _, lang := range locale.Supported {
+			x := seedFile(today, lang)
 			first, last := julian(today.AddDate(-1, 0, 0)), julian(today)
 			type key struct {
 				account int
@@ -84,6 +85,28 @@ func checkTransfers(t *testing.T, today time.Time, x *importer.XHB) {
 	for k, pair := range legs {
 		if len(pair) != 2 || cents(t, pair[0].Amount) != -cents(t, pair[1].Amount) {
 			t.Fatalf("%s: transfer %d is not two matching legs: %+v", today.Format("2006-01-02"), k, pair)
+		}
+	}
+}
+
+// Every language CloudBank speaks has the demo's words, all of them: a new
+// language without its block would quietly show the English demo.
+func TestWordsForEveryLanguage(t *testing.T) {
+	for _, lang := range locale.Supported {
+		block, ok := words[lang]
+		if !ok {
+			t.Errorf("no demo words for %q", lang)
+			continue
+		}
+		for key := range words[locale.Default] {
+			if block[key] == "" {
+				t.Errorf("%s: no demo word for %q", lang, key)
+			}
+		}
+		for key := range block {
+			if _, ok := words[locale.Default][key]; !ok {
+				t.Errorf("%s: %q is not an English key", lang, key)
+			}
 		}
 	}
 }

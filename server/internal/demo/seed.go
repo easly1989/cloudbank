@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/importer"
+	"github.com/easly1989/cloudbank/server/internal/locale"
 )
 
 // The demo wallet is described the way a HomeBank file describes one and goes
@@ -89,80 +90,152 @@ const (
 	asgDoCategory = 1 << 1
 )
 
-// words holds every name the seed shows, in English and Italian.
-var words = map[string][2]string{
-	"wallet":     {"Demo wallet", "Portafoglio demo"},
-	"checking":   {"Checking", "Conto corrente"},
-	"savings":    {"Savings", "Risparmi"},
-	"card":       {"Credit card", "Carta di credito"},
-	"cash":       {"Cash", "Contanti"},
-	"bank":       {"Demo Bank", "Banca Demo"},
-	"employer":   {"Employer", "Datore di lavoro"},
-	"landlord":   {"Landlord", "Padrone di casa"},
-	"energy":     {"Energy supplier", "Fornitore di energia"},
-	"internet":   {"Internet provider", "Provider internet"},
-	"super":      {"Supermarket", "Supermercato"},
-	"market":     {"Local market", "Mercato rionale"},
-	"restaurant": {"Restaurant", "Ristorante"},
-	"cafe":       {"Café", "Bar"},
-	"petrol":     {"Petrol station", "Distributore"},
-	"transitPay": {"City transit", "Trasporto urbano"},
-	"streaming":  {"Streaming service", "Servizio di streaming"},
-	"gym":        {"Gym", "Palestra"},
-	"pharmacy":   {"Pharmacy", "Farmacia"},
-	"clothes":    {"Clothes shop", "Negozio di abbigliamento"},
-	"bookshop":   {"Bookshop", "Libreria"},
-	"hotel":      {"Seaside hotel", "Hotel al mare"},
-	"income":     {"Income", "Entrate"},
-	"salary":     {"Salary", "Stipendio"},
-	"other":      {"Other income", "Altre entrate"},
-	"home":       {"Home", "Casa"},
-	"rent":       {"Rent", "Affitto"},
-	"utilities":  {"Utilities", "Utenze"},
-	"phone":      {"Internet & phone", "Internet e telefono"},
-	"food":       {"Food", "Alimentari"},
-	"groceries":  {"Groceries", "Spesa"},
-	"eatingOut":  {"Restaurants", "Ristoranti"},
-	"transport":  {"Transport", "Trasporti"},
-	"fuel":       {"Fuel", "Carburante"},
-	"transit":    {"Public transport", "Trasporto pubblico"},
-	"leisure":    {"Leisure", "Tempo libero"},
-	"subs":       {"Subscriptions", "Abbonamenti"},
-	"sport":      {"Sport", "Sport"},
-	"books":      {"Books", "Libri"},
-	"holidays":   {"Holidays", "Vacanze"},
-	"health":     {"Health", "Salute"},
-	"clothing":   {"Clothing", "Abbigliamento"},
-	"gifts":      {"Gifts", "Regali"},
-	"tagHoliday": {"holiday", "vacanza"},
-	// A tag is one word: HomeBank's file separates them with spaces.
-	"tagCar":       {"car", "auto"},
-	"tagRefund":    {"reimbursable", "rimborsabile"},
-	"tagChristmas": {"christmas", "natale"},
-	"tagHome":      {"home-office", "smart-working"},
-	"weekly":       {"Weekly shop", "Spesa settimanale"},
-	"coffee":       {"Coffee", "Caffè"},
-	"household":    {"Household items", "Articoli per la casa"},
-	"topUp":        {"Monthly saving", "Risparmio mensile"},
-	"payOff":       {"Card balance", "Saldo carta"},
-	"withdraw":     {"Cash withdrawal", "Prelievo"},
-	"pass":         {"Monthly pass", "Abbonamento mensile"},
-	"bonus":        {"Bonus", "Premio"},
-	"refund":       {"Refund", "Rimborso"},
-	"goalTrip":     {"Summer trip", "Viaggio d'estate"},
-	"goalBuffer":   {"Rainy-day fund", "Fondo imprevisti"},
-	"goalTickets":  {"Concert tickets", "Biglietti del concerto"},
-	"goalBike":     {"New bike", "Bici nuova"},
-	"goalSofa":     {"New sofa", "Divano nuovo"},
-	"goalNote":     {"Made-up goal: change it, top it up, delete it.", "Obiettivo inventato: modificalo, aggiungi, eliminalo."},
-	"car":          {"Family car", "Auto di famiglia"},
-	"carNotes":     {"Petrol · service every 15,000 km", "Benzina · tagliando ogni 15.000 km"},
-	"scooter":      {"Scooter", "Scooter"},
+// words holds every name the seed shows, per language (internal/locale's
+// codes). A language without its own block gets the English one; the tests ask
+// every listed language for a block with every key.
+var words = map[string]map[string]string{
+	"en": {
+		"wallet":     "Demo wallet",
+		"checking":   "Checking",
+		"savings":    "Savings",
+		"card":       "Credit card",
+		"cash":       "Cash",
+		"bank":       "Demo Bank",
+		"employer":   "Employer",
+		"landlord":   "Landlord",
+		"energy":     "Energy supplier",
+		"internet":   "Internet provider",
+		"super":      "Supermarket",
+		"market":     "Local market",
+		"restaurant": "Restaurant",
+		"cafe":       "Café",
+		"petrol":     "Petrol station",
+		"transitPay": "City transit",
+		"streaming":  "Streaming service",
+		"gym":        "Gym",
+		"pharmacy":   "Pharmacy",
+		"clothes":    "Clothes shop",
+		"bookshop":   "Bookshop",
+		"hotel":      "Seaside hotel",
+		"income":     "Income",
+		"salary":     "Salary",
+		"other":      "Other income",
+		"home":       "Home",
+		"rent":       "Rent",
+		"utilities":  "Utilities",
+		"phone":      "Internet & phone",
+		"food":       "Food",
+		"groceries":  "Groceries",
+		"eatingOut":  "Restaurants",
+		"transport":  "Transport",
+		"fuel":       "Fuel",
+		"transit":    "Public transport",
+		"leisure":    "Leisure",
+		"subs":       "Subscriptions",
+		"sport":      "Sport",
+		"books":      "Books",
+		"holidays":   "Holidays",
+		"health":     "Health",
+		"clothing":   "Clothing",
+		"gifts":      "Gifts",
+		"tagHoliday": "holiday",
+		// A tag is one word: HomeBank's file separates them with spaces.
+		"tagCar":       "car",
+		"tagRefund":    "reimbursable",
+		"tagChristmas": "christmas",
+		"tagHome":      "home-office",
+		"weekly":       "Weekly shop",
+		"coffee":       "Coffee",
+		"household":    "Household items",
+		"topUp":        "Monthly saving",
+		"payOff":       "Card balance",
+		"withdraw":     "Cash withdrawal",
+		"pass":         "Monthly pass",
+		"bonus":        "Bonus",
+		"refund":       "Refund",
+		"goalTrip":     "Summer trip",
+		"goalBuffer":   "Rainy-day fund",
+		"goalTickets":  "Concert tickets",
+		"goalBike":     "New bike",
+		"goalSofa":     "New sofa",
+		"goalNote":     "Made-up goal: change it, top it up, delete it.",
+		"car":          "Family car",
+		"carNotes":     "Petrol · service every 15,000 km",
+		"scooter":      "Scooter",
+	},
+	"it": {
+		"wallet":       "Portafoglio demo",
+		"checking":     "Conto corrente",
+		"savings":      "Risparmi",
+		"card":         "Carta di credito",
+		"cash":         "Contanti",
+		"bank":         "Banca Demo",
+		"employer":     "Datore di lavoro",
+		"landlord":     "Padrone di casa",
+		"energy":       "Fornitore di energia",
+		"internet":     "Provider internet",
+		"super":        "Supermercato",
+		"market":       "Mercato rionale",
+		"restaurant":   "Ristorante",
+		"cafe":         "Bar",
+		"petrol":       "Distributore",
+		"transitPay":   "Trasporto urbano",
+		"streaming":    "Servizio di streaming",
+		"gym":          "Palestra",
+		"pharmacy":     "Farmacia",
+		"clothes":      "Negozio di abbigliamento",
+		"bookshop":     "Libreria",
+		"hotel":        "Hotel al mare",
+		"income":       "Entrate",
+		"salary":       "Stipendio",
+		"other":        "Altre entrate",
+		"home":         "Casa",
+		"rent":         "Affitto",
+		"utilities":    "Utenze",
+		"phone":        "Internet e telefono",
+		"food":         "Alimentari",
+		"groceries":    "Spesa",
+		"eatingOut":    "Ristoranti",
+		"transport":    "Trasporti",
+		"fuel":         "Carburante",
+		"transit":      "Trasporto pubblico",
+		"leisure":      "Tempo libero",
+		"subs":         "Abbonamenti",
+		"sport":        "Sport",
+		"books":        "Libri",
+		"holidays":     "Vacanze",
+		"health":       "Salute",
+		"clothing":     "Abbigliamento",
+		"gifts":        "Regali",
+		"tagHoliday":   "vacanza",
+		"tagCar":       "auto",
+		"tagRefund":    "rimborsabile",
+		"tagChristmas": "natale",
+		"tagHome":      "smart-working",
+		"weekly":       "Spesa settimanale",
+		"coffee":       "Caffè",
+		"household":    "Articoli per la casa",
+		"topUp":        "Risparmio mensile",
+		"payOff":       "Saldo carta",
+		"withdraw":     "Prelievo",
+		"pass":         "Abbonamento mensile",
+		"bonus":        "Premio",
+		"refund":       "Rimborso",
+		"goalTrip":     "Viaggio d'estate",
+		"goalBuffer":   "Fondo imprevisti",
+		"goalTickets":  "Biglietti del concerto",
+		"goalBike":     "Bici nuova",
+		"goalSofa":     "Divano nuovo",
+		"goalNote":     "Obiettivo inventato: modificalo, aggiungi, eliminalo.",
+		"car":          "Auto di famiglia",
+		"carNotes":     "Benzina · tagliando ogni 15.000 km",
+		"scooter":      "Scooter",
+	},
 }
 
 // seeder builds the file for one language.
 type seeder struct {
-	lang  int // 0 = English, 1 = Italian
+	lang  string // a locale code
 	today time.Time
 	rng   *rand.Rand
 	x     *importer.XHB
@@ -206,11 +279,11 @@ func (s *seeder) book(account int, d time.Time, cents int64) {
 }
 
 func (s *seeder) w(key string) string {
-	v, ok := words[key]
+	v, ok := locale.Pick(words, s.lang)[key]
 	if !ok {
 		panic("demo seed: no words for " + key)
 	}
-	return v[s.lang]
+	return v
 }
 
 // amount renders cents as HomeBank writes an amount.
@@ -330,16 +403,14 @@ func (s *seeder) split(d time.Time, food, house int64) {
 }
 
 // seedFile describes the demo wallet: a year of made-up money ending today.
-func seedFile(today time.Time, italian bool) *importer.XHB {
+func seedFile(today time.Time, lang string) *importer.XHB {
 	s := &seeder{
+		lang:      lang,
 		today:     time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC),
 		rng:       rand.New(rand.NewPCG(420, 2026)),
 		x:         &importer.XHB{Version: "1.6"},
 		cardSpend: map[time.Month]int64{},
 		booked:    map[int]map[int64][]time.Time{},
-	}
-	if italian {
-		s.lang = 1
 	}
 	x := s.x
 	x.Properties = importer.XProperties{Title: s.w("wallet"), Curr: 1}

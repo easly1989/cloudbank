@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/auth"
+	"github.com/easly1989/cloudbank/server/internal/locale"
 )
 
 const sessionCookie = "cb_session"
@@ -279,9 +280,14 @@ func (h *authHandlers) updateMe(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &in) {
 		return
 	}
-	locale := in.Locale
-	if locale == "" {
-		locale = user.Locale
+	lang := user.Locale
+	if in.Locale != "" {
+		code, ok := locale.Normalize(in.Locale)
+		if !ok {
+			writeError(w, http.StatusBadRequest, "invalid_locale", "CloudBank does not speak that language")
+			return
+		}
+		lang = code
 	}
 	theme := in.Theme
 	if theme == "" {
@@ -291,7 +297,7 @@ func (h *authHandlers) updateMe(w http.ResponseWriter, r *http.Request) {
 	if prefs == "" {
 		prefs = user.Preferences
 	}
-	updated, err := h.svc.UpdateSettingsAt(r.Context(), user.ID, locale, theme, prefs, in.PreferencesRevision)
+	updated, err := h.svc.UpdateSettingsAt(r.Context(), user.ID, lang, theme, prefs, in.PreferencesRevision)
 	if errors.Is(err, auth.ErrStalePreferences) {
 		writeError(w, http.StatusConflict, "stale_preferences", "the preferences were saved elsewhere since; read them again")
 		return

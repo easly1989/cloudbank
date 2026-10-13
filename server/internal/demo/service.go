@@ -28,6 +28,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/config"
 	"github.com/easly1989/cloudbank/server/internal/goal"
 	"github.com/easly1989/cloudbank/server/internal/importer"
+	"github.com/easly1989/cloudbank/server/internal/locale"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -190,12 +191,12 @@ func (s *Service) Start(ctx context.Context, ip, acceptLanguage, userAgent strin
 		_ = s.deleteUser(ctx, id)
 		return auth.User{}, "", err
 	}
-	locale := Language(acceptLanguage)
-	u, err = s.auth.UpdateSettings(ctx, id, locale, "auto", "{}")
+	lang := locale.FromAcceptLanguage(acceptLanguage)
+	u, err = s.auth.UpdateSettings(ctx, id, lang, "auto", "{}")
 	if err != nil {
 		return fail(err)
 	}
-	if err := s.fill(ctx, id, locale == "it"); err != nil {
+	if err := s.fill(ctx, id, lang); err != nil {
 		return fail(err)
 	}
 	token, err := s.auth.IssueSession(ctx, id, userAgent)
@@ -208,17 +209,13 @@ func (s *Service) Start(ctx context.Context, ip, acceptLanguage, userAgent strin
 // fill gives a new demo account its wallet: the seeded year, savings goals in
 // each state (two open, one reached and waiting to be closed, two in the
 // history), and a connection to the pretend bank linked to the checking account.
-func (s *Service) fill(ctx context.Context, userID int64, italian bool) error {
+func (s *Service) fill(ctx context.Context, userID int64, lang string) error {
 	today := s.now().UTC()
-	res, err := s.imp.ImportXHB(ctx, userID, seedFile(today, italian))
+	res, err := s.imp.ImportXHB(ctx, userID, seedFile(today, lang))
 	if err != nil {
 		return err
 	}
-	lang := 0
-	if italian {
-		lang = 1
-	}
-	w := func(key string) string { return words[key][lang] }
+	w := func(key string) string { return locale.Pick(words, lang)[key] }
 
 	accounts, err := s.q.ListAccountsForWallet(ctx, res.WalletID)
 	if err != nil {
@@ -380,21 +377,6 @@ func (s *Service) Run(ctx context.Context, logger *slog.Logger) {
 			night.Reset(time.Until(NextNightly(s.now())))
 		}
 	}
-}
-
-// Language picks the demo's language from an Accept-Language header: the
-// first of Italian or English the browser names, English when it names neither.
-func Language(acceptLanguage string) string {
-	for _, part := range strings.Split(acceptLanguage, ",") {
-		tag := strings.ToLower(strings.TrimSpace(strings.SplitN(part, ";", 2)[0]))
-		switch {
-		case tag == "it" || strings.HasPrefix(tag, "it-"):
-			return "it"
-		case tag == "en" || strings.HasPrefix(tag, "en-"):
-			return "en"
-		}
-	}
-	return "en"
 }
 
 // Visitor names the address a demo is started from. With hops at 0 it is the
