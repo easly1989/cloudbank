@@ -1,17 +1,17 @@
 import { Button, Checkbox, SegmentedControl, Text, TextInput } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconCheck, IconMinus, IconPlus } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ApiError, addGoalContribution, closeGoal } from "../../api/client";
+import { addGoalContribution, closeGoal } from "../../api/client";
 import { SideSheet } from "../../components/SideSheet";
 import { type MoneyFormat, minorToInput } from "../../money";
 import { useAmountParser } from "../../useAmountParser";
 import { type GoalLine, monthIndex } from "./goalList";
 import { type Money, useMonthName } from "./goalWords";
 import classes from "./goals.module.css";
+import { notifyError } from "../../notifyError";
 
 export type Direction = "in" | "out";
 
@@ -90,10 +90,7 @@ export function MoneySheet({
     onError: (err: unknown) => {
       // The money may have gone in before the close failed.
       onSaved();
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      });
+      notifyError(err);
     },
   });
 

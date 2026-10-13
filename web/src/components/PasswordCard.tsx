@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 
 import { ApiError, changePassword } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
+import { notifyError } from "../notifyError";
 
 const MIN_LENGTH = 8;
 
@@ -39,10 +40,7 @@ export function PasswordCard() {
         setWrongCurrent(true);
         return;
       }
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      });
+      notifyError(err);
     },
   });
 

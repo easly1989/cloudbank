@@ -1,5 +1,4 @@
 import { ActionIcon, Button, Menu, Select, Text, TextInput } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconDots, IconMinus, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -7,7 +6,6 @@ import { useTranslation } from "react-i18next";
 
 import {
   type Account,
-  ApiError,
   createGoal,
   deleteGoalContribution,
   listGoalContributions,
@@ -22,6 +20,7 @@ import { useDayMonth } from "../categories/labels";
 import { type GoalLine, monthIndex } from "./goalList";
 import { type GoalActions, type Money, useMonthName } from "./goalWords";
 import classes from "./goals.module.css";
+import { notifyError } from "../../notifyError";
 
 /** A new goal's starting values, from one of the empty page's examples. */
 export interface GoalPreset {
@@ -30,11 +29,7 @@ export interface GoalPreset {
   targetDate?: string;
 }
 
-const showError = (err: unknown) =>
-  notifications.show({
-    color: "red",
-    message: err instanceof ApiError ? err.message : String(err),
-  });
+const showError = (err: unknown) => notifyError(err);
 
 /**
  * A goal in the sheet beside the page (#572): its name, target and date, the

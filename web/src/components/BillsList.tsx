@@ -5,10 +5,11 @@ import { EmptyState } from "./EmptyState";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
-import { ApiError, type Bill, type BillState, getBills, postScheduleNow } from "../api/client";
+import { type Bill, type BillState, getBills, postScheduleNow } from "../api/client";
 import { useDateFormat } from "../dates";
 import { formatMinor } from "../money";
 import { amountColor, errorColor } from "../amountTone";
+import { notifyError } from "../notifyError";
 
 const STATE_COLOR: Record<BillState, string> = {
   overdue: "red",
@@ -54,11 +55,7 @@ export function BillsList({
       refresh();
       notifications.show({ color: "green", message: t("bills.marked"), autoClose: 1600 });
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const stateLabel = (s: BillState) => t(`bills.state.${s}`);

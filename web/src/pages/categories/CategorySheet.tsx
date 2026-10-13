@@ -9,7 +9,6 @@ import {
   Switch,
   TextInput,
 } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconDots } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
@@ -17,7 +16,6 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import {
-  ApiError,
   createCategory,
   updateCategory,
   type Category,
@@ -30,6 +28,7 @@ import { sameName } from "../../sameName";
 import classes from "./categories.module.css";
 import type { CategoryNode } from "./categoryTree";
 import { useDayMonth, useSince } from "./labels";
+import { notifyError } from "../../notifyError";
 
 const NONE = "none";
 
@@ -127,11 +126,7 @@ export function CategorySheet({
       onSaved();
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const kindLabel = (income: boolean) =>

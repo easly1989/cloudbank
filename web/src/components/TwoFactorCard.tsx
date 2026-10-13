@@ -20,8 +20,9 @@ import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ApiError, type TotpSetup, disable2fa, enable2fa, getMe, setup2fa } from "../api/client";
+import { type TotpSetup, disable2fa, enable2fa, getMe, setup2fa } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
+import { notifyError } from "../notifyError";
 
 // TwoFactorCard shows the account's 2FA status and drives enable (QR + confirm →
 // recovery codes) and disable (password re-auth).
@@ -35,11 +36,7 @@ export function TwoFactorCard() {
   const [disableOpen, setDisableOpen] = useState(false);
 
   const refreshMe = async () => qc.setQueryData(["me"], await getMe());
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
 
   return (
     <Card withBorder>
@@ -136,11 +133,7 @@ function EnrollModal({
   const enable = useMutation({
     mutationFn: () => enable2fa(setup!.secret, code.trim()),
     onSuccess: (res) => setRecoveryCodes(res.recoveryCodes),
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const finish = () => {

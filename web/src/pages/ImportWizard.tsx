@@ -23,7 +23,6 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import {
-  ApiError,
   CSV_FIELDS,
   commitImport,
   listAccounts,
@@ -42,6 +41,7 @@ import {
 } from "../api/client";
 import { formatMinor } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
+import { ErrorMessage } from "../components/ErrorMessage";
 
 type Format = "homebank" | "generic" | "qif" | "ofx" | "camt" | "plugin";
 type Phase = "source" | "map" | "review" | "done";
@@ -118,7 +118,7 @@ export function ImportWizard() {
   const [applyRules, setApplyRules] = useState(false);
   const [created, setCreated] = useState(0);
   const [updated, setUpdated] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   const showMapping = format === "generic";
 
@@ -179,7 +179,7 @@ export function ImportWizard() {
 
   const preview = useMutation({
     mutationFn: runPreview,
-    onError: (err: unknown) => setError(err instanceof ApiError ? err.message : String(err)),
+    onError: (err: unknown) => setError(err),
   });
 
   const commit = useMutation({
@@ -206,7 +206,7 @@ export function ImportWizard() {
       setUpdated(res.updated ?? 0);
       setPhase("done");
     },
-    onError: (err: unknown) => setError(err instanceof ApiError ? err.message : String(err)),
+    onError: (err: unknown) => setError(err),
   });
 
   const onPickFile = (file: File | null) => {
@@ -291,9 +291,9 @@ export function ImportWizard() {
         <Stepper.Step label={t("importCsv.steps.done")} />
       </Stepper>
 
-      {error && (
+      {error != null && (
         <Alert color="red" icon={<IconAlertTriangle size={16} />}>
-          {error}
+          <ErrorMessage error={error} />
         </Alert>
       )}
 

@@ -1,6 +1,5 @@
 import { Button, Stack } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
 import { IconFileText } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -8,7 +7,6 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import {
-  ApiError,
   deleteTemplate,
   getTemplateUsage,
   listCategories,
@@ -30,6 +28,7 @@ import { buildGroups, usedKey, type TemplateRow } from "./templates/templateList
 import classes from "./templates/templates.module.css";
 import { TemplateSheet } from "./templates/TemplateSheet";
 import { TemplatePhoneList, TemplateTable } from "./templates/TemplateTable";
+import { notifyError } from "../notifyError";
 
 /**
  * Templates (#560): the ones kept for quick entry, with how often each was
@@ -107,11 +106,7 @@ export function TemplatesPage() {
   const remove = useMutation({
     mutationFn: (id: number) => deleteTemplate(walletId, id),
     onSuccess: invalidate,
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const [sheetOpen, setSheetOpen] = useState(false);

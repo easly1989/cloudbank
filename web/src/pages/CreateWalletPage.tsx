@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { ApiError, createWallet, getCurrencyCatalog } from "../api/client";
+import { createWallet, getCurrencyCatalog } from "../api/client";
+import { ErrorMessage } from "../components/ErrorMessage";
 
 // Creates a wallet. Used both as the first-run gate (firstRun) and from the
 // in-app "new wallet" route.
@@ -31,8 +32,6 @@ export function CreateWalletPage({ firstRun = false }: { firstRun?: boolean }) {
     },
   });
 
-  const error = mutation.error instanceof ApiError ? mutation.error.message : "";
-
   return (
     <Center mih={firstRun ? "100vh" : "60vh"}>
       <Card withBorder w={420} p="lg">
@@ -43,7 +42,11 @@ export function CreateWalletPage({ firstRun = false }: { firstRun?: boolean }) {
               {t("wallet.subtitle")}
             </Text>
           </div>
-          {error && <Alert color="red">{error}</Alert>}
+          {mutation.error && (
+            <Alert color="red">
+              <ErrorMessage error={mutation.error} />
+            </Alert>
+          )}
           <TextInput
             label={t("wallet.title")}
             required
@@ -62,7 +65,11 @@ export function CreateWalletPage({ firstRun = false }: { firstRun?: boolean }) {
             value={baseCurrency}
             onChange={setBaseCurrency}
           />
-          <Button onClick={() => mutation.mutate()} loading={mutation.isPending} disabled={!title}>
+          <Button
+            onClick={() => mutation.mutate()}
+            loading={mutation.isPending}
+            disabled={!title.trim()}
+          >
             {t("wallet.create")}
           </Button>
         </Stack>

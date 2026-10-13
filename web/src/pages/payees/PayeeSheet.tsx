@@ -1,12 +1,11 @@
 import { ActionIcon, Anchor, Button, Menu, Select, TextInput, UnstyledButton } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconCheck, IconDots } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { ApiError, createPayee, updatePayee, type Category, type Payee } from "../../api/client";
+import { createPayee, updatePayee, type Category, type Payee } from "../../api/client";
 import { amountColor } from "../../amountTone";
 import { SideSheet } from "../../components/SideSheet";
 import { ENTRY_SHEET } from "../../components/entrySheetTheme";
@@ -14,6 +13,7 @@ import { sameName } from "../../sameName";
 import { PAYMENT_MODES } from "../../transactionEnums";
 import { categoryLabel, type PayeeRow } from "./payeeList";
 import classes from "./payees.module.css";
+import { notifyError } from "../../notifyError";
 
 /** A suggestion under a field: what the payee usually gets, and a button to take it. */
 function Suggestion({ text, label, onUse }: { text: string; label: string; onUse: () => void }) {
@@ -97,11 +97,7 @@ export function PayeeSheet({
       onSaved();
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const count = row?.count ?? 0;

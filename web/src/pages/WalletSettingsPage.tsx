@@ -16,11 +16,12 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { errorColor } from "../amountTone";
 
-import { ApiError, deleteWallet, listCategories, updateWallet } from "../api/client";
+import { deleteWallet, listCategories, updateWallet } from "../api/client";
 import { useWallet } from "../wallet/WalletProvider";
 import { BackupCard } from "./BackupCard";
 import { ImportExport } from "./ImportPage";
 import { IntegrityCard } from "./IntegrityCard";
+import { notifyError } from "../notifyError";
 
 export function WalletSettingsPage({
   only = "general",
@@ -49,12 +50,6 @@ export function WalletSettingsPage({
       .filter((c) => !c.isIncome)
       .map((c) => ({ value: String(c.id), label: c.name })),
   ];
-
-  const notifyError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
 
   const rename = useMutation({
     mutationFn: () =>
@@ -134,7 +129,7 @@ export function WalletSettingsPage({
                 <Button
                   onClick={() => rename.mutate()}
                   loading={rename.isPending}
-                  disabled={!isOwner || !title}
+                  disabled={!isOwner || !title.trim()}
                 >
                   {t("wallet.save")}
                 </Button>
