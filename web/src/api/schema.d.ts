@@ -2817,6 +2817,7 @@ export interface components {
             signsInWithSso?: boolean;
         };
         UpdateMeRequest: {
+            /** @description a language tag; a variant is saved as the language CloudBank speaks (it-CH as it, pt-PT as pt-BR), one it does not speak is refused with 400 invalid_locale */
             locale?: string;
             theme?: string;
             preferences?: {
@@ -4703,6 +4704,7 @@ export interface operations {
                     "application/json": components["schemas"]["User"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             /** @description The preferences were saved since preferencesRevision (stale_preferences). */
             409: {

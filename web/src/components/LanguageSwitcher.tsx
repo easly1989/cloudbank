@@ -1,12 +1,7 @@
 import { Select } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 
-import { supportedLanguages } from "../i18n";
-
-const labels: Record<string, string> = {
-  en: "English",
-  it: "Italiano",
-};
+import { languages } from "../i18n/languages";
 
 export function LanguageSwitcher() {
   const { i18n, t } = useTranslation();
@@ -20,7 +15,7 @@ export function LanguageSwitcher() {
       allowDeselect={false}
       value={current}
       onChange={(value) => value && void i18n.changeLanguage(value)}
-      data={supportedLanguages.map((lng) => ({ value: lng, label: labels[lng] ?? lng }))}
+      data={languages.map((l) => ({ value: l.code, label: l.name }))}
     />
   );
 }
