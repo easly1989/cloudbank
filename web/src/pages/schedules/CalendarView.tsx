@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import type { ScheduleOccurrence } from "../../api/client";
 import { amountColor } from "../../amountTone";
+import { useWeekStart, weekdayNames } from "../../i18n/week";
 import { STATUS_ICONS } from "../../components/statusIcons";
 import { useOccurrenceLabel, useShortDate } from "./labels";
 import { OccurrenceIcon } from "./OccurrenceIcon";
@@ -13,14 +14,14 @@ import classes from "./schedules.module.css";
 
 type Format = (amount: number, accountId?: number) => string;
 
-/** Monday to Sunday, in the reader's language. */
+/** The week's days in the reader's language, from the day it starts on. */
 function useWeekdays(style: "short" | "narrow") {
   const { i18n } = useTranslation();
-  return useMemo(() => {
-    const f = new Intl.DateTimeFormat(i18n.language, { weekday: style, timeZone: "UTC" });
-    // 2024-01-01 was a Monday.
-    return Array.from({ length: 7 }, (_, i) => f.format(new Date(Date.UTC(2024, 0, 1 + i))));
-  }, [i18n.language, style]);
+  const weekStart = useWeekStart();
+  return useMemo(
+    () => weekdayNames(i18n.language, style, weekStart),
+    [i18n.language, style, weekStart],
+  );
 }
 
 const byDay = (occurrences: ScheduleOccurrence[]) => {

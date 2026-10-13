@@ -49,6 +49,21 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
+        // A language is fetched the first time it is used, not with the shell:
+        // precaching would download all of them on install (#608). Once used,
+        // it is kept, so the app still speaks it offline. The names carry the
+        // content hash, so a kept file is never stale.
+        globIgnores: ["**/locale-*.js"],
+        runtimeCaching: [
+          {
+            urlPattern: /\/assets\/locale-[^/]+\.js$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "cloudbank-locales",
+              expiration: { maxEntries: 20 },
+            },
+          },
+        ],
         navigateFallback: "index.html",
         // API and health checks must reach the network, never the SPA shell.
         navigateFallbackDenylist: [/^\/api/, /^\/healthz/],
@@ -68,6 +83,10 @@ export default defineConfig({
         // cached vendor code. Pages themselves are code-split via React.lazy.
         // (Function form: the object form's type was tightened in newer Vite.)
         manualChunks(id) {
+          // One chunk per translation, named so the service worker can tell
+          // them apart; English stays in the bundle (src/i18n/index.ts).
+          const locale = /[\\/]i18n[\\/]locales[\\/]([\w-]+)\.json$/.exec(id);
+          if (locale) return locale[1] === "en" ? undefined : `locale-${locale[1]}`;
           if (!id.includes("node_modules")) return undefined;
           if (
             /[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(

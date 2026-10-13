@@ -7,6 +7,7 @@ import { expenseColor } from "../../../amountTone";
 
 import { getTrend } from "../../../api/client";
 import { useDateFormat } from "../../../dates";
+import { dayInWeek, useWeekStart, weekdayNames } from "../../../i18n/week";
 import { formatMinor } from "../../../money";
 import { useToday } from "../../../useToday";
 
@@ -22,6 +23,7 @@ const TOP_CATS = 3;
 export function SpendingHeatmapCard({ walletId }: { walletId: number }) {
   const { t, i18n } = useTranslation();
   const fmtDate = useDateFormat();
+  const weekStart = useWeekStart();
   // `today` makes the "current month" anchor reactive: a dashboard left open past
   // a month boundary rolls over without a manual reload.
   const today = useToday();
@@ -80,14 +82,13 @@ export function SpendingHeatmapCard({ walletId }: { walletId: number }) {
     return map;
   }, [qCat.data]);
 
-  // Weekday header (Mon-first) and lead-in blanks for the 1st of the month.
-  const weekdays = useMemo(() => {
-    // 2024-01-01 is a Monday; render narrow weekday names in the app's language.
-    return Array.from({ length: 7 }, (_, i) =>
-      new Date(2024, 0, 1 + i).toLocaleDateString(i18n.language, { weekday: "narrow" }),
-    );
-  }, [i18n.language]);
-  const lead = (new Date(y, m, 1).getDay() + 6) % 7; // Mon=0 … Sun=6
+  // Weekday header, from the day the language starts its week on, and lead-in
+  // blanks for the 1st of the month.
+  const weekdays = useMemo(
+    () => weekdayNames(i18n.language, "narrow", weekStart),
+    [i18n.language, weekStart],
+  );
+  const lead = dayInWeek(new Date(y, m, 1).getDay(), weekStart);
   const cells: (number | null)[] = [
     ...Array.from({ length: lead }, () => null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
