@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/bills"
+	"github.com/easly1989/cloudbank/server/internal/locale"
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
@@ -177,5 +178,23 @@ func TestBillsRemindersDedup(t *testing.T) {
 	}
 	if mock.calls != 1 {
 		t.Fatalf("second run sends = %d, want still 1 (deduped)", mock.calls)
+	}
+}
+
+// Every language CloudBank speaks has the reminder's wording, and the reminder
+// opens the Schedules page.
+func TestBillsPayloadLanguages(t *testing.T) {
+	for _, lang := range locale.Supported {
+		text, ok := reminderTexts[lang]
+		if !ok || text.title == "" || text.many == "" || text.one == "" {
+			t.Errorf("no complete reminder wording for %q", lang)
+		}
+	}
+	one := []bills.Bill{{Name: "Rent"}}
+	if p := billsPayload(one, "it"); p.Title != "Scadenze in arrivo" || p.Body != "Rent è in scadenza o scaduta" || p.URL != "/schedules" {
+		t.Errorf("Italian payload = %+v", p)
+	}
+	if p := billsPayload(append(one, bills.Bill{Name: "Gym"}), "xx"); p.Title != "Bills due" || p.Body != "2 bills need your attention" {
+		t.Errorf("unknown language payload = %+v", p)
 	}
 }

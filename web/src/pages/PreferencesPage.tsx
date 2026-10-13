@@ -22,7 +22,7 @@ import { useTranslation } from "react-i18next";
 import { ApiError, listAccounts, saveMe, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { useTour } from "../onboarding/tourContext";
-import { supportedLanguages } from "../i18n";
+import { languages } from "../i18n/languages";
 import { SIDEBAR_ACCOUNTS_MAX } from "../components/sidebarAccounts";
 import {
   ALL_BALANCES,
@@ -38,8 +38,6 @@ const BALANCE_LABEL: Record<BalanceKey, string> = {
 };
 import { ACCENT_COLORS } from "../theme";
 import { useWallet } from "../wallet/WalletProvider";
-
-const langLabels: Record<string, string> = { en: "English", it: "Italiano" };
 
 /**
  * Your own preferences, rendered one settings section at a time.
@@ -144,7 +142,7 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
             {general && (
               <Select
                 label={t("preferences.language")}
-                data={supportedLanguages.map((l) => ({ value: l, label: langLabels[l] ?? l }))}
+                data={languages.map((l) => ({ value: l.code, label: l.name }))}
                 value={locale}
                 onChange={(v) => v && setLocale(v)}
                 allowDeselect={false}

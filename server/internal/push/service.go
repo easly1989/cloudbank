@@ -17,6 +17,7 @@ import (
 	webpush "github.com/SherClockHolmes/webpush-go"
 
 	"github.com/easly1989/cloudbank/server/internal/bills"
+	"github.com/easly1989/cloudbank/server/internal/locale"
 	"github.com/easly1989/cloudbank/server/internal/netguard"
 	"github.com/easly1989/cloudbank/server/internal/secrets"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
@@ -206,34 +207,38 @@ func (s *Service) RunBillsReminders(ctx context.Context, now time.Time) error {
 		if len(pending) == 0 {
 			continue
 		}
-		locale := "en"
+		lang := locale.Default
 		if u, err := s.rq.GetUserByID(ctx, uid); err == nil {
-			locale = u.Locale
+			lang = u.Locale
 		}
-		if err := s.sendToUser(ctx, uid, billsPayload(pending, locale)); err != nil {
+		if err := s.sendToUser(ctx, uid, billsPayload(pending, lang)); err != nil {
 			s.logger.Warn("push reminders: send", "user", uid, "err", err)
 		}
 	}
 	return nil
 }
 
-// billsPayload builds the reminder notification, localized by the user's locale.
-func billsPayload(pending []bills.Bill, locale string) Payload {
-	n := len(pending)
-	it := locale == "it"
-	title := "Bills due"
-	body := fmt.Sprintf("%d bills need your attention", n)
-	if it {
-		title = "Scadenze in arrivo"
-		body = fmt.Sprintf("%d scadenze richiedono attenzione", n)
+// reminderText is the reminder notification's wording, one per language
+// (internal/locale's codes); a language without its own gets the English one,
+// and a test asks every listed language for an entry.
+type reminderText struct {
+	title string
+	many  string // %d: how many bills
+	one   string // %s: the bill's name
+}
+
+var reminderTexts = map[string]reminderText{
+	"en": {title: "Bills due", many: "%d bills need your attention", one: "%s is due or overdue"},
+	"it": {title: "Scadenze in arrivo", many: "%d scadenze richiedono attenzione", one: "%s è in scadenza o scaduta"},
+}
+
+// billsPayload builds the reminder notification, in the user's language. It
+// opens the Schedules page, where bills live since the Bills page was folded in.
+func billsPayload(pending []bills.Bill, lang string) Payload {
+	text := locale.Pick(reminderTexts, lang)
+	body := fmt.Sprintf(text.many, len(pending))
+	if len(pending) == 1 {
+		body = fmt.Sprintf(text.one, pending[0].Name)
 	}
-	if n == 1 {
-		name := pending[0].Name
-		if it {
-			body = fmt.Sprintf("%s è in scadenza o scaduta", name)
-		} else {
-			body = fmt.Sprintf("%s is due or overdue", name)
-		}
-	}
-	return Payload{Title: title, Body: body, URL: "/bills", Tag: "bills"}
+	return Payload{Title: text.title, Body: body, URL: "/schedules", Tag: "bills"}
 }
