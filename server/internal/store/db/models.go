@@ -8,6 +8,14 @@ import (
 	"database/sql"
 )
 
+type AccessRecoveryCode struct {
+	ID        int64
+	UserID    int64
+	CodeHash  string
+	UsedAt    sql.NullString
+	CreatedAt string
+}
+
 type Account struct {
 	ID                 int64
 	WalletID           int64

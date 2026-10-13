@@ -61,6 +61,11 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
 		os.Exit(healthcheck())
 	}
+	// `cloudbank recovery-codes <username>` prints new access recovery codes
+	// for one account: the last way in on an SSO-only server (#620).
+	if len(os.Args) > 1 && os.Args[1] == "recovery-codes" {
+		os.Exit(recoveryCodes(os.Args[2:], os.Stdout, os.Stderr))
+	}
 	if err := run(); err != nil {
 		slog.Error("fatal", "error", err)
 		os.Exit(1)
@@ -122,21 +127,27 @@ func run() error {
 	// Writes (including auth and wallets) go through the single write connection.
 	authSvc := auth.NewService(db.New(st.Write()))
 
-	// OIDC/SSO login is optional; discovery reaches the provider at startup. A
-	// failure disables SSO (local login still works) rather than blocking boot.
+	// OIDC/SSO login is optional. Discovery reaches the provider at startup only
+	// to report on it: a provider that does not answer yet is tried again at the
+	// next sign-in, so it never blocks boot.
 	var oidcSvc *oidc.Service
 	if cfg.OIDCEnabled() {
+		oidcSvc = oidc.New(oidc.Config{
+			Issuer: cfg.OIDCIssuer, ClientID: cfg.OIDCClientID, ClientSecret: cfg.OIDCClientSecret,
+			RedirectURL: cfg.OIDCRedirectURL, Scopes: cfg.OIDCScopes, Name: cfg.OIDCName,
+		})
 		dctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		oidcSvc, err = oidc.New(dctx, cfg.OIDCIssuer, cfg.OIDCClientID, cfg.OIDCClientSecret,
-			cfg.OIDCRedirectURL, cfg.OIDCScopes, cfg.OIDCName)
-		cancel()
-		if err != nil {
-			logger.Error("oidc: disabled (discovery failed)", "issuer", cfg.OIDCIssuer, "error", err)
-			oidcSvc = nil
-		} else {
-			logger.Info("oidc: enabled", "issuer", cfg.OIDCIssuer, "provider", cfg.OIDCName,
-				"auto_provision", cfg.OIDCAutoProvision)
+		if err := oidcSvc.Discover(dctx); err != nil {
+			logger.Error("oidc: provider not reachable yet, retried at the next sign-in", "issuer", cfg.OIDCIssuer, "error", err)
 		}
+		cancel()
+		logger.Info("oidc: enabled", "issuer", cfg.OIDCIssuer, "provider", cfg.OIDCName,
+			"auto_provision", cfg.OIDCAutoProvision, "password_login", cfg.PasswordLogin)
+	}
+	// Without the password form, SSO is the only way in (#620): refuse to start
+	// rather than serve a login page nobody can get past.
+	if !cfg.PasswordLogin && oidcSvc == nil {
+		return errors.New("CB_PASSWORD_LOGIN=false needs OIDC: set CB_OIDC_ISSUER, CB_OIDC_CLIENT_ID, CB_OIDC_CLIENT_SECRET and CB_OIDC_REDIRECT_URL")
 	}
 	walletSvc := wallet.NewService(st.Write())
 	currencySvc := currency.NewServiceWithRead(st.Read(), st.Write())
@@ -221,6 +232,8 @@ func run() error {
 		SecureCookies:     cfg.SecureCookies,
 		OIDC:              oidcSvc,
 		OIDCAutoProvision: cfg.OIDCAutoProvision,
+		SSOOnly:           !cfg.PasswordLogin,
+		OIDCAdminEmail:    cfg.OIDCAdminEmail,
 	}
 	// The demo build switches parts of the server off; any other build leaves
 	// opts as they are.

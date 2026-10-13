@@ -1,7 +1,7 @@
 import { Center, Loader } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import { Suspense, lazy } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { getSetupStatus } from "./api/client";
 import { useAuth } from "./auth/AuthProvider";
@@ -93,6 +93,13 @@ function FullScreenLoader() {
   );
 }
 
+// ToSetup sends every path to the setup page, keeping the query: a refused
+// first SSO sign-in comes back as /login?sso_error=… and the setup page says why.
+function ToSetup() {
+  const { search } = useLocation();
+  return <Navigate to={{ pathname: "/setup", search }} replace />;
+}
+
 export function App() {
   const setupStatus = useQuery({
     queryKey: ["setup-status"],
@@ -109,7 +116,7 @@ export function App() {
     return (
       <Routes>
         <Route path="/setup" element={<SetupPage />} />
-        <Route path="*" element={<Navigate to="/setup" replace />} />
+        <Route path="*" element={<ToSetup />} />
       </Routes>
     );
   }

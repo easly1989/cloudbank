@@ -60,6 +60,14 @@ type Config struct {
 	// SSO login for an unknown identity; otherwise the account must pre-exist
 	// (matched by verified email) or login is refused.
 	OIDCAutoProvision bool
+	// PasswordLogin offers the username/password form (the default).
+	// CB_PASSWORD_LOGIN=false signs in through OIDC only (#620): it needs OIDC
+	// configured, the first SSO sign-in becomes the administrator, and each user
+	// keeps one-time access recovery codes for when the provider is down.
+	PasswordLogin bool
+	// OIDCAdminEmail, when set, reserves that first administrator sign-in to the
+	// SSO identity with this verified email.
+	OIDCAdminEmail string
 
 	// Demo tunes the public demo build (the `demo` build tag). A normal build
 	// reads it and never uses it.
@@ -112,6 +120,8 @@ func Load() Config {
 		OIDCScopes:        getenv("CB_OIDC_SCOPES", "openid profile email"),
 		OIDCName:          getenv("CB_OIDC_NAME", "SSO"),
 		OIDCAutoProvision: getBoolEnv("CB_OIDC_AUTO_PROVISION", false),
+		PasswordLogin:     getBoolEnv("CB_PASSWORD_LOGIN", true),
+		OIDCAdminEmail:    strings.TrimSpace(getenv("CB_OIDC_ADMIN_EMAIL", "")),
 
 		Demo: Demo{
 			Idle:            getDurationEnv("CB_DEMO_IDLE", 2*time.Hour),
