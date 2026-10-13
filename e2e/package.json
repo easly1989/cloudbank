@@ -6,6 +6,7 @@
   "scripts": {
     "test": "playwright test",
     "test:demo": "playwright test -c playwright.demo.config.ts",
+    "test:sso": "playwright test -c playwright.sso.config.ts",
     "report": "playwright show-report"
   },
   "devDependencies": {
