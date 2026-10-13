@@ -1,0 +1,63 @@
+name: Wiki
+
+# The wiki mirrors docs/ (#605): every merge that touches a guide or the
+# changelog rebuilds its pages from them. docs/ stays the only source; an edit
+# made in the wiki itself is overwritten by the next run. On a pull request it
+# only builds the pages, so a broken link fails there, before the merge.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**/*.md"
+      - "CHANGELOG.md"
+      - ".github/scripts/wiki.py"
+      - ".github/workflows/wiki.yml"
+  pull_request:
+    paths:
+      - "docs/**/*.md"
+      - "CHANGELOG.md"
+      - ".github/scripts/wiki.py"
+      - ".github/workflows/wiki.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  # Publishing runs one at a time; a pull request only checks, on its own.
+  group: wiki-${{ github.event_name == 'pull_request' && github.ref || 'publish' }}
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check out the wiki
+        if: github.event_name != 'pull_request'
+        env:
+          # A WIKI_TOKEN secret wins when present, should the workflow token
+          # ever be refused by the wiki repository.
+          TOKEN: ${{ secrets.WIKI_TOKEN || secrets.GITHUB_TOKEN }}
+        run: git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" wiki
+
+      - name: Build the pages
+        run: |
+          mkdir -p wiki
+          python3 .github/scripts/wiki.py wiki
+
+      - name: Publish what changed
+        if: github.event_name != 'pull_request'
+        working-directory: wiki
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "The wiki is already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -q -m "Mirror docs/ at ${GITHUB_SHA::7}"
+          git push -q

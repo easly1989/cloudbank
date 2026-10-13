@@ -199,6 +199,7 @@ Every guide, grouped by what you are trying to do: **[docs/README.md](docs/READM
 - **Backups, upgrades and restoring** — what each backup holds, a routine that works, upgrading, and getting it all back: [docs/backup.md](docs/backup.md).
 - **Reverse proxy / HTTPS**: [docs/reverse-proxy.md](docs/reverse-proxy.md).
 - **Single sign-on (OIDC)**, with Authelia step by step, and SSO-only sign-in: [docs/sso.md](docs/sso.md).
+- **The same guides on the [wiki](https://github.com/easly1989/cloudbank/wiki)**, copied from `docs/` on every merge; `docs/` is the source.
 - **Using CloudBank, page by page** — what each page is for and what it can do: [docs/pages.md](docs/pages.md).
 - **Importing transactions** (bank CSV, QIF, OFX, CAMT.053), with the column mapping and what to do when rows come in wrong: [docs/import.md](docs/import.md).
 - **Migrating from HomeBank**: [docs/migrate-from-homebank.md](docs/migrate-from-homebank.md).
