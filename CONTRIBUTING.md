@@ -45,7 +45,8 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/): `type(scope
   the Playwright suite against both the ordinary and the `:demo` build.
 - Update `api/openapi.yaml` and the generated types when you change the HTTP contract.
 - Add or update tests. User-facing strings must ship for both `en` and `it`, with
-  identical key sets (`cd web && npm run check:i18n`).
+  identical key sets (`cd web && npm run check:i18n`). Translations follow
+  [the glossary](docs/i18n/glossary.md); `npm run check:glossary` warns where one drifts.
 
 ## Engineering conventions
 

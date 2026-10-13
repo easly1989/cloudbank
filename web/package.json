@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "gen:api": "openapi-typescript ../api/openapi.yaml -o src/api/schema.d.ts",
-    "check:i18n": "node scripts/check-i18n.mjs"
+    "check:i18n": "node scripts/check-i18n.mjs",
+    "check:glossary": "node scripts/check-glossary.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

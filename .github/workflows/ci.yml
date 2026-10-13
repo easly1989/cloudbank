@@ -105,8 +105,11 @@ jobs:
         run: git diff --exit-code src/api/schema.d.ts
       - name: Lint (eslint + prettier)
         run: npm run lint
-      - name: i18n key parity
+      - name: i18n key parity, plurals, placeholders
         run: npm run check:i18n
+      # Warnings only: a translation that drifts from docs/i18n/glossary.md.
+      - name: i18n glossary
+        run: npm run check:glossary
       - name: Typecheck + build
         run: npm run build
       - name: Test
