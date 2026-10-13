@@ -1355,7 +1355,20 @@
     "invalidCode": "That code is not valid",
     "or": "or",
     "ssoSignIn": "Sign in with {{provider}}",
-    "ssoFailed": "Single sign-on failed. Please try again or use your username and password."
+    "ssoFailed": "Single sign-on failed. Please try again or use your username and password.",
+    "ssoFailedOnly": "Signing in with {{provider}} did not work.",
+    "ssoUnavailable": "{{provider}} is not answering right now.",
+    "recoveryPrompt": "Can't sign in?",
+    "recoveryLink": "Use a recovery code",
+    "recoveryHint": "Use one of the codes you saved in Settings › Security. Each code works once.",
+    "recoveryCode": "Recovery code",
+    "recoverySubmit": "Sign in with the code",
+    "recoveryInvalid": "Invalid username or recovery code",
+    "backToSso": "Sign in with {{provider}} instead",
+    "recoveryLeft_one": "You signed in with a recovery code. You have {{count}} left.",
+    "recoveryLeft_other": "You signed in with a recovery code. You have {{count}} left.",
+    "recoveryNoneLeft": "You signed in with your last recovery code. Make new ones in Settings › Security.",
+    "tooMany": "Too many attempts. Try again in a few minutes."
   },
   "twofa": {
     "title": "Two-factor authentication",
@@ -1379,6 +1392,21 @@
     "disableHint": "Enter your password to turn off two-factor authentication.",
     "disabled": "Two-factor authentication disabled",
     "setupError": "Could not start setup. Please try again."
+  },
+  "accessCodes": {
+    "title": "Access recovery codes",
+    "hint": "If {{provider}} is not answering, one of these codes lets you in, once.",
+    "none": "You have no recovery codes yet. Make them now, while you can still sign in.",
+    "shownOnce": "Keep them somewhere safe: you will not see them again. Making new ones voids these.",
+    "remaining_one": "{{count}} of {{total}} codes still valid.",
+    "remaining_other": "{{count}} of {{total}} codes still valid.",
+    "generate": "Make recovery codes",
+    "regenerate": "Make new codes",
+    "download": "Download as a file",
+    "copy": "Copy",
+    "copied": "Copied",
+    "fileTitle": "CloudBank access recovery codes for {{user}}",
+    "fileHint": "Each code signs you in once when the identity provider is not answering."
   },
   "notif": {
     "title": "Notifications",
@@ -1416,7 +1444,9 @@
     "confirmPassword": "Confirm password",
     "submit": "Create admin account",
     "passwordMismatch": "Passwords do not match",
-    "passwordTooShort": "Password must be at least 8 characters"
+    "passwordTooShort": "Password must be at least 8 characters",
+    "ssoSubtitle": "The first sign-in becomes the administrator of this server.",
+    "ssoReserved": "The first sign-in is reserved to the administrator's email. Sign in with that account."
   },
   "admin": {
     "title": "Users",
@@ -1438,7 +1468,8 @@
     "disable": "Disable",
     "you": "you",
     "userCreated": "User created",
-    "passwordReset": "Password reset"
+    "passwordReset": "Password reset",
+    "emailSso": "They sign in with {{provider}}, matched by this email."
   },
   "wallet": {
     "firstTitle": "Create your first wallet",
@@ -1997,6 +2028,7 @@
     "navigationHint": "Which pages the sidebar lists, and in what order.",
     "signIn": "Signing in",
     "signInHint": "The password you sign in with, and a second step on top of it.",
+    "signInHintSso": "You sign in with {{provider}}, which looks after passwords and second steps.",
     "apiTokensHint": "Tokens let a script or another app act as you. Revoke one and it stops working immediately.",
     "notificationsHint": "Where CloudBank reaches you when something needs you.",
     "ai": "AI",
