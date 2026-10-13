@@ -70,7 +70,11 @@ paths:
     get:
       operationId: getAuthConfig
       summary: Public auth configuration (available login methods)
-      description: Tells the login page whether OIDC/SSO login is enabled and its button label.
+      description: >-
+        Tells the login and setup pages how to sign in: whether OIDC/SSO login is
+        enabled and its button label, and whether the username/password form is
+        there at all (passwordLogin is false when the server signs in through SSO
+        only, CB_PASSWORD_LOGIN=false).
       security: []
       responses:
         "200":
@@ -86,7 +90,8 @@ paths:
                       enabled: { type: boolean }
                       name: { type: string }
                     required: [enabled, name]
-                required: [oidc]
+                  passwordLogin: { type: boolean }
+                required: [oidc, passwordLogin]
   /api/v1/setup:
     post:
       operationId: postSetup
@@ -107,6 +112,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
         "400": { $ref: "#/components/responses/BadRequest" }
+        "403":
+          description: The server signs in through SSO only (code password_login_off); the first SSO sign-in sets it up.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "409":
           description: Setup has already been completed.
           content:
@@ -131,6 +142,45 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/LoginResult"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403":
+          description: The server signs in through SSO only (code password_login_off).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too many attempts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/auth/recovery:
+    post:
+      operationId: recoveryLogin
+      summary: Sign in with an access recovery code (SSO-only servers)
+      description: >-
+        Exists only when the server signs in through SSO only. Consumes one of the
+        user's access recovery codes and starts a session: the way in while the
+        identity provider is down. Attempts are rate limited like the password
+        login.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                code: { type: string, description: "one access recovery code; dashes, spaces and case do not matter" }
+              required: [username, code]
+      responses:
+        "200":
+          description: Signed in.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecoveryLoginResult" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "429":
           description: Too many attempts.
@@ -229,11 +279,46 @@ paths:
         "204": { description: Changed. }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { description: "The current password is wrong (code invalid_password), or the request came with an API token." }
+        "403": { description: "The current password is wrong (code invalid_password), the request came with an API token, or the server signs in through SSO only (code password_login_off)." }
+  /api/v1/auth/me/access-codes:
+    get:
+      operationId: getAccessCodes
+      summary: How many of your access recovery codes are unused (SSO-only servers)
+      responses:
+        "200":
+          description: The count.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  remaining: { type: integer, format: int64 }
+                required: [remaining]
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: newAccessCodes
+      summary: Make new access recovery codes, voiding the old ones (SSO-only servers, session only)
+      description: Returns ten one-time codes, shown once. Only their hashes are stored.
+      responses:
+        "200":
+          description: The new codes.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codes: { type: array, items: { type: string } }
+                required: [codes]
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /api/v1/auth/2fa/setup:
     post:
       operationId: setup2fa
       summary: Begin TOTP enrollment — returns a secret and provisioning URI (session only)
+      description: >-
+        Two-factor belongs to the password login: on a server that signs in
+        through SSO only, this and the other 2fa endpoints answer 403
+        password_login_off.
       responses:
         "200": { description: The pending secret., content: { application/json: { schema: { $ref: "#/components/schemas/TotpSetup" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
@@ -815,6 +900,7 @@ paths:
     post:
       operationId: resetUserPassword
       summary: Reset a user's password (admin)
+      description: Answers 403 password_login_off on a server that signs in through SSO only.
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
       requestBody:
@@ -2982,12 +3068,22 @@ components:
           required: [totpRequired]
     CreateUserRequest:
       type: object
+      description: >-
+        On a server that signs in through SSO only, the password is ignored and
+        the email is required: the user signs in through the provider, matched
+        by that email once the provider says it is verified.
       properties:
         username: { type: string }
         email: { type: string }
-        password: { type: string, minLength: 8 }
+        password: { type: string, minLength: 8, description: "required unless the server signs in through SSO only" }
         isAdmin: { type: boolean }
-      required: [username, password]
+      required: [username]
+    RecoveryLoginResult:
+      type: object
+      properties:
+        user: { $ref: "#/components/schemas/User" }
+        remaining: { type: integer, format: int64, description: "access recovery codes still unused" }
+      required: [user, remaining]
     Wallet:
       type: object
       properties:

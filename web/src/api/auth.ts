@@ -150,6 +150,10 @@ export const getSetupStatus = () => api.get<{ needsSetup: boolean }>("/api/v1/se
 /** Public auth configuration: which login methods the login page should offer. */
 export interface AuthConfig {
   oidc: { enabled: boolean; name: string };
+  /** False when the server signs in through SSO only (#620): no password form,
+   *  the first SSO sign-in sets it up, and recovery codes stand in for the
+   *  provider when it is down. */
+  passwordLogin: boolean;
 }
 
 export const getAuthConfig = () => api.get<AuthConfig>("/api/v1/auth/config");
@@ -157,6 +161,10 @@ export const getAuthConfig = () => api.get<AuthConfig>("/api/v1/auth/config");
 export const postSetup = (body: Credentials) => api.post<User>("/api/v1/setup", body);
 
 export const login = (body: Credentials) => api.post<LoginResult>("/api/v1/auth/login", body);
+
+/** SSO-only servers: sign in with one access recovery code, which is used up. */
+export const recoveryLogin = (username: string, code: string) =>
+  api.post<{ user: User; remaining: number }>("/api/v1/auth/recovery", { username, code });
 
 export const logout = () => api.post<void>("/api/v1/auth/logout");
 
@@ -222,6 +230,13 @@ export const enable2fa = (secret: string, code: string) =>
 export const disable2fa = (password: string) =>
   api.post<void>("/api/v1/auth/2fa/disable", { password });
 
+// --- Access recovery codes (SSO-only servers, #620) ---
+
+export const getAccessCodes = () => api.get<{ remaining: number }>("/api/v1/auth/me/access-codes");
+
+/** New codes, shown once; the old ones stop working. */
+export const newAccessCodes = () => api.post<{ codes: string[] }>("/api/v1/auth/me/access-codes");
+
 /** Change your own password (#530). Every other session is signed out. */
 export const changePassword = (currentPassword: string, newPassword: string) =>
   api.post<void>("/api/v1/auth/me/password", { currentPassword, newPassword });
@@ -259,7 +274,8 @@ export const listUsers = () => api.get<User[]>("/api/v1/admin/users");
 export interface CreateUserRequest {
   username: string;
   email?: string;
-  password: string;
+  /** Left out on an SSO-only server, where the email is what matters. */
+  password?: string;
   isAdmin: boolean;
 }
 

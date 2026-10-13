@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/secrets"
@@ -111,6 +112,10 @@ type Service struct {
 	limiter *rateLimiter
 	now     func() time.Time
 	ttl     time.Duration
+	// firstUser keeps two SSO sign-ins on an empty installation from both
+	// becoming its first administrator: the count and the insert are two
+	// statements, so they are made one under this lock.
+	firstUser sync.Mutex
 }
 
 // NewService builds a Service backed by the given querier.
@@ -347,6 +352,17 @@ func (s *Service) ChangePassword(ctx context.Context, userID int64, current, nex
 	return s.q.DeleteOtherUserSessions(ctx, db.DeleteOtherUserSessionsParams{UserID: userID, ID: hashToken(keepToken)})
 }
 
+// CreateSSOUser creates an account that signs in through the identity
+// provider only (#620), matched by its verified email on the first sign-in. Its
+// local password is random and never shown, so it cannot be used.
+func (s *Service) CreateSSOUser(ctx context.Context, username, email string, isAdmin bool) (User, error) {
+	randomPw, _, err := newToken()
+	if err != nil {
+		return User{}, err
+	}
+	return s.CreateUser(ctx, username, email, randomPw, isAdmin)
+}
+
 // SignsInWithSSO reports whether the user has an SSO identity linked. One
 // created by SSO on first sign-in has a random password it never saw.
 func (s *Service) SignsInWithSSO(ctx context.Context, userID int64) (bool, error) {
@@ -389,16 +405,32 @@ type OIDCClaims struct {
 	Name          string
 }
 
+// OIDCPolicy says what an SSO sign-in that matches no linked identity may do.
+type OIDCPolicy struct {
+	// AutoProvision creates a non-admin account for an unknown identity.
+	AutoProvision bool
+	// FirstAdmin lets the first SSO sign-in on an installation with no users
+	// become its administrator: the setup of a server that signs in through
+	// SSO only (#620). Without it, an empty installation refuses SSO until the
+	// setup page has created the administrator.
+	FirstAdmin bool
+	// AdminEmail, when set, reserves that first sign-in to the identity with
+	// this verified email.
+	AdminEmail string
+}
+
 // UpsertOIDCUser resolves a verified OIDC identity to a local user:
 //  1. an existing (issuer, subject) link → that user;
-//  2. else, when the email is verified and matches exactly one local account,
+//  2. else, on an installation with no users, the first administrator when
+//     the policy allows it (FirstAdmin, and AdminEmail if set), refused if not;
+//  3. else, when the email is verified and matches exactly one local account,
 //     link that account and use it;
-//  3. else, only when autoProvision is set, create a new non-admin account with a
-//     random (unusable) local password.
+//  4. else, only when AutoProvision is set, create a new non-admin account with
+//     a random (unusable) local password.
 //
 // A disabled account, or an ambiguous email (more than one match), is refused
 // with ErrUnauthorized rather than guessed.
-func (s *Service) UpsertOIDCUser(ctx context.Context, c OIDCClaims, autoProvision bool) (User, error) {
+func (s *Service) UpsertOIDCUser(ctx context.Context, c OIDCClaims, p OIDCPolicy) (User, error) {
 	if c.Issuer == "" || c.Subject == "" {
 		return User{}, ErrUnauthorized
 	}
@@ -410,7 +442,24 @@ func (s *Service) UpsertOIDCUser(ctx context.Context, c OIDCClaims, autoProvisio
 	case !errors.Is(err, sql.ErrNoRows):
 		return User{}, err
 	}
-	// 2. Link an existing local account by verified email (only when unambiguous).
+	// 2. The first sign-in on an empty installation. Held under the lock up to
+	// the insert, so a second sign-in racing this one finds a user and goes on.
+	s.firstUser.Lock()
+	defer s.firstUser.Unlock()
+	users, err := s.q.CountUsers(ctx)
+	if err != nil {
+		return User{}, err
+	}
+	if users == 0 {
+		if !p.FirstAdmin {
+			return User{}, ErrUnauthorized
+		}
+		if p.AdminEmail != "" && (!c.EmailVerified || !strings.EqualFold(c.Email, p.AdminEmail)) {
+			return User{}, ErrUnauthorized
+		}
+		return s.provisionOIDCUser(ctx, c, true)
+	}
+	// 3. Link an existing local account by verified email (only when unambiguous).
 	if c.Email != "" && c.EmailVerified {
 		n, err := s.q.CountUsersByEmail(ctx, c.Email)
 		if err != nil {
@@ -433,10 +482,16 @@ func (s *Service) UpsertOIDCUser(ctx context.Context, c OIDCClaims, autoProvisio
 			return toUser(u), nil
 		}
 	}
-	// 3. Auto-provision a new account, if enabled.
-	if !autoProvision {
+	// 4. Auto-provision a new account, if enabled.
+	if !p.AutoProvision {
 		return User{}, ErrUnauthorized
 	}
+	return s.provisionOIDCUser(ctx, c, false)
+}
+
+// provisionOIDCUser creates an account for a verified identity, with a random
+// (unusable) local password, and links the identity to it.
+func (s *Service) provisionOIDCUser(ctx context.Context, c OIDCClaims, isAdmin bool) (User, error) {
 	username, err := s.uniqueUsername(ctx, c)
 	if err != nil {
 		return User{}, err
@@ -445,7 +500,7 @@ func (s *Service) UpsertOIDCUser(ctx context.Context, c OIDCClaims, autoProvisio
 	if err != nil {
 		return User{}, err
 	}
-	u, err := s.createUser(ctx, username, c.Email, randomPw, false)
+	u, err := s.createUser(ctx, username, c.Email, randomPw, isAdmin)
 	if err != nil {
 		return User{}, err
 	}
@@ -660,15 +715,21 @@ func (s *Service) Enable2FA(ctx context.Context, userID int64, secret, code stri
 	if err := s.q.DeleteRecoveryCodes(ctx, userID); err != nil {
 		return nil, err
 	}
+	return issueRecoveryCodes(func(hash string) error {
+		return s.q.InsertRecoveryCode(ctx, db.InsertRecoveryCodeParams{UserID: userID, CodeHash: hash})
+	})
+}
+
+// issueRecoveryCodes makes recoveryCodeCount fresh one-time codes, hands the
+// hash of each to store, and returns them as shown to the user, once.
+func issueRecoveryCodes(store func(hash string) error) ([]string, error) {
 	codes := make([]string, 0, recoveryCodeCount)
 	for i := 0; i < recoveryCodeCount; i++ {
 		display, canonical, err := newRecoveryCode()
 		if err != nil {
 			return nil, err
 		}
-		if err := s.q.InsertRecoveryCode(ctx, db.InsertRecoveryCodeParams{
-			UserID: userID, CodeHash: hashToken(canonical),
-		}); err != nil {
+		if err := store(hashToken(canonical)); err != nil {
 			return nil, err
 		}
 		codes = append(codes, display)
@@ -702,6 +763,80 @@ func (s *Service) Disable2FA(ctx context.Context, userID int64, password string)
 // RecoveryCodesRemaining reports how many unused recovery codes the user has.
 func (s *Service) RecoveryCodesRemaining(ctx context.Context, userID int64) (int64, error) {
 	return s.q.CountUnusedRecoveryCodes(ctx, userID)
+}
+
+// NewAccessCodes replaces the user's access recovery codes (#620) with a fresh
+// set of one-time codes, returned once. The old ones stop working.
+func (s *Service) NewAccessCodes(ctx context.Context, userID int64) ([]string, error) {
+	if err := s.q.DeleteAccessRecoveryCodes(ctx, userID); err != nil {
+		return nil, err
+	}
+	return issueRecoveryCodes(func(hash string) error {
+		return s.q.InsertAccessRecoveryCode(ctx, db.InsertAccessRecoveryCodeParams{UserID: userID, CodeHash: hash})
+	})
+}
+
+// NewAccessCodesByUsername is NewAccessCodes for the account with this
+// username: the `cloudbank recovery-codes` command, the last way in for
+// whoever runs the server when a user has lost both the provider and their
+// codes. ErrNotFound when there is no such account.
+func (s *Service) NewAccessCodesByUsername(ctx context.Context, username string) ([]string, error) {
+	u, err := s.q.GetUserByUsername(ctx, username)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return s.NewAccessCodes(ctx, u.ID)
+}
+
+// AccessCodesRemaining reports how many unused access recovery codes the user has.
+func (s *Service) AccessCodesRemaining(ctx context.Context, userID int64) (int64, error) {
+	return s.q.CountUnusedAccessRecoveryCodes(ctx, userID)
+}
+
+// LoginWithAccessCode opens a session with one of the user's access recovery
+// codes, which it consumes: the way in when the identity provider is down
+// (#620). It returns how many codes are still unused. Attempts are rate
+// limited like the password login, keyed apart from it.
+func (s *Service) LoginWithAccessCode(ctx context.Context, ip, username, code, userAgent string) (User, string, int64, error) {
+	key := "access|" + ip + "|" + username
+	if !s.limiter.allow(key) {
+		return User{}, "", 0, ErrRateLimited
+	}
+	u, err := s.q.GetUserByUsername(ctx, username)
+	if errors.Is(err, sql.ErrNoRows) {
+		s.limiter.record(key)
+		return User{}, "", 0, ErrInvalidCredentials
+	}
+	if err != nil {
+		return User{}, "", 0, err
+	}
+	if u.Disabled != 0 {
+		s.limiter.record(key)
+		return User{}, "", 0, ErrInvalidCredentials
+	}
+	n, err := s.q.ConsumeAccessRecoveryCode(ctx, db.ConsumeAccessRecoveryCodeParams{
+		UserID: u.ID, CodeHash: hashToken(normalizeRecoveryCode(code)),
+	})
+	if err != nil {
+		return User{}, "", 0, err
+	}
+	if n == 0 {
+		s.limiter.record(key)
+		return User{}, "", 0, ErrInvalidCredentials
+	}
+	s.limiter.reset(key)
+	left, err := s.q.CountUnusedAccessRecoveryCodes(ctx, u.ID)
+	if err != nil {
+		return User{}, "", 0, err
+	}
+	token, err := s.openSession(ctx, u.ID, userAgent)
+	if err != nil {
+		return User{}, "", 0, err
+	}
+	return toUser(u), token, left, nil
 }
 
 func (s *Service) openSession(ctx context.Context, userID int64, userAgent string) (string, error) {
