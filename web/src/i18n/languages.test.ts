@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { languageOf, languages, normalizeLanguage } from "./languages";
+import {
+  correctionUrl,
+  languageOf,
+  languages,
+  normalizeLanguage,
+  orderedLanguages,
+  type Language,
+} from "./languages";
 
 // Every translation file, read from disk: a row without its file, or a file
 // without its row, fails here (the server has the same test for internal/locale).
@@ -40,5 +47,50 @@ describe("the languages list", () => {
     expect(normalizeLanguage("pt-PT")).toBeUndefined();
     expect(languageOf("pt-PT").code).toBe("en");
     expect(languageOf("it-CH").code).toBe("it");
+  });
+});
+
+describe("the selectors' order and the corrections link", () => {
+  const row = (code: string, name: string, beta: boolean): Language => ({
+    code,
+    name,
+    beta,
+    weekStart: 1,
+    correction: beta ? `Fix ${code}` : undefined,
+  });
+
+  it("puts the complete languages first, then the beta ones by their own name", () => {
+    const list = [
+      row("en", "English", false),
+      row("pt-BR", "Português (Brasil)", true),
+      row("it", "Italiano", false),
+      row("fr", "Français", true),
+      row("de", "Deutsch", true),
+      row("es", "Español", true),
+    ];
+    expect(orderedLanguages(list).map((l) => l.code)).toEqual([
+      "en",
+      "it",
+      "de",
+      "es",
+      "fr",
+      "pt-BR",
+    ]);
+  });
+
+  it("opens the translation form with the language chosen and the title started", () => {
+    expect(correctionUrl("de")).toBe(
+      "https://github.com/easly1989/cloudbank/issues/new?template=translation.yml&language=de&title=%5Bde%5D%20",
+    );
+    const url = new URL(correctionUrl("pt-BR"));
+    expect(url.searchParams.get("template")).toBe("translation.yml");
+    expect(url.searchParams.get("language")).toBe("pt-BR");
+    expect(url.searchParams.get("title")).toBe("[pt-BR] ");
+  });
+
+  it("gives every beta language its invitation to correct it", () => {
+    for (const l of languages as readonly Language[]) {
+      if (l.beta) expect(l.correction, l.code).toBeTruthy();
+    }
   });
 });
