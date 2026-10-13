@@ -1,0 +1,149 @@
+<p align="center">
+  <img src="docs/img/logo.svg" alt="Logo di CloudBank" width="96" height="96" />
+</p>
+
+<h1 align="center">CloudBank</h1>
+
+<p align="center">
+  <strong>I tuoi soldi, sul tuo server.</strong><br />
+  Un gestore di finanze personali gratuito e sul web: un port per il browser, scritto da zero, di <a href="https://www.gethomebank.org/">HomeBank</a>.
+</p>
+
+<p align="center">
+  <a href="README.md">English</a> · <strong>Italiano</strong>
+</p>
+
+<p align="center">
+  <a href="https://p01--cloudbank--7dcjw6mlmtky.code.run/"><img src="https://img.shields.io/badge/Prova_la_demo-2457D6?style=for-the-badge" alt="Prova la demo" height="34" /></a>
+</p>
+
+<p align="center">
+  <sub>Dati inventati in un account usa e getta, cancellato quando smetti di usarlo. <a href="docs/demo.md">Cos'è la demo</a> (in inglese).</sub>
+</p>
+
+<p align="center">
+  <a href="https://github.com/easly1989/cloudbank/actions/workflows/ci.yml"><img src="https://github.com/easly1989/cloudbank/actions/workflows/ci.yml/badge.svg" alt="Stato della CI" /></a>
+  <a href="https://github.com/easly1989/cloudbank/issues"><img src="https://img.shields.io/github/issues/easly1989/cloudbank" alt="Issue aperte" /></a>
+  <a href="https://github.com/easly1989/cloudbank/pkgs/container/cloudbank"><img src="https://img.shields.io/badge/ghcr.io-cloudbank-2496ED?logo=docker&logoColor=white" alt="Immagine del container" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="Licenza: AGPL v3" /></a>
+</p>
+
+---
+
+**CloudBank** è un gestore di finanze personali gratuito, da ospitare sul proprio server, che si usa dal browser: un port per il web, scritto da zero, dell'ottima applicazione desktop [HomeBank](https://www.gethomebank.org/). Punta a fare tutto ciò che fa HomeBank, ma pensato per il browser: un solo container Docker che fai girare tu, con i dati in un database SQLite su un volume che controlli tu.
+
+**Provalo prima:** la [demo](https://p01--cloudbank--7dcjw6mlmtky.code.run/) è a un clic, senza registrazione, con un anno di dati inventati. Viene cancellata dopo due ore di inattività, quindi niente di ciò che ci metti resta.
+
+## Perché
+
+HomeBank è un'ottima app desktop, ma solo desktop. CloudBank porta lo stesso modo di lavorare (conti, un registro delle transazioni completo, transazioni programmate, budget, report ricchi e l'import da molti formati, compreso il file `.xhb` di HomeBank, in **lettura e scrittura**) in un'interfaccia web che raggiungi da qualsiasi dispositivo, tenendo i dati sul tuo server.
+
+CloudBank è una **reimplementazione indipendente, clean-room**. Non copia né usa codice di HomeBank: dell'originale guarda solo il comportamento documentato e i formati dei file, e segue le versioni di HomeBank, presenti e future. CloudBank è distribuito con licenza **AGPL-3.0** (HomeBank è GPL-2+).
+
+## Schermate
+
+|                 Cruscotto                |          Registro: azioni su più righe selezionate          |
+| :--------------------------------------: | :---------------------------------------------------------: |
+| ![Cruscotto](docs/img/dashboard.png)     | ![Azioni su più righe nel registro](docs/img/register-bulk.png) |
+
+|        Programmate: le bollette del mese su un calendario        |        Revisione: i possibili doppioni della sincronizzazione        |
+| :------------------------------------------------------: | :---------------------------------------------------------: |
+| ![Calendario delle programmate](docs/img/schedules.png)  | ![Revisione](docs/img/review.png)                           |
+
+|      Budget: previsto e speso, la risposta per prima      |      Categorie: ogni elenco si modifica in un pannello accanto      |
+| :--------------------------------------------------------: | :----------------------------------------------------------: |
+| ![Budget](docs/img/budget.png)                              | ![Categorie](docs/img/categories.png)                         |
+
+|                 Report interattivi                  |            Aspetto: tema, colore, barra laterale            |
+| :-------------------------------------------------: | :------------------------------------------------: |
+| ![Report](docs/img/reports.png)                     | ![Impostazioni](docs/img/settings.png)             |
+
+|            Un cruscotto libero, su misura             |    Import ed export: `.xhb` di HomeBank, backup e ripristino    |
+| :------------------------------------------------------: | :------------------------------------------------: |
+| ![Personalizzare il cruscotto](docs/img/dashboard-customize.png) | ![Export](docs/img/export.png)             |
+
+<sub>Le schermate usano i dati inventati della demo, in inglese.</sub>
+
+## Funzioni
+
+- **Conti e registro:** tutti i tipi di conto di HomeBank, ognuno nella sua valuta, con il saldo di oggi e quello futuro. Le transazioni hanno stato verificata e riconciliata, suddivisioni, tag e giroconti; il registro ha filtri, colonne a scelta, azioni su più righe, la ricerca e la riconciliazione con l'estratto conto.
+- **Programmate e calendario:** le transazioni che tornano si registrano da sole, anche fino a tre mesi prima. Un calendario mostra le scadenze del mese con il loro stato, cosa resta da pagare e cosa aspetta te; modelli e regole di assegnazione compilano il resto.
+- **Budget e report:** dove sono finiti i soldi, cosa è entrato e uscito, cosa hanno e avranno i conti, quanto costa un'auto; per mese, trimestre o anno, con viste salvate e download CSV e PNG.
+- **Obiettivi e veicoli:** quanto hai messo da parte, quanto mettere ogni mese per arrivare in tempo e quanto resta libero; per ogni veicolo carburante, chilometri, costo al chilometro e consumi.
+- **Import ed export:** `.xhb` di HomeBank, QIF, OFX/QFX, CSV e CAMT.053 (ISO 20022) in entrata, con un assistente; `.xhb`, QIF e CSV in uscita; backup e ripristino del portafoglio.
+- **Sincronizzazione bancaria:** le transazioni nuove arrivano dalla banca, passano per le tue regole e si uniscono a quelle che hai già invece di duplicarsi. Con le tue credenziali, su [SimpleFIN](https://www.simplefin.org/), [Enable Banking](https://enablebanking.com/) (UE e Regno Unito) e, in prova, [Pluggy](https://pluggy.ai/) (America Latina).
+- **Multi-valuta e multi-utente:** cambi manuali od online (BCE), più utenti gestiti dall'amministratore, portafogli condivisi; l'app è in inglese e in italiano.
+- **Un cruscotto su misura:** in cima ciò che aspetta te, poi widget da mettere e ridimensionare dove vuoi, temi chiaro e scuro con il colore che preferisci, barra laterale e navigazione da riordinare.
+- **Sicurezza:** autenticazione a due fattori, accesso con SSO (OIDC), token API revocabili e segreti cifrati nel database.
+- **App installabile:** CloudBank si installa sul telefono o sul computer come un'app, con le notifiche push delle scadenze, e avvisa quando c'è una versione nuova.
+- **IA facoltativa, con la tua chiave:** suggerimenti di categoria e transazioni scritte a parole («caffè 3,50 ieri»).
+
+## Avvio rapido
+
+<!-- quick-start -->
+
+Ti serve [Docker](https://docs.docker.com/get-docker/) con il plugin Compose.
+Crea un `docker-compose.yml` (o copia [quello del repository](docker-compose.yml)):
+
+```yaml
+services:
+  cloudbank:
+    image: ghcr.io/easly1989/cloudbank:main # latest stable release (see tags below)
+    container_name: cloudbank
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Set to "false" only for a plain-HTTP LAN install without TLS in front.
+      CB_SECURE_COOKIES: "false"
+    volumes:
+      - cloudbank-data:/data
+
+volumes:
+  cloudbank-data:
+```
+
+Poi avvialo e apri l'app:
+
+```bash
+docker compose up -d
+# open http://localhost:8080 and complete the first-run admin setup
+```
+
+Tutta l'installazione è questa: un container, nessun database esterno. I dati
+stanno nel volume `cloudbank-data` (un database SQLite sotto `/data`). Per il
+backup copia quel volume, oppure usa il **backup del portafoglio** nell'app
+(Impostazioni › Importa ed esporta) e il **backup completo** dell'amministratore:
+[docs/backup.md](docs/backup.md) spiega cosa contiene ciascuno e come si ripristina.
+
+Poi segui [Getting started](docs/getting-started.md): l'amministratore, un
+portafoglio, i conti e le categorie, le prime transazioni.
+
+Lo metti dietro HTTPS (consigliato per tutto ciò che va oltre una rete di casa
+fidata)? Vedi [docs/reverse-proxy.md](docs/reverse-proxy.md). Arrivi da HomeBank
+desktop? Vedi [docs/migrate-from-homebank.md](docs/migrate-from-homebank.md).
+
+<!-- /quick-start -->
+
+## Il resto, in inglese
+
+La configurazione (le variabili `CB_*`), le immagini del container e il significato dei tag, l'installazione come app e tutte le guide sono nel [README inglese](README.md) e in [docs/](docs/README.md). Attenzione ai tag: `:main` è l'ultima versione stabile, `:latest` la build notturna.
+
+## Licenza
+
+CloudBank è distribuito con la **GNU Affero General Public License v3.0**: vedi [LICENSE](LICENSE). Se fai girare una versione modificata come servizio di rete, l'AGPL ti chiede di offrirne il codice sorgente a chi la usa.
+
+## Sostieni il progetto
+
+CloudBank è un progetto open source fatto con passione. Se ti è utile, valuta una
+donazione: aiuta davvero ed è molto apprezzata. ♥ Il modo più semplice è
+[**Buy Me a Coffee**](https://buymeacoffee.com/easly1989). Se ne preferisci un altro,
+la [pagina delle donazioni](https://easly1989.github.io/donate.html) li elenca tutti:
+[PayPal](https://paypal.me/carloruggiero),
+[Stripe](https://buy.stripe.com/8x26oAeqA7h6dPk80hfbq00),
+[Liberapay](https://liberapay.com/amon2126/donate) o
+[GitHub Sponsors](https://github.com/sponsors/easly1989).
+
+---
+
+<sub>Allineato al README della v3.8.0.</sub>
