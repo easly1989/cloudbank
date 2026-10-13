@@ -142,11 +142,11 @@ func run() error {
 		}
 		cancel()
 		logger.Info("oidc: enabled", "issuer", cfg.OIDCIssuer, "provider", cfg.OIDCName,
-			"auto_provision", cfg.OIDCAutoProvision, "password_login", cfg.PasswordLogin)
+			"auto_provision", cfg.OIDCAutoProvision, "sso_only", cfg.SSOOnly)
 	}
 	// Without the password form, SSO is the only way in (#620): refuse to start
 	// rather than serve a login page nobody can get past.
-	if !cfg.PasswordLogin && oidcSvc == nil {
+	if cfg.SSOOnly && oidcSvc == nil {
 		return errors.New("CB_PASSWORD_LOGIN=false needs OIDC: set CB_OIDC_ISSUER, CB_OIDC_CLIENT_ID, CB_OIDC_CLIENT_SECRET and CB_OIDC_REDIRECT_URL")
 	}
 	walletSvc := wallet.NewService(st.Write())
@@ -232,7 +232,7 @@ func run() error {
 		SecureCookies:     cfg.SecureCookies,
 		OIDC:              oidcSvc,
 		OIDCAutoProvision: cfg.OIDCAutoProvision,
-		SSOOnly:           !cfg.PasswordLogin,
+		SSOOnly:           cfg.SSOOnly,
 		OIDCAdminEmail:    cfg.OIDCAdminEmail,
 	}
 	// The demo build switches parts of the server off; any other build leaves
