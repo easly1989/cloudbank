@@ -70,7 +70,7 @@ export interface paths {
         };
         /**
          * Public auth configuration (available login methods)
-         * @description Tells the login page whether OIDC/SSO login is enabled and its button label.
+         * @description Tells the login and setup pages how to sign in: whether OIDC/SSO login is enabled and its button label, and whether the username/password form is there at all (passwordLogin is false when the server signs in through SSO only, CB_PASSWORD_LOGIN=false).
          */
         get: operations["getAuthConfig"];
         put?: never;
@@ -112,6 +112,26 @@ export interface paths {
         put?: never;
         /** Log in */
         post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/recovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in with an access recovery code (SSO-only servers)
+         * @description Exists only when the server signs in through SSO only. Consumes one of the user's access recovery codes and starts a session: the way in while the identity provider is down. Attempts are rate limited like the password login.
+         */
+        post: operations["recoveryLogin"];
         delete?: never;
         options?: never;
         head?: never;
@@ -196,6 +216,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/me/access-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How many of your access recovery codes are unused (SSO-only servers) */
+        get: operations["getAccessCodes"];
+        put?: never;
+        /**
+         * Make new access recovery codes, voiding the old ones (SSO-only servers, session only)
+         * @description Returns ten one-time codes, shown once. Only their hashes are stored.
+         */
+        post: operations["newAccessCodes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/2fa/setup": {
         parameters: {
             query?: never;
@@ -205,7 +246,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Begin TOTP enrollment — returns a secret and provisioning URI (session only) */
+        /**
+         * Begin TOTP enrollment — returns a secret and provisioning URI (session only)
+         * @description Two-factor belongs to the password login: on a server that signs in through SSO only, this and the other 2fa endpoints answer 403 password_login_off.
+         */
         post: operations["setup2fa"];
         delete?: never;
         options?: never;
@@ -929,7 +973,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reset a user's password (admin) */
+        /**
+         * Reset a user's password (admin)
+         * @description Answers 403 password_login_off on a server that signs in through SSO only.
+         */
         post: operations["resetUserPassword"];
         delete?: never;
         options?: never;
@@ -3086,11 +3133,21 @@ export interface components {
             /** @enum {boolean} */
             totpRequired: true;
         };
+        /** @description On a server that signs in through SSO only, the password is ignored and the email is required: the user signs in through the provider, matched by that email once the provider says it is verified. */
         CreateUserRequest: {
             username: string;
             email?: string;
-            password: string;
+            /** @description required unless the server signs in through SSO only */
+            password?: string;
             isAdmin?: boolean;
+        };
+        RecoveryLoginResult: {
+            user: components["schemas"]["User"];
+            /**
+             * Format: int64
+             * @description access recovery codes still unused
+             */
+            remaining: number;
         };
         Wallet: {
             /** Format: int64 */
@@ -4531,6 +4588,7 @@ export interface operations {
                             enabled: boolean;
                             name: string;
                         };
+                        passwordLogin: boolean;
                     };
                 };
             };
@@ -4559,6 +4617,15 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description The server signs in through SSO only (code password_login_off); the first SSO sign-in sets it up. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Setup has already been completed. */
             409: {
                 headers: {
@@ -4590,6 +4657,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LoginResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description The server signs in through SSO only (code password_login_off). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Too many attempts. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    recoveryLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    username: string;
+                    /** @description one access recovery code; dashes, spaces and case do not matter */
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Signed in. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryLoginResult"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -4740,13 +4854,61 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description The current password is wrong (code invalid_password), or the request came with an API token. */
+            /** @description The current password is wrong (code invalid_password), the request came with an API token, or the server signs in through SSO only (code password_login_off). */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
+        };
+    };
+    getAccessCodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The count. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        remaining: number;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    newAccessCodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new codes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        codes: string[];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     setup2fa: {

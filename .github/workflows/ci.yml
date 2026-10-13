@@ -216,6 +216,18 @@ jobs:
         run: npm test
         env:
           E2E_BASE_URL: http://localhost:8080
+      - name: Wait for the SSO-only server
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8081/healthz; then ok=1; break; fi
+            sleep 2
+          done
+          test -n "$ok"
+      - name: Run the SSO-only e2e
+        working-directory: e2e
+        run: npm run test:sso
+        env:
+          E2E_SSO_BASE_URL: http://localhost:8081
       - name: Container logs on failure
         if: failure()
         run: docker compose -f e2e/docker-compose.ci.yml logs
@@ -226,6 +238,7 @@ jobs:
           name: playwright-artifacts
           path: |
             e2e/test-results/
+            e2e/test-results-sso/
             e2e/playwright-report/
           retention-days: 7
 

@@ -128,6 +128,14 @@ type Options struct {
 	// OIDCAutoProvision creates a local account on first SSO login for an unknown
 	// identity (see config.OIDCAutoProvision).
 	OIDCAutoProvision bool
+	// SSOOnly turns the password login off (#620, CB_PASSWORD_LOGIN=false):
+	// sign-in goes through OIDC, the first SSO sign-in on an empty installation
+	// becomes its administrator, and access recovery codes stand in for the
+	// provider when it is down. It needs OIDC set.
+	SSOOnly bool
+	// OIDCAdminEmail reserves that first administrator sign-in to the identity
+	// with this verified email (CB_OIDC_ADMIN_EMAIL).
+	OIDCAdminEmail string
 	// Version is the running build version, surfaced at GET /api/v1/version.
 	Version string
 	// Updates, if non-nil, mounts the admin endpoints of the new-version check
@@ -185,7 +193,7 @@ func New(opts Options) http.Handler {
 			writeJSON(w, http.StatusOK, map[string]string{"version": version})
 		})
 		if opts.Auth != nil {
-			ah := &authHandlers{svc: opts.Auth, secure: opts.SecureCookies, demo: dh != nil}
+			ah := &authHandlers{svc: opts.Auth, secure: opts.SecureCookies, demo: dh != nil, ssoOnly: opts.SSOOnly}
 			if dh != nil {
 				dh.routes(r)
 			} else {
@@ -195,7 +203,12 @@ func New(opts Options) http.Handler {
 			// the login page can hide the button when SSO is off.
 			(&oidcHandlers{
 				svc: opts.OIDC, auth: opts.Auth, secure: opts.SecureCookies,
-				autoProvision: opts.OIDCAutoProvision,
+				ssoOnly: opts.SSOOnly,
+				policy: auth.OIDCPolicy{
+					AutoProvision: opts.OIDCAutoProvision,
+					FirstAdmin:    opts.SSOOnly,
+					AdminEmail:    opts.OIDCAdminEmail,
+				},
 			}).routes(r)
 			// Authenticated API: one requireAuth group shared by auth-protected
 			// endpoints and the wallet endpoints.

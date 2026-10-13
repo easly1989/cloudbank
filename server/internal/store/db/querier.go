@@ -37,6 +37,7 @@ type Querier interface {
 	CategoryExpenseTotals(ctx context.Context, arg CategoryExpenseTotalsParams) ([]CategoryExpenseTotalsRow, error)
 	ClearUserTOTP(ctx context.Context, id int64) error
 	ClearWalletBase(ctx context.Context, walletID int64) error
+	ConsumeAccessRecoveryCode(ctx context.Context, arg ConsumeAccessRecoveryCodeParams) (int64, error)
 	ConsumeRecoveryCode(ctx context.Context, arg ConsumeRecoveryCodeParams) (int64, error)
 	// Ownership checks for the ids a request names (#543): each counts how many of
 	// the given ids are rows of the wallet.
@@ -52,6 +53,7 @@ type Querier interface {
 	CountTransactionsForAccount(ctx context.Context, accountID int64) (int64, error)
 	CountTransactionsWithCategory(ctx context.Context, categoryID sql.NullInt64) (int64, error)
 	CountTransactionsWithPayee(ctx context.Context, payeeID sql.NullInt64) (int64, error)
+	CountUnusedAccessRecoveryCodes(ctx context.Context, userID int64) (int64, error)
 	CountUnusedRecoveryCodes(ctx context.Context, userID int64) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CountUsersByEmail(ctx context.Context, email string) (int64, error)
@@ -61,6 +63,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateWallet(ctx context.Context, arg CreateWalletParams) (Wallet, error)
 	DeleteAPIToken(ctx context.Context, arg DeleteAPITokenParams) (int64, error)
+	DeleteAccessRecoveryCodes(ctx context.Context, userID int64) error
 	DeleteAccount(ctx context.Context, id int64) error
 	DeleteAssignment(ctx context.Context, id int64) error
 	DeleteAssignmentTags(ctx context.Context, assignmentID int64) error
@@ -144,6 +147,7 @@ type Querier interface {
 	GetWalletMembership(ctx context.Context, arg GetWalletMembershipParams) (string, error)
 	GoalSaved(ctx context.Context, goalID int64) (int64, error)
 	InsertAPIToken(ctx context.Context, arg InsertAPITokenParams) (ApiToken, error)
+	InsertAccessRecoveryCode(ctx context.Context, arg InsertAccessRecoveryCodeParams) error
 	InsertAccount(ctx context.Context, arg InsertAccountParams) (Account, error)
 	InsertAssignment(ctx context.Context, arg InsertAssignmentParams) (Assignment, error)
 	InsertAttachment(ctx context.Context, arg InsertAttachmentParams) (Attachment, error)
