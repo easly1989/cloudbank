@@ -10,6 +10,10 @@
 </p>
 
 <p align="center">
+  <strong>English</strong> · <a href="README.it.md">Italiano</a>
+</p>
+
+<p align="center">
   <a href="https://p01--cloudbank--7dcjw6mlmtky.code.run/"><img src="https://img.shields.io/badge/Try_the_live_demo-2457D6?style=for-the-badge" alt="Try the live demo" height="34" /></a>
 </p>
 
@@ -121,6 +125,9 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 
 ## Quick start
 
+<!-- quick-start: the translated READMEs copy these code blocks verbatim; .github/scripts/readme_sync.py checks them -->
+<!-- quick-start -->
+
 You need [Docker](https://docs.docker.com/get-docker/) with the Compose plugin.
 Create a `docker-compose.yml` (or copy [the one in this repo](docker-compose.yml)):
 
@@ -161,6 +168,8 @@ wallet, your accounts and categories, and your first transactions.
 Running behind HTTPS (recommended for anything beyond a trusted LAN)? See
 [docs/reverse-proxy.md](docs/reverse-proxy.md). Coming from the HomeBank desktop
 app? See [docs/migrate-from-homebank.md](docs/migrate-from-homebank.md).
+
+<!-- /quick-start -->
 
 ## Install as an app (PWA)
 
