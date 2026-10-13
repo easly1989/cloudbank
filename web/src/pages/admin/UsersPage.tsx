@@ -24,11 +24,13 @@ import {
   setUserDisabled,
   type User,
 } from "../../api/client";
-import { useAuth } from "../../auth/AuthProvider";
+import { useAuth, useAuthConfig } from "../../auth/AuthProvider";
 
 export function UsersPage() {
   const { t } = useTranslation();
   const { user: current } = useAuth();
+  // Signing in through SSO only (#620): no passwords to set or reset.
+  const ssoOnly = useAuthConfig().data?.passwordLogin === false;
   const qc = useQueryClient();
   const usersQuery = useQuery({ queryKey: ["admin", "users"], queryFn: listUsers });
   const invalidate = () => qc.invalidateQueries({ queryKey: ["admin", "users"] });
@@ -90,9 +92,11 @@ export function UsersPage() {
               </Table.Td>
               <Table.Td>
                 <Group gap="xs">
-                  <Button size="xs" variant="default" onClick={() => setResetTarget(u)}>
-                    {t("admin.resetPassword")}
-                  </Button>
+                  {!ssoOnly && (
+                    <Button size="xs" variant="default" onClick={() => setResetTarget(u)}>
+                      {t("admin.resetPassword")}
+                    </Button>
+                  )}
                   {current?.id !== u.id && (
                     <Button
                       size="xs"
@@ -111,6 +115,7 @@ export function UsersPage() {
       </Table>
 
       <CreateUserModal
+        ssoOnly={ssoOnly}
         opened={createOpened}
         onClose={createHandlers.close}
         onCreated={invalidate}
@@ -121,22 +126,27 @@ export function UsersPage() {
 }
 
 function CreateUserModal({
+  ssoOnly,
   opened,
   onClose,
   onCreated,
 }: {
+  ssoOnly: boolean;
   opened: boolean;
   onClose: () => void;
   onCreated: () => void;
 }) {
   const { t } = useTranslation();
+  const provider = useAuthConfig().data?.oidc.name ?? "SSO";
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const ready = ssoOnly ? !!username && email.includes("@") : !!username && password.length >= 8;
 
   const mutation = useMutation({
-    mutationFn: () => createUser({ username, email, password, isAdmin }),
+    mutationFn: () =>
+      createUser(ssoOnly ? { username, email, isAdmin } : { username, email, password, isAdmin }),
     onSuccess: () => {
       notifications.show({ color: "green", message: t("admin.userCreated") });
       setUsername("");
@@ -164,25 +174,26 @@ function CreateUserModal({
         />
         <TextInput
           label={t("admin.email")}
+          type="email"
+          required={ssoOnly}
+          description={ssoOnly ? t("admin.emailSso", { provider }) : undefined}
           value={email}
           onChange={(e) => setEmail(e.currentTarget.value)}
         />
-        <PasswordInput
-          label={t("admin.password")}
-          required
-          value={password}
-          onChange={(e) => setPassword(e.currentTarget.value)}
-        />
+        {!ssoOnly && (
+          <PasswordInput
+            label={t("admin.password")}
+            required
+            value={password}
+            onChange={(e) => setPassword(e.currentTarget.value)}
+          />
+        )}
         <Checkbox
           label={t("admin.makeAdmin")}
           checked={isAdmin}
           onChange={(e) => setIsAdmin(e.currentTarget.checked)}
         />
-        <Button
-          onClick={() => mutation.mutate()}
-          loading={mutation.isPending}
-          disabled={!username || password.length < 8}
-        >
+        <Button onClick={() => mutation.mutate()} loading={mutation.isPending} disabled={!ready}>
           {t("admin.create")}
         </Button>
       </Stack>

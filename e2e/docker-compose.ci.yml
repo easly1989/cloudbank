@@ -14,5 +14,38 @@ services:
     volumes:
       - cb-e2e-data:/data
 
+  # The SSO-only server (#620) and the pretend provider it signs in through,
+  # for `npm run test:sso`. Both sit on the host network so the browser and
+  # CloudBank reach the provider at the same address, which the ID token's
+  # issuer has to match.
+  fake-idp:
+    image: node:26-alpine
+    network_mode: host
+    command: ["node", "/sso/fake-idp.mjs"]
+    environment:
+      FAKE_IDP_PORT: "9000"
+    volumes:
+      - ./sso:/sso:ro
+  cloudbank-sso:
+    image: cloudbank:e2e
+    network_mode: host
+    depends_on:
+      - fake-idp
+    environment:
+      CB_ADDR: ":8081"
+      CB_SECURE_COOKIES: "false"
+      CB_LOG_LEVEL: "info"
+      CB_PASSWORD_LOGIN: "false"
+      CB_OIDC_ISSUER: "http://localhost:9000"
+      CB_OIDC_CLIENT_ID: "cloudbank"
+      # The pretend provider accepts any secret; this one guards nothing.
+      CB_OIDC_CLIENT_SECRET: "e2e-only"
+      CB_OIDC_REDIRECT_URL: "http://localhost:8081/api/v1/auth/oidc/callback"
+      CB_OIDC_NAME: "Fake IdP"
+      CB_OIDC_ADMIN_EMAIL: "admin@example.com"
+    volumes:
+      - cb-sso-data:/data
+
 volumes:
   cb-e2e-data:
+  cb-sso-data:
