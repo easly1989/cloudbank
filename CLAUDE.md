@@ -160,4 +160,3 @@ See `docs/agents/domain.md`.
 ### Token tools
 
 CBM: call `index_repository` once, then `search_graph` / `trace_path` before reading files.
-Headroom: run `headroom wrap claude` to compress a session (`headroom unwrap claude` undoes it).
