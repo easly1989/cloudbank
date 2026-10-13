@@ -6,7 +6,6 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
-  ApiError,
   applyAssignments,
   deleteAssignment,
   listAccounts,
@@ -33,6 +32,7 @@ import {
   type Lookups,
   type RuleActions,
 } from "./rules/RuleTable";
+import { notifyError } from "../notifyError";
 
 /**
  * Rules (#566): every rule as the sentence it is, in the order they are tried,
@@ -92,11 +92,7 @@ export function AssignmentsPage() {
     void qc.invalidateQueries({ queryKey: ["assignments", walletId] });
     void qc.invalidateQueries({ queryKey: ["tags", walletId] });
   };
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Assignment | null>(null);

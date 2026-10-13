@@ -79,6 +79,7 @@ import { useAmountParser } from "../useAmountParser";
 import { AttachmentsField } from "./AttachmentsField";
 import { ENTRY_SHEET } from "./entrySheetTheme";
 import { todayCivil } from "../civilDate";
+import { ErrorMessage } from "./ErrorMessage";
 
 // How a save resolves: close the sheet, or stay open for another entry — with
 // the fields cleared, or kept when "keep the fields" is ticked. Editing always
@@ -204,7 +205,7 @@ export function TransactionForm({
       notifications.show({
         position: toastAt,
         color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
+        message: <ErrorMessage error={err} />,
       }),
   });
 
@@ -236,7 +237,7 @@ export function TransactionForm({
       notifications.show({
         position: toastAt,
         color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
+        message: <ErrorMessage error={err} />,
       }),
   });
 
@@ -401,7 +402,7 @@ export function TransactionForm({
       notifications.show({
         position: toastAt,
         color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
+        message: <ErrorMessage error={err} />,
       }),
   });
 
@@ -524,7 +525,7 @@ export function TransactionForm({
       notifications.show({
         position: toastAt,
         color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
+        message: <ErrorMessage error={err} />,
       }),
   });
 
@@ -576,7 +577,7 @@ export function TransactionForm({
       notifications.show({
         position: toastAt,
         color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
+        message: <ErrorMessage error={err} />,
       });
       return null;
     }

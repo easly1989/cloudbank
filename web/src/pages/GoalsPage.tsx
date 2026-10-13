@@ -1,12 +1,10 @@
 import { Button, Stack } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
-  ApiError,
   closeGoal,
   deleteGoal,
   getDashboard,
@@ -34,6 +32,7 @@ import {
 } from "./goals/GoalsTable";
 import type { GoalActions } from "./goals/goalWords";
 import { type Direction, MoneySheet } from "./goals/MoneySheet";
+import { notifyError } from "../notifyError";
 
 /**
  * Savings goals (#572): what is set aside, what a month gets every goal there
@@ -99,11 +98,7 @@ export function GoalsPage() {
     void qc.invalidateQueries({ queryKey: ["goals", walletId] });
     void qc.invalidateQueries({ queryKey: ["goalContributions", walletId] });
   };
-  const showError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const showError = (err: unknown) => notifyError(err);
 
   // The goal's sheet, and the sheet for money in and out. Each keeps the goal
   // it opened on, so it can close without losing its content.

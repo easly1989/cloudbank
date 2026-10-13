@@ -1,8 +1,6 @@
 // Minimal fetch wrapper for the CloudBank JSON API. All requests are
 // same-origin and send cookies (session auth, added in a later milestone).
 
-import { demoMessage } from "../demo/messages";
-
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -39,7 +37,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // non-JSON error body; keep the fallback
     }
-    if (__DEMO__) message = demoMessage(res.status, code) ?? message;
     throw new ApiError(res.status, message, code);
   }
 

@@ -7,7 +7,6 @@ import { useTranslation } from "react-i18next";
 import { errorColor } from "../amountTone";
 
 import {
-  ApiError,
   type Account,
   type Template,
   type TransferInput,
@@ -20,6 +19,7 @@ import { minorToInput } from "../money";
 import { STATUSES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import { todayCivil } from "../civilDate";
+import { notifyError } from "../notifyError";
 
 export function TransferForm({
   opened,
@@ -127,11 +127,7 @@ export function TransferForm({
       onSaved();
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   // Apply a transfer template: pre-fill from/to accounts, amount and memo.
@@ -164,11 +160,7 @@ export function TransferForm({
       onTemplateSaved();
       notifications.show({ color: "green", message: t("templates.saved") });
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const accountOptions = accounts.map((a) => ({ value: String(a.id), label: a.name }));

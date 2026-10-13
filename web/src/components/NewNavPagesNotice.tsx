@@ -1,14 +1,14 @@
 import { Button, Group, Paper, Text } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconSparkles } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ApiError, savePreferences } from "../api/client";
+import { savePreferences } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { NAV_ITEMS } from "./navItems";
 import { migrateNavLayout, unseenNavPages, type NavLayout } from "./navLayout";
+import { notifyError } from "../notifyError";
 
 const LABEL_KEY = new Map(NAV_ITEMS.map((i) => [i.to, i.labelKey]));
 
@@ -26,11 +26,7 @@ export function NewNavPagesNotice() {
 
   const save = useMutation({
     mutationFn: (next: NavLayout) => savePreferences(qc, { navLayout: next }),
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   if (unseen.length === 0) return null;

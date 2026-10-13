@@ -1,12 +1,10 @@
 import { ActionIcon, Button, Menu, SegmentedControl, Select, Text, TextInput } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconDots } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
-  ApiError,
   type BudgetMode,
   type Category,
   type CategoryBudget,
@@ -22,6 +20,7 @@ import { categoryLabel } from "../payees/payeeList";
 import { type BudgetLine, historyStats, lastTwelve, type Plan, planFor } from "./budgetList";
 import type { Money } from "./BudgetTable";
 import classes from "./budget.module.css";
+import { notifyError } from "../../notifyError";
 
 /** What the sheet opens on: a category (with its line, when it has one), or a
  *  new budget whose category is still to choose. */
@@ -150,11 +149,7 @@ export function BudgetSheet({
       onSaved();
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   // Switching the plan keeps the amount entered.

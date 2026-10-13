@@ -4,17 +4,18 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ApiError, checkIntegrity, fixIntegrity, type IntegrityIssue } from "../api/client";
+import { checkIntegrity, fixIntegrity, type IntegrityIssue } from "../api/client";
 import { useWallet } from "../wallet/WalletProvider";
+import { ErrorMessage } from "../components/ErrorMessage";
 
 export function IntegrityCard() {
   const { t } = useTranslation();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
   const [issues, setIssues] = useState<IntegrityIssue[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
-  const onError = (err: unknown) => setError(err instanceof ApiError ? err.message : String(err));
+  const onError = (err: unknown) => setError(err);
 
   const run = useMutation({
     mutationFn: () => checkIntegrity(walletId),
@@ -44,9 +45,9 @@ export function IntegrityCard() {
           {t("integrity.description")}
         </Text>
 
-        {error && (
+        {error != null && (
           <Alert color="red" icon={<IconAlertTriangle size={16} />}>
-            {error}
+            <ErrorMessage error={error} />
           </Alert>
         )}
 

@@ -10,14 +10,12 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconDots } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
-  ApiError,
   createTemplate,
   updateTemplate,
   type Account,
@@ -33,6 +31,7 @@ import { PAYMENT_MODES, STATUSES } from "../../transactionEnums";
 import { useAmountParser } from "../../useAmountParser";
 import { categoryLabel } from "../payees/payeeList";
 import classes from "./templates.module.css";
+import { notifyError } from "../../notifyError";
 
 /**
  * A template kept for quick entry, in the sheet beside the page (#560): new,
@@ -165,11 +164,7 @@ export function TemplateSheet({
       onSaved();
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const categoryOptions = useMemo(

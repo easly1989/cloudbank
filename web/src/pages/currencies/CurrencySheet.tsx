@@ -9,25 +9,19 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconDots } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import {
-  ApiError,
-  addCurrency,
-  updateCurrency,
-  type Currency,
-  type CurrencyUpdate,
-} from "../../api/client";
+import { addCurrency, updateCurrency, type Currency, type CurrencyUpdate } from "../../api/client";
 import { SideSheet } from "../../components/SideSheet";
 import { ENTRY_SHEET } from "../../components/entrySheetTheme";
 import classes from "./currencies.module.css";
 import { formatProblem, inverseText, preview, symbolOf, type CurrencyRow } from "./currencyList";
 import { CurrencyMenuItems, type CurrencyActions } from "./CurrencyTable";
 import { useOrigin } from "./labels";
+import { notifyError } from "../../notifyError";
 
 /** Select values for the thousands separator: "" cannot be one. */
 const NONE = "none";
@@ -93,11 +87,7 @@ export function CurrencySheet({
     }
   }
 
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
 
   const add = useMutation({
     mutationFn: () => addCurrency(walletId, code!),

@@ -1,13 +1,11 @@
 import { Button, SegmentedControl, Stack, TextInput, UnstyledButton } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
 import { IconCategory, IconLayoutColumns, IconLayoutList, IconSearch } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
-  ApiError,
   deleteCategory,
   getCategoryActivity,
   listCategories,
@@ -34,6 +32,7 @@ import {
 } from "./categories/categoryTree";
 import { CategoryIndex, CategoryPhoneList, CategoryRows } from "./categories/CategoryViews";
 import { useSince } from "./categories/labels";
+import { notifyError } from "../notifyError";
 
 type View = "rows" | "index";
 
@@ -109,11 +108,7 @@ export function CategoriesPage() {
   // is saved behind. A phone always has the rows.
   const [viewChoice, setViewChoice] = useState<View | null>(null);
   const view: View = phone ? "rows" : (viewChoice ?? user?.preferences?.categoriesView ?? "rows");
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
   const setView = (v: View) => {
     setViewChoice(v);
     savePreferences(qc, { categoriesView: v }).catch(onError);
