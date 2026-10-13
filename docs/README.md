@@ -27,6 +27,9 @@ pull request: an edit made in the wiki is overwritten.
   routine that works, upgrading, and getting it all back.
 - [Reverse proxy and HTTPS](reverse-proxy.md): putting CloudBank behind Caddy
   or nginx.
+- [Signing in with OIDC](sso.md): single sign-on through Authelia, Authentik,
+  Keycloak or Google, next to passwords or in their place, and the recovery
+  codes for when the provider does not answer.
 - [Configuration](../README.md#configuration): every `CB_*` setting.
 - [Container images](../README.md#container-images-and-tag-convention): which
   tag is stable and which is the nightly.

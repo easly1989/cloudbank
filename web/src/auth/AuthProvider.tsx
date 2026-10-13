@@ -3,11 +3,13 @@ import { createContext, useContext, useEffect, type ReactNode } from "react";
 
 import {
   ApiError,
+  getAuthConfig,
   getMe,
   isTotpChallenge,
   login as apiLogin,
   logout as apiLogout,
   postSetup,
+  recoveryLogin,
   type Credentials,
   type User,
 } from "../api/client";
@@ -63,6 +65,24 @@ export function useLogin() {
     onSuccess: (result) => {
       if (!isTotpChallenge(result)) qc.setQueryData(["me"], result);
     },
+  });
+}
+
+/** How this server signs in: the SSO button, and whether there is a password
+ *  form at all (#620). Read by the login and setup pages before anyone is in. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function useAuthConfig() {
+  return useQuery({ queryKey: ["authConfig"], queryFn: getAuthConfig, staleTime: Infinity });
+}
+
+/** SSO-only servers: sign in with a username and one access recovery code. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function useRecoveryLogin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ username, code }: { username: string; code: string }) =>
+      recoveryLogin(username, code),
+    onSuccess: (result) => qc.setQueryData(["me"], result.user),
   });
 }
 

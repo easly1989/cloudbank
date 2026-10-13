@@ -11,6 +11,7 @@ import {
   useVersion,
 } from "../../aboutLinks";
 
+import { AccessCodesCard } from "../../components/AccessCodesCard";
 import { AiSettingsCard } from "../../components/AiSettingsCard";
 import { EntryFieldsCard } from "../../components/EntryFieldsCard";
 import { Logo } from "../../components/Logo";
@@ -19,7 +20,7 @@ import { NotificationsCard } from "../../components/NotificationsCard";
 import { PasswordCard } from "../../components/PasswordCard";
 import { TwoFactorCard } from "../../components/TwoFactorCard";
 import { UpdateStatusCard } from "../../components/updates/UpdateStatusCard";
-import { useAuth } from "../../auth/AuthProvider";
+import { useAuth, useAuthConfig } from "../../auth/AuthProvider";
 import { ApiTokensPage } from "../ApiTokensPage";
 import { BankSyncSettings } from "../BankSyncPage";
 import { PreferencesPage } from "../PreferencesPage";
@@ -66,12 +67,25 @@ export function WalletSection() {
 
 export function SecuritySection() {
   const { t } = useTranslation();
+  const config = useAuthConfig().data;
+  // Signing in through SSO only (#620), there is no password to change and no
+  // second step on top of it: the recovery codes take their place.
+  const ssoOnly = config?.passwordLogin === false;
   return (
     <Stack gap="xl">
-      <SettingsGroup title={t("settings.signIn")} hint={t("settings.signInHint")}>
-        {!__DEMO__ && <PasswordCard />}
-        <TwoFactorCard />
-      </SettingsGroup>
+      {ssoOnly ? (
+        <SettingsGroup
+          title={t("settings.signIn")}
+          hint={t("settings.signInHintSso", { provider: config.oidc.name })}
+        >
+          <AccessCodesCard />
+        </SettingsGroup>
+      ) : (
+        <SettingsGroup title={t("settings.signIn")} hint={t("settings.signInHint")}>
+          {!__DEMO__ && <PasswordCard />}
+          <TwoFactorCard />
+        </SettingsGroup>
+      )}
       <SettingsGroup title={t("settings.apiTokens")} hint={t("settings.apiTokensHint")}>
         <ApiTokensPage />
       </SettingsGroup>

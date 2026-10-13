@@ -58,6 +58,10 @@ type authHandlers struct {
 	// demo leaves out what a throwaway demo account has no use for: API
 	// tokens, two-factor and user administration.
 	demo bool
+	// ssoOnly: the password login is off (#620). The password, setup and
+	// two-factor endpoints answer password_login_off, users are created with an
+	// email to match on, and access recovery codes take their place.
+	ssoOnly bool
 }
 
 // userResponse is the JSON shape returned for an account. It never contains the
@@ -97,6 +101,13 @@ func toUserResponse(u auth.User) userResponse {
 // publicRoutes registers the unauthenticated auth/setup endpoints.
 func (h *authHandlers) publicRoutes(r chi.Router) {
 	r.Get("/setup/status", h.setupStatus)
+	if h.ssoOnly {
+		// The first SSO sign-in sets the server up (see oidcHandlers).
+		r.Post("/setup", passwordLoginOff)
+		r.Post("/auth/login", passwordLoginOff)
+		r.Post("/auth/recovery", h.recoveryLogin)
+		return
+	}
 	r.Post("/setup", h.setup)
 	r.Post("/auth/login", h.login)
 }
@@ -111,15 +122,27 @@ func (h *authHandlers) protectedRoutes(r chi.Router) {
 		return
 	}
 	h.tokenRoutes(r)
-	h.twoFactorRoutes(r)
-	r.Post("/auth/me/password", h.changePassword)
+	if h.ssoOnly {
+		h.accessCodeRoutes(r)
+		r.Post("/auth/2fa/setup", passwordLoginOff)
+		r.Post("/auth/2fa/enable", passwordLoginOff)
+		r.Post("/auth/2fa/disable", passwordLoginOff)
+		r.Post("/auth/me/password", passwordLoginOff)
+	} else {
+		h.twoFactorRoutes(r)
+		r.Post("/auth/me/password", h.changePassword)
+	}
 
 	r.Group(func(r chi.Router) {
 		r.Use(h.requireAdmin)
 		r.Get("/admin/users", h.listUsers)
 		r.Post("/admin/users", h.createUser)
 		r.Post("/admin/users/{id}/disable", h.disableUser)
-		r.Post("/admin/users/{id}/password", h.resetPassword)
+		if h.ssoOnly {
+			r.Post("/admin/users/{id}/password", passwordLoginOff)
+		} else {
+			r.Post("/admin/users/{id}/password", h.resetPassword)
+		}
 	})
 }
 
@@ -305,11 +328,30 @@ func (h *authHandlers) createUser(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &in) {
 		return
 	}
-	if msg := validateCredentials(in.Username, in.Password); msg != "" {
-		writeError(w, http.StatusBadRequest, "invalid", msg)
-		return
+	var (
+		u   auth.User
+		err error
+	)
+	if h.ssoOnly {
+		// No password: the user signs in through the provider, matched by this
+		// email once the provider says it is verified.
+		email := strings.TrimSpace(in.Email)
+		switch {
+		case strings.TrimSpace(in.Username) == "":
+			writeError(w, http.StatusBadRequest, "invalid", "username is required")
+			return
+		case !strings.Contains(email, "@"):
+			writeError(w, http.StatusBadRequest, "invalid", "an email is required to sign in through SSO")
+			return
+		}
+		u, err = h.svc.CreateSSOUser(r.Context(), strings.TrimSpace(in.Username), email, in.IsAdmin)
+	} else {
+		if msg := validateCredentials(in.Username, in.Password); msg != "" {
+			writeError(w, http.StatusBadRequest, "invalid", msg)
+			return
+		}
+		u, err = h.svc.CreateUser(r.Context(), strings.TrimSpace(in.Username), in.Email, in.Password, in.IsAdmin)
 	}
-	u, err := h.svc.CreateUser(r.Context(), strings.TrimSpace(in.Username), in.Email, in.Password, in.IsAdmin)
 	if err != nil {
 		if isUniqueViolation(err) {
 			writeError(w, http.StatusConflict, "username_taken", "that username is already taken")

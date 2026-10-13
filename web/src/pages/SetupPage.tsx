@@ -9,16 +9,69 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
+import { IconLogin2 } from "@tabler/icons-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ApiError } from "../api/client";
-import { useSetup } from "../auth/AuthProvider";
+import { useAuthConfig, useSetup } from "../auth/AuthProvider";
 import { ColorSchemeToggle } from "../components/ColorSchemeToggle";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 
 // First-run wizard: creates the administrator account when no users exist yet.
+// A server that signs in through SSO only (#620) is set up by its first SSO
+// sign-in instead, so the page is that button.
 export function SetupPage() {
+  const authConfig = useAuthConfig();
+  const sso = authConfig.data?.oidc;
+  if (authConfig.data?.passwordLogin === false && sso?.enabled) {
+    return <SsoSetup provider={sso.name} />;
+  }
+  return <PasswordSetup />;
+}
+
+function SsoSetup({ provider }: { provider: string }) {
+  const { t } = useTranslation();
+  // A refused first sign-in comes back here with the error the callback
+  // handed the login page; "account" means CB_OIDC_ADMIN_EMAIL is someone else.
+  const ssoError = new URLSearchParams(window.location.search).get("sso_error");
+  return (
+    <Center mih="100vh">
+      <Card withBorder w={400} p="lg">
+        <Stack>
+          <div>
+            <Title order={3}>{t("setup.title")}</Title>
+            <Text c="dimmed" size="sm">
+              {t("setup.ssoSubtitle")}
+            </Text>
+          </div>
+          {ssoError && (
+            <Alert color="red">
+              {ssoError === "unavailable"
+                ? t("login.ssoUnavailable", { provider })
+                : ssoError === "account"
+                  ? t("setup.ssoReserved")
+                  : t("login.ssoFailedOnly", { provider })}
+            </Alert>
+          )}
+          <Button
+            component="a"
+            href="/api/v1/auth/oidc/start"
+            leftSection={<IconLogin2 size={16} />}
+          >
+            {t("login.ssoSignIn", { provider })}
+          </Button>
+          <Stack gap="xs" align="center">
+            <LanguageSwitcher />
+            <ColorSchemeToggle />
+          </Stack>
+        </Stack>
+      </Card>
+    </Center>
+  );
+}
+
+function PasswordSetup() {
   const { t } = useTranslation();
   const setup = useSetup();
   const [username, setUsername] = useState("");
