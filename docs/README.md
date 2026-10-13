@@ -1,5 +1,9 @@
 # CloudBank guides
 
+The [wiki](https://github.com/easly1989/cloudbank/wiki) shows these same guides,
+copied from `docs/` whenever they change. Corrections go to `docs/`, through a
+pull request: an edit made in the wiki is overwritten.
+
 ## Start here
 
 - [Getting started](getting-started.md): from a fresh install to your first
