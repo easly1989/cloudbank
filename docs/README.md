@@ -44,5 +44,7 @@ pull request: an edit made in the wiki is overwritten.
   `/api/docs`.
 - [Contributing](../CONTRIBUTING.md): running from source, and how changes are
   made.
+- [Translation glossary](i18n/glossary.md): the words CloudBank uses in each
+  language it speaks, and the style each translation follows.
 
 Something missing or wrong? [Open an issue](https://github.com/easly1989/cloudbank/issues/new).
