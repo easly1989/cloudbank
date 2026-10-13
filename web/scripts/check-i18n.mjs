@@ -1,4 +1,5 @@
-// CI guard for the translations. Run via `npm run check:i18n`. Three checks:
+// CI guard for the translations. Run via `npm run check:i18n`. Five checks
+// fail the build:
 //
 //   1. Parity: every locale defines exactly the keys the reference (en) does.
 //   2. Plurals (#447): a key that has one plural form has every form its
@@ -7,6 +8,14 @@
 //   3. References (#458): every key the source names exists. Parity cannot see
 //      this either — `bulk.clear` shipped to the screen while both locales
 //      agreed that neither had it.
+//   4. Placeholders (#610): a translation has the same {{x}} and <1> tags as
+//      the English it translates. A missing {{count}} shows the wrong number
+//      or none; an extra one shows "{{count}}" itself.
+//   5. Empty values (#610): an empty string renders nothing, silently.
+//
+// And one prints a warning without failing: values identical to the English,
+// which are probably not translated, unless listed as words a language keeps.
+// The glossary has its own warning-only check, scripts/check-glossary.mjs.
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -50,10 +59,9 @@ for (const lng of locales) {
 const PLURAL = /_(zero|one|two|few|many|other)$/;
 
 // The forms a language needs are the ones a count can actually select — not
-// Intl's full list. Italian declares `many`, but only for compact notation
-// ("1 Mln"); no plain number ever selects it, so i18next never asks for
-// `_many` and demanding it here would be wrong. Sampled rather than written
-// down, so a language added later brings its own rules with it.
+// Intl's full list. Sampled rather than written down, so a language added
+// later brings its own rules with it, and sampled past a thousand, where
+// Italian, Spanish, French and Portuguese select `many` for round millions.
 function neededForms(lng) {
   const rules = new Intl.PluralRules(lng);
   const forms = new Set();
@@ -61,8 +69,16 @@ function neededForms(lng) {
     forms.add(rules.select(n));
     forms.add(rules.select(n + 0.5));
   }
+  for (let n = 1e4; n <= 1e9; n *= 10) {
+    forms.add(rules.select(n));
+    forms.add(rules.select(2 * n));
+  }
   return forms;
 }
+
+// A missing `_many` is filled from `_other` when the language loads
+// (withMany in src/i18n/index.ts, #602), so `_other` covers it here too.
+const covered = (form, forms) => forms.has(form) || (form === "many" && forms.has("other"));
 
 let pluralRoots = 0;
 for (const lng of locales) {
@@ -77,7 +93,7 @@ for (const lng of locales) {
   }
   if (lng === reference) pluralRoots = roots.size;
   for (const [root, forms] of roots) {
-    const missing = [...needed].filter((f) => !forms.has(f));
+    const missing = [...needed].filter((f) => !covered(f, forms));
     if (missing.length)
       errors.push(`${lng}: plural "${root}" lacks ${missing.map((f) => `_${f}`).join(", ")}`);
   }
@@ -153,7 +169,120 @@ for (const { key, at } of refs) {
   if (!resolves(key)) errors.push(`${at}: "${key}" is not a key in ${reference}.json`);
 }
 
+// --- 4. Placeholders, 5. empty values ------------------------------------------
+
+function flatValues(obj, prefix = "") {
+  return Object.entries(obj).flatMap(([k, v]) => {
+    const path = prefix ? `${prefix}.${k}` : k;
+    return v && typeof v === "object" ? flatValues(v, path) : [[path, v]];
+  });
+}
+const values = new Map(locales.map((lng) => [lng, new Map(flatValues(load(lng)))]));
+const refValues = values.get(reference);
+
+// The {{name}} placeholders (a format after a comma is ignored) and the <1>
+// tags of <Trans>, sorted, so their order may change with the language.
+const placeholders = (s) =>
+  [
+    ...[...s.matchAll(/\{\{\s*([^},\s]+)[^}]*\}\}/g)].map((m) => `{{${m[1]}}}`),
+    ...[...s.matchAll(/<\/?[A-Za-z0-9]+\s*\/?>/g)].map((m) => m[0].replace(/\s/g, "")),
+  ].sort();
+
+// What a key translates: the same key in English, or, for a plural form
+// English does not have (`_many`, `_few`), its `_other`.
+function englishOf(key) {
+  if (refValues.has(key)) return refValues.get(key);
+  const m = key.match(PLURAL);
+  return m ? refValues.get(`${key.slice(0, -m[0].length)}_other`) : undefined;
+}
+
+for (const lng of locales) {
+  for (const [key, value] of values.get(lng)) {
+    if (typeof value !== "string" || !value.trim()) {
+      errors.push(`${lng}: "${key}" is empty`);
+      continue;
+    }
+    if (lng === reference) continue;
+    const en = englishOf(key);
+    if (en === undefined) continue;
+    const want = placeholders(en).join(" ");
+    const got = placeholders(value).join(" ");
+    if (want !== got)
+      errors.push(
+        `${lng}: "${key}" has ${got || "no placeholders"}, English has ${want || "none"}`,
+      );
+  }
+}
+
+// --- Warning: identical to English ------------------------------------------
+
+// Words a translation rightly leaves as they are: names, codes, units, and
+// words a language has borrowed. Everywhere first, then per language.
+const SAME_EVERYWHERE = new Set([
+  "CloudBank",
+  "SimpleFIN",
+  "Enable Banking (EU)",
+  "Application ID",
+  "Client ID",
+  "Client secret",
+  "Item ID",
+  "QIF",
+  "OFX/QFX",
+  "CAMT.053 (ISO 20022)",
+  "OK",
+  "AI",
+  "Token",
+  "Email",
+  "km",
+  "L/100km",
+  "L",
+  "S",
+  "M",
+  "sk-…",
+]);
+const SAME_IN = {
+  it: [
+    "Tag",
+    "Budget",
+    "Password",
+    "Report",
+    "Info",
+    "Auto",
+    "auto",
+    "Admin",
+    "Demo",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Nov",
+    "Per 100 km",
+    "info “{{info}}”",
+    "per {{code}}",
+    "{{transactions}} in {{groups}}",
+    "{{kind}}, in {{group}}",
+    "{{kind}} · {{spent}} in {{period}}",
+  ],
+};
+
+const untranslated = [];
+for (const lng of locales) {
+  if (lng === reference) continue;
+  const keep = new Set(SAME_IN[lng] ?? []);
+  for (const [key, value] of values.get(lng)) {
+    if (value !== englishOf(key) || SAME_EVERYWHERE.has(value) || keep.has(value)) continue;
+    // Nothing but placeholders and punctuation: there is nothing to translate.
+    if (!/\p{L}/u.test(value.replace(/\{\{[^}]*\}\}/g, ""))) continue;
+    untranslated.push(`${lng}: "${key}" is the English "${value}"`);
+  }
+}
+
 // ---------------------------------------------------------------------------
+
+if (untranslated.length) {
+  console.warn(`Warning: ${untranslated.length} values match the English, probably not translated`);
+  console.warn("(if a language rightly keeps one, add it to SAME_IN in scripts/check-i18n.mjs):");
+  for (const w of untranslated) console.warn(`  ${w}`);
+}
 
 if (errors.length) {
   for (const e of errors) console.error(e);
@@ -161,5 +290,6 @@ if (errors.length) {
 }
 console.log(
   `i18n OK: ${locales.length} locales share ${refKeys.size} keys; ` +
-    `${pluralRoots} plurals complete; ${refs.length} key references and ${templates} built keys resolve.`,
+    `${pluralRoots} plurals complete; placeholders match, no value is empty; ` +
+    `${refs.length} key references and ${templates} built keys resolve.`,
 );

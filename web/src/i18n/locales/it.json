@@ -494,7 +494,7 @@
     "leaveAsIs": "Lascia com'è",
     "setInfo": "Info",
     "setTags": "Aggiungi tag",
-    "setTagsHint": "Si aggiungono a quelli che la transazione ha già; nessuno viene tolto.",
+    "setTagsHint": "Si aggiungono ai tag che la transazione ha già; nessuno viene tolto.",
     "onManual": "Quando inserisco una transazione",
     "onImport": "All'importazione e alla sincronizzazione bancaria",
     "previewEmpty": "Scrivi il testo da cercare",
@@ -530,8 +530,8 @@
     "nextDue": "Prossima scadenza",
     "weekendMode": "Gestione weekend",
     "postAdvance": "Giorni di anticipo",
-    "limit": "Limita occorrenze",
-    "remaining": "Occorrenze rimaste",
+    "limit": "Limita le scadenze",
+    "remaining": "Scadenze rimaste",
     "autoPost": "Registra automaticamente",
     "cadenceLabel": "Ricorrenza",
     "cadence": "Ogni {{n}} {{unit}}",
@@ -562,7 +562,7 @@
       "0": "Mantieni la data del weekend",
       "1": "Sposta al venerdì precedente",
       "2": "Sposta al lunedì successivo",
-      "3": "Salta le occorrenze nel weekend"
+      "3": "Salta le scadenze nel weekend"
     },
     "transactionDetails": "Transazione",
     "fromTemplate": "Precompila da un modello salvato",
@@ -630,7 +630,7 @@
       "due": "Scade {{date}}",
       "split": "È divisa: l'importo si cambia nella programmata.",
       "amountHint": "L'importo della programmata. Cambialo se questa bolletta dice altro.",
-      "notNext": "C'è un'occorrenza precedente ancora da registrare: registrala o saltala prima.",
+      "notNext": "C'è una scadenza precedente di questa programmata ancora da registrare: registrala o saltala prima.",
       "earlier": "Mesi precedenti",
       "overdue_one": "Scadeva {{date}}, {{count}} giorno fa",
       "overdue_other": "Scadeva {{date}}, {{count}} giorni fa"
@@ -1148,7 +1148,7 @@
     "direction": "Uscita o entrata",
     "out": "Uscita",
     "in": "Entrata",
-    "addTag": "Aggiungi un'etichetta",
+    "addTag": "Aggiungi un tag",
     "changeNote": "Cambiarlo cambia ciò che compilerà d'ora in poi; le transazioni già fatte con questo modello restano come sono.",
     "newNote": "Puoi anche salvarne uno dalla scheda di inserimento: ⋯ → Salva come modello."
   },
@@ -1494,7 +1494,7 @@
     "deleteConfirmLabel": "Digita \"{{title}}\" per confermare l'eliminazione.",
     "delete": "Elimina portafoglio",
     "billsCategory": "Categoria bollette",
-    "billsCategoryHint": "Nella pagina Bills appaiono solo le schedule di questa categoria. Lascia “Tutte le uscite” per includerle tutte.",
+    "billsCategoryHint": "Nella pagina Bills appaiono solo le programmate di questa categoria. Lascia “Tutte le uscite” per includerle tutte.",
     "billsCategoryNone": "Tutte le uscite",
     "label": "Portafoglio"
   },
@@ -1820,7 +1820,7 @@
     "noUpcoming": "Nessuna transazione programmata in arrivo.",
     "noScheduled": "Nessuna transazione programmata.",
     "noReminders": "Nessun promemoria.",
-    "noRecurring": "Niente da registrare — le ricorrenti vengono registrate automaticamente alla scadenza.",
+    "noRecurring": "Niente da registrare — le transazioni ricorrenti vengono registrate automaticamente alla scadenza.",
     "noFuture": "Nessuna transazione programmata in arrivo.",
     "addTransaction": "Aggiungi transazione",
     "quickAdd": "Aggiungi veloce",
@@ -1880,7 +1880,7 @@
   },
   "import": {
     "title": "Importa",
-    "description": "Importa un file HomeBank .xhb. Verrà creato un nuovo portafoglio con valute, conti, beneficiari, categorie, operazioni e impostazioni.",
+    "description": "Importa un file HomeBank .xhb. Verrà creato un nuovo portafoglio con valute, conti, beneficiari, categorie, transazioni e impostazioni.",
     "fileLabel": "File HomeBank",
     "filePlaceholder": "Scegli un file .xhb",
     "submit": "Importa",
@@ -1893,8 +1893,8 @@
       "accounts": "Conti",
       "payees": "Beneficiari",
       "categories": "Categorie",
-      "tags": "Etichette",
-      "transactions": "Operazioni",
+      "tags": "Tag",
+      "transactions": "Transazioni",
       "transfers": "Giroconti",
       "budgets": "Budget",
       "assignments": "Regole",
@@ -1938,7 +1938,7 @@
     "next": "Avanti",
     "back": "Indietro",
     "preview": "Anteprima",
-    "mapHint": "Associa ogni campo dell'operazione a una colonna del file. La data è obbligatoria, più Importo oppure Dare/Avere.",
+    "mapHint": "Associa ogni campo della transazione a una colonna del file. La data è obbligatoria, più Importo oppure Dare/Avere.",
     "fields": {
       "date": "Data",
       "amount": "Importo",
@@ -1949,7 +1949,7 @@
       "category": "Categoria",
       "info": "Info",
       "paymode": "Modalità",
-      "tags": "Etichette"
+      "tags": "Tag"
     },
     "debitCreditHint": "Usa al posto di Importo quando il file ha colonne separate per uscite ed entrate.",
     "invertAmount": "Inverti segno",
@@ -1966,15 +1966,15 @@
     "rule": "Regola",
     "import": "Importa {{count}}",
     "done": "Importazione completata",
-    "createdCount_one": "Creata {{count}} operazione.",
-    "createdCount_other": "Create {{count}} operazioni.",
-    "updatedCount_one": "Riconciliata {{count}} operazione in sospeso.",
-    "updatedCount_other": "Riconciliate {{count}} operazioni in sospeso.",
+    "createdCount_one": "Creata {{count}} transazione.",
+    "createdCount_other": "Create {{count}} transazioni.",
+    "updatedCount_one": "Riconciliata {{count}} transazione in sospeso.",
+    "updatedCount_other": "Riconciliate {{count}} transazioni in sospeso.",
     "reviewImported": "Rivedi e categorizza",
     "importAnother": "Importa un altro file"
   },
   "exportCsv": {
-    "description": "Scarica le operazioni di un conto come CSV in formato HomeBank (re-importabile in HomeBank).",
+    "description": "Scarica le transazioni di un conto come CSV in formato HomeBank (re-importabile in HomeBank).",
     "account": "Conto",
     "accountPlaceholder": "Scegli un conto",
     "download": "Scarica CSV",
@@ -2132,7 +2132,7 @@
     "clean": "Nessun problema rilevato.",
     "fix": "Correggi",
     "types": {
-      "split_sum": "Operazioni suddivise non quadrate",
+      "split_sum": "Transazioni suddivise non quadrate",
       "orphan_transfer_leg": "Giroconti senza contropartita",
       "category_sign": "Segno dell'importo non coerente con la categoria",
       "future_reconciled": "Riconciliate ma con data futura"
@@ -2243,7 +2243,7 @@
         "body": "Clicca sulla prima riga, o premi N, per aggiungere una transazione. Nella scheda, Invio salva e chiude; Maiusc+Invio salva e ne inizia un'altra."
       },
       "more": {
-        "title": "Riconcilia e trasferisci",
+        "title": "Riconcilia e fai giroconti",
         "body": "Il menu ⋯ riconcilia il conto con l'estratto della banca, sposta denaro tra conti e nasconde gli importi."
       }
     },
@@ -2384,7 +2384,7 @@
   },
   "demo": {
     "loginTitle": "Prova CloudBank",
-    "loginBody": "Un clic e hai un account tutto tuo, con un anno di movimenti inventati da esplorare. Niente registrazione, niente email, niente password.",
+    "loginBody": "Un clic e hai un account tutto tuo, con un anno di transazioni inventate da esplorare. Niente registrazione, niente email, niente password.",
     "loginResets": "Tutto ciò che vedi o modifichi viene cancellato dopo 2 ore di inattività, ogni notte alle 03:00 UTC e a ogni aggiornamento della demo.",
     "start": "Avvia la demo",
     "full": "La demo è piena in questo momento. Riprova tra qualche minuto.",
@@ -2392,7 +2392,7 @@
     "failed": "Non è stato possibile avviare la demo. Riprova.",
     "noticeTitle": "Ti diamo il benvenuto nella demo di CloudBank",
     "noticeFakeLead": "Niente qui è reale.",
-    "noticeFake": "Conti, movimenti e budget sono inventati.",
+    "noticeFake": "Conti, transazioni e budget sono inventati.",
     "noticeYoursLead": "Modifica tutto ciò che vuoi.",
     "noticeYours": "Questo account è solo tuo, per questa sessione.",
     "noticeResetLead": "Tutto viene cancellato",
