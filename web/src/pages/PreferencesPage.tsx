@@ -22,7 +22,7 @@ import { useTranslation } from "react-i18next";
 import { ApiError, listAccounts, saveMe, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { useTour } from "../onboarding/tourContext";
-import { languages } from "../i18n/languages";
+import { LanguageCards } from "../components/LanguageCards";
 import { SIDEBAR_ACCOUNTS_MAX } from "../components/sidebarAccounts";
 import {
   ALL_BALANCES,
@@ -140,12 +140,10 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
         <Stack>
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
             {general && (
-              <Select
+              <LanguageCards
                 label={t("preferences.language")}
-                data={languages.map((l) => ({ value: l.code, label: l.name }))}
                 value={locale}
-                onChange={(v) => v && setLocale(v)}
-                allowDeselect={false}
+                onChange={setLocale}
               />
             )}
             {appearance && (
