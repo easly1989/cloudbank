@@ -31,16 +31,24 @@ const occ = (o: Partial<ScheduleOccurrence>): ScheduleOccurrence => ({
 describe("monthGrid", () => {
   it("draws whole weeks, Monday first", () => {
     // September 2026 starts on a Tuesday and ends on a Wednesday.
-    const days = monthGrid("2026-09");
+    const days = monthGrid("2026-09", 1);
     expect(days[0]).toBe("2026-08-31");
     expect(days.at(-1)).toBe("2026-10-04");
     expect(days.length).toBe(35);
   });
   it("takes six rows when the month needs them", () => {
     // August 2026 starts on a Saturday.
-    const days = monthGrid("2026-08");
+    const days = monthGrid("2026-08", 1);
     expect(days[0]).toBe("2026-07-27");
     expect(days.length).toBe(42);
+  });
+  // A language whose week starts on Sunday (pt-BR) draws Sunday first (#608).
+  it("starts on Sunday when the language does", () => {
+    const days = monthGrid("2026-09", 0);
+    expect(days[0]).toBe("2026-08-30");
+    expect(new Date(`${days[0]}T00:00:00Z`).getUTCDay()).toBe(0);
+    expect(days.at(-1)).toBe("2026-10-03");
+    expect(days.length % 7).toBe(0);
   });
 });
 
