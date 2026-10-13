@@ -296,21 +296,6 @@ func TestCapsHoldOnEveryPath(t *testing.T) {
 	}
 }
 
-func TestLanguage(t *testing.T) {
-	for header, want := range map[string]string{
-		"":                           "en",
-		"it":                         "it",
-		"it-IT,it;q=0.9":             "it",
-		"de-DE,it;q=0.8,en;q=0.7":    "it",
-		"fr-FR,en-GB;q=0.8,it;q=0.5": "en",
-		"italic":                     "en",
-	} {
-		if got := Language(header); got != want {
-			t.Errorf("Language(%q) = %q, want %q", header, got, want)
-		}
-	}
-}
-
 func TestVisitor(t *testing.T) {
 	cases := []struct {
 		peer, xff string

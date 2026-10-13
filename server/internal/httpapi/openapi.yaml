@@ -201,6 +201,7 @@ paths:
             schema: { $ref: "#/components/schemas/UpdateMeRequest" }
       responses:
         "200": { description: The updated user., content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "409":
           description: The preferences were saved since preferencesRevision (stale_preferences).
@@ -2731,7 +2732,7 @@ components:
     UpdateMeRequest:
       type: object
       properties:
-        locale: { type: string }
+        locale: { type: string, description: "a language tag; a variant is saved as the language CloudBank speaks (it-CH as it, pt-PT as pt-BR), one it does not speak is refused with 400 invalid_locale" }
         theme: { type: string }
         preferences: { type: object, additionalProperties: true }
         preferencesRevision: { type: integer, format: int64, description: "the revision the change started from; omit to write regardless" }
