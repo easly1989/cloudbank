@@ -155,3 +155,8 @@ one-issue -> one-branch -> one-PR workflow. See `docs/agents/issue-tracker.md`.
 
 Single-context: `CONTEXT.md` at the repo root and ADRs under `docs/adr/`, both created lazily.
 See `docs/agents/domain.md`.
+
+### Token tools
+
+CBM: call `index_repository` once, then `search_graph` / `trace_path` before reading files.
+Headroom: run `headroom wrap claude` to compress a session (`headroom unwrap claude` undoes it).
