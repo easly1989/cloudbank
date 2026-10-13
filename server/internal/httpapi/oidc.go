@@ -23,10 +23,13 @@ const oidcStatePath = "/api/v1/auth/oidc"
 // configured; the start/callback endpoints then report that SSO is disabled while
 // /auth/config still answers so the login page can hide the button.
 type oidcHandlers struct {
-	svc           *oidc.Service
-	auth          *auth.Service
-	secure        bool
-	autoProvision bool
+	svc    *oidc.Service
+	auth   *auth.Service
+	secure bool
+	policy auth.OIDCPolicy
+	// ssoOnly: the server signs in through SSO alone (#620), so the login
+	// page shows no password form.
+	ssoOnly bool
 }
 
 func (h *oidcHandlers) routes(r chi.Router) {
@@ -35,14 +38,15 @@ func (h *oidcHandlers) routes(r chi.Router) {
 	r.Get("/auth/oidc/callback", h.callback)
 }
 
-// config tells the (pre-auth) login page whether to show the SSO button.
+// config tells the (pre-auth) login and setup pages how to sign in: whether to
+// show the SSO button, and whether the password form is there at all.
 func (h *oidcHandlers) config(w http.ResponseWriter, _ *http.Request) {
 	oidcInfo := map[string]any{"enabled": false, "name": ""}
 	if h.svc != nil {
 		oidcInfo["enabled"] = true
 		oidcInfo["name"] = h.svc.Name()
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"oidc": oidcInfo})
+	writeJSON(w, http.StatusOK, map[string]any{"oidc": oidcInfo, "passwordLogin": !h.ssoOnly})
 }
 
 func (h *oidcHandlers) start(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +54,14 @@ func (h *oidcHandlers) start(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found", "SSO is not enabled")
 		return
 	}
-	req, authURL := h.svc.Start()
+	req, authURL, err := h.svc.Start(r.Context())
+	if err != nil {
+		// The provider does not answer: back to the login page, which offers
+		// the access recovery code.
+		slog.Warn("oidc: provider unavailable", "error", err)
+		h.fail(w, r, "unavailable")
+		return
+	}
 	blob, err := json.Marshal(req)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not start SSO")
@@ -91,7 +102,7 @@ func (h *oidcHandlers) callback(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, "exchange")
 		return
 	}
-	u, err := h.auth.UpsertOIDCUser(r.Context(), claims, h.autoProvision)
+	u, err := h.auth.UpsertOIDCUser(r.Context(), claims, h.policy)
 	if err != nil {
 		slog.Warn("oidc: identity mapping refused", "error", err)
 		h.fail(w, r, "account")

@@ -1355,7 +1355,20 @@
     "invalidCode": "Codice non valido",
     "or": "oppure",
     "ssoSignIn": "Accedi con {{provider}}",
-    "ssoFailed": "Single sign-on non riuscito. Riprova oppure usa nome utente e password."
+    "ssoFailed": "Single sign-on non riuscito. Riprova oppure usa nome utente e password.",
+    "ssoFailedOnly": "L'accesso con {{provider}} non è riuscito.",
+    "ssoUnavailable": "{{provider}} non risponde in questo momento.",
+    "recoveryPrompt": "Non riesci ad accedere?",
+    "recoveryLink": "Usa un codice di recupero",
+    "recoveryHint": "Usa uno dei codici che hai salvato in Impostazioni › Sicurezza. Ogni codice vale una volta.",
+    "recoveryCode": "Codice di recupero",
+    "recoverySubmit": "Accedi con il codice",
+    "recoveryInvalid": "Nome utente o codice di recupero non validi",
+    "backToSso": "Torna all'accesso con {{provider}}",
+    "recoveryLeft_one": "Sei entrato con un codice di recupero. Te ne resta {{count}}.",
+    "recoveryLeft_other": "Sei entrato con un codice di recupero. Te ne restano {{count}}.",
+    "recoveryNoneLeft": "Sei entrato con l'ultimo codice di recupero. Generane di nuovi in Impostazioni › Sicurezza.",
+    "tooMany": "Troppi tentativi. Riprova tra qualche minuto."
   },
   "twofa": {
     "title": "Autenticazione a due fattori",
@@ -1379,6 +1392,21 @@
     "disableHint": "Inserisci la password per disattivare l'autenticazione a due fattori.",
     "disabled": "Autenticazione a due fattori disattivata",
     "setupError": "Impossibile avviare la configurazione. Riprova."
+  },
+  "accessCodes": {
+    "title": "Codici di recupero d'accesso",
+    "hint": "Se {{provider}} non risponde, uno di questi codici ti fa entrare una volta.",
+    "none": "Non hai ancora codici di recupero. Generali adesso, finché puoi entrare.",
+    "shownOnce": "Salvali in un posto sicuro: non li vedrai più. Generarne di nuovi annulla questi.",
+    "remaining_one": "{{count}} codice su {{total}} ancora valido.",
+    "remaining_other": "{{count}} codici su {{total}} ancora validi.",
+    "generate": "Genera i codici di recupero",
+    "regenerate": "Genera nuovi codici",
+    "download": "Scarica come file",
+    "copy": "Copia",
+    "copied": "Copiati",
+    "fileTitle": "Codici di recupero d'accesso a CloudBank per {{user}}",
+    "fileHint": "Ogni codice ti fa entrare una volta quando il provider di identità non risponde."
   },
   "notif": {
     "title": "Notifiche",
@@ -1416,7 +1444,9 @@
     "confirmPassword": "Conferma password",
     "submit": "Crea account amministratore",
     "passwordMismatch": "Le password non coincidono",
-    "passwordTooShort": "La password deve avere almeno 8 caratteri"
+    "passwordTooShort": "La password deve avere almeno 8 caratteri",
+    "ssoSubtitle": "Il primo accesso diventa l'amministratore di questo server.",
+    "ssoReserved": "Il primo accesso è riservato all'email dell'amministratore. Entra con quell'account."
   },
   "admin": {
     "title": "Utenti",
@@ -1438,7 +1468,8 @@
     "disable": "Disabilita",
     "you": "tu",
     "userCreated": "Utente creato",
-    "passwordReset": "Password reimpostata"
+    "passwordReset": "Password reimpostata",
+    "emailSso": "Entra con {{provider}}, abbinato a questa email."
   },
   "wallet": {
     "firstTitle": "Crea il tuo primo portafoglio",
@@ -1997,6 +2028,7 @@
     "navigationHint": "Quali pagine elenca la barra laterale, e in che ordine.",
     "signIn": "Accesso",
     "signInHint": "La password con cui entri, e un secondo passaggio oltre a quella.",
+    "signInHintSso": "Entri con {{provider}}, che si occupa di password e secondi passaggi.",
     "apiTokensHint": "Un token permette a uno script o a un'altra app di agire come te. Revocarlo lo blocca all'istante.",
     "notificationsHint": "Dove CloudBank ti raggiunge quando qualcosa ti richiede.",
     "ai": "AI",
