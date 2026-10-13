@@ -66,7 +66,7 @@ CloudBank è una **reimplementazione indipendente, clean-room**. Non copia né u
 
 ## Funzioni
 
-- **Conti e registro:** tutti i tipi di conto di HomeBank, ognuno nella sua valuta, con il saldo di oggi e quello futuro. Le transazioni hanno stato verificata e riconciliata, suddivisioni, tag e giroconti; il registro ha filtri, colonne a scelta, azioni su più righe, la ricerca e la riconciliazione con l'estratto conto.
+- **Conti e registro:** tutti i tipi di conto di HomeBank, ognuno nella sua valuta, con il saldo di oggi e quello futuro. Le transazioni si segnano verificate e riconciliate, con suddivisioni, tag e giroconti; il registro ha filtri, colonne a scelta, azioni su più righe, la ricerca e la riconciliazione con l'estratto conto.
 - **Programmate e calendario:** le transazioni che tornano si registrano da sole, anche fino a tre mesi prima. Un calendario mostra le scadenze del mese con il loro stato, cosa resta da pagare e cosa aspetta te; modelli e regole di assegnazione compilano il resto.
 - **Budget e report:** dove sono finiti i soldi, cosa è entrato e uscito, cosa hanno e avranno i conti, quanto costa un'auto; per mese, trimestre o anno, con viste salvate e download CSV e PNG.
 - **Obiettivi e veicoli:** quanto hai messo da parte, quanto mettere ogni mese per arrivare in tempo e quanto resta libero; per ogni veicolo carburante, chilometri, costo al chilometro e consumi.
