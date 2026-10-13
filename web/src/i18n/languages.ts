@@ -15,6 +15,12 @@ export interface Language {
   beta: boolean;
   /** 0 = Sunday, 1 = Monday: the first column of calendars. */
   weekStart: 0 | 1;
+  /**
+   * A beta language's invitation to correct it, in the language itself and
+   * saying that it opens GitHub: the reader picking German reads German,
+   * whatever the app is showing (#604). Every beta row has one.
+   */
+  correction?: string;
 }
 
 export const languages = [
@@ -25,6 +31,27 @@ export const languages = [
 export type LanguageCode = (typeof languages)[number]["code"];
 
 export const DEFAULT_LANGUAGE: LanguageCode = "en";
+
+/**
+ * The order a selector shows them in: the complete languages as listed, then
+ * the beta ones by their own name (#595).
+ */
+export function orderedLanguages(list: readonly Language[] = languages): Language[] {
+  const byName = (a: Language, b: Language) => a.name.localeCompare(b.name);
+  return [...list.filter((l) => !l.beta), ...list.filter((l) => l.beta).sort(byName)];
+}
+
+/**
+ * The issue form for proposing a correction, with the language chosen and the
+ * title started (.github/ISSUE_TEMPLATE/translation.yml, #604).
+ */
+export function correctionUrl(code: string): string {
+  const q = { template: "translation.yml", language: code, title: `[${code}] ` };
+  const query = Object.entries(q)
+    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+    .join("&");
+  return `https://github.com/easly1989/cloudbank/issues/new?${query}`;
+}
 
 // A whole language read as the one variant CloudBank speaks: pt-PT, pt-AO and
 // plain pt all get Brazilian Portuguese (the server's internal/locale does the same).

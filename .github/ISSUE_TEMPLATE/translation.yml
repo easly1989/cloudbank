@@ -1,0 +1,52 @@
+name: Translation correction
+description: A word or a sentence that reads wrong in your language.
+title: "[xx] "
+labels: [translation]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping CloudBank read well in your language. Write in English or in your own language, whichever is easier.
+
+        The words CloudBank uses in each language are in the [translation glossary](https://github.com/easly1989/cloudbank/blob/main/docs/i18n/glossary.md). If a correction goes against it, say why: the glossary can change too.
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      description: The language the text is in.
+      options:
+        - de
+        - es
+        - fr
+        - pt-BR
+        - it
+        - en
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: The page or the feature where the text appears.
+      placeholder: "Settings › General, the language cards"
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current text
+      description: The text as CloudBank shows it now.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed text
+      description: How it should read.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Why, if it is not obvious, or anything else that helps. A screenshot is welcome (demo data only).
