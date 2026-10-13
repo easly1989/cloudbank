@@ -1,6 +1,5 @@
 import { Button, Stack, UnstyledButton } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
 import { IconWallet } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -8,7 +7,6 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import {
-  ApiError,
   deleteAccount,
   listAccounts,
   listCurrencies,
@@ -28,6 +26,7 @@ import { AccountSheet } from "./accounts/AccountSheet";
 import { AccountPhoneList, AccountTable, type AccountActions } from "./accounts/AccountTable";
 import { useDayMonth } from "./categories/labels";
 import { asideByAccount } from "./goals/goalList";
+import { notifyError } from "../notifyError";
 
 /**
  * Accounts (#564): every account with what the bank has confirmed, today's
@@ -85,11 +84,7 @@ export function AccountsPage() {
   const remove = useMutation({
     mutationFn: (id: number) => deleteAccount(walletId, id),
     onSuccess: invalidate,
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const [sheetOpen, setSheetOpen] = useState(false);

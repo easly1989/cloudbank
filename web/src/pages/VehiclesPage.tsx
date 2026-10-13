@@ -1,18 +1,11 @@
 import { Button, Stack } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import {
-  ApiError,
-  deleteVehicle,
-  getVehicleReport,
-  listCurrencies,
-  listVehicles,
-} from "../api/client";
+import { deleteVehicle, getVehicleReport, listCurrencies, listVehicles } from "../api/client";
 import { useConfirm } from "../components/confirmContext";
 import { PageHeader } from "../components/PageHeader";
 import { baseFmt } from "../components/reports/reportUtils";
@@ -31,6 +24,7 @@ import {
   VehicleTable,
 } from "./vehicles/VehicleTable";
 import type { VehicleActions, VehicleFormat } from "./vehicles/vehicleWords";
+import { notifyError } from "../notifyError";
 
 /**
  * Vehicles (#574): what each car, motorbike or van cost to run over the last
@@ -103,11 +97,7 @@ export function VehiclesPage() {
   const remove = useMutation({
     mutationFn: (id: number) => deleteVehicle(walletId, id),
     onSuccess: invalidate,
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const askDelete = async (l: VehicleLine) => {

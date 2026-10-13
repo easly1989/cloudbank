@@ -1,17 +1,11 @@
 import { ActionIcon, Anchor, Button, Group, Stack, Text } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconPaperclip, IconTrash, IconUpload } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 
-import {
-  ApiError,
-  attachmentUrl,
-  deleteAttachment,
-  listAttachments,
-  uploadAttachment,
-} from "../api/client";
+import { attachmentUrl, deleteAttachment, listAttachments, uploadAttachment } from "../api/client";
+import { notifyError } from "../notifyError";
 
 // formatBytes renders a compact human-readable file size (e.g. "12.3 KB").
 function formatBytes(n: number): string {
@@ -50,11 +44,7 @@ export function AttachmentsField({
     // Refresh the register so the paperclip count updates.
     void qc.invalidateQueries({ queryKey: ["register", walletId] });
   };
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
 
   const upload = useMutation({
     mutationFn: async (files: File[]) => {

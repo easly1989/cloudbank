@@ -7,7 +7,6 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
-  ApiError,
   deleteCurrency,
   getCurrencyCatalog,
   listAccounts,
@@ -25,6 +24,7 @@ import classes from "./currencies/currencies.module.css";
 import { buildRows, latestEcbDate } from "./currencies/currencyList";
 import { CurrencySheet } from "./currencies/CurrencySheet";
 import { CurrencyPhoneList, CurrencyTable } from "./currencies/CurrencyTable";
+import { notifyError } from "../notifyError";
 
 /**
  * Currencies (#558): every currency the wallet can use, the base first, with
@@ -73,11 +73,7 @@ export function CurrenciesPage() {
     void qc.invalidateQueries({ queryKey: ["wallets"] });
     void qc.invalidateQueries({ queryKey: ["dashboard", walletId] });
   };
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Currency | null>(null);

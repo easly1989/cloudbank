@@ -4,8 +4,9 @@ import { useTranslation } from "react-i18next";
 import { errorColor } from "../amountTone";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { ApiError, completeEnableBankingAuth } from "../api/client";
+import { completeEnableBankingAuth } from "../api/client";
 import { useWallet } from "../wallet/WalletProvider";
+import { ErrorMessage } from "../components/ErrorMessage";
 
 // One in-flight completion per state, at module scope, so React StrictMode's
 // double-mount (and any remount) reuses the single POST rather than firing a
@@ -28,7 +29,7 @@ export function BankSyncCallback() {
   const [status, setStatus] = useState<"working" | "done" | "error">(
     malformed ? "error" : "working",
   );
-  const [message, setMessage] = useState(malformed ? t("banksync.eb.callback.error") : "");
+  const [failure, setFailure] = useState<unknown>(null);
 
   useEffect(() => {
     if (malformed) return;
@@ -49,7 +50,7 @@ export function BankSyncCallback() {
       .catch((err: unknown) => {
         if (!alive) return;
         setStatus("error");
-        setMessage(err instanceof ApiError ? err.message : String(err));
+        setFailure(err);
       });
     return () => {
       alive = false;
@@ -70,7 +71,7 @@ export function BankSyncCallback() {
           {status === "error" && (
             <>
               <Text c={errorColor} ta="center">
-                {message || t("banksync.eb.callback.error")}
+                {failure ? <ErrorMessage error={failure} /> : t("banksync.eb.callback.error")}
               </Text>
               <Button onClick={() => nav("/settings/integrations")}>
                 {t("banksync.eb.callback.back")}

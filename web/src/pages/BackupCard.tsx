@@ -14,6 +14,7 @@ import {
 } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { useWallet } from "../wallet/WalletProvider";
+import { notifyError } from "../notifyError";
 
 export function BackupCard() {
   const { t } = useTranslation();
@@ -23,11 +24,7 @@ export function BackupCard() {
   const walletId = currentWallet?.id ?? 0;
   const [file, setFile] = useState<File | null>(null);
 
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
 
   const download = useMutation({ mutationFn: () => downloadWalletBackup(walletId), onError });
   const downloadXhb = useMutation({ mutationFn: () => downloadWalletXHB(walletId), onError });

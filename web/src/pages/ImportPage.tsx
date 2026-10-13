@@ -22,10 +22,11 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { ApiError, importXHB, type ImportResult } from "../api/client";
+import { importXHB, type ImportResult } from "../api/client";
 import { useWallet } from "../wallet/WalletProvider";
 import { ExportPanel } from "./ExportPanel";
 import { ImportWizard } from "./ImportWizard";
+import { ErrorMessage } from "../components/ErrorMessage";
 
 function XhbImportPanel() {
   const { t } = useTranslation();
@@ -34,7 +35,7 @@ function XhbImportPanel() {
   const { setCurrentWalletId } = useWallet();
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   const mutation = useMutation({
     mutationFn: (f: File) => importXHB(f),
@@ -46,7 +47,7 @@ function XhbImportPanel() {
     },
     onError: (err: unknown) => {
       setResult(null);
-      setError(err instanceof ApiError ? err.message : String(err));
+      setError(err);
     },
   });
 
@@ -76,9 +77,9 @@ function XhbImportPanel() {
         </Stack>
       </Card>
 
-      {error && (
+      {error != null && (
         <Alert color="red" icon={<IconAlertTriangle size={16} />} title={t("import.failed")}>
-          {error}
+          <ErrorMessage error={error} />
         </Alert>
       )}
 

@@ -19,7 +19,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ApiError, listAccounts, saveMe, type User } from "../api/client";
+import { listAccounts, saveMe, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { useTour } from "../onboarding/tourContext";
 import { LanguageCards } from "../components/LanguageCards";
@@ -38,6 +38,7 @@ const BALANCE_LABEL: Record<BalanceKey, string> = {
 };
 import { ACCENT_COLORS } from "../theme";
 import { useWallet } from "../wallet/WalletProvider";
+import { notifyError } from "../notifyError";
 
 /**
  * Your own preferences, rendered one settings section at a time.
@@ -124,11 +125,7 @@ export function PreferencesPage({ section = "general" }: { section?: "general" |
       setColorScheme((updated.theme as "auto" | "light" | "dark") ?? "auto");
       notifications.show({ color: "teal", message: t("preferences.saved") });
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const general = section === "general";

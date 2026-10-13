@@ -1,18 +1,18 @@
 import { ActionIcon, Anchor, Button, Menu, TextInput, Textarea } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconChartLine, IconDots, IconTrash } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { ApiError, createVehicle, updateVehicle } from "../../api/client";
+import { createVehicle, updateVehicle } from "../../api/client";
 import { SideSheet } from "../../components/SideSheet";
 import { ENTRY_SHEET } from "../../components/entrySheetTheme";
 import { sameName } from "../../sameName";
 import { reportLink, type VehicleLine } from "./vehicleList";
 import classes from "./vehicles.module.css";
 import { code, useFigures, type VehicleFormat } from "./vehicleWords";
+import { notifyError } from "../../notifyError";
 
 /**
  * A vehicle in the sheet beside the page (#574): new, or opened from the list.
@@ -74,11 +74,7 @@ export function VehicleSheet({
       onSaved();
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const subtitle =

@@ -11,7 +11,6 @@ import {
   TextInput,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
 import { IconDots } from "@tabler/icons-react";
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -34,6 +33,7 @@ import { PAYMENT_MODES } from "../../transactionEnums";
 import { categoryLabel } from "../payees/payeeList";
 import type { Lookups, RuleActions } from "./RuleTable";
 import classes from "./rules.module.css";
+import { notifyError } from "../../notifyError";
 
 const FIELDS: MatchField[] = ["memo", "payee", "both", "tag"];
 const TYPES: MatchType[] = ["contains", "exact", "regex"];
@@ -148,11 +148,7 @@ export function RuleSheet({
       onSaved();
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const categoryOptions = useMemo(

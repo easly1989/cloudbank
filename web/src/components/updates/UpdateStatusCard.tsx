@@ -1,15 +1,15 @@
 import { Anchor, Button, Group, Switch, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
 import { IconCircleArrowUp, IconCircleCheck } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
-import { ApiError, checkForUpdates, setUpdateCheck, type UpdateStatus } from "../../api/client";
+import { checkForUpdates, setUpdateCheck, type UpdateStatus } from "../../api/client";
 import { sinceNow } from "../../bankSyncNotice";
 import { HowToUpdateModal } from "./HowToUpdateModal";
 import { useUpdateStatus } from "./updateModel";
 import classes from "./updates.module.css";
+import { notifyError } from "../../notifyError";
 
 /**
  * Settings › About, for an admin (#582): whether a newer CloudBank is out,
@@ -21,11 +21,7 @@ export function UpdateStatusCard() {
   const qc = useQueryClient();
   const { data: st } = useUpdateStatus();
   const [how, { open, close }] = useDisclosure(false);
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
   const store = (next: UpdateStatus) => qc.setQueryData(["updates"], next);
   const toggle = useMutation({ mutationFn: setUpdateCheck, onSuccess: store, onError });
   const check = useMutation({ mutationFn: checkForUpdates, onSuccess: store, onError });

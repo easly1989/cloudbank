@@ -1,12 +1,12 @@
 import { Button, Card, Group, SimpleGrid, Text, Title } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconLifebuoy } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ApiError, getAccessCodes, newAccessCodes } from "../api/client";
+import { getAccessCodes, newAccessCodes } from "../api/client";
 import { useAuth, useAuthConfig } from "../auth/AuthProvider";
+import { notifyError } from "../notifyError";
 
 /** How many codes a set holds; the server makes ten. */
 const TOTAL = 10;
@@ -29,11 +29,7 @@ export function AccessCodesCard() {
       setCodes(res.codes);
       qc.setQueryData(["accessCodes"], { remaining: res.codes.length });
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const download = () => {

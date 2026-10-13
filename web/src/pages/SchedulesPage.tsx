@@ -1,6 +1,5 @@
 import { ActionIcon, Button, SegmentedControl, Stack } from "@mantine/core";
 import { useElementSize, useMediaQuery } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
 import { IconCalendarRepeat, IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -8,7 +7,6 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import {
-  ApiError,
   deleteSchedule,
   getScheduleCalendar,
   listSchedules,
@@ -54,6 +52,7 @@ import { ScheduleList } from "./schedules/ScheduleList";
 import { ScheduleSheet } from "./schedules/ScheduleSheet";
 import classes from "./schedules/schedules.module.css";
 import { useWeekStart } from "../i18n/week";
+import { notifyError } from "../notifyError";
 
 /** How far back "Needs you" looks for something never registered. */
 const NOW_BACK_DAYS = 60;
@@ -168,11 +167,7 @@ export function SchedulesPage() {
     ])
       void qc.invalidateQueries({ queryKey: [key, walletId] });
   };
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
   const register = useMutation({
     mutationFn: (id: number) => postScheduleNow(walletId, id),
     onSuccess: invalidate,

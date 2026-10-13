@@ -4,14 +4,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import {
-  ApiError,
-  getTransactionReview,
-  listBankConnections,
-  syncBankConnection,
-} from "../api/client";
+import { getTransactionReview, listBankConnections, syncBankConnection } from "../api/client";
 import { showSyncResult, sinceNow } from "../bankSyncNotice";
-import { notifications } from "@mantine/notifications";
+import { notifyError } from "../notifyError";
 
 /**
  * The account's line to its bank and to what wants reviewing, under the
@@ -68,11 +63,7 @@ export function RegisterBankRow({
       void qc.invalidateQueries({ queryKey: ["bankConnections", walletId] });
       void qc.invalidateQueries({ queryKey: ["review", walletId] });
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   if (!connection && toReview === 0) return null;

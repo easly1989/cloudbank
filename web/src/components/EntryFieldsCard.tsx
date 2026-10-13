@@ -9,17 +9,17 @@ import {
   Stack,
   Text,
 } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconInfoCircle } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 
-import { ApiError, savePreferences, type Preferences, type User } from "../api/client";
+import { savePreferences, type Preferences, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { ENTRY_FIELDS, placements, type EntryField, type Placement } from "./entryFields";
 import { StatusPicker } from "./StatusPicker";
+import { notifyError } from "../notifyError";
 
 /**
  * Which of the entry sheet's fields are in view and which wait under More
@@ -61,10 +61,7 @@ export function EntryFieldsCard() {
       // The server's copy, rather than this render's: another save may have
       // landed since.
       void qc.invalidateQueries({ queryKey: ["me"] });
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      });
+      notifyError(err);
     },
   });
 

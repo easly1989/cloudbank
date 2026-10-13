@@ -6,7 +6,6 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
-  ApiError,
   postScheduleNow,
   skipSchedule,
   type Account,
@@ -22,6 +21,7 @@ import { useAmountParser } from "../../useAmountParser";
 import { useShortDate } from "./labels";
 import { OccurrenceIcon } from "./OccurrenceIcon";
 import classes from "./schedules.module.css";
+import { notifyError } from "../../notifyError";
 
 /** A posted scheduled transaction defaults to Cleared: it has happened. */
 const DEFAULT_STATUS = "1";
@@ -75,11 +75,7 @@ export function OccurrenceSheet({
     }
   }
 
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
   const sign = (o?.amount ?? 0) < 0 ? -1 : 1;
   const parsed = parseAmount(amount, fd, dc);
   const register = useMutation({
