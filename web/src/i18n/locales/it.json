@@ -103,18 +103,18 @@
     "removeSplit": "Togli questa riga"
   },
   "transfers": {
-    "add": "Trasferimento",
-    "addTitle": "Nuovo trasferimento",
-    "editTitle": "Modifica trasferimento",
-    "transfer": "Trasferimento",
+    "add": "Giroconto",
+    "addTitle": "Nuovo giroconto",
+    "editTitle": "Modifica giroconto",
+    "transfer": "Giroconto",
     "from": "Conto di origine",
     "to": "Conto di destinazione",
     "fromAmount": "Importo inviato",
     "toAmount": "Importo ricevuto",
     "sameAccount": "Il conto di origine e di destinazione devono essere diversi.",
-    "confirmDelete": "Eliminare questo trasferimento? Verranno rimosse entrambe le righe.",
-    "confirmDeleteTitle": "Eliminare questo trasferimento?",
-    "confirmDeleteBody": "Un trasferimento è composto da due movimenti, uno per conto. Vengono rimossi entrambi.",
+    "confirmDelete": "Eliminare questo giroconto? Verranno rimosse entrambe le righe.",
+    "confirmDeleteTitle": "Eliminare questo giroconto?",
+    "confirmDeleteBody": "Un giroconto è composto da due movimenti, uno per conto. Vengono rimossi entrambi.",
     "confirmDeleteAction": "Elimina entrambi"
   },
   "reports": {
@@ -191,8 +191,8 @@
     },
     "chip": {
       "transfers": {
-        "all": "Trasferimenti inclusi",
-        "only": "Solo trasferimenti"
+        "all": "Giroconti inclusi",
+        "only": "Solo giroconti"
       }
     },
     "views": {
@@ -220,7 +220,7 @@
         "income": "Entrato {{when}}",
         "incomeSoFar": "Entrato finora {{when}}"
       },
-      "noTransfers": "esclusi i trasferimenti tra i tuoi conti",
+      "noTransfers": "esclusi i giroconti tra i tuoi conti",
       "more": "{{amount}} in più",
       "less": "{{amount}} in meno",
       "same": "Uguale",
@@ -567,7 +567,7 @@
     "transactionDetails": "Transazione",
     "fromTemplate": "Precompila da un modello salvato",
     "fromTemplatePlaceholder": "Facoltativo",
-    "transferNote": "È un trasferimento; qui puoi cambiare solo importo, note e ricorrenza.",
+    "transferNote": "È un giroconto; qui puoi cambiare solo importo, note e ricorrenza.",
     "untitled": "Programmata",
     "confirmDeleteTitle": "Eliminare questa programmata?",
     "confirmDeleteBody": "Le transazioni già registrate restano; non ne verranno registrate altre.",
@@ -1106,21 +1106,21 @@
     "edit": "Modifica modello",
     "delete": "Elimina modello",
     "create": "Nuovo modello",
-    "complexNote": "Questo modello ha suddivisioni o è un trasferimento; modifica i dettagli da una transazione. Puoi comunque rinominarlo qui.",
+    "complexNote": "Questo modello ha suddivisioni o è un giroconto; modifica i dettagli da una transazione. Puoi comunque rinominarlo qui.",
     "confirmDeleteTitle": "Eliminare \"{{name}}\"?",
     "confirmDeleteBody": "Le transazioni già create da questo modello non vengono toccate.",
     "hint": "Transazioni che inserisci più di una volta: compilane una e poi riusala.",
     "emptyHint": "La spesa settimanale, il bonifico mensile: le transazioni che altrimenti riscriveresti.",
     "actionsFor": "Azioni per {{name}}",
-    "openSchedule": "Apri la programmazione di {{name}}",
+    "openSchedule": "Apri la programmata di {{name}}",
     "transferTo": "Giroconto verso {{account}}",
     "split": "Suddivisa",
     "quick": "Per l'inserimento rapido",
-    "scheduled": "Dietro una programmazione",
+    "scheduled": "Dietro una programmata",
     "col": {
       "what": "Beneficiario e categoria",
       "used": "Usato",
-      "schedule": "Programmazione"
+      "schedule": "Programmata"
     },
     "usedTimes_one": "1 volta · {{date}}",
     "usedTimes_other": "{{count}} volte · {{date}}",
@@ -1138,7 +1138,7 @@
     },
     "everyNext": "{{every}} · prossima {{date}}",
     "line": "Scegli un modello dal menu ⋯ della scheda di inserimento e la transazione si compila da sola.",
-    "lineScheduled": "Scegli un modello dal menu ⋯ della scheda di inserimento e la transazione si compila da sola. Quelli dietro una programmazione sono ciò che la programmazione registra: si aprono nelle Programmate.",
+    "lineScheduled": "Scegli un modello dal menu ⋯ della scheda di inserimento e la transazione si compila da sola. Quelli dietro una programmata sono ciò che la programmata registra: si aprono nelle Programmate.",
     "sheet": {
       "usedTimes_one": "Usato una volta, il {{date}}",
       "usedTimes_other": "Usato {{count}} volte, l'ultima il {{date}}",
@@ -1193,8 +1193,8 @@
     "columnsReset": "Ripristina",
     "newEntry": "Nuova riga — scrivi, oppure premi N",
     "needsCategory": "Serve una categoria",
-    "reconciledRun_one": "{{count}} riconciliato",
-    "reconciledRun_other": "{{count}} riconciliati",
+    "reconciledRun_one": "{{count}} riconciliata",
+    "reconciledRun_other": "{{count}} riconciliate",
     "reconciledAll": "tutto riconciliato fino a qui",
     "setAside": "Messo da parte per obiettivi",
     "setAsideFree": "{{amount}} liberi",
@@ -1211,10 +1211,10 @@
     "amountMax": "Importo max",
     "search": "Cerca",
     "hideFuture": "Nascondi future",
-    "transfers": "Trasferimenti",
+    "transfers": "Giroconti",
     "transfersAll": "Tutti",
-    "transfersOnly": "Solo trasferimenti",
-    "transfersNone": "Escludi trasferimenti",
+    "transfersOnly": "Solo giroconti",
+    "transfersNone": "Escludi giroconti",
     "noFlags": "Senza stato",
     "uncategorised": "Senza categoria",
     "clear": "Azzera filtri",
@@ -1244,8 +1244,8 @@
       "amountMax": "Importo massimo",
       "hideFuture": "Da oggi indietro",
       "transfers": {
-        "only": "Solo trasferimenti",
-        "none": "Senza trasferimenti"
+        "only": "Solo giroconti",
+        "none": "Senza giroconti"
       },
       "noFlags": "Senza contrassegno",
       "uncategorised": "Senza categoria",
@@ -1305,7 +1305,7 @@
     "2": "Assegno",
     "3": "Contanti",
     "4": "Bonifico",
-    "5": "Trasferimento interno",
+    "5": "Giroconto",
     "6": "Carta di debito",
     "7": "Ordine permanente",
     "8": "Pagamento elettronico",
@@ -1315,10 +1315,10 @@
   },
   "status": {
     "0": "Nessuno",
-    "1": "Non riconciliato",
-    "2": "Riconciliato",
+    "1": "Verificata",
+    "2": "Riconciliata",
     "3": "Promemoria",
-    "4": "Annullato"
+    "4": "Annullata"
   },
   "actions": {
     "signIn": "Accedi",
@@ -1857,7 +1857,7 @@
     "balanceSparkline": "Andamento saldo",
     "spendingHeatmap": "Calendario spese",
     "uncleared": "Da riconciliare",
-    "allCleared": "Tutto riconciliato.",
+    "allCleared": "Tutto verificato.",
     "unclearedCount": "{{count}} da riconciliare",
     "cashflow": "Previsione flusso di cassa",
     "hiddenWidgets": "Widget nascosti",
@@ -1895,7 +1895,7 @@
       "categories": "Categorie",
       "tags": "Etichette",
       "transactions": "Operazioni",
-      "transfers": "Trasferimenti",
+      "transfers": "Giroconti",
       "budgets": "Budget",
       "assignments": "Regole",
       "templates": "Modelli",
@@ -2133,7 +2133,7 @@
     "fix": "Correggi",
     "types": {
       "split_sum": "Operazioni suddivise non quadrate",
-      "orphan_transfer_leg": "Trasferimenti senza contropartita",
+      "orphan_transfer_leg": "Giroconti senza contropartita",
       "category_sign": "Segno dell'importo non coerente con la categoria",
       "future_reconciled": "Riconciliate ma con data futura"
     }
@@ -2292,7 +2292,7 @@
       "offer": "Prima volta qui? Fai il giro delle programmate",
       "views": {
         "title": "Il mese, o tutte le programmate",
-        "body": "Il calendario mostra il mese: cosa è registrato, non riconciliato o riconciliato, e cosa è ancora da registrare. Tutte le programmate elenca le programmate stesse."
+        "body": "Il calendario mostra il mese: cosa è registrato, verificato o riconciliato, e cosa è ancora da registrare. Tutte le programmate elenca le programmate stesse."
       },
       "needs": {
         "title": "Da fare",
