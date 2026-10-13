@@ -31,7 +31,8 @@ Targeted runs:
 cd server && go test ./internal/httpapi -run TestAccountsCreate -race -count=1
 cd web && npx vitest run src/money.test.ts     # single file
 cd web && npm run typecheck                    # tsc -b --noEmit (plain --noEmit checks nothing: see below)
-cd web && npm run check:i18n                   # locale key parity (CI gate)
+cd web && npm run check:i18n                   # locale parity, plurals, placeholders (CI gate)
+cd web && npm run check:glossary               # warns where a translation drifts from docs/i18n/glossary.md
 cd e2e && npm test                             # Playwright; needs the app on E2E_BASE_URL
 ```
 
