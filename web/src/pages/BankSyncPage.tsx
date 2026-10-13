@@ -44,7 +44,6 @@ import { errorColor } from "../amountTone";
 import { useConfirm } from "../components/confirmContext";
 
 import {
-  ApiError,
   type BankConnection,
   clearBankConnectionSyncRuns,
   connectBank,
@@ -75,6 +74,7 @@ import { localScheduleToUtc, utcScheduleToLocal } from "../schedule";
 import { useWallet } from "../wallet/WalletProvider";
 import { showSyncResult } from "../bankSyncNotice";
 import { EmptyState } from "../components/EmptyState";
+import { notifyError } from "../notifyError";
 
 // The Enable Banking redirect target — must be whitelisted in the user's app.
 const ebRedirectUrl = () => `${window.location.origin}/bank-sync/callback`;
@@ -173,11 +173,7 @@ function DemoBankPanel({ walletId }: { walletId: number }) {
   const connect = useMutation({
     mutationFn: () => connectDemoBank(walletId, t("demo.bankName")),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["bankConnections", walletId] }),
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
   return (
     <Card withBorder data-tour="banksync-providers" maw={560}>
@@ -226,11 +222,7 @@ function ConnectionCard({
   const confirm = useConfirm();
   const fmtDate = useDateFormat();
   const qc = useQueryClient();
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
 
   const accountsQuery = useQuery({
     queryKey: ["accounts", walletId],
@@ -675,11 +667,7 @@ function ConnectModal({
       onDone();
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   return (
@@ -740,11 +728,7 @@ function PluggyPanel({ walletId }: { walletId: number }) {
     queryFn: () => getPluggyConfig(walletId),
     enabled: walletId > 0,
   });
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
   const removeCfg = useMutation({
     mutationFn: () => deletePluggyConfig(walletId),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["pluggyConfig", walletId] }),
@@ -880,11 +864,7 @@ function PluggyConfigForm({
       onDone();
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   return (
@@ -958,11 +938,7 @@ function PluggyConnectForm({
       onDone();
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   return (
@@ -1010,11 +986,7 @@ function EnableBankingPanel({ walletId }: { walletId: number }) {
     queryFn: () => getEnableBankingConfig(walletId),
     enabled: walletId > 0,
   });
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
   const removeCfg = useMutation({
     mutationFn: () => deleteEnableBankingConfig(walletId),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["ebConfig", walletId] }),
@@ -1142,11 +1114,7 @@ function EnableBankingConfigModal({
       onDone();
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   return (
@@ -1244,11 +1212,7 @@ function EnableBankingConnectModal({
     onSuccess: (res) => {
       window.location.href = res.url;
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const bankOptions = (banks.data ?? []).map((b) => ({ value: b.name, label: b.name }));

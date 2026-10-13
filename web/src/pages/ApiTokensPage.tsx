@@ -16,7 +16,6 @@ import {
   TextInput,
   Tooltip,
 } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconCheck, IconCopy, IconKey, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -24,7 +23,6 @@ import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/confirmContext";
 
 import {
-  ApiError,
   type ApiToken,
   type ApiTokenScope,
   createApiToken,
@@ -32,6 +30,7 @@ import {
   revokeApiToken,
 } from "../api/client";
 import { useDateFormat } from "../dates";
+import { notifyError } from "../notifyError";
 
 // ApiTokensPage manages the user's personal API tokens: create (with a
 // show-once reveal of the plaintext), list, and revoke. The plaintext token is
@@ -51,11 +50,7 @@ export function ApiTokensPage() {
   const [expiry, setExpiry] = useState("0");
   const [reveal, setReveal] = useState<string | null>(null);
 
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
   const refresh = () => void qc.invalidateQueries({ queryKey: ["apiTokens"] });
 
   const create = useMutation({

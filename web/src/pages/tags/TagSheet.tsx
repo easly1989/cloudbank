@@ -1,17 +1,17 @@
 import { ActionIcon, Anchor, Button, Menu, TextInput } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconDots } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { ApiError, createTag, renameTag, type TagInfo } from "../../api/client";
+import { createTag, renameTag, type TagInfo } from "../../api/client";
 import { amountColor } from "../../amountTone";
 import { SideSheet } from "../../components/SideSheet";
 import { ENTRY_SHEET } from "../../components/entrySheetTheme";
 import { takenBy, type TagRow } from "./tagList";
 import classes from "./tags.module.css";
+import { notifyError } from "../../notifyError";
 
 /**
  * A tag in the sheet beside the page (#556): new, or opened from the list. Its
@@ -69,11 +69,7 @@ export function TagSheet({
       onSaved();
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const count = row?.count ?? 0;

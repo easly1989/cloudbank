@@ -1,12 +1,12 @@
 import { Button, Card, Group, SegmentedControl, Select, Stack, Text } from "@mantine/core";
 import { IconDownload } from "@tabler/icons-react";
-import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ApiError, downloadExport, listAccounts } from "../api/client";
+import { downloadExport, listAccounts } from "../api/client";
 import { useWallet } from "../wallet/WalletProvider";
+import { notifyError } from "../notifyError";
 
 export function ExportPanel() {
   const { t } = useTranslation();
@@ -28,11 +28,7 @@ export function ExportPanel() {
       const name = (acc?.name ?? "account").replace(/[^\w.-]+/g, "_");
       return downloadExport(walletId, Number(accountId), format, `${name}.${format}`);
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   return (

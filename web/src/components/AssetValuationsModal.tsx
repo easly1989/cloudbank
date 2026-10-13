@@ -1,12 +1,10 @@
 import { ActionIcon, Button, Group, Modal, Stack, Table, Text, TextInput } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconPencil, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
-  ApiError,
   type Account,
   type AssetValuation,
   addAssetValuation,
@@ -17,6 +15,7 @@ import {
 import { type MoneyFormat, formatMinor, minorToInput } from "../money";
 import { useAmountParser } from "../useAmountParser";
 import { todayCivil } from "../civilDate";
+import { notifyError } from "../notifyError";
 
 // AssetValuationsModal manages an asset account's dated valuation history: the
 // latest one stands in for the account balance in net worth. Add, edit and
@@ -63,11 +62,7 @@ export function AssetValuationsModal({
     enabled: opened && walletId > 0,
   });
 
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: ["valuations", walletId, account.id] });
     void qc.invalidateQueries({ queryKey: ["accounts", walletId] });
@@ -103,7 +98,10 @@ export function AssetValuationsModal({
     setNote(v.note);
   };
 
-  const canSave = date.trim() !== "" && value.trim() !== "";
+  // The server refuses a missing date or a negative value with a bare
+  // "invalid" (#613): the button waits for both instead.
+  const parsedValue = parseAmount(value, fd, dc);
+  const canSave = date.trim() !== "" && parsedValue != null && parsedValue >= 0;
   const rows = valuations.data ?? [];
 
   return (

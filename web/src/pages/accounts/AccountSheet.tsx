@@ -8,7 +8,6 @@ import {
   Select,
   TextInput,
 } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconDots } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
@@ -16,7 +15,6 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import {
-  ApiError,
   createAccount,
   updateAccount,
   type Account,
@@ -32,6 +30,7 @@ import { useAmountParser } from "../../useAmountParser";
 import { accountFormat, ACCOUNT_TYPES, hasValuations } from "./accountList";
 import type { AccountActions } from "./AccountTable";
 import classes from "./accounts.module.css";
+import { notifyError } from "../../notifyError";
 
 /**
  * An account in the sheet beside the page (#564): new, or opened from its ⋯.
@@ -139,11 +138,7 @@ export function AccountSheet({
       onSaved();
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const fmt = editing ? accountFormat(editing) : null;

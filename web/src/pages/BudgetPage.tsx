@@ -1,13 +1,11 @@
 import { Button, Stack } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import {
-  ApiError,
   clearCategoryBudget,
   getBudgetReport,
   listBudgets,
@@ -42,6 +40,7 @@ import {
   Figures,
   PeriodBar,
 } from "./budget/BudgetTable";
+import { notifyError } from "../notifyError";
 
 /**
  * Budget (#568): the answer first — how much of the month's plan is gone and
@@ -159,11 +158,7 @@ export function BudgetPage() {
         await clearCategoryBudget(walletId, id, period.year);
     },
     onSuccess: invalidate,
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const transactions = (id: number) => {

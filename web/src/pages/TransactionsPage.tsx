@@ -34,7 +34,6 @@ import { PageHeader } from "../components/PageHeader";
 import { Link, useSearchParams } from "react-router-dom";
 
 import {
-  ApiError,
   type Account,
   type BulkField,
   type RegisterRow,
@@ -83,6 +82,7 @@ import { amountColor, attentionColor, errorColor, negativeOnlyColor } from "../a
 import { pickBalances, type BalanceKey } from "../components/dashboard/overviewFigureModel";
 import { arrival, useArrival, useCountUp, type Arrival } from "../motion";
 import { BAND_INSET, BAND_PADDING, ROW_GAP, ROW_TYPE } from "./registerTheme";
+import { notifyError } from "../notifyError";
 
 // The three figures, and where each name and explanation live.
 const BALANCE_LABEL: Record<BalanceKey, string> = {
@@ -213,11 +213,7 @@ export function TransactionsPage() {
     void qc.invalidateQueries({ queryKey: ["accounts", walletId] });
     if (id != null) setSavedMark(arrival(id));
   };
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
 
   const balances = pickBalances(user?.preferences?.registerBalances);
   const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
@@ -434,10 +430,7 @@ export function TransactionsPage() {
     try {
       return { ...row, ...(await getTransaction(walletId, row.id)) };
     } catch (err) {
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      });
+      notifyError(err);
       return null;
     }
   };

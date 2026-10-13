@@ -1,13 +1,11 @@
 import { Button, Stack, TextInput, UnstyledButton } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
 import { IconSearch, IconTags } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
-  ApiError,
   deleteTag,
   getTagActivity,
   listCategories,
@@ -28,6 +26,7 @@ import { arrange, buildRows, DEFAULT_SORT, isUnused, type Sort } from "./tags/ta
 import classes from "./tags/tags.module.css";
 import { TagSheet } from "./tags/TagSheet";
 import { TagPhoneList, TagTable } from "./tags/TagTable";
+import { notifyError } from "../notifyError";
 
 /** Plain two-decimal numbers, for a wallet with no base currency yet. */
 const PLAIN: MoneyFormat = {
@@ -93,11 +92,7 @@ export function TagsPage() {
     for (const key of ["tagsManage", "tags", "tag-activity"])
       void qc.invalidateQueries({ queryKey: [key, walletId] });
   };
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<TagInfo | null>(null);

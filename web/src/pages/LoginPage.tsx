@@ -21,6 +21,7 @@ import { ApiError, isTotpChallenge } from "../api/client";
 import { useAuthConfig, useLogin, useRecoveryLogin } from "../auth/AuthProvider";
 import { ColorSchemeToggle } from "../components/ColorSchemeToggle";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
+import { ErrorMessage } from "../components/ErrorMessage";
 
 const SSO_START = "/api/v1/auth/oidc/start";
 
@@ -84,15 +85,15 @@ function PasswordForm({
   const submit = () => login.mutate({ username, password, totpCode: totpCode.trim() || undefined });
 
   const error =
-    login.error instanceof ApiError
-      ? login.error.status === 401
-        ? challenged
-          ? t("login.invalidCode")
-          : t("login.invalid")
-        : login.error.message
-      : login.error
-        ? String(login.error)
-        : "";
+    login.error instanceof ApiError && login.error.status === 401 ? (
+      challenged ? (
+        t("login.invalidCode")
+      ) : (
+        t("login.invalid")
+      )
+    ) : login.error ? (
+      <ErrorMessage error={login.error} />
+    ) : null;
 
   return (
     <>
@@ -215,15 +216,13 @@ function SsoOnlyForm({ provider, ssoError }: { provider: string; ssoError: strin
   }
 
   const error =
-    recovery.error instanceof ApiError
-      ? recovery.error.status === 401
-        ? t("login.recoveryInvalid")
-        : recovery.error.status === 429
-          ? t("login.tooMany")
-          : recovery.error.message
-      : recovery.error
-        ? String(recovery.error)
-        : "";
+    recovery.error instanceof ApiError && recovery.error.status === 401 ? (
+      t("login.recoveryInvalid")
+    ) : recovery.error instanceof ApiError && recovery.error.status === 429 ? (
+      t("login.tooMany")
+    ) : recovery.error ? (
+      <ErrorMessage error={recovery.error} />
+    ) : null;
 
   return (
     <>

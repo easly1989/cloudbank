@@ -13,10 +13,10 @@ import { IconLogin2 } from "@tabler/icons-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ApiError } from "../api/client";
 import { useAuthConfig, useSetup } from "../auth/AuthProvider";
 import { ColorSchemeToggle } from "../components/ColorSchemeToggle";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
+import { ErrorMessage } from "../components/ErrorMessage";
 
 // First-run wizard: creates the administrator account when no users exist yet.
 // A server that signs in through SSO only (#620) is set up by its first SSO
@@ -93,8 +93,7 @@ function PasswordSetup() {
     setup.mutate({ username, email, password });
   };
 
-  const serverError =
-    setup.error instanceof ApiError ? setup.error.message : setup.error ? String(setup.error) : "";
+  const serverError = setup.error ? <ErrorMessage error={setup.error} /> : null;
   const error = localError || serverError;
 
   return (

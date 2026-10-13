@@ -11,7 +11,6 @@ import {
   TextInput,
   Tooltip,
 } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import {
   IconEye,
   IconEyeOff,
@@ -49,7 +48,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "./confirmContext";
 
-import { ApiError, savePreferences } from "../api/client";
+import { savePreferences } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { NAV_ITEMS, type NavItemDef } from "./navItems";
 import {
@@ -61,6 +60,7 @@ import {
   type NavGroupLayout,
   type NavLayout,
 } from "./navLayout";
+import { notifyError } from "../notifyError";
 
 const BY_TO = new Map(NAV_ITEMS.map((i) => [i.to, i]));
 
@@ -93,11 +93,7 @@ export function NavLayoutEditor() {
 
   const save = useMutation({
     mutationFn: (next: NavLayout) => savePreferences(qc, { navLayout: next }),
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   // Update local state now; persist (debounced) only when `save` is true, so a

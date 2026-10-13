@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { errorColor } from "../amountTone";
 
 import { currentPushSubscription, disablePush, enablePush, pushSupported } from "../push";
+import { notifyError } from "../notifyError";
 
 // NotificationsCard lets the user opt this browser in or out of Web Push
 // notifications (currently: bills reminders).
@@ -39,7 +40,7 @@ export function NotificationsCard() {
         setSubscribed(false);
       }
     } catch (err) {
-      notifications.show({ color: "red", message: String(err) });
+      notifyError(err);
     } finally {
       setBusy(false);
     }

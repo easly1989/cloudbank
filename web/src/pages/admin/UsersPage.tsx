@@ -17,7 +17,6 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
-  ApiError,
   createUser,
   listUsers,
   resetUserPassword,
@@ -25,6 +24,7 @@ import {
   type User,
 } from "../../api/client";
 import { useAuth, useAuthConfig } from "../../auth/AuthProvider";
+import { notifyError } from "../../notifyError";
 
 export function UsersPage() {
   const { t } = useTranslation();
@@ -34,12 +34,6 @@ export function UsersPage() {
   const qc = useQueryClient();
   const usersQuery = useQuery({ queryKey: ["admin", "users"], queryFn: listUsers });
   const invalidate = () => qc.invalidateQueries({ queryKey: ["admin", "users"] });
-
-  const notifyError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
 
   const disableMutation = useMutation({
     mutationFn: ({ id, disabled }: { id: number; disabled: boolean }) =>
@@ -156,11 +150,7 @@ function CreateUserModal({
       onCreated();
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   return (
@@ -212,11 +202,7 @@ function ResetPasswordModal({ user, onClose }: { user: User | null; onClose: () 
       setPassword("");
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   return (

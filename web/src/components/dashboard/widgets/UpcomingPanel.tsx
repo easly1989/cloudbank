@@ -1,5 +1,4 @@
 import { ActionIcon, Badge, Box, Card, Group, Stack, Tabs, Text, Title } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconPencil, IconPlayerPlay, IconPlayerSkipForward } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -7,7 +6,6 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import {
-  ApiError,
   type CurrencyInfo,
   type Schedule,
   listSchedules,
@@ -18,6 +16,7 @@ import { useDateFormat } from "../../../dates";
 import { formatMinor } from "../../../money";
 import { todayCivil } from "../../../civilDate";
 import { amountColor } from "../../../amountTone";
+import { notifyError } from "../../../notifyError";
 
 // UpcomingPanel lists scheduled transactions in three tabs — the next due
 // occurrences (with Post now / Skip), every active schedule, and the manual
@@ -57,11 +56,7 @@ export function UpcomingPanel({ walletId, base }: { walletId: number; base?: Cur
     [schedules],
   );
 
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ["schedules", walletId] });
     void qc.invalidateQueries({ queryKey: ["dashboard", walletId] });

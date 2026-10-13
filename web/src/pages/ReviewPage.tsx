@@ -27,7 +27,6 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useConfirm } from "../components/confirmContext";
 
 import {
-  ApiError,
   type Account,
   type ReviewTxn,
   type Transaction,
@@ -50,6 +49,7 @@ import { useWallet } from "../wallet/WalletProvider";
 import { PageHeader } from "../components/PageHeader";
 import { amountColor, errorColor } from "../amountTone";
 import { compareRows, type CompareField, type CompareRow, type Described } from "./reviewCompare";
+import { notifyError } from "../notifyError";
 
 // The label each compared field goes by (#484).
 const FIELD_LABEL: Record<CompareField, string> = {
@@ -170,11 +170,7 @@ export function ReviewPage() {
   const [editTx, setEditTx] = useState<{ tx: Transaction; account: Account } | null>(null);
   const [formOpen, form] = useDisclosure(false);
 
-  const onError = (err: unknown) =>
-    notifications.show({
-      color: "red",
-      message: err instanceof ApiError ? err.message : String(err),
-    });
+  const onError = (err: unknown) => notifyError(err);
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ["review", walletId] });
     void qc.invalidateQueries({ queryKey: ["register", walletId] });

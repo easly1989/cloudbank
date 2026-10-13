@@ -10,14 +10,12 @@ import {
   TextInput,
   UnstyledButton,
 } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { IconChevronDown, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
-  ApiError,
   createSchedule,
   createTemplate,
   listAccounts,
@@ -40,6 +38,7 @@ import { ENTRY_SHEET } from "../../components/entrySheetTheme";
 import { minorToInput } from "../../money";
 import { PAYMENT_MODES } from "../../transactionEnums";
 import { useAmountParser } from "../../useAmountParser";
+import { notifyError } from "../../notifyError";
 
 const UNITS: ScheduleUnit[] = ["day", "week", "month", "year"];
 const WEEKEND_MODES = [0, 1, 2, 3];
@@ -262,11 +261,7 @@ export function ScheduleSheet({
       onSaved();
       onClose();
     },
-    onError: (err: unknown) =>
-      notifications.show({
-        color: "red",
-        message: err instanceof ApiError ? err.message : String(err),
-      }),
+    onError: (err: unknown) => notifyError(err),
   });
 
   const categoryOptions = useMemo(
