@@ -53,6 +53,7 @@ import {
 import { ScheduleList } from "./schedules/ScheduleList";
 import { ScheduleSheet } from "./schedules/ScheduleSheet";
 import classes from "./schedules/schedules.module.css";
+import { useWeekStart } from "../i18n/week";
 
 /** How far back "Needs you" looks for something never registered. */
 const NOW_BACK_DAYS = 60;
@@ -119,7 +120,8 @@ export function SchedulesPage() {
   );
 
   // The month on screen: every day of the weeks it spans.
-  const days = useMemo(() => monthGrid(month), [month]);
+  const weekStart = useWeekStart();
+  const days = useMemo(() => monthGrid(month, weekStart), [month, weekStart]);
   const monthQuery = useQuery({
     queryKey: ["schedule-calendar", walletId, days[0], days.at(-1), today],
     queryFn: () => getScheduleCalendar(walletId, days[0], days.at(-1)!, today),

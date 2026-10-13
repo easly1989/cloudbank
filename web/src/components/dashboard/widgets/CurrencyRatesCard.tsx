@@ -7,7 +7,7 @@ import { listCurrencies } from "../../../api/client";
 // CurrencyRatesCard lists the wallet's non-base currencies with their exchange
 // rate relative to the base currency (mirrors the Currencies page "per base").
 export function CurrencyRatesCard({ walletId }: { walletId: number }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const q = useQuery({
     queryKey: ["currencies", walletId],
     queryFn: () => listCurrencies(walletId),
@@ -42,7 +42,7 @@ export function CurrencyRatesCard({ walletId }: { walletId: number }) {
                 </Text>
               </Text>
               <Text size="sm" fw={600}>
-                {c.rate.toLocaleString(undefined, {
+                {c.rate.toLocaleString(i18n.language, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 6,
                 })}

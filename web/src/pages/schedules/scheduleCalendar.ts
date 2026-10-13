@@ -3,6 +3,7 @@
 // components so it can be tested without rendering anything.
 
 import type { Schedule, ScheduleOccurrence, ScheduleUnit } from "../../api/client";
+import { dayInWeek, type WeekStart } from "../../i18n/week";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const civil = (d: Date) =>
@@ -27,17 +28,18 @@ export const isMonth = (month: string | null): month is string =>
   !!month && /^\d{4}-(0[1-9]|1[0-2])$/.test(month);
 
 /**
- * The days a month view draws: whole weeks, Monday first, from the week the
- * month starts in to the week it ends in — five or six rows.
+ * The days a month view draws: whole weeks, starting on `weekStart` (Monday
+ * unless the language says Sunday), from the week the month starts in to the
+ * week it ends in — five or six rows.
  */
-export function monthGrid(month: string): string[] {
+export function monthGrid(month: string, weekStart: WeekStart): string[] {
   const first = parse(`${month}-01`);
   const start = new Date(first);
-  start.setUTCDate(1 - ((first.getUTCDay() + 6) % 7));
+  start.setUTCDate(1 - dayInWeek(first.getUTCDay(), weekStart));
   const last = parse(`${shiftMonth(month, 1)}-01`);
   last.setUTCDate(0);
   const end = new Date(last);
-  end.setUTCDate(last.getUTCDate() + (6 - ((last.getUTCDay() + 6) % 7)));
+  end.setUTCDate(last.getUTCDate() + (6 - dayInWeek(last.getUTCDay(), weekStart)));
   const days: string[] = [];
   for (const d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) days.push(civil(d));
   return days;
