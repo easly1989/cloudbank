@@ -59,9 +59,10 @@ describe when it is another one:
 - Spanish and Portuguese: masculine (verificado, conciliado, registrado).
 - French: feminine (pointée, rapprochée, saisie).
 - German: unchanged when used as a predicate.
-- Italian: feminine beside *transazione* or *programmata*; a status shown on
-  its own, as in the register's status menu, agrees with *stato* (Verificato,
-  Riconciliato).
+- Italian: feminine, after *transazione* (verificata, riconciliata,
+  annullata), also for a status shown on its own, as in the register's status
+  badge. A balance stays masculine, after *saldo* ("Riconciliato" as one of an
+  account's figures, "Saldo verificato").
 
 ## Why, where there was a choice
 

@@ -1193,8 +1193,8 @@
     "columnsReset": "Ripristina",
     "newEntry": "Nuova riga — scrivi, oppure premi N",
     "needsCategory": "Serve una categoria",
-    "reconciledRun_one": "{{count}} riconciliato",
-    "reconciledRun_other": "{{count}} riconciliati",
+    "reconciledRun_one": "{{count}} riconciliata",
+    "reconciledRun_other": "{{count}} riconciliate",
     "reconciledAll": "tutto riconciliato fino a qui",
     "setAside": "Messo da parte per obiettivi",
     "setAsideFree": "{{amount}} liberi",
@@ -1315,10 +1315,10 @@
   },
   "status": {
     "0": "Nessuno",
-    "1": "Verificato",
-    "2": "Riconciliato",
+    "1": "Verificata",
+    "2": "Riconciliata",
     "3": "Promemoria",
-    "4": "Annullato"
+    "4": "Annullata"
   },
   "actions": {
     "signIn": "Accedi",
