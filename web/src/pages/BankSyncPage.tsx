@@ -222,7 +222,7 @@ function ConnectionCard({
   walletId: number;
   connection: BankConnection;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const confirm = useConfirm();
   const fmtDate = useDateFormat();
   const qc = useQueryClient();
@@ -372,7 +372,7 @@ function ConnectionCard({
                     multiline
                     label={`${fmtDate(connection.lastSyncAt)} ${new Date(
                       connection.lastSyncAt,
-                    ).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${
+                    ).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" })}${
                       connection.lastSyncMessage ? ` — ${connection.lastSyncMessage}` : ""
                     }`}
                   >
@@ -595,7 +595,7 @@ function ConnectionCard({
                     <Group justify="space-between" wrap="nowrap" gap="xs">
                       <Text size="xs" fw={500}>
                         {fmtDate(run.ranAt)}{" "}
-                        {new Date(run.ranAt).toLocaleTimeString([], {
+                        {new Date(run.ranAt).toLocaleTimeString(i18n.language, {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}

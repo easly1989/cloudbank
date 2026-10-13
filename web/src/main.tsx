@@ -28,7 +28,7 @@ import { AuthProvider } from "./auth/AuthProvider";
 import { ConfirmProvider } from "./components/confirm";
 import { PageErrorBoundary } from "./components/PageErrorBoundary";
 import { UpdateNotice } from "./components/UpdateNotice";
-import "./i18n";
+import { i18nReady } from "./i18n";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -41,24 +41,28 @@ const appUpdate = "serviceWorker" in navigator ? startAppUpdate(registerSW) : nu
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("root element not found");
 
-createRoot(rootElement).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ThemedMantineProvider>
-          {/* The last net: if the shell itself breaks, a full-page message
+// The language is loaded before the first render, so a page never flashes in
+// English on its way to Italian (#608).
+void i18nReady.then(() =>
+  createRoot(rootElement).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <ThemedMantineProvider>
+            {/* The last net: if the shell itself breaks, a full-page message
               instead of a blank one (#518). Pages have their own, inside it. */}
-          <PageErrorBoundary fullPage>
-            <ConfirmProvider>
-              <Notifications />
-              <UpdateNotice update={appUpdate} />
-              <BrowserRouter>
-                <App />
-              </BrowserRouter>
-            </ConfirmProvider>
-          </PageErrorBoundary>
-        </ThemedMantineProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  </StrictMode>,
+            <PageErrorBoundary fullPage>
+              <ConfirmProvider>
+                <Notifications />
+                <UpdateNotice update={appUpdate} />
+                <BrowserRouter>
+                  <App />
+                </BrowserRouter>
+              </ConfirmProvider>
+            </PageErrorBoundary>
+          </ThemedMantineProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </StrictMode>,
+  ),
 );
