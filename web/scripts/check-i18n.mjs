@@ -11,7 +11,8 @@
 //   4. Placeholders (#610): a translation has the same {{x}} and <1> tags as
 //      the English it translates. A missing {{count}} shows the wrong number
 //      or none; an extra one shows "{{count}}" itself.
-//   5. Empty values (#610): an empty string renders nothing, silently.
+//   5. Empty values (#610): an empty string renders nothing, silently. Nor
+//      may a value hold a control character, which renders as a box.
 //
 // And one prints a warning without failing: values identical to the English,
 // which are probably not translated, unless listed as words a language keeps.
@@ -202,12 +203,21 @@ for (const lng of locales) {
       errors.push(`${lng}: "${key}" is empty`);
       continue;
     }
+    // A control character draws an empty box (a mangled escape, #616).
+    if (/[\u0000-\u001f\u007f]/.test(value))
+      errors.push(`${lng}: "${key}" has a control character`);
     if (lng === reference) continue;
     const en = englishOf(key);
     if (en === undefined) continue;
     const want = placeholders(en).join(" ");
     const got = placeholders(value).join(" ");
-    if (want !== got)
+    // English may write "1" in its `_one`; French and Portuguese select `_one`
+    // for 0 as well, so theirs needs the {{count}}.
+    const addsCount =
+      PLURAL.test(key) &&
+      got === [...placeholders(en), "{{count}}"].sort().join(" ") &&
+      !want.includes("{{count}}");
+    if (want !== got && !addsCount)
       errors.push(
         `${lng}: "${key}" has ${got || "no placeholders"}, English has ${want || "none"}`,
       );
@@ -288,6 +298,33 @@ const SAME_IN = {
     "Detail: {{text}}",
     "{{transactions}} in {{groups}}",
     "{{kind}}, in {{group}}",
+  ],
+  // French spells these the same as English.
+  fr: [
+    "Guide",
+    "Budget",
+    "Budgets",
+    "Date",
+    "Info",
+    "Net",
+    "Mode",
+    "Auto",
+    "auto",
+    "Note",
+    "Notes",
+    "Distance",
+    "Total",
+    "Notifications",
+    "Admin",
+    "Actions",
+    "Type",
+    "Index",
+    "Source",
+    "Section",
+    "Navigation",
+    "Point .",
+    "Apostrophe '",
+    "version {{version}}",
   ],
 };
 

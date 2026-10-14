@@ -90,6 +90,22 @@ const (
 	asgDoCategory = 1 << 1
 )
 
+// separators is how the demo's euro writes its amounts, per language: the
+// decimal mark, then the thousands separator. A language without its own row
+// gets the default, 1.234,56 €; the visitor can change it in Currencies.
+type separators struct{ decimal, group string }
+
+var numberFormats = map[string]separators{
+	"fr": {decimal: ",", group: " "},
+}
+
+func numberFormat(lang string) separators {
+	if f, ok := numberFormats[lang]; ok {
+		return f
+	}
+	return separators{decimal: ",", group: "."}
+}
+
 // words holds every name the seed shows, per language (internal/locale's
 // codes). A language without its own block gets the English one; the tests ask
 // every listed language for a block with every key.
@@ -299,6 +315,74 @@ var words = map[string]map[string]string{
 		"carNotes":     "Benzin · Inspektion alle 15.000 km",
 		"scooter":      "Motorroller",
 	},
+	"fr": {
+		"wallet":       "Classeur démo",
+		"checking":     "Compte courant",
+		"savings":      "Livret d’épargne",
+		"card":         "Carte de crédit",
+		"cash":         "Espèces",
+		"bank":         "Banque démo",
+		"employer":     "Employeur",
+		"landlord":     "Propriétaire",
+		"energy":       "Fournisseur d’énergie",
+		"internet":     "Fournisseur d’accès",
+		"super":        "Supermarché",
+		"market":       "Marché du quartier",
+		"restaurant":   "Restaurant",
+		"cafe":         "Café",
+		"petrol":       "Station-service",
+		"transitPay":   "Transports urbains",
+		"streaming":    "Service de streaming",
+		"gym":          "Salle de sport",
+		"pharmacy":     "Pharmacie",
+		"clothes":      "Magasin de vêtements",
+		"bookshop":     "Librairie",
+		"hotel":        "Hôtel en bord de mer",
+		"income":       "Revenus",
+		"salary":       "Salaire",
+		"other":        "Autres revenus",
+		"home":         "Logement",
+		"rent":         "Loyer",
+		"utilities":    "Charges",
+		"phone":        "Internet et téléphone",
+		"food":         "Alimentation",
+		"groceries":    "Courses",
+		"eatingOut":    "Restaurants",
+		"transport":    "Transports",
+		"fuel":         "Carburant",
+		"transit":      "Transports en commun",
+		"leisure":      "Loisirs",
+		"subs":         "Abonnements",
+		"sport":        "Sport",
+		"books":        "Livres",
+		"holidays":     "Vacances",
+		"health":       "Santé",
+		"clothing":     "Vêtements",
+		"gifts":        "Cadeaux",
+		"tagHoliday":   "vacances",
+		"tagCar":       "voiture",
+		"tagRefund":    "remboursable",
+		"tagChristmas": "noël",
+		"tagHome":      "télétravail",
+		"weekly":       "Courses de la semaine",
+		"coffee":       "Café",
+		"household":    "Articles ménagers",
+		"topUp":        "Épargne mensuelle",
+		"payOff":       "Relevé de carte",
+		"withdraw":     "Retrait d’espèces",
+		"pass":         "Abonnement mensuel",
+		"bonus":        "Prime",
+		"refund":       "Remboursement",
+		"goalTrip":     "Voyage d’été",
+		"goalBuffer":   "Épargne de précaution",
+		"goalTickets":  "Billets de concert",
+		"goalBike":     "Nouveau vélo",
+		"goalSofa":     "Nouveau canapé",
+		"goalNote":     "Objectif inventé : modifiez-le, versez, supprimez-le.",
+		"car":          "Voiture familiale",
+		"carNotes":     "Essence · révision tous les 15 000 km",
+		"scooter":      "Scooter",
+	},
 }
 
 // seeder builds the file for one language.
@@ -482,8 +566,9 @@ func seedFile(today time.Time, lang string) *importer.XHB {
 	}
 	x := s.x
 	x.Properties = importer.XProperties{Title: s.w("wallet"), Curr: 1}
+	sep := numberFormat(s.lang)
 	x.Currencies = []importer.XCur{{
-		Key: 1, ISO: "EUR", Name: "Euro", Symb: "€", Syprf: 0, Dchar: ",", Gchar: ".", Frac: 2, Rate: 1,
+		Key: 1, ISO: "EUR", Name: "Euro", Symb: "€", Syprf: 0, Dchar: sep.decimal, Gchar: sep.group, Frac: 2, Rate: 1,
 	}}
 	x.Accounts = []importer.XAccount{
 		{Key: accChecking, Pos: 1, Type: 1, Curr: 1, Name: s.w("checking"), Bankname: s.w("bank"), Initial: "1850.00", Minimum: "200.00"},

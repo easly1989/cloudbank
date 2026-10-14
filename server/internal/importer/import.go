@@ -106,7 +106,7 @@ func (s *Service) ImportXHB(ctx context.Context, userID int64, x *XHB) (Result, 
 	for _, c := range x.Currencies {
 		row, err := q.InsertCurrency(ctx, db.InsertCurrencyParams{
 			WalletID: w.ID, IsoCode: c.ISO, Name: orDefault(c.Name, c.ISO), Symbol: c.Symb,
-			SymbolPrefix: int64(c.Syprf), DecimalChar: orDefault(c.Dchar, "."), GroupChar: orDefault(c.Gchar, ","),
+			SymbolPrefix: int64(c.Syprf), DecimalChar: orDefault(c.Dchar, "."), GroupChar: groupChar(c.Gchar),
 			FracDigits: clamp(c.Frac, 0, 6), IsBase: dbconv.B2i(c.Key == x.Properties.Curr), Rate: c.Rate,
 		})
 		if err != nil {
@@ -430,6 +430,15 @@ func scheduleUnit(u int) string {
 	default:
 		return "month"
 	}
+}
+
+// groupChar keeps a space as the thousands separator: French and other files
+// group with one, and orDefault would read it as missing.
+func groupChar(s string) string {
+	if s == "" {
+		return ","
+	}
+	return s
 }
 
 func orDefault(s, def string) string {
