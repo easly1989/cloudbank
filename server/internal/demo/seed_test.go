@@ -89,6 +89,19 @@ func checkTransfers(t *testing.T, today time.Time, x *importer.XHB) {
 	}
 }
 
+// The demo's euro writes amounts the way its language does: 1 234,56 € in
+// French, 1.234,56 € where a language has no row of its own.
+func TestNumberFormatFollowsLanguage(t *testing.T) {
+	today := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	want := map[string]string{"fr": ", ", "en": ",.", "it": ",.", "de": ",."}
+	for lang, sep := range want {
+		c := seedFile(today, lang).Currencies[0]
+		if got := c.Dchar + c.Gchar; got != sep {
+			t.Errorf("%s: separators %q, want %q", lang, got, sep)
+		}
+	}
+}
+
 // Every language CloudBank speaks has the demo's words, all of them: a new
 // language without its block would quietly show the English demo.
 func TestWordsForEveryLanguage(t *testing.T) {

@@ -65,6 +65,17 @@ func TestImportGoldenFile(t *testing.T) {
 		}
 	}
 
+	// The separators come across as written, a space included: the fixture's
+	// euro groups thousands with one, as a French HomeBank file does.
+	currencies, _ := q.ListCurrenciesForWallet(ctx, res.WalletID)
+	gotSep := map[string]string{}
+	for _, c := range currencies {
+		gotSep[c.IsoCode] = c.DecimalChar + c.GroupChar
+	}
+	if gotSep["EUR"] != ", " || gotSep["USD"] != ".," {
+		t.Fatalf("separators = %q, want EUR \", \" and USD \".,\"", gotSep)
+	}
+
 	// Budget value parsed in base currency (Food b0 = -100.00).
 	budgets, _ := q.ListBudgetsForWallet(ctx, res.WalletID)
 	if len(budgets) != 1 || budgets[0].Amount != -10000 {

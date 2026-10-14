@@ -9,6 +9,8 @@ export interface MoneyFormat {
   symbolPrefix: boolean;
 }
 
+const NBSP = String.fromCharCode(0xa0);
+
 function pow10(n: number): number {
   let r = 1;
   for (let i = 0; i < n; i++) r *= 10;
@@ -21,7 +23,9 @@ function group(digits: string, groupChar: string): string {
   const parts: string[] = [];
   if (pre > 0) parts.push(digits.slice(0, pre));
   for (let i = pre; i < digits.length; i += 3) parts.push(digits.slice(i, i + 3));
-  return parts.join(groupChar);
+  // A space between thousands is a non-breaking one, so 1 234 never splits
+  // across two lines.
+  return parts.join(groupChar === " " ? NBSP : groupChar);
 }
 
 /** Format minor units using the given currency metadata. */

@@ -32,6 +32,19 @@ describe("formatMinor", () => {
       }),
     ).toBe("1.234,50 €");
   });
+  it("groups with a non-breaking space when the separator is a space", () => {
+    const nb = String.fromCharCode(0xa0);
+    const fr = {
+      fracDigits: 2,
+      decimalChar: ",",
+      groupChar: " ",
+      symbol: "€",
+      symbolPrefix: false,
+    };
+    expect(formatMinor(123456789, fr)).toBe(`1${nb}234${nb}567,89 €`);
+    expect(formatNumber(41250, 0, fr)).toBe(`41${nb}250`);
+    expect(parseMinor(`1${nb}234,50`, 2, ",")).toBe(123450);
+  });
   it("formats a negative amount", () => {
     expect(
       formatMinor(-99, {

@@ -361,7 +361,9 @@ export function GoalsPhoneList({
       }}
     >
       <span className={classes.prowTop}>
-        <b className={l.closed ? classes.dim : undefined}>{l.name}</b>
+        <b className={l.closed ? classes.dim : undefined} data-truncate-ok>
+          {l.name}
+        </b>
         <span className={`${classes.mono} ${l.closed ? classes.dim : ""}`}>{money(l.saved)}</span>
       </span>
       <GoalBar l={l} small />
