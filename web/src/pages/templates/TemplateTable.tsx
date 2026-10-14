@@ -143,6 +143,7 @@ export function TemplateTable(props: TemplateTableProps) {
             >
               <UnstyledButton
                 className={classes.name}
+                data-truncate-ok
                 onClick={stop(() => actions.onOpen(r.template))}
               >
                 {r.template.name}
@@ -169,6 +170,7 @@ export function TemplateTable(props: TemplateTableProps) {
             >
               <UnstyledButton
                 className={classes.name}
+                data-truncate-ok
                 aria-label={t("templates.openSchedule", { name: r.template.name })}
                 onClick={stop(() => actions.onOpenSchedule(r))}
               >
