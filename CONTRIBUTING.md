@@ -47,6 +47,13 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/): `type(scope
 - Add or update tests. User-facing strings must ship for both `en` and `it`, with
   identical key sets (`cd web && npm run check:i18n`). Translations follow
   [the glossary](docs/i18n/glossary.md); `npm run check:glossary` warns where one drifts.
+- A change to a translation, a component or a stylesheet also runs the language
+  check: every page in every language, at phone and desktop widths, against the
+  demo build. It fails on a cut-off button, tab or badge label, a key shown in
+  place of its text, and a page wider than the screen. Locally, with a demo build
+  running: `cd e2e && E2E_BASE_URL=http://localhost:8080 npm run test:i18n`. A
+  name cut short on purpose (a long account name in a row) is marked
+  `data-truncate-ok`; `node i18n/sheet.mjs it` makes one picture of every page.
 
 ## Engineering conventions
 
