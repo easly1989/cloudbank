@@ -117,7 +117,11 @@ export function PayeeTable({
           data-testid={`payee-row-${r.payee.id}`}
           onClick={() => actions.onOpen(r.payee)}
         >
-          <UnstyledButton className={classes.name} onClick={stop(() => actions.onOpen(r.payee))}>
+          <UnstyledButton
+            className={classes.name}
+            data-truncate-ok
+            onClick={stop(() => actions.onOpen(r.payee))}
+          >
             {r.payee.name}
           </UnstyledButton>
           <span className={classes.cat}>
