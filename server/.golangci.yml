@@ -19,11 +19,11 @@ linters:
       - path: _test\.go
         linters:
           - errcheck
-      # The demo seed (#420) names things in Italian too; misspell reads
-      # those as English typos. Only these words, so real typos still show.
+      # The demo seed (#420) names things in Italian and German too; misspell
+      # reads those as English typos. Only these words, so real typos still show.
       - linters:
           - misspell
-        text: "`(Contanti|Distributore)` is a misspelling"
+        text: "`(Contanti|Distributore|Supermarkt|Inspektion)` is a misspelling"
 
 formatters:
   enable:
