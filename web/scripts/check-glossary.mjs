@@ -41,6 +41,33 @@ const EXCEPTIONS = {
     "templates.emptyHint": ["transfer"],
     "paymentModes.4": ["transfer"],
   },
+  de: {
+    // The plural, Haushaltsbücher, changes the stem's vowel.
+    "tour.wallet.title": ["wallet"],
+    "backup.hotHint": ["wallet"],
+    // "Register" as the verb: erfassen an occurrence, registrieren an app.
+    "schedules.state.auto": ["register"],
+    "schedules.meta.auto": ["register"],
+    "schedules.toRegister": ["register"],
+    "schedules.register": ["register"],
+    "schedules.sheet.auto": ["register"],
+    "schedules.sheet.notNext": ["register"],
+    "schedules.form.autoPostHint": ["register"],
+    "banksync.eb.configHint": ["register"],
+    // The page is Wiederkehrend, and its list view is the Liste.
+    "nav.schedules": ["schedule"],
+    "schedules.title": ["schedule"],
+    "schedules.view.list": ["schedule"],
+    "tours.schedules.views.title": ["schedule"],
+    // "Schedule" as the repetition settings, not a schedule.
+    "schedules.transferNote": ["schedule"],
+    "templates.col.schedule": ["schedule"],
+    // The verbs, not the statuses.
+    "transactions.savedNew": ["cleared"],
+    "accessCodes.shownOnce": ["void"],
+    // A bank transfer to someone else is an Überweisung, not an Umbuchung.
+    "paymentModes.4": ["transfer"],
+  },
 };
 
 function flatValues(obj, prefix = "") {
@@ -92,7 +119,8 @@ for (const lng of locales) {
       for (const [key, english] of en) {
         if (!uses.test(english.replace(PLACEHOLDER, ""))) continue;
         if (except[key]?.includes(term)) continue;
-        const value = (values.get(key) ?? "").toLowerCase();
+        // A soft hyphen (Zahlungs­partner) only shows where the word breaks.
+        const value = (values.get(key) ?? "").replace(/­/g, "").toLowerCase();
         if (!stems.every((s) => value.includes(s)))
           warnings.push(
             `  ${lng}: "${key}" says ${term} without "${words[i]}": ${values.get(key)}`,

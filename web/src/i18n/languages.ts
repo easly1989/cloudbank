@@ -26,6 +26,13 @@ export interface Language {
 export const languages = [
   { code: "en", name: "English", beta: false, weekStart: 1 },
   { code: "it", name: "Italiano", beta: false, weekStart: 1 },
+  {
+    code: "de",
+    name: "Deutsch",
+    beta: true,
+    weekStart: 1,
+    correction: "Korrektur auf GitHub vorschlagen",
+  },
 ] as const satisfies readonly Language[];
 
 export type LanguageCode = (typeof languages)[number]["code"];
