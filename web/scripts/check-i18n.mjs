@@ -262,6 +262,33 @@ const SAME_IN = {
     "{{kind}}, in {{group}}",
     "{{kind}} · {{spent}} in {{period}}",
   ],
+  // German borrows these as they are, and capitalizes them as nouns.
+  de: [
+    "Links",
+    "Tag",
+    "Tags",
+    "Budget",
+    "Budgets",
+    "Import",
+    "Status",
+    "Plan",
+    "Text",
+    "Info",
+    "Optional",
+    "Name",
+    "Bank",
+    "Administrator",
+    "Admin",
+    "Symbol",
+    "Navigation",
+    "Demo",
+    "Bank / CSV / QIF / OFX",
+    "Q{{n}} {{year}}",
+    "H{{n}} {{year}}",
+    "Detail: {{text}}",
+    "{{transactions}} in {{groups}}",
+    "{{kind}}, in {{group}}",
+  ],
 };
 
 const untranslated = [];

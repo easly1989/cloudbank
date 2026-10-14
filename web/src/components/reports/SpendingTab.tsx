@@ -168,11 +168,12 @@ export function SpendingTab({ ctx }: { ctx: ReportContext }) {
             { value: "income", label: t("reports.spending.income") },
           ]}
         />
-        <Group gap={10} wrap="nowrap">
+        <Group gap={10} wrap="nowrap" miw={0} maw="100%">
           <Text size="sm" c="dimmed">
             {t("reports.spending.byLabel")}
           </Text>
           <SegmentedControl
+            className="cb-segment-scroll"
             aria-label={t("reports.spending.byLabel")}
             value={by}
             onChange={(v) => {
