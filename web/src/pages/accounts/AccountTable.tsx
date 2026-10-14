@@ -271,8 +271,10 @@ export function AccountPhoneList({
                     onClick={() => actions.onOpen(a)}
                   >
                     <span className={classes.pl}>
-                      <span className={classes.pt}>{a.name}</span>
-                      <span className={classes.pm}>
+                      <span className={classes.pt} data-truncate-ok>
+                        {a.name}
+                      </span>
+                      <span className={classes.pm} data-truncate-ok>
                         {sub(a) || t(`accounts.types.${a.type}`)}
                         {asideNote(a)}
                       </span>

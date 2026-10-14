@@ -155,11 +155,13 @@ export function TagPhoneList({ rows, format, day, actions }: TableProps) {
           onClick={() => actions.onOpen(r.tag)}
         >
           <span className={classes.pl}>
-            <span className={classes.pt}>
+            <span className={classes.pt} data-truncate-ok>
               <IconTag size={15} aria-hidden />
               <span>{r.tag.name}</span>
             </span>
-            <span className={classes.pm}>{meta(r)}</span>
+            <span className={classes.pm} data-truncate-ok>
+              {meta(r)}
+            </span>
           </span>
           <span
             className={`${classes.pa} ${classes.mono}`}

@@ -376,6 +376,20 @@ body {
 .cb-period-switch .mantine-SegmentedControl-indicator {
   border-radius: 7px;
 }
+/* Five periods on a 320px phone: tighter labels fit them in Italian and
+   English; a language that still runs longer scrolls rather than cutting the
+   last one off. */
+@media (max-width: 30em) {
+  .cb-period-switch {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .cb-period-switch .mantine-SegmentedControl-label {
+    padding: 8px 5px;
+    font-size: 12.5px;
+  }
+}
 
 /* The card that lists what wants doing: outlined in the attention colour, and
    nothing else. A filled panel here reads as an error state, and most of what
