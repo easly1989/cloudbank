@@ -116,6 +116,7 @@ export function VehicleTable({ lines, format, actions }: ListProps) {
               <span className={classes.nameTop}>
                 <UnstyledButton
                   className={classes.nameText}
+                  data-truncate-ok
                   onClick={stop(() => actions.onOpen(l))}
                 >
                   {l.vehicle.name}
@@ -233,14 +234,16 @@ export function VehiclePhoneList({ lines, format, actions }: ListProps) {
           >
             <span className={classes.prowTop}>
               <span className={classes.nameTop}>
-                <span className={classes.nameText}>{l.vehicle.name}</span>
+                <span className={classes.nameText} data-truncate-ok>
+                  {l.vehicle.name}
+                </span>
                 <Plate plate={l.vehicle.plate} />
               </span>
               {l.fills > 0 && <span className={classes.mono}>{format.money(l.cost)}</span>}
             </span>
             <span className={classes.prowMeta}>
               {l.fills > 0 ? (
-                <span>
+                <span data-truncate-ok>
                   {[
                     fig.distance(l),
                     l.perKm == null
@@ -254,7 +257,9 @@ export function VehiclePhoneList({ lines, format, actions }: ListProps) {
                     .join(" · ")}
                 </span>
               ) : (
-                <span>{t(l.linked > 0 ? "vehicles.noneLately" : "vehicles.noFillsShort")}</span>
+                <span className={classes.prowNone}>
+                  {t(l.linked > 0 ? "vehicles.noneLately" : "vehicles.noFillsShort")}
+                </span>
               )}
               {last && <span>{format.day(last.date)}</span>}
             </span>

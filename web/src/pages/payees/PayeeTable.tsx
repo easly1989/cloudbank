@@ -117,7 +117,11 @@ export function PayeeTable({
           data-testid={`payee-row-${r.payee.id}`}
           onClick={() => actions.onOpen(r.payee)}
         >
-          <UnstyledButton className={classes.name} onClick={stop(() => actions.onOpen(r.payee))}>
+          <UnstyledButton
+            className={classes.name}
+            data-truncate-ok
+            onClick={stop(() => actions.onOpen(r.payee))}
+          >
             {r.payee.name}
           </UnstyledButton>
           <span className={classes.cat}>
@@ -186,8 +190,12 @@ export function PayeePhoneList({ rows, format, day, actions }: TableProps) {
           onClick={() => actions.onOpen(r.payee)}
         >
           <span className={classes.pl}>
-            <span className={classes.pt}>{r.payee.name}</span>
-            <span className={classes.pm}>{meta(r)}</span>
+            <span className={classes.pt} data-truncate-ok>
+              {r.payee.name}
+            </span>
+            <span className={classes.pm} data-truncate-ok>
+              {meta(r)}
+            </span>
           </span>
           <span
             className={`${classes.pa} ${classes.mono}`}

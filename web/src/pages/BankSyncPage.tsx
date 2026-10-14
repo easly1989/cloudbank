@@ -185,10 +185,15 @@ function DemoBankPanel({ walletId }: { walletId: number }) {
         {t("demo.bankHint")}
       </Text>
       <Group>
+        {/* On the narrowest phone the label takes two lines rather than losing its end. */}
         <Button
           leftSection={<IconPlus size={16} />}
           onClick={() => connect.mutate()}
           loading={connect.isPending}
+          h="auto"
+          mih={36}
+          py={6}
+          styles={{ label: { whiteSpace: "normal", textAlign: "center" } }}
         >
           {t("demo.bankConnect")}
         </Button>
@@ -505,36 +510,38 @@ function ConnectionCard({
             </Stack>
           ) : (
             (remote.data ?? []).map((ra) => (
-              <Group key={ra.externalId} justify="space-between" wrap="nowrap" gap="sm">
-                <div style={{ minWidth: 0 }}>
+              // The badge sits with the balance; on a phone the account picker
+              // takes the whole line under them.
+              <Group key={ra.externalId} justify="space-between" gap="sm">
+                <div style={{ minWidth: 0, flex: "1 1 140px" }}>
                   <Text size="sm" truncate>
                     {ra.name}
                   </Text>
-                  <Text size="xs" c="dimmed">
-                    {ra.balance} {ra.currency}
-                  </Text>
+                  <Group gap="xs" wrap="nowrap">
+                    <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>
+                      {ra.balance} {ra.currency}
+                    </Text>
+                    {ra.linkedAccountId ? (
+                      <Badge size="sm" color="teal" variant="dot" style={{ flexShrink: 0 }}>
+                        {t("banksync.linked")}
+                      </Badge>
+                    ) : (
+                      <Badge size="sm" color="gray" variant="dot" style={{ flexShrink: 0 }}>
+                        {t("banksync.notLinked")}
+                      </Badge>
+                    )}
+                  </Group>
                 </div>
-                <Group gap="xs" wrap="nowrap">
-                  {ra.linkedAccountId ? (
-                    <Badge size="sm" color="teal" variant="dot">
-                      {t("banksync.linked")}
-                    </Badge>
-                  ) : (
-                    <Badge size="sm" color="gray" variant="dot">
-                      {t("banksync.notLinked")}
-                    </Badge>
-                  )}
-                  <Select
-                    placeholder={t("banksync.linkTo")}
-                    data={accountOptions}
-                    value={ra.linkedAccountId ? String(ra.linkedAccountId) : null}
-                    onChange={(v) =>
-                      link.mutate({ externalId: ra.externalId, accountId: v ? Number(v) : null })
-                    }
-                    clearable
-                    w={200}
-                  />
-                </Group>
+                <Select
+                  placeholder={t("banksync.linkTo")}
+                  data={accountOptions}
+                  value={ra.linkedAccountId ? String(ra.linkedAccountId) : null}
+                  onChange={(v) =>
+                    link.mutate({ externalId: ra.externalId, accountId: v ? Number(v) : null })
+                  }
+                  clearable
+                  w={{ base: "100%", xs: 200 }}
+                />
               </Group>
             ))
           )}
