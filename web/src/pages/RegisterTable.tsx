@@ -1212,7 +1212,20 @@ function ColumnHeader({
           aria-label={t("register.sortBy")}
           style={{ display: "flex", alignItems: "center", gap: 4, width: "100%", minWidth: 0 }}
         >
-          <Box style={{ minWidth: 0, overflow: "hidden" }}>{children}</Box>
+          {/* A heading longer than its column, a German compound most of all,
+              hyphenates onto a second line (the page's lang picks the rules)
+              rather than losing its end. */}
+          <Box
+            style={{
+              minWidth: 0,
+              overflow: "hidden",
+              whiteSpace: "normal",
+              hyphens: "auto",
+              overflowWrap: "break-word",
+            }}
+          >
+            {children}
+          </Box>
           {active &&
             (sort.desc ? (
               <IconArrowDown size={13} stroke={2.5} />
