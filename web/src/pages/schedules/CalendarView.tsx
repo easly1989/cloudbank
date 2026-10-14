@@ -86,7 +86,9 @@ export function MonthCalendar({
                   title={`${o.name}, ${format(o.amount, o.accountId)}`}
                 >
                   <OccurrenceIcon o={o} />
-                  <span className={classes.chipName}>{o.name}</span>
+                  <span className={classes.chipName} data-truncate-ok>
+                    {o.name}
+                  </span>
                   <span className={classes.chipAmount} style={{ color: amountColor(o.amount) }}>
                     {format(o.amount, o.accountId)}
                   </span>

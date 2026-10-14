@@ -176,7 +176,14 @@ span.chev {
   align-items: center;
   gap: 5px;
   margin-left: 6px;
-  flex-shrink: 0;
+  /* Hidden until hover, it still holds its place: in a narrow column it gives
+     way before the name does, which otherwise shrank to its first letter. The
+     factor is large enough that the name's share of the shrinking rounds to
+     nothing; even a twentieth of a pixel brings up the ellipsis. */
+  flex: 0 100000 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
   color: var(--mantine-color-text);
 }
 .addSub:hover {
