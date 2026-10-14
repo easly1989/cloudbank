@@ -346,8 +346,9 @@ function ConnectionCard({
             <IconBuildingBank size={20} />
           </ThemeIcon>
           <div style={{ minWidth: 0 }}>
-            <Group gap={6} wrap="nowrap">
-              <Text fw={600} truncate>
+            {/* The badge goes under the name when both do not fit. */}
+            <Group gap={6} wrap="wrap">
+              <Text fw={600} truncate maw="100%">
                 {connection.name || t("banksync.unnamed")}
               </Text>
               <Badge size="xs" variant="light" color="gray">

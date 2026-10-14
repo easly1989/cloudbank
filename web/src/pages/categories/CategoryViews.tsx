@@ -323,7 +323,7 @@ export function CategoryPhoneList({ sections, format, since, actions }: ViewProp
         onClick={() => actions.onOpen(n.category)}
       >
         <span className={classes.pl}>
-          <span className={classes.pt} style={{ display: "block" }}>
+          <span className={classes.pt} style={{ display: "block" }} data-truncate-ok>
             {n.category.name}
           </span>
           {kind !== "group" && (

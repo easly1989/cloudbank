@@ -234,6 +234,11 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* The amount keeps its line: a long name shortens instead. */
+.prowTop > .mono {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 .prowMeta {
   font-size: 13px;
   color: var(--mantine-color-dimmed);
