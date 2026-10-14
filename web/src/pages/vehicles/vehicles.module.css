@@ -184,6 +184,11 @@
 .prowTop .nameText {
   font-weight: 500;
 }
+/* The amount keeps its currency on its line; the name gives way first. */
+.prowTop > .mono {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 .prowMeta {
   font-size: 13px;
   color: var(--mantine-color-dimmed);
@@ -197,6 +202,13 @@
 .prowMeta > span:last-child {
   text-align: right;
   white-space: nowrap;
+}
+/* Without fills the line is a sentence, not figures: it wraps rather than
+   losing its end. After the rule above, which it also is when no fill date
+   follows it. */
+.prowMeta > span.prowNone {
+  white-space: normal;
+  text-align: left;
 }
 
 /* Empty: what the page does, the three steps, and the button. */

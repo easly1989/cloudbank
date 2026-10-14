@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { PAGES } from "../pages";
+
 // Mobile/responsive checks. Named "zz-" so it runs after the main journey
 // (smoke.spec.ts), whose admin it reuses; it also self-sets-up when run alone.
 // Verifies: no horizontal overflow on the key pages across phone/tablet
@@ -9,30 +11,6 @@ const VIEWPORTS = [
   { label: "small-phone", width: 320, height: 568 },
   { label: "phone", width: 390, height: 844 },
   { label: "tablet", width: 768, height: 1024 },
-];
-
-// Every page, not a sample of them. With six, three pages that each overflowed a
-// phone by up to 319px — tags, rules, schedules — passed this suite for as long
-// as it existed (#446).
-const PAGES = [
-  "/",
-  "/accounts",
-  "/transactions",
-  "/templates",
-  "/tags",
-  "/assignments",
-  "/schedules",
-  "/schedules?view=list",
-  "/budget",
-  "/goals",
-  "/settings/integrations",
-  "/review",
-  "/reports",
-  "/vehicles",
-  "/categories",
-  "/payees",
-  "/settings",
-  "/settings/about",
 ];
 
 // ensureReady authenticates (setting up the admin on a fresh instance, else

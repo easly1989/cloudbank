@@ -34,6 +34,7 @@ cd web && npm run typecheck                    # tsc -b --noEmit (plain --noEmit
 cd web && npm run check:i18n                   # locale parity, plurals, placeholders (CI gate)
 cd web && npm run check:glossary               # warns where a translation drifts from docs/i18n/glossary.md
 cd e2e && npm test                             # Playwright; needs the app on E2E_BASE_URL
+cd e2e && npm run test:i18n                    # every page in every language; needs a demo build on E2E_BASE_URL
 ```
 
 Prerequisites: Go 1.27.2+, Node 22+ (CI and the image use 26), Docker. `golangci-lint` v2.14.0 runs in CI but not in `make lint`.

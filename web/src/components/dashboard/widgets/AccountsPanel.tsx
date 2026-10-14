@@ -1,12 +1,27 @@
-import { Card, Group, Stack, Table, Text, Title } from "@mantine/core";
+import { Card, Stack, Table, Text, Title } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 
 import type { CurrencyInfo, DashboardAccount } from "../../../api/client";
 import { formatMinor } from "../../../money";
 import { negativeOnlyColor } from "../../../amountTone";
 
+// The amount columns: right-aligned, and an amount never breaks before its
+// currency sign.
+const num = { ta: "right", style: { whiteSpace: "nowrap" } } as const;
+
+// One column plan for every group and the total, so their figures line up.
+const COLUMNS = (
+  <colgroup>
+    <col style={{ width: "31%" }} />
+    <col style={{ width: "23%" }} />
+    <col style={{ width: "23%" }} />
+    <col style={{ width: "23%" }} />
+  </colgroup>
+);
+
 // AccountsPanel groups the home-screen accounts by type with per-group subtotals
-// and a base-currency grand total.
+// and a base-currency grand total. A tile too narrow for the four columns, on
+// a phone, scrolls them sideways instead of cutting off the last ones.
 export function AccountsPanel({
   groups,
   base,
@@ -23,50 +38,60 @@ export function AccountsPanel({
         {t("dashboard.yourAccounts")}
       </Title>
       {groups.length === 0 && <Text c="dimmed">{t("dashboard.noAccounts")}</Text>}
-      <Stack gap="lg">
-        {groups.map(([type, accounts]) => (
-          <div key={type}>
-            <Text size="sm" fw={600} c="dimmed" tt="uppercase" mb={4}>
-              {t(`accounts.types.${type}`)}
-            </Text>
-            <Table>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>{t("accounts.name")}</Table.Th>
-                  <Table.Th ta="right">{t("register.bank")}</Table.Th>
-                  <Table.Th ta="right">{t("register.today")}</Table.Th>
-                  <Table.Th ta="right">{t("register.future")}</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {accounts.map((a) => (
-                  <Table.Tr key={a.id}>
-                    <Table.Td>{a.name}</Table.Td>
-                    <Table.Td ta="right">{formatMinor(a.bank, a.currency)}</Table.Td>
-                    <Table.Td ta="right">{formatMinor(a.today, a.currency)}</Table.Td>
-                    <Table.Td ta="right" c={negativeOnlyColor(a.future)}>
-                      {formatMinor(a.future, a.currency)}
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-              <GroupSubtotal accounts={accounts} />
-            </Table>
-          </div>
-        ))}
-        {base && totals && groups.length > 0 && (
-          <Group justify="space-between" pt="xs" wrap="nowrap">
-            <Text fw={700}>{t("dashboard.total")}</Text>
-            <Group gap="lg" wrap="nowrap">
-              <Text fw={700}>{formatMinor(totals.bank, base)}</Text>
-              <Text fw={700}>{formatMinor(totals.today, base)}</Text>
-              <Text fw={700} c={negativeOnlyColor(totals.future)}>
-                {formatMinor(totals.future, base)}
+      <Table.ScrollContainer minWidth={440} type="native">
+        <Stack gap="lg">
+          {groups.map(([type, accounts]) => (
+            <div key={type}>
+              <Text size="sm" fw={600} c="dimmed" tt="uppercase" mb={4}>
+                {t(`accounts.types.${type}`)}
               </Text>
-            </Group>
-          </Group>
-        )}
-      </Stack>
+              <Table layout="fixed">
+                {COLUMNS}
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>{t("accounts.name")}</Table.Th>
+                    <Table.Th {...num}>{t("register.bank")}</Table.Th>
+                    <Table.Th {...num}>{t("register.today")}</Table.Th>
+                    <Table.Th {...num}>{t("register.future")}</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {accounts.map((a) => (
+                    <Table.Tr key={a.id}>
+                      <Table.Td>{a.name}</Table.Td>
+                      <Table.Td {...num}>{formatMinor(a.bank, a.currency)}</Table.Td>
+                      <Table.Td {...num}>{formatMinor(a.today, a.currency)}</Table.Td>
+                      <Table.Td {...num} c={negativeOnlyColor(a.future)}>
+                        {formatMinor(a.future, a.currency)}
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+                <GroupSubtotal accounts={accounts} />
+              </Table>
+            </div>
+          ))}
+          {base && totals && groups.length > 0 && (
+            <Table layout="fixed" withRowBorders={false}>
+              {COLUMNS}
+              <Table.Tbody>
+                <Table.Tr>
+                  <Table.Td fw={700}>{t("dashboard.total")}</Table.Td>
+                  <Table.Td {...num} fw={700}>
+                    {formatMinor(totals.bank, base)}
+                  </Table.Td>
+                  <Table.Td {...num} fw={700}>
+                    {formatMinor(totals.today, base)}
+                  </Table.Td>
+                  <Table.Td {...num} fw={700} c={negativeOnlyColor(totals.future)}>
+                    {formatMinor(totals.future, base)}
+                  </Table.Td>
+                </Table.Tr>
+              </Table.Tbody>
+            </Table>
+          )}
+        </Stack>
+      </Table.ScrollContainer>
     </Card>
   );
 }
@@ -86,13 +111,13 @@ function GroupSubtotal({ accounts }: { accounts: DashboardAccount[] }) {
     <Table.Tfoot>
       <Table.Tr>
         <Table.Td fw={600}>{t("dashboard.subtotal")}</Table.Td>
-        <Table.Td ta="right" fw={600}>
+        <Table.Td {...num} fw={600}>
           {formatMinor(bank, cur)}
         </Table.Td>
-        <Table.Td ta="right" fw={600}>
+        <Table.Td {...num} fw={600}>
           {formatMinor(today, cur)}
         </Table.Td>
-        <Table.Td ta="right" fw={600} c={negativeOnlyColor(future)}>
+        <Table.Td {...num} fw={600} c={negativeOnlyColor(future)}>
           {formatMinor(future, cur)}
         </Table.Td>
       </Table.Tr>

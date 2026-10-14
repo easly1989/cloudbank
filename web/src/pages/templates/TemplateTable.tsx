@@ -143,6 +143,7 @@ export function TemplateTable(props: TemplateTableProps) {
             >
               <UnstyledButton
                 className={classes.name}
+                data-truncate-ok
                 onClick={stop(() => actions.onOpen(r.template))}
               >
                 {r.template.name}
@@ -169,6 +170,7 @@ export function TemplateTable(props: TemplateTableProps) {
             >
               <UnstyledButton
                 className={classes.name}
+                data-truncate-ok
                 aria-label={t("templates.openSchedule", { name: r.template.name })}
                 onClick={stop(() => actions.onOpenSchedule(r))}
               >
@@ -196,8 +198,12 @@ export function TemplatePhoneList(props: TemplateTableProps) {
   const row = (r: TemplateRow, meta: string, onClick: () => void) => (
     <UnstyledButton key={r.template.id} className={classes.prow} onClick={onClick}>
       <span className={classes.pl}>
-        <span className={classes.pt}>{r.template.name}</span>
-        <span className={classes.pm}>{meta}</span>
+        <span className={classes.pt} data-truncate-ok>
+          {r.template.name}
+        </span>
+        <span className={classes.pm} data-truncate-ok>
+          {meta}
+        </span>
       </span>
       <span
         className={`${classes.pa} ${classes.mono}`}

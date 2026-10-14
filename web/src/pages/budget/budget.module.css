@@ -214,8 +214,16 @@
   align-items: center;
   gap: 8px;
 }
+/* Month and year never lose their second half: on the narrowest phone the
+   arrows move under them. */
+.phonePeriod {
+  flex-wrap: wrap;
+}
+.phonePeriod > :first-child {
+  flex: none;
+}
 .phonePeriod .nav {
-  flex: 1;
+  flex: 1 1 170px;
   justify-content: center;
 }
 .phonePeriod .navName {
@@ -246,10 +254,14 @@
 .card > .prow:first-child {
   border-top: 0;
 }
+/* The name keeps its line; when the figures do not fit beside it, as with
+   the longer Italian ones, they go under it on the right. */
 .prowTop {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 10px;
+  align-items: baseline;
+  gap: 2px 10px;
   font-size: 15px;
 }
 .prowTop b {
@@ -264,6 +276,7 @@
   color: var(--mantine-color-dimmed);
   text-align: right;
   white-space: nowrap;
+  margin-left: auto;
 }
 
 /* Empty: what a budget does, where the money went, and the button. */
