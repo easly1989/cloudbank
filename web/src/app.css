@@ -376,6 +376,15 @@ body {
 .cb-period-switch .mantine-SegmentedControl-indicator {
   border-radius: 7px;
 }
+/* A segmented control whose labels may outrun a phone in a longer language:
+   it scrolls instead of cutting the last one off. */
+.cb-segment-scroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
 /* Five periods on a 320px phone: tighter labels fit them in Italian and
    English; a language that still runs longer scrolls rather than cutting the
    last one off. */

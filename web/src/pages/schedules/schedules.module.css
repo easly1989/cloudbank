@@ -247,8 +247,14 @@ button.item:hover {
 .itemActions {
   grid-column: 2 / 4;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
+}
+/* A button keeps its whole word; when the row is too narrow for both, the
+   next one moves to a line of its own. */
+.itemActions > * {
+  flex-shrink: 0;
 }
 .empty {
   padding: 8px 16px 16px;
