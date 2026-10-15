@@ -160,6 +160,7 @@ export function SchedulesPage() {
   const invalidate = () => {
     for (const key of [
       "schedules",
+      "templates",
       "schedule-calendar",
       "register",
       "bills",
