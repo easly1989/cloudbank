@@ -1,7 +1,7 @@
 import { Button, Group, Modal, Select, Stack, Text, TextInput } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconDeviceFloppy } from "@tabler/icons-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { errorColor } from "../amountTone";
@@ -41,6 +41,7 @@ export function TransferForm({
   onTemplateSaved: () => void;
 }) {
   const { t } = useTranslation();
+  const qc = useQueryClient();
   const parseAmount = useAmountParser();
 
   const transferQuery = useQuery({
@@ -49,6 +50,14 @@ export function TransferForm({
     enabled: opened && editingId != null,
   });
   const loaded = transferQuery.data;
+  // Closing drops the fetched transfer, so the next opening waits for a fresh
+  // copy: the cached one can be older than the transfer (a save from here, a
+  // status changed in the register), and seeding from it showed, and a second
+  // save wrote back, the values from before.
+  const close = () => {
+    qc.removeQueries({ queryKey: ["transfer", walletId] });
+    onClose();
+  };
 
   const [fromId, setFromId] = useState<string | null>(null);
   const [toId, setToId] = useState<string | null>(null);
@@ -125,7 +134,7 @@ export function TransferForm({
     },
     onSuccess: () => {
       onSaved();
-      onClose();
+      close();
     },
     onError: (err: unknown) => notifyError(err),
   });
@@ -175,7 +184,7 @@ export function TransferForm({
   return (
     <Modal
       opened={opened}
-      onClose={onClose}
+      onClose={close}
       size="lg"
       title={editingId != null ? t("transfers.editTitle") : t("transfers.addTitle")}
     >
@@ -266,7 +275,7 @@ export function TransferForm({
             {t("templates.saveAs")}
           </Button>
           <Group justify="flex-end">
-            <Button variant="default" onClick={onClose}>
+            <Button variant="default" onClick={close}>
               {t("transactions.cancel")}
             </Button>
             <Button onClick={() => save.mutate()} loading={save.isPending} disabled={invalid}>
