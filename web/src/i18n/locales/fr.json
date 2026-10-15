@@ -327,6 +327,20 @@
     "monthByMonth": "mois par mois",
     "lineMonth": "Le trait sur chaque barre marque où l’on en est du mois : une barre qui le dépasse dépense plus vite que prévu. Le budget d’une catégorie couvre ses sous-catégories qui n’en ont pas. Les catégories et les comptes exclus du budget ne sont pas comptés.",
     "lineYear": "Le trait sur chaque barre marque où l’on en est de l’année : une barre qui le dépasse dépense plus vite que prévu. Le budget d’une catégorie couvre ses sous-catégories qui n’en ont pas. Les catégories et les comptes exclus du budget ne sont pas comptés.",
+    "pace": {
+      "label": {
+        "month": "aujourd’hui, {{date}} · {{pace}} % du mois",
+        "year": "aujourd’hui, {{date}} · {{pace}} % de l’année"
+      },
+      "passed": {
+        "month": "Aujourd’hui, {{date}} : {{pace}} % du mois est écoulé.",
+        "year": "Aujourd’hui, {{date}} : {{pace}} % de l’année est écoulé."
+      },
+      "under": "Ici, vous avez dépensé {{spent}} % du prévu, vous êtes donc sous le rythme.",
+      "ahead": "Ici, vous avez dépensé {{spent}} % du prévu, vous êtes donc au-dessus du rythme.",
+      "past": "Ici, vous avez déjà dépassé le prévu de {{amount}}.",
+      "income": "Ici, {{spent}} % du prévu est arrivé."
+    },
     "actionsFor": "Actions pour {{name}}",
     "menu": {
       "edit": "Modifier le budget",

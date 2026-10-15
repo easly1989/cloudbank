@@ -327,6 +327,20 @@
     "monthByMonth": "mese per mese",
     "lineMonth": "La tacca su ogni barra segna dove cade oggi nel mese: una barra oltre la tacca vuol dire che stai spendendo più in fretta del previsto. Il budget di una categoria copre le sue sottocategorie che non ne hanno uno loro. Le categorie e i conti esclusi dal budget non vengono contati.",
     "lineYear": "La tacca su ogni barra segna dove cade oggi nell'anno: una barra oltre la tacca vuol dire che stai spendendo più in fretta del previsto. Il budget di una categoria copre le sue sottocategorie che non ne hanno uno loro. Le categorie e i conti esclusi dal budget non vengono contati.",
+    "pace": {
+      "label": {
+        "month": "oggi, {{date}} · {{pace}}% del mese",
+        "year": "oggi, {{date}} · {{pace}}% dell’anno"
+      },
+      "passed": {
+        "month": "Oggi, {{date}}: è passato il {{pace}}% del mese.",
+        "year": "Oggi, {{date}}: è passato il {{pace}}% dell’anno."
+      },
+      "under": "Qui hai speso il {{spent}}% del previsto, quindi sei sotto il ritmo.",
+      "ahead": "Qui hai speso il {{spent}}% del previsto, quindi sei sopra il ritmo.",
+      "past": "Qui hai già superato il previsto di {{amount}}.",
+      "income": "Qui è arrivato il {{spent}}% del previsto."
+    },
     "actionsFor": "Azioni per {{name}}",
     "menu": {
       "edit": "Modifica budget",

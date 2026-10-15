@@ -327,6 +327,20 @@
     "monthByMonth": "Monat für Monat",
     "lineMonth": "Der Strich auf jedem Balken zeigt, wo heute im Monat steht: Ein Balken darüber hinaus gibt schneller aus als geplant. Ein Budget auf einer Kategorie gilt auch für ihre Unterkategorien ohne eigenes Budget. Kategorien und Konten außerhalb des Budgets werden nicht gezählt.",
     "lineYear": "Der Strich auf jedem Balken zeigt, wo heute im Jahr steht: Ein Balken darüber hinaus gibt schneller aus als geplant. Ein Budget auf einer Kategorie gilt auch für ihre Unterkategorien ohne eigenes Budget. Kategorien und Konten außerhalb des Budgets werden nicht gezählt.",
+    "pace": {
+      "label": {
+        "month": "heute, {{date}} · {{pace}} % des Monats",
+        "year": "heute, {{date}} · {{pace}} % des Jahres"
+      },
+      "passed": {
+        "month": "Heute, {{date}}: {{pace}} % des Monats sind vorbei.",
+        "year": "Heute, {{date}}: {{pace}} % des Jahres sind vorbei."
+      },
+      "under": "Hier hast du {{spent}} % des Geplanten ausgegeben, du liegst also unter dem Tempo.",
+      "ahead": "Hier hast du {{spent}} % des Geplanten ausgegeben, du liegst also über dem Tempo.",
+      "past": "Hier liegst du schon {{amount}} über dem Geplanten.",
+      "income": "Hier sind {{spent}} % des Geplanten eingegangen."
+    },
     "actionsFor": "Aktionen für {{name}}",
     "menu": {
       "edit": "Budget bearbeiten",

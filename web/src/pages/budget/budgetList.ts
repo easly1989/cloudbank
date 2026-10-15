@@ -51,6 +51,36 @@ export function paceOf(p: Pick<Period, "from" | "to">, today: string): number | 
   return (at(today) + DAY - at(p.from)) / (at(p.to) + DAY - at(p.from));
 }
 
+/** Where today stands in the period, for the tick on the bars and its words. */
+export interface Pace {
+  /** How far through the period, 0..1 (paceOf). */
+  at: number;
+  /** Today, as a civil date. */
+  today: string;
+  kind: PeriodKind;
+}
+
+/**
+ * What a line's tick says (#625): the share of the plan gone against the share
+ * of the period, as whole percentages. A spending line is under the pace or
+ * ahead of it, or past the plan by `past`; income only says how much is in.
+ */
+export function paceVerdict(
+  l: Pick<BudgetLine, "plan" | "spent" | "income">,
+  at: number,
+): {
+  kind: "under" | "ahead" | "past" | "income";
+  spentPct: number;
+  pacePct: number;
+  past?: number;
+} {
+  const spentPct = l.plan > 0 ? Math.round((l.spent / l.plan) * 100) : 0;
+  const pacePct = Math.round(at * 100);
+  if (l.income) return { kind: "income", spentPct, pacePct };
+  if (l.spent > l.plan) return { kind: "past", spentPct, pacePct, past: l.spent - l.plan };
+  return { kind: l.spent > at * l.plan ? "ahead" : "under", spentPct, pacePct };
+}
+
 /** The days left in the period after today; null when today is outside it. */
 export function daysLeft(p: Pick<Period, "from" | "to">, today: string): number | null {
   if (today < p.from || today > p.to) return null;
@@ -72,6 +102,8 @@ export interface BudgetLine {
   plan: number;
   spent: number;
   coming: number;
+  /** Paid once a month at most lately, like rent: its bar has no tick (#625). */
+  oncePerMonth?: boolean;
 }
 
 /** What is left of the plan once what has gone and what is coming are out. */
@@ -94,6 +126,7 @@ function lineOf(r: BudgetReportRow, categories: Category[]): BudgetLine {
     plan: sign * r.budget,
     spent: sign * (r.actual - r.coming),
     coming: sign * r.coming,
+    oncePerMonth: r.oncePerMonth,
   };
 }
 
