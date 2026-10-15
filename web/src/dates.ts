@@ -28,6 +28,15 @@ export function formatDate(iso: string, fmt?: string, lang?: string): string {
   }
 }
 
+/**
+ * A month name as a title: its first letter upper case, the rest as the
+ * language writes it. CSS `capitalize` would turn "octubre de 2026" into
+ * "Octubre De 2026".
+ */
+export function asTitle(s: string, lang?: string): string {
+  return s.charAt(0).toLocaleUpperCase(lang) + s.slice(1);
+}
+
 /** useDateFormat returns a formatter bound to the current user's preference. */
 export function useDateFormat(): (iso: string) => string {
   const { user } = useAuth();

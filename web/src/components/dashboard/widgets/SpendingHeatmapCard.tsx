@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { expenseColor } from "../../../amountTone";
 
 import { getTrend } from "../../../api/client";
-import { useDateFormat } from "../../../dates";
+import { asTitle, useDateFormat } from "../../../dates";
 import { dayInWeek, useWeekStart, weekdayNames } from "../../../i18n/week";
 import { formatMinor } from "../../../money";
 import { useToday } from "../../../useToday";
@@ -112,8 +112,8 @@ export function SpendingHeatmapCard({ walletId }: { walletId: number }) {
           >
             <IconChevronLeft size={16} />
           </ActionIcon>
-          <Title order={4} tt="capitalize" style={{ whiteSpace: "nowrap" }}>
-            {monthLabel}
+          <Title order={4} style={{ whiteSpace: "nowrap" }}>
+            {asTitle(monthLabel, i18n.language)}
           </Title>
           <ActionIcon
             variant="subtle"

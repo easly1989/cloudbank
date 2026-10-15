@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> · <a href="README.it.md">Italiano</a> · <strong>Deutsch</strong> · <a href="README.fr.md">Français</a>
+  <a href="README.md">English</a> · <a href="README.it.md">Italiano</a> · <strong>Deutsch</strong> · <a href="README.fr.md">Français</a> · <a href="README.es.md">Español</a>
 </p>
 
 <p align="center">
@@ -72,7 +72,7 @@ CloudBank ist eine **unabhängige Clean-Room-Neuimplementierung**. Es kopiert od
 - **Sparziele und Fahrzeuge:** wie viel du zurückgelegt hast, wie viel du jeden Monat zurücklegen musst, um rechtzeitig ans Ziel zu kommen, und wie viel frei bleibt; für jedes Fahrzeug Kraftstoff, Kilometer, Kosten pro Kilometer und Verbrauch.
 - **Import und Export:** HomeBank-`.xhb`, QIF, OFX/QFX, CSV und CAMT.053 (ISO 20022) herein, mit einem Assistenten; `.xhb`, QIF und CSV hinaus; Sicherung und Wiederherstellung des Haushaltsbuchs.
 - **Bankanbindung:** Neue Buchungen kommen von der Bank, laufen durch deine Regeln und werden mit den vorhandenen zusammengeführt, statt doppelt zu erscheinen. Mit deinen eigenen Zugangsdaten, über [SimpleFIN](https://www.simplefin.org/), [Enable Banking](https://enablebanking.com/) (EU und Vereinigtes Königreich) und, experimentell, [Pluggy](https://pluggy.ai/) (Lateinamerika).
-- **Mehrere Währungen und Benutzer:** manuelle oder Online-Kurse (EZB), mehrere Benutzer, vom Administrator verwaltet, gemeinsame Haushaltsbücher; die App gibt es auf Englisch und Italienisch, dazu auf Deutsch und Französisch (Beta).
+- **Mehrere Währungen und Benutzer:** manuelle oder Online-Kurse (EZB), mehrere Benutzer, vom Administrator verwaltet, gemeinsame Haushaltsbücher; die App gibt es auf Englisch und Italienisch, dazu auf Deutsch, Französisch und Spanisch (Beta).
 - **Eine Übersicht nach Maß:** oben, was auf dich wartet, darunter Widgets, die du platzierst und in der Größe änderst, wie du willst, helles und dunkles Design in deiner Lieblingsfarbe, Seitenleiste und Navigation zum Umsortieren.
 - **Sicherheit:** Zwei-Faktor-Authentifizierung, Anmeldung per SSO (OIDC), widerrufbare API-Tokens und verschlüsselte Geheimnisse in der Datenbank.
 - **Installierbare App:** CloudBank lässt sich auf Handy oder Computer wie eine App installieren, mit Push-Benachrichtigungen zu Fälligkeiten, und meldet, wenn eine neue Version da ist.

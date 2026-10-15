@@ -71,7 +71,9 @@ func TestFromAcceptLanguage(t *testing.T) {
 		"nl-NL,it;q=0.8,en;q=0.7":    "it",
 		"fr-FR,en-GB;q=0.8,it;q=0.5": "fr",
 		"fr-CA,en;q=0.5":             "fr",
-		"es-ES,en-GB;q=0.8,it;q=0.5": "en",
+		"es-ES,en-GB;q=0.8,it;q=0.5": "es",
+		"es-MX,en;q=0.5":             "es",
+		"pt-BR,en-GB;q=0.8,it;q=0.5": "en",
 		"italic":                     "en",
 		"pt-PT,pt;q=0.9":             "en",
 	}
