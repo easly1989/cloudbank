@@ -91,7 +91,7 @@ export function EntryFieldsCard() {
     account: <Text fz="sm">{t("entryFields.accountDefault")}</Text>,
     paymentMode: <Text fz="sm">{t("entryFields.paymentDefault")}</Text>,
     status: (
-      <div style={{ width: 240 }}>
+      <div style={{ width: 240, maxWidth: "100%" }}>
         <StatusPicker
           label={t("entryFields.statusDefault")}
           value={statusDefault}
