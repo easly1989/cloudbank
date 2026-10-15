@@ -62,6 +62,7 @@ import { IncomeExpenseCard } from "../components/dashboard/widgets/IncomeExpense
 import { KpiCard } from "../components/dashboard/widgets/KpiCard";
 import { NotesCard } from "../components/dashboard/widgets/NotesCard";
 import { QuickAddCard } from "../components/dashboard/widgets/QuickAddCard";
+import { useQuickEntry } from "../components/dashboard/useQuickEntry";
 import { RecentTransactionsCard } from "../components/dashboard/widgets/RecentTransactionsCard";
 import {
   DEFAULT_IE,
@@ -85,6 +86,7 @@ export function DashboardPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const walletId = currentWallet?.id ?? 0;
+  const quick = useQuickEntry(walletId);
 
   // Per-user dashboard layout: a free-form 2D grid of placed widgets. The legacy
   // { order, hidden, spans } model is migrated on load (see layout.ts).
@@ -421,9 +423,17 @@ export function DashboardPage() {
             >
               {editingLayout ? t("dashboard.layoutDone") : t("overview.customise")}
             </Button>
-            <Button component={Link} to="/transactions?new=1">
-              <ShortLabel long={t("transactions.add")} short={t("transactions.addShort")} />
-            </Button>
+            {/* The sheet opens here, over the overview (#624); a wallet with no
+                account yet goes to Transactions, which says to make one. */}
+            {quick.account ? (
+              <Button onClick={quick.open}>
+                <ShortLabel long={t("transactions.add")} short={t("transactions.addShort")} />
+              </Button>
+            ) : (
+              <Button component={Link} to="/transactions">
+                <ShortLabel long={t("transactions.add")} short={t("transactions.addShort")} />
+              </Button>
+            )}
           </>
         }
       />
@@ -457,6 +467,7 @@ export function DashboardPage() {
         but an overdue bill is not a preference. Something you can remove is
         something the one person who removes it will then miss. */}
       <NeedsAttention walletId={walletId} />
+      {quick.form}
 
       <GridDashboard
         ref={gridApi}

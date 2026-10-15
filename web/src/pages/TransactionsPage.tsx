@@ -77,6 +77,7 @@ import {
   filtersToParams,
   isActive,
   parseFilters,
+  withFilters,
 } from "./registerFilterModel";
 import { amountColor, attentionColor, errorColor, negativeOnlyColor } from "../amountTone";
 import { pickBalances, type BalanceKey } from "../components/dashboard/overviewFigureModel";
@@ -156,7 +157,7 @@ export function TransactionsPage() {
   const filtersKey = `cb.reg.filters.${walletId}`;
   const setFilters = (f: typeof filters) => {
     const params = filtersToParams(f);
-    setSearchParams(params, { replace: true });
+    setSearchParams((current) => withFilters(current, params), { replace: true });
     try {
       localStorage.setItem(filtersKey, new URLSearchParams(params).toString());
     } catch {
@@ -176,7 +177,8 @@ export function TransactionsPage() {
       const saved = localStorage.getItem(filtersKey);
       if (saved) {
         const params = new URLSearchParams(saved);
-        if ([...params.keys()].length > 0) setSearchParams(params, { replace: true });
+        if ([...params.keys()].length > 0)
+          setSearchParams((current) => withFilters(current, params), { replace: true });
       }
     } catch {
       /* ignore */
