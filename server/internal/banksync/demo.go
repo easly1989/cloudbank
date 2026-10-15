@@ -23,10 +23,31 @@ var ErrProviderDisabled = errors.New("banksync: this bank provider is not availa
 // payments, not a second copy of the seeded year.
 const demoLookbackDays = 10
 
-// The pretend bank's two accounts.
-var demoAccounts = []RemoteAccount{
-	{ExternalID: "demo-checking", Name: "Everyday account", Currency: "EUR", Balance: "2481.36"},
-	{ExternalID: "demo-card", Name: "Credit card", Currency: "EUR", Balance: "-312.40"},
+// The pretend bank's two accounts, their balances in cents.
+var demoAccounts = []struct {
+	ext, name string
+	balance   int64
+}{
+	{"demo-checking", "Everyday account", 248136},
+	{"demo-card", "Credit card", -31240},
+}
+
+// demoFactors sizes the pretend bank's amounts to a currency worth less than
+// the euro, as the demo seed does: a real buys about a third of what a euro
+// does. A currency without a row keeps the euro amounts.
+var demoFactors = map[string]int64{"BRL": 3}
+
+// demoCurrency is what the pretend bank keeps its accounts in: the wallet's own
+// base currency, so a link needs no exchange, with the factor its amounts take.
+func (s *Service) demoCurrency(ctx context.Context, walletID int64) (iso string, factor int64) {
+	iso, factor = "EUR", 1
+	if c, err := s.rq.GetBaseCurrency(ctx, walletID); err == nil {
+		iso = c.IsoCode
+	}
+	if f, ok := demoFactors[iso]; ok {
+		factor = f
+	}
+	return iso, factor
 }
 
 // demoMerchants are what the pretend bank's statement lines say.
@@ -80,8 +101,10 @@ func (s *Service) demoRemoteAccounts(ctx context.Context, c db.BankConnection) (
 			linked[l.ExternalID] = l.AccountID
 		}
 	}
+	iso, factor := s.demoCurrency(ctx, c.WalletID)
 	out := make([]RemoteAccount, 0, len(demoAccounts))
-	for _, a := range demoAccounts {
+	for _, d := range demoAccounts {
+		a := RemoteAccount{ExternalID: d.ext, Name: d.name, Currency: iso, Balance: demoAmount(d.balance * factor)}
 		if id, ok := linked[a.ExternalID]; ok {
 			a.LinkedAccountID = &id
 		}
@@ -90,10 +113,19 @@ func (s *Service) demoRemoteAccounts(ctx context.Context, c db.BankConnection) (
 	return out, nil
 }
 
-// demoFetchRows makes up the statement lines from start to today. The same day
-// always yields the same lines, so a sync over days already fetched imports
-// nothing new: the dedup key is stable.
-func demoFetchRows(start, today time.Time) map[string][]importio.Row {
+// demoAmount writes cents the way a provider reports a balance: 2481.36.
+func demoAmount(cents int64) string {
+	sign := ""
+	if cents < 0 {
+		sign, cents = "-", -cents
+	}
+	return fmt.Sprintf("%s%d.%02d", sign, cents/100, cents%100)
+}
+
+// demoFetchRows makes up the statement lines from start to today, their amounts
+// multiplied by factor. The same day always yields the same lines, so a sync
+// over days already fetched imports nothing new: the dedup key is stable.
+func demoFetchRows(start, today time.Time, factor int64) map[string][]importio.Row {
 	floor := today.AddDate(0, 0, -demoLookbackDays)
 	if start.Before(floor) {
 		start = floor
@@ -119,7 +151,7 @@ func demoFetchRows(start, today time.Time) map[string][]importio.Row {
 			out[ext] = append(out[ext], importio.Row{
 				Line:   line,
 				Date:   date,
-				Amount: -cents * 10000, // six fraction digits, as the other providers
+				Amount: -cents * factor * 10000, // six fraction digits, as the other providers
 				Memo:   m.memo,
 				Status: status,
 				FITID:  fmt.Sprintf("demo:%s:%s", ext, date),

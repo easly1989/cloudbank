@@ -24,7 +24,7 @@ linters:
       # so real typos still show.
       - linters:
           - misspell
-        text: "`(Contanti|Distributore|Supermarkt|Inspektion|Employeur|Restaurantes)` is a misspelling"
+        text: "`(Contanti|Distributore|Supermarkt|Inspektion|Employeur|Restaurantes|Presentes)` is a misspelling"
 
 formatters:
   enable:
