@@ -22,6 +22,7 @@ import {
   type Period,
   type PeriodKind,
 } from "./budgetList";
+import { usePrivacy } from "../../privacy";
 import classes from "./budget.module.css";
 
 export interface BudgetActions {
@@ -75,14 +76,21 @@ export function BudgetBar({
   const over = !line.income && plan > 0 && spent + coming > plan;
   const tick = pace != null && plan > 0 && !line.oncePerMonth ? (pace.at * plan) / scale : null;
   const date = pace ? dayMonth(pace.today, i18n.language) : "";
+  const hidden = usePrivacy();
   let tickText = "";
   if (pace && tick != null && !big) {
     const v = paceVerdict({ plan, spent, income: !!line.income }, pace.at);
+    // In privacy mode (#626) the tick still says what it is, but not how
+    // this line stands against it: that sentence is all its figures.
     tickText = [
       t(`budget.pace.passed.${pace.kind}`, { date, pace: v.pacePct }),
-      v.kind === "past"
-        ? t("budget.pace.past", { amount: money(v.past ?? 0) })
-        : t(`budget.pace.${v.kind}`, { spent: v.spentPct }),
+      ...(hidden
+        ? []
+        : [
+            v.kind === "past"
+              ? t("budget.pace.past", { amount: money(v.past ?? 0) })
+              : t(`budget.pace.${v.kind}`, { spent: v.spentPct }),
+          ]),
     ].join(" ");
   }
   return (
@@ -229,7 +237,7 @@ export function Figures({
           <span className={classes.figValue} data-testid="budget-spent">
             {money(total.spent)}
           </span>
-          <span className={classes.figSub}>
+          <span data-cb-sensitive className={classes.figSub}>
             {t("budget.ofPlanned", { amount: money(total.plan) })}
             {total.coming > 0 && ` · ${t("budget.stillToCome", { amount: money(total.coming) })}`}
           </span>
@@ -299,7 +307,9 @@ function Spent({ l, money, dim = false }: { l: BudgetLine; money: Money; dim?: b
     <>
       <span className={`${classes.mono} ${dim ? classes.dim : ""}`}>{money(l.spent)}</span>
       {l.coming > 0 && (
-        <span className={classes.sub}>{t("budget.toCome", { amount: money(l.coming) })}</span>
+        <span data-cb-sensitive className={classes.sub}>
+          {t("budget.toCome", { amount: money(l.coming) })}
+        </span>
       )}
     </>
   );
@@ -524,7 +534,7 @@ export function BudgetPhoneList({
         >
           <UnstyledButton className={classes.prowTop} onClick={stop(() => actions.onEdit(l))}>
             <b className={loose ? classes.dim : undefined}>{loose ? pathOf(l) : l.name}</b>
-            <span className={classes.prowMeta}>
+            <span data-cb-sensitive className={classes.prowMeta}>
               {loose ? <span className={classes.mono}>{money(l.spent + l.coming)}</span> : meta(l)}
             </span>
           </UnstyledButton>

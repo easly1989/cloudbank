@@ -57,7 +57,7 @@ export function NetWorthTrendCard({ walletId }: { walletId: number }) {
       <Group justify="space-between" mb="xs" wrap="nowrap" gap="xs">
         <Title order={4}>{t("dashboard.netWorth")}</Title>
         {base && latest != null && (
-          <Text size="sm" fw={700} c={negativeOnlyColor(latest)}>
+          <Text data-cb-sensitive size="sm" fw={700} c={negativeOnlyColor(latest)}>
             {formatMinor(latest, base)}
           </Text>
         )}

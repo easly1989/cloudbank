@@ -359,3 +359,14 @@
   font-size: 12.5px;
   font-weight: 500;
 }
+
+/* Privacy mode (#626, privacy.ts): these classes only ever hold figures
+   or names, so they blur like every [data-cb-sensitive] element (app.css). A
+   field keeps its value legible: whoever opens a form is typing into it. */
+:global(.cb-private) .mono:not(input),
+:global(.cb-private) .figValue,
+:global(.cb-private) .amber {
+  filter: blur(max(6px, 0.45em));
+  user-select: none;
+  pointer-events: none;
+}

@@ -78,7 +78,7 @@ export function UpcomingPanel({ walletId, base }: { walletId: number; base?: Cur
   const row = (s: Schedule) => (
     <Group key={s.id} justify="space-between" wrap="nowrap" gap="xs">
       <Box style={{ minWidth: 0 }}>
-        <Text size="sm" truncate>
+        <Text data-cb-sensitive size="sm" truncate>
           {s.templateName || t("schedules.untitled")}
         </Text>
         <Text size="xs" c="dimmed">
@@ -88,7 +88,7 @@ export function UpcomingPanel({ walletId, base }: { walletId: number; base?: Cur
       </Box>
       <Group gap={4} wrap="nowrap">
         {base && (
-          <Text size="sm" fw={500} c={amountColor(s.templateAmount)}>
+          <Text data-cb-sensitive size="sm" fw={500} c={amountColor(s.templateAmount)}>
             {formatMinor(s.templateAmount, base)}
           </Text>
         )}

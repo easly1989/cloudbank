@@ -1194,10 +1194,6 @@
     },
     "sortBy": "Trier par cette colonne",
     "resizeColumn": "Faites glisser pour changer la largeur de cette colonne",
-    "privacy": {
-      "hide": "Masquer les noms et les montants",
-      "show": "Afficher les noms et les montants"
-    },
     "moveColumnLeft": "Déplacer {{name}} à gauche",
     "moveColumnRight": "Déplacer {{name}} à droite",
     "import": "Importer",
@@ -2190,6 +2186,10 @@
     "close": "Fermer",
     "confirm": "Confirmer",
     "save": "Enregistrer"
+  },
+  "privacy": {
+    "hide": "Masquer les montants",
+    "show": "Afficher les montants"
   },
   "overview": {
     "figures": "La période en chiffres",

@@ -11,7 +11,7 @@ import {
   Text,
   useMantineColorScheme,
 } from "@mantine/core";
-import { useDisclosure, useMediaQuery } from "@mantine/hooks";
+import { useDisclosure, useHotkeys, useMediaQuery } from "@mantine/hooks";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,6 +20,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { savePreferences } from "../api/client";
 import { DemoChrome } from "../demo/DemoChrome";
 import { useAuth } from "../auth/AuthProvider";
+import { togglePrivacy } from "../privacy";
 import { useWallet } from "../wallet/WalletProvider";
 import { AppFooter } from "./AppFooter";
 import {
@@ -47,6 +48,8 @@ export function AppLayout() {
   const { setColorScheme } = useMantineColorScheme();
   const location = useLocation();
   const updateCard = useUpdateCard();
+  // Privacy mode on and off from anywhere (#626); not while typing in a field.
+  useHotkeys([["shift+H", togglePrivacy]]);
 
   // Desktop sidebar collapse to an icon-only rail, remembered per user. The rail
   // only applies on desktop; the mobile drawer always shows full labels.

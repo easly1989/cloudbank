@@ -142,10 +142,10 @@ const CHECKS = [
     true,
   ],
   [
-    "register toolbar: privacy",
+    "register header: privacy",
     "/transactions",
     null,
-    role("button", "Hide names and amounts"),
+    role("button", "Hide amounts"),
     { board: "register", tag: "button", size: [44, 44] },
     true,
   ],
