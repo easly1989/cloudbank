@@ -672,6 +672,15 @@ body {
   align-items: center;
   justify-content: center;
 }
+/* Five icons at a choice's padding want 240px; a 320px phone gives the
+   settings card 224. Tighter padding lets them share what there is, and each
+   icon stays in the middle of its segment however wide that comes out. */
+@media (max-width: 30em) {
+  .cb-status-picker .mantine-SegmentedControl-label {
+    padding-inline: 8px;
+    justify-content: center;
+  }
+}
 
 /* The register's search box is the one field the board draws at 46: the
    toolbar's 44px buttons sit inside its border, a pixel clear of each edge. */
