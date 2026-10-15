@@ -251,14 +251,18 @@ func (s *Service) fill(ctx context.Context, userID int64, lang string) error {
 		{goal.Input{Name: w("goalSofa"), TargetAmount: 90000, TargetDate: &sofaDate, Note: w("goalNote")},
 			map[int]int64{9: 20000, 7: 16000}, 3},
 	}
+	// The goals are written in euros, like the seed, and take the language's
+	// currency here.
+	m := moneyOf(lang)
 	for _, g := range goals {
+		g.in.TargetAmount = m.fixed(g.in.TargetAmount)
 		made, err := s.goals.Create(ctx, res.WalletID, g.in)
 		if err != nil {
 			return err
 		}
 		for back := 12; back >= 0; back-- {
 			if cents, ok := g.added[back]; ok {
-				if _, err := s.goals.AddContribution(ctx, res.WalletID, made.ID, day(back), cents, ""); err != nil {
+				if _, err := s.goals.AddContribution(ctx, res.WalletID, made.ID, day(back), m.fixed(cents), ""); err != nil {
 					return err
 				}
 			}
