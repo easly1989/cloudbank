@@ -672,13 +672,16 @@ body {
   align-items: center;
   justify-content: center;
 }
+/* A choice's label is a flex row: in a segment wider than its icon, the icon
+   would sit against the left padding. */
+.cb-status-picker .mantine-SegmentedControl-label {
+  justify-content: center;
+}
 /* Five icons at a choice's padding want 240px; a 320px phone gives the
-   settings card 224. Tighter padding lets them share what there is, and each
-   icon stays in the middle of its segment however wide that comes out. */
+   settings card 224. Tighter padding lets them share what there is. */
 @media (max-width: 30em) {
   .cb-status-picker .mantine-SegmentedControl-label {
     padding-inline: 8px;
-    justify-content: center;
   }
 }
 
