@@ -89,7 +89,12 @@ export function BalanceSparklineCard({
       </Group>
       {account && values.length > 0 ? (
         <>
-          <Text fw={700} size="lg" c={latest == null ? undefined : negativeOnlyColor(latest)}>
+          <Text
+            data-cb-sensitive
+            fw={700}
+            size="lg"
+            c={latest == null ? undefined : negativeOnlyColor(latest)}
+          >
             {base && latest != null ? formatMinor(latest, base) : "—"}
           </Text>
           <Chart option={option} height={90} />

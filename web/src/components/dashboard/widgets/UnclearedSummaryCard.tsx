@@ -39,7 +39,7 @@ export function UnclearedSummaryCard({ walletId }: { walletId: number }) {
                   {t("dashboard.unclearedCount", { count: a.count })}
                 </Text>
               </div>
-              <Text size="sm" fw={600} c={amountColor(a.amount)}>
+              <Text data-cb-sensitive size="sm" fw={600} c={amountColor(a.amount)}>
                 {formatMinor(a.amount, a.currency)}
               </Text>
             </Group>

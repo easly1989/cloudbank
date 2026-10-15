@@ -113,6 +113,7 @@ export function PayeeSheet({
       onClose={onClose}
       testId="payee-sheet"
       title={editing ? editing.name : t("payees.addTitle")}
+      titleSensitive={!!editing}
       subtitle={
         editing
           ? last

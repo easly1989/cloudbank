@@ -46,10 +46,10 @@ export function AccountBalanceCard({
       </Group>
       {account ? (
         <>
-          <Text fw={700} size="xl" c={negativeOnlyColor(account.balance)}>
+          <Text data-cb-sensitive fw={700} size="xl" c={negativeOnlyColor(account.balance)}>
             {formatMinor(account.balance, accountFmt(account))}
           </Text>
-          <Text size="xs" c="dimmed">
+          <Text data-cb-sensitive size="xs" c="dimmed">
             {t("register.future")}: {formatMinor(account.futureBalance, accountFmt(account))}
           </Text>
         </>

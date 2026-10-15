@@ -122,6 +122,7 @@ export function MoneySheet({
           : t("goals.money.titleOut", { name: goal.name })
       }
       subtitle={subtitle}
+      subtitleSensitive
       foot={
         <>
           <Button variant="default" onClick={onClose}>
@@ -187,6 +188,7 @@ export function MoneySheet({
           variant="default"
           size="compact-sm"
           className={classes.share}
+          data-cb-sensitive
           onClick={() => setAmount(input(goal.need!))}
         >
           {t("goals.money.share", { amount: money(goal.need) })}
@@ -207,7 +209,7 @@ export function MoneySheet({
       </div>
       {reaches ? (
         <>
-          <span className={classes.note} data-ok>
+          <span className={classes.note} data-ok data-cb-sensitive>
             <IconCheck size={14} />
             {t("goals.money.reaches", { target: money(target) })}
           </span>
@@ -221,7 +223,7 @@ export function MoneySheet({
       ) : (
         magnitude > 0 &&
         !tooMuch && (
-          <span className={classes.note}>
+          <span className={classes.note} data-cb-sensitive>
             {after >= target
               ? t("goals.money.afterReached", { saved: money(after), target: money(target) })
               : t("goals.money.after", {

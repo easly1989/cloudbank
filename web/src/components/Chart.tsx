@@ -14,6 +14,9 @@ import { init, use as registerEcharts, type ECharts } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 
+import { usePrivacy } from "../privacy";
+import { applyPrivacy } from "./chartPrivacy";
+
 // Register only the chart types and components the app actually uses, so the
 // bundle doesn't pull in the whole ECharts library (saves ~400 KB of JS versus
 // `import * as echarts from "echarts"`). Add to this list if a new chart/feature
@@ -85,14 +88,20 @@ export const Chart = forwardRef<
     onSelect?: (key: string) => void;
     /** What the chart shows, for a screen reader; the figures beside it carry the rest. */
     label?: string;
+    /** Its categories are payees, hidden in privacy mode like its figures (#626). */
+    namesPrivate?: boolean;
   }
->(function Chart({ option, height = 360, onSelect, label }, ref) {
+>(function Chart({ option, height = 360, onSelect, label, namesPrivate = false }, ref) {
   const el = useRef<HTMLDivElement>(null);
   const chart = useRef<ECharts | null>(null);
   // Re-theme (and re-render) the option whenever the colour scheme changes so
   // chart text stays readable after a light/dark toggle.
   const scheme = useComputedColorScheme("light");
-  const themed = useMemo(() => applyChartTheme(option, scheme === "dark"), [option, scheme]);
+  const hidden = usePrivacy();
+  const themed = useMemo(() => {
+    const t = applyChartTheme(option, scheme === "dark");
+    return hidden ? applyPrivacy(t, namesPrivate) : t;
+  }, [option, scheme, hidden, namesPrivate]);
 
   useImperativeHandle(ref, () => ({
     // The card's own ground: on white, the dark scheme's light text disappears.
