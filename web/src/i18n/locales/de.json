@@ -1504,7 +1504,7 @@
     "deleteConfirmLabel": "Gib „{{title}}“ ein, um das Löschen zu bestätigen.",
     "delete": "Haushaltsbuch löschen",
     "billsCategory": "Kategorie für Rechnungen",
-    "billsCategoryHint": "Nur wiederkehrende Buchungen dieser Kategorie erscheinen bei den Rechnungen. Lass „Alle Ausgaben“ stehen, um jede wiederkehrende Ausgabe einzubeziehen.",
+    "billsCategoryHint": "Nur wiederkehrende Buchungen dieser Kategorie zählen als Rechnungen: im Kasten „Rechnungen“ der Übersicht und im Hinweis auf überfällige Rechnungen. Lass „Alle Ausgaben“ stehen, um jede wiederkehrende Ausgabe mitzuzählen.",
     "billsCategoryNone": "Alle Ausgaben",
     "label": "Haushaltsbuch"
   },

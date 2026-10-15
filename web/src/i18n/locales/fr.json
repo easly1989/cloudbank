@@ -1504,7 +1504,7 @@
     "deleteConfirmLabel": "Tapez « {{title}} » pour confirmer la suppression.",
     "delete": "Supprimer le classeur",
     "billsCategory": "Catégorie des factures",
-    "billsCategoryHint": "Seules les opérations récurrentes de cette catégorie apparaissent sur la page Factures. Laissez Toutes les sorties pour inclure toutes les opérations récurrentes de sortie.",
+    "billsCategoryHint": "Seules les opérations récurrentes de cette catégorie comptent comme factures : dans le bloc « Factures » du tableau de bord et dans le rappel des factures en retard. Laissez « Toutes les sorties » pour les compter toutes.",
     "billsCategoryNone": "Toutes les sorties",
     "label": "Classeur"
   },

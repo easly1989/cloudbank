@@ -6,6 +6,82 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
+## [3.8.0] — 2026-10-15
+
+CloudBank speaks four more languages: Spanish, French, German and Brazilian
+Portuguese, in beta. A privacy mode hides your money across the app, a server
+can sign in through SSO alone, and the server's errors come in the reader's
+language.
+
+### Added
+
+- **Spanish, French, German and Brazilian Portuguese**, marked **beta**. Each
+  covers the whole interface, the push reminder and the demo, whose wallet,
+  accounts, payees, categories and goals are seeded in the language it is
+  started in. They were translated against a shared glossary
+  (`docs/i18n/glossary.md`) of what each CloudBank word means and the term
+  chosen for it in every language. The browser's language picks one on a first
+  visit (`es-MX` → Spanish, `pt-PT` → Brazilian Portuguese), and a language
+  loads only when it is used, so the app is no heavier for the ones you never
+  pick.
+- **A new language selector.** Sign-in, setup and the demo have a globe menu
+  listing each language by its own name, with its name in yours under it.
+  Settings › General shows a card per language; while a beta language is
+  chosen, its card links to a form for native speakers to send corrections.
+- **README in every language**: Italian, Spanish, French, German and Brazilian
+  Portuguese, shorter than the English one, with a row linking them all.
+- **Privacy mode.** An eye beside the **?** of every page (or **Shift+H**) blurs
+  amounts, balances, totals, memos and payees across the app, sidebar and
+  charts included. Dates, categories, account names and the shape of each page
+  stay readable. It stays on, on that device, until you turn it off, and
+  replaces the register's own switch.
+- **Sign in through SSO only.** With `CB_PASSWORD_LOGIN=false` the login page is
+  the provider's button. The first sign-in on a new server becomes the
+  administrator, and `CB_OIDC_ADMIN_EMAIL` reserves it to one verified email.
+  Ten one-time **access recovery codes** per person, made in Settings ›
+  Security, get you in when the provider is down. `docs/sso.md` walks through
+  Authelia.
+- **The budget's tick says what it means.** The big bar names it ("today,
+  15 October · 48% of the month"), and each line's tick explains on hover,
+  touch or focus how that line stands against the pace. A line paid at most once
+  a month lately, like rent, has no tick.
+- **The guides are mirrored to the wiki** on every change.
+
+### Changed
+
+- **Server errors are in the reader's language**, with a sentence of their own
+  for the ones a person meets (a wrong password, a name already taken, an
+  expired bank consent…), and the server's technical detail kept apart under
+  it.
+- **Italian follows the glossary**: a transfer is a *giroconto*, a cleared
+  transaction is *verificata*, a schedule is a *programmata*, and statuses agree
+  with *transazione*.
+- **Add transaction on the overview** opens the entry sheet right there, on the
+  default account, instead of sending you to the register.
+- **Large counts read right** in Italian, Spanish, French and Portuguese, which
+  have their own plural for round millions.
+- **OIDC is sturdier for every setup**: a provider that was down when CloudBank
+  started is tried again at the next sign-in, and the email is read from the
+  userinfo endpoint when the ID token leaves it out (Authelia since 4.39). One
+  migration runs at startup, for the recovery codes.
+- **The server builds with Go 1.27.2**, for ten standard-library security fixes.
+
+### Fixed
+
+- **A schedule edited and saved no longer reverts.** Opened again, its sheet
+  showed the values from before the save, and a second save wrote them back. A
+  transfer edited from the register did the same.
+- **Add transaction on the overview** opened the entry sheet and shut it at once
+  when the register had saved filters.
+- **An SSO sign-in before setup is refused** with the password login on. It used
+  to create an account that was not an administrator, leaving the server with
+  none.
+- **The status picker fits its card at 320px**, and its icons sit centred in the
+  entry sheet.
+- **The bills category says what it filters.** Its hint in Settings › Wallet
+  still sent you to the Bills page, gone into Schedules in 3.7.0; it now names
+  the dashboard's Bills widget and the overdue bills reminder.
+
 ## [3.7.0] — 2026-10-06
 
 The secondary pages are rebuilt. Every page outside the register and the
@@ -826,7 +902,8 @@ HomeBank feature parity, shipped as a single Docker container.
 - CI (lint, race tests, build, Docker smoke, Playwright e2e) and automated GHCR
   publishing (`:latest` nightly, `:main` stable, `:vX.Y.Z` per release).
 
-[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.7.0...HEAD
+[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.8.0...HEAD
+[3.8.0]: https://github.com/easly1989/cloudbank/compare/v3.7.0...v3.8.0
 [3.7.0]: https://github.com/easly1989/cloudbank/compare/v3.6.1...v3.7.0
 [3.6.1]: https://github.com/easly1989/cloudbank/compare/v3.6.0...v3.6.1
 [3.6.0]: https://github.com/easly1989/cloudbank/compare/v3.5.1...v3.6.0

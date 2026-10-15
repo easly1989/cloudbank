@@ -1504,7 +1504,7 @@
     "deleteConfirmLabel": "Type \"{{title}}\" to confirm deletion.",
     "delete": "Delete wallet",
     "billsCategory": "Bills category",
-    "billsCategoryHint": "Only schedules in this category appear on the Bills page. Leave as All outflows to include every outflow schedule.",
+    "billsCategoryHint": "Only schedules in this category count as bills: in the dashboard's Bills widget and in the overdue bills reminder. Leave All outflows to count every outflow schedule.",
     "billsCategoryNone": "All outflows",
     "label": "Wallet"
   },

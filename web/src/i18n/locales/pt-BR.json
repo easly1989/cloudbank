@@ -1504,7 +1504,7 @@
     "deleteConfirmLabel": "Digite “{{title}}” para confirmar a exclusão.",
     "delete": "Excluir carteira",
     "billsCategory": "Categoria das contas",
-    "billsCategoryHint": "Só os agendamentos desta categoria aparecem na página Contas. Deixe em Todas as saídas para incluir todos os agendamentos de saída.",
+    "billsCategoryHint": "Só os agendamentos desta categoria contam como contas: no quadro “Contas” do painel e no aviso de contas vencidas. Deixe “Todas as saídas” para contar todos.",
     "billsCategoryNone": "Todas as saídas",
     "label": "Carteira"
   },
