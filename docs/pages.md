@@ -8,6 +8,12 @@ The sidebar groups the pages into **Money**, **Planning**, **Insights** and
 Appearance → Navigation**.
 Every page also has a short tour: the **?** in its header plays it.
 
+Beside the **?**, the **eye** turns on privacy mode, for showing CloudBank to
+someone without showing your money. Amounts, balances, totals, memos and payees
+blur on every page, and charts keep their shapes but lose their figures; dates,
+categories and account names stay readable. **Shift+H** does the same. It stays
+on, on that device, until you turn it off.
+
 - [Dashboard](#dashboard)
 - [Accounts](#accounts)
 - [Transactions (the register)](#transactions-the-register)
@@ -98,8 +104,6 @@ switches between them.
     on its own.
 - **Columns.** The columns button chooses which columns show. Drag a column's
   edge to resize it. CloudBank remembers your choice.
-- **Privacy.** The eye button hides names and amounts, for when someone is
-  looking over your shoulder.
 - **⋯ (More actions).**
   - **Reconcile.** Tick off a statement against the register. See
     [Getting started](getting-started.md#7-keep-it-matching-the-bank).

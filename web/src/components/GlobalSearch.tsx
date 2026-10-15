@@ -93,10 +93,12 @@ export function GlobalSearch({
 
   const primaryText = (r: SearchRow) =>
     r.payeeName || r.memo || r.info || r.categoryName || t("search.untitled");
-  const secondaryText = (r: SearchRow) => {
-    const bits = [r.memo, r.categoryName].filter((s) => s && s !== r.payeeName);
-    return bits.join(" · ");
-  };
+  // The second line: the memo, hidden in privacy mode (#626), then the
+  // category, which is not.
+  const secondaryBits = (r: SearchRow) => ({
+    memo: r.memo && r.memo !== r.payeeName ? r.memo : "",
+    category: r.categoryName && r.categoryName !== r.payeeName ? r.categoryName : "",
+  });
 
   return (
     <>
@@ -159,7 +161,12 @@ export function GlobalSearch({
                         <Group justify="space-between" wrap="nowrap" gap="sm">
                           <div style={{ minWidth: 0 }}>
                             <Group gap={6} wrap="nowrap">
-                              <Text size="sm" fw={500} truncate>
+                              <Text
+                                size="sm"
+                                fw={500}
+                                truncate
+                                data-cb-sensitive={!!(r.payeeName || r.memo || r.info) || undefined}
+                              >
                                 {primaryText(r)}
                               </Text>
                               <Badge size="xs" variant="light" color="gray">
@@ -168,10 +175,16 @@ export function GlobalSearch({
                             </Group>
                             <Text size="xs" c="dimmed" truncate>
                               {fmtDate(r.date)}
-                              {secondaryText(r) ? ` · ${secondaryText(r)}` : ""}
+                              {secondaryBits(r).memo && (
+                                <>
+                                  {" · "}
+                                  <span data-cb-sensitive>{secondaryBits(r).memo}</span>
+                                </>
+                              )}
+                              {secondaryBits(r).category && ` · ${secondaryBits(r).category}`}
                             </Text>
                           </div>
-                          <Text size="sm" fw={500} c={amountColor(r.amount)}>
+                          <Text data-cb-sensitive size="sm" fw={500} c={amountColor(r.amount)}>
                             {fmt ? formatMinor(r.amount, fmt) : r.amount}
                           </Text>
                         </Group>

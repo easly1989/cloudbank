@@ -41,7 +41,11 @@ export function TotalsBreakdown({
         {counted.map((a) => (
           <div key={a.id} className={classes.row}>
             <span className={classes.name}>{a.name}</span>
-            <span className={classes.amount} data-negative={a[balance] < 0 || undefined}>
+            <span
+              data-cb-sensitive
+              className={classes.amount}
+              data-negative={a[balance] < 0 || undefined}
+            >
               {formatMinor(a[balance], a.currency)}
             </span>
           </div>
@@ -49,7 +53,7 @@ export function TotalsBreakdown({
       </div>
       <div className={`${classes.row} ${classes.total}`}>
         <span>{t("totals.total")}</span>
-        <span className={classes.amount} data-negative={total < 0 || undefined}>
+        <span data-cb-sensitive className={classes.amount} data-negative={total < 0 || undefined}>
           {formatMinor(total, base)}
         </span>
       </div>

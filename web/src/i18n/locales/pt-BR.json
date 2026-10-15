@@ -1194,10 +1194,6 @@
     },
     "sortBy": "Ordenar por esta coluna",
     "resizeColumn": "Arraste para mudar a largura desta coluna",
-    "privacy": {
-      "hide": "Ocultar nomes e valores",
-      "show": "Mostrar nomes e valores"
-    },
     "moveColumnLeft": "Mover {{name}} para a esquerda",
     "moveColumnRight": "Mover {{name}} para a direita",
     "import": "Importar",
@@ -2190,6 +2186,10 @@
     "close": "Fechar",
     "confirm": "Confirmar",
     "save": "Salvar"
+  },
+  "privacy": {
+    "hide": "Ocultar os valores",
+    "show": "Mostrar os valores"
   },
   "overview": {
     "figures": "O período em números",

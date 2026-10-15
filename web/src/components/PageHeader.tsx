@@ -3,6 +3,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import type { ReactNode } from "react";
 
 import { TourButton } from "../onboarding/TourButton";
+import { PrivacyButton } from "./PrivacyButton";
 import { usePageTour } from "../onboarding/tourContext";
 import type { TourId } from "../onboarding/tours";
 
@@ -22,6 +23,9 @@ import type { TourId } from "../onboarding/tours";
 // On a phone the ? leaves the actions for the title's own line (#500). In the
 // action block it was the one button left behind on pages with no other
 // action, and so took a 60px row to itself; beside the title it takes none.
+//
+// The privacy eye (#626) comes first, beside the ?, on every page that has this
+// header — which is every page but Settings, whose layout has its own.
 export function PageHeader({
   title,
   hint,
@@ -59,7 +63,10 @@ export function PageHeader({
             <Title order={2} style={{ minWidth: 0 }}>
               {title}
             </Title>
-            {tour && <TourButton id={tour} size={32} round />}
+            <Group gap={4} wrap="nowrap">
+              <PrivacyButton size={32} round />
+              {tour && <TourButton id={tour} size={32} round />}
+            </Group>
           </Group>
           {hint && (
             <Text c="dimmed" size="sm">
@@ -100,19 +107,18 @@ export function PageHeader({
           </Text>
         )}
       </Stack>
-      {(actions || tour) && (
-        <Group
-          className="cb-page-actions"
-          data-prominent={prominent || undefined}
-          gap="xs"
-          wrap="wrap"
-          justify="flex-end"
-          style={{ minWidth: 0 }}
-        >
-          {tour && <TourButton id={tour} size={prominent ? 44 : 40} />}
-          {actions}
-        </Group>
-      )}
+      <Group
+        className="cb-page-actions"
+        data-prominent={prominent || undefined}
+        gap="xs"
+        wrap="wrap"
+        justify="flex-end"
+        style={{ minWidth: 0 }}
+      >
+        <PrivacyButton size={prominent ? 44 : 40} />
+        {tour && <TourButton id={tour} size={prominent ? 44 : 40} />}
+        {actions}
+      </Group>
     </Group>
   );
 }

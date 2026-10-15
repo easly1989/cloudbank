@@ -38,6 +38,7 @@ export function RegisterGoalsFigure({ walletId, account }: { walletId: number; a
         {t("register.setAside")}
       </Text>
       <Text
+        data-cb-sensitive
         ff="monospace"
         fw={500}
         fz={17}
@@ -50,11 +51,13 @@ export function RegisterGoalsFigure({ walletId, account }: { walletId: number; a
         {comparable && " · "}
         {comparable &&
           (free < 0 ? (
-            <span style={{ color: "var(--cb-attention)" }}>
+            <span style={{ color: "var(--cb-attention)" }} data-cb-sensitive>
               {t("register.setAsideShort", { amount: formatMinor(-free, fmt) })}
             </span>
           ) : (
-            t("register.setAsideFree", { amount: formatMinor(free, fmt) })
+            <span data-cb-sensitive>
+              {t("register.setAsideFree", { amount: formatMinor(free, fmt) })}
+            </span>
           ))}
       </Text>
     </Stack>

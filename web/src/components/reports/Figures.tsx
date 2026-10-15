@@ -15,6 +15,7 @@ export function Figure({
   color,
   big = false,
   testId,
+  subSensitive = false,
 }: {
   label: ReactNode;
   value: ReactNode;
@@ -22,14 +23,26 @@ export function Figure({
   color?: string;
   big?: boolean;
   testId?: string;
+  /** The line under the figure carries figures or names of its own, so it is
+      hidden with them in privacy mode (#626). The figure itself always is. */
+  subSensitive?: boolean;
 }) {
   return (
     <div data-testid={testId}>
       <div className={classes.figureLabel}>{label}</div>
-      <div className={classes.figure} data-big={big || undefined} style={{ color }}>
+      <div
+        className={classes.figure}
+        data-big={big || undefined}
+        data-cb-sensitive
+        style={{ color }}
+      >
         {value}
       </div>
-      {sub && <div className={classes.figureSub}>{sub}</div>}
+      {sub && (
+        <div className={classes.figureSub} data-cb-sensitive={subSensitive || undefined}>
+          {sub}
+        </div>
+      )}
     </div>
   );
 }

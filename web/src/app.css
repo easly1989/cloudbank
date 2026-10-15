@@ -64,13 +64,15 @@
   --mantine-color-dimmed: #9a9a9a;
 }
 
-/* Hide sensitive figures for a screenshot.
+/* Privacy mode (#626, privacy.ts): hide sensitive figures and names.
    The toggle blurs names and amounts and leaves everything else alone: dates,
    categories, status and the shape of the page stay legible, so a screenshot
    still shows how CloudBank works without showing what you earn. Selection is
-   disabled too, otherwise the text could simply be copied out of the blur. */
+   disabled too, otherwise the text could simply be copied out of the blur.
+   The blur grows with the text: six pixels hide a line of the register, but a
+   headline balance stays readable through them (#626). */
 .cb-private [data-cb-sensitive] {
-  filter: blur(6px);
+  filter: blur(max(6px, 0.45em));
   user-select: none;
   pointer-events: none;
 }

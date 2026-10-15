@@ -118,6 +118,7 @@ export function PayeeTable({
           onClick={() => actions.onOpen(r.payee)}
         >
           <UnstyledButton
+            data-cb-sensitive
             className={classes.name}
             data-truncate-ok
             onClick={stop(() => actions.onOpen(r.payee))}
@@ -190,7 +191,7 @@ export function PayeePhoneList({ rows, format, day, actions }: TableProps) {
           onClick={() => actions.onOpen(r.payee)}
         >
           <span className={classes.pl}>
-            <span className={classes.pt} data-truncate-ok>
+            <span data-cb-sensitive className={classes.pt} data-truncate-ok>
               {r.payee.name}
             </span>
             <span className={classes.pm} data-truncate-ok>

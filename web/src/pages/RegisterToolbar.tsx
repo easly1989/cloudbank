@@ -1,13 +1,6 @@
 import { ActionIcon, Box, Indicator, TextInput, Tooltip } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import {
-  IconColumns3,
-  IconEye,
-  IconEyeOff,
-  IconFilter,
-  IconSearch,
-  IconX,
-} from "@tabler/icons-react";
+import { IconColumns3, IconFilter, IconSearch, IconX } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
 import { clearedFacets, registerChips } from "./registerChips";
@@ -31,20 +24,15 @@ export function RegisterToolbar({
   onFilters,
   panels,
   onTogglePanel,
-  privacy,
-  onPrivacy,
 }: {
   filters: Filters;
   onFilters: (f: Filters) => void;
   panels: RegisterPanels;
   onTogglePanel: (id: PanelId) => void;
-  privacy: boolean;
-  onPrivacy: (v: boolean) => void;
 }) {
   const { t } = useTranslation();
   const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
   const chips = registerChips(filters, onFilters, t);
-  const privacyLabel = t(privacy ? "register.privacy.show" : "register.privacy.hide");
   const filtersLabel =
     chips.length > 0 ? `${t("filters.section")} (${chips.length})` : t("filters.section");
 
@@ -119,17 +107,6 @@ export function RegisterToolbar({
             onClick={() => onTogglePanel("columns")}
           >
             <IconColumns3 size={16} />
-          </ActionIcon>
-        </Tooltip>
-        <Tooltip label={privacyLabel}>
-          <ActionIcon
-            variant={privacy ? "filled" : "default"}
-            size={44}
-            aria-label={privacyLabel}
-            aria-pressed={privacy}
-            onClick={() => onPrivacy(!privacy)}
-          >
-            {privacy ? <IconEyeOff size={16} /> : <IconEye size={16} />}
           </ActionIcon>
         </Tooltip>
       </div>

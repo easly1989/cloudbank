@@ -153,6 +153,7 @@ export function GoalSheet({
       testId="goal-sheet"
       title={goal ? goal.name : t("goals.sheet.addTitle")}
       subtitle={subtitle}
+      subtitleSensitive={!!goal}
       headerActions={
         goal && (
           <Menu position="bottom-end" withinPortal>

@@ -158,7 +158,9 @@ export function AssetValuationsModal({
                 <Table.Tr key={v.id}>
                   <Table.Td>{v.date}</Table.Td>
                   <Table.Td ta="right">
-                    <Text fw={600}>{formatMinor(v.value, fmt)}</Text>
+                    <Text fw={600} data-cb-sensitive>
+                      {formatMinor(v.value, fmt)}
+                    </Text>
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" c="dimmed" truncate>

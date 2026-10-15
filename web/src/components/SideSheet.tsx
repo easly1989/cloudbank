@@ -23,6 +23,8 @@ export function SideSheet({
   foot,
   children,
   testId,
+  titleSensitive = false,
+  subtitleSensitive = false,
 }: {
   opened: boolean;
   onClose: () => void;
@@ -35,6 +37,10 @@ export function SideSheet({
   foot?: ReactNode;
   children: ReactNode;
   testId?: string;
+  /** The title names a payee; the subtitle carries figures. Either is hidden
+      in privacy mode (#626). */
+  titleSensitive?: boolean;
+  subtitleSensitive?: boolean;
 }) {
   const { t } = useTranslation();
   const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
@@ -50,9 +56,14 @@ export function SideSheet({
       <Drawer.Content data-testid={testId}>
         <Drawer.Header>
           <Stack gap={4} style={{ minWidth: 0 }}>
-            <Drawer.Title>{title}</Drawer.Title>
+            <Drawer.Title data-cb-sensitive={titleSensitive || undefined}>{title}</Drawer.Title>
             {subtitle && (
-              <Text size="sm" c="dimmed" component="div">
+              <Text
+                size="sm"
+                c="dimmed"
+                component="div"
+                data-cb-sensitive={subtitleSensitive || undefined}
+              >
                 {subtitle}
               </Text>
             )}

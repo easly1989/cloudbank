@@ -102,7 +102,7 @@ export function TemplateTable(props: TemplateTableProps) {
         <span className={classes.what}>
           {w.payee || w.category ? (
             <>
-              <b>{w.payee}</b>
+              <b data-cb-sensitive>{w.payee}</b>
               {w.payee && w.category ? " · " : ""}
               {w.category}
             </>
@@ -142,6 +142,7 @@ export function TemplateTable(props: TemplateTableProps) {
               onClick={() => actions.onOpen(r.template)}
             >
               <UnstyledButton
+                data-cb-sensitive
                 className={classes.name}
                 data-truncate-ok
                 onClick={stop(() => actions.onOpen(r.template))}
@@ -169,6 +170,7 @@ export function TemplateTable(props: TemplateTableProps) {
               onClick={() => actions.onOpenSchedule(r)}
             >
               <UnstyledButton
+                data-cb-sensitive
                 className={classes.name}
                 data-truncate-ok
                 aria-label={t("templates.openSchedule", { name: r.template.name })}
@@ -198,10 +200,10 @@ export function TemplatePhoneList(props: TemplateTableProps) {
   const row = (r: TemplateRow, meta: string, onClick: () => void) => (
     <UnstyledButton key={r.template.id} className={classes.prow} onClick={onClick}>
       <span className={classes.pl}>
-        <span className={classes.pt} data-truncate-ok>
+        <span data-cb-sensitive className={classes.pt} data-truncate-ok>
           {r.template.name}
         </span>
-        <span className={classes.pm} data-truncate-ok>
+        <span data-cb-sensitive className={classes.pm} data-truncate-ok>
           {meta}
         </span>
       </span>

@@ -58,7 +58,7 @@ export function Figures({
         <span className={classes.figValue} data-testid="goals-saved">
           {money(view.saved)}
         </span>
-        <span className={classes.figSub}>
+        <span data-cb-sensitive className={classes.figSub}>
           {t("goals.savedOf", { target: money(view.target), count: view.count })}
         </span>
       </div>
@@ -86,7 +86,9 @@ export function Figures({
           <span className={classes.figValue} data-small data-testid="goals-free">
             {money(wallet - view.saved)}
           </span>
-          <span className={classes.figSub}>{t("goals.freeSub", { wallet: money(wallet) })}</span>
+          <span data-cb-sensitive className={classes.figSub}>
+            {t("goals.freeSub", { wallet: money(wallet) })}
+          </span>
         </div>
       )}
     </div>
@@ -272,8 +274,16 @@ export function GoalsTable({
           <GoalBar l={l} />
         </span>
         <span className={classes.status}>
-          <span>{s.main}</span>
-          {s.sub && <span className={classes.sub}>{s.sub}</span>}
+          {/* What is still needed, and at what pace, are figures; "reached"
+              and a month are not (#626). */}
+          <span data-cb-sensitive={(!l.reached && (l.pastDate || l.need != null)) || undefined}>
+            {s.main}
+          </span>
+          {s.sub && (
+            <span data-cb-sensitive={!l.reached || undefined} className={classes.sub}>
+              {s.sub}
+            </span>
+          )}
         </span>
         <span>
           <RowButton l={l} actions={actions} />
@@ -342,7 +352,7 @@ export function GoalsPhoneList({
       );
     if (l.need != null)
       return (
-        <span className={l.late ? classes.amber : undefined}>
+        <span data-cb-sensitive className={l.late ? classes.amber : undefined}>
           {t("goals.aMonth", { amount: money(l.need) })}
         </span>
       );
@@ -369,7 +379,7 @@ export function GoalsPhoneList({
       <GoalBar l={l} small />
       <span className={classes.prowMeta}>
         <span>{when(l)}</span>
-        <span>{right(l)}</span>
+        <span data-cb-sensitive={!l.reached || undefined}>{right(l)}</span>
       </span>
     </div>
   );
