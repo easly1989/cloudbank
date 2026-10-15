@@ -11,7 +11,7 @@ import {
   UnstyledButton,
 } from "@mantine/core";
 import { IconChevronDown, IconTrash } from "@tabler/icons-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -66,6 +66,7 @@ export function ScheduleSheet({
   onDelete: (s: Schedule) => void;
 }) {
   const { t } = useTranslation();
+  const qc = useQueryClient();
   const parseAmount = useAmountParser();
   const templatesQuery = useQuery({
     queryKey: ["templates", walletId],
@@ -245,6 +246,14 @@ export function ScheduleSheet({
         editing != null
           ? await updateTemplate(walletId, editing.templateId, tplInput)
           : await createTemplate(walletId, tplInput);
+      // The sheet seeds itself from the cached templates: the saved one goes in
+      // now, or opening the schedule again before the list is fetched anew
+      // shows, and a second save writes back, the values from before.
+      qc.setQueryData<Template[]>(["templates", walletId], (list) =>
+        list?.some((x) => x.id === tpl.id)
+          ? list.map((x) => (x.id === tpl.id ? tpl : x))
+          : list && [...list, tpl],
+      );
       const body: ScheduleInput = {
         templateId: tpl.id,
         unit,
