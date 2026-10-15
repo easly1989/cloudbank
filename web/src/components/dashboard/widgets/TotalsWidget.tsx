@@ -65,7 +65,7 @@ function TotalCard({
           </Tooltip>
         )}
       </Group>
-      <Text size="xl" fw={700} c={negativeOnlyColor(value)}>
+      <Text data-cb-sensitive size="xl" fw={700} c={negativeOnlyColor(value)}>
         {formatMinor(value, fmt)}
       </Text>
     </Card>

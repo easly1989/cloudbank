@@ -1194,10 +1194,6 @@
     },
     "sortBy": "Ordenar por esta columna",
     "resizeColumn": "Arrastra para cambiar el ancho de esta columna",
-    "privacy": {
-      "hide": "Ocultar nombres e importes",
-      "show": "Mostrar nombres e importes"
-    },
     "moveColumnLeft": "Mover {{name}} a la izquierda",
     "moveColumnRight": "Mover {{name}} a la derecha",
     "import": "Importar",
@@ -2190,6 +2186,10 @@
     "close": "Cerrar",
     "confirm": "Confirmar",
     "save": "Guardar"
+  },
+  "privacy": {
+    "hide": "Ocultar los importes",
+    "show": "Mostrar los importes"
   },
   "overview": {
     "figures": "El periodo en cifras",

@@ -116,6 +116,7 @@ export function SidebarHead({
                   </Group>
                   {base && balance != null && (
                     <Text
+                      data-cb-sensitive
                       fz={WALLET_CARD.balance.fz}
                       c="dimmed"
                       lh={1.2}

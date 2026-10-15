@@ -114,7 +114,12 @@ export function SpendingCard({
           </Menu>
         </Group>
       </Group>
-      <SpendingChart slices={slices} base={base} chartType={config.chartType} />
+      <SpendingChart
+        slices={slices}
+        base={base}
+        chartType={config.chartType}
+        byPayee={config.groupBy === "payee"}
+      />
     </Card>
   );
 }
@@ -126,10 +131,13 @@ function SpendingChart({
   slices,
   base,
   chartType,
+  byPayee,
 }: {
   slices: { categoryId: number; name: string; amount: number }[];
   base?: CurrencyInfo;
   chartType: ChartType;
+  /** The slices are payees: their names are hidden in privacy mode too. */
+  byPayee: boolean;
 }) {
   const { t } = useTranslation();
   const colors = useChartColors();
@@ -190,11 +198,17 @@ function SpendingChart({
                     flexShrink: 0,
                   }}
                 />
-                <Text size="sm" truncate>
+                <Text size="sm" truncate data-cb-sensitive={byPayee || undefined}>
                   {d.label}
                 </Text>
               </Group>
-              <Text size="sm" fw={500} ff="monospace" style={{ whiteSpace: "nowrap" }}>
+              <Text
+                data-cb-sensitive
+                size="sm"
+                fw={500}
+                ff="monospace"
+                style={{ whiteSpace: "nowrap" }}
+              >
                 {base ? formatMinor(d.value, base) : d.value}
               </Text>
             </Group>
@@ -222,7 +236,9 @@ function SpendingChart({
   }
 
   if (chartType === "bar") {
-    return <Chart option={barOption} height={Math.max(180, data.length * 34)} />;
+    return (
+      <Chart option={barOption} height={Math.max(180, data.length * 34)} namesPrivate={byPayee} />
+    );
   }
 
   const total = data.reduce((s, d) => s + d.value, 0);
@@ -243,12 +259,12 @@ function SpendingChart({
                   flexShrink: 0,
                 }}
               />
-              <Text size="sm" truncate>
+              <Text size="sm" truncate data-cb-sensitive={byPayee || undefined}>
                 {d.label}
               </Text>
             </Group>
             <Group gap={10} wrap="nowrap">
-              <Text size="sm" fw={500}>
+              <Text data-cb-sensitive size="sm" fw={500}>
                 {formatMinor(d.value, base)}
               </Text>
               <Text size="xs" c="dimmed" w={36} ta="right">

@@ -25,8 +25,10 @@ export function BudgetGauge({
   return (
     <Stack gap={6}>
       <Group justify="space-between" gap="xs" wrap="nowrap">
-        <Text size="sm">{spentOf}</Text>
-        <Text size="sm" fw={600} c={over ? attentionColor : undefined}>
+        <Text data-cb-sensitive size="sm">
+          {spentOf}
+        </Text>
+        <Text data-cb-sensitive size="sm" fw={600} c={over ? attentionColor : undefined}>
           {over
             ? t("budget.overBy", { amount: formatMinor(actual - budget, base) })
             : t("budget.remaining", { amount: formatMinor(budget - actual, base) })}

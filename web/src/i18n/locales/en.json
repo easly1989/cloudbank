@@ -1194,10 +1194,6 @@
     },
     "sortBy": "Sort by this column",
     "resizeColumn": "Drag to change this column's width",
-    "privacy": {
-      "hide": "Hide names and amounts",
-      "show": "Show names and amounts"
-    },
     "moveColumnLeft": "Move {{name}} left",
     "moveColumnRight": "Move {{name}} right",
     "import": "Import",
@@ -2190,6 +2186,10 @@
     "close": "Close",
     "confirm": "Confirm",
     "save": "Save"
+  },
+  "privacy": {
+    "hide": "Hide amounts",
+    "show": "Show amounts"
   },
   "overview": {
     "figures": "The period in figures",

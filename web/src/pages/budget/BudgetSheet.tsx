@@ -15,6 +15,7 @@ import {
 import { SideSheet } from "../../components/SideSheet";
 import { ENTRY_SHEET } from "../../components/entrySheetTheme";
 import { type MoneyFormat, formatMinor } from "../../money";
+import { usePrivacy } from "../../privacy";
 import { useAmountParser } from "../../useAmountParser";
 import { categoryLabel } from "../payees/payeeList";
 import { type BudgetLine, historyStats, lastTwelve, type Plan, planFor } from "./budgetList";
@@ -81,6 +82,7 @@ export function BudgetSheet({
   onRemove: (categoryId: number) => void;
 }) {
   const { t, i18n } = useTranslation();
+  const hidden = usePrivacy();
   const parseAmount = useAmountParser();
 
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -209,6 +211,7 @@ export function BudgetSheet({
       testId="budget-sheet"
       title={category ? categoryLabel(category, categories) : t("budget.sheet.addTitle")}
       subtitle={subtitle}
+      subtitleSensitive={!!category}
       headerActions={
         hasBudget &&
         id != null && (
@@ -340,7 +343,7 @@ export function BudgetSheet({
                     key={m.month}
                     className={classes.col}
                     data-over={(!income && plans[i] > 0 && values[i] > plans[i]) || undefined}
-                    title={`${m.month}: ${money(values[i])}`}
+                    title={hidden ? undefined : `${m.month}: ${money(values[i])}`}
                   >
                     <span
                       style={{ height: `${Math.max(2, (Math.max(values[i], 0) / top) * 100)}%` }}
@@ -362,7 +365,7 @@ export function BudgetSheet({
                   <span key={m.month}>{monthName(m.month)}</span>
                 ))}
               </div>
-              <span className={classes.note}>
+              <span className={classes.note} data-cb-sensitive>
                 {income
                   ? t("budget.sheet.historyNoteIncome", {
                       total: money(stats.total),
@@ -379,6 +382,7 @@ export function BudgetSheet({
                   variant="default"
                   size="compact-sm"
                   className={classes.use}
+                  data-cb-sensitive
                   onClick={() => {
                     setMode("same");
                     setSame(plain(stats.suggestion, fmt));

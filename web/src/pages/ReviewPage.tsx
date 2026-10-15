@@ -52,6 +52,9 @@ import { compareRows, type CompareField, type CompareRow, type Described } from 
 import { notifyError } from "../notifyError";
 
 // The label each compared field goes by (#484).
+// Compared fields hidden in privacy mode (#626): who, and what was written.
+const PRIVATE_FIELDS = new Set(["payee", "memo", "info"]);
+
 const FIELD_LABEL: Record<CompareField, string> = {
   amount: "transactions.amount",
   account: "transactions.account",
@@ -273,6 +276,7 @@ export function ReviewPage() {
           ff="monospace"
           c={amountColor(tx.amount)}
           opacity={row.same ? 0.6 : 1}
+          data-cb-sensitive
         >
           {text}
         </Text>
@@ -283,6 +287,7 @@ export function ReviewPage() {
         size="sm"
         c={row.same ? "dimmed" : undefined}
         style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+        data-cb-sensitive={PRIVATE_FIELDS.has(row.field) || undefined}
       >
         {row.field === "transfer" && (
           <IconArrowsLeftRight size={13} style={{ marginRight: 4, verticalAlign: -2 }} />
@@ -525,12 +530,17 @@ export function ReviewPage() {
                     }}
                   >
                     <div style={{ minWidth: 0 }}>
-                      <Text size="sm" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                      <Text
+                        size="sm"
+                        style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+                        data-cb-sensitive={!!tx.memo || undefined}
+                      >
                         {tx.memo || t("review.noMemo")}
                       </Text>
                       <Text size="xs" c="dimmed">
                         {fmtDate(tx.date)}
-                        {acc ? ` · ${acc.name}` : ""} · {formatMinor(tx.amount, fmtFor(acc))}
+                        {acc ? ` · ${acc.name}` : ""} ·{" "}
+                        <span data-cb-sensitive>{formatMinor(tx.amount, fmtFor(acc))}</span>
                       </Text>
                     </div>
                     <Select

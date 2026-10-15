@@ -168,6 +168,7 @@ export function VehicleTab({ ctx }: { ctx: ReportContext }) {
               testId="vehicle-cost"
               label={t("reports.fuel.costPerKm")}
               value={costPerKm === null ? "—" : formatMinor(costPerKm, fmt)}
+              subSensitive
               sub={t("reports.fuel.costFor", {
                 cost: formatMinor(report.totalCost, fmt),
                 distance: `${num(report.totalDistance, 0)} ${km}`,
@@ -222,7 +223,7 @@ export function VehicleTab({ ctx }: { ctx: ReportContext }) {
                   <span className={classes.wideOnly}>
                     {e.consumption > 0 ? num(e.consumption) : "—"}
                   </span>
-                  <span>{formatMinor(e.cost, fmt)}</span>
+                  <span data-cb-sensitive>{formatMinor(e.cost, fmt)}</span>
                   <span className={classes.fillSummary}>
                     {[
                       e.distance > 0 ? `${num(e.distance, 0)} ${km}` : null,
