@@ -47,6 +47,13 @@ export const languages = [
     weekStart: 1,
     correction: "Proponer una corrección en GitHub",
   },
+  {
+    code: "pt-BR",
+    name: "Português (Brasil)",
+    beta: true,
+    weekStart: 0,
+    correction: "Sugerir uma correção no GitHub",
+  },
 ] as const satisfies readonly Language[];
 
 export type LanguageCode = (typeof languages)[number]["code"];

@@ -341,6 +341,23 @@ const SAME_IN = {
     "General",
     "Demo",
   ],
+  // Brazilian Portuguese spells these the same as English, and keeps Tag (#596).
+  "pt-BR": [
+    "Links",
+    "Tag",
+    "Tags",
+    "Status",
+    "Info",
+    "info “{{info}}”",
+    "auto",
+    "Manual",
+    "Experimental",
+    "Total",
+    "Subtotal",
+    "Admin",
+    "Decimal",
+    "Demo",
+  ],
 };
 
 const untranslated = [];

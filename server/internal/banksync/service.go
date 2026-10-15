@@ -461,7 +461,8 @@ func (s *Service) syncOnce(ctx context.Context, walletID, connID int64) (SyncRes
 	)
 	switch c.Provider {
 	case providerDemo:
-		byAccount = demoFetchRows(start, time.Now().UTC())
+		_, factor := s.demoCurrency(ctx, c.WalletID)
+		byAccount = demoFetchRows(start, time.Now().UTC(), factor)
 	case providerEnableBanking:
 		byAccount, failures, err2 = s.ebFetchRows(ctx, c, linkByExt, start)
 	case providerPluggy:

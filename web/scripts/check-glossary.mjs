@@ -113,6 +113,27 @@ const EXCEPTIONS = {
     // The verb, not the status.
     "transactions.savedNew": ["cleared"],
   },
+  "pt-BR": {
+    // "Register" as the verb: registrar an occurrence, or an app.
+    "schedules.state.auto": ["register"],
+    "schedules.meta.auto": ["register"],
+    "schedules.toRegister": ["register"],
+    "schedules.register": ["register"],
+    "schedules.sheet.auto": ["register"],
+    "schedules.sheet.notNext": ["register"],
+    "schedules.form.autoPostHint": ["register"],
+    "banksync.eb.configHint": ["register"],
+    "tours.schedules.views.body": ["register"],
+    // Scheduled transactions are the agendamentos themselves.
+    "wallet.scheduleAhead": ["transaction", "register"],
+    "wallet.scheduleAheadHint": ["transaction"],
+    // The account a new entry is opened from, not its register.
+    "entryFields.accountDefault": ["register"],
+    // The verbs, not the statuses or the transfer.
+    "transactions.savedNew": ["cleared"],
+    "accessCodes.shownOnce": ["void"],
+    "tours.register.more.title": ["transfer"],
+  },
 };
 
 function flatValues(obj, prefix = "") {

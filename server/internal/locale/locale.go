@@ -15,7 +15,7 @@ import "strings"
 const Default = "en"
 
 // Supported lists the languages, by the code users.locale stores.
-var Supported = []string{"en", "it", "de", "fr", "es"}
+var Supported = []string{"en", "it", "de", "fr", "es", "pt-BR"}
 
 // families sends a whole language to the one variant CloudBank speaks:
 // pt-PT, pt-AO and plain pt all read Brazilian Portuguese.
