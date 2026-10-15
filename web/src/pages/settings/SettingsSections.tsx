@@ -27,6 +27,7 @@ import { PreferencesPage } from "../PreferencesPage";
 import { WalletSettingsPage } from "../WalletSettingsPage";
 import { UsersPage } from "../admin/UsersPage";
 import { SettingsGroup } from "./SettingsLayout";
+import { MailIngestMock, mailMockOn } from "./MailIngest.prototype";
 
 // One component per section of the settings screen. They are thin on purpose:
 // the work lives in the cards and forms that were already there, and what
@@ -114,6 +115,7 @@ export function IntegrationsSection() {
           <BankSyncSettings />
         </SettingsGroup>
       )}
+      {mailMockOn && <MailIngestMock />}
     </Stack>
   );
 }
