@@ -93,7 +93,7 @@ func checkTransfers(t *testing.T, today time.Time, x *importer.XHB) {
 // French, 1.234,56 € where a language has no row of its own.
 func TestNumberFormatFollowsLanguage(t *testing.T) {
 	today := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
-	want := map[string]string{"fr": ", ", "en": ",.", "it": ",.", "de": ",."}
+	want := map[string]string{"fr": ", ", "en": ",.", "it": ",.", "de": ",.", "es": ",."}
 	for lang, sep := range want {
 		c := seedFile(today, lang).Currencies[0]
 		if got := c.Dchar + c.Gchar; got != sep {

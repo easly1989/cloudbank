@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> · <strong>Italiano</strong> · <a href="README.de.md">Deutsch</a> · <a href="README.fr.md">Français</a>
+  <a href="README.md">English</a> · <strong>Italiano</strong> · <a href="README.de.md">Deutsch</a> · <a href="README.fr.md">Français</a> · <a href="README.es.md">Español</a>
 </p>
 
 <p align="center">
@@ -72,7 +72,7 @@ CloudBank è una **reimplementazione indipendente, clean-room**. Non copia né u
 - **Obiettivi e veicoli:** quanto hai messo da parte, quanto mettere ogni mese per arrivare in tempo e quanto resta libero; per ogni veicolo carburante, chilometri, costo al chilometro e consumi.
 - **Import ed export:** `.xhb` di HomeBank, QIF, OFX/QFX, CSV e CAMT.053 (ISO 20022) in entrata, con un assistente; `.xhb`, QIF e CSV in uscita; backup e ripristino del portafoglio.
 - **Sincronizzazione bancaria:** le transazioni nuove arrivano dalla banca, passano per le tue regole e si uniscono a quelle che hai già invece di duplicarsi. Con le tue credenziali, su [SimpleFIN](https://www.simplefin.org/), [Enable Banking](https://enablebanking.com/) (UE e Regno Unito) e, in prova, [Pluggy](https://pluggy.ai/) (America Latina).
-- **Multi-valuta e multi-utente:** cambi manuali od online (BCE), più utenti gestiti dall'amministratore, portafogli condivisi; l'app è in inglese e in italiano, e in tedesco e francese (beta).
+- **Multi-valuta e multi-utente:** cambi manuali od online (BCE), più utenti gestiti dall'amministratore, portafogli condivisi; l'app è in inglese e in italiano, e in tedesco, francese e spagnolo (beta).
 - **Un cruscotto su misura:** in cima ciò che aspetta te, poi widget da mettere e ridimensionare dove vuoi, temi chiaro e scuro con il colore che preferisci, barra laterale e navigazione da riordinare.
 - **Sicurezza:** autenticazione a due fattori, accesso con SSO (OIDC), token API revocabili e segreti cifrati nel database.
 - **App installabile:** CloudBank si installa sul telefono o sul computer come un'app, con le notifiche push delle scadenze, e avvisa quando c'è una versione nuova.

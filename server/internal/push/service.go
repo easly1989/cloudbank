@@ -232,6 +232,7 @@ var reminderTexts = map[string]reminderText{
 	"it": {title: "Scadenze in arrivo", many: "%d scadenze richiedono attenzione", one: "%s è in scadenza o scaduta"},
 	"de": {title: "Anstehende Fälligkeiten", many: "%d Fälligkeiten brauchen deine Aufmerksamkeit", one: "%s ist fällig oder überfällig"},
 	"fr": {title: "Échéances à venir", many: "%d échéances demandent votre attention", one: "%s arrive à échéance ou est en retard"},
+	"es": {title: "Próximos vencimientos", many: "%d vencimientos necesitan tu atención", one: "%s vence pronto o está vencido"},
 }
 
 // billsPayload builds the reminder notification, in the user's language. It
