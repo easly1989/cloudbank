@@ -54,7 +54,7 @@ export function GoalsWidget({ walletId, base }: { walletId: number; base?: Curre
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <Group justify="space-between" gap="xs" fz="sm" wrap="nowrap">
             <span>
-              <Text span ff="monospace" fz="sm">
+              <Text data-cb-sensitive span ff="monospace" fz="sm">
                 {money(view.saved)}
               </Text>{" "}
               <Text span c="dimmed" fz="sm">
@@ -62,7 +62,7 @@ export function GoalsWidget({ walletId, base }: { walletId: number; base?: Curre
               </Text>
             </span>
             {view.need > 0 && (
-              <Text span c="dimmed" fz="sm">
+              <Text data-cb-sensitive span c="dimmed" fz="sm">
                 {t("dashboard.goalsThisMonth", { amount: money(view.need) })}
               </Text>
             )}
@@ -104,6 +104,7 @@ export function GoalsWidget({ walletId, base }: { walletId: number; base?: Curre
                   />
                 </span>
                 <Text
+                  data-cb-sensitive
                   fz="sm"
                   ta="right"
                   style={{ whiteSpace: "nowrap" }}

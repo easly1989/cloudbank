@@ -7,7 +7,9 @@ import { negativeOnlyColor } from "../../../amountTone";
 
 // The amount columns: right-aligned, and an amount never breaks before its
 // currency sign.
-const num = { ta: "right", style: { whiteSpace: "nowrap" } } as const;
+const head = { ta: "right", style: { whiteSpace: "nowrap" } } as const;
+// A figure cell: hidden in privacy mode (#626).
+const num = { ...head, "data-cb-sensitive": true } as const;
 
 // One column plan for every group and the total, so their figures line up.
 const COLUMNS = (
@@ -50,9 +52,9 @@ export function AccountsPanel({
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th>{t("accounts.name")}</Table.Th>
-                    <Table.Th {...num}>{t("register.bank")}</Table.Th>
-                    <Table.Th {...num}>{t("register.today")}</Table.Th>
-                    <Table.Th {...num}>{t("register.future")}</Table.Th>
+                    <Table.Th {...head}>{t("register.bank")}</Table.Th>
+                    <Table.Th {...head}>{t("register.today")}</Table.Th>
+                    <Table.Th {...head}>{t("register.future")}</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>

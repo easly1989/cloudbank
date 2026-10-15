@@ -399,3 +399,16 @@
 .tabList > * {
   flex: none;
 }
+
+/* Privacy mode (#626, privacy.ts): these classes only ever hold figures
+   or names, so they blur like every [data-cb-sensitive] element (app.css). A
+   field keeps its value legible: whoever opens a form is typing into it. */
+:global(.cb-private) .rowAmount,
+:global(.cb-private) .accBalance,
+:global(.cb-private) .accNote,
+:global(.cb-private) .accWarn,
+:global(.cb-private) .table td:not(:first-child) {
+  filter: blur(max(6px, 0.45em));
+  user-select: none;
+  pointer-events: none;
+}

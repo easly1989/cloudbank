@@ -13,8 +13,6 @@ import {
 import { useDisclosure, useHotkeys, useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
-  IconEye,
-  IconEyeOff,
   IconArrowUp,
   IconArrowsExchange,
   IconChecklist,
@@ -270,7 +268,6 @@ export function TransactionsPage() {
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   // Deliberately not a saved preference: hiding figures is something you turn on
   // for a moment to take a screenshot, not a mode to wake up in.
-  const [privacy, setPrivacy] = useState(false);
   const [reconcile, setReconcile] = useState(false);
   // Switching account resets transient selection/reconcile state, during render:
   // a selection carried into another account's register is a selection of rows
@@ -494,7 +491,7 @@ export function TransactionsPage() {
     : { fracDigits: 2, decimalChar: ".", groupChar: ",", symbol: "", symbolPrefix: false };
 
   return (
-    <Stack className={privacy ? "cb-private" : undefined}>
+    <Stack>
       <Stack ref={topRef} gap="md">
         {/* The account is the title. The register is about one account, so
             naming the page "Transactions" and putting the account in a control
@@ -540,7 +537,7 @@ export function TransactionsPage() {
           }
           actions={
             <>
-              {/* Reconciling, transferring and hiding figures are workflows, not
+              {/* Reconciling and transferring are workflows, not
                   the headline actions of the page; they keep their own menu so
                   the two that matter stay the two you see. */}
               <Menu position="bottom-end" withinPortal>
@@ -555,12 +552,6 @@ export function TransactionsPage() {
                   </ActionIcon>
                 </Menu.Target>
                 <Menu.Dropdown>
-                  <Menu.Item
-                    leftSection={privacy ? <IconEye size={16} /> : <IconEyeOff size={16} />}
-                    onClick={() => setPrivacy((v) => !v)}
-                  >
-                    {t(privacy ? "register.privacy.show" : "register.privacy.hide")}
-                  </Menu.Item>
                   <Menu.Item
                     leftSection={<IconChecklist size={16} />}
                     disabled={!account}
@@ -662,8 +653,6 @@ export function TransactionsPage() {
             onFilters={setFilters}
             panels={panels}
             onTogglePanel={togglePanel}
-            privacy={privacy}
-            onPrivacy={setPrivacy}
           />
         )}
 
@@ -830,6 +819,7 @@ function BalanceFigure({
       {/* Only the lead figure is in full-strength text: the others are context
           for it, and three equal figures would be three headlines. */}
       <Text
+        data-cb-sensitive
         ff="monospace"
         fw={lead ? 600 : 500}
         fz={lead ? 26 : 17}
@@ -876,7 +866,13 @@ function BulkBar({
       <Text fz={ROW_TYPE.bulkLabel.fz} fw={ROW_TYPE.bulkLabel.fw}>
         {t("bulk.title", { count })}
       </Text>
-      <Text ff="monospace" fz={ROW_TYPE.bulkSum.fz} fw={ROW_TYPE.bulkSum.fw} c={amountColor(total)}>
+      <Text
+        data-cb-sensitive
+        ff="monospace"
+        fz={ROW_TYPE.bulkSum.fz}
+        fw={ROW_TYPE.bulkSum.fw}
+        c={amountColor(total)}
+      >
         {formatMinor(total, fmt)}
       </Text>
       {/* 40px buttons 16 apart, as the register board's selection bar. */}
@@ -943,13 +939,16 @@ function ReconcilePanel({
             <Text size="xs" c="dimmed" tt="uppercase">
               {t("reconcile.clearedBalance")}
             </Text>
-            <Text fw={600}>{formatMinor(clearedBalance, fmt)}</Text>
+            <Text data-cb-sensitive fw={600}>
+              {formatMinor(clearedBalance, fmt)}
+            </Text>
           </div>
           <div>
             <Text size="xs" c="dimmed" tt="uppercase">
               {t("reconcile.difference")}
             </Text>
             <Text
+              data-cb-sensitive
               fw={700}
               c={diff === null ? undefined : diff === 0 ? "var(--cb-positive)" : attentionColor}
             >

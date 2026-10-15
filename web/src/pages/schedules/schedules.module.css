@@ -357,3 +357,16 @@ button.item:hover {
 .scroll .row {
   min-width: 900px;
 }
+
+/* Privacy mode (#626, privacy.ts): these classes only ever hold figures
+   or names, so they blur like every [data-cb-sensitive] element (app.css). A
+   field keeps its value legible: whoever opens a form is typing into it. */
+:global(.cb-private) .chipAmount,
+:global(.cb-private) .itemAmount,
+:global(.cb-private) .rowAmount,
+:global(.cb-private) .chipName,
+:global(.cb-private) .itemName {
+  filter: blur(max(6px, 0.45em));
+  user-select: none;
+  pointer-events: none;
+}

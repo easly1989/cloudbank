@@ -34,6 +34,8 @@ export function NotesCard({
         autosize
         minRows={3}
         variant="unstyled"
+        // A note on the overview is in plain sight: hidden in privacy mode (#626).
+        data-cb-sensitive
       />
     </Card>
   );

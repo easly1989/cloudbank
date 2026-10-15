@@ -329,6 +329,7 @@ export function SchedulesPage() {
         label={t("schedules.fig.toPay")}
         value={fmt(figures.toPay)}
         sub={t("schedules.fig.toPaySub", { total: fmt(figures.outTotal), month: monthTitle })}
+        subSensitive
         testId="schedules-to-pay"
       />
       {figures.overdueCount > 0 && (
@@ -344,6 +345,7 @@ export function SchedulesPage() {
                 })
               : t("schedules.fig.overdueMany", { count: figures.overdueCount })
           }
+          subSensitive={figures.overdueCount === 1}
         />
       )}
       {!phone && figures.overdueCount === 0 && figures.outCount > 0 && (
@@ -363,6 +365,7 @@ export function SchedulesPage() {
               ? t("schedules.fig.allReceived")
               : t("schedules.fig.toCome", { amount: fmt(figures.inTotal - figures.received) })
           }
+          subSensitive={figures.received < figures.inTotal}
         />
       )}
     </Figures>
@@ -380,12 +383,14 @@ export function SchedulesPage() {
         value={fmt(perPeriod.month.in)}
         color={incomeColor}
         sub={t("schedules.fig.perYear", { amount: fmt(perPeriod.year.in) })}
+        subSensitive
       />
       <Figure
         label={t("schedules.fig.outMonth")}
         value={fmt(perPeriod.month.out)}
         color={expenseColor}
         sub={t("schedules.fig.perYear", { amount: fmt(perPeriod.year.out) })}
+        subSensitive
       />
     </Figures>
   );

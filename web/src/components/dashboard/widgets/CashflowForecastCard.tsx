@@ -110,7 +110,7 @@ export function CashflowForecastCard({
       </Group>
       {account && balances.length > 0 ? (
         <>
-          <Text fw={700} size="lg" c={breaches ? attentionColor : undefined}>
+          <Text data-cb-sensitive fw={700} size="lg" c={breaches ? attentionColor : undefined}>
             {base && ending != null ? formatMinor(ending, base) : "—"}
           </Text>
           <Chart option={option} height={200} />

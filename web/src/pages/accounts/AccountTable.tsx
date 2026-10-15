@@ -78,6 +78,7 @@ function useAsideNote(
       <>
         {" · "}
         <span
+          data-cb-sensitive
           data-testid={`account-aside-${a.id}`}
           data-short={short || undefined}
           style={short ? { color: attentionColor } : undefined}
@@ -284,7 +285,7 @@ export function AccountPhoneList({
                         {formatMinor(a.balance, fmt)}
                       </span>
                       {a.futureBalance !== a.balance && (
-                        <small>
+                        <small data-cb-sensitive>
                           {t("accounts.futureShort", {
                             amount: formatMinor(a.futureBalance, fmt),
                           })}
