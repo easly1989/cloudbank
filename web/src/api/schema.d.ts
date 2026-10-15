@@ -5450,7 +5450,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Microsoft could not be reached. */
+            /** @description microsoft_error: Microsoft refused, with its explanation; or Microsoft could not be reached. */
             502: {
                 headers: {
                     [name: string]: unknown;
@@ -5487,7 +5487,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Microsoft answered with an unexpected error. */
+            /** @description microsoft_error: Microsoft answered with an unexpected error, with its explanation. */
             502: {
                 headers: {
                     [name: string]: unknown;

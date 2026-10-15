@@ -58,6 +58,7 @@ const TRANSLATED = new Set([
   "flow_not_found",
   "login_refused",
   "mail_error",
+  "microsoft_error",
 ]);
 
 /**
@@ -70,6 +71,7 @@ const KEEP_DETAIL = new Set([
   "restore_failed",
   "login_refused",
   "mail_error",
+  "microsoft_error",
 ]);
 
 /** Turns any error into the words the reader sees. */

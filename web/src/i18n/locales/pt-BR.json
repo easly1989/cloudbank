@@ -2602,6 +2602,7 @@
     "flow_not_found": "Este login terminou: recomece.",
     "login_refused": "O servidor de e-mail recusou o login.",
     "mail_error": "Não foi possível ler a caixa.",
+    "microsoft_error": "A Microsoft respondeu com um erro.",
     "network": "Não foi possível alcançar o CloudBank. Verifique a conexão e tente de novo.",
     "detail": "Detalhe: {{text}}",
     "fallback": {

@@ -2602,6 +2602,7 @@
     "flow_not_found": "Questo accesso è terminato: ricomincia.",
     "login_refused": "Il server di posta ha rifiutato l'accesso.",
     "mail_error": "Non è stato possibile leggere la casella.",
+    "microsoft_error": "Microsoft ha risposto con un errore.",
     "network": "CloudBank non risponde. Controlla la connessione e riprova.",
     "detail": "Dettaglio: {{text}}",
     "fallback": {

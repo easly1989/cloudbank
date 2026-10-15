@@ -471,7 +471,7 @@ paths:
         "201": { description: The sign-in., content: { application/json: { schema: { $ref: "#/components/schemas/MailSignIn" } } } }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { description: "unavailable: the server has no CB_SECRET_KEY." }
-        "502": { description: Microsoft could not be reached. }
+        "502": { description: "microsoft_error: Microsoft refused, with its explanation; or Microsoft could not be reached." }
   /api/v1/wallets/{walletId}/mail/microsoft/{flowId}/poll:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -486,7 +486,7 @@ paths:
       responses:
         "200": { description: Where the sign-in stands., content: { application/json: { schema: { $ref: "#/components/schemas/MailSignInStatus" } } } }
         "404": { description: "flow_not_found: unknown, finished or someone else's sign-in." }
-        "502": { description: Microsoft answered with an unexpected error. }
+        "502": { description: "microsoft_error: Microsoft answered with an unexpected error, with its explanation." }
   /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }

@@ -2602,6 +2602,7 @@
     "flow_not_found": "Este inicio de sesión ha terminado: empieza de nuevo.",
     "login_refused": "El servidor de correo rechazó el inicio de sesión.",
     "mail_error": "No se pudo leer el buzón.",
+    "microsoft_error": "Microsoft respondió con un error.",
     "network": "No se pudo contactar con CloudBank. Comprueba la conexión y vuelve a intentarlo.",
     "detail": "Detalle: {{text}}",
     "fallback": {
