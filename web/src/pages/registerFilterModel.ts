@@ -377,6 +377,41 @@ export function parseFilters(p: URLSearchParams): Filters {
   };
 }
 
+// The query-string keys the filters own; parseFilters and filtersToParams read
+// and write these and no others.
+const FILTER_KEYS = [
+  "dp",
+  "df",
+  "dt",
+  "st",
+  "pe",
+  "cat",
+  "tg",
+  "amin",
+  "amax",
+  "q",
+  "hf",
+  "xf",
+  "nf",
+  "unc",
+];
+
+/**
+ * The address with its filters replaced by `filters` and everything else kept:
+ * the account, ?txn=, ?new=1. Replacing the whole query string dropped them,
+ * and restoring the saved filters shut the entry sheet ?new=1 had opened (#624).
+ */
+export function withFilters(
+  current: URLSearchParams,
+  filters: Record<string, string> | URLSearchParams,
+): URLSearchParams {
+  const next = new URLSearchParams(current);
+  for (const k of FILTER_KEYS) next.delete(k);
+  const add = filters instanceof URLSearchParams ? filters : new URLSearchParams(filters);
+  for (const [k, v] of add) if (FILTER_KEYS.includes(k)) next.set(k, v);
+  return next;
+}
+
 export function filtersToParams(f: Filters): Record<string, string> {
   const out: Record<string, string> = {};
   if (f.preset !== "all") out.dp = f.preset;
