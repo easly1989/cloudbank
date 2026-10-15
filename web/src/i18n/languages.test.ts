@@ -44,9 +44,10 @@ describe("the languages list", () => {
   });
 
   it("opens in English for a language it does not speak yet", () => {
-    expect(normalizeLanguage("pt-PT")).toBeUndefined();
-    expect(languageOf("pt-PT").code).toBe("en");
+    expect(normalizeLanguage("nl-NL")).toBeUndefined();
+    expect(languageOf("nl-NL").code).toBe("en");
     expect(languageOf("it-CH").code).toBe("it");
+    expect(languageOf("pt-PT").code).toBe("pt-BR");
   });
 });
 

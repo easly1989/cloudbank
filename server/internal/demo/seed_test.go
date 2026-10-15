@@ -89,16 +89,34 @@ func checkTransfers(t *testing.T, today time.Time, x *importer.XHB) {
 	}
 }
 
-// The demo's euro writes amounts the way its language does: 1 234,56 € in
-// French, 1.234,56 € where a language has no row of its own.
-func TestNumberFormatFollowsLanguage(t *testing.T) {
+// The demo's money is the language's: 1 234,56 € in French, R$ 1.234,56 in
+// Brazilian Portuguese, 1.234,56 € where a language has no row of its own.
+func TestCurrencyFollowsLanguage(t *testing.T) {
 	today := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
-	want := map[string]string{"fr": ", ", "en": ",.", "it": ",.", "de": ",.", "es": ",."}
-	for lang, sep := range want {
+	want := map[string]string{
+		"fr": "EUR , ", "en": "EUR ,.", "it": "EUR ,.", "de": "EUR ,.", "es": "EUR ,.",
+		"pt-BR": "BRL ,.",
+	}
+	for lang, cur := range want {
 		c := seedFile(today, lang).Currencies[0]
-		if got := c.Dchar + c.Gchar; got != sep {
-			t.Errorf("%s: separators %q, want %q", lang, got, sep)
+		if got := c.ISO + " " + c.Dchar + c.Gchar; got != cur {
+			t.Errorf("%s: currency %q, want %q", lang, got, cur)
 		}
+	}
+}
+
+// A currency worth less than the euro scales the amounts, and rounds the set
+// ones the way a price is written there: a rent of 750 € is R$ 2.250, a
+// subscription of 9,99 € is R$ 29,90.
+func TestFixedAmountsRound(t *testing.T) {
+	brl := moneyOf("pt-BR")
+	for in, want := range map[int64]int64{75000: 225000, 999: 2990, 3500: 10490, 245000: 735000} {
+		if got := brl.fixed(in); got != want {
+			t.Errorf("fixed(%d) = %d, want %d", in, got, want)
+		}
+	}
+	if got := moneyOf("it").fixed(999); got != 999 {
+		t.Errorf("euro fixed(999) = %d, want 999", got)
 	}
 }
 

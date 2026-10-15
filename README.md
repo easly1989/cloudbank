@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <strong>English</strong> · <a href="README.it.md">Italiano</a> · <a href="README.de.md">Deutsch</a> · <a href="README.fr.md">Français</a> · <a href="README.es.md">Español</a>
+  <strong>English</strong> · <a href="README.it.md">Italiano</a> · <a href="README.de.md">Deutsch</a> · <a href="README.fr.md">Français</a> · <a href="README.es.md">Español</a> · <a href="README.pt-BR.md">Português (Brasil)</a>
 </p>
 
 <p align="center">
@@ -97,7 +97,7 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 - **Review** — lists imported transactions still **needing a category** (set it inline) and finds **possible duplicates** that slipped through, with per-pair **merge**, edit, delete, or **"not a duplicate"** (remembered, so it isn't shown again). An account with something to review says so in its register ("3 to review"), and the button opens Review on that account; a linked account also shows when it last synced, with a **Sync** button. The connections themselves are set up in **Settings → Bank sync & AI**.
 - **Multi-currency** with manual and online (ECB / frankfurter.app) exchange rates.
 - **Totals that say what they add up** — the balance beside the wallet and at the head of the dashboard names how many accounts it sums ("4 of 6 accounts" when some are closed or kept out of the totals) and opens them one by one.
-- Multi-user (managed by the admin from **Settings → People**; each user changes their own password), responsive UI, English and Italian, plus German, French and Spanish in beta.
+- Multi-user (managed by the admin from **Settings → People**; each user changes their own password), responsive UI, English and Italian, plus German, French, Spanish and Brazilian Portuguese in beta.
 
 ### Make it yours
 

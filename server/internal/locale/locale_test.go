@@ -55,9 +55,9 @@ func TestNormalize(t *testing.T) {
 			t.Errorf("normalize(%q) = %q, %v; want %q", tag, got, ok, want)
 		}
 	}
-	// Today's list: Portuguese is not there yet, so pt-PT is unknown.
-	if code, ok := Normalize("pt-PT"); ok {
-		t.Errorf("Normalize(pt-PT) = %q before pt-BR exists", code)
+	// Today's list speaks Brazilian Portuguese, which pt-PT reads.
+	if code, ok := Normalize("pt-PT"); !ok || code != "pt-BR" {
+		t.Errorf("Normalize(pt-PT) = %q, %v; want pt-BR", code, ok)
 	}
 }
 
@@ -73,9 +73,9 @@ func TestFromAcceptLanguage(t *testing.T) {
 		"fr-CA,en;q=0.5":             "fr",
 		"es-ES,en-GB;q=0.8,it;q=0.5": "es",
 		"es-MX,en;q=0.5":             "es",
-		"pt-BR,en-GB;q=0.8,it;q=0.5": "en",
+		"pt-BR,en-GB;q=0.8,it;q=0.5": "pt-BR",
 		"italic":                     "en",
-		"pt-PT,pt;q=0.9":             "en",
+		"pt-PT,pt;q=0.9":             "pt-BR",
 	}
 	for h, want := range cases {
 		if got := FromAcceptLanguage(h); got != want {

@@ -90,20 +90,53 @@ const (
 	asgDoCategory = 1 << 1
 )
 
-// separators is how the demo's euro writes its amounts, per language: the
-// decimal mark, then the thousands separator. A language without its own row
-// gets the default, 1.234,56 €; the visitor can change it in Currencies.
-type separators struct{ decimal, group string }
-
-var numberFormats = map[string]separators{
-	"fr": {decimal: ",", group: " "},
+// money is the demo's currency, per language: how it writes its amounts, and
+// how much bigger they are than the euro amounts the seed is written in, so a
+// month's rent looks like a month's rent. A language without its own row gets
+// the euro, 1.234,56 €; the visitor can change the separators in Currencies.
+type money struct {
+	iso, name, symbol string
+	prefix            bool
+	decimal, group    string
+	factor            int64
 }
 
-func numberFormat(lang string) separators {
-	if f, ok := numberFormats[lang]; ok {
-		return f
+var euro = money{iso: "EUR", name: "Euro", symbol: "€", decimal: ",", group: ".", factor: 1}
+
+var moneys = map[string]money{
+	"fr":    {iso: "EUR", name: "Euro", symbol: "€", decimal: ",", group: " ", factor: 1},
+	"pt-BR": {iso: "BRL", name: "Real brasileiro", symbol: "R$", prefix: true, decimal: ",", group: ".", factor: 3},
+}
+
+func moneyOf(lang string) money {
+	if m, ok := moneys[lang]; ok {
+		return m
 	}
-	return separators{decimal: ",", group: "."}
+	return euro
+}
+
+// scaled turns a varying euro amount into the language's currency.
+func (m money) scaled(cents int64) int64 { return cents * m.factor }
+
+// fixed turns a set euro amount (a rent, a subscription, a budget) into the
+// language's currency as its prices are written: a round amount stays round,
+// a small one ends in ,90 as Brazilian prices do, a larger one goes to the ten.
+func (m money) fixed(cents int64) int64 {
+	if m.factor == 1 {
+		return cents
+	}
+	v, sign := cents*m.factor, int64(1)
+	if v < 0 {
+		v, sign = -v, -1
+	}
+	switch {
+	case v%1000 == 0:
+	case v < 20000:
+		v = (v+50)/100*100 - 10
+	default:
+		v = (v + 500) / 1000 * 1000
+	}
+	return sign * v
 }
 
 // words holds every name the seed shows, per language (internal/locale's
@@ -451,11 +484,80 @@ var words = map[string]map[string]string{
 		"carNotes":     "Gasolina · revisión cada 15.000 km",
 		"scooter":      "Scooter",
 	},
+	"pt-BR": {
+		"wallet":       "Carteira demo",
+		"checking":     "Conta corrente",
+		"savings":      "Poupança",
+		"card":         "Cartão de crédito",
+		"cash":         "Dinheiro",
+		"bank":         "Banco Demo",
+		"employer":     "Empregador",
+		"landlord":     "Proprietário",
+		"energy":       "Companhia de energia",
+		"internet":     "Provedor de internet",
+		"super":        "Supermercado",
+		"market":       "Feira do bairro",
+		"restaurant":   "Restaurante",
+		"cafe":         "Padaria",
+		"petrol":       "Posto de gasolina",
+		"transitPay":   "Transporte urbano",
+		"streaming":    "Serviço de streaming",
+		"gym":          "Academia",
+		"pharmacy":     "Farmácia",
+		"clothes":      "Loja de roupas",
+		"bookshop":     "Livraria",
+		"hotel":        "Pousada na praia",
+		"income":       "Receitas",
+		"salary":       "Salário",
+		"other":        "Outras receitas",
+		"home":         "Moradia",
+		"rent":         "Aluguel",
+		"utilities":    "Contas da casa",
+		"phone":        "Internet e telefone",
+		"food":         "Alimentação",
+		"groceries":    "Mercado",
+		"eatingOut":    "Restaurantes",
+		"transport":    "Transporte",
+		"fuel":         "Combustível",
+		"transit":      "Transporte público",
+		"leisure":      "Lazer",
+		"subs":         "Assinaturas",
+		"sport":        "Esporte",
+		"books":        "Livros",
+		"holidays":     "Férias",
+		"health":       "Saúde",
+		"clothing":     "Roupas",
+		"gifts":        "Presentes",
+		"tagHoliday":   "férias",
+		"tagCar":       "carro",
+		"tagRefund":    "reembolsável",
+		"tagChristmas": "natal",
+		"tagHome":      "home-office",
+		"weekly":       "Compra da semana",
+		"coffee":       "Cafezinho",
+		"household":    "Utilidades domésticas",
+		"topUp":        "Poupança mensal",
+		"payOff":       "Pagamento da fatura",
+		"withdraw":     "Saque",
+		"pass":         "Passe mensal",
+		"bonus":        "Décimo terceiro",
+		"refund":       "Reembolso",
+		"goalTrip":     "Viagem de verão",
+		"goalBuffer":   "Reserva de emergência",
+		"goalTickets":  "Ingressos do show",
+		"goalBike":     "Bicicleta nova",
+		"goalSofa":     "Sofá novo",
+		"goalNote":     "Meta inventada: altere, contribua, exclua.",
+		"car":          "Carro da família",
+		"carNotes":     "Gasolina · revisão a cada 15.000 km",
+		"scooter":      "Scooter",
+	},
 }
 
 // seeder builds the file for one language.
 type seeder struct {
 	lang  string // a locale code
+	m     money  // the language's currency
 	today time.Time
 	rng   *rand.Rand
 	x     *importer.XHB
@@ -528,8 +630,9 @@ func (s *seeder) status(d time.Time) int {
 	return 0
 }
 
-// between returns a whole number of cents in [lo, hi].
-func (s *seeder) between(lo, hi int64) int64 { return lo + s.rng.Int64N(hi-lo+1) }
+// between returns a whole number of euro cents in [lo, hi], in the language's
+// currency.
+func (s *seeder) between(lo, hi int64) int64 { return s.m.scaled(lo + s.rng.Int64N(hi-lo+1)) }
 
 type ope struct {
 	date     time.Time
@@ -560,7 +663,8 @@ func (s *seeder) fuelMemo(d time.Time, cents int64, f fill) string {
 	start := time.Date(s.today.Year(), s.today.Month()-11, 1, 0, 0, 0, 0, time.UTC)
 	days := int(d.Sub(start).Hours() / 24)
 	odometer := 38400 + days*41 + (d.Day()*37)%23
-	price := 1769 + ((d.Day()*13+int(d.Month())*7)%17)*5 // thousandths of a euro
+	// Thousandths of a euro, scaled like the payment so the litres stay the same.
+	price := s.m.scaled(int64(1769 + ((d.Day()*13+int(d.Month())*7)%17)*5))
 	if f == partialFill {
 		return fmt.Sprintf("d=%d p=%.3f", odometer, float64(price)/1000)
 	}
@@ -626,6 +730,7 @@ func (s *seeder) split(d time.Time, food, house int64) {
 func seedFile(today time.Time, lang string) *importer.XHB {
 	s := &seeder{
 		lang:      lang,
+		m:         moneyOf(lang),
 		today:     time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC),
 		rng:       rand.New(rand.NewPCG(420, 2026)),
 		x:         &importer.XHB{Version: "1.6"},
@@ -634,15 +739,19 @@ func seedFile(today time.Time, lang string) *importer.XHB {
 	}
 	x := s.x
 	x.Properties = importer.XProperties{Title: s.w("wallet"), Curr: 1}
-	sep := numberFormat(s.lang)
+	m := s.m
+	prefix := 0
+	if m.prefix {
+		prefix = 1
+	}
 	x.Currencies = []importer.XCur{{
-		Key: 1, ISO: "EUR", Name: "Euro", Symb: "€", Syprf: 0, Dchar: sep.decimal, Gchar: sep.group, Frac: 2, Rate: 1,
+		Key: 1, ISO: m.iso, Name: m.name, Symb: m.symbol, Syprf: prefix, Dchar: m.decimal, Gchar: m.group, Frac: 2, Rate: 1,
 	}}
 	x.Accounts = []importer.XAccount{
-		{Key: accChecking, Pos: 1, Type: 1, Curr: 1, Name: s.w("checking"), Bankname: s.w("bank"), Initial: "1850.00", Minimum: "200.00"},
-		{Key: accSavings, Pos: 2, Type: 1, Curr: 1, Name: s.w("savings"), Bankname: s.w("bank"), Initial: "6200.00"},
+		{Key: accChecking, Pos: 1, Type: 1, Curr: 1, Name: s.w("checking"), Bankname: s.w("bank"), Initial: amount(m.fixed(185000)), Minimum: amount(m.fixed(20000))},
+		{Key: accSavings, Pos: 2, Type: 1, Curr: 1, Name: s.w("savings"), Bankname: s.w("bank"), Initial: amount(m.fixed(620000))},
 		{Key: accCard, Pos: 3, Type: 4, Curr: 1, Name: s.w("card"), Bankname: s.w("bank")},
-		{Key: accCash, Pos: 4, Type: 2, Curr: 1, Name: s.w("cash"), Initial: "80.00"},
+		{Key: accCash, Pos: 4, Type: 2, Curr: 1, Name: s.w("cash"), Initial: amount(m.fixed(8000))},
 	}
 	for key, name := range map[int]string{
 		payEmployer: "employer", payLandlord: "landlord", payEnergy: "energy", payInternet: "internet",
@@ -656,7 +765,7 @@ func seedFile(today time.Time, lang string) *importer.XHB {
 		c := importer.XCat{Key: key, Parent: parent, Flags: flags, Name: s.w(name)}
 		if budget != 0 {
 			c.Flags |= flagBudget
-			c.B0 = amount(budget)
+			c.B0 = amount(m.fixed(budget))
 		}
 		x.Categories = append(x.Categories, c)
 	}
@@ -707,7 +816,7 @@ func seedFile(today time.Time, lang string) *importer.XHB {
 	}
 	fav := func(account int, cents int64, mode, payee, category int, memo string, due time.Time) {
 		x.Favorites = append(x.Favorites, importer.XFav{
-			Account: account, Amount: amount(cents), Paymode: mode, Payee: payee, Category: category,
+			Account: account, Amount: amount(m.fixed(cents)), Paymode: mode, Payee: payee, Category: category,
 			Wording: memo, Nextdate: julian(due), Every: 1, Unit: 2,
 		})
 	}
@@ -720,7 +829,7 @@ func seedFile(today time.Time, lang string) *importer.XHB {
 	// to the transactions it stands for, so the templates page has uses to count.
 	quick := func(account int, cents int64, mode, payee, category int, memo string) {
 		x.Favorites = append(x.Favorites, importer.XFav{
-			Account: account, Amount: amount(cents), Paymode: mode, Payee: payee, Category: category, Wording: memo,
+			Account: account, Amount: amount(m.fixed(cents)), Paymode: mode, Payee: payee, Category: category, Wording: memo,
 		})
 	}
 	quick(accChecking, -6500, modeDebit, paySupermarket, catGroceries, s.w("weekly"))
@@ -742,13 +851,13 @@ func (s *seeder) month(start time.Time, back int) {
 		return start.AddDate(0, 0, day-1)
 	}
 
-	s.add(ope{date: on(27), account: accChecking, cents: 245000, mode: modeDeposit, payee: payEmployer, category: catSalary, memo: s.w("salary")})
+	s.add(ope{date: on(27), account: accChecking, cents: s.m.fixed(245000), mode: modeDeposit, payee: payEmployer, category: catSalary, memo: s.w("salary")})
 	if start.Month() == time.December {
-		s.add(ope{date: on(18), account: accChecking, cents: 80000, mode: modeDeposit, payee: payEmployer, category: catOtherIncome, memo: s.w("bonus")})
+		s.add(ope{date: on(18), account: accChecking, cents: s.m.fixed(80000), mode: modeDeposit, payee: payEmployer, category: catOtherIncome, memo: s.w("bonus")})
 	}
-	s.add(ope{date: on(1), account: accChecking, cents: -75000, mode: modeStanding, payee: payLandlord, category: catRent, memo: s.w("rent")})
+	s.add(ope{date: on(1), account: accChecking, cents: s.m.fixed(-75000), mode: modeStanding, payee: payLandlord, category: catRent, memo: s.w("rent")})
 	// The line and the power a home office runs on (#556).
-	s.add(ope{date: on(5), account: accChecking, cents: -2990, mode: modeDirect, payee: payInternet, category: catInternet, memo: s.w("internet"), tags: s.w("tagHome")})
+	s.add(ope{date: on(5), account: accChecking, cents: s.m.fixed(-2990), mode: modeDirect, payee: payInternet, category: catInternet, memo: s.w("internet"), tags: s.w("tagHome")})
 	// The energy bill falls three days before today's day of the month; the
 	// latest one is left unpaid (see seedFile).
 	winter := start.Month() <= time.March || start.Month() >= time.November
@@ -760,9 +869,9 @@ func (s *seeder) month(start time.Time, back int) {
 	if bill := on(energy.Day()); bill.Before(energy) {
 		s.add(ope{date: bill, account: accChecking, cents: -s.between(lo, hi), mode: modeDirect, payee: payEnergy, category: catUtilities, memo: s.w("energy"), tags: s.w("tagHome")})
 	}
-	s.add(ope{date: on(15), account: accCard, cents: -1299, mode: modeCard, payee: payStreaming, category: catSubscriptions, memo: s.w("streaming")})
-	s.add(ope{date: on(3), account: accChecking, cents: -3900, mode: modeDebit, payee: payGym, category: catSport, memo: s.w("gym")})
-	s.add(ope{date: on(2), account: accChecking, cents: -3500, mode: modeDebit, payee: payTransit, category: catTransit, memo: s.w("pass")})
+	s.add(ope{date: on(15), account: accCard, cents: s.m.fixed(-1299), mode: modeCard, payee: payStreaming, category: catSubscriptions, memo: s.w("streaming")})
+	s.add(ope{date: on(3), account: accChecking, cents: s.m.fixed(-3900), mode: modeDebit, payee: payGym, category: catSport, memo: s.w("gym")})
+	s.add(ope{date: on(2), account: accChecking, cents: s.m.fixed(-3500), mode: modeDebit, payee: payTransit, category: catTransit, memo: s.w("pass")})
 
 	// Groceries: most weeks at the supermarket, a Saturday market now and then,
 	// and one receipt a month that was partly for the house.
@@ -809,18 +918,18 @@ func (s *seeder) month(start time.Time, back int) {
 	// One summer week away, tagged so the tag has something to find.
 	if start.Month() == time.August {
 		tag := s.w("tagHoliday")
-		s.add(ope{date: on(10), account: accCard, cents: -64000, mode: modeCard, payee: payHotel, category: catHolidays, tags: tag})
+		s.add(ope{date: on(10), account: accCard, cents: s.m.fixed(-64000), mode: modeCard, payee: payHotel, category: catHolidays, tags: tag})
 		for day := 10; day <= 15; day++ {
 			s.add(ope{date: on(day), account: accCard, cents: -s.between(3500, 7500), mode: modeCard, payee: payRestaurant, category: catRestaurants, tags: tag})
 		}
-		s.add(ope{date: on(9), account: accCard, cents: -6800, mode: modeCard, payee: payPetrol, category: catFuel, tags: tag + " " + s.w("tagCar"), fill: fullFill})
+		s.add(ope{date: on(9), account: accCard, cents: s.m.fixed(-6800), mode: modeCard, payee: payPetrol, category: catFuel, tags: tag + " " + s.w("tagCar"), fill: fullFill})
 	}
 	if back == 4 {
-		s.add(ope{date: on(14), account: accChecking, cents: 4590, mode: modeTransfer, payee: payClothes, category: catClothing, memo: s.w("refund")})
+		s.add(ope{date: on(14), account: accChecking, cents: s.m.fixed(4590), mode: modeTransfer, payee: payClothes, category: catClothing, memo: s.w("refund")})
 	}
 
-	s.transfer(on(6), accChecking, accCash, 6000, s.w("withdraw"))
-	s.transfer(on(28), accChecking, accSavings, 40000, s.w("topUp"))
+	s.transfer(on(6), accChecking, accCash, s.m.fixed(6000), s.w("withdraw"))
+	s.transfer(on(28), accChecking, accSavings, s.m.fixed(40000), s.w("topUp"))
 	// Last month's card spending, paid off from checking.
 	if back < 11 {
 		prev := start.AddDate(0, -1, 0).Month()

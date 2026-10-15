@@ -62,8 +62,8 @@ func TestDemoOnlyRefusesRealProviders(t *testing.T) {
 
 func TestDemoFetchRowsIsStableAndRecent(t *testing.T) {
 	today := time.Date(2026, 3, 15, 0, 0, 0, 0, time.UTC)
-	long := demoFetchRows(today.AddDate(0, 0, -90), today)
-	short := demoFetchRows(today.AddDate(0, 0, -demoLookbackDays), today)
+	long := demoFetchRows(today.AddDate(0, 0, -90), today, 1)
+	short := demoFetchRows(today.AddDate(0, 0, -demoLookbackDays), today, 1)
 	for ext, rows := range long {
 		if len(rows) != len(short[ext]) {
 			t.Fatalf("%s: a 90-day window gave %d rows, want the %d of the last %d days",
