@@ -51,6 +51,10 @@ func (h *mailHandlers) writeErr(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusBadRequest, "invalid", strings.TrimPrefix(err.Error(), "mailingest: "))
 	case errors.Is(err, mailingest.ErrReauth):
 		writeError(w, http.StatusConflict, "reauth", "sign in to Microsoft again")
+	case errors.As(err, new(*mailingest.OAuthError)):
+		// Microsoft's own explanation, e.g. an app registration that does not
+		// allow the device-code flow.
+		writeError(w, http.StatusBadGateway, "microsoft_error", strings.TrimPrefix(err.Error(), "mailingest: microsoft: "))
 	case errors.Is(err, mailingest.ErrLogin):
 		writeError(w, http.StatusBadGateway, "login_refused", "the mail server refused the login")
 	default:

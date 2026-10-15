@@ -2602,6 +2602,7 @@
     "flow_not_found": "Cette connexion est terminée : recommencez.",
     "login_refused": "Le serveur de messagerie a refusé la connexion.",
     "mail_error": "Impossible de lire la boîte.",
+    "microsoft_error": "Microsoft a répondu par une erreur.",
     "network": "CloudBank est injoignable. Vérifiez la connexion et réessayez.",
     "detail": "Détail : {{text}}",
     "fallback": {

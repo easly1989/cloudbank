@@ -2602,6 +2602,7 @@
     "flow_not_found": "This sign-in is over: start again.",
     "login_refused": "The mail server refused the sign-in.",
     "mail_error": "The mailbox could not be read.",
+    "microsoft_error": "Microsoft answered with an error.",
     "network": "CloudBank could not be reached. Check the connection and try again.",
     "detail": "Detail: {{text}}",
     "fallback": {
