@@ -8,6 +8,7 @@ import {
   lastTwelve,
   leftOf,
   paceOf,
+  paceVerdict,
   pathOf,
   periodAt,
   periodOf,
@@ -66,6 +67,7 @@ describe("viewOf", () => {
     budget,
     actual,
     coming,
+    oncePerMonth: false,
   });
   const report: BudgetReport = {
     rows: [
@@ -131,5 +133,62 @@ describe("history", () => {
     expect(s.average).toBeCloseTo(18416.67, 1);
     expect(s.suggestion).toBe(18500);
     expect(s.over).toBe(11);
+  });
+});
+
+describe("paceVerdict", () => {
+  const line = { plan: 10000, spent: 3000, coming: 0, income: false };
+  it("says how much of the plan has gone, against the share of the period (#625)", () => {
+    expect(paceVerdict(line, 0.42)).toEqual({ kind: "under", spentPct: 30, pacePct: 42 });
+    expect(paceVerdict({ ...line, spent: 6000 }, 0.42)).toEqual({
+      kind: "ahead",
+      spentPct: 60,
+      pacePct: 42,
+    });
+  });
+  it("past the plan, says by how much", () => {
+    expect(paceVerdict({ ...line, spent: 12500 }, 0.42)).toEqual({
+      kind: "past",
+      spentPct: 125,
+      pacePct: 42,
+      past: 2500,
+    });
+  });
+  it("on the pace exactly is not ahead of it", () => {
+    expect(paceVerdict({ ...line, spent: 4200 }, 0.42).kind).toBe("under");
+  });
+  it("income only says how much has come in", () => {
+    expect(paceVerdict({ ...line, income: true }, 0.5)).toEqual({
+      kind: "income",
+      spentPct: 30,
+      pacePct: 50,
+    });
+  });
+});
+
+describe("viewOf and oncePerMonth", () => {
+  it("carries the report's oncePerMonth onto the line", () => {
+    const report = {
+      rows: [
+        {
+          categoryId: 1,
+          name: "Rent",
+          isIncome: false,
+          budgeted: true,
+          budget: -80000,
+          actual: -80000,
+          coming: 0,
+          oncePerMonth: true,
+        },
+      ],
+      totalBudget: -80000,
+      totalActual: -80000,
+      totalComing: 0,
+      from: "2026-10-01",
+      to: "2026-10-31",
+      today: "2026-10-13",
+      currency: null,
+    } satisfies BudgetReport;
+    expect(viewOf(report, []).spending[0].oncePerMonth).toBe(true);
   });
 });

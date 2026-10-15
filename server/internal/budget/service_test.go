@@ -258,3 +258,58 @@ func TestReportMonthlyBudget(t *testing.T) {
 		t.Fatalf("monthly budget = %d, want -30000", rep.Rows[0].Budget)
 	}
 }
+
+// A line paid once a month at most, over the three months before today's, has
+// no "today" tick worth reading: rent goes out in one go (#625). It needs at
+// least one payment in those months, and a refund does not count as one.
+func TestReportOncePerMonth(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	rent := f.category(t, "Rent", nil, false)
+	food := f.category(t, "Food", nil, false)
+	gym := f.category(t, "Gym", nil, false)
+	fresh := f.category(t, "Fresh", nil, false)
+	sal, err := f.q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: f.wid, Name: "Salary", IsIncome: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []int64{rent, food, gym, fresh} {
+		_ = f.s.SetCategoryBudget(ctx, f.wid, id, 0, Input{Mode: ModeSame, Same: -10000})
+	}
+	_ = f.s.SetCategoryBudget(ctx, f.wid, sal.ID, 0, Input{Mode: ModeSame, Same: 200000})
+	add := func(date string, amount, cat int64) {
+		if _, err := f.ts.Create(ctx, f.wid, transaction.Input{AccountID: f.acc, Date: date, Amount: amount, CategoryID: iptr(cat)}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// July to September: rent once a month, and once with a refund beside it.
+	for _, m := range []string{"07", "08", "09"} {
+		add("2026-"+m+"-01", -80000, rent)
+		add("2026-"+m+"-27", 245000, sal.ID)
+	}
+	add("2026-08-20", 5000, rent)
+	// Food twice in August.
+	add("2026-07-03", -2000, food)
+	add("2026-08-03", -2000, food)
+	add("2026-08-17", -3000, food)
+	// The gym once in July only, and twice this month: this month does not count.
+	add("2026-07-10", -3000, gym)
+	add("2026-10-02", -3000, gym)
+	add("2026-10-09", -3000, gym)
+	// Fresh has nothing before October: no sign it is paid in one go.
+	add("2026-10-05", -1000, fresh)
+
+	rep, err := f.s.Report(ctx, f.wid, "2026-10-01", "2026-10-31", "2026-10-15")
+	if err != nil {
+		t.Fatal(err)
+	}
+	by := map[int64]ReportRow{}
+	for _, r := range rep.Rows {
+		by[r.CategoryID] = r
+	}
+	for id, want := range map[int64]bool{rent: true, food: false, gym: true, fresh: false, sal.ID: true} {
+		if got := by[id].OncePerMonth; got != want {
+			t.Errorf("%s: oncePerMonth = %v, want %v", by[id].Name, got, want)
+		}
+	}
+}

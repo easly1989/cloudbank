@@ -30,6 +30,8 @@ export interface BudgetReportRow {
   actual: number;
   /** The part of actual dated after today: entered, not yet gone. */
   coming: number;
+  /** Paid at least once and at most once a month lately, like rent (#625). */
+  oncePerMonth: boolean;
 }
 
 /**

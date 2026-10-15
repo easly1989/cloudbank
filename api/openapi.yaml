@@ -3912,7 +3912,8 @@ components:
         budget: { type: integer, format: int64 }
         actual: { type: integer, format: int64 }
         coming: { type: integer, format: int64, description: "the part of actual dated after today" }
-      required: [categoryId, name, isIncome, budgeted, budget, actual, coming]
+        oncePerMonth: { type: boolean, description: "paid (income: received) at least once and at most once a month over the three months before today's, like rent" }
+      required: [categoryId, name, isIncome, budgeted, budget, actual, coming, oncePerMonth]
     BudgetReport:
       type: object
       properties:
