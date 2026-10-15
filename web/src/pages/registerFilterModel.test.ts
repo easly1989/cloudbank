@@ -14,6 +14,7 @@ import {
   filtersToParams,
   isActive,
   parseFilters,
+  withFilters,
   type Filters,
 } from "./registerFilterModel";
 
@@ -386,5 +387,24 @@ describe("sortRegisterRows", () => {
   it("knows which columns can be sorted", () => {
     expect(isSortable("amount")).toBe(true);
     expect(isSortable("actions")).toBe(false);
+  });
+});
+
+describe("withFilters", () => {
+  it("replaces the filters and keeps what is not a filter (#624)", () => {
+    const current = new URLSearchParams("account=3&new=1&q=old&st=1");
+    const next = withFilters(current, new URLSearchParams("hf=1&q=coffee"));
+    expect(Object.fromEntries(next)).toEqual({ account: "3", new: "1", hf: "1", q: "coffee" });
+  });
+
+  it("clears every filter when given none, and leaves the rest", () => {
+    const current = new URLSearchParams("txn=9&dp=thisMonth&tg=a,b&unc=1");
+    expect(withFilters(current, {}).toString()).toBe("txn=9");
+  });
+
+  it("does not change the params it was given", () => {
+    const current = new URLSearchParams("new=1");
+    withFilters(current, { hf: "1" });
+    expect(current.toString()).toBe("new=1");
   });
 });
