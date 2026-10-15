@@ -1504,7 +1504,7 @@
     "deleteConfirmLabel": "Escribe «{{title}}» para confirmar la eliminación.",
     "delete": "Eliminar cartera",
     "billsCategory": "Categoría de los recibos",
-    "billsCategoryHint": "Solo los movimientos programados de esta categoría aparecen en la página Recibos. Deja Todas las salidas para incluir todos los movimientos programados de salida.",
+    "billsCategoryHint": "Solo los movimientos programados de esta categoría cuentan como recibos: en el bloque «Recibos» del panel y en el aviso de recibos vencidos. Deja «Todas las salidas» para contarlos todos.",
     "billsCategoryNone": "Todas las salidas",
     "label": "Cartera"
   },
