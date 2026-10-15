@@ -70,7 +70,15 @@ type ReportRow struct {
 	Actual     int64  `json:"actual"`
 	// Coming is the part of Actual dated after today: entered, not yet gone.
 	Coming int64 `json:"coming"`
+	// OncePerMonth: over the three months before today's, the line was paid
+	// (or, for income, received) at least once and never more than once in a
+	// month, like rent. How far through the period today is says little there
+	// (#625).
+	OncePerMonth bool `json:"oncePerMonth"`
 }
+
+// oncePerMonthSpan is how many whole months before today's OncePerMonth reads.
+const oncePerMonthSpan = 3
 
 // Report is budget vs actual over a period. The totals are over the budgeted
 // spending lines only: income and unbudgeted spending are not added in.
@@ -248,6 +256,11 @@ func (s *Service) Report(ctx context.Context, walletID int64, from, to, today st
 		}
 	}
 
+	once, err := s.oncePerMonth(ctx, walletID, w, today, lineOf)
+	if err != nil {
+		return Report{}, err
+	}
+
 	rep := Report{From: from, To: to, Today: today, Rows: []ReportRow{}, Currency: w.currency()}
 	seen := map[int64]bool{}
 	add := func(id int64) {
@@ -259,7 +272,7 @@ func (s *Service) Report(ctx context.Context, walletID int64, from, to, today st
 		_, budgeted := plan[id]
 		row := ReportRow{
 			CategoryID: id, Name: m.name, IsIncome: m.isIncome, Budgeted: budgeted,
-			Budget: plan[id], Actual: actual[id], Coming: coming[id],
+			Budget: plan[id], Actual: actual[id], Coming: coming[id], OncePerMonth: once[id],
 		}
 		rep.Rows = append(rep.Rows, row)
 		if budgeted && !m.isIncome {
@@ -278,6 +291,48 @@ func (s *Service) Report(ctx context.Context, walletID int64, from, to, today st
 	}
 	sortRows(rep.Rows)
 	return rep, nil
+}
+
+// oncePerMonth tells, per budget line, whether it was paid at least once and at
+// most once a month over the oncePerMonthSpan months before the one today falls
+// in. A payment is a row of the line's own sign: a refund on a spending line
+// does not count as one.
+func (s *Service) oncePerMonth(ctx context.Context, walletID int64, w walletData, today string, lineOf func(int64) (int64, bool)) (map[int64]bool, error) {
+	t, err := time.Parse(dateLayout, today)
+	if err != nil {
+		return nil, err
+	}
+	month := time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
+	rows, err := s.rq.CategoryActualsForBudget(ctx, db.CategoryActualsForBudgetParams{
+		WalletID: walletID,
+		FromDate: month.AddDate(0, -oncePerMonthSpan, 0).Format(dateLayout),
+		ToDate:   month.AddDate(0, 0, -1).Format(dateLayout),
+	})
+	if err != nil {
+		return nil, err
+	}
+	type key struct {
+		line  int64
+		month string
+	}
+	payments := map[key]int{}
+	for _, r := range rows {
+		if !r.CategoryID.Valid {
+			continue
+		}
+		line, ok := lineOf(r.CategoryID.Int64)
+		if !ok || (r.Amount > 0) != w.meta[line].isIncome || r.Amount == 0 {
+			continue
+		}
+		payments[key{line, r.Date[:7]}]++
+	}
+	once := map[int64]bool{}
+	for k, n := range payments {
+		if prev, seen := once[k.line]; !seen || prev {
+			once[k.line] = n == 1
+		}
+	}
+	return once, nil
 }
 
 // History returns what a category took, month by month, over the `months`

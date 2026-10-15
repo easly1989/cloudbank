@@ -327,6 +327,20 @@
     "monthByMonth": "month by month",
     "lineMonth": "The line on each bar is where today falls in the month: a bar past it is spending ahead of plan. A budget on a category covers its subcategories without one of their own. Categories and accounts left out of the budget are not counted.",
     "lineYear": "The line on each bar is where today falls in the year: a bar past it is spending ahead of plan. A budget on a category covers its subcategories without one of their own. Categories and accounts left out of the budget are not counted.",
+    "pace": {
+      "label": {
+        "month": "today, {{date}} · {{pace}}% of the month",
+        "year": "today, {{date}} · {{pace}}% of the year"
+      },
+      "passed": {
+        "month": "Today, {{date}}: {{pace}}% of the month has gone.",
+        "year": "Today, {{date}}: {{pace}}% of the year has gone."
+      },
+      "under": "Here you have spent {{spent}}% of the plan, so you are below the pace.",
+      "ahead": "Here you have spent {{spent}}% of the plan, so you are ahead of the pace.",
+      "past": "Here you are already {{amount}} past the plan.",
+      "income": "Here {{spent}}% of the plan has come in."
+    },
     "actionsFor": "Actions for {{name}}",
     "menu": {
       "edit": "Edit budget",

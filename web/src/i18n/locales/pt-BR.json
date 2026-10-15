@@ -327,6 +327,20 @@
     "monthByMonth": "mês a mês",
     "lineMonth": "A linha em cada barra marca onde hoje cai no mês: uma barra que passa dela está gastando à frente do plano. Um orçamento numa categoria cobre as subcategorias que não têm um próprio. Categorias e contas deixadas fora do orçamento não são contadas.",
     "lineYear": "A linha em cada barra marca onde hoje cai no ano: uma barra que passa dela está gastando à frente do plano. Um orçamento numa categoria cobre as subcategorias que não têm um próprio. Categorias e contas deixadas fora do orçamento não são contadas.",
+    "pace": {
+      "label": {
+        "month": "hoje, {{date}} · {{pace}}% do mês",
+        "year": "hoje, {{date}} · {{pace}}% do ano"
+      },
+      "passed": {
+        "month": "Hoje, {{date}}: já passou {{pace}}% do mês.",
+        "year": "Hoje, {{date}}: já passou {{pace}}% do ano."
+      },
+      "under": "Aqui você gastou {{spent}}% do planejado, então está abaixo do ritmo.",
+      "ahead": "Aqui você gastou {{spent}}% do planejado, então está acima do ritmo.",
+      "past": "Aqui você já passou do planejado em {{amount}}.",
+      "income": "Aqui entrou {{spent}}% do planejado."
+    },
     "actionsFor": "Ações para {{name}}",
     "menu": {
       "edit": "Editar orçamento",

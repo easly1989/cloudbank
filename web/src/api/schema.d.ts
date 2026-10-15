@@ -4239,6 +4239,8 @@ export interface components {
              * @description the part of actual dated after today
              */
             coming: number;
+            /** @description paid (income: received) at least once and at most once a month over the three months before today's, like rent */
+            oncePerMonth: boolean;
         };
         BudgetReport: {
             rows: components["schemas"]["BudgetReportRow"][];

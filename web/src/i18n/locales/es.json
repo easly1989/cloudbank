@@ -327,6 +327,20 @@
     "monthByMonth": "mes a mes",
     "lineMonth": "La línea de cada barra marca en qué punto del mes estamos hoy: una barra que la pasa va gastando más rápido de lo previsto. El presupuesto de una categoría cubre sus subcategorías que no tienen uno propio. Las categorías y cuentas excluidas del presupuesto no se cuentan.",
     "lineYear": "La línea de cada barra marca en qué punto del año estamos hoy: una barra que la pasa va gastando más rápido de lo previsto. El presupuesto de una categoría cubre sus subcategorías que no tienen uno propio. Las categorías y cuentas excluidas del presupuesto no se cuentan.",
+    "pace": {
+      "label": {
+        "month": "hoy, {{date}} · {{pace}} % del mes",
+        "year": "hoy, {{date}} · {{pace}} % del año"
+      },
+      "passed": {
+        "month": "Hoy, {{date}}: ha pasado el {{pace}} % del mes.",
+        "year": "Hoy, {{date}}: ha pasado el {{pace}} % del año."
+      },
+      "under": "Aquí has gastado el {{spent}} % de lo previsto, así que vas por debajo del ritmo.",
+      "ahead": "Aquí has gastado el {{spent}} % de lo previsto, así que vas por encima del ritmo.",
+      "past": "Aquí ya has superado lo previsto en {{amount}}.",
+      "income": "Aquí ha entrado el {{spent}} % de lo previsto."
+    },
     "actionsFor": "Acciones para {{name}}",
     "menu": {
       "edit": "Editar presupuesto",

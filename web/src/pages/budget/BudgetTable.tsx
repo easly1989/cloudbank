@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Menu, SegmentedControl, UnstyledButton } from "@mantine/core";
+import { ActionIcon, Button, Menu, SegmentedControl, Tooltip, UnstyledButton } from "@mantine/core";
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -16,6 +16,8 @@ import {
   type BudgetView,
   isOver,
   leftOf,
+  type Pace,
+  paceVerdict,
   pathOf,
   type Period,
   type PeriodKind,
@@ -37,26 +39,52 @@ const stop = (fn: () => void) => (e: MouseEvent) => {
   fn();
 };
 
+/** "13 October": today in the tick's words. */
+const dayMonth = (date: string, lang: string) =>
+  new Date(`${date}T00:00:00Z`).toLocaleDateString(lang, {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
+
 /**
  * The bar: what has gone, what is coming lighter, amber past the plan. When
  * the spending runs past the plan the bar is scaled to it and a notch marks
- * where the plan ended; the tick is where today stands in the period.
+ * where the plan ended; the tick is where today stands in the period. The big
+ * bar names the tick under it; a line's tick says, on hover, touch or focus,
+ * what it means for that line (#625). A line paid once a month at most, like
+ * rent, has no tick: its pace says nothing.
  */
 export function BudgetBar({
   line,
   pace,
+  money,
   big = false,
 }: {
-  line: Pick<BudgetLine, "plan" | "spent" | "coming"> & { income?: boolean };
-  pace: number | null;
+  line: Pick<BudgetLine, "plan" | "spent" | "coming" | "oncePerMonth"> & { income?: boolean };
+  pace: Pace | null;
+  money: Money;
   big?: boolean;
 }) {
+  const { t, i18n } = useTranslation();
   const { plan, spent, coming } = line;
   const scale = Math.max(plan, spent + coming, 1);
   const gone = Math.min(Math.max(spent, 0), scale);
   const sp = (gone / scale) * 100;
   const co = (Math.min(Math.max(coming, 0), scale - gone) / scale) * 100;
   const over = !line.income && plan > 0 && spent + coming > plan;
+  const tick = pace != null && plan > 0 && !line.oncePerMonth ? (pace.at * plan) / scale : null;
+  const date = pace ? dayMonth(pace.today, i18n.language) : "";
+  let tickText = "";
+  if (pace && tick != null && !big) {
+    const v = paceVerdict({ plan, spent, income: !!line.income }, pace.at);
+    tickText = [
+      t(`budget.pace.passed.${pace.kind}`, { date, pace: v.pacePct }),
+      v.kind === "past"
+        ? t("budget.pace.past", { amount: money(v.past ?? 0) })
+        : t(`budget.pace.${v.kind}`, { spent: v.spentPct }),
+    ].join(" ");
+  }
   return (
     <span className={classes.bar} data-over={over || undefined} data-size={big ? "big" : undefined}>
       <span className={classes.fill} style={{ width: `${sp}%` }} />
@@ -64,8 +92,37 @@ export function BudgetBar({
       {plan > 0 && plan < scale && (
         <i className={classes.planEnd} style={{ left: `${(plan / scale) * 100}%` }} />
       )}
-      {pace != null && plan > 0 && (
-        <i className={classes.pace} style={{ left: `${((pace * plan) / scale) * 100}%` }} />
+      {pace && tick != null && big && (
+        <>
+          <i className={classes.pace} style={{ left: `${tick * 100}%` }} />
+          <span
+            className={classes.paceLabel}
+            data-edge={tick < 0.15 ? "start" : tick > 0.85 ? "end" : undefined}
+            style={{ left: `${tick * 100}%` }}
+            data-testid="budget-pace-label"
+          >
+            {t(`budget.pace.label.${pace.kind}`, { date, pace: Math.round(pace.at * 100) })}
+          </span>
+        </>
+      )}
+      {pace && tick != null && !big && (
+        <Tooltip
+          label={tickText}
+          multiline
+          w={250}
+          withArrow
+          events={{ hover: true, focus: true, touch: true }}
+        >
+          <button
+            type="button"
+            className={classes.paceHit}
+            style={{ left: `${tick * 100}%` }}
+            aria-label={tickText}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <i className={classes.paceMark} />
+          </button>
+        </Tooltip>
       )}
     </span>
   );
@@ -146,7 +203,7 @@ export function Figures({
   period,
 }: {
   view: BudgetView;
-  pace: number | null;
+  pace: Pace | null;
   days: number | null;
   money: Money;
   period?: ReactNode;
@@ -194,8 +251,8 @@ export function Figures({
         </div>
         {period}
       </div>
-      <div className={classes.totalBar}>
-        <BudgetBar line={total} pace={pace} big />
+      <div className={classes.totalBar} data-pace={pace ? "" : undefined}>
+        <BudgetBar line={total} pace={pace} money={money} big />
       </div>
     </>
   );
@@ -307,7 +364,7 @@ export function BudgetTable({
   actions,
 }: {
   view: BudgetView;
-  pace: number | null;
+  pace: Pace | null;
   money: Money;
   /** The categories whose plan changes month by month. */
   monthly: Set<number>;
@@ -334,7 +391,7 @@ export function BudgetTable({
         <LeftCell l={l} money={money} />
       </span>
       <span>
-        <BudgetBar line={l} pace={pace} />
+        <BudgetBar line={l} pace={pace} money={money} />
       </span>
       <span>
         <LineMenu l={l} actions={actions} />
@@ -431,7 +488,7 @@ export function BudgetPhoneList({
   actions,
 }: {
   view: BudgetView;
-  pace: number | null;
+  pace: Pace | null;
   money: Money;
   actions: BudgetActions;
 }) {
@@ -453,23 +510,26 @@ export function BudgetPhoneList({
       </>
     );
   };
+  // A row opens its plan wherever it is tapped. Its name is the button, not the
+  // whole row: the bar's tick is a button of its own (#625), and a button
+  // cannot sit inside another.
   const card = (lines: BudgetLine[], loose = false) => (
     <div className={classes.card}>
       {lines.map((l) => (
-        <UnstyledButton
+        <div
           key={l.id}
           className={classes.prow}
           data-testid={loose ? `budget-loose-${l.id}` : `budget-row-${l.id}`}
           onClick={() => actions.onEdit(l)}
         >
-          <span className={classes.prowTop}>
+          <UnstyledButton className={classes.prowTop} onClick={stop(() => actions.onEdit(l))}>
             <b className={loose ? classes.dim : undefined}>{loose ? pathOf(l) : l.name}</b>
             <span className={classes.prowMeta}>
               {loose ? <span className={classes.mono}>{money(l.spent + l.coming)}</span> : meta(l)}
             </span>
-          </span>
-          {!loose && <BudgetBar line={l} pace={pace} />}
-        </UnstyledButton>
+          </UnstyledButton>
+          {!loose && <BudgetBar line={l} pace={pace} money={money} />}
+        </div>
       ))}
     </div>
   );

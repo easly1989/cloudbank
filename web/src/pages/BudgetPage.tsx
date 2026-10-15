@@ -23,6 +23,7 @@ import {
   daysLeft,
   leftOf,
   paceOf,
+  type Pace,
   pathOf,
   type Period,
   periodAt,
@@ -96,7 +97,9 @@ export function BudgetPage() {
     enabled: walletId > 0,
   });
   const view = useMemo(() => viewOf(report.data, categories), [report.data, categories]);
-  const pace = paceOf(period, report.data?.today ?? today);
+  const paceAt = paceOf(period, report.data?.today ?? today);
+  const pace: Pace | null =
+    paceAt == null ? null : { at: paceAt, today: report.data?.today ?? today, kind: period.kind };
   const days = daysLeft(period, today);
 
   // Empty: where the money went over the last twelve complete months.
