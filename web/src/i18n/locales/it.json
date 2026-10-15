@@ -1504,7 +1504,7 @@
     "deleteConfirmLabel": "Digita \"{{title}}\" per confermare l'eliminazione.",
     "delete": "Elimina portafoglio",
     "billsCategory": "Categoria bollette",
-    "billsCategoryHint": "Nella pagina Bills appaiono solo le programmate di questa categoria. Lascia “Tutte le uscite” per includerle tutte.",
+    "billsCategoryHint": "Solo le programmate di questa categoria contano come bollette: nel riquadro Scadenze del cruscotto e nell’avviso delle bollette scadute. Lascia «Tutte le uscite» per contarle tutte.",
     "billsCategoryNone": "Tutte le uscite",
     "label": "Portafoglio"
   },

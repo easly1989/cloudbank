@@ -5,7 +5,8 @@ import { Link } from "react-router-dom";
 import { BillsList } from "../../BillsList";
 
 // BillsPanel is the dashboard widget: a compact "what's due" list (overdue and
-// due only) with the base-currency total, linking to the full Bills page.
+// due only) with the base-currency total, linking to Schedules, where the
+// bills live since 3.7.0.
 export function BillsPanel({ walletId }: { walletId: number }) {
   const { t } = useTranslation();
   return (
