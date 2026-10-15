@@ -67,6 +67,65 @@
   background: var(--mantine-color-text);
   opacity: 0.55;
 }
+
+/* A line's tick is a button (#625): a hit area wider than the 2px mark, so a
+   finger can find it, with the mark drawn in its middle. */
+.paceHit {
+  position: absolute;
+  top: -9px;
+  bottom: -9px;
+  width: 18px;
+  margin-left: -9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+}
+
+.paceMark {
+  width: 2px;
+  height: 12px;
+  border-radius: 1px;
+  background: var(--mantine-color-text);
+  opacity: 0.55;
+  transition:
+    width 120ms ease,
+    opacity 120ms ease;
+}
+
+.paceHit:hover .paceMark,
+.paceHit:focus-visible .paceMark {
+  width: 4px;
+  opacity: 0.9;
+}
+
+.paceHit:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 1px;
+  border-radius: 4px;
+}
+
+/* Under the big bar's tick: "today, 13 October · 42% of the month". */
+.paceLabel {
+  position: absolute;
+  top: 14px;
+  transform: translateX(-50%);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--mantine-color-dimmed);
+  white-space: nowrap;
+}
+
+.paceLabel[data-edge="start"] {
+  transform: translateX(-4px);
+}
+
+.paceLabel[data-edge="end"] {
+  transform: translateX(calc(-100% + 4px));
+}
 .planEnd {
   background: var(--mantine-color-body);
 }
@@ -116,6 +175,10 @@
 }
 .totalBar {
   padding-top: 10px;
+}
+
+.totalBar[data-pace] {
+  padding-bottom: 22px;
 }
 /* Add to budget, on a line with no budget: smaller than a page action. */
 .addLine {
@@ -250,6 +313,7 @@
   width: 100%;
   text-align: start;
   color: var(--mantine-color-text);
+  cursor: pointer;
 }
 .card > .prow:first-child {
   border-top: 0;
@@ -257,6 +321,9 @@
 /* The name keeps its line; when the figures do not fit beside it, as with
    the longer Italian ones, they go under it on the right. */
 .prowTop {
+  width: 100%;
+  text-align: start;
+  color: inherit;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
