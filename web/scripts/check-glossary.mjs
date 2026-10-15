@@ -31,6 +31,10 @@ const EXCEPTIONS = {
     "setup.ssoReserved": ["account"],
     "demo.loginBody": ["account"],
     "demo.noticeYours": ["account"],
+    // The account of a mailbox, at Microsoft or at the mail provider.
+    "mail.imapHint": ["account"],
+    "mail.warning": ["account"],
+    "mail.step3": ["account"],
     // "Schedule" as the repetition settings, not a schedule.
     "schedules.transferNote": ["schedule"],
     // The verbs, not the statuses.

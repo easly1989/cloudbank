@@ -66,7 +66,7 @@ test("what the demo switched off is not offered", async ({ page }) => {
   await page.goto("/settings/general");
   const rail = page.getByRole("navigation", { name: "Settings" });
   await expect(rail.getByRole("link", { name: "General" })).toBeVisible();
-  for (const gone of ["Security", "People", "Bank sync & AI"]) {
+  for (const gone of ["Security", "People", "Bank sync, mail & AI"]) {
     await expect(rail.getByRole("link", { name: gone })).toHaveCount(0);
   }
   await expect(rail.getByRole("link", { name: "Bank sync" })).toBeVisible();
