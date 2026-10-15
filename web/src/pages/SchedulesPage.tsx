@@ -19,6 +19,7 @@ import {
 import { attentionColor, expenseColor, incomeColor } from "../amountTone";
 import { useConfirm } from "../components/confirmContext";
 import { EmptyState } from "../components/EmptyState";
+import { asTitle } from "../dates";
 import { PageHeader } from "../components/PageHeader";
 import { Figure, Figures } from "../components/reports/Figures";
 import { formatMinor } from "../money";
@@ -293,7 +294,7 @@ export function SchedulesPage() {
         aria-live="polite"
         style={phone ? { flex: 1, minWidth: 0 } : undefined}
       >
-        {monthTitle}
+        {asTitle(monthTitle, i18n.language)}
       </div>
       <ActionIcon
         variant="default"

@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> · <a href="README.it.md">Italiano</a> · <a href="README.de.md">Deutsch</a> · <strong>Français</strong>
+  <a href="README.md">English</a> · <a href="README.it.md">Italiano</a> · <a href="README.de.md">Deutsch</a> · <strong>Français</strong> · <a href="README.es.md">Español</a>
 </p>
 
 <p align="center">
@@ -72,7 +72,7 @@ CloudBank est une **réimplémentation indépendante, en salle blanche**. Il ne 
 - **Objectifs d’épargne et véhicules :** combien vous avez mis de côté, combien mettre de côté chaque mois pour arriver à temps, et ce qui reste disponible ; pour chaque véhicule, le carburant, les kilomètres, le coût au kilomètre et la consommation.
 - **Import et export :** `.xhb` de HomeBank, QIF, OFX/QFX, CSV et CAMT.053 (ISO 20022) en entrée, avec un assistant ; `.xhb`, QIF et CSV en sortie ; sauvegarde et restauration du classeur.
 - **Connexion bancaire :** les nouvelles opérations arrivent de la banque, passent par vos règles et se fusionnent avec celles qui existent au lieu d’apparaître en double. Avec vos propres identifiants, via [SimpleFIN](https://www.simplefin.org/), [Enable Banking](https://enablebanking.com/) (UE et Royaume-Uni) et, à titre expérimental, [Pluggy](https://pluggy.ai/) (Amérique latine).
-- **Plusieurs devises et utilisateurs :** taux manuels ou en ligne (BCE), plusieurs utilisateurs gérés par l’administrateur, classeurs partagés ; l’application est en anglais et en italien, et en allemand et en français (bêta).
+- **Plusieurs devises et utilisateurs :** taux manuels ou en ligne (BCE), plusieurs utilisateurs gérés par l’administrateur, classeurs partagés ; l’application est en anglais et en italien, et en allemand, en français et en espagnol (bêta).
 - **Une vue d’ensemble sur mesure :** en haut, ce qui vous attend, en dessous des widgets que vous placez et redimensionnez comme vous voulez, thème clair et sombre dans votre couleur préférée, barre latérale et navigation à réorganiser.
 - **Sécurité :** authentification à deux facteurs, connexion par SSO (OIDC), jetons d’API révocables et secrets chiffrés dans la base de données.
 - **Application installable :** CloudBank s’installe sur téléphone ou ordinateur comme une application, avec des notifications push pour les échéances, et signale quand une nouvelle version est disponible.
