@@ -53,13 +53,24 @@ const TRANSLATED = new Set([
   "stale_preferences",
   "demo_limit",
   "demo_full",
+  "unavailable",
+  "reauth",
+  "flow_not_found",
+  "login_refused",
+  "mail_error",
 ]);
 
 /**
  * Codes whose server text says what the sentence cannot: which provider, what
- * the AI answered, why the backup did not restore. They keep it as a detail.
+ * the AI answered, why the backup did not restore, what the mail server said. They keep it as a detail.
  */
-const KEEP_DETAIL = new Set(["provider_error", "ai_error", "restore_failed"]);
+const KEEP_DETAIL = new Set([
+  "provider_error",
+  "ai_error",
+  "restore_failed",
+  "login_refused",
+  "mail_error",
+]);
 
 /** Turns any error into the words the reader sees. */
 export function errorText(err: unknown, t: TFunction = i18n.t): ErrorText {

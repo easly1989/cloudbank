@@ -10,6 +10,7 @@ export * from "./bills";
 export * from "./push";
 export * from "./ai";
 export * from "./banksync";
+export * from "./mail";
 export * from "./automation";
 export * from "./finance";
 export * from "./imports";

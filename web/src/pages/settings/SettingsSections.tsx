@@ -23,6 +23,7 @@ import { UpdateStatusCard } from "../../components/updates/UpdateStatusCard";
 import { useAuth, useAuthConfig } from "../../auth/AuthProvider";
 import { ApiTokensPage } from "../ApiTokensPage";
 import { BankSyncSettings } from "../BankSyncPage";
+import { MailSettings } from "../MailSettings";
 import { PreferencesPage } from "../PreferencesPage";
 import { WalletSettingsPage } from "../WalletSettingsPage";
 import { UsersPage } from "../admin/UsersPage";
@@ -33,9 +34,9 @@ import { SettingsGroup } from "./SettingsLayout";
 // changes here is only which of them belong together.
 //
 // Where a card moved, it moved because the tile says so. Two-factor and API
-// tokens are both "who can get in", so they share a section; the AI key and the
-// bank connections are both "something else acting on your behalf", so they
-// share another; and the navigation layout is appearance, not a page of its own.
+// tokens are both "who can get in", so they share a section; the AI key, the
+// bank connections and the bank mails are all "something else acting on your
+// behalf", so they share another; and the navigation layout is appearance, not a page of its own.
 
 export function GeneralSection() {
   const { t } = useTranslation();
@@ -114,6 +115,9 @@ export function IntegrationsSection() {
           <BankSyncSettings />
         </SettingsGroup>
       )}
+      <SettingsGroup title={t("mail.title")} hint={t("mail.hint")}>
+        <MailSettings />
+      </SettingsGroup>
     </Stack>
   );
 }

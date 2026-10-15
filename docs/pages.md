@@ -436,7 +436,7 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | **Appearance** | Theme and accent, the balances shown, account balances in the sidebar, the footer; the sidebar's navigation |
 | *Your wallet* | Name, owner, pre-registered schedules, the bills category the dashboard's Bills widget lists |
 | **Security** | Two-factor sign-in, API tokens, notifications |
-| **Bank sync & AI** | Bank connections ([Automatic bank sync](bank-sync.md)) and the optional AI category suggestions |
+| **Bank sync, mail & AI** | Bank connections ([Automatic bank sync](bank-sync.md)), the bank's notification mails read from a mailbox, and the optional AI category suggestions |
 | **Import & export** | Imports ([Importing transactions](import.md)), exports, backups and a database check |
 | **People** | Administrators only: the people who can sign in |
 | **About** | The version, the licence and the source code; for administrators, whether a newer CloudBank is out and the switch for the daily check ([Upgrading](backup.md#upgrading)) |

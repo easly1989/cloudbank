@@ -248,6 +248,37 @@ type InstanceSetting struct {
 	Value string
 }
 
+type MailMessage struct {
+	ID         int64
+	MailboxID  int64
+	Uid        int64
+	MessageID  string
+	Sender     string
+	Subject    string
+	ReceivedAt string
+	Body       string
+	Outcome    string
+	CreatedAt  string
+}
+
+type Mailbox struct {
+	ID           int64
+	WalletID     int64
+	CreatedBy    sql.NullInt64
+	Provider     string
+	Address      string
+	Secret       string
+	Folder       string
+	Paused       int64
+	UidValidity  int64
+	LastUid      int64
+	Status       string
+	StatusDetail string
+	LastCheckAt  sql.NullString
+	LastMailAt   sql.NullString
+	CreatedAt    string
+}
+
 type MfaRecoveryCode struct {
 	ID        int64
 	UserID    int64
