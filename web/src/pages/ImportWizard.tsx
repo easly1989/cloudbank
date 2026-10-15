@@ -493,7 +493,7 @@ export function ImportWizard() {
                         />
                       </Table.Td>
                       <Table.Td>{r.date || "—"}</Table.Td>
-                      <Table.Td>{r.payee}</Table.Td>
+                      <Table.Td data-cb-sensitive>{r.payee}</Table.Td>
                       <Table.Td>
                         <Select
                           aria-label={t("importCsv.fields.category")}
@@ -521,7 +521,9 @@ export function ImportWizard() {
                           maxTags={6}
                         />
                       </Table.Td>
-                      <Table.Td ta="right">{r.error ? "—" : fmtAmount(r.amount)}</Table.Td>
+                      <Table.Td ta="right" data-cb-sensitive>
+                        {r.error ? "—" : fmtAmount(r.amount)}
+                      </Table.Td>
                       <Table.Td>
                         <Group gap={4}>
                           {r.match === "update" && !r.candidates?.length && (

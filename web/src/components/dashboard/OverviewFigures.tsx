@@ -184,6 +184,7 @@ function Figure({
         {label}
       </Text>
       <Text
+        data-cb-sensitive
         ff="monospace"
         c={colour}
         lh={1.3}

@@ -67,7 +67,7 @@ export function BillsList({
       <Group key={b.scheduleId} justify="space-between" wrap="nowrap" gap="xs">
         <Box style={{ minWidth: 0 }}>
           <Group gap={6} wrap="nowrap">
-            <Text size="sm" truncate>
+            <Text data-cb-sensitive size="sm" truncate>
               {b.name}
             </Text>
             <Badge size="xs" variant="dot" color={STATE_COLOR[b.state]}>
@@ -86,7 +86,7 @@ export function BillsList({
           </Text>
         </Box>
         <Group gap={4} wrap="nowrap">
-          <Text size="sm" fw={500} c={amountColor(b.amount)}>
+          <Text data-cb-sensitive size="sm" fw={500} c={amountColor(b.amount)}>
             {formatMinor(b.amount, b.currency)}
           </Text>
           {postable ? (
@@ -119,7 +119,7 @@ export function BillsList({
   return (
     <Stack gap="sm">
       <Group justify="space-between" wrap="nowrap">
-        <Text fw={600}>
+        <Text data-cb-sensitive fw={600}>
           {base ? formatMinor(data?.totalDue ?? 0, base) : (data?.totalDue ?? 0)} {t("bills.toPay")}
         </Text>
         <Group gap={6} wrap="nowrap">

@@ -190,6 +190,7 @@ export function BalancesTab({ ctx }: { ctx: ReportContext }) {
               value={formatMinor(res.todayTotal, fmt)}
               color={res.todayTotal < 0 ? colors.out : undefined}
               sub={`${signed(res.todayTotal - res.startTotal)} ${since}`}
+              subSensitive
             />
           )}
           {past && (
@@ -199,6 +200,7 @@ export function BalancesTab({ ctx }: { ctx: ReportContext }) {
               label={periodPhrase(period, t, i18n.language, "atEnd")}
               value={formatMinor(end, fmt)}
               sub={`${signed(end - res.startTotal)} ${since}`}
+              subSensitive
             />
           )}
           {projects && (

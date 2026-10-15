@@ -196,6 +196,7 @@ export function SpendingTab({ ctx }: { ctx: ReportContext }) {
             <div className={classes.rank} data-testid="spending-list">
               {shown.map((r) => (
                 <RankRow
+                  privateName={by === "payee"}
                   key={r.key}
                   row={{ ...r, label: labelOf(r.key, r.label) }}
                   max={Math.max(...rows.map((x) => Math.max(x.amount, x.prev ?? 0)))}
@@ -208,6 +209,7 @@ export function SpendingTab({ ctx }: { ctx: ReportContext }) {
               ))}
               {lumped && (
                 <RankRow
+                  privateName={by === "payee"}
                   row={{
                     key: "other",
                     label: t("reports.spending.other", { count: rest.length }),
@@ -256,7 +258,13 @@ export function SpendingTab({ ctx }: { ctx: ReportContext }) {
           onClose={() => setPicked(null)}
           position="bottom"
           size="auto"
-          title={selectedRow ? labelOf(selectedRow.key, selectedRow.label) : undefined}
+          title={
+            selectedRow ? (
+              <span data-cb-sensitive={by === "payee" || undefined}>
+                {labelOf(selectedRow.key, selectedRow.label)}
+              </span>
+            ) : undefined
+          }
         >
           {selectedRow && (
             <Drill
@@ -280,6 +288,7 @@ function RankRow({
   fmt,
   expands = false,
   onClick,
+  privateName = false,
 }: {
   row: Row;
   max: number;
@@ -290,6 +299,8 @@ function RankRow({
   fmt: MoneyFormat;
   expands?: boolean;
   onClick: () => void;
+  /** The row names a payee: hidden in privacy mode (#626). */
+  privateName?: boolean;
 }) {
   const { t } = useTranslation();
   const pct = total ? Math.round((row.amount / total) * 100) : 0;
@@ -301,7 +312,7 @@ function RankRow({
     else if (d === 0) change = t("reports.spending.sameShort");
     else
       change = (
-        <span style={{ color: d > 0 ? up : undefined }}>
+        <span style={{ color: d > 0 ? up : undefined }} data-cb-sensitive>
           {`${d > 0 ? "+" : "−"}${formatMinor(Math.abs(d), fmt)}`}
         </span>
       );
@@ -316,7 +327,7 @@ function RankRow({
     >
       <span className={classes.rowName}>
         <span className={classes.dot} style={{ background: row.color }} />
-        <span>{row.label}</span>
+        <span data-cb-sensitive={privateName || undefined}>{row.label}</span>
       </span>
       <span className={classes.rowAmount}>{formatMinor(row.amount, fmt)}</span>
       <span className={classes.track}>
@@ -406,7 +417,7 @@ function Drill({ ctx, row, bare = false }: { ctx: ReportContext; row: Row; bare?
     <>
       {!bare && (
         <Text fw={600} mb={4}>
-          {row.label}{" "}
+          <span data-cb-sensitive={ctx.state.by === "payee" || undefined}>{row.label}</span>{" "}
           <Text span c="dimmed" size="sm" fw={400}>
             · {t("reports.spending.count", { count: txns.length })}
           </Text>
@@ -423,8 +434,10 @@ function Drill({ ctx, row, bare = false }: { ctx: ReportContext; row: Row; bare?
             <span className={classes.mono} style={{ color: "var(--mantine-color-dimmed)" }}>
               {shortDay(x.date, i18n.language)}
             </span>
-            <span>{x.payeeName || x.memo || x.categoryName}</span>
-            <span className={classes.mono}>{formatMinor(x.amount, fmt)}</span>
+            <span data-cb-sensitive>{x.payeeName || x.memo || x.categoryName}</span>
+            <span className={classes.mono} data-cb-sensitive>
+              {formatMinor(x.amount, fmt)}
+            </span>
           </div>
         ))}
       </div>

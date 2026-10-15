@@ -243,7 +243,7 @@ export function VehiclePhoneList({ lines, format, actions }: ListProps) {
             </span>
             <span className={classes.prowMeta}>
               {l.fills > 0 ? (
-                <span data-truncate-ok>
+                <span data-cb-sensitive data-truncate-ok>
                   {[
                     fig.distance(l),
                     l.perKm == null

@@ -138,7 +138,13 @@ export function SpendingHeatmapCard({ walletId }: { walletId: number }) {
           )}
         </Group>
         {base && total > 0 && (
-          <Text size="sm" fw={700} c={expenseColor} style={{ whiteSpace: "nowrap" }}>
+          <Text
+            data-cb-sensitive
+            size="sm"
+            fw={700}
+            c={expenseColor}
+            style={{ whiteSpace: "nowrap" }}
+          >
             {formatMinor(total, base)}
           </Text>
         )}
@@ -189,14 +195,14 @@ export function SpendingHeatmapCard({ walletId }: { walletId: number }) {
               label={
                 <Stack gap={2}>
                   <Text size="xs" fw={700}>
-                    {fmtDate(date)} · {formatMinor(s, base)}
+                    {fmtDate(date)} · <span data-cb-sensitive>{formatMinor(s, base)}</span>
                   </Text>
                   {cats.slice(0, TOP_CATS).map((c) => (
                     <Group key={c.label} justify="space-between" gap="md" wrap="nowrap">
                       <Text size="xs" truncate>
                         {c.label}
                       </Text>
-                      <Text size="xs" style={{ whiteSpace: "nowrap" }}>
+                      <Text size="xs" style={{ whiteSpace: "nowrap" }} data-cb-sensitive>
                         {formatMinor(c.amount, base)}
                       </Text>
                     </Group>

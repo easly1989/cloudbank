@@ -54,14 +54,14 @@ export function RecentTransactionsCard({
           {rows.map((r) => (
             <Group key={r.id} justify="space-between" wrap="nowrap" gap="xs">
               <div style={{ minWidth: 0 }}>
-                <Text size="sm" truncate>
+                <Text data-cb-sensitive size="sm" truncate>
                   {r.payeeName || r.memo || "—"}
                 </Text>
                 <Text size="xs" c="dimmed">
                   {fmtDate(r.date)}
                 </Text>
               </div>
-              <Text size="sm" fw={600} c={amountColor(r.amount)}>
+              <Text data-cb-sensitive size="sm" fw={600} c={amountColor(r.amount)}>
                 {formatMinor(r.amount, accountFmt(account))}
               </Text>
             </Group>

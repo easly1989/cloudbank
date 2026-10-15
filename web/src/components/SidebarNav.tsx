@@ -198,7 +198,7 @@ function SidebarBalances() {
             <Text size="sm" c="dimmed" truncate>
               {a.name}
             </Text>
-            <Text size="sm" ff="monospace" c={negativeOnlyColor(a.balance)}>
+            <Text data-cb-sensitive size="sm" ff="monospace" c={negativeOnlyColor(a.balance)}>
               {formatMinor(a.balance, {
                 fracDigits: a.currencyFracDigits,
                 decimalChar: a.currencyDecimalChar,

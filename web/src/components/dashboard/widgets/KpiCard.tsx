@@ -44,7 +44,12 @@ export function KpiCard({
           w={130}
         />
       </Group>
-      <Text fw={700} size="xl" c={m.value == null ? undefined : negativeOnlyColor(m.value)}>
+      <Text
+        data-cb-sensitive
+        fw={700}
+        size="xl"
+        c={m.value == null ? undefined : negativeOnlyColor(m.value)}
+      >
         {base && m.value != null ? formatMinor(m.value, base) : "—"}
       </Text>
     </Card>
