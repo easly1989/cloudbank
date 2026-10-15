@@ -78,6 +78,9 @@ language.
   none.
 - **The status picker fits its card at 320px**, and its icons sit centred in the
   entry sheet.
+- **The bills category says what it filters.** Its hint in Settings › Wallet
+  still sent you to the Bills page, gone into Schedules in 3.7.0; it now names
+  the dashboard's Bills widget and the overdue bills reminder.
 
 ## [3.7.0] — 2026-10-06
 
