@@ -68,6 +68,29 @@ const EXCEPTIONS = {
     // A bank transfer to someone else is an Überweisung, not an Umbuchung.
     "paymentModes.4": ["transfer"],
   },
+  es: {
+    // "Register" as the verb: registrar an occurrence, or an app.
+    "schedules.state.auto": ["register"],
+    "schedules.meta.auto": ["register"],
+    "schedules.toRegister": ["register"],
+    "schedules.register": ["register"],
+    "schedules.sheet.auto": ["register"],
+    "schedules.sheet.notNext": ["register"],
+    "schedules.form.autoPostHint": ["register"],
+    "banksync.eb.configHint": ["register"],
+    // The page is Programados, and its list view is the Lista.
+    "nav.schedules": ["schedule"],
+    "schedules.title": ["schedule"],
+    "schedules.view.list": ["schedule"],
+    "tours.schedules.offer": ["schedule"],
+    // "Schedule" as the repetition settings, not a schedule.
+    "schedules.transferNote": ["schedule"],
+    "templates.col.schedule": ["schedule"],
+    // The verbs, not the statuses.
+    "transactions.savedNew": ["cleared"],
+    "tours.schedules.needs.body": ["reconciled"],
+    "accessCodes.shownOnce": ["void"],
+  },
   fr: {
     // "Register" as the verb: saisir an occurrence, enregistrer an app.
     "schedules.state.auto": ["register"],

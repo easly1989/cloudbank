@@ -326,6 +326,21 @@ const SAME_IN = {
     "Apostrophe '",
     "version {{version}}",
   ],
+  // Spanish spells these the same as English.
+  es: [
+    "Info",
+    "Auto",
+    "auto",
+    "Manual",
+    "Experimental",
+    "Error",
+    "Total",
+    "Subtotal",
+    "Admin",
+    "Decimal",
+    "General",
+    "Demo",
+  ],
 };
 
 const untranslated = [];
