@@ -68,6 +68,10 @@ type Mailbox struct {
 	CreatedAt    string  `json:"createdAt"`
 	// IMAP is where an IMAP mailbox's server is; nil for Microsoft.
 	IMAP *IMAPSettings `json:"imap"`
+	// AI is how the mailbox uses the AI (#659); AIReady whether it can: whoever
+	// connected it has AI set up.
+	AI      MailboxAI `json:"ai"`
+	AIReady bool      `json:"aiReady"`
 	// Mode is how the listener is reading the mailbox right now: "idle" (the
 	// server tells it about new mail), "polling" (it asks on a timer, for a
 	// server without IDLE), "retry" (it lost the connection and waits to try
@@ -98,6 +102,8 @@ type MailSummary struct {
 	Amount *int64  `json:"amount"`
 	Memo   *string `json:"memo"`
 	Payee  *string `json:"payee"`
+	// ByAI says the AI, not a pattern, read the mail.
+	ByAI bool `json:"byAi"`
 }
 
 // MailDetail is one mail with its text, for the pattern editor.
@@ -165,6 +171,7 @@ type Service struct {
 	canIdle   func(*Session) bool
 	notify    Notify
 	importer  Importer
+	reader    AIReader
 
 	mu     sync.Mutex
 	flows  map[string]*flow
@@ -209,11 +216,11 @@ func (s *Service) Available() bool { return s.enabled() }
 // it also needs an application id to sign in to Microsoft with.
 func (s *Service) MicrosoftAvailable() bool { return s.enabled() && s.ms != nil }
 
-func (s *Service) view(m db.Mailbox) Mailbox {
+func (s *Service) view(ctx context.Context, m db.Mailbox) Mailbox {
 	out := Mailbox{
 		ID: m.ID, Provider: m.Provider, Address: m.Address, Folder: m.Folder,
 		Paused: m.Paused != 0, Status: m.Status, StatusDetail: m.StatusDetail,
-		CreatedAt: m.CreatedAt, IMAP: imapSettings(m),
+		CreatedAt: m.CreatedAt, IMAP: imapSettings(m), AI: aiOf(m), AIReady: s.aiReady(ctx, m),
 	}
 	if m.LastCheckAt.Valid {
 		out.LastCheckAt = &m.LastCheckAt.String
@@ -242,7 +249,7 @@ func (s *Service) ListMailboxes(ctx context.Context, walletID int64) ([]Mailbox,
 	}
 	out := make([]Mailbox, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, s.view(r))
+		out = append(out, s.view(ctx, r))
 	}
 	return out, nil
 }
@@ -424,7 +431,7 @@ func (s *Service) reload(ctx context.Context, walletID, id int64) (Mailbox, erro
 	if err != nil {
 		return Mailbox{}, err
 	}
-	return s.view(m), nil
+	return s.view(ctx, m), nil
 }
 
 func (s *Service) lockFor(id int64) *sync.Mutex {
@@ -734,7 +741,7 @@ func (s *Service) readMails(ctx context.Context, mb db.Mailbox, ids []int64) (cr
 		if err != nil {
 			return created, unread, err
 		}
-		switch s.process(ctx, mb.WalletID, m, patterns).name {
+		switch s.readMail(ctx, mb, m, patterns).name {
 		case OutcomeCreated:
 			created++
 		case OutcomeUnrecognized, OutcomeUnverified:
@@ -760,7 +767,7 @@ func (s *Service) Messages(ctx context.Context, walletID, id int64) ([]MailSumma
 			Outcome: r.Outcome, Detail: r.Detail, Authenticated: r.Authenticated != 0,
 			PatternID: nullID(r.PatternID), TransactionID: nullID(r.TransactionID), AccountID: nullID(r.AccountID),
 			Amount: nullID(r.TransactionAmount), Memo: nullText(r.TransactionMemo),
-			Payee: nullText(r.TransactionPayee),
+			Payee: nullText(r.TransactionPayee), ByAI: r.ByAi != 0,
 		})
 	}
 	return out, nil
@@ -784,7 +791,7 @@ func (s *Service) Message(ctx context.Context, walletID, mailboxID, id int64) (M
 			Outcome: m.Outcome, Detail: m.Detail, Authenticated: m.Authenticated != 0,
 			PatternID: nullID(m.PatternID), TransactionID: nullID(m.TransactionID), AccountID: nullID(m.AccountID),
 			Amount: nullID(m.TransactionAmount), Memo: nullText(m.TransactionMemo),
-			Payee: nullText(m.TransactionPayee),
+			Payee: nullText(m.TransactionPayee), ByAI: m.ByAi != 0,
 		},
 		Body: m.Body,
 	}, nil

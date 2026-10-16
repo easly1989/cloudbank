@@ -99,20 +99,35 @@ type outcome struct {
 	detail        string
 	patternID     int64
 	transactionID int64
+	byAI          bool
 }
 
-// process reads one stored mail with the patterns and records what became of
-// it. The caller holds the mailbox's lock.
+// process reads one stored mail with the given patterns only and records what
+// became of it. The caller holds the mailbox's lock.
 func (s *Service) process(ctx context.Context, walletID int64, m db.MailMessage, patterns []*compiled) outcome {
+	return s.save(ctx, m, s.byPatterns(ctx, walletID, m, patterns))
+}
+
+// byPatterns reads a mail with the patterns and writes what the first that
+// reads it makes.
+func (s *Service) byPatterns(ctx context.Context, walletID int64, m db.MailMessage, patterns []*compiled) outcome {
 	ev := evaluate(patterns, inputOf(m), s.fracOf(ctx, walletID))
-	out := outcome{name: ev.outcome}
-	if ev.pattern != nil {
-		out = s.insert(ctx, walletID, m, ev)
+	if ev.pattern == nil {
+		return outcome{name: ev.outcome}
 	}
+	if ev.err != nil {
+		return outcome{name: OutcomeFailed, detail: errorText(ev.err), patternID: ev.pattern.p.ID}
+	}
+	return s.insertTx(ctx, walletID, m, ev.tx, ev.pattern.p.ID)
+}
+
+// save records what became of a mail.
+func (s *Service) save(ctx context.Context, m db.MailMessage, out outcome) outcome {
 	err := s.q.SetMailMessageOutcome(ctx, db.SetMailMessageOutcomeParams{
 		Outcome: out.name, Detail: out.detail,
 		PatternID:     sql.NullInt64{Int64: out.patternID, Valid: out.patternID > 0},
 		TransactionID: sql.NullInt64{Int64: out.transactionID, Valid: out.transactionID > 0},
+		ByAi:          flag(out.byAI),
 		ID:            m.ID,
 	})
 	if err != nil {
@@ -121,22 +136,19 @@ func (s *Service) process(ctx context.Context, walletID int64, m db.MailMessage,
 	return out
 }
 
-// insert turns a read mail into a Cleared transaction through the import
+// insertTx turns a read mail into a Cleared transaction through the import
 // pipeline. A mail whose ref the account already has is a duplicate; a same
 // amount on the same day is not, since two coffees at one bar are two.
-func (s *Service) insert(ctx context.Context, walletID int64, m db.MailMessage, ev evaluation) outcome {
-	out := outcome{patternID: ev.pattern.p.ID}
+// patternID is the pattern that read it, or 0 for the AI.
+func (s *Service) insertTx(ctx context.Context, walletID int64, m db.MailMessage, tx Extracted, patternID int64) outcome {
+	out := outcome{patternID: patternID}
 	fail := func(err error) outcome {
 		out.name, out.detail = OutcomeFailed, errorText(err)
 		return out
 	}
-	if ev.err != nil {
-		return fail(ev.err)
-	}
 	if s.importer == nil {
 		return fail(errors.New("transactions cannot be written here"))
 	}
-	tx := ev.tx
 	frac, _ := s.fracOf(ctx, walletID)(tx.AccountID)
 	ref := importRef(m.MessageID)
 	row := importio.Row{

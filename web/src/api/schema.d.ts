@@ -514,6 +514,29 @@ export interface paths {
         patch: operations["updateMailbox"];
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/ai": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Choose how the mailbox's mails are read, with the patterns, the AI or both
+         * @description A mode with the AI uses the AI settings of whoever connected the mailbox, and needs them complete. Only authenticated mails from the listed senders (addresses, or domains with their subdomains) are ever sent to the AI provider, with card numbers, IBANs and other long numbers hidden first. The AI reads the amount, the date, the direction and a description, which fills the chosen field; the account is always the one given here. An AI answer that is not a usable payment leaves the mail unrecognised.
+         */
+        put: operations["updateMailboxAI"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/folders": {
         parameters: {
             query?: never;
@@ -3255,6 +3278,9 @@ export interface components {
             createdAt: string;
             /** @description where an IMAP mailbox's server is; null for Microsoft */
             imap: components["schemas"]["IMAPSettings"] | null;
+            ai: components["schemas"]["MailboxAI"];
+            /** @description whether whoever connected the mailbox has AI set up, so a mode with the AI can be chosen */
+            aiReady: boolean;
             /**
              * @description How the server is reading the mailbox right now: idle (the mail server announces new mail), polling (asked on a timer, for a server without IDLE), retry (the connection was lost and is about to be tried again), or empty when nothing is listening.
              * @enum {string}
@@ -3262,6 +3288,26 @@ export interface components {
             mode: "idle" | "polling" | "retry" | "";
             /** @description the next full check, or the next attempt while retrying; RFC3339 UTC */
             nextCheckAt: string | null;
+        };
+        /** @description How a mailbox uses the AI (#659). */
+        MailboxAI: {
+            /**
+             * @description patterns only; the patterns, then the AI for what none read; the AI, then the patterns for what it did not take for a payment; the AI only
+             * @enum {string}
+             */
+            mode: "patterns" | "patterns_ai" | "ai_patterns" | "ai";
+            /**
+             * Format: int64
+             * @description where what the AI reads goes; required with the AI
+             */
+            accountId?: number | null;
+            /**
+             * @description the field the AI's description fills
+             * @enum {string}
+             */
+            field?: "memo" | "payee";
+            /** @description the bank's senders, addresses or domains; required with the AI */
+            senders?: string[];
         };
         /** @description An IMAP mailbox's server and login name; never its password. */
         IMAPSettings: {
@@ -3318,7 +3364,7 @@ export interface components {
             /** @description the mail's Date header with its offset, RFC3339 */
             receivedAt: string;
             /**
-             * @description unverified: a pattern would read it, but the sender was not authenticated; duplicate: the account already has its transaction.
+             * @description unverified: a pattern would read it, or it is from one of the senders the AI reads, but the sender was not authenticated; duplicate: the account already has its transaction.
              * @enum {string}
              */
             outcome: "unrecognized" | "unverified" | "created" | "duplicate" | "failed";
@@ -3343,6 +3389,8 @@ export interface components {
             memo: string | null;
             /** @description that transaction's payee */
             payee: string | null;
+            /** @description the AI, not a pattern, read the mail (#659) */
+            byAi: boolean;
         };
         MailDetail: components["schemas"]["MailSummary"] & {
             body: string;
@@ -5955,6 +6003,42 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    updateMailboxAI: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MailboxAI"];
+            };
+        };
+        responses: {
+            /** @description The mailbox. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Mailbox"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description ai_not_configured: a mode with the AI was chosen, and whoever connected the mailbox has no AI set up. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     listMailboxFolders: {
