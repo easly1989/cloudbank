@@ -1096,7 +1096,6 @@
     "imapTitle": "Anderes Postfach",
     "imapHint": "Gmail, Libero, Virgilio, iCloud, Yahoo, Fastmail, Aruba: mit einem App-Passwort, nie mit dem deines Kontos.",
     "imapConnect": "Per IMAP verbinden",
-    "soon": "Demnächst",
     "warning": "Wer diesen Zugang erhält, kann das <b>ganze</b> Postfach lesen, nicht nur den gewählten Ordner: Kein Anbieter erlaubt, ihn einzuschränken. CloudBank liest nur einen Ordner und ändert nichts, aber für die stärkste Abschottung nimm ein Postfach, das nur die E-Mails deiner Bank empfängt. Wenn du glaubst, dass der Zugang gestohlen wurde, widerrufe ihn in deinem Konto.",
     "unavailable": "Zum Lesen der Bank-E-Mails braucht der Server CB_SECRET_KEY, damit die Zugangsdaten des Postfachs verschlüsselt gespeichert werden. Bitte die Person, die dieses CloudBank betreibt, ihn zu setzen.",
     "today": "heute {{time}}",
@@ -1255,6 +1254,48 @@
       "errDateFormat": "Das Format braucht DD und MM, zum Beispiel DD.MM oder DD/MM/YYYY.",
       "needAccount": "Wähle das Konto, um es an den letzten E-Mails auszuprobieren.",
       "invalidSubject": "Der Ausdruck für den Betreff ist ungültig"
+    },
+    "imap": {
+      "title": "Per IMAP verbinden",
+      "reconnectTitle": "Neues App-Passwort",
+      "address": "E-Mail-Adresse",
+      "provider": "Anbieter",
+      "other": "Ein anderer Server",
+      "hint": {
+        "gmail": "Gmail verlangt ein App-Passwort, das die Bestätigung in zwei Schritten voraussetzt.",
+        "libero": "Mit aktivem Password Sicura verlangt Libero ein App-Passwort mit 16 Zeichen.",
+        "virgilio": "Mit aktivem Password Sicura verlangt Virgilio ein App-Passwort mit 16 Zeichen.",
+        "icloud": "iCloud verlangt ein app-spezifisches Passwort, das die Zwei-Faktor-Authentifizierung voraussetzt.",
+        "yahoo": "Yahoo verlangt ein App-Passwort, das du in den Sicherheitseinstellungen deines Kontos erstellst.",
+        "fastmail": "Fastmail nimmt nur ein App-Passwort an: Das deines Kontos wird abgelehnt.",
+        "aruba": "Aruba-Postfächer haben kein App-Passwort: Nimm das des Postfachs.",
+        "other": "Gib den IMAP-Server deines Anbieters ein. Die Verbindung ist immer verschlüsselt."
+      },
+      "guide": "Anleitung von {{name}}",
+      "password": "App-Passwort",
+      "passwordMailbox": "Passwort des Postfachs",
+      "passwordHint": "Wird verschlüsselt gespeichert und nie wieder angezeigt, auch dir nicht.",
+      "serverLine": "{{host}} · Port {{port}} · {{security}}",
+      "change": "Ändern",
+      "host": "IMAP-Server",
+      "port": "Port",
+      "security": "Verschlüsselung",
+      "securityHint": "TLS verschlüsselt ab dem ersten Byte (meist Port 993). STARTTLS wechselt vor der Anmeldung zur Verschlüsselung (meist Port 143); ein Server, der es nicht anbietet, bekommt kein Passwort.",
+      "username": "Benutzername",
+      "usernameHint": "Nur wenn dein Anbieter etwas anderes als die Adresse verlangt.",
+      "outlook": "Outlook.com, Hotmail und Live nehmen keine App-Passwörter an: Verbinde sie über die Anmeldung mit Microsoft.",
+      "connect": "Verbinden",
+      "save": "Speichern",
+      "trying": "Anmeldung beim Mailserver…",
+      "saved": "Neues Passwort für {{address}} gespeichert",
+      "newPassword": "Neues App-Passwort",
+      "statusReauth": "Der Mailserver hat das App-Passwort abgelehnt.",
+      "refusedHint": "Prüfe die Adresse und das App-Passwort. Das Passwort deines Kontos funktioniert per IMAP meist nicht.",
+      "tlsHint": "Prüfe Server und Verschlüsselung: Bei STARTTLS muss der Server es anbieten.",
+      "errAddress": "Eine Adresse wie name@example.com",
+      "errPassword": "Zum Verbinden wird das Passwort gebraucht",
+      "errHost": "Der Server ist ein Name wie imap.example.com",
+      "errPort": "Eine Zahl von 1 bis 65535"
     }
   },
   "search": {
@@ -2721,6 +2762,9 @@
       "notFound": "Es ist nicht mehr da: Vielleicht wurde es gelöscht.",
       "server": "Auf dem Server ist etwas schiefgegangen.",
       "other": "Der Vorgang konnte nicht abgeschlossen werden."
-    }
+    },
+    "host_not_public": "Dieser Server ist nicht im Internet: CloudBank verbindet sich nicht mit seinem eigenen Netz.",
+    "unreachable": "Der Mailserver antwortet nicht: Prüfe Name und Port.",
+    "tls_failed": "Die Verbindung zum Mailserver konnte nicht verschlüsselt werden."
   }
 }

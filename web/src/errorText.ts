@@ -59,6 +59,9 @@ const TRANSLATED = new Set([
   "login_refused",
   "mail_error",
   "microsoft_error",
+  "host_not_public",
+  "unreachable",
+  "tls_failed",
 ]);
 
 /**
@@ -72,6 +75,8 @@ const KEEP_DETAIL = new Set([
   "login_refused",
   "mail_error",
   "microsoft_error",
+  "unreachable",
+  "tls_failed",
 ]);
 
 /** Turns any error into the words the reader sees. */

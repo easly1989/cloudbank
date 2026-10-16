@@ -41,6 +41,7 @@ var (
 // Providers and mailbox states.
 const (
 	ProviderMicrosoft = "microsoft"
+	ProviderIMAP      = "imap"
 
 	StatusOK     = "ok"
 	StatusError  = "error"
@@ -65,6 +66,8 @@ type Mailbox struct {
 	LastCheckAt  *string `json:"lastCheckAt"`
 	LastMailAt   *string `json:"lastMailAt"`
 	CreatedAt    string  `json:"createdAt"`
+	// IMAP is where an IMAP mailbox's server is; nil for Microsoft.
+	IMAP *IMAPSettings `json:"imap"`
 	// Mode is how the listener is reading the mailbox right now: "idle" (the
 	// server tells it about new mail), "polling" (it asks on a timer, for a
 	// server without IDLE), "retry" (it lost the connection and waits to try
@@ -154,6 +157,7 @@ type Service struct {
 	seal      func(string) string
 	open      func(string) string
 	outlook   Endpoint
+	localIMAP string
 	tokenAuth func(user, token string) Credentials
 	now       func() time.Time
 	keep      int
@@ -199,13 +203,17 @@ func NewService(read, write *sql.DB, ms *Microsoft) *Service {
 func (s *Service) SetOutlook(ep Endpoint) { s.outlook = ep }
 
 // Available reports whether mailboxes can be connected here.
-func (s *Service) Available() bool { return s.enabled() && s.ms != nil }
+func (s *Service) Available() bool { return s.enabled() }
+
+// MicrosoftAvailable reports whether Outlook.com mailboxes can be connected:
+// it also needs an application id to sign in to Microsoft with.
+func (s *Service) MicrosoftAvailable() bool { return s.enabled() && s.ms != nil }
 
 func (s *Service) view(m db.Mailbox) Mailbox {
 	out := Mailbox{
 		ID: m.ID, Provider: m.Provider, Address: m.Address, Folder: m.Folder,
 		Paused: m.Paused != 0, Status: m.Status, StatusDetail: m.StatusDetail,
-		CreatedAt: m.CreatedAt,
+		CreatedAt: m.CreatedAt, IMAP: imapSettings(m),
 	}
 	if m.LastCheckAt.Valid {
 		out.LastCheckAt = &m.LastCheckAt.String
@@ -250,7 +258,7 @@ func (s *Service) get(ctx context.Context, walletID, id int64) (db.Mailbox, erro
 // StartMicrosoft begins a device-code sign-in. A mailboxID above zero signs an
 // existing mailbox in again, keeping its folder and history.
 func (s *Service) StartMicrosoft(ctx context.Context, walletID, userID, mailboxID int64) (Flow, error) {
-	if !s.Available() {
+	if !s.MicrosoftAvailable() {
 		return Flow{}, ErrUnavailable
 	}
 	if mailboxID > 0 {
@@ -459,17 +467,32 @@ func (s *Service) accessToken(ctx context.Context, mb db.Mailbox) (string, error
 // withSession logs in to the mailbox and runs fn. The caller holds the
 // mailbox's lock, so two checks never race on the cursor or the token.
 func (s *Service) withSession(ctx context.Context, mb db.Mailbox, fn func(*Session) error) error {
-	if mb.Provider != ProviderMicrosoft || s.ms == nil {
-		return fmt.Errorf("%w: unknown provider %q", ErrInvalid, mb.Provider)
-	}
-	sess, err := s.login(ctx, mb, func(cred Credentials) (*Session, error) {
-		return Connect(ctx, s.outlook, cred)
+	sess, err := s.connectTo(ctx, mb, func(ep Endpoint, cred Credentials) (*Session, error) {
+		return Connect(ctx, ep, cred)
 	})
 	if err != nil {
 		return err
 	}
 	defer sess.Close()
 	return fn(sess)
+}
+
+// connectTo logs in to the mailbox with its stored credential, through
+// connect: a plain session or a listening one.
+func (s *Service) connectTo(ctx context.Context, mb db.Mailbox, connect func(Endpoint, Credentials) (*Session, error)) (*Session, error) {
+	switch {
+	case !s.enabled():
+		return nil, ErrUnavailable
+	case mb.Provider == ProviderIMAP:
+		return s.imapLogin(mb, connect)
+	case mb.Provider == ProviderMicrosoft && s.ms != nil:
+		return s.login(ctx, mb, func(cred Credentials) (*Session, error) {
+			return connect(s.outlook, cred)
+		})
+	case mb.Provider == ProviderMicrosoft:
+		return nil, ErrUnavailable
+	}
+	return nil, fmt.Errorf("%w: unknown provider %q", ErrInvalid, mb.Provider)
 }
 
 // login connects with the mailbox's access token. A refused token is most
@@ -499,6 +522,9 @@ func (s *Service) record(ctx context.Context, mb db.Mailbox, err error) {
 	case err == nil:
 	case errors.Is(err, ErrReauth):
 		status, detail = StatusReauth, "sign in to Microsoft again"
+		if le := new(LoginError); errors.As(err, &le) {
+			detail = "the mail server refused the app password: " + le.Text
+		}
 	default:
 		status, detail = StatusError, err.Error()
 	}

@@ -303,6 +303,10 @@ type Mailbox struct {
 	LastMailAt   sql.NullString
 	CreatedAt    string
 	Alerted      int64
+	ImapHost     string
+	ImapPort     int64
+	ImapSecurity string
+	ImapUsername string
 }
 
 type MfaRecoveryCode struct {

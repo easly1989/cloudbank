@@ -122,6 +122,11 @@ func (s *Service) Run(ctx context.Context, logger *slog.Logger) {
 		} else {
 			want := make(map[int64]db.Mailbox, len(rows))
 			for _, r := range rows {
+				// Without an application id a Microsoft mailbox cannot be
+				// reached: listening would fail and restart on every look.
+				if r.Provider == ProviderMicrosoft && s.ms == nil {
+					continue
+				}
 				want[r.ID] = r
 			}
 			for id, w := range running {
@@ -299,14 +304,14 @@ func (s *Service) openWatch(ctx context.Context, mb db.Mailbox, wake chan<- stru
 	if err != nil {
 		return nil, err
 	}
-	if fresh.Provider != ProviderMicrosoft || s.ms == nil {
-		return nil, ErrUnavailable
-	}
-	sess, err := s.login(ctx, fresh, func(cred Credentials) (*Session, error) {
-		return connectWatch(ctx, s.outlook, cred, wake)
+	sess, err := s.connectTo(ctx, fresh, func(ep Endpoint, cred Credentials) (*Session, error) {
+		return connectWatch(ctx, ep, cred, wake)
 	})
 	if err != nil {
-		s.record(ctx, fresh, err)
+		// A server that cannot run the feature says nothing about the mailbox.
+		if !errors.Is(err, ErrUnavailable) {
+			s.record(ctx, fresh, err)
+		}
 		return nil, err
 	}
 	return sess, nil

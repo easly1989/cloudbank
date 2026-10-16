@@ -1096,7 +1096,6 @@
     "imapTitle": "Altra casella",
     "imapHint": "Gmail, Libero, Virgilio, iCloud, Yahoo, Fastmail, Aruba: con una password per app, mai quella del tuo account.",
     "imapConnect": "Collega con IMAP",
-    "soon": "In arrivo",
     "warning": "Chi ottiene questo accesso può leggere <b>tutta</b> la casella, non solo la cartella che scegli: nessun provider permette di limitarlo. CloudBank legge una sola cartella e non modifica nulla, ma per il massimo isolamento usa una casella che riceve solo le mail della banca. Se pensi che l'accesso sia stato rubato, revocalo dal tuo account.",
     "unavailable": "Per leggere le mail della banca il server deve avere CB_SECRET_KEY, così la credenziale della casella è conservata cifrata. Chiedi a chi gestisce questo CloudBank di impostarla.",
     "today": "oggi {{time}}",
@@ -1255,6 +1254,48 @@
       "errDirMark": "Segna nella mail la parola che dice se è un'entrata o un'uscita.",
       "errDirGroup": "L'espressione deve leggere la direzione: (?P<direction>…).",
       "invalidSubject": "L'espressione dell'oggetto non è valida"
+    },
+    "imap": {
+      "title": "Collega con IMAP",
+      "reconnectTitle": "Nuova password per app",
+      "address": "Indirizzo email",
+      "provider": "Provider",
+      "other": "Un altro server",
+      "hint": {
+        "gmail": "Gmail vuole una password per app, che richiede la verifica in due passaggi attiva.",
+        "libero": "Con Password Sicura attiva, Libero vuole una password per app di 16 caratteri.",
+        "virgilio": "Con Password Sicura attiva, Virgilio vuole una password per app di 16 caratteri.",
+        "icloud": "iCloud vuole una password specifica per app, che richiede l'autenticazione a due fattori attiva.",
+        "yahoo": "Yahoo vuole una password per app, da creare nelle impostazioni di sicurezza dell'account.",
+        "fastmail": "Fastmail accetta solo una password per app: quella dell'account viene rifiutata.",
+        "aruba": "Le caselle Aruba non hanno password per app: usa quella della casella.",
+        "other": "Scrivi il server IMAP del tuo provider. La connessione è sempre cifrata."
+      },
+      "guide": "La guida di {{name}}",
+      "password": "Password per app",
+      "passwordMailbox": "Password della casella",
+      "passwordHint": "Viene salvata cifrata e non viene più mostrata, nemmeno a te.",
+      "serverLine": "{{host}} · porta {{port}} · {{security}}",
+      "change": "Cambia",
+      "host": "Server IMAP",
+      "port": "Porta",
+      "security": "Cifratura",
+      "securityHint": "TLS cifra dal primo byte (di solito porta 993). STARTTLS passa alla cifratura prima dell'accesso (di solito porta 143); a un server che non la offre la password non viene inviata.",
+      "username": "Nome utente",
+      "usernameHint": "Solo se il provider vuole qualcosa di diverso dall'indirizzo.",
+      "outlook": "Outlook.com, Hotmail e Live non accettano password per app: collegale accedendo con Microsoft.",
+      "connect": "Collega",
+      "save": "Salva",
+      "trying": "Accesso al server di posta…",
+      "saved": "Nuova password salvata per {{address}}",
+      "newPassword": "Nuova password per app",
+      "statusReauth": "Il server di posta ha rifiutato la password per app.",
+      "refusedHint": "Controlla l'indirizzo e la password per app. La password del tuo account di solito non funziona con IMAP.",
+      "tlsHint": "Controlla il server e la cifratura: con STARTTLS il server deve offrirla.",
+      "errAddress": "Un indirizzo come nome@example.com",
+      "errPassword": "Per collegarsi serve la password",
+      "errHost": "Il server è un nome come imap.example.com",
+      "errPort": "Un numero da 1 a 65535"
     }
   },
   "search": {
@@ -2721,6 +2762,9 @@
       "notFound": "Non c'è più: forse è stato eliminato.",
       "server": "Qualcosa è andato storto sul server.",
       "other": "Non è stato possibile completare l'operazione."
-    }
+    },
+    "host_not_public": "Quel server non è su internet: CloudBank non si collega alla propria rete.",
+    "unreachable": "Il server di posta non risponde: controlla nome e porta.",
+    "tls_failed": "Non è stato possibile cifrare la connessione al server di posta."
   }
 }

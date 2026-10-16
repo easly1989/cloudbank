@@ -3,10 +3,12 @@ package netguard
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
 	"testing"
+	"time"
 )
 
 func TestIsPublic(t *testing.T) {
@@ -71,5 +73,21 @@ func TestTransportRefusesLoopback(t *testing.T) {
 	_, err := (&http.Client{Transport: Transport()}).Get(srv.URL)
 	if !errors.Is(err, ErrNotPublic) {
 		t.Fatalf("guarded client err = %v, want ErrNotPublic", err)
+	}
+}
+
+// The dialer, for protocols other than HTTP, refuses a loopback server by
+// name and by address: the check runs on the address the name resolves to.
+func TestDialerRefusesLoopback(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = ln.Close() }()
+	_, port, _ := net.SplitHostPort(ln.Addr().String())
+	for _, addr := range []string{ln.Addr().String(), net.JoinHostPort("localhost", port)} {
+		if _, err := Dialer(time.Second).DialContext(context.Background(), "tcp", addr); !errors.Is(err, ErrNotPublic) {
+			t.Errorf("dial %s = %v, want ErrNotPublic", addr, err)
+		}
 	}
 }

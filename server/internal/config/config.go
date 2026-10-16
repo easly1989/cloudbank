@@ -54,6 +54,12 @@ type Config struct {
 	// (CB_MS_AUTHORITY, CB_MS_IMAP); an installation leaves them unset.
 	MicrosoftAuthority string
 	MicrosoftIMAP      string
+	// LocalIMAP is one IMAP server on this machine (a loopback host:port) that
+	// mailboxes connected with an app password may use, without TLS. Every
+	// other server must be on the public internet and encrypted. It exists for
+	// the end-to-end tests' pretend server (CB_MAIL_LOCAL_IMAP); an
+	// installation leaves it unset.
+	LocalIMAP string
 	// UpdateCheck lets the server look, once a day, for a newer CloudBank and
 	// tell admins (#582). CB_UPDATE_CHECK=false turns it off for the whole
 	// installation, whatever an admin chooses in Settings.
@@ -130,6 +136,7 @@ func Load() Config {
 		MicrosoftClientID:  getenv("CB_MS_CLIENT_ID", DefaultMicrosoftClientID),
 		MicrosoftAuthority: strings.TrimSpace(getenv("CB_MS_AUTHORITY", "")),
 		MicrosoftIMAP:      strings.TrimSpace(getenv("CB_MS_IMAP", "")),
+		LocalIMAP:          strings.TrimSpace(getenv("CB_MAIL_LOCAL_IMAP", "")),
 		UpdateCheck:        getBoolEnv("CB_UPDATE_CHECK", true),
 
 		OIDCIssuer:        getenv("CB_OIDC_ISSUER", ""),

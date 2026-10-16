@@ -1096,7 +1096,6 @@
     "imapTitle": "Other mailbox",
     "imapHint": "Gmail, Libero, Virgilio, iCloud, Yahoo, Fastmail, Aruba: with an app password, never your account's own.",
     "imapConnect": "Connect with IMAP",
-    "soon": "Coming soon",
     "warning": "Whoever gets this access can read <b>all</b> of the mailbox, not only the folder you choose: no provider lets it be narrowed. CloudBank reads one folder and changes nothing, but for the strongest isolation use a mailbox that only receives your bank's mails. If you think the access was stolen, revoke it from your account.",
     "unavailable": "Reading bank mails needs CB_SECRET_KEY on the server, so the mailbox credential is stored encrypted. Ask whoever runs this CloudBank to set it.",
     "today": "today {{time}}",
@@ -1255,6 +1254,48 @@
       "errDirMark": "Mark in the mail the word that tells whether it is money in or money out.",
       "errDirGroup": "The expression must read the direction: (?P<direction>…).",
       "invalidSubject": "The subject expression is not valid"
+    },
+    "imap": {
+      "title": "Connect with IMAP",
+      "reconnectTitle": "New app password",
+      "address": "Email address",
+      "provider": "Provider",
+      "other": "Another server",
+      "hint": {
+        "gmail": "Gmail wants an app password, which needs 2-Step Verification on.",
+        "libero": "With Password Sicura on, Libero wants a 16-character app password.",
+        "virgilio": "With Password Sicura on, Virgilio wants a 16-character app password.",
+        "icloud": "iCloud wants an app-specific password, which needs two-factor authentication on.",
+        "yahoo": "Yahoo wants an app password, made in your account's security settings.",
+        "fastmail": "Fastmail takes only an app password: your account's own is refused.",
+        "aruba": "Aruba mailboxes have no app password: use the mailbox's own.",
+        "other": "Type your provider's IMAP server. The connection is always encrypted."
+      },
+      "guide": "{{name}}'s guide",
+      "password": "App password",
+      "passwordMailbox": "Mailbox password",
+      "passwordHint": "Stored encrypted and never shown again, not even to you.",
+      "serverLine": "{{host}} · port {{port}} · {{security}}",
+      "change": "Change",
+      "host": "IMAP server",
+      "port": "Port",
+      "security": "Encryption",
+      "securityHint": "TLS encrypts from the first byte (usually port 993). STARTTLS switches to encryption before the login (usually port 143); a server that does not offer it gets no password.",
+      "username": "Username",
+      "usernameHint": "Only if your provider wants something other than the address.",
+      "outlook": "Outlook.com, Hotmail and Live take no app password: connect them by signing in to Microsoft.",
+      "connect": "Connect",
+      "save": "Save",
+      "trying": "Signing in to the mail server…",
+      "saved": "New password saved for {{address}}",
+      "newPassword": "New app password",
+      "statusReauth": "The mail server refused the app password.",
+      "refusedHint": "Check the address and the app password. Your account's own password usually does not work over IMAP.",
+      "tlsHint": "Check the server and the encryption: with STARTTLS, the server has to offer it.",
+      "errAddress": "An address like name@example.com",
+      "errPassword": "The password is needed to connect",
+      "errHost": "The server is a name like imap.example.com",
+      "errPort": "A number from 1 to 65535"
     }
   },
   "search": {
@@ -2721,6 +2762,9 @@
       "notFound": "It is not there any more: it may have been deleted.",
       "server": "Something went wrong on the server.",
       "other": "The operation could not be completed."
-    }
+    },
+    "host_not_public": "That server is not on the internet: CloudBank does not connect to its own network.",
+    "unreachable": "The mail server does not answer: check its name and port.",
+    "tls_failed": "The connection to the mail server could not be encrypted."
   }
 }
