@@ -4,8 +4,9 @@
 //
 // A Microsoft mailbox is connected with the device-code flow (#655); the
 // folder chosen is then listened to with IDLE, with a full check on a timer as
-// a safety net (#656, watch.go). What arrives is kept in a short history;
-// turning those mails into transactions comes with the models (#657).
+// a safety net (#656, watch.go). What arrives is kept in a short history and
+// read with the mailbox's patterns, which turn a bank's mail into a
+// transaction (#657, pattern.go and ingest.go).
 package mailingest
 
 import (
@@ -79,7 +80,22 @@ type MailSummary struct {
 	Sender     string `json:"sender"`
 	Subject    string `json:"subject"`
 	ReceivedAt string `json:"receivedAt"`
-	Outcome    string `json:"outcome"`
+	// Outcome is what became of the mail (the Outcome constants); Detail says
+	// why one failed.
+	Outcome       string `json:"outcome"`
+	Detail        string `json:"detail"`
+	Authenticated bool   `json:"authenticated"`
+	PatternID     *int64 `json:"patternId"`
+	// TransactionID and AccountID lead to the transaction the mail made, or
+	// the one it duplicates, while it exists.
+	TransactionID *int64 `json:"transactionId"`
+	AccountID     *int64 `json:"accountId"`
+}
+
+// MailDetail is one mail with its text, for the pattern editor.
+type MailDetail struct {
+	MailSummary
+	Body string `json:"body"`
 }
 
 // Flow is a Microsoft sign-in waiting for the user.
@@ -101,9 +117,12 @@ type FlowStatus struct {
 	Mailbox *Mailbox `json:"mailbox,omitempty"`
 }
 
-// CheckResult says how many new mails a check read.
+// CheckResult says how many new mails a check read, how many became
+// transactions, and how many no pattern read.
 type CheckResult struct {
-	New int `json:"new"`
+	New          int `json:"new"`
+	Created      int `json:"created"`
+	Unrecognized int `json:"unrecognized"`
 }
 
 type flow struct {
@@ -136,6 +155,7 @@ type Service struct {
 	timing    watchTiming
 	canIdle   func(*Session) bool
 	notify    Notify
+	importer  Importer
 
 	mu     sync.Mutex
 	flows  map[string]*flow
@@ -571,17 +591,17 @@ func (s *Service) Remove(ctx context.Context, walletID, id int64) error {
 }
 
 // Check reads the mails that arrived in the mailbox's folder since the last
-// check, and keeps them in its history.
+// check, keeps them in its history, and turns those a pattern reads into
+// transactions.
 func (s *Service) Check(ctx context.Context, walletID, id int64) (CheckResult, error) {
 	res, mb, err := s.checkLocked(ctx, walletID, id)
 	if err != nil {
 		return CheckResult{}, err
 	}
-	// Until the models (#657) read them, every new mail is one CloudBank did
-	// not recognise. Announced after the lock is let go, so a slow push
-	// service holds up no other check.
-	if res.New > 0 {
-		s.alertUnrecognized(ctx, mb, res.New)
+	// Announced after the lock is let go, so a slow push service holds up no
+	// other check.
+	if res.Unrecognized > 0 {
+		s.alertUnrecognized(ctx, mb, res.Unrecognized)
 	}
 	return res, nil
 }
@@ -596,6 +616,7 @@ func (s *Service) checkLocked(ctx context.Context, walletID, id int64) (CheckRes
 		return CheckResult{}, mb, err
 	}
 	var res CheckResult
+	var fresh []int64
 	err = s.withSession(ctx, mb, func(sess *Session) error {
 		cur := Cursor{UIDValidity: uint32(mb.UidValidity), LastUID: uint32(mb.LastUid)}
 		mails, next, err := sess.Since(mb.Folder, cur, fetchMax)
@@ -616,22 +637,24 @@ func (s *Service) checkLocked(ctx context.Context, walletID, id int64) (CheckRes
 				received = s.now()
 			}
 			at := received.Format(time.RFC3339)
-			n, ierr := s.q.InsertMailMessage(ctx, db.InsertMailMessageParams{
+			auth := int64(0)
+			if m.Authenticated {
+				auth = 1
+			}
+			ids, ierr := s.q.InsertMailMessage(ctx, db.InsertMailMessageParams{
 				MailboxID: id, Uid: int64(f.UID), MessageID: m.MessageID, Sender: m.From,
-				Subject: m.Subject, ReceivedAt: at, Body: m.Body,
+				Subject: m.Subject, ReceivedAt: at, Body: m.Body, Authenticated: auth,
 			})
 			if ierr != nil {
 				return ierr
 			}
-			if n > 0 {
-				res.New++
+			if len(ids) > 0 {
+				fresh = append(fresh, ids[0])
 				newest = received.UTC().Format(time.RFC3339)
 			}
 		}
+		res.New = len(fresh)
 		if res.New > 0 {
-			if err := s.q.PruneMailMessages(ctx, db.PruneMailMessagesParams{MailboxID: id, MailboxID_2: id, Limit: int64(s.keep)}); err != nil {
-				return err
-			}
 			if err := s.q.TouchMailboxLastMail(ctx, db.TouchMailboxLastMailParams{LastMailAt: sql.NullString{String: newest, Valid: true}, ID: id}); err != nil {
 				return err
 			}
@@ -644,7 +667,46 @@ func (s *Service) checkLocked(ctx context.Context, walletID, id int64) (CheckRes
 		return nil
 	})
 	s.record(ctx, mb, err)
-	return res, mb, err
+	if err != nil {
+		return res, mb, err
+	}
+	// Read with the patterns once the mail server is let go. A mail stored but
+	// not read here (the process stopped) stays unrecognised, and a pattern
+	// saved later can still be applied to it.
+	if len(fresh) > 0 {
+		created, unread, perr := s.readMails(ctx, mb, fresh)
+		if perr != nil {
+			return res, mb, perr
+		}
+		res.Created, res.Unrecognized = created, unread
+		if err := s.q.PruneMailMessages(ctx, db.PruneMailMessagesParams{MailboxID: id, MailboxID_2: id, Limit: int64(s.keep)}); err != nil {
+			return res, mb, err
+		}
+	}
+	return res, mb, nil
+}
+
+// readMails reads the given mails of a mailbox with its patterns. It returns
+// how many became transactions and how many no pattern read. The caller holds
+// the mailbox's lock.
+func (s *Service) readMails(ctx context.Context, mb db.Mailbox, ids []int64) (created, unread int, err error) {
+	patterns, err := s.loadPatterns(ctx, mb.ID)
+	if err != nil {
+		return 0, 0, err
+	}
+	for _, mid := range ids {
+		m, err := s.q.GetMailMessage(ctx, db.GetMailMessageParams{ID: mid, MailboxID: mb.ID})
+		if err != nil {
+			return created, unread, err
+		}
+		switch s.process(ctx, mb.WalletID, m, patterns).name {
+		case OutcomeCreated:
+			created++
+		case OutcomeUnrecognized, OutcomeUnverified:
+			unread++
+		}
+	}
+	return created, unread, nil
 }
 
 // Messages returns the mailbox's history, newest first.
@@ -658,7 +720,40 @@ func (s *Service) Messages(ctx context.Context, walletID, id int64) ([]MailSumma
 	}
 	out := make([]MailSummary, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, MailSummary{ID: r.ID, Sender: r.Sender, Subject: r.Subject, ReceivedAt: r.ReceivedAt, Outcome: r.Outcome})
+		out = append(out, MailSummary{
+			ID: r.ID, Sender: r.Sender, Subject: r.Subject, ReceivedAt: r.ReceivedAt,
+			Outcome: r.Outcome, Detail: r.Detail, Authenticated: r.Authenticated != 0,
+			PatternID: nullID(r.PatternID), TransactionID: nullID(r.TransactionID), AccountID: nullID(r.AccountID),
+		})
 	}
 	return out, nil
+}
+
+// Message returns one mail of the mailbox's history with its text.
+func (s *Service) Message(ctx context.Context, walletID, mailboxID, id int64) (MailDetail, error) {
+	if _, err := s.get(ctx, walletID, mailboxID); err != nil {
+		return MailDetail{}, err
+	}
+	m, err := s.rq.GetMailMessageView(ctx, db.GetMailMessageViewParams{ID: id, MailboxID: mailboxID})
+	if errors.Is(err, sql.ErrNoRows) {
+		return MailDetail{}, ErrNotFound
+	}
+	if err != nil {
+		return MailDetail{}, err
+	}
+	return MailDetail{
+		MailSummary: MailSummary{
+			ID: m.ID, Sender: m.Sender, Subject: m.Subject, ReceivedAt: m.ReceivedAt,
+			Outcome: m.Outcome, Detail: m.Detail, Authenticated: m.Authenticated != 0,
+			PatternID: nullID(m.PatternID), TransactionID: nullID(m.TransactionID), AccountID: nullID(m.AccountID),
+		},
+		Body: m.Body,
+	}, nil
+}
+
+func nullID(v sql.NullInt64) *int64 {
+	if !v.Valid {
+		return nil
+	}
+	return &v.Int64
 }

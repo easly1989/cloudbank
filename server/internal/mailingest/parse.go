@@ -30,6 +30,9 @@ type Message struct {
 	// Body is the text, from the plain-text part when there is one, otherwise
 	// from the HTML part with its markup removed.
 	Body string
+	// Authenticated says the receiving server vouched for the sender: DMARC
+	// passed for the From domain, or a DKIM signature of that domain did.
+	Authenticated bool
 }
 
 // Parse reads a raw RFC 5322 mail.
@@ -55,6 +58,9 @@ func Parse(raw []byte) (Message, error) {
 	if d, err := h.Date(); err == nil {
 		m.Date = d
 	}
+	// Only the first Authentication-Results counts: the receiving server adds
+	// its own on top, and a sender can forge any number below it.
+	m.Authenticated = authenticated(h.Get("Authentication-Results"), m.From)
 
 	var plain, htmlText string
 	for {
@@ -92,6 +98,38 @@ func Parse(raw []byte) (Message, error) {
 	}
 	m.Body = capText(cleanText(body), maxBody)
 	return m, nil
+}
+
+var (
+	reAuthPass   = regexp.MustCompile(`(?i)\b(dmarc|dkim)\s*=\s*pass\b([^;]*)`)
+	reAuthDomain = regexp.MustCompile(`(?i)\bheader\.(?:from|d)\s*=\s*([^\s;]+)`)
+)
+
+// authenticated reads an Authentication-Results header (RFC 8601) for a pass
+// that vouches for from's domain: DMARC for that domain, or DKIM signed by it
+// or by a parent of it (DMARC's relaxed alignment). A DKIM pass for some other
+// domain proves nothing about who the mail claims to be from.
+func authenticated(results, from string) bool {
+	at := strings.LastIndexByte(from, '@')
+	if at < 0 || results == "" {
+		return false
+	}
+	domain := strings.ToLower(from[at+1:])
+	for _, m := range reAuthPass.FindAllStringSubmatch(results, -1) {
+		d := reAuthDomain.FindStringSubmatch(m[2])
+		if d == nil {
+			continue
+		}
+		got := strings.ToLower(strings.Trim(d[1], `"`))
+		// A bare top-level domain never signs anything; never let one match.
+		if !strings.Contains(got, ".") {
+			continue
+		}
+		if got == domain || strings.HasSuffix(domain, "."+got) {
+			return true
+		}
+	}
+	return false
 }
 
 var (

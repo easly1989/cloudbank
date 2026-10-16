@@ -526,7 +526,7 @@ export interface paths {
         put?: never;
         /**
          * Read the mails that arrived in the folder since the last check
-         * @description Read-only: the folder is opened with EXAMINE and bodies are fetched with BODY.PEEK, so nothing is marked read or moved. Only mails that arrived after the mailbox was connected (or its folder chosen) are ever read.
+         * @description Read-only: the folder is opened with EXAMINE and bodies are fetched with BODY.PEEK, so nothing is marked read or moved. Only mails that arrived after the mailbox was connected (or its folder chosen) are ever read. Each new mail is read with the mailbox's patterns; the first that reads it makes a Cleared transaction through the import pipeline.
          */
         post: operations["checkMailbox"];
         delete?: never;
@@ -549,6 +549,137 @@ export interface paths {
         get: operations["listMailboxMessages"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/messages/{messageId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+                messageId: number;
+            };
+            cookie?: never;
+        };
+        /** One mail of the history with its text, for the pattern editor */
+        get: operations["getMailboxMessage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/patterns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        /** The mailbox's patterns, in the order they are tried */
+        get: operations["listMailPatterns"];
+        put?: never;
+        /**
+         * Add a pattern at the end of the list
+         * @description The expression is compiled (RE2, linear time) and its accounts must be the wallet's; a pattern that fails is refused with the reason. Left out, direction is out, and applyRules and requireAuth are on.
+         */
+        post: operations["createMailPattern"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/patterns/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Put the patterns in a new order, naming each once */
+        put: operations["reorderMailPatterns"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/patterns/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Try a pattern, saved or not, on the sender's latest mails
+         * @description Nothing is written. Also says how many of the mails no pattern read so far it would read, for "apply it to them too".
+         */
+        post: operations["testMailPattern"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/patterns/{patternId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+                patternId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace a pattern, keeping its place in the list */
+        put: operations["updateMailPattern"];
+        post?: never;
+        /** Remove a pattern (the mails it read keep their transactions) */
+        delete: operations["deleteMailPattern"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/patterns/{patternId}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+                patternId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read with a saved pattern the mails no pattern read so far */
+        post: operations["applyMailPattern"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3129,8 +3260,154 @@ export interface components {
             subject: string;
             /** @description the mail's Date header with its offset, RFC3339 */
             receivedAt: string;
-            /** @enum {string} */
-            outcome: "unrecognized";
+            /**
+             * @description unverified: a pattern would read it, but the sender was not authenticated; duplicate: the account already has its transaction.
+             * @enum {string}
+             */
+            outcome: "unrecognized" | "unverified" | "created" | "duplicate" | "failed";
+            /** @description why it failed */
+            detail: string;
+            authenticated: boolean;
+            /** Format: int64 */
+            patternId: number | null;
+            /**
+             * Format: int64
+             * @description the transaction it made or duplicates, while it exists
+             */
+            transactionId: number | null;
+            /** Format: int64 */
+            accountId: number | null;
+        };
+        MailDetail: components["schemas"]["MailSummary"] & {
+            body: string;
+        };
+        MailCheckResult: {
+            new: number;
+            /** @description new mails that became transactions */
+            created: number;
+            /** @description new mails no pattern read */
+            unrecognized: number;
+        };
+        MailCardAccount: {
+            /** @description the card digits the mail shows */
+            digits: string;
+            /** Format: int64 */
+            accountId: number;
+        };
+        /** @description How to read one kind of bank mail. */
+        MailPatternInput: {
+            name?: string;
+            /** @description the From address it is for, without case */
+            sender: string;
+            /**
+             * @description any subject, one containing subject, or one matching it
+             * @enum {string}
+             */
+            subjectMode?: "" | "contains" | "regex";
+            subject?: string;
+            /** @description RE2 expression with named groups (amount, memo, payee, info, tag, category, date, card, direction), matched against the subject, a newline and the body */
+            body: string;
+            /**
+             * Format: int64
+             * @description receives the transactions
+             */
+            accountId: number;
+            /** @description sends one card's mails to its own account */
+            cards?: components["schemas"]["MailCardAccount"][];
+            /**
+             * @description capture: money in when the direction group holds one of inWords
+             * @enum {string}
+             */
+            direction?: "out" | "in" | "capture";
+            /** @description comma-separated words that mean money in */
+            inWords?: string;
+            paymentMode?: number;
+            applyRules?: boolean;
+            /** @description how the date group is written, e.g. DD.MM or DD/MM/YYYY; without a date group, the mail's own day */
+            dateFormat?: string;
+            /** @description read only mails whose sender's domain the receiving server vouched for (DMARC or DKIM) */
+            requireAuth?: boolean;
+            /** @description the editor's own state, opaque to the server */
+            editor?: string;
+        };
+        MailPattern: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            mailboxId: number;
+            position: number;
+            name: string;
+            /** @description the From address it is for, without case */
+            sender: string;
+            /**
+             * @description any subject, one containing subject, or one matching it
+             * @enum {string}
+             */
+            subjectMode: "" | "contains" | "regex";
+            subject: string;
+            /** @description RE2 expression with named groups (amount, memo, payee, info, tag, category, date, card, direction), matched against the subject, a newline and the body */
+            body: string;
+            /**
+             * Format: int64
+             * @description receives the transactions
+             */
+            accountId: number;
+            /** @description sends one card's mails to its own account */
+            cards: components["schemas"]["MailCardAccount"][];
+            /**
+             * @description capture: money in when the direction group holds one of inWords
+             * @enum {string}
+             */
+            direction: "out" | "in" | "capture";
+            /** @description comma-separated words that mean money in */
+            inWords: string;
+            paymentMode: number;
+            applyRules: boolean;
+            /** @description how the date group is written, e.g. DD.MM or DD/MM/YYYY; without a date group, the mail's own day */
+            dateFormat: string;
+            /** @description read only mails whose sender's domain the receiving server vouched for (DMARC or DKIM) */
+            requireAuth: boolean;
+            /** @description the editor's own state, opaque to the server */
+            editor: string;
+        };
+        /** @description The transaction a mail becomes, before assignment rules. */
+        MailExtracted: {
+            /** Format: int64 */
+            accountId: number;
+            /** @description YYYY-MM-DD */
+            date: string;
+            /**
+             * Format: int64
+             * @description minor units, negative for money out
+             */
+            amount: number;
+            memo: string;
+            payee: string;
+            info: string;
+            category: string;
+            tags: string[];
+            paymentMode: number;
+        };
+        MailPatternTest: {
+            matched: number;
+            total: number;
+            mails: {
+                /** Format: int64 */
+                id: number;
+                subject: string;
+                receivedAt: string;
+                authenticated: boolean;
+                matched: boolean;
+                transaction?: components["schemas"]["MailExtracted"];
+                error?: string;
+            }[];
+            /** @description mails no pattern read that this one would */
+            retry: number;
+        };
+        MailApplyResult: {
+            created: number;
+            duplicate: number;
+            failed: number;
         };
         /** @description A bank-sync connection's metadata — never the access URL. */
         BankConnection: {
@@ -5609,15 +5886,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description How many new mails were read. */
+            /** @description What the check read. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        new: number;
-                    };
+                    "application/json": components["schemas"]["MailCheckResult"];
                 };
             };
             404: components["responses"]["NotFound"];
@@ -5658,6 +5933,223 @@ export interface operations {
                     "application/json": components["schemas"]["MailSummary"][];
                 };
             };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getMailboxMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+                messageId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The mail. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailDetail"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listMailPatterns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The patterns. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailPattern"][];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createMailPattern: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MailPatternInput"];
+            };
+        };
+        responses: {
+            /** @description The saved pattern. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailPattern"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    reorderMailPatterns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: number[];
+                };
+            };
+        };
+        responses: {
+            /** @description The patterns in their new order. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailPattern"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    testMailPattern: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MailPatternInput"];
+            };
+        };
+        responses: {
+            /** @description What the pattern makes of the mails. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailPatternTest"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateMailPattern: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+                patternId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MailPatternInput"];
+            };
+        };
+        responses: {
+            /** @description The saved pattern. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailPattern"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteMailPattern: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+                patternId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    applyMailPattern: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+                patternId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description What it made. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailApplyResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
         };
     };
