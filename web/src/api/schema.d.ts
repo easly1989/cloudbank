@@ -401,6 +401,160 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/mail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * The wallet's connected mailboxes, and whether one can be connected here
+         * @description Bank-mail reading (#654) reads the bank's notification mails from one folder of a mailbox. `available` is false when the server has no CB_SECRET_KEY: a mailbox credential is never stored in clear. Not mounted on the demo build.
+         */
+        get: operations["getMailOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/microsoft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a Microsoft device-code sign-in for an Outlook.com mailbox
+         * @description Returns the code the user types at the verification URI. Pass a mailboxId to sign an existing mailbox in again. The device code itself stays on the server.
+         */
+        post: operations["startMicrosoftMail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/microsoft/{flowId}/poll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                flowId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask whether a Microsoft sign-in has finished
+         * @description Asks Microsoft at most once per the sign-in's interval; faster calls just hear `pending`. Only the user who started the sign-in, in the same wallet, can poll it.
+         */
+        post: operations["pollMicrosoftMail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Disconnect a mailbox (its credential and its mails go with it) */
+        delete: operations["removeMailbox"];
+        options?: never;
+        head?: never;
+        /**
+         * Choose the folder to read, or pause the mailbox
+         * @description A new folder is read from its current end, like a new mailbox.
+         */
+        patch: operations["updateMailbox"];
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        /** The folders of a mailbox that can be read, the inbox first */
+        get: operations["listMailboxFolders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read the mails that arrived in the folder since the last check
+         * @description Read-only: the folder is opened with EXAMINE and bodies are fetched with BODY.PEEK, so nothing is marked read or moved. Only mails that arrived after the mailbox was connected (or its folder chosen) are ever read.
+         */
+        post: operations["checkMailbox"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        /** The newest mails read from a mailbox (at most 50), newest first */
+        get: operations["listMailboxMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/bank/connections": {
         parameters: {
             query?: never;
@@ -2922,6 +3076,55 @@ export interface components {
             /** @description human-formatted amount, for context */
             amount?: string;
         };
+        MailOverview: {
+            /** @description false when the server has no CB_SECRET_KEY */
+            available: boolean;
+            mailboxes: components["schemas"]["Mailbox"][];
+        };
+        /** @description A connected mailbox, never its credential. */
+        Mailbox: {
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            provider: "microsoft";
+            address: string;
+            folder: string;
+            paused: boolean;
+            /** @enum {string} */
+            status: "ok" | "error" | "reauth";
+            statusDetail: string;
+            /** @description last check, RFC3339 UTC */
+            lastCheckAt: string | null;
+            /** @description arrival of the newest mail read, RFC3339 UTC */
+            lastMailAt: string | null;
+            createdAt: string;
+        };
+        MailSignIn: {
+            flowId: string;
+            userCode: string;
+            verificationUri: string;
+            /** @description RFC3339 */
+            expiresAt: string;
+            /** @description the code's lifetime in seconds */
+            expiresIn: number;
+            /** @description seconds between polls */
+            interval: number;
+        };
+        MailSignInStatus: {
+            /** @enum {string} */
+            state: "pending" | "declined" | "expired" | "done";
+            mailbox?: components["schemas"]["Mailbox"];
+        };
+        MailSummary: {
+            /** Format: int64 */
+            id: number;
+            sender: string;
+            subject: string;
+            /** @description the mail's Date header with its offset, RFC3339 */
+            receivedAt: string;
+            /** @enum {string} */
+            outcome: "unrecognized";
+        };
         /** @description A bank-sync connection's metadata — never the access URL. */
         BankConnection: {
             /** Format: int64 */
@@ -5188,6 +5391,267 @@ export interface operations {
                 };
                 content?: never;
             };
+        };
+    };
+    getMailOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The overview. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailOverview"];
+                };
+            };
+        };
+    };
+    startMicrosoftMail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    mailboxId?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description The sign-in. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailSignIn"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description unavailable: the server has no CB_SECRET_KEY. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description microsoft_error: Microsoft refused, with its explanation; or Microsoft could not be reached. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    pollMicrosoftMail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                flowId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Where the sign-in stands. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailSignInStatus"];
+                };
+            };
+            /** @description flow_not_found: unknown, finished or someone else's sign-in. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description microsoft_error: Microsoft answered with an unexpected error, with its explanation. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    removeMailbox: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateMailbox: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    folder?: string;
+                    paused?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description The mailbox. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Mailbox"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listMailboxFolders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The folders. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        folders: string[];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description reauth: sign in to Microsoft again. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The mail server failed or refused the login. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    checkMailbox: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description How many new mails were read. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        new: number;
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description reauth: sign in to Microsoft again. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The mail server failed or refused the login. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listMailboxMessages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The mails. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailSummary"][];
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
     };
     listBankConnections: {

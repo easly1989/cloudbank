@@ -19,7 +19,7 @@ import { SETTINGS_SECTIONS } from "./sections";
 // which moved here from a page of its own (#504).
 const SECTION_TOURS: Partial<Record<string, TourId>> = {
   general: "settings",
-  integrations: "bankSync",
+  "bank-sync": "bankSync",
   data: "data",
 };
 

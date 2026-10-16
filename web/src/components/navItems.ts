@@ -27,7 +27,7 @@ export interface NavItemDef {
 // The full set of navigation destinations, in their default order.
 //
 // Bank sync and Review are not among them (#504, #505): the bank connections
-// are a setting, under Settings › Bank sync & AI, and Review is reached from
+// are a setting, under Settings › Bank sync, and Review is reached from
 // where its work is — the register's "to review" button and the overview's
 // list of things that want doing — rather than from a page that sits in the
 // sidebar whether or not there is anything to review.
