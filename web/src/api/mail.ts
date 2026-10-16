@@ -16,6 +16,14 @@ export interface Mailbox {
   /** Arrival of the newest mail read, RFC3339 UTC. */
   lastMailAt: string | null;
   createdAt: string;
+  /**
+   * How the server reads the mailbox now: "idle" (told about new mail),
+   * "polling" (asks on a timer), "retry" (lost the connection, about to try
+   * again), or "" when nothing listens.
+   */
+  mode: "idle" | "polling" | "retry" | "";
+  /** The next full check, or the next attempt while retrying; RFC3339 UTC. */
+  nextCheckAt: string | null;
 }
 
 export interface MailOverview {

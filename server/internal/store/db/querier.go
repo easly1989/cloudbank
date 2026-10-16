@@ -230,6 +230,9 @@ type Querier interface {
 	ListLatestRatesForWallet(ctx context.Context, walletID int64) ([]ListLatestRatesForWalletRow, error)
 	ListMailMessages(ctx context.Context, arg ListMailMessagesParams) ([]ListMailMessagesRow, error)
 	ListMailboxesForWallet(ctx context.Context, walletID int64) ([]Mailbox, error)
+	// Every mailbox the listener should keep open: not paused, and not waiting for
+	// a new sign-in, across all wallets.
+	ListMailboxesToWatch(ctx context.Context) ([]Mailbox, error)
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID int64) ([]ListPushSubscriptionsForUserRow, error)
 	ListPushUserIDs(ctx context.Context) ([]int64, error)
@@ -323,6 +326,9 @@ type Querier interface {
 	SetCurrencyBase(ctx context.Context, id int64) error
 	SetGoalClosed(ctx context.Context, arg SetGoalClosedParams) error
 	SetInstanceSetting(ctx context.Context, arg SetInstanceSettingParams) error
+	// Changes the flag only when it differs, so the caller learns from the row
+	// count whether this is the moment it changed.
+	SetMailboxAlerted(ctx context.Context, arg SetMailboxAlertedParams) (int64, error)
 	SetMailboxCursor(ctx context.Context, arg SetMailboxCursorParams) error
 	SetMailboxFolder(ctx context.Context, arg SetMailboxFolderParams) error
 	SetMailboxPaused(ctx context.Context, arg SetMailboxPausedParams) error

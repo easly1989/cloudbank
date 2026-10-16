@@ -28,7 +28,7 @@ func (q *Queries) DeleteMailbox(ctx context.Context, arg DeleteMailboxParams) (i
 }
 
 const findMailboxByAddress = `-- name: FindMailboxByAddress :one
-SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at FROM mailboxes WHERE wallet_id = ? AND provider = ? AND address = ? LIMIT 1
+SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted FROM mailboxes WHERE wallet_id = ? AND provider = ? AND address = ? LIMIT 1
 `
 
 type FindMailboxByAddressParams struct {
@@ -56,12 +56,13 @@ func (q *Queries) FindMailboxByAddress(ctx context.Context, arg FindMailboxByAdd
 		&i.LastCheckAt,
 		&i.LastMailAt,
 		&i.CreatedAt,
+		&i.Alerted,
 	)
 	return i, err
 }
 
 const getMailbox = `-- name: GetMailbox :one
-SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at FROM mailboxes WHERE id = ? AND wallet_id = ? LIMIT 1
+SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted FROM mailboxes WHERE id = ? AND wallet_id = ? LIMIT 1
 `
 
 type GetMailboxParams struct {
@@ -88,6 +89,7 @@ func (q *Queries) GetMailbox(ctx context.Context, arg GetMailboxParams) (Mailbox
 		&i.LastCheckAt,
 		&i.LastMailAt,
 		&i.CreatedAt,
+		&i.Alerted,
 	)
 	return i, err
 }
@@ -127,7 +129,7 @@ func (q *Queries) InsertMailMessage(ctx context.Context, arg InsertMailMessagePa
 const insertMailbox = `-- name: InsertMailbox :one
 INSERT INTO mailboxes (wallet_id, created_by, provider, address, secret)
 VALUES (?, ?, ?, ?, ?)
-RETURNING id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at
+RETURNING id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted
 `
 
 type InsertMailboxParams struct {
@@ -163,6 +165,7 @@ func (q *Queries) InsertMailbox(ctx context.Context, arg InsertMailboxParams) (M
 		&i.LastCheckAt,
 		&i.LastMailAt,
 		&i.CreatedAt,
+		&i.Alerted,
 	)
 	return i, err
 }
@@ -223,7 +226,7 @@ func (q *Queries) ListMailMessages(ctx context.Context, arg ListMailMessagesPara
 }
 
 const listMailboxesForWallet = `-- name: ListMailboxesForWallet :many
-SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at FROM mailboxes WHERE wallet_id = ? ORDER BY created_at, id
+SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted FROM mailboxes WHERE wallet_id = ? ORDER BY created_at, id
 `
 
 func (q *Queries) ListMailboxesForWallet(ctx context.Context, walletID int64) ([]Mailbox, error) {
@@ -251,6 +254,53 @@ func (q *Queries) ListMailboxesForWallet(ctx context.Context, walletID int64) ([
 			&i.LastCheckAt,
 			&i.LastMailAt,
 			&i.CreatedAt,
+			&i.Alerted,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMailboxesToWatch = `-- name: ListMailboxesToWatch :many
+SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted FROM mailboxes WHERE paused = 0 AND status != 'reauth' ORDER BY id
+`
+
+// Every mailbox the listener should keep open: not paused, and not waiting for
+// a new sign-in, across all wallets.
+func (q *Queries) ListMailboxesToWatch(ctx context.Context) ([]Mailbox, error) {
+	rows, err := q.db.QueryContext(ctx, listMailboxesToWatch)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Mailbox{}
+	for rows.Next() {
+		var i Mailbox
+		if err := rows.Scan(
+			&i.ID,
+			&i.WalletID,
+			&i.CreatedBy,
+			&i.Provider,
+			&i.Address,
+			&i.Secret,
+			&i.Folder,
+			&i.Paused,
+			&i.UidValidity,
+			&i.LastUid,
+			&i.Status,
+			&i.StatusDetail,
+			&i.LastCheckAt,
+			&i.LastMailAt,
+			&i.CreatedAt,
+			&i.Alerted,
 		); err != nil {
 			return nil, err
 		}
@@ -299,6 +349,26 @@ type RecordMailboxCheckParams struct {
 func (q *Queries) RecordMailboxCheck(ctx context.Context, arg RecordMailboxCheckParams) error {
 	_, err := q.db.ExecContext(ctx, recordMailboxCheck, arg.Status, arg.StatusDetail, arg.ID)
 	return err
+}
+
+const setMailboxAlerted = `-- name: SetMailboxAlerted :execrows
+UPDATE mailboxes SET alerted = ? WHERE id = ? AND alerted != ?
+`
+
+type SetMailboxAlertedParams struct {
+	Alerted   int64
+	ID        int64
+	Alerted_2 int64
+}
+
+// Changes the flag only when it differs, so the caller learns from the row
+// count whether this is the moment it changed.
+func (q *Queries) SetMailboxAlerted(ctx context.Context, arg SetMailboxAlertedParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, setMailboxAlerted, arg.Alerted, arg.ID, arg.Alerted_2)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const setMailboxCursor = `-- name: SetMailboxCursor :exec
