@@ -1096,7 +1096,6 @@
     "imapTitle": "Outra caixa de e-mail",
     "imapHint": "Gmail, Libero, Virgilio, iCloud, Yahoo, Fastmail, Aruba: com uma senha de app, nunca a da sua conta.",
     "imapConnect": "Conectar por IMAP",
-    "soon": "Em breve",
     "warning": "Quem obtiver este acesso pode ler <b>toda</b> a caixa, não só a pasta que você escolher: nenhum provedor permite limitá-lo. O CloudBank lê uma só pasta e não altera nada, mas para o máximo isolamento use uma caixa que receba apenas os e-mails do seu banco. Se achar que o acesso foi roubado, revogue-o na sua conta.",
     "unavailable": "Para ler os e-mails do banco, o servidor precisa de CB_SECRET_KEY, para que a credencial da caixa fique guardada criptografada. Peça a quem administra este CloudBank que a configure.",
     "today": "hoje {{time}}",
@@ -1255,6 +1254,48 @@
       "errDateFormat": "O formato precisa ter DD e MM, por exemplo DD.MM ou DD/MM/YYYY.",
       "needAccount": "Escolha a conta para testá-lo nos últimos e-mails.",
       "invalidSubject": "A expressão do assunto não é válida"
+    },
+    "imap": {
+      "title": "Conectar por IMAP",
+      "reconnectTitle": "Nova senha de app",
+      "address": "Endereço de e-mail",
+      "provider": "Provedor",
+      "other": "Outro servidor",
+      "hint": {
+        "gmail": "O Gmail pede uma senha de app, que exige a verificação em duas etapas ativada.",
+        "libero": "Com o Password Sicura ativado, o Libero pede uma senha de app de 16 caracteres.",
+        "virgilio": "Com o Password Sicura ativado, o Virgilio pede uma senha de app de 16 caracteres.",
+        "icloud": "O iCloud pede uma senha específica de app, que exige a autenticação de dois fatores ativada.",
+        "yahoo": "O Yahoo pede uma senha de app, criada nas configurações de segurança da sua conta.",
+        "fastmail": "O Fastmail só aceita uma senha de app: a da sua conta é recusada.",
+        "aruba": "As caixas da Aruba não têm senha de app: use a da caixa.",
+        "other": "Digite o servidor IMAP do seu provedor. A conexão é sempre criptografada."
+      },
+      "guide": "O guia de {{name}}",
+      "password": "Senha de app",
+      "passwordMailbox": "Senha da caixa",
+      "passwordHint": "Fica salva criptografada e não é mostrada de novo, nem para você.",
+      "serverLine": "{{host}} · porta {{port}} · {{security}}",
+      "change": "Alterar",
+      "host": "Servidor IMAP",
+      "port": "Porta",
+      "security": "Criptografia",
+      "securityHint": "TLS criptografa desde o primeiro byte (em geral porta 993). STARTTLS passa para a criptografia antes do login (em geral porta 143); um servidor que não oferece isso não recebe a senha.",
+      "username": "Nome de usuário",
+      "usernameHint": "Só se o seu provedor pedir algo diferente do endereço.",
+      "outlook": "Outlook.com, Hotmail e Live não aceitam senhas de app: conecte-os entrando com a Microsoft.",
+      "connect": "Conectar",
+      "save": "Salvar",
+      "trying": "Entrando no servidor de e-mail…",
+      "saved": "Nova senha salva para {{address}}",
+      "newPassword": "Nova senha de app",
+      "statusReauth": "O servidor de e-mail recusou a senha de app.",
+      "refusedHint": "Confira o endereço e a senha de app. A senha da sua conta geralmente não funciona por IMAP.",
+      "tlsHint": "Confira o servidor e a criptografia: com STARTTLS, o servidor precisa oferecê-la.",
+      "errAddress": "Um endereço como nome@example.com",
+      "errPassword": "Para conectar é preciso a senha",
+      "errHost": "O servidor é um nome como imap.example.com",
+      "errPort": "Um número de 1 a 65535"
     }
   },
   "search": {
@@ -2721,6 +2762,9 @@
       "notFound": "Não está mais aí: pode ter sido excluído.",
       "server": "Algo deu errado no servidor.",
       "other": "Não foi possível concluir a operação."
-    }
+    },
+    "host_not_public": "Esse servidor não está na internet: o CloudBank não se conecta à própria rede.",
+    "unreachable": "O servidor de e-mail não responde: confira o nome e a porta.",
+    "tls_failed": "Não foi possível criptografar a conexão com o servidor de e-mail."
   }
 }

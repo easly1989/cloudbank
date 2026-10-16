@@ -1096,7 +1096,6 @@
     "imapTitle": "Autre boîte mail",
     "imapHint": "Gmail, Libero, Virgilio, iCloud, Yahoo, Fastmail, Aruba : avec un mot de passe d’application, jamais celui de votre compte.",
     "imapConnect": "Connecter en IMAP",
-    "soon": "Bientôt",
     "warning": "Quiconque obtient cet accès peut lire <b>toute</b> la boîte, pas seulement le dossier choisi : aucun fournisseur ne permet de le restreindre. CloudBank lit un seul dossier et ne modifie rien, mais pour une isolation maximale, utilisez une boîte qui ne reçoit que les e-mails de votre banque. Si vous pensez que l’accès a été volé, révoquez-le depuis votre compte.",
     "unavailable": "Pour lire les e-mails de la banque, le serveur a besoin de CB_SECRET_KEY, afin que l’identifiant de la boîte soit stocké chiffré. Demandez à la personne qui gère ce CloudBank de la définir.",
     "today": "aujourd’hui {{time}}",
@@ -1255,6 +1254,48 @@
       "errDateFormat": "Le format doit contenir DD et MM, par exemple DD.MM ou DD/MM/YYYY.",
       "needAccount": "Choisissez le compte pour l’essayer sur les derniers e-mails.",
       "invalidSubject": "L’expression de l’objet n’est pas valide"
+    },
+    "imap": {
+      "title": "Connecter en IMAP",
+      "reconnectTitle": "Nouveau mot de passe d’application",
+      "address": "Adresse e-mail",
+      "provider": "Fournisseur",
+      "other": "Un autre serveur",
+      "hint": {
+        "gmail": "Gmail demande un mot de passe d’application, qui nécessite la validation en deux étapes.",
+        "libero": "Avec Password Sicura activé, Libero demande un mot de passe d’application de 16 caractères.",
+        "virgilio": "Avec Password Sicura activé, Virgilio demande un mot de passe d’application de 16 caractères.",
+        "icloud": "iCloud demande un mot de passe pour app, qui nécessite l’authentification à deux facteurs.",
+        "yahoo": "Yahoo demande un mot de passe d’application, créé dans les réglages de sécurité de votre compte.",
+        "fastmail": "Fastmail n’accepte qu’un mot de passe d’application : celui de votre compte est refusé.",
+        "aruba": "Les boîtes Aruba n’ont pas de mot de passe d’application : utilisez celui de la boîte.",
+        "other": "Saisissez le serveur IMAP de votre fournisseur. La connexion est toujours chiffrée."
+      },
+      "guide": "Le guide de {{name}}",
+      "password": "Mot de passe d’application",
+      "passwordMailbox": "Mot de passe de la boîte",
+      "passwordHint": "Enregistré chiffré et jamais réaffiché, même pour vous.",
+      "serverLine": "{{host}} · port {{port}} · {{security}}",
+      "change": "Modifier",
+      "host": "Serveur IMAP",
+      "port": "Port",
+      "security": "Chiffrement",
+      "securityHint": "TLS chiffre dès le premier octet (port 993 en général). STARTTLS passe au chiffrement avant la connexion (port 143 en général) ; un serveur qui ne le propose pas ne reçoit pas le mot de passe.",
+      "username": "Nom d’utilisateur",
+      "usernameHint": "Seulement si votre fournisseur demande autre chose que l’adresse.",
+      "outlook": "Outlook.com, Hotmail et Live n’acceptent pas les mots de passe d’application : connectez-les en vous connectant avec Microsoft.",
+      "connect": "Connecter",
+      "save": "Enregistrer",
+      "trying": "Connexion au serveur de messagerie…",
+      "saved": "Nouveau mot de passe enregistré pour {{address}}",
+      "newPassword": "Nouveau mot de passe d’application",
+      "statusReauth": "Le serveur de messagerie a refusé le mot de passe d’application.",
+      "refusedHint": "Vérifiez l’adresse et le mot de passe d’application. Le mot de passe de votre compte ne fonctionne généralement pas en IMAP.",
+      "tlsHint": "Vérifiez le serveur et le chiffrement : avec STARTTLS, le serveur doit le proposer.",
+      "errAddress": "Une adresse comme nom@example.com",
+      "errPassword": "Le mot de passe est nécessaire pour se connecter",
+      "errHost": "Le serveur est un nom comme imap.example.com",
+      "errPort": "Un nombre de 1 à 65535"
     }
   },
   "search": {
@@ -2721,6 +2762,9 @@
       "notFound": "Ce n’est plus là : l’élément a peut-être été supprimé.",
       "server": "Une erreur s’est produite sur le serveur.",
       "other": "L’opération n’a pas pu aboutir."
-    }
+    },
+    "host_not_public": "Ce serveur n’est pas sur internet : CloudBank ne se connecte pas à son propre réseau.",
+    "unreachable": "Le serveur de messagerie ne répond pas : vérifiez son nom et son port.",
+    "tls_failed": "La connexion au serveur de messagerie n’a pas pu être chiffrée."
   }
 }

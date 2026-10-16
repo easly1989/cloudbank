@@ -1096,7 +1096,6 @@
     "imapTitle": "Otro buzón",
     "imapHint": "Gmail, Libero, Virgilio, iCloud, Yahoo, Fastmail, Aruba: con una contraseña de aplicación, nunca la de tu cuenta.",
     "imapConnect": "Conectar por IMAP",
-    "soon": "Próximamente",
     "warning": "Quien obtenga este acceso puede leer <b>todo</b> el buzón, no solo la carpeta que elijas: ningún proveedor permite limitarlo. CloudBank lee una sola carpeta y no modifica nada, pero para el máximo aislamiento usa un buzón que solo reciba los correos de tu banco. Si crees que te han robado el acceso, revócalo desde tu cuenta.",
     "unavailable": "Para leer los correos del banco, el servidor necesita CB_SECRET_KEY, de modo que la credencial del buzón se guarde cifrada. Pide a quien administra este CloudBank que la configure.",
     "today": "hoy {{time}}",
@@ -1255,6 +1254,48 @@
       "errDateFormat": "El formato debe tener DD y MM, por ejemplo DD.MM o DD/MM/YYYY.",
       "needAccount": "Elige la cuenta para probarlo con los últimos correos.",
       "invalidSubject": "La expresión del asunto no es válida"
+    },
+    "imap": {
+      "title": "Conectar por IMAP",
+      "reconnectTitle": "Nueva contraseña de aplicación",
+      "address": "Correo electrónico",
+      "provider": "Proveedor",
+      "other": "Otro servidor",
+      "hint": {
+        "gmail": "Gmail pide una contraseña de aplicación, que necesita la verificación en dos pasos activada.",
+        "libero": "Con Password Sicura activada, Libero pide una contraseña de aplicación de 16 caracteres.",
+        "virgilio": "Con Password Sicura activada, Virgilio pide una contraseña de aplicación de 16 caracteres.",
+        "icloud": "iCloud pide una contraseña específica de app, que necesita la autenticación de doble factor activada.",
+        "yahoo": "Yahoo pide una contraseña de aplicación, creada en los ajustes de seguridad de tu cuenta.",
+        "fastmail": "Fastmail solo acepta una contraseña de aplicación: la de tu cuenta se rechaza.",
+        "aruba": "Los buzones de Aruba no tienen contraseña de aplicación: usa la del buzón.",
+        "other": "Escribe el servidor IMAP de tu proveedor. La conexión siempre va cifrada."
+      },
+      "guide": "La guía de {{name}}",
+      "password": "Contraseña de aplicación",
+      "passwordMailbox": "Contraseña del buzón",
+      "passwordHint": "Se guarda cifrada y no se vuelve a mostrar, ni siquiera a ti.",
+      "serverLine": "{{host}} · puerto {{port}} · {{security}}",
+      "change": "Cambiar",
+      "host": "Servidor IMAP",
+      "port": "Puerto",
+      "security": "Cifrado",
+      "securityHint": "TLS cifra desde el primer byte (normalmente puerto 993). STARTTLS pasa a cifrado antes del inicio de sesión (normalmente puerto 143); a un servidor que no lo ofrece no se le envía la contraseña.",
+      "username": "Nombre de usuario",
+      "usernameHint": "Solo si tu proveedor pide algo distinto de la dirección.",
+      "outlook": "Outlook.com, Hotmail y Live no aceptan contraseñas de aplicación: conéctalos iniciando sesión con Microsoft.",
+      "connect": "Conectar",
+      "save": "Guardar",
+      "trying": "Iniciando sesión en el servidor de correo…",
+      "saved": "Nueva contraseña guardada para {{address}}",
+      "newPassword": "Nueva contraseña de aplicación",
+      "statusReauth": "El servidor de correo rechazó la contraseña de aplicación.",
+      "refusedHint": "Comprueba la dirección y la contraseña de aplicación. La contraseña de tu cuenta normalmente no funciona por IMAP.",
+      "tlsHint": "Comprueba el servidor y el cifrado: con STARTTLS, el servidor tiene que ofrecerlo.",
+      "errAddress": "Una dirección como nombre@example.com",
+      "errPassword": "Para conectar hace falta la contraseña",
+      "errHost": "El servidor es un nombre como imap.example.com",
+      "errPort": "Un número del 1 al 65535"
     }
   },
   "search": {
@@ -2721,6 +2762,9 @@
       "notFound": "Ya no está: puede que se haya eliminado.",
       "server": "Algo ha fallado en el servidor.",
       "other": "No se pudo completar la operación."
-    }
+    },
+    "host_not_public": "Ese servidor no está en internet: CloudBank no se conecta a su propia red.",
+    "unreachable": "El servidor de correo no responde: comprueba el nombre y el puerto.",
+    "tls_failed": "No se pudo cifrar la conexión con el servidor de correo."
   }
 }

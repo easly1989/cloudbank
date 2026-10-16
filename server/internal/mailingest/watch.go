@@ -122,6 +122,11 @@ func (s *Service) Run(ctx context.Context, logger *slog.Logger) {
 		} else {
 			want := make(map[int64]db.Mailbox, len(rows))
 			for _, r := range rows {
+				// Without an application id a Microsoft mailbox cannot be
+				// reached: listening would fail and restart on every look.
+				if r.Provider == ProviderMicrosoft && s.ms == nil {
+					continue
+				}
 				want[r.ID] = r
 			}
 			for id, w := range running {
