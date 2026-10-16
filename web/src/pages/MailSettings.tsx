@@ -73,6 +73,9 @@ export function MailSettings() {
     queryKey: ["mail", walletId],
     queryFn: () => getMailOverview(walletId),
     enabled: walletId > 0,
+    // The server listens on its own (#656): a mail that arrives, or a
+    // connection that drops, shows here without a reload.
+    refetchInterval: 30_000,
   });
 
   if (!currentWallet || !overview.data) return null;
@@ -178,6 +181,16 @@ function useWhen() {
   };
 }
 
+/** A local time of day, for something due in the next minutes. */
+function useClock() {
+  const { i18n } = useTranslation();
+  return (iso: string) => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return new Intl.DateTimeFormat(i18n.language, { hour: "2-digit", minute: "2-digit" }).format(d);
+  };
+}
+
 function MailboxCard({
   walletId,
   mailbox,
@@ -191,6 +204,7 @@ function MailboxCard({
   const qc = useQueryClient();
   const confirm = useConfirm();
   const when = useWhen();
+  const clock = useClock();
   const [foldersWanted, setFoldersWanted] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
@@ -204,8 +218,11 @@ function MailboxCard({
   };
 
   const messages = useQuery({
-    queryKey: ["mailMessages", walletId, mailbox.id],
+    // Keyed by the newest mail's arrival, so a mail the listener read comes
+    // with the next look at the overview.
+    queryKey: ["mailMessages", walletId, mailbox.id, mailbox.lastMailAt],
     queryFn: () => listMailboxMessages(walletId, mailbox.id),
+    placeholderData: (prev) => prev,
   });
   // Listing the folders logs in to the mailbox, so it waits until the reader
   // opens the menu.
@@ -261,23 +278,38 @@ function MailboxCard({
   const list = messages.data ?? [];
   const shown = showAll ? list : list.slice(0, RECENT_SHOWN);
 
+  const next = mailbox.nextCheckAt ? clock(mailbox.nextCheckAt) : "";
+  const lastMail = mailbox.lastMailAt
+    ? t("mail.lastMail", { when: when(mailbox.lastMailAt) })
+    : null;
   let statusColor = "teal";
-  let statusText: ReactNode;
+  let parts: (string | null)[];
   if (mailbox.status === "reauth") {
     statusColor = "red";
-    statusText = t("mail.statusReauth");
+    parts = [t("mail.statusReauth")];
   } else if (mailbox.status === "error") {
     statusColor = "red";
-    statusText = t("mail.statusError", { detail: mailbox.statusDetail });
+    parts = [
+      t("mail.statusError", { detail: mailbox.statusDetail }),
+      mailbox.mode === "retry" && next ? t("mail.retryAt", { time: next }) : null,
+    ];
+  } else if (mailbox.mode === "idle") {
+    parts = [t("mail.listening"), lastMail, next ? t("mail.nextFull", { time: next }) : null];
+  } else if (mailbox.mode === "polling") {
+    parts = [t("mail.polling"), lastMail, next ? t("mail.nextPoll", { time: next }) : null];
+  } else if (mailbox.mode === "retry") {
+    // The server ended the connection, as servers do now and then.
+    statusColor = "yellow";
+    parts = [t("mail.reconnecting"), next ? t("mail.retryAt", { time: next }) : null];
   } else {
-    const parts = [
+    parts = [
       mailbox.lastCheckAt
         ? t("mail.lastCheck", { when: when(mailbox.lastCheckAt) })
         : t("mail.neverChecked"),
+      lastMail,
     ];
-    if (mailbox.lastMailAt) parts.push(t("mail.lastMail", { when: when(mailbox.lastMailAt) }));
-    statusText = parts.join(" · ");
   }
+  const statusText: ReactNode = parts.filter(Boolean).join(" · ");
   if (mailbox.paused) statusColor = "gray";
 
   return (

@@ -59,6 +59,31 @@ type Session struct {
 
 // Connect dials, logs in and returns the session.
 func Connect(ctx context.Context, ep Endpoint, cred Credentials) (*Session, error) {
+	return dial(ctx, ep, cred, nil)
+}
+
+// connectWatch is Connect for a session that listens: each time the server
+// announces a change in the open folder, a signal lands on wake. The channel is
+// never blocked on, so it should have room for one signal.
+func connectWatch(ctx context.Context, ep Endpoint, cred Credentials, wake chan<- struct{}) (*Session, error) {
+	poke := func() {
+		select {
+		case wake <- struct{}{}:
+		default:
+		}
+	}
+	return dial(ctx, ep, cred, &imapclient.Options{
+		UnilateralDataHandler: &imapclient.UnilateralDataHandler{
+			Mailbox: func(d *imapclient.UnilateralDataMailbox) {
+				if d.NumMessages != nil {
+					poke()
+				}
+			},
+		},
+	})
+}
+
+func dial(ctx context.Context, ep Endpoint, cred Credentials, opts *imapclient.Options) (*Session, error) {
 	d := net.Dialer{Timeout: 30 * time.Second}
 	conn, err := d.DialContext(ctx, "tcp", ep.Addr)
 	if err != nil {
@@ -73,7 +98,7 @@ func Connect(ctx context.Context, ep Endpoint, cred Credentials) (*Session, erro
 		}
 		conn = tc
 	}
-	c := imapclient.New(conn, nil)
+	c := imapclient.New(conn, opts)
 	if err := c.WaitGreeting(); err != nil {
 		_ = c.Close()
 		return nil, fmt.Errorf("mailingest: the mail server did not greet: %w", err)
@@ -87,6 +112,11 @@ func Connect(ctx context.Context, ep Endpoint, cred Credentials) (*Session, erro
 		_ = c.Close()
 		return nil, fmt.Errorf("%w: %v", ErrLogin, err)
 	}
+	if opts != nil {
+		// A listening session lives for hours: the client bounds each command
+		// by itself, so the session-wide deadline goes.
+		_ = conn.SetDeadline(time.Time{})
+	}
 	return &Session{c: c}, nil
 }
 
@@ -97,6 +127,21 @@ var ErrLogin = errors.New("mailingest: the mail server refused the login")
 func (s *Session) Close() {
 	_ = s.c.Logout().Wait()
 	_ = s.c.Close()
+}
+
+// CanIdle reports whether the server announces IDLE, so it can tell this
+// session about new mail instead of being asked.
+func (s *Session) CanIdle() bool {
+	caps := s.c.Caps()
+	return caps.Has(imap.CapIdle) || caps.Has(imap.CapIMAP4rev2)
+}
+
+// Examine opens folder read-only and leaves it open, for listening to it.
+func (s *Session) Examine(folder string) error {
+	if _, err := s.c.Select(folder, &imap.SelectOptions{ReadOnly: true}).Wait(); err != nil {
+		return fmt.Errorf("mailingest: cannot open folder %q: %w", folder, err)
+	}
+	return nil
 }
 
 // Folders lists the folders that can be opened, the inbox first.

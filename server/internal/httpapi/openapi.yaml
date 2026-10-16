@@ -2986,7 +2986,16 @@ components:
         lastCheckAt: { type: string, nullable: true, description: "last check, RFC3339 UTC" }
         lastMailAt: { type: string, nullable: true, description: "arrival of the newest mail read, RFC3339 UTC" }
         createdAt: { type: string }
-      required: [id, provider, address, folder, paused, status, statusDetail, lastCheckAt, lastMailAt, createdAt]
+        mode:
+          type: string
+          enum: ["idle", "polling", "retry", ""]
+          description: >-
+            How the server is reading the mailbox right now: idle (the mail
+            server announces new mail), polling (asked on a timer, for a server
+            without IDLE), retry (the connection was lost and is about to be
+            tried again), or empty when nothing is listening.
+        nextCheckAt: { type: string, nullable: true, description: "the next full check, or the next attempt while retrying; RFC3339 UTC" }
+      required: [id, provider, address, folder, paused, status, statusDetail, lastCheckAt, lastMailAt, createdAt, mode, nextCheckAt]
     MailSignIn:
       type: object
       properties:
