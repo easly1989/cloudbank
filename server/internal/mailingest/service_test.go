@@ -17,6 +17,7 @@ import (
 
 type fixture struct {
 	svc    *Service
+	st     *store.Store
 	q      *db.Queries
 	wallet int64
 	other  int64
@@ -93,7 +94,7 @@ func newFixtureWith(t *testing.T, o fixtureOpts, tokenReplies ...func(http.Respo
 	}
 	clock := time.Date(2026, 10, 15, 12, 0, 0, 0, time.UTC)
 	svc.now = func() time.Time { return clock }
-	return &fixture{svc: svc, q: q, wallet: w.ID, other: w2.ID, uid: u1.ID, uid2: u2.ID, user: u, clock: &clock}
+	return &fixture{svc: svc, st: st, q: q, wallet: w.ID, other: w2.ID, uid: u1.ID, uid2: u2.ID, user: u, clock: &clock}
 }
 
 func (f *fixture) tick(d time.Duration) { *f.clock = f.clock.Add(d) }

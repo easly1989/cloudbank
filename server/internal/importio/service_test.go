@@ -232,3 +232,31 @@ func TestExportRoundTrip(t *testing.T) {
 		t.Fatalf("round-trip row0 = %+v", reparsed[0])
 	}
 }
+
+// A transaction read from a bank mail (#657) is one the bank has not booked
+// yet: when bank sync brings the booked row, it merges into it, as into one
+// entered by hand, instead of leaving two.
+func TestBankSyncMergesIntoATransactionFromAMail(t *testing.T) {
+	s, _, _, q, wid, acc := newTestService(t)
+	ctx := context.Background()
+	fromMail, err := q.InsertTransaction(ctx, db.InsertTransactionParams{
+		WalletID: wid, AccountID: acc, Date: "2026-10-15", Amount: -643,
+		Status: 1, Memo: "Supermercato Demo", ImportRef: MailRefPrefix + "abc",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	booked := []Row{{Line: 1, Date: "2026-10-16", Amount: -6430000, Memo: "POS SUPERMERCATO DEMO", FITID: "eb:booked:1", Status: 2}}
+	pv, err := s.PreviewParsed(ctx, wid, acc, booked, false, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r := pv.Rows[0]; r.Match != "update" || r.MatchID != fromMail.ID {
+		t.Fatalf("booked row = %+v, want an update of the mail's transaction %d", r, fromMail.ID)
+	}
+	// A file import still treats it as any other transaction.
+	pv, _ = s.PreviewParsed(ctx, wid, acc, booked, false, false)
+	if pv.Rows[0].Match != "" {
+		t.Fatalf("file import row = %+v", pv.Rows[0])
+	}
+}

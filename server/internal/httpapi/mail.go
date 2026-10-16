@@ -27,7 +27,22 @@ func (h *mailHandlers) walletRoutes(r chi.Router) {
 		r.Get("/folders", h.folders)
 		r.Post("/check", h.check)
 		r.Get("/messages", h.messages)
+		r.Get("/messages/{messageId}", h.message)
+		r.Get("/patterns", h.patterns)
+		r.Post("/patterns", h.createPattern)
+		r.Put("/patterns/order", h.reorderPatterns)
+		r.Post("/patterns/test", h.testPattern)
+		r.Put("/patterns/{patternId}", h.updatePattern)
+		r.Delete("/patterns/{patternId}", h.deletePattern)
+		r.Post("/patterns/{patternId}/apply", h.applyPattern)
 	})
+}
+
+// decodePattern reads a pattern. What the body leaves out takes the safe
+// value: money out, assignment rules applied, and authenticated senders only.
+func decodePattern(w http.ResponseWriter, r *http.Request) (mailingest.Pattern, bool) {
+	p := mailingest.Pattern{Direction: mailingest.DirectionOut, ApplyRules: true, RequireAuth: true}
+	return p, decodeJSON(w, r, &p)
 }
 
 func (h *mailHandlers) mailboxID(w http.ResponseWriter, r *http.Request) (int64, bool) {
@@ -175,4 +190,149 @@ func (h *mailHandlers) messages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, msgs)
+}
+
+func (h *mailHandlers) message(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := h.mailboxID(w, r)
+	if !ok {
+		return
+	}
+	mid, ok := idParam(w, r, "messageId", "mail not found")
+	if !ok {
+		return
+	}
+	m, err := h.svc.Message(r.Context(), wl.ID, id, mid)
+	if err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, m)
+}
+
+func (h *mailHandlers) patterns(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := h.mailboxID(w, r)
+	if !ok {
+		return
+	}
+	list, err := h.svc.Patterns(r.Context(), wl.ID, id)
+	if err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, list)
+}
+
+func (h *mailHandlers) createPattern(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := h.mailboxID(w, r)
+	if !ok {
+		return
+	}
+	p, ok := decodePattern(w, r)
+	if !ok {
+		return
+	}
+	saved, err := h.svc.CreatePattern(r.Context(), wl.ID, id, p)
+	if err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, saved)
+}
+
+func (h *mailHandlers) updatePattern(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := h.mailboxID(w, r)
+	if !ok {
+		return
+	}
+	pid, ok := idParam(w, r, "patternId", "pattern not found")
+	if !ok {
+		return
+	}
+	p, ok := decodePattern(w, r)
+	if !ok {
+		return
+	}
+	saved, err := h.svc.UpdatePattern(r.Context(), wl.ID, id, pid, p)
+	if err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, saved)
+}
+
+func (h *mailHandlers) deletePattern(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := h.mailboxID(w, r)
+	if !ok {
+		return
+	}
+	pid, ok := idParam(w, r, "patternId", "pattern not found")
+	if !ok {
+		return
+	}
+	if err := h.svc.DeletePattern(r.Context(), wl.ID, id, pid); err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *mailHandlers) reorderPatterns(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := h.mailboxID(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		IDs []int64 `json:"ids"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	list, err := h.svc.ReorderPatterns(r.Context(), wl.ID, id, body.IDs)
+	if err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, list)
+}
+
+func (h *mailHandlers) testPattern(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := h.mailboxID(w, r)
+	if !ok {
+		return
+	}
+	p, ok := decodePattern(w, r)
+	if !ok {
+		return
+	}
+	res, err := h.svc.TestPattern(r.Context(), wl.ID, id, p)
+	if err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
+}
+
+func (h *mailHandlers) applyPattern(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := h.mailboxID(w, r)
+	if !ok {
+		return
+	}
+	pid, ok := idParam(w, r, "patternId", "pattern not found")
+	if !ok {
+		return
+	}
+	res, err := h.svc.ApplyPattern(r.Context(), wl.ID, id, pid)
+	if err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
 }
