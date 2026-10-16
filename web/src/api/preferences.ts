@@ -43,8 +43,17 @@ const stale = (err: unknown) =>
  * write says which revision it started from; the server refuses it when that
  * is no longer the stored one, and the change is made again over the stored
  * preferences. A saved write is announced to this browser's other tabs.
+ *
+ * The change shows at once: the cached copy takes it before the write is even
+ * sent, so a page reads its own change on the next render rather than after
+ * the round trip. Without that, a column widened by dragging snapped back
+ * until the server answered, and a second click made before the answer
+ * started from the old settings and undid the first. A write that fails puts
+ * the stored settings back.
  */
 export function saveMe(qc: QueryClient, change: MeChange): Promise<User> {
+  const shown = qc.getQueryData<User>(ME);
+  if (shown) qc.setQueryData(ME, withChange(shown, change));
   const run = queue.then(async () => {
     for (let attempt = 0; ; attempt++) {
       await qc.cancelQueries({ queryKey: ME });
@@ -65,14 +74,34 @@ export function saveMe(qc: QueryClient, change: MeChange): Promise<User> {
         tabs()?.postMessage(user);
         return user;
       } catch (err) {
-        if (!stale(err) || attempt >= RETRIES) throw err;
-        qc.setQueryData(ME, await getMe());
+        if (!stale(err) || attempt >= RETRIES) {
+          // Undo what was shown: back to what the server keeps.
+          try {
+            qc.setQueryData(ME, await getMe());
+          } catch {
+            // Offline too; the next read of /auth/me sets it right.
+          }
+          throw err;
+        }
+        qc.setQueryData(ME, withChange(await getMe(), change));
       }
     }
   });
   // A failed write rejects its own caller, and the next one still runs.
   queue = run.catch(() => undefined);
   return run;
+}
+
+/** user with change applied, as the server will store it. */
+function withChange(user: User, change: MeChange): User {
+  const { preferences, ...account } = change;
+  const next: User = { ...user, ...account };
+  if (preferences) {
+    const merged: Record<string, unknown> = { ...(user.preferences ?? {}), ...preferences };
+    for (const k of Object.keys(merged)) if (merged[k] === undefined) delete merged[k];
+    next.preferences = merged as Preferences;
+  }
+  return next;
 }
 
 /** saveMe for preferences alone. */

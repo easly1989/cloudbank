@@ -61,6 +61,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useDateFormat } from "../dates";
 import { todayCivil } from "../civilDate";
 import { formatMinor, type MoneyFormat } from "../money";
+import { notifyError } from "../notifyError";
 import { stopRowEdit } from "../rowEdit";
 import { ALL_COLUMNS, moveColumn, normalizeColumnOrder } from "./registerColumns";
 import {
@@ -301,6 +302,27 @@ export function RegisterTable({
   const persistPrefs = useMutation({
     mutationFn: (patch: Partial<Preferences>) => savePreferences(qc, patch),
   });
+
+  // The drag reports the width it ended on: the handler it calls was made
+  // when the drag began, so reading dragWidths there would see the empty
+  // state of that moment, save nothing and put the column back. The dragged
+  // width stays on screen until the save settles, so no frame falls between
+  // it and the preferences that carry it.
+  const endResize = (id: string, width: number | null) => {
+    if (width == null) {
+      setDragWidths(null);
+      return;
+    }
+    const next = { ...(savedWidths ?? {}), [id]: width };
+    setDragWidths(next);
+    persistPrefs.mutate(
+      { registerColumnWidths: next },
+      {
+        onError: notifyError,
+        onSettled: () => setDragWidths(null),
+      },
+    );
+  };
 
   const toggleSort = (id: string) => {
     if (!isSortable(id)) return;
@@ -809,11 +831,8 @@ export function RegisterTable({
                   id={h.id}
                   sort={sort}
                   onSort={toggleSort}
-                  onResize={(width) => setDragWidths({ ...widths, [h.id]: width })}
-                  onResizeEnd={() => {
-                    if (dragWidths) persistPrefs.mutate({ registerColumnWidths: dragWidths });
-                    setDragWidths(null);
-                  }}
+                  onResize={(width) => setDragWidths({ ...(savedWidths ?? {}), [h.id]: width })}
+                  onResizeEnd={(width) => endResize(h.id, width)}
                 >
                   {flexRender(h.column.columnDef.header, h.getContext())}
                 </ColumnHeader>
@@ -1179,7 +1198,8 @@ function ColumnHeader({
   sort: RegisterSort | null;
   onSort: (id: string) => void;
   onResize: (width: number) => void;
-  onResizeEnd: () => void;
+  /** The width the drag ended on, or null when the pointer never moved. */
+  onResizeEnd: (width: number | null) => void;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -1192,12 +1212,15 @@ function ColumnHeader({
     e.stopPropagation();
     const startX = e.clientX;
     const startWidth = ref.current?.getBoundingClientRect().width ?? 120;
-    const move = (ev: PointerEvent) =>
-      onResize(Math.max(MIN_COL_WIDTH, Math.round(startWidth + ev.clientX - startX)));
+    let last: number | null = null;
+    const move = (ev: PointerEvent) => {
+      last = Math.max(MIN_COL_WIDTH, Math.round(startWidth + ev.clientX - startX));
+      onResize(last);
+    };
     const up = () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
-      onResizeEnd();
+      onResizeEnd(last);
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
