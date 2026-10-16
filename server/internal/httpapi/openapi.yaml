@@ -441,6 +441,113 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
         "502": { description: The AI provider request failed. }
+  /api/v1/wallets/{walletId}/mail:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getMailOverview
+      summary: The wallet's connected mailboxes, and whether one can be connected here
+      description: >-
+        Bank-mail reading (#654) reads the bank's notification mails from one folder
+        of a mailbox. `available` is false when the server has no CB_SECRET_KEY: a
+        mailbox credential is never stored in clear. Not mounted on the demo build.
+      responses:
+        "200": { description: The overview., content: { application/json: { schema: { $ref: "#/components/schemas/MailOverview" } } } }
+  /api/v1/wallets/{walletId}/mail/microsoft:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: startMicrosoftMail
+      summary: Start a Microsoft device-code sign-in for an Outlook.com mailbox
+      description: >-
+        Returns the code the user types at the verification URI. Pass a mailboxId to
+        sign an existing mailbox in again. The device code itself stays on the server.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { mailboxId: { type: integer, format: int64 } } }
+      responses:
+        "201": { description: The sign-in., content: { application/json: { schema: { $ref: "#/components/schemas/MailSignIn" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "unavailable: the server has no CB_SECRET_KEY." }
+        "502": { description: "microsoft_error: Microsoft refused, with its explanation; or Microsoft could not be reached." }
+  /api/v1/wallets/{walletId}/mail/microsoft/{flowId}/poll:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: flowId, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: pollMicrosoftMail
+      summary: Ask whether a Microsoft sign-in has finished
+      description: >-
+        Asks Microsoft at most once per the sign-in's interval; faster calls just
+        hear `pending`. Only the user who started the sign-in, in the same wallet,
+        can poll it.
+      responses:
+        "200": { description: Where the sign-in stands., content: { application/json: { schema: { $ref: "#/components/schemas/MailSignInStatus" } } } }
+        "404": { description: "flow_not_found: unknown, finished or someone else's sign-in." }
+        "502": { description: "microsoft_error: Microsoft answered with an unexpected error, with its explanation." }
+  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: updateMailbox
+      summary: Choose the folder to read, or pause the mailbox
+      description: A new folder is read from its current end, like a new mailbox.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { folder: { type: string }, paused: { type: boolean } } }
+      responses:
+        "200": { description: The mailbox., content: { application/json: { schema: { $ref: "#/components/schemas/Mailbox" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: removeMailbox
+      summary: Disconnect a mailbox (its credential and its mails go with it)
+      responses:
+        "204": { description: Removed. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/folders:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listMailboxFolders
+      summary: The folders of a mailbox that can be read, the inbox first
+      responses:
+        "200": { description: The folders., content: { application/json: { schema: { type: object, properties: { folders: { type: array, items: { type: string } } }, required: [folders] } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "reauth: sign in to Microsoft again." }
+        "502": { description: The mail server failed or refused the login. }
+  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/check:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: checkMailbox
+      summary: Read the mails that arrived in the folder since the last check
+      description: >-
+        Read-only: the folder is opened with EXAMINE and bodies are fetched with
+        BODY.PEEK, so nothing is marked read or moved. Only mails that arrived after
+        the mailbox was connected (or its folder chosen) are ever read.
+      responses:
+        "200": { description: How many new mails were read., content: { application/json: { schema: { type: object, properties: { new: { type: integer } }, required: [new] } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "reauth: sign in to Microsoft again." }
+        "502": { description: The mail server failed or refused the login. }
+  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/messages:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listMailboxMessages
+      summary: The newest mails read from a mailbox (at most 50), newest first
+      responses:
+        "200": { description: The mails., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/MailSummary" } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/bank/connections:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -2859,6 +2966,52 @@ components:
         payee: { type: string }
         memo: { type: string }
         amount: { type: string, description: "human-formatted amount, for context" }
+    MailOverview:
+      type: object
+      properties:
+        available: { type: boolean, description: "false when the server has no CB_SECRET_KEY" }
+        mailboxes: { type: array, items: { $ref: "#/components/schemas/Mailbox" } }
+      required: [available, mailboxes]
+    Mailbox:
+      type: object
+      description: A connected mailbox, never its credential.
+      properties:
+        id: { type: integer, format: int64 }
+        provider: { type: string, enum: [microsoft] }
+        address: { type: string }
+        folder: { type: string }
+        paused: { type: boolean }
+        status: { type: string, enum: [ok, error, reauth] }
+        statusDetail: { type: string }
+        lastCheckAt: { type: string, nullable: true, description: "last check, RFC3339 UTC" }
+        lastMailAt: { type: string, nullable: true, description: "arrival of the newest mail read, RFC3339 UTC" }
+        createdAt: { type: string }
+      required: [id, provider, address, folder, paused, status, statusDetail, lastCheckAt, lastMailAt, createdAt]
+    MailSignIn:
+      type: object
+      properties:
+        flowId: { type: string }
+        userCode: { type: string }
+        verificationUri: { type: string }
+        expiresAt: { type: string, description: RFC3339 }
+        expiresIn: { type: integer, description: "the code's lifetime in seconds" }
+        interval: { type: integer, description: "seconds between polls" }
+      required: [flowId, userCode, verificationUri, expiresAt, expiresIn, interval]
+    MailSignInStatus:
+      type: object
+      properties:
+        state: { type: string, enum: [pending, declined, expired, done] }
+        mailbox: { $ref: "#/components/schemas/Mailbox" }
+      required: [state]
+    MailSummary:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        sender: { type: string }
+        subject: { type: string }
+        receivedAt: { type: string, description: "the mail's Date header with its offset, RFC3339" }
+        outcome: { type: string, enum: [unrecognized] }
+      required: [id, sender, subject, receivedAt, outcome]
     BankConnection:
       type: object
       description: A bank-sync connection's metadata — never the access URL.

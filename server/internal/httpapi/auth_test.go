@@ -26,6 +26,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
+	"github.com/easly1989/cloudbank/server/internal/mailingest"
 	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
@@ -90,10 +91,13 @@ func newTestAPI(t *testing.T) *testClient {
 	attsvc := attachment.NewService(st.Write(), filepath.Join(t.TempDir(), "attachments"))
 	tsvc.SetAttachmentPurger(attsvc.PurgeTransactions)
 	bksvc.SetAttachments(attsvc)
+	// Microsoft is never reached in these tests: the mail endpoints are
+	// exercised for their gate (CB_SECRET_KEY) and their wallet scoping.
+	mailsvc := mailingest.NewService(st.Read(), st.Write(), mailingest.NewMicrosoft("test-client", "http://127.0.0.1:1", nil))
 	srv := httptest.NewServer(New(Options{
 		Auth: svc, Wallets: wsvc, Currencies: csvc, Accounts: asvc,
 		Categories: catsvc, Payees: psvc, Transactions: tsvc, Tags: tagsvc, Vehicles: vehsvc, Goals: goalsvc, Transfers: xsvc, Dashboard: dsvc, Templates: tplsvc, Schedules: ssvc, Assignments: asvc2, Budgets: bsvc, Reports: rsvc, Import: impsvc, CSV: csvsvc, RateProvider: stubRateProvider{},
-		Integrity: intsvc, Backup: bksvc, Attachments: attsvc, HotBackup: st, DataDir: t.TempDir(), Health: st,
+		Integrity: intsvc, Backup: bksvc, Attachments: attsvc, Mail: mailsvc, HotBackup: st, DataDir: t.TempDir(), Health: st,
 		// A local build: the check follows no channel, so it never goes online.
 		Updates: updates.New(st.Write(), "dev", true),
 	}))

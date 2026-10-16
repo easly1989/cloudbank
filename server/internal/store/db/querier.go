@@ -79,6 +79,7 @@ type Querier interface {
 	DeleteEBankingConfig(ctx context.Context, walletID int64) (int64, error)
 	DeleteExpiredSessions(ctx context.Context, expiresAt string) error
 	DeleteGoal(ctx context.Context, id int64) error
+	DeleteMailbox(ctx context.Context, arg DeleteMailboxParams) (int64, error)
 	DeleteOtherUserSessions(ctx context.Context, arg DeleteOtherUserSessionsParams) error
 	DeletePayee(ctx context.Context, id int64) error
 	DeletePluggyConfig(ctx context.Context, walletID int64) error
@@ -112,6 +113,7 @@ type Querier interface {
 	// comes from has no vehicles, only the fills' memos (d= the odometer).
 	DemoLinkFills(ctx context.Context, arg DemoLinkFillsParams) (int64, error)
 	FindDuplicateTransactions(ctx context.Context, arg FindDuplicateTransactionsParams) ([]Transaction, error)
+	FindMailboxByAddress(ctx context.Context, arg FindMailboxByAddressParams) (Mailbox, error)
 	GetAISettings(ctx context.Context, userID int64) (GetAISettingsRow, error)
 	GetAPIToken(ctx context.Context, id string) (ApiToken, error)
 	GetAccount(ctx context.Context, id int64) (Account, error)
@@ -127,6 +129,7 @@ type Querier interface {
 	GetEBankingConfig(ctx context.Context, walletID int64) (BankEbankingConfig, error)
 	GetGoal(ctx context.Context, id int64) (Goal, error)
 	GetInstanceSetting(ctx context.Context, key string) (string, error)
+	GetMailbox(ctx context.Context, arg GetMailboxParams) (Mailbox, error)
 	GetPayee(ctx context.Context, id int64) (Payee, error)
 	GetPluggyConfig(ctx context.Context, walletID int64) (BankPluggyConfig, error)
 	GetSchedule(ctx context.Context, id int64) (Schedule, error)
@@ -161,6 +164,8 @@ type Querier interface {
 	InsertEBankingAuth(ctx context.Context, arg InsertEBankingAuthParams) error
 	InsertEBankingConnection(ctx context.Context, arg InsertEBankingConnectionParams) (BankConnection, error)
 	InsertGoal(ctx context.Context, arg InsertGoalParams) (Goal, error)
+	InsertMailMessage(ctx context.Context, arg InsertMailMessageParams) (int64, error)
+	InsertMailbox(ctx context.Context, arg InsertMailboxParams) (Mailbox, error)
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
 	InsertRecoveryCode(ctx context.Context, arg InsertRecoveryCodeParams) error
 	InsertReminderIfNew(ctx context.Context, arg InsertReminderIfNewParams) (int64, error)
@@ -223,6 +228,8 @@ type Querier interface {
 	ListImportedUncategorized(ctx context.Context, walletID int64) ([]Transaction, error)
 	// Each currency's latest recorded rate: where it came from, and its date.
 	ListLatestRatesForWallet(ctx context.Context, walletID int64) ([]ListLatestRatesForWalletRow, error)
+	ListMailMessages(ctx context.Context, arg ListMailMessagesParams) ([]ListMailMessagesRow, error)
+	ListMailboxesForWallet(ctx context.Context, walletID int64) ([]Mailbox, error)
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID int64) ([]ListPushSubscriptionsForUserRow, error)
 	ListPushUserIDs(ctx context.Context) ([]int64, error)
@@ -282,6 +289,7 @@ type Querier interface {
 	// "none" (0) left out.
 	PayeePaymentCounts(ctx context.Context, arg PayeePaymentCountsParams) ([]PayeePaymentCountsRow, error)
 	PruneBankSyncRuns(ctx context.Context, arg PruneBankSyncRunsParams) error
+	PruneMailMessages(ctx context.Context, arg PruneMailMessagesParams) error
 	// A tag merge moves the rules too; OR IGNORE skips a rule that already adds
 	// the target (its row goes away with the source tag).
 	ReassignAssignmentTag(ctx context.Context, arg ReassignAssignmentTagParams) error
@@ -294,6 +302,7 @@ type Querier interface {
 	ReassignTransactionCategory(ctx context.Context, arg ReassignTransactionCategoryParams) error
 	ReassignTransactionPayee(ctx context.Context, arg ReassignTransactionPayeeParams) error
 	RecordBankSyncOutcome(ctx context.Context, arg RecordBankSyncOutcomeParams) error
+	RecordMailboxCheck(ctx context.Context, arg RecordMailboxCheckParams) error
 	RefreshEBankingConnectionSession(ctx context.Context, arg RefreshEBankingConnectionSessionParams) (BankConnection, error)
 	RenameTag(ctx context.Context, arg RenameTagParams) error
 	ReparentChildren(ctx context.Context, arg ReparentChildrenParams) error
@@ -314,6 +323,10 @@ type Querier interface {
 	SetCurrencyBase(ctx context.Context, id int64) error
 	SetGoalClosed(ctx context.Context, arg SetGoalClosedParams) error
 	SetInstanceSetting(ctx context.Context, arg SetInstanceSettingParams) error
+	SetMailboxCursor(ctx context.Context, arg SetMailboxCursorParams) error
+	SetMailboxFolder(ctx context.Context, arg SetMailboxFolderParams) error
+	SetMailboxPaused(ctx context.Context, arg SetMailboxPausedParams) error
+	SetMailboxSecret(ctx context.Context, arg SetMailboxSecretParams) error
 	SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error
 	SetTransactionImportRef(ctx context.Context, arg SetTransactionImportRefParams) error
 	SetTransactionInfo(ctx context.Context, arg SetTransactionInfoParams) error
@@ -336,6 +349,7 @@ type Querier interface {
 	TemplateUsage(ctx context.Context, arg TemplateUsageParams) ([]TemplateUsageRow, error)
 	TouchAPIToken(ctx context.Context, id string) error
 	TouchBankConnection(ctx context.Context, id int64) error
+	TouchMailboxLastMail(ctx context.Context, arg TouchMailboxLastMailParams) error
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
 	UpdateAccountPosition(ctx context.Context, arg UpdateAccountPositionParams) error

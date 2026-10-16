@@ -34,6 +34,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
+	"github.com/easly1989/cloudbank/server/internal/mailingest"
 	"github.com/easly1989/cloudbank/server/internal/oidc"
 	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/push"
@@ -175,6 +176,14 @@ func run() error {
 	importSvc := importer.NewService(st.Write())
 	csvSvc := importio.NewService(st.Write(), transactionSvc, assignmentSvc, accountSvc)
 	bankSyncSvc := banksync.NewService(st.Read(), st.Write(), csvSvc)
+	// Bank-mail reading (#654). Without an application id there is no
+	// Microsoft provider; without CB_SECRET_KEY the service refuses to store a
+	// mailbox credential at all.
+	var microsoft *mailingest.Microsoft
+	if cfg.MicrosoftClientID != "" {
+		microsoft = mailingest.NewMicrosoft(cfg.MicrosoftClientID, "", nil)
+	}
+	mailSvc := mailingest.NewService(st.Read(), st.Write(), microsoft)
 	rateProvider := &currency.Frankfurter{BaseURL: cfg.RateProviderURL}
 	integritySvc := integrity.NewServiceWithRead(st.Read(), st.Write())
 	backupSvc := backup.NewService(st.Write())
@@ -214,6 +223,7 @@ func run() error {
 		Push:              pushSvc,
 		AI:                aiSvc,
 		BankSync:          bankSyncSvc,
+		Mail:              mailSvc,
 		Templates:         templateSvc,
 		Schedules:         scheduleSvc,
 		Assignments:       assignmentSvc,

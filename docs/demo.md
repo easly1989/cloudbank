@@ -37,9 +37,10 @@ These are not bugs, so please don't report them as bugs:
   _Demo Bank_ in Settings → Bank sync and each sync makes up a few days of card
   payments, which then run through reconciliation and the Review page like the
   real thing. SimpleFIN, Enable Banking and Pluggy are not offered.
-- **No attachments, no AI, no push notifications, no API tokens, no two-factor
-  sign-in and no SSO.** Each of these needs something a throwaway account
-  should not have: stored files, your API key, a device or an identity provider.
+- **No attachments, no AI, no bank mails, no push notifications, no API tokens,
+  no two-factor sign-in and no SSO.** Each of these needs something a throwaway
+  account should not have: stored files, your API key, your mailbox, a device or
+  an identity provider.
 - **No restore, no administration.** You can download a backup or an `.xhb`
   export of your demo wallet, but not restore one. There is no People section
   and no admin account.

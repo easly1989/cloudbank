@@ -142,6 +142,12 @@ Added since:
   touch screen the footer at the end of the page is one 44px line, the version
   and licence with a "Links" toggle that opens the links one per row; the fixed
   bar a mouse gets is unchanged.
+- **Bank sync, Bank mails and AI are three sections** (#655). The settings
+  board has one section, "Bank sync & AI". Reading the bank's mails (#654)
+  added a third thing to it, and the three are set up separately, so the app
+  splits it, at the board's place in the rail: Bank sync, Bank mails, AI. Each
+  section shows its cards under its own header, with no group of the same
+  name. The demo shows Bank sync only.
 - **Accounts on a phone** (#514). No board draws the accounts page at phone
   width. There each account is one line: the name over its bank and share on
   the left, the amount on the right, never wrapped, and a ⋯ menu (Edit,
