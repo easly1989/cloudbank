@@ -249,16 +249,41 @@ type InstanceSetting struct {
 }
 
 type MailMessage struct {
-	ID         int64
-	MailboxID  int64
-	Uid        int64
-	MessageID  string
-	Sender     string
-	Subject    string
-	ReceivedAt string
-	Body       string
-	Outcome    string
-	CreatedAt  string
+	ID            int64
+	MailboxID     int64
+	Uid           int64
+	MessageID     string
+	Sender        string
+	Subject       string
+	ReceivedAt    string
+	Body          string
+	Outcome       string
+	CreatedAt     string
+	Authenticated int64
+	Detail        string
+	PatternID     sql.NullInt64
+	TransactionID sql.NullInt64
+}
+
+type MailPattern struct {
+	ID          int64
+	MailboxID   int64
+	Position    int64
+	Name        string
+	Sender      string
+	SubjectMode string
+	Subject     string
+	Body        string
+	AccountID   int64
+	Cards       string
+	Direction   string
+	InWords     string
+	PaymentMode int64
+	ApplyRules  int64
+	DateFormat  string
+	RequireAuth int64
+	Editor      string
+	CreatedAt   string
 }
 
 type Mailbox struct {

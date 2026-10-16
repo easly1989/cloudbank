@@ -184,6 +184,8 @@ func run() error {
 		microsoft = mailingest.NewMicrosoft(cfg.MicrosoftClientID, "", nil)
 	}
 	mailSvc := mailingest.NewService(st.Read(), st.Write(), microsoft)
+	// A bank mail a pattern reads becomes a transaction the way an import does.
+	mailSvc.SetImporter(csvSvc)
 	rateProvider := &currency.Frankfurter{BaseURL: cfg.RateProviderURL}
 	integritySvc := integrity.NewServiceWithRead(st.Read(), st.Write())
 	backupSvc := backup.NewService(st.Write())

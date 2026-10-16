@@ -10,6 +10,23 @@ import (
 	"database/sql"
 )
 
+const deleteMailPattern = `-- name: DeleteMailPattern :execrows
+DELETE FROM mail_patterns WHERE id = ? AND mailbox_id = ?
+`
+
+type DeleteMailPatternParams struct {
+	ID        int64
+	MailboxID int64
+}
+
+func (q *Queries) DeleteMailPattern(ctx context.Context, arg DeleteMailPatternParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteMailPattern, arg.ID, arg.MailboxID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const deleteMailbox = `-- name: DeleteMailbox :execrows
 DELETE FROM mailboxes WHERE id = ? AND wallet_id = ?
 `
@@ -61,6 +78,153 @@ func (q *Queries) FindMailboxByAddress(ctx context.Context, arg FindMailboxByAdd
 	return i, err
 }
 
+const findTransactionByImportRef = `-- name: FindTransactionByImportRef :one
+SELECT id FROM transactions WHERE account_id = ? AND import_ref = ? ORDER BY id LIMIT 1
+`
+
+type FindTransactionByImportRefParams struct {
+	AccountID int64
+	ImportRef string
+}
+
+func (q *Queries) FindTransactionByImportRef(ctx context.Context, arg FindTransactionByImportRefParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, findTransactionByImportRef, arg.AccountID, arg.ImportRef)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const getAccountFracDigits = `-- name: GetAccountFracDigits :one
+SELECT c.frac_digits FROM accounts a JOIN currencies c ON c.id = a.currency_id
+WHERE a.id = ? AND a.wallet_id = ?
+`
+
+type GetAccountFracDigitsParams struct {
+	ID       int64
+	WalletID int64
+}
+
+// An account's currency decimals, if the account is in the wallet.
+func (q *Queries) GetAccountFracDigits(ctx context.Context, arg GetAccountFracDigitsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getAccountFracDigits, arg.ID, arg.WalletID)
+	var frac_digits int64
+	err := row.Scan(&frac_digits)
+	return frac_digits, err
+}
+
+const getMailMessage = `-- name: GetMailMessage :one
+SELECT id, mailbox_id, uid, message_id, sender, subject, received_at, body, outcome, created_at, authenticated, detail, pattern_id, transaction_id FROM mail_messages WHERE id = ? AND mailbox_id = ? LIMIT 1
+`
+
+type GetMailMessageParams struct {
+	ID        int64
+	MailboxID int64
+}
+
+func (q *Queries) GetMailMessage(ctx context.Context, arg GetMailMessageParams) (MailMessage, error) {
+	row := q.db.QueryRowContext(ctx, getMailMessage, arg.ID, arg.MailboxID)
+	var i MailMessage
+	err := row.Scan(
+		&i.ID,
+		&i.MailboxID,
+		&i.Uid,
+		&i.MessageID,
+		&i.Sender,
+		&i.Subject,
+		&i.ReceivedAt,
+		&i.Body,
+		&i.Outcome,
+		&i.CreatedAt,
+		&i.Authenticated,
+		&i.Detail,
+		&i.PatternID,
+		&i.TransactionID,
+	)
+	return i, err
+}
+
+const getMailMessageView = `-- name: GetMailMessageView :one
+SELECT m.id, m.sender, m.subject, m.received_at, m.body, m.outcome, m.detail, m.authenticated,
+       m.pattern_id, m.transaction_id, t.account_id
+FROM mail_messages m
+LEFT JOIN transactions t ON t.id = m.transaction_id
+WHERE m.id = ? AND m.mailbox_id = ? LIMIT 1
+`
+
+type GetMailMessageViewParams struct {
+	ID        int64
+	MailboxID int64
+}
+
+type GetMailMessageViewRow struct {
+	ID            int64
+	Sender        string
+	Subject       string
+	ReceivedAt    string
+	Body          string
+	Outcome       string
+	Detail        string
+	Authenticated int64
+	PatternID     sql.NullInt64
+	TransactionID sql.NullInt64
+	AccountID     sql.NullInt64
+}
+
+// One mail with the account of the transaction it made, for the history.
+func (q *Queries) GetMailMessageView(ctx context.Context, arg GetMailMessageViewParams) (GetMailMessageViewRow, error) {
+	row := q.db.QueryRowContext(ctx, getMailMessageView, arg.ID, arg.MailboxID)
+	var i GetMailMessageViewRow
+	err := row.Scan(
+		&i.ID,
+		&i.Sender,
+		&i.Subject,
+		&i.ReceivedAt,
+		&i.Body,
+		&i.Outcome,
+		&i.Detail,
+		&i.Authenticated,
+		&i.PatternID,
+		&i.TransactionID,
+		&i.AccountID,
+	)
+	return i, err
+}
+
+const getMailPattern = `-- name: GetMailPattern :one
+SELECT id, mailbox_id, position, name, sender, subject_mode, subject, body, account_id, cards, direction, in_words, payment_mode, apply_rules, date_format, require_auth, editor, created_at FROM mail_patterns WHERE id = ? AND mailbox_id = ? LIMIT 1
+`
+
+type GetMailPatternParams struct {
+	ID        int64
+	MailboxID int64
+}
+
+func (q *Queries) GetMailPattern(ctx context.Context, arg GetMailPatternParams) (MailPattern, error) {
+	row := q.db.QueryRowContext(ctx, getMailPattern, arg.ID, arg.MailboxID)
+	var i MailPattern
+	err := row.Scan(
+		&i.ID,
+		&i.MailboxID,
+		&i.Position,
+		&i.Name,
+		&i.Sender,
+		&i.SubjectMode,
+		&i.Subject,
+		&i.Body,
+		&i.AccountID,
+		&i.Cards,
+		&i.Direction,
+		&i.InWords,
+		&i.PaymentMode,
+		&i.ApplyRules,
+		&i.DateFormat,
+		&i.RequireAuth,
+		&i.Editor,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getMailbox = `-- name: GetMailbox :one
 SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted FROM mailboxes WHERE id = ? AND wallet_id = ? LIMIT 1
 `
@@ -94,24 +258,27 @@ func (q *Queries) GetMailbox(ctx context.Context, arg GetMailboxParams) (Mailbox
 	return i, err
 }
 
-const insertMailMessage = `-- name: InsertMailMessage :execrows
-INSERT INTO mail_messages (mailbox_id, uid, message_id, sender, subject, received_at, body)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+const insertMailMessage = `-- name: InsertMailMessage :many
+INSERT INTO mail_messages (mailbox_id, uid, message_id, sender, subject, received_at, body, authenticated)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (mailbox_id, message_id) DO NOTHING
+RETURNING id
 `
 
 type InsertMailMessageParams struct {
-	MailboxID  int64
-	Uid        int64
-	MessageID  string
-	Sender     string
-	Subject    string
-	ReceivedAt string
-	Body       string
+	MailboxID     int64
+	Uid           int64
+	MessageID     string
+	Sender        string
+	Subject       string
+	ReceivedAt    string
+	Body          string
+	Authenticated int64
 }
 
-func (q *Queries) InsertMailMessage(ctx context.Context, arg InsertMailMessageParams) (int64, error) {
-	result, err := q.db.ExecContext(ctx, insertMailMessage,
+// Returns the new row's id, or nothing when the mail was already there.
+func (q *Queries) InsertMailMessage(ctx context.Context, arg InsertMailMessageParams) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, insertMailMessage,
 		arg.MailboxID,
 		arg.Uid,
 		arg.MessageID,
@@ -119,11 +286,103 @@ func (q *Queries) InsertMailMessage(ctx context.Context, arg InsertMailMessagePa
 		arg.Subject,
 		arg.ReceivedAt,
 		arg.Body,
+		arg.Authenticated,
 	)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return result.RowsAffected()
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const insertMailPattern = `-- name: InsertMailPattern :one
+INSERT INTO mail_patterns (
+    mailbox_id, position, name, sender, subject_mode, subject, body, account_id, cards,
+    direction, in_words, payment_mode, apply_rules, date_format, require_auth, editor
+)
+VALUES (
+    ?1,
+    (SELECT COALESCE(MAX(p.position) + 1, 0) FROM mail_patterns p WHERE p.mailbox_id = ?1),
+    ?2, ?3, ?4, ?5, ?6,
+    ?7, ?8, ?9, ?10,
+    ?11, ?12, ?13, ?14,
+    ?15
+)
+RETURNING id, mailbox_id, position, name, sender, subject_mode, subject, body, account_id, cards, direction, in_words, payment_mode, apply_rules, date_format, require_auth, editor, created_at
+`
+
+type InsertMailPatternParams struct {
+	MailboxID   int64
+	Name        string
+	Sender      string
+	SubjectMode string
+	Subject     string
+	Body        string
+	AccountID   int64
+	Cards       string
+	Direction   string
+	InWords     string
+	PaymentMode int64
+	ApplyRules  int64
+	DateFormat  string
+	RequireAuth int64
+	Editor      string
+}
+
+func (q *Queries) InsertMailPattern(ctx context.Context, arg InsertMailPatternParams) (MailPattern, error) {
+	row := q.db.QueryRowContext(ctx, insertMailPattern,
+		arg.MailboxID,
+		arg.Name,
+		arg.Sender,
+		arg.SubjectMode,
+		arg.Subject,
+		arg.Body,
+		arg.AccountID,
+		arg.Cards,
+		arg.Direction,
+		arg.InWords,
+		arg.PaymentMode,
+		arg.ApplyRules,
+		arg.DateFormat,
+		arg.RequireAuth,
+		arg.Editor,
+	)
+	var i MailPattern
+	err := row.Scan(
+		&i.ID,
+		&i.MailboxID,
+		&i.Position,
+		&i.Name,
+		&i.Sender,
+		&i.SubjectMode,
+		&i.Subject,
+		&i.Body,
+		&i.AccountID,
+		&i.Cards,
+		&i.Direction,
+		&i.InWords,
+		&i.PaymentMode,
+		&i.ApplyRules,
+		&i.DateFormat,
+		&i.RequireAuth,
+		&i.Editor,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const insertMailbox = `-- name: InsertMailbox :one
@@ -171,8 +430,11 @@ func (q *Queries) InsertMailbox(ctx context.Context, arg InsertMailboxParams) (M
 }
 
 const listMailMessages = `-- name: ListMailMessages :many
-SELECT id, mailbox_id, uid, message_id, sender, subject, received_at, outcome, created_at
-FROM mail_messages WHERE mailbox_id = ? ORDER BY id DESC LIMIT ?
+SELECT m.id, m.mailbox_id, m.uid, m.message_id, m.sender, m.subject, m.received_at, m.outcome,
+       m.detail, m.authenticated, m.pattern_id, m.transaction_id, t.account_id, m.created_at
+FROM mail_messages m
+LEFT JOIN transactions t ON t.id = m.transaction_id
+WHERE m.mailbox_id = ? ORDER BY m.id DESC LIMIT ?
 `
 
 type ListMailMessagesParams struct {
@@ -181,15 +443,20 @@ type ListMailMessagesParams struct {
 }
 
 type ListMailMessagesRow struct {
-	ID         int64
-	MailboxID  int64
-	Uid        int64
-	MessageID  string
-	Sender     string
-	Subject    string
-	ReceivedAt string
-	Outcome    string
-	CreatedAt  string
+	ID            int64
+	MailboxID     int64
+	Uid           int64
+	MessageID     string
+	Sender        string
+	Subject       string
+	ReceivedAt    string
+	Outcome       string
+	Detail        string
+	Authenticated int64
+	PatternID     sql.NullInt64
+	TransactionID sql.NullInt64
+	AccountID     sql.NullInt64
+	CreatedAt     string
 }
 
 func (q *Queries) ListMailMessages(ctx context.Context, arg ListMailMessagesParams) ([]ListMailMessagesRow, error) {
@@ -210,6 +477,154 @@ func (q *Queries) ListMailMessages(ctx context.Context, arg ListMailMessagesPara
 			&i.Subject,
 			&i.ReceivedAt,
 			&i.Outcome,
+			&i.Detail,
+			&i.Authenticated,
+			&i.PatternID,
+			&i.TransactionID,
+			&i.AccountID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMailMessagesFrom = `-- name: ListMailMessagesFrom :many
+SELECT id, mailbox_id, uid, message_id, sender, subject, received_at, body, outcome, created_at, authenticated, detail, pattern_id, transaction_id FROM mail_messages
+WHERE mailbox_id = ? AND sender = ?
+ORDER BY id DESC LIMIT ?
+`
+
+type ListMailMessagesFromParams struct {
+	MailboxID int64
+	Sender    string
+	Limit     int64
+}
+
+// The latest mails of one sender, for trying a pattern before saving it.
+func (q *Queries) ListMailMessagesFrom(ctx context.Context, arg ListMailMessagesFromParams) ([]MailMessage, error) {
+	rows, err := q.db.QueryContext(ctx, listMailMessagesFrom, arg.MailboxID, arg.Sender, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []MailMessage{}
+	for rows.Next() {
+		var i MailMessage
+		if err := rows.Scan(
+			&i.ID,
+			&i.MailboxID,
+			&i.Uid,
+			&i.MessageID,
+			&i.Sender,
+			&i.Subject,
+			&i.ReceivedAt,
+			&i.Body,
+			&i.Outcome,
+			&i.CreatedAt,
+			&i.Authenticated,
+			&i.Detail,
+			&i.PatternID,
+			&i.TransactionID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMailMessagesToRetry = `-- name: ListMailMessagesToRetry :many
+SELECT id, mailbox_id, uid, message_id, sender, subject, received_at, body, outcome, created_at, authenticated, detail, pattern_id, transaction_id FROM mail_messages
+WHERE mailbox_id = ? AND outcome IN ('unrecognized', 'unverified', 'failed')
+ORDER BY id
+`
+
+// The mails that made no transaction, oldest first, for a pattern saved or
+// corrected after them: none read them, or one did and failed.
+func (q *Queries) ListMailMessagesToRetry(ctx context.Context, mailboxID int64) ([]MailMessage, error) {
+	rows, err := q.db.QueryContext(ctx, listMailMessagesToRetry, mailboxID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []MailMessage{}
+	for rows.Next() {
+		var i MailMessage
+		if err := rows.Scan(
+			&i.ID,
+			&i.MailboxID,
+			&i.Uid,
+			&i.MessageID,
+			&i.Sender,
+			&i.Subject,
+			&i.ReceivedAt,
+			&i.Body,
+			&i.Outcome,
+			&i.CreatedAt,
+			&i.Authenticated,
+			&i.Detail,
+			&i.PatternID,
+			&i.TransactionID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMailPatterns = `-- name: ListMailPatterns :many
+SELECT id, mailbox_id, position, name, sender, subject_mode, subject, body, account_id, cards, direction, in_words, payment_mode, apply_rules, date_format, require_auth, editor, created_at FROM mail_patterns WHERE mailbox_id = ? ORDER BY position, id
+`
+
+func (q *Queries) ListMailPatterns(ctx context.Context, mailboxID int64) ([]MailPattern, error) {
+	rows, err := q.db.QueryContext(ctx, listMailPatterns, mailboxID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []MailPattern{}
+	for rows.Next() {
+		var i MailPattern
+		if err := rows.Scan(
+			&i.ID,
+			&i.MailboxID,
+			&i.Position,
+			&i.Name,
+			&i.Sender,
+			&i.SubjectMode,
+			&i.Subject,
+			&i.Body,
+			&i.AccountID,
+			&i.Cards,
+			&i.Direction,
+			&i.InWords,
+			&i.PaymentMode,
+			&i.ApplyRules,
+			&i.DateFormat,
+			&i.RequireAuth,
+			&i.Editor,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -351,6 +766,45 @@ func (q *Queries) RecordMailboxCheck(ctx context.Context, arg RecordMailboxCheck
 	return err
 }
 
+const setMailMessageOutcome = `-- name: SetMailMessageOutcome :exec
+UPDATE mail_messages SET outcome = ?, detail = ?, pattern_id = ?, transaction_id = ?
+WHERE id = ?
+`
+
+type SetMailMessageOutcomeParams struct {
+	Outcome       string
+	Detail        string
+	PatternID     sql.NullInt64
+	TransactionID sql.NullInt64
+	ID            int64
+}
+
+func (q *Queries) SetMailMessageOutcome(ctx context.Context, arg SetMailMessageOutcomeParams) error {
+	_, err := q.db.ExecContext(ctx, setMailMessageOutcome,
+		arg.Outcome,
+		arg.Detail,
+		arg.PatternID,
+		arg.TransactionID,
+		arg.ID,
+	)
+	return err
+}
+
+const setMailPatternPosition = `-- name: SetMailPatternPosition :exec
+UPDATE mail_patterns SET position = ? WHERE id = ? AND mailbox_id = ?
+`
+
+type SetMailPatternPositionParams struct {
+	Position  int64
+	ID        int64
+	MailboxID int64
+}
+
+func (q *Queries) SetMailPatternPosition(ctx context.Context, arg SetMailPatternPositionParams) error {
+	_, err := q.db.ExecContext(ctx, setMailPatternPosition, arg.Position, arg.ID, arg.MailboxID)
+	return err
+}
+
 const setMailboxAlerted = `-- name: SetMailboxAlerted :execrows
 UPDATE mailboxes SET alerted = ? WHERE id = ? AND alerted != ?
 `
@@ -447,4 +901,56 @@ type TouchMailboxLastMailParams struct {
 func (q *Queries) TouchMailboxLastMail(ctx context.Context, arg TouchMailboxLastMailParams) error {
 	_, err := q.db.ExecContext(ctx, touchMailboxLastMail, arg.LastMailAt, arg.ID)
 	return err
+}
+
+const updateMailPattern = `-- name: UpdateMailPattern :execrows
+UPDATE mail_patterns
+SET name = ?, sender = ?, subject_mode = ?, subject = ?, body = ?, account_id = ?, cards = ?,
+    direction = ?, in_words = ?, payment_mode = ?, apply_rules = ?, date_format = ?,
+    require_auth = ?, editor = ?
+WHERE id = ? AND mailbox_id = ?
+`
+
+type UpdateMailPatternParams struct {
+	Name        string
+	Sender      string
+	SubjectMode string
+	Subject     string
+	Body        string
+	AccountID   int64
+	Cards       string
+	Direction   string
+	InWords     string
+	PaymentMode int64
+	ApplyRules  int64
+	DateFormat  string
+	RequireAuth int64
+	Editor      string
+	ID          int64
+	MailboxID   int64
+}
+
+func (q *Queries) UpdateMailPattern(ctx context.Context, arg UpdateMailPatternParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, updateMailPattern,
+		arg.Name,
+		arg.Sender,
+		arg.SubjectMode,
+		arg.Subject,
+		arg.Body,
+		arg.AccountID,
+		arg.Cards,
+		arg.Direction,
+		arg.InWords,
+		arg.PaymentMode,
+		arg.ApplyRules,
+		arg.DateFormat,
+		arg.RequireAuth,
+		arg.Editor,
+		arg.ID,
+		arg.MailboxID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
