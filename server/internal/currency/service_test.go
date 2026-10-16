@@ -33,7 +33,7 @@ func TestAddFirstCurrencyBecomesBase(t *testing.T) {
 	ctx := context.Background()
 	wid := seedWallet(t, q)
 
-	c, err := s.AddCurrency(ctx, wid, "usd", false)
+	c, err := s.AddCurrency(ctx, wid, "usd", false, "")
 	if err != nil {
 		t.Fatalf("AddCurrency: %v", err)
 	}
@@ -47,14 +47,40 @@ func TestAddFirstCurrencyBecomesBase(t *testing.T) {
 	}
 }
 
+func TestANewCurrencyIsWrittenTheWayItsAdderReadsNumbers(t *testing.T) {
+	for lang, want := range map[string][2]string{
+		"it": {",", "."}, "es": {",", "."}, "de": {",", "."}, "pt-BR": {",", "."},
+		"fr": {",", " "}, "en": {".", ","}, "": {".", ","}, "it-CH": {",", "."}, "xx": {".", ","},
+	} {
+		if d, g := Separators(lang); d != want[0] || g != want[1] {
+			t.Errorf("%q: %q %q, want %q %q", lang, d, g, want[0], want[1])
+		}
+	}
+
+	s, q := newTestService(t)
+	ctx := context.Background()
+	wid := seedWallet(t, q)
+	eur, err := s.AddCurrency(ctx, wid, "EUR", true, "it")
+	if err != nil {
+		t.Fatal(err)
+	}
+	usd, err := s.AddCurrency(ctx, wid, "USD", false, "en")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if eur.DecimalChar != "," || eur.GroupChar != "." || usd.DecimalChar != "." || usd.GroupChar != "," {
+		t.Fatalf("EUR %q %q, USD %q %q", eur.DecimalChar, eur.GroupChar, usd.DecimalChar, usd.GroupChar)
+	}
+}
+
 func TestAddDuplicateRejected(t *testing.T) {
 	s, q := newTestService(t)
 	ctx := context.Background()
 	wid := seedWallet(t, q)
-	if _, err := s.AddCurrency(ctx, wid, "USD", false); err != nil {
+	if _, err := s.AddCurrency(ctx, wid, "USD", false, ""); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.AddCurrency(ctx, wid, "USD", false); err != ErrDuplicate {
+	if _, err := s.AddCurrency(ctx, wid, "USD", false, ""); err != ErrDuplicate {
 		t.Fatalf("duplicate add = %v, want ErrDuplicate", err)
 	}
 }
@@ -62,7 +88,7 @@ func TestAddDuplicateRejected(t *testing.T) {
 func TestAddUnknownCodeRejected(t *testing.T) {
 	s, q := newTestService(t)
 	wid := seedWallet(t, q)
-	if _, err := s.AddCurrency(context.Background(), wid, "ZZZ", false); err != ErrUnknownCode {
+	if _, err := s.AddCurrency(context.Background(), wid, "ZZZ", false, ""); err != ErrUnknownCode {
 		t.Fatalf("unknown code = %v, want ErrUnknownCode", err)
 	}
 }
@@ -71,8 +97,8 @@ func TestSetBaseSwitchesBase(t *testing.T) {
 	s, q := newTestService(t)
 	ctx := context.Background()
 	wid := seedWallet(t, q)
-	usd, _ := s.AddCurrency(ctx, wid, "USD", false) // base
-	eur, _ := s.AddCurrency(ctx, wid, "EUR", false) // secondary
+	usd, _ := s.AddCurrency(ctx, wid, "USD", false, "") // base
+	eur, _ := s.AddCurrency(ctx, wid, "EUR", false, "") // secondary
 
 	if err := s.SetBase(ctx, wid, eur.ID); err != nil {
 		t.Fatalf("SetBase: %v", err)
@@ -100,8 +126,8 @@ func TestUpdateRateRecordsHistoryAndRejectsBase(t *testing.T) {
 	s, q := newTestService(t)
 	ctx := context.Background()
 	wid := seedWallet(t, q)
-	usd, _ := s.AddCurrency(ctx, wid, "USD", false) // base
-	eur, _ := s.AddCurrency(ctx, wid, "EUR", false)
+	usd, _ := s.AddCurrency(ctx, wid, "USD", false, "") // base
+	eur, _ := s.AddCurrency(ctx, wid, "EUR", false, "")
 
 	if err := s.UpdateRate(ctx, eur.ID, 1.08); err != nil {
 		t.Fatalf("UpdateRate: %v", err)
@@ -124,8 +150,8 @@ func TestDeleteBaseRejected(t *testing.T) {
 	s, q := newTestService(t)
 	ctx := context.Background()
 	wid := seedWallet(t, q)
-	usd, _ := s.AddCurrency(ctx, wid, "USD", false)
-	eur, _ := s.AddCurrency(ctx, wid, "EUR", false)
+	usd, _ := s.AddCurrency(ctx, wid, "USD", false, "")
+	eur, _ := s.AddCurrency(ctx, wid, "EUR", false, "")
 
 	if err := s.Delete(ctx, usd.ID); err != ErrBaseCurrency {
 		t.Fatalf("delete base = %v, want ErrBaseCurrency", err)
@@ -151,9 +177,9 @@ func TestSetBaseReworksRates(t *testing.T) {
 	s, q := newTestService(t)
 	ctx := context.Background()
 	wid := seedWallet(t, q)
-	eur, _ := s.AddCurrency(ctx, wid, "EUR", false) // base
-	usd, _ := s.AddCurrency(ctx, wid, "USD", false)
-	gbp, _ := s.AddCurrency(ctx, wid, "GBP", false)
+	eur, _ := s.AddCurrency(ctx, wid, "EUR", false, "") // base
+	usd, _ := s.AddCurrency(ctx, wid, "USD", false, "")
+	gbp, _ := s.AddCurrency(ctx, wid, "GBP", false, "")
 	// 1 $ = 0.8 €, 1 £ = 1.2 €.
 	if err := s.UpdateRate(ctx, usd.ID, 0.8); err != nil {
 		t.Fatal(err)
@@ -185,8 +211,8 @@ func TestDeleteInUseRejected(t *testing.T) {
 	s, q := newTestService(t)
 	ctx := context.Background()
 	wid := seedWallet(t, q)
-	_, _ = s.AddCurrency(ctx, wid, "EUR", false)
-	usd, _ := s.AddCurrency(ctx, wid, "USD", false)
+	_, _ = s.AddCurrency(ctx, wid, "EUR", false, "")
+	usd, _ := s.AddCurrency(ctx, wid, "USD", false, "")
 	if _, err := q.InsertAccount(ctx, db.InsertAccountParams{WalletID: wid, Name: "Card", Type: "creditcard", CurrencyID: usd.ID}); err != nil {
 		t.Fatal(err)
 	}
@@ -202,8 +228,8 @@ func TestUpdateFormatChecks(t *testing.T) {
 	s, q := newTestService(t)
 	ctx := context.Background()
 	wid := seedWallet(t, q)
-	_, _ = s.AddCurrency(ctx, wid, "EUR", false)
-	usd, _ := s.AddCurrency(ctx, wid, "USD", false)
+	_, _ = s.AddCurrency(ctx, wid, "EUR", false, "")
+	usd, _ := s.AddCurrency(ctx, wid, "USD", false, "")
 	if err := s.UpdateFormat(ctx, usd.ID, "US$", true, ",", ".", 2); err != nil {
 		t.Fatalf("valid format: %v", err)
 	}
@@ -221,8 +247,8 @@ func TestListCarriesLatestRate(t *testing.T) {
 	s, q := newTestService(t)
 	ctx := context.Background()
 	wid := seedWallet(t, q)
-	_, _ = s.AddCurrency(ctx, wid, "EUR", false)
-	usd, _ := s.AddCurrency(ctx, wid, "USD", false)
+	_, _ = s.AddCurrency(ctx, wid, "EUR", false, "")
+	usd, _ := s.AddCurrency(ctx, wid, "USD", false, "")
 	if err := q.UpsertExchangeRate(ctx, db.UpsertExchangeRateParams{CurrencyID: usd.ID, Date: "2026-01-01", Rate: 0.9, Source: "frankfurter"}); err != nil {
 		t.Fatal(err)
 	}

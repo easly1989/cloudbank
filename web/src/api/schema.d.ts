@@ -1339,7 +1339,7 @@ export interface paths {
         put?: never;
         /**
          * Add a currency to a wallet
-         * @description A currency that is not the base gets the provider's rate at once, when the provider publishes it; otherwise it starts at 1 until one is typed.
+         * @description A currency that is not the base gets the provider's rate at once, when the provider publishes it; otherwise it starts at 1 until one is typed. Its separators are those of the caller's language (1.234,56 in Italian, 1 234,56 in French, 1,234.56 in English), as are those of the base currency a new wallet starts with.
          */
         post: operations["addCurrency"];
         delete?: never;

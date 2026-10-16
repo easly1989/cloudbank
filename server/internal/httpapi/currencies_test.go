@@ -30,6 +30,35 @@ func createWalletWithBase(t *testing.T, c *testClient, base string) int64 {
 	return decodeWallet(t, resp).ID
 }
 
+func TestAWalletMadeInItalianWritesItsMoneyTheItalianWay(t *testing.T) {
+	c := newTestAPI(t)
+	setupAdmin(c)
+	resp := c.do(http.MethodPatch, "/api/v1/auth/me", map[string]any{"locale": "it"}, true)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("set locale = %d", resp.StatusCode)
+	}
+	resp = c.do(http.MethodPost, "/api/v1/wallets", map[string]any{"title": "Casa", "baseCurrency": "EUR"}, true)
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("create wallet = %d", resp.StatusCode)
+	}
+	ws := strconv.FormatInt(decodeWallet(t, resp).ID, 10)
+	resp = c.do(http.MethodPost, "/api/v1/wallets/"+ws+"/currencies", map[string]any{"isoCode": "CHF"}, true)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("add currency = %d", resp.StatusCode)
+	}
+	got := decodeCurrencies(t, c.do(http.MethodGet, "/api/v1/wallets/"+ws+"/currencies", nil, false))
+	if len(got) != 2 {
+		t.Fatalf("currencies = %+v", got)
+	}
+	for _, cur := range got {
+		if cur.DecimalChar != "," || cur.GroupChar != "." {
+			t.Fatalf("%s written with %q %q, want , .", cur.IsoCode, cur.DecimalChar, cur.GroupChar)
+		}
+	}
+}
+
 func TestCatalogEndpoint(t *testing.T) {
 	c := newTestAPI(t)
 	setupAdmin(c)
