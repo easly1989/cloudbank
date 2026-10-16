@@ -1,0 +1,90 @@
+[
+  {
+    "name": "card payment",
+    "expression": "in\\s+data\\s+(?P<date>\\d{1,4}[./-]\\d{1,2}(?:[./-]\\d{2,4})?)[\\s\\S]*?pagamento\\s+di\\s+(?P<amount>\\d(?:[\\d.,]*\\d)?)[\\s\\S]*?carta\\s+\\d+_\\*_\\*_(?P<card>\\d+)[\\s\\S]*?presso\\s+(?P<memo>.+?),\\s+-",
+    "dateFormat": "MM.DD",
+    "checks": [
+      {
+        "text": "Pagamento con carta\nGentile cliente, ti informiamo che in data 10.15 è stato richiesto un pagamento di 6,43 EUR con la carta 1234_*_*_5678 presso Supermercato Demo 0042, - 10.15 ore 17:56\nCordiali saluti",
+        "want": {
+          "amount": "6,43",
+          "card": "5678",
+          "memo": "Supermercato Demo 0042",
+          "date": "10.15"
+        }
+      },
+      {
+        "text": "Pagamento con carta\nGentile cliente, ti informiamo che in data 11.02 è stato richiesto un pagamento di 1.234,56 EUR con la carta 1234_*_*_9876 presso Bar Demo, - 11.02 ore 08:05\nCordiali saluti",
+        "want": {
+          "amount": "1.234,56",
+          "card": "9876",
+          "memo": "Bar Demo",
+          "date": "11.02"
+        }
+      }
+    ]
+  },
+  {
+    "name": "credit transfer, pieces ending their line",
+    "expression": "Ordinante:\\s+(?P<payee>[^\\n]+)[\\s\\S]*?Importo:\\s+(?P<amount>\\d(?:[\\d.,]*\\d)?)[\\s\\S]*?Causale:\\s+(?P<info>[^\\n]+)",
+    "dateFormat": "",
+    "checks": [
+      {
+        "text": "Bonifico in arrivo\nOrdinante: Mario Demo\nImporto: 250,00 EUR\nCausale: rimborso cena",
+        "want": {
+          "payee": "Mario Demo",
+          "amount": "250,00",
+          "info": "rimborso cena"
+        }
+      },
+      {
+        "text": "Bonifico in arrivo\nOrdinante: Luisa Esempio Srl\nImporto: 12,00 EUR\nCausale: quota (marzo) 50%",
+        "want": {
+          "payee": "Luisa Esempio Srl",
+          "amount": "12,00",
+          "info": "quota (marzo) 50%"
+        }
+      }
+    ]
+  },
+  {
+    "name": "amount in the subject",
+    "expression": "Addebito\\s+di\\s+(?P<amount>\\d(?:[\\d.,]*\\d)?)",
+    "dateFormat": "",
+    "checks": [
+      {
+        "text": "Addebito di 19,99 EUR\nIl tuo abbonamento Demo è stato rinnovato.",
+        "want": {
+          "amount": "19,99"
+        }
+      },
+      {
+        "text": "Addebito di 5,00 EUR\nAltro testo",
+        "want": {
+          "amount": "5,00"
+        }
+      }
+    ]
+  },
+  {
+    "name": "direction as a word, with accents",
+    "expression": "Tipo:\\s+(?P<direction>\\pL+)[\\s\\S]*?di\\s+(?P<amount>\\d(?:[\\d.,]*\\d)?)",
+    "dateFormat": "",
+    "checks": [
+      {
+        "text": "Movimento\nTipo: accredito di 10,00 EUR [rif. 2026/1]",
+        "want": {
+          "direction": "accredito",
+          "amount": "10,00"
+        }
+      },
+      {
+        "text": "Movimento\nTipo: addebitò di 3,50 EUR [rif. 2026/2]",
+        "want": {
+          "direction": "addebitò",
+          "amount": "3,50"
+        }
+      }
+    ]
+  }
+]

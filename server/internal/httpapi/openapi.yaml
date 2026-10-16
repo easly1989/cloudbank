@@ -576,8 +576,11 @@ paths:
       summary: Add a pattern at the end of the list
       description: >-
         The expression is compiled (RE2, linear time) and its accounts must be
-        the wallet's; a pattern that fails is refused with the reason. Left
-        out, direction is out, and applyRules and requireAuth are on.
+        the wallet's; a pattern that fails is refused with the reason. An
+        expression RE2 cannot read is refused with the code
+        invalid_expression (invalid_subject_expression for the subject's) and
+        RE2's own reason as the message. Left out, direction is out, and
+        applyRules and requireAuth are on.
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/MailPatternInput" } } }
@@ -3131,7 +3134,10 @@ components:
         patternId: { type: integer, format: int64, nullable: true }
         transactionId: { type: integer, format: int64, nullable: true, description: "the transaction it made or duplicates, while it exists" }
         accountId: { type: integer, format: int64, nullable: true }
-      required: [id, sender, subject, receivedAt, outcome, detail, authenticated, patternId, transactionId, accountId]
+        amount: { type: integer, format: int64, nullable: true, description: "that transaction's amount, minor units" }
+        memo: { type: string, nullable: true, description: "that transaction's memo" }
+        payee: { type: string, nullable: true, description: "that transaction's payee" }
+      required: [id, sender, subject, receivedAt, outcome, detail, authenticated, patternId, transactionId, accountId, amount, memo, payee]
     MailDetail:
       allOf:
         - { $ref: "#/components/schemas/MailSummary" }

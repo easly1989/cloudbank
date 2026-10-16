@@ -1,6 +1,7 @@
 import {
   ActionIcon,
   Alert,
+  Anchor,
   Badge,
   Box,
   Button,
@@ -38,13 +39,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
 import { useEffect, useState, type ReactNode } from "react";
 import { Trans, useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 import {
+  type Account,
   checkMailbox,
   getMailOverview,
+  listAccounts,
   listMailboxFolders,
   listMailboxMessages,
+  listMailPatterns,
   type Mailbox,
+  type MailPattern,
+  type MailSummary,
   pollMicrosoftMail,
   removeMailbox,
   startMicrosoftMail,
@@ -53,7 +60,10 @@ import {
 import { useConfirm } from "../components/confirmContext";
 import { ErrorMessage } from "../components/ErrorMessage";
 import { useDateFormat } from "../dates";
+import { formatMinor } from "../money";
 import { notifyError } from "../notifyError";
+import { PatternList } from "./mail/PatternList";
+import { PatternSheet } from "./mail/PatternSheet";
 import { useWallet } from "../wallet/WalletProvider";
 
 /** How many of a mailbox's latest mails show before "Show all". */
@@ -207,6 +217,8 @@ function MailboxCard({
   const clock = useClock();
   const [foldersWanted, setFoldersWanted] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  // The pattern editor: a pattern to edit, or the mail a new one starts from.
+  const [editor, setEditor] = useState<{ pattern?: MailPattern; mailId?: number } | null>(null);
 
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ["mail", walletId] });
@@ -224,6 +236,14 @@ function MailboxCard({
     queryFn: () => listMailboxMessages(walletId, mailbox.id),
     placeholderData: (prev) => prev,
   });
+  const patterns = useQuery({
+    queryKey: ["mailPatterns", walletId, mailbox.id],
+    queryFn: () => listMailPatterns(walletId, mailbox.id),
+  });
+  const accounts = useQuery({
+    queryKey: ["accounts", walletId],
+    queryFn: () => listAccounts(walletId),
+  });
   // Listing the folders logs in to the mailbox, so it waits until the reader
   // opens the menu.
   const folders = useQuery({
@@ -238,7 +258,12 @@ function MailboxCard({
     onSuccess: (res) => {
       notifications.show({
         color: "teal",
-        message: res.new > 0 ? t("mail.checked", { count: res.new }) : t("mail.checkedNone"),
+        message:
+          res.new === 0
+            ? t("mail.checkedNone")
+            : res.created > 0
+              ? `${t("mail.checked", { count: res.new })} · ${t("mail.checkedCreated", { count: res.created })}`
+              : t("mail.checked", { count: res.new }),
       });
       refresh();
     },
@@ -412,6 +437,17 @@ function MailboxCard({
 
         <Divider />
 
+        <PatternList
+          walletId={walletId}
+          mailboxId={mailbox.id}
+          patterns={patterns.data ?? []}
+          canCreate={list.length > 0}
+          onNew={() => setEditor({})}
+          onEdit={(p) => setEditor({ pattern: p })}
+        />
+
+        <Divider />
+
         <Text fw={600}>{t("mail.recent")}</Text>
         {list.length === 0 ? (
           <Text size="sm" c="dimmed">
@@ -433,9 +469,19 @@ function MailboxCard({
                 <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }} data-cb-sensitive>
                   {m.subject || m.sender}
                 </Text>
-                <Badge color="yellow" variant="light" size="sm">
-                  {t(`mail.outcome.${m.outcome}`)}
-                </Badge>
+                {/* On a phone the outcome takes its own line, so the subject
+                    keeps the width it needs. */}
+                <Box w={{ base: "100%", sm: "auto" }} style={{ minWidth: 0 }}>
+                  <MailOutcome
+                    mail={m}
+                    accounts={accounts.data ?? []}
+                    onCreate={() => setEditor({ mailId: m.id })}
+                    onFix={() => {
+                      const p = patterns.data?.find((x) => x.id === m.patternId);
+                      if (p) setEditor({ pattern: p });
+                    }}
+                  />
+                </Box>
               </Group>
             ))}
             {list.length > RECENT_SHOWN && (
@@ -446,7 +492,118 @@ function MailboxCard({
           </Stack>
         )}
       </Stack>
+      {editor && (
+        <PatternSheet
+          walletId={walletId}
+          mailboxId={mailbox.id}
+          pattern={editor.pattern}
+          startMailId={editor.mailId}
+          mails={list}
+          onClose={() => setEditor(null)}
+        />
+      )}
     </Card>
+  );
+}
+
+const OUTCOME_COLOR: Record<MailSummary["outcome"], string> = {
+  created: "teal",
+  duplicate: "gray",
+  unrecognized: "yellow",
+  unverified: "orange",
+  failed: "red",
+};
+
+/**
+ * What became of one mail, and what to do next: open the transaction it made,
+ * make a pattern from it, or fix the pattern that could not write it.
+ */
+function MailOutcome({
+  mail,
+  accounts,
+  onCreate,
+  onFix,
+}: {
+  mail: MailSummary;
+  accounts: Account[];
+  onCreate: () => void;
+  onFix: () => void;
+}) {
+  const { t } = useTranslation();
+  const badge = (
+    <Badge color={OUTCOME_COLOR[mail.outcome]} variant="light" size="sm" style={{ flexShrink: 0 }}>
+      {t(`mail.outcome.${mail.outcome}`)}
+    </Badge>
+  );
+  const acc = accounts.find((a) => a.id === mail.accountId);
+  const link =
+    mail.transactionId && mail.accountId
+      ? `/transactions?account=${mail.accountId}&txn=${mail.transactionId}`
+      : null;
+  let next: ReactNode = null;
+  if (mail.outcome === "created" && link) {
+    const amount =
+      acc && mail.amount != null
+        ? formatMinor(mail.amount, {
+            fracDigits: acc.currencyFracDigits,
+            decimalChar: acc.currencyDecimalChar,
+            groupChar: acc.currencyGroupChar,
+            symbol: acc.currencySymbol,
+            symbolPrefix: acc.currencySymbolPrefix,
+          })
+        : null;
+    next = (
+      <Anchor component={Link} to={link} size="sm" truncate data-cb-sensitive>
+        {[amount, mail.payee, mail.memo].filter(Boolean).join(" · ") || t("mail.history.open")}
+      </Anchor>
+    );
+  } else if (mail.outcome === "duplicate") {
+    next = link ? (
+      <Anchor component={Link} to={link} size="sm" c="dimmed">
+        {t("mail.history.alreadyThere")}
+      </Anchor>
+    ) : (
+      <Text size="sm" c="dimmed">
+        {t("mail.history.alreadyThere")}
+      </Text>
+    );
+  } else if (mail.outcome === "unrecognized") {
+    next = (
+      <Anchor component="button" type="button" size="sm" onClick={onCreate}>
+        {t("mail.history.createPattern")}
+      </Anchor>
+    );
+  } else if (mail.outcome === "unverified") {
+    next = (
+      <Text size="sm" c="dimmed">
+        {t("mail.history.unverified")}
+      </Text>
+    );
+  } else if (mail.outcome === "failed") {
+    next = (
+      <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
+        <Text size="sm" c="dimmed" truncate title={mail.detail}>
+          {mail.detail}
+        </Text>
+        {mail.patternId != null && (
+          <Anchor
+            component="button"
+            type="button"
+            size="sm"
+            onClick={onFix}
+            style={{ flexShrink: 0 }}
+          >
+            {t("mail.history.fixPattern")}
+          </Anchor>
+        )}
+      </Group>
+    );
+  }
+  return (
+    <Group gap={6} wrap="wrap" style={{ minWidth: 0, maxWidth: "100%", rowGap: 4 }}>
+      {badge}
+      {next}
+    </Group>
   );
 }
 

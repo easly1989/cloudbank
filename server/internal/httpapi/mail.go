@@ -55,6 +55,7 @@ func (h *mailHandlers) mailboxID(w http.ResponseWriter, r *http.Request) (int64,
 }
 
 func (h *mailHandlers) writeErr(w http.ResponseWriter, err error) {
+	var expr *mailingest.ExpressionError
 	switch {
 	case errors.Is(err, mailingest.ErrUnavailable):
 		writeError(w, http.StatusConflict, "unavailable", "reading bank mails needs CB_SECRET_KEY on the server")
@@ -62,8 +63,17 @@ func (h *mailHandlers) writeErr(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "not_found", "not found")
 	case errors.Is(err, mailingest.ErrFlowNotFound):
 		writeError(w, http.StatusNotFound, "flow_not_found", "this sign-in is over; start again")
+	case errors.As(err, &expr):
+		// RE2's reason alone; the editor says what is wrong in its own words.
+		code := "invalid_expression"
+		if expr.Subject {
+			code = "invalid_subject_expression"
+		}
+		writeError(w, http.StatusBadRequest, code, expr.Reason)
 	case errors.Is(err, mailingest.ErrInvalid):
-		writeError(w, http.StatusBadRequest, "invalid", strings.TrimPrefix(err.Error(), "mailingest: "))
+		// The reason alone, without the package's prefixes.
+		msg := strings.TrimPrefix(err.Error(), "mailingest: ")
+		writeError(w, http.StatusBadRequest, "invalid", strings.TrimPrefix(msg, "invalid input: "))
 	case errors.Is(err, mailingest.ErrReauth):
 		writeError(w, http.StatusConflict, "reauth", "sign in to Microsoft again")
 	case errors.As(err, new(*mailingest.OAuthError)):
