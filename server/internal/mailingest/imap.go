@@ -3,6 +3,7 @@ package mailingest
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"net"
@@ -12,18 +13,27 @@ import (
 
 	"github.com/emersion/go-imap/v2"
 	"github.com/emersion/go-imap/v2/imapclient"
+
+	"github.com/easly1989/cloudbank/server/internal/netguard"
 )
 
 // sessionTimeout bounds one check: connect, select, fetch, log out. The IMAP
 // client has no per-call context, so the connection carries a deadline.
 const sessionTimeout = 2 * time.Minute
 
-// Endpoint is where an IMAP server listens. TLS means implicit TLS (port 993);
-// it is false only in tests.
+// Endpoint is where an IMAP server listens, and how to reach it. TLS means
+// TLS from the first byte (port 993); StartTLS means a plain connection that
+// must switch to TLS before the login, or is dropped. Neither is set only for
+// a server on this machine (tests). Public dials public addresses only: the
+// server is one a user named, who must not reach the LAN through it.
 type Endpoint struct {
 	Addr       string
 	TLS        bool
+	StartTLS   bool
 	ServerName string
+	Public     bool
+	// roots replaces the system's trusted certificates, in tests.
+	roots *x509.CertPool
 }
 
 // OutlookEndpoint is Microsoft's IMAP server for Outlook.com, Hotmail and Live.
@@ -106,21 +116,40 @@ func connectWatch(ctx context.Context, ep Endpoint, cred Credentials, wake chan<
 }
 
 func dial(ctx context.Context, ep Endpoint, cred Credentials, opts *imapclient.Options) (*Session, error) {
-	d := net.Dialer{Timeout: 30 * time.Second}
+	d := &net.Dialer{Timeout: 30 * time.Second}
+	if ep.Public {
+		d = netguard.Dialer(30 * time.Second)
+	}
 	conn, err := d.DialContext(ctx, "tcp", ep.Addr)
 	if err != nil {
-		return nil, fmt.Errorf("mailingest: cannot reach the mail server: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrUnreachable, err)
 	}
 	_ = conn.SetDeadline(time.Now().Add(sessionTimeout))
-	if ep.TLS {
-		tc := tls.Client(conn, &tls.Config{ServerName: ep.ServerName, MinVersion: tls.VersionTLS12})
+	tlsConfig := &tls.Config{ServerName: ep.ServerName, MinVersion: tls.VersionTLS12, RootCAs: ep.roots}
+	var c *imapclient.Client
+	switch {
+	case ep.TLS:
+		tc := tls.Client(conn, tlsConfig)
 		if err := tc.HandshakeContext(ctx); err != nil {
 			_ = conn.Close()
-			return nil, fmt.Errorf("mailingest: TLS with the mail server failed: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrTLS, err)
 		}
-		conn = tc
+		c = imapclient.New(tc, opts)
+	case ep.StartTLS:
+		o := imapclient.Options{}
+		if opts != nil {
+			o = *opts
+		}
+		o.TLSConfig = tlsConfig
+		// The client says STARTTLS before anything else and closes the
+		// connection when the server refuses it: the password never travels
+		// in clear.
+		if c, err = imapclient.NewStartTLS(conn, &o); err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrTLS, err)
+		}
+	default:
+		c = imapclient.New(conn, opts)
 	}
-	c := imapclient.New(conn, opts)
 	if err := c.WaitGreeting(); err != nil {
 		_ = c.Close()
 		return nil, fmt.Errorf("mailingest: the mail server did not greet: %w", err)
@@ -132,7 +161,7 @@ func dial(ctx context.Context, ep Endpoint, cred Credentials, opts *imapclient.O
 	}
 	if err != nil {
 		_ = c.Close()
-		return nil, fmt.Errorf("%w: %v", ErrLogin, err)
+		return nil, loginError(err)
 	}
 	if opts != nil {
 		// A listening session lives for hours: the client bounds each command
@@ -142,8 +171,32 @@ func dial(ctx context.Context, ep Endpoint, cred Credentials, opts *imapclient.O
 	return &Session{c: c}, nil
 }
 
-// ErrLogin means the mail server refused the credentials.
-var ErrLogin = errors.New("mailingest: the mail server refused the login")
+var (
+	// ErrLogin means the mail server refused the credentials.
+	ErrLogin = errors.New("mailingest: the mail server refused the login")
+	// ErrUnreachable means no connection to the mail server could be made, or
+	// it was refused because the server is not on the public internet.
+	ErrUnreachable = errors.New("mailingest: cannot reach the mail server")
+	// ErrTLS means the connection could not be encrypted: a certificate that
+	// is not valid for the host, or a server without STARTTLS.
+	ErrTLS = errors.New("mailingest: cannot encrypt the connection to the mail server")
+)
+
+// LoginError is a refused login, with the mail server's own words.
+type LoginError struct {
+	Text string
+}
+
+func (e *LoginError) Error() string { return ErrLogin.Error() + ": " + e.Text }
+func (e *LoginError) Unwrap() error { return ErrLogin }
+
+func loginError(err error) error {
+	var ie *imap.Error
+	if errors.As(err, &ie) && ie.Text != "" {
+		return &LoginError{Text: ie.Text}
+	}
+	return &LoginError{Text: err.Error()}
+}
 
 // Close logs out and closes the connection.
 func (s *Session) Close() {

@@ -1,15 +1,19 @@
 // Command e2e-mail is a pretend Microsoft for the bank-mail end-to-end tests
 // (#657): the identity platform's device-code sign-in, and an Outlook IMAP
 // server that takes only the access tokens it issued (SASL XOAUTH2), as the
-// real one does. It never leaves this machine and holds only invented mail.
+// real one does. Beside it runs a pretend provider with app passwords (#658),
+// a second IMAP server whose one mailbox logs in with a password. It never
+// leaves this machine and holds only invented mail.
 //
-// The tests deliver mail with POST /deliver, a JSON {folder, from, subject,
-// body, authenticated}; the sign-in page at /device approves a user code.
+// The tests deliver mail with POST /deliver, a JSON {mailbox, folder, from,
+// subject, body, authenticated}, where mailbox "imap" is the app-password one;
+// the sign-in page at /device approves a user code.
 //
-//	E2E_MAIL_HTTP=127.0.0.1:9100 E2E_MAIL_IMAP=127.0.0.1:1143 go run ./cmd/e2e-mail
+//	E2E_MAIL_HTTP=127.0.0.1:9100 E2E_MAIL_IMAP=127.0.0.1:1143 \
+//	E2E_MAIL_PASSWORD_IMAP=127.0.0.1:1144 go run ./cmd/e2e-mail
 //
-// CloudBank reaches it with CB_MS_AUTHORITY=http://127.0.0.1:9100 and
-// CB_MS_IMAP=127.0.0.1:1143.
+// CloudBank reaches it with CB_MS_AUTHORITY=http://127.0.0.1:9100,
+// CB_MS_IMAP=127.0.0.1:1143 and CB_MAIL_LOCAL_IMAP=127.0.0.1:1144.
 package main
 
 import (
@@ -35,8 +39,14 @@ import (
 	"github.com/emersion/go-sasl"
 )
 
-// address is the one mailbox there is.
-const address = "notifiche.demo@example.com"
+// address is the Outlook mailbox; guestAddress and guestPassword are the
+// app-password one's. The password is a test value: it opens nothing but this
+// pretend mailbox.
+const (
+	address       = "notifiche.demo@example.com"
+	guestAddress  = "avvisi.demo@example.net"
+	guestPassword = "e2e-app-password"
+)
 
 func getenv(k, def string) string {
 	if v := os.Getenv(k); v != "" {
@@ -55,6 +65,7 @@ func random() string {
 type fake struct {
 	httpAddr string
 	user     *imapmemserver.User
+	guest    *imapmemserver.User
 
 	mu      sync.Mutex
 	codes   map[string]*signIn // device code → sign-in
@@ -97,6 +108,29 @@ func main() {
 	}
 	go func() { log.Fatal(srv.Serve(ln)) }()
 
+	// The app-password provider: an ordinary LOGIN, which a wrong password
+	// gets refused.
+	f.guest = imapmemserver.NewUser(guestAddress, guestPassword)
+	for _, name := range []string{"INBOX", "Banca"} {
+		if err := f.guest.Create(name, nil); err != nil {
+			log.Fatal(err)
+		}
+	}
+	guests := imapmemserver.New()
+	guests.AddUser(f.guest)
+	psrv := imapserver.New(&imapserver.Options{
+		NewSession: func(*imapserver.Conn) (imapserver.Session, *imapserver.GreetingData, error) {
+			return guests.NewSession(), nil, nil
+		},
+		Caps:         imap.CapSet{imap.CapIMAP4rev1: {}, imap.CapIdle: {}},
+		InsecureAuth: true,
+	})
+	pln, err := net.Listen("tcp", getenv("E2E_MAIL_PASSWORD_IMAP", "127.0.0.1:1144"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	go func() { log.Fatal(psrv.Serve(pln)) }()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /devicecode", f.deviceCode)
 	mux.HandleFunc("GET /device", f.devicePage)
@@ -104,7 +138,7 @@ func main() {
 	mux.HandleFunc("POST /token", f.token)
 	mux.HandleFunc("POST /deliver", f.deliver)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
-	log.Printf("pretend Microsoft on http://%s, IMAP on %s", f.httpAddr, ln.Addr())
+	log.Printf("pretend Microsoft on http://%s, IMAP on %s; app-password IMAP on %s", f.httpAddr, ln.Addr(), pln.Addr())
 	hs := &http.Server{Addr: f.httpAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 	log.Fatal(hs.ListenAndServe())
 }
@@ -206,6 +240,7 @@ func (f *fake) token(w http.ResponseWriter, r *http.Request) {
 // would, with the receiving server's verdict on its sender on top.
 func (f *fake) deliver(w http.ResponseWriter, r *http.Request) {
 	var in struct {
+		Mailbox       string `json:"mailbox"`
 		Folder        string `json:"folder"`
 		From          string `json:"from"`
 		Subject       string `json:"subject"`
@@ -213,11 +248,15 @@ func (f *fake) deliver(w http.ResponseWriter, r *http.Request) {
 		Authenticated bool   `json:"authenticated"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil || in.From == "" {
-		http.Error(w, "want {folder, from, subject, body, authenticated}", http.StatusBadRequest)
+		http.Error(w, "want {mailbox, folder, from, subject, body, authenticated}", http.StatusBadRequest)
 		return
 	}
 	if in.Folder == "" {
 		in.Folder = "INBOX"
+	}
+	user, to := f.user, address
+	if in.Mailbox == "imap" {
+		user, to = f.guest, guestAddress
 	}
 	domain := in.From[strings.LastIndexByte(in.From, '@')+1:]
 	verdict := "fail"
@@ -226,11 +265,11 @@ func (f *fake) deliver(w http.ResponseWriter, r *http.Request) {
 	}
 	var raw bytes.Buffer
 	fmt.Fprintf(&raw, "Authentication-Results: mx.example.com; dmarc=%s header.from=%s\r\n", verdict, domain)
-	fmt.Fprintf(&raw, "From: %s\r\nTo: %s\r\nSubject: %s\r\n", in.From, address, in.Subject)
+	fmt.Fprintf(&raw, "From: %s\r\nTo: %s\r\nSubject: %s\r\n", in.From, to, in.Subject)
 	fmt.Fprintf(&raw, "Message-ID: <%s@%s>\r\nDate: %s\r\n", random(), domain, time.Now().Format(time.RFC1123Z))
 	raw.WriteString("MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n")
 	raw.WriteString(strings.ReplaceAll(in.Body, "\n", "\r\n") + "\r\n")
-	if _, err := f.user.Append(in.Folder, bytes.NewReader(raw.Bytes()), &imap.AppendOptions{}); err != nil {
+	if _, err := user.Append(in.Folder, bytes.NewReader(raw.Bytes()), &imap.AppendOptions{}); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

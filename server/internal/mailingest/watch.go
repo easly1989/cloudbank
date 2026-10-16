@@ -299,14 +299,14 @@ func (s *Service) openWatch(ctx context.Context, mb db.Mailbox, wake chan<- stru
 	if err != nil {
 		return nil, err
 	}
-	if fresh.Provider != ProviderMicrosoft || s.ms == nil {
-		return nil, ErrUnavailable
-	}
-	sess, err := s.login(ctx, fresh, func(cred Credentials) (*Session, error) {
-		return connectWatch(ctx, s.outlook, cred, wake)
+	sess, err := s.connectTo(ctx, fresh, func(ep Endpoint, cred Credentials) (*Session, error) {
+		return connectWatch(ctx, ep, cred, wake)
 	})
 	if err != nil {
-		s.record(ctx, fresh, err)
+		// A server that cannot run the feature says nothing about the mailbox.
+		if !errors.Is(err, ErrUnavailable) {
+			s.record(ctx, fresh, err)
+		}
 		return nil, err
 	}
 	return sess, nil

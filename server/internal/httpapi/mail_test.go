@@ -65,6 +65,7 @@ func TestMailStaysInItsWallet(t *testing.T) {
 		{http.MethodGet, base},
 		{http.MethodPost, base + "/microsoft"},
 		{http.MethodPost, base + "/microsoft/abc/poll"},
+		{http.MethodPost, base + "/imap"},
 		{http.MethodGet, base + "/mailboxes/1/folders"},
 		{http.MethodPatch, base + "/mailboxes/1"},
 		{http.MethodPost, base + "/mailboxes/1/check"},
@@ -169,5 +170,54 @@ func TestMailPatternsAreCheckedByTheServer(t *testing.T) {
 	resp.Body.Close()
 	if len(list) != 1 {
 		t.Fatalf("patterns = %d, want only the valid one", len(list))
+	}
+}
+
+// The connect form's server goes through the same guard as every address a
+// user supplies, and its input is checked before anything is dialled.
+func TestMailIMAPRefusesThisMachine(t *testing.T) {
+	k, err := secrets.New("test-secret-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	secrets.Configure(k)
+	t.Cleanup(func() { secrets.Configure(nil) })
+
+	c := newTestAPI(t)
+	wid := createWalletWithBase(t, c, "EUR")
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10) + "/mail"
+	for _, tc := range []struct {
+		body       map[string]any
+		status     int
+		code, text string
+	}{
+		{map[string]any{"address": "notifiche.demo@example.com", "password": "x", "host": "127.0.0.1", "port": 993, "security": "tls"},
+			http.StatusBadRequest, "host_not_public", ""},
+		{map[string]any{"address": "notifiche.demo@example.com", "password": "x", "host": "imap.example.com", "port": 143, "security": "none"},
+			http.StatusBadRequest, "invalid", "the connection is encrypted with tls or starttls"},
+	} {
+		resp := c.do(http.MethodPost, base+"/imap", tc.body, true)
+		var e struct {
+			Error struct {
+				Code    string `json:"code"`
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		_ = json.NewDecoder(resp.Body).Decode(&e)
+		resp.Body.Close()
+		if resp.StatusCode != tc.status || e.Error.Code != tc.code || (tc.text != "" && e.Error.Message != tc.text) {
+			t.Errorf("%v = %d %+v", tc.body, resp.StatusCode, e.Error)
+		}
+	}
+	resp := c.do(http.MethodGet, base, nil, false)
+	var ov struct {
+		Available bool              `json:"available"`
+		Microsoft bool              `json:"microsoft"`
+		Mailboxes []json.RawMessage `json:"mailboxes"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&ov)
+	resp.Body.Close()
+	if !ov.Available || !ov.Microsoft || len(ov.Mailboxes) != 0 {
+		t.Fatalf("overview = %+v", ov)
 	}
 }

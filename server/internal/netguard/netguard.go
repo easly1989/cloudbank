@@ -1,7 +1,7 @@
 // Package netguard keeps the server's requests to URLs its users supply off the
-// network it runs on (#543). A SimpleFIN setup token, a browser's push endpoint
-// or an AI provider URL is data from a user, so the server must not become their
-// way into the LAN, the host or a cloud metadata service.
+// network it runs on (#543). A SimpleFIN setup token, a browser's push endpoint,
+// an AI provider URL or an IMAP server is data from a user, so the server must
+// not become their way into the LAN, the host or a cloud metadata service.
 //
 // The check runs where the connection is made, on the address actually dialled,
 // so a name that resolves to a public address when saved and to a private one
@@ -73,11 +73,17 @@ func control(_, address string, _ syscall.RawConn) error {
 	return nil
 }
 
+// Dialer returns a dialer that connects to public addresses only, for a
+// protocol other than HTTP: the IMAP server a user names (#658).
+func Dialer(timeout time.Duration) *net.Dialer {
+	return &net.Dialer{Timeout: timeout, KeepAlive: 30 * time.Second, Control: control}
+}
+
 // Transport returns an http.Transport that dials public addresses only.
 // It ignores proxy settings: a proxy would dial on its behalf, out of reach of
 // the check.
 func Transport() *http.Transport {
-	d := &net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second, Control: control}
+	d := Dialer(30 * time.Second)
 	t := http.DefaultTransport.(*http.Transport).Clone()
 	t.Proxy = nil
 	t.DialContext = d.DialContext
