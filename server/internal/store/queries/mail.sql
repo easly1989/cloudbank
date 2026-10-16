@@ -54,9 +54,12 @@ RETURNING id;
 
 -- name: ListMailMessages :many
 SELECT m.id, m.mailbox_id, m.uid, m.message_id, m.sender, m.subject, m.received_at, m.outcome,
-       m.detail, m.authenticated, m.pattern_id, m.transaction_id, t.account_id, m.created_at
+       m.detail, m.authenticated, m.pattern_id, m.transaction_id, t.account_id,
+       t.amount AS transaction_amount, t.memo AS transaction_memo, p.name AS transaction_payee,
+       m.created_at
 FROM mail_messages m
 LEFT JOIN transactions t ON t.id = m.transaction_id
+LEFT JOIN payees p ON p.id = t.payee_id
 WHERE m.mailbox_id = ? ORDER BY m.id DESC LIMIT ?;
 
 -- name: GetMailMessage :one
@@ -65,9 +68,11 @@ SELECT * FROM mail_messages WHERE id = ? AND mailbox_id = ? LIMIT 1;
 -- name: GetMailMessageView :one
 -- One mail with the account of the transaction it made, for the history.
 SELECT m.id, m.sender, m.subject, m.received_at, m.body, m.outcome, m.detail, m.authenticated,
-       m.pattern_id, m.transaction_id, t.account_id
+       m.pattern_id, m.transaction_id, t.account_id,
+       t.amount AS transaction_amount, t.memo AS transaction_memo, p.name AS transaction_payee
 FROM mail_messages m
 LEFT JOIN transactions t ON t.id = m.transaction_id
+LEFT JOIN payees p ON p.id = t.payee_id
 WHERE m.id = ? AND m.mailbox_id = ? LIMIT 1;
 
 -- name: ListMailMessagesToRetry :many

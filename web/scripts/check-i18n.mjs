@@ -322,6 +322,7 @@ const SAME_IN = {
     "Source",
     "Section",
     "Navigation",
+    "Expression",
     "Point .",
     "Apostrophe '",
     "version {{version}}",

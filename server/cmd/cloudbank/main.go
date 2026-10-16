@@ -181,9 +181,24 @@ func run() error {
 	// mailbox credential at all.
 	var microsoft *mailingest.Microsoft
 	if cfg.MicrosoftClientID != "" {
-		microsoft = mailingest.NewMicrosoft(cfg.MicrosoftClientID, "", nil)
+		if err := mailingest.CheckAuthority(cfg.MicrosoftAuthority); err != nil {
+			return fmt.Errorf("CB_MS_AUTHORITY: %w", err)
+		}
+		microsoft = mailingest.NewMicrosoft(cfg.MicrosoftClientID, cfg.MicrosoftAuthority, nil)
 	}
 	mailSvc := mailingest.NewService(st.Read(), st.Write(), microsoft)
+	// Only the end-to-end tests point Microsoft elsewhere (a pretend one).
+	if cfg.MicrosoftIMAP != "" {
+		ep, err := mailingest.EndpointFor(cfg.MicrosoftIMAP)
+		if err != nil {
+			return fmt.Errorf("CB_MS_IMAP: %w", err)
+		}
+		mailSvc.SetOutlook(ep)
+	}
+	if cfg.MicrosoftAuthority != "" || cfg.MicrosoftIMAP != "" {
+		logger.Warn("mail: Microsoft is reached elsewhere, as in the end-to-end tests",
+			"authority", cfg.MicrosoftAuthority, "imap", cfg.MicrosoftIMAP)
+	}
 	// A bank mail a pattern reads becomes a transaction the way an import does.
 	mailSvc.SetImporter(csvSvc)
 	rateProvider := &currency.Frankfurter{BaseURL: cfg.RateProviderURL}

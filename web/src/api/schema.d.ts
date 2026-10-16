@@ -3277,6 +3277,15 @@ export interface components {
             transactionId: number | null;
             /** Format: int64 */
             accountId: number | null;
+            /**
+             * Format: int64
+             * @description that transaction's amount, minor units
+             */
+            amount: number | null;
+            /** @description that transaction's memo */
+            memo: string | null;
+            /** @description that transaction's payee */
+            payee: string | null;
         };
         MailDetail: components["schemas"]["MailSummary"] & {
             body: string;

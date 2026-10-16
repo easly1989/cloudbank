@@ -48,6 +48,12 @@ type Config struct {
 	// The default is the project's own registration; CB_MS_CLIENT_ID lets an
 	// installation use its own.
 	MicrosoftClientID string
+	// MicrosoftAuthority and MicrosoftIMAP send the Outlook.com sign-in and
+	// its IMAP connection to another server. They exist for the end-to-end
+	// tests, which run a pretend Microsoft on the same machine
+	// (CB_MS_AUTHORITY, CB_MS_IMAP); an installation leaves them unset.
+	MicrosoftAuthority string
+	MicrosoftIMAP      string
 	// UpdateCheck lets the server look, once a day, for a newer CloudBank and
 	// tell admins (#582). CB_UPDATE_CHECK=false turns it off for the whole
 	// installation, whatever an admin chooses in Settings.
@@ -113,16 +119,18 @@ func (c Config) OIDCEnabled() bool {
 // Load reads the configuration from the environment, applying defaults.
 func Load() Config {
 	return Config{
-		Addr:              getenv("CB_ADDR", ":8080"),
-		DataDir:           getenv("CB_DATA_DIR", "/data"),
-		LogLevel:          getenv("CB_LOG_LEVEL", "info"),
-		SecureCookies:     getBoolEnv("CB_SECURE_COOKIES", true),
-		RateProviderURL:   getenv("CB_RATE_URL", ""),
-		VAPIDSubject:      getenv("CB_VAPID_SUBJECT", "mailto:cloudbank@localhost"),
-		SecretKey:         getenv("CB_SECRET_KEY", ""),
-		BankSyncInterval:  getDurationEnv("CB_BANK_SYNC_INTERVAL", time.Hour),
-		MicrosoftClientID: getenv("CB_MS_CLIENT_ID", DefaultMicrosoftClientID),
-		UpdateCheck:       getBoolEnv("CB_UPDATE_CHECK", true),
+		Addr:               getenv("CB_ADDR", ":8080"),
+		DataDir:            getenv("CB_DATA_DIR", "/data"),
+		LogLevel:           getenv("CB_LOG_LEVEL", "info"),
+		SecureCookies:      getBoolEnv("CB_SECURE_COOKIES", true),
+		RateProviderURL:    getenv("CB_RATE_URL", ""),
+		VAPIDSubject:       getenv("CB_VAPID_SUBJECT", "mailto:cloudbank@localhost"),
+		SecretKey:          getenv("CB_SECRET_KEY", ""),
+		BankSyncInterval:   getDurationEnv("CB_BANK_SYNC_INTERVAL", time.Hour),
+		MicrosoftClientID:  getenv("CB_MS_CLIENT_ID", DefaultMicrosoftClientID),
+		MicrosoftAuthority: strings.TrimSpace(getenv("CB_MS_AUTHORITY", "")),
+		MicrosoftIMAP:      strings.TrimSpace(getenv("CB_MS_IMAP", "")),
+		UpdateCheck:        getBoolEnv("CB_UPDATE_CHECK", true),
 
 		OIDCIssuer:        getenv("CB_OIDC_ISSUER", ""),
 		OIDCClientID:      getenv("CB_OIDC_CLIENT_ID", ""),

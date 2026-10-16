@@ -214,3 +214,23 @@ func TestXOAuth2InitialResponse(t *testing.T) {
 		t.Fatalf("next = %q, %v", resp, err)
 	}
 }
+
+func TestEndpointForUsesTLSAwayFromThisMachine(t *testing.T) {
+	for addr, want := range map[string]Endpoint{
+		"outlook.office365.com:993": {Addr: "outlook.office365.com:993", TLS: true, ServerName: "outlook.office365.com"},
+		"localhost:1143":            {Addr: "localhost:1143"},
+		"127.0.0.1:1143":            {Addr: "127.0.0.1:1143"},
+		"[::1]:1143":                {Addr: "[::1]:1143"},
+		"10.0.0.5:143":              {Addr: "10.0.0.5:143", TLS: true, ServerName: "10.0.0.5"},
+	} {
+		got, err := EndpointFor(addr)
+		if err != nil || got != want {
+			t.Errorf("%s: %+v, %v", addr, got, err)
+		}
+	}
+	for _, bad := range []string{"", "localhost", ":993"} {
+		if _, err := EndpointFor(bad); err == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+}
