@@ -91,8 +91,8 @@ const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
  * The bank connections: the providers to connect through, then each connected
  * bank with its schedule, its linked accounts and its history. It used to be a
  * page of its own in the sidebar; it is a setting, and lives in Settings ›
- * Bank sync, mail & AI (#504). Syncing by hand is also offered from the register of
- * any linked account.
+ * Bank sync (#504). Syncing by hand is also offered from the register of any
+ * linked account.
  */
 export function BankSyncSettings() {
   const { t } = useTranslation();

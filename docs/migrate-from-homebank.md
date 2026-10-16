@@ -54,7 +54,7 @@ latest save — re-export from HomeBank and import again into a fresh wallet.
 
 ## 4. Next steps
 
-- **Connect your bank** in **Settings → Bank sync, mail & AI** ([the bank-sync guide](bank-sync.md)).
+- **Connect your bank** in **Settings → Bank sync** ([the bank-sync guide](bank-sync.md)).
   A bank row that matches a transaction you already have — the same amount on a
   nearby date — is merged into it rather than added twice, so your history and
   the new rows line up.

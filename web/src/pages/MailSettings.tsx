@@ -9,6 +9,7 @@ import {
   CopyButton,
   Divider,
   Group,
+  Image,
   Loader,
   Menu,
   Modal,
@@ -34,6 +35,7 @@ import {
   IconServer,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import QRCode from "qrcode";
 import { useEffect, useState, type ReactNode } from "react";
 import { Trans, useTranslation } from "react-i18next";
 
@@ -60,11 +62,9 @@ const RECENT_SHOWN = 8;
 /**
  * Bank mails (#654): CloudBank reads the bank's payment notifications from one
  * folder of a mailbox. This is where a mailbox is connected, its folder chosen
- * and what it read shown. It sits in Settings › Bank sync, mail & AI, under the
- * bank connections, because both are something acting on the user's behalf.
+ * and what it read shown, in its own section of Settings.
  */
 export function MailSettings() {
-  const { t } = useTranslation();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
   const [signIn, setSignIn] = useState<{ mailboxId?: number } | null>(null);
@@ -72,18 +72,9 @@ export function MailSettings() {
   const overview = useQuery({
     queryKey: ["mail", walletId],
     queryFn: () => getMailOverview(walletId),
-    enabled: walletId > 0 && !__DEMO__,
+    enabled: walletId > 0,
   });
 
-  if (__DEMO__) {
-    return (
-      <Card withBorder maw={560}>
-        <Text size="sm" c="dimmed">
-          {t("mail.notInDemo")}
-        </Text>
-      </Card>
-    );
-  }
   if (!currentWallet || !overview.data) return null;
   const { available, mailboxes } = overview.data;
 
@@ -466,6 +457,17 @@ function MicrosoftSignIn({
     },
   });
   const state = poll.data?.state;
+  const [qr, setQr] = useState("");
+  const uri = flow?.verificationUri;
+
+  useEffect(() => {
+    if (!uri) return;
+    let live = true;
+    void QRCode.toDataURL(uri, { margin: 1, width: 208 }).then((d) => live && setQr(d));
+    return () => {
+      live = false;
+    };
+  }, [uri]);
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000);
@@ -517,19 +519,34 @@ function MicrosoftSignIn({
         flow && (
           <Stack gap="md">
             <Step n={1}>
-              <Text size="sm">{t("mail.step1")}</Text>
-              <Button
-                size="xs"
-                variant="default"
-                mt={6}
-                rightSection={<IconExternalLink size={14} />}
-                component="a"
-                href={flow.verificationUri}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {flow.verificationUri.replace(/^https?:\/\/(www\.)?/, "")}
-              </Button>
+              <Group justify="space-between" align="flex-start" wrap="nowrap" gap="md">
+                <div>
+                  <Text size="sm">{t("mail.step1")}</Text>
+                  <Button
+                    size="xs"
+                    variant="default"
+                    mt={6}
+                    rightSection={<IconExternalLink size={14} />}
+                    component="a"
+                    href={flow.verificationUri}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {flow.verificationUri.replace(/^https?:\/\/(www\.)?/, "")}
+                  </Button>
+                </div>
+                {/* Only the page: Microsoft takes no code in the link, so the
+                    code below is typed on the phone too. Not on a phone, which
+                    would be scanning itself. */}
+                {qr && (
+                  <Stack gap={4} align="center" style={{ flexShrink: 0 }} visibleFrom="sm">
+                    <Image src={qr} alt={t("mail.scanQr")} w={104} h={104} radius="sm" />
+                    <Text size="xs" c="dimmed" ta="center" maw={120}>
+                      {t("mail.scanQr")}
+                    </Text>
+                  </Stack>
+                )}
+              </Group>
             </Step>
             <Step n={2}>
               <Text size="sm">{t("mail.step2")}</Text>
@@ -560,8 +577,8 @@ function MicrosoftSignIn({
                 <Trans i18nKey="mail.step3" components={{ b: <b /> }} />
               </Text>
             </Step>
-            <Group gap="xs">
-              <Loader size="xs" />
+            <Group gap="xs" wrap="nowrap">
+              <Loader size="xs" style={{ flexShrink: 0 }} />
               <Text size="sm" c="dimmed">
                 {t("mail.waiting", { time: countdown })}
               </Text>

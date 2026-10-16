@@ -34,9 +34,8 @@ import { SettingsGroup } from "./SettingsLayout";
 // changes here is only which of them belong together.
 //
 // Where a card moved, it moved because the tile says so. Two-factor and API
-// tokens are both "who can get in", so they share a section; the AI key, the
-// bank connections and the bank mails are all "something else acting on your
-// behalf", so they share another; and the navigation layout is appearance, not a page of its own.
+// tokens are both "who can get in", so they share a section; and the navigation
+// layout is appearance, not a page of its own.
 
 export function GeneralSection() {
   const { t } = useTranslation();
@@ -97,29 +96,18 @@ export function SecuritySection() {
   );
 }
 
-export function IntegrationsSection() {
-  const { t } = useTranslation();
-  return (
-    <Stack gap="xl">
-      {!__DEMO__ && (
-        <SettingsGroup title={t("settings.ai")} hint={t("settings.aiHint")}>
-          <AiSettingsCard />
-        </SettingsGroup>
-      )}
-      {/* The demo's section is Bank sync alone, so a group of the same name
-          would only repeat it, and its hint names providers the demo lacks. */}
-      {__DEMO__ ? (
-        <BankSyncSettings />
-      ) : (
-        <SettingsGroup title={t("banksync.title")} hint={t("banksync.hint")}>
-          <BankSyncSettings />
-        </SettingsGroup>
-      )}
-      <SettingsGroup title={t("mail.title")} hint={t("mail.hint")}>
-        <MailSettings />
-      </SettingsGroup>
-    </Stack>
-  );
+// The section's own header already names it, so these three carry no group of
+// the same name.
+export function BankSyncSection() {
+  return <BankSyncSettings />;
+}
+
+export function MailSection() {
+  return <MailSettings />;
+}
+
+export function AiSection() {
+  return <AiSettingsCard />;
 }
 
 export function DataSection() {

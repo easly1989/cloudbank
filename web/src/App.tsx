@@ -74,7 +74,9 @@ const GeneralSection = settingsSection("GeneralSection");
 const AppearanceSection = settingsSection("AppearanceSection");
 const WalletSection = settingsSection("WalletSection");
 const SecuritySection = settingsSection("SecuritySection");
-const IntegrationsSection = settingsSection("IntegrationsSection");
+const BankSyncSection = settingsSection("BankSyncSection");
+const MailSection = settingsSection("MailSection");
+const AiSection = settingsSection("AiSection");
 const DataSection = settingsSection("DataSection");
 const PeopleSection = settingsSection("PeopleSection");
 const AboutSection = settingsSection("AboutSection");
@@ -178,7 +180,7 @@ function AuthenticatedApp() {
           {/* The bank connections live in Settings now (#504); the old address
               still leads there. The callback keeps its path: it is the
               redirect URL people registered with Enable Banking. */}
-          <Route path="bank-sync" element={<Navigate to="/settings/integrations" replace />} />
+          <Route path="bank-sync" element={<Navigate to="/settings/bank-sync" replace />} />
           <Route path="bank-sync/callback" element={<BankSyncCallback />} />
           <Route path="review" element={<ReviewPage />} />
           <Route path="reports" element={<ReportsPage />} />
@@ -204,7 +206,11 @@ function AuthenticatedApp() {
           <Route path="appearance" element={<AppearanceSection />} />
           <Route path="wallet" element={<WalletSection />} />
           <Route path="security" element={<SecuritySection />} />
-          <Route path="integrations" element={<IntegrationsSection />} />
+          <Route path="bank-sync" element={<BankSyncSection />} />
+          {!__DEMO__ && <Route path="mail" element={<MailSection />} />}
+          {!__DEMO__ && <Route path="ai" element={<AiSection />} />}
+          {/* One section until the bank mails split it in three. */}
+          <Route path="integrations" element={<Navigate to="/settings/bank-sync" replace />} />
           <Route path="data" element={<DataSection />} />
           <Route path="people" element={<PeopleSection />} />
           <Route path="about" element={<AboutSection />} />

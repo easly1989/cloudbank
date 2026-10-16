@@ -13,7 +13,7 @@ export const PAGES = [
   "/schedules?view=list",
   "/budget",
   "/goals",
-  "/settings/integrations",
+  "/settings/bank-sync",
   "/review",
   "/reports",
   "/vehicles",
