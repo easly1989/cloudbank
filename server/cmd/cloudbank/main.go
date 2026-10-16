@@ -201,6 +201,11 @@ func run() error {
 	} else {
 		ps.SetBills(billsSvc)
 		pushSvc = ps
+		// A bank mailbox that stops working, or mails nobody could read, are
+		// announced to whoever connected it (#656).
+		mailSvc.SetNotify(func(ctx context.Context, userID int64, ref, title, body, url string) error {
+			return ps.SendOnce(ctx, userID, ref, push.Payload{Title: title, Body: body, URL: url, Tag: "mail"})
+		})
 	}
 
 	opts := httpapi.Options{
@@ -301,6 +306,18 @@ func run() error {
 		go runBankSync(ctx, bankSyncSvc, cfg.BankSyncInterval, logger)
 	}
 
+	// Listen to the connected bank mailboxes (#656). Shutting down waits for
+	// their connections to close, so none is left half open.
+	mailDone := make(chan struct{})
+	if opts.Mail != nil {
+		go func() {
+			defer close(mailDone)
+			opts.Mail.Run(ctx, logger)
+		}()
+	} else {
+		close(mailDone)
+	}
+
 	select {
 	case err := <-errCh:
 		return err
@@ -308,7 +325,12 @@ func run() error {
 		logger.Info("shutdown signal received, draining connections")
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
-		return srv.Shutdown(shutdownCtx)
+		err := srv.Shutdown(shutdownCtx)
+		select {
+		case <-mailDone:
+		case <-shutdownCtx.Done():
+		}
+		return err
 	}
 }
 

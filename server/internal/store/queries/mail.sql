@@ -12,6 +12,16 @@ SELECT * FROM mailboxes WHERE wallet_id = ? AND provider = ? AND address = ? LIM
 -- name: ListMailboxesForWallet :many
 SELECT * FROM mailboxes WHERE wallet_id = ? ORDER BY created_at, id;
 
+-- name: ListMailboxesToWatch :many
+-- Every mailbox the listener should keep open: not paused, and not waiting for
+-- a new sign-in, across all wallets.
+SELECT * FROM mailboxes WHERE paused = 0 AND status != 'reauth' ORDER BY id;
+
+-- name: SetMailboxAlerted :execrows
+-- Changes the flag only when it differs, so the caller learns from the row
+-- count whether this is the moment it changed.
+UPDATE mailboxes SET alerted = ? WHERE id = ? AND alerted != ?;
+
 -- name: DeleteMailbox :execrows
 DELETE FROM mailboxes WHERE id = ? AND wallet_id = ?;
 

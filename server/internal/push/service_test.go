@@ -135,6 +135,25 @@ func TestSubscribeSendAndPrune(t *testing.T) {
 	}
 }
 
+func TestSendOnceSendsEachRefOnce(t *testing.T) {
+	st, svc := newFixture(t)
+	ctx := context.Background()
+	u, _ := db.New(st.Write()).CreateUser(ctx, db.CreateUserParams{Username: "u", PasswordHash: "x"})
+	if err := svc.Subscribe(ctx, u.ID, "https://push.example/ep1", testP256dh, testAuth); err != nil {
+		t.Fatal(err)
+	}
+	mock := &mockClient{status: http.StatusCreated}
+	svc.client = mock
+	for _, ref := range []string{"mail:1:a", "mail:1:a", "mail:1:b"} {
+		if err := svc.SendOnce(ctx, u.ID, ref, Payload{Title: "t"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if mock.calls != 2 {
+		t.Fatalf("sends = %d, want 2 (one per ref)", mock.calls)
+	}
+}
+
 func TestBillsRemindersDedup(t *testing.T) {
 	st, svc := newFixture(t)
 	ctx := context.Background()
