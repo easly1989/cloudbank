@@ -133,6 +133,10 @@ func (s *Service) ConnectIMAP(ctx context.Context, walletID, userID int64, in IM
 		switch {
 		case ferr == nil:
 			existing = &found
+			// Like any change to the credential, under the mailbox's lock.
+			lock := s.lockFor(found.ID)
+			lock.Lock()
+			defer lock.Unlock()
 		case !errors.Is(ferr, sql.ErrNoRows):
 			return Mailbox{}, ferr
 		}
