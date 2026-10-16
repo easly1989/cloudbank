@@ -79,6 +79,7 @@ type Querier interface {
 	DeleteEBankingConfig(ctx context.Context, walletID int64) (int64, error)
 	DeleteExpiredSessions(ctx context.Context, expiresAt string) error
 	DeleteGoal(ctx context.Context, id int64) error
+	DeleteMailPattern(ctx context.Context, arg DeleteMailPatternParams) (int64, error)
 	DeleteMailbox(ctx context.Context, arg DeleteMailboxParams) (int64, error)
 	DeleteOtherUserSessions(ctx context.Context, arg DeleteOtherUserSessionsParams) error
 	DeletePayee(ctx context.Context, id int64) error
@@ -114,9 +115,12 @@ type Querier interface {
 	DemoLinkFills(ctx context.Context, arg DemoLinkFillsParams) (int64, error)
 	FindDuplicateTransactions(ctx context.Context, arg FindDuplicateTransactionsParams) ([]Transaction, error)
 	FindMailboxByAddress(ctx context.Context, arg FindMailboxByAddressParams) (Mailbox, error)
+	FindTransactionByImportRef(ctx context.Context, arg FindTransactionByImportRefParams) (int64, error)
 	GetAISettings(ctx context.Context, userID int64) (GetAISettingsRow, error)
 	GetAPIToken(ctx context.Context, id string) (ApiToken, error)
 	GetAccount(ctx context.Context, id int64) (Account, error)
+	// An account's currency decimals, if the account is in the wallet.
+	GetAccountFracDigits(ctx context.Context, arg GetAccountFracDigitsParams) (int64, error)
 	GetAppConfig(ctx context.Context, key string) (string, error)
 	GetAssignment(ctx context.Context, id int64) (Assignment, error)
 	GetAttachment(ctx context.Context, id int64) (Attachment, error)
@@ -129,6 +133,10 @@ type Querier interface {
 	GetEBankingConfig(ctx context.Context, walletID int64) (BankEbankingConfig, error)
 	GetGoal(ctx context.Context, id int64) (Goal, error)
 	GetInstanceSetting(ctx context.Context, key string) (string, error)
+	GetMailMessage(ctx context.Context, arg GetMailMessageParams) (MailMessage, error)
+	// One mail with the account of the transaction it made, for the history.
+	GetMailMessageView(ctx context.Context, arg GetMailMessageViewParams) (GetMailMessageViewRow, error)
+	GetMailPattern(ctx context.Context, arg GetMailPatternParams) (MailPattern, error)
 	GetMailbox(ctx context.Context, arg GetMailboxParams) (Mailbox, error)
 	GetPayee(ctx context.Context, id int64) (Payee, error)
 	GetPluggyConfig(ctx context.Context, walletID int64) (BankPluggyConfig, error)
@@ -164,7 +172,9 @@ type Querier interface {
 	InsertEBankingAuth(ctx context.Context, arg InsertEBankingAuthParams) error
 	InsertEBankingConnection(ctx context.Context, arg InsertEBankingConnectionParams) (BankConnection, error)
 	InsertGoal(ctx context.Context, arg InsertGoalParams) (Goal, error)
-	InsertMailMessage(ctx context.Context, arg InsertMailMessageParams) (int64, error)
+	// Returns the new row's id, or nothing when the mail was already there.
+	InsertMailMessage(ctx context.Context, arg InsertMailMessageParams) ([]int64, error)
+	InsertMailPattern(ctx context.Context, arg InsertMailPatternParams) (MailPattern, error)
 	InsertMailbox(ctx context.Context, arg InsertMailboxParams) (Mailbox, error)
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
 	InsertRecoveryCode(ctx context.Context, arg InsertRecoveryCodeParams) error
@@ -229,6 +239,12 @@ type Querier interface {
 	// Each currency's latest recorded rate: where it came from, and its date.
 	ListLatestRatesForWallet(ctx context.Context, walletID int64) ([]ListLatestRatesForWalletRow, error)
 	ListMailMessages(ctx context.Context, arg ListMailMessagesParams) ([]ListMailMessagesRow, error)
+	// The latest mails of one sender, for trying a pattern before saving it.
+	ListMailMessagesFrom(ctx context.Context, arg ListMailMessagesFromParams) ([]MailMessage, error)
+	// The mails that made no transaction, oldest first, for a pattern saved or
+	// corrected after them: none read them, or one did and failed.
+	ListMailMessagesToRetry(ctx context.Context, mailboxID int64) ([]MailMessage, error)
+	ListMailPatterns(ctx context.Context, mailboxID int64) ([]MailPattern, error)
 	ListMailboxesForWallet(ctx context.Context, walletID int64) ([]Mailbox, error)
 	// Every mailbox the listener should keep open: not paused, and not waiting for
 	// a new sign-in, across all wallets.
@@ -326,6 +342,8 @@ type Querier interface {
 	SetCurrencyBase(ctx context.Context, id int64) error
 	SetGoalClosed(ctx context.Context, arg SetGoalClosedParams) error
 	SetInstanceSetting(ctx context.Context, arg SetInstanceSettingParams) error
+	SetMailMessageOutcome(ctx context.Context, arg SetMailMessageOutcomeParams) error
+	SetMailPatternPosition(ctx context.Context, arg SetMailPatternPositionParams) error
 	// Changes the flag only when it differs, so the caller learns from the row
 	// count whether this is the moment it changed.
 	SetMailboxAlerted(ctx context.Context, arg SetMailboxAlertedParams) (int64, error)
@@ -367,6 +385,7 @@ type Querier interface {
 	// does not re-fetch them from the provider on every open).
 	UpdateEBankingAccounts(ctx context.Context, arg UpdateEBankingAccountsParams) error
 	UpdateGoal(ctx context.Context, arg UpdateGoalParams) error
+	UpdateMailPattern(ctx context.Context, arg UpdateMailPatternParams) (int64, error)
 	UpdatePayee(ctx context.Context, arg UpdatePayeeParams) error
 	UpdateScheduleConfig(ctx context.Context, arg UpdateScheduleConfigParams) error
 	UpdateTemplate(ctx context.Context, arg UpdateTemplateParams) error

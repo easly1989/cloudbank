@@ -338,7 +338,7 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 			}
 			var refless []transaction.ReconcileCandidate
 			for _, c := range cands {
-				if c.ImportRef == "" && !matchedIDs[c.ID] {
+				if bankless(c.ImportRef) && !matchedIDs[c.ID] {
 					refless = append(refless, c)
 				}
 			}
@@ -380,6 +380,15 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 	}
 	return out, nil
 }
+
+// MailRefPrefix starts the import ref of a transaction read from a bank mail
+// (#657). The bank has not booked it yet, so bank sync may still merge its own
+// row into it, as into one entered by hand.
+const MailRefPrefix = "mail:"
+
+// bankless says no bank booking stands behind a transaction yet: entered by
+// hand, posted by a schedule, or read from a bank mail.
+func bankless(ref string) bool { return ref == "" || strings.HasPrefix(ref, MailRefPrefix) }
 
 // CommitRow is a resolved row to persist (the wizard sends back only the rows
 // the user kept, with any edits applied).

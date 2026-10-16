@@ -54,7 +54,27 @@ export interface MailSummary {
   subject: string;
   /** The mail's own Date header with its offset, RFC3339. */
   receivedAt: string;
-  outcome: "unrecognized";
+  /**
+   * What became of the mail (#657): "unverified" means a pattern would read it
+   * but the sender was not authenticated; "duplicate" that the account
+   * already has its transaction.
+   */
+  outcome: "unrecognized" | "unverified" | "created" | "duplicate" | "failed";
+  /** Why it failed. */
+  detail: string;
+  authenticated: boolean;
+  patternId: number | null;
+  /** The transaction it made or duplicates, while it exists, and its account. */
+  transactionId: number | null;
+  accountId: number | null;
+}
+
+export interface MailCheckResult {
+  new: number;
+  /** New mails that became transactions. */
+  created: number;
+  /** New mails no pattern read. */
+  unrecognized: number;
 }
 
 const base = (walletId: number) => `/api/v1/wallets/${walletId}/mail`;
@@ -81,7 +101,7 @@ export const listMailboxFolders = (walletId: number, id: number) =>
   api.get<{ folders: string[] }>(`${base(walletId)}/mailboxes/${id}/folders`);
 
 export const checkMailbox = (walletId: number, id: number) =>
-  api.post<{ new: number }>(`${base(walletId)}/mailboxes/${id}/check`);
+  api.post<MailCheckResult>(`${base(walletId)}/mailboxes/${id}/check`);
 
 export const listMailboxMessages = (walletId: number, id: number) =>
   api.get<MailSummary[]>(`${base(walletId)}/mailboxes/${id}/messages`);

@@ -1,12 +1,15 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/easly1989/cloudbank/server/internal/secrets"
+	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
 func TestMailNeedsSecretKey(t *testing.T) {
@@ -68,6 +71,14 @@ func TestMailStaysInItsWallet(t *testing.T) {
 		{http.MethodPost, base + "/mailboxes/1/check"},
 		{http.MethodGet, base + "/mailboxes/1/messages"},
 		{http.MethodDelete, base + "/mailboxes/1"},
+		{http.MethodGet, base + "/mailboxes/1/messages/1"},
+		{http.MethodGet, base + "/mailboxes/1/patterns"},
+		{http.MethodPost, base + "/mailboxes/1/patterns"},
+		{http.MethodPut, base + "/mailboxes/1/patterns/order"},
+		{http.MethodPost, base + "/mailboxes/1/patterns/test"},
+		{http.MethodPut, base + "/mailboxes/1/patterns/1"},
+		{http.MethodDelete, base + "/mailboxes/1/patterns/1"},
+		{http.MethodPost, base + "/mailboxes/1/patterns/1/apply"},
 	} {
 		resp := bob.do(r.method, r.path, map[string]any{}, true)
 		resp.Body.Close()
@@ -91,5 +102,73 @@ func TestMailStaysInItsWallet(t *testing.T) {
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusNotFound || e.Error.Code != "flow_not_found" {
 		t.Errorf("unknown sign-in = %d %q", resp.StatusCode, e.Error.Code)
+	}
+}
+
+// A pattern is checked by the server, not only by the editor: an expression
+// that does not compile is refused with the reason, and nothing is saved.
+func TestMailPatternsAreCheckedByTheServer(t *testing.T) {
+	k, err := secrets.New("test-secret-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	secrets.Configure(k)
+	t.Cleanup(func() { secrets.Configure(nil) })
+
+	c := newTestAPI(t)
+	wid := createWalletWithBase(t, c, "EUR")
+	ws := strconv.FormatInt(wid, 10)
+	resp := c.do(http.MethodPost, "/api/v1/wallets/"+ws+"/accounts", map[string]any{"name": "Conto", "type": "bank"}, true)
+	var acc struct {
+		ID int64 `json:"id"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&acc)
+	resp.Body.Close()
+	accID := acc.ID
+	ctx := context.Background()
+	mb, err := db.New(c.st.Write()).InsertMailbox(ctx, db.InsertMailboxParams{
+		WalletID: wid, Provider: "microsoft", Address: "notifiche.demo@example.com", Secret: "x",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := "/api/v1/wallets/" + ws + "/mail/mailboxes/" + strconv.FormatInt(mb.ID, 10) + "/patterns"
+	pattern := func(body string) map[string]any {
+		return map[string]any{"sender": "avvisi@banca.example", "body": body, "accountId": accID}
+	}
+
+	resp = c.do(http.MethodPost, base, pattern(`pagato (?P<amount>[\d.,+) EUR`), true)
+	var e struct {
+		Error struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&e)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest || e.Error.Code != "invalid" ||
+		!strings.Contains(e.Error.Message, "the expression is not valid") {
+		t.Fatalf("invalid expression = %d %+v", resp.StatusCode, e.Error)
+	}
+
+	// What the body leaves out takes the safe value.
+	resp = c.do(http.MethodPost, base, pattern(`pagato (?P<amount>[\d.,]+) EUR`), true)
+	var saved struct {
+		ID          int64  `json:"id"`
+		Direction   string `json:"direction"`
+		RequireAuth bool   `json:"requireAuth"`
+		ApplyRules  bool   `json:"applyRules"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&saved)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated || saved.Direction != "out" || !saved.RequireAuth || !saved.ApplyRules {
+		t.Fatalf("create = %d %+v", resp.StatusCode, saved)
+	}
+	resp = c.do(http.MethodGet, base, nil, false)
+	var list []json.RawMessage
+	_ = json.NewDecoder(resp.Body).Decode(&list)
+	resp.Body.Close()
+	if len(list) != 1 {
+		t.Fatalf("patterns = %d, want only the valid one", len(list))
 	}
 }

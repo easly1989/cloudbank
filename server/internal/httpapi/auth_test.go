@@ -57,6 +57,9 @@ type testClient struct {
 	t    *testing.T
 	base string
 	hc   *http.Client
+	// st is the server's database, for a test to seed what no endpoint can
+	// make (a mailbox needs a Microsoft sign-in).
+	st *store.Store
 }
 
 func newTestAPI(t *testing.T) *testClient {
@@ -104,14 +107,14 @@ func newTestAPI(t *testing.T) *testClient {
 	t.Cleanup(srv.Close)
 
 	jar, _ := cookiejar.New(nil)
-	return &testClient{t: t, base: srv.URL, hc: &http.Client{Jar: jar}}
+	return &testClient{t: t, base: srv.URL, hc: &http.Client{Jar: jar}, st: st}
 }
 
 // fork returns a second client against the same server with its own cookie jar,
 // for testing cross-user isolation.
 func (c *testClient) fork() *testClient {
 	jar, _ := cookiejar.New(nil)
-	return &testClient{t: c.t, base: c.base, hc: &http.Client{Jar: jar}}
+	return &testClient{t: c.t, base: c.base, hc: &http.Client{Jar: jar}, st: c.st}
 }
 
 // do issues a request. When csrf is true the X-Requested-With header is sent.
