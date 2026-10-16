@@ -122,7 +122,8 @@ func (h *currencyHandlers) add(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &in) {
 		return
 	}
-	c, err := h.svc.AddCurrency(r.Context(), wl.ID, in.IsoCode, in.MakeBase)
+	// Written the way its adder reads numbers.
+	c, err := h.svc.AddCurrency(r.Context(), wl.ID, in.IsoCode, in.MakeBase, userFromContext(r.Context()).Locale)
 	switch {
 	case errors.Is(err, currency.ErrUnknownCode):
 		writeError(w, http.StatusBadRequest, "unknown_code", "unknown currency code")
