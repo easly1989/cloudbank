@@ -199,6 +199,13 @@ func run() error {
 		logger.Warn("mail: Microsoft is reached elsewhere, as in the end-to-end tests",
 			"authority", cfg.MicrosoftAuthority, "imap", cfg.MicrosoftIMAP)
 	}
+	if cfg.LocalIMAP != "" {
+		if err := mailSvc.SetLocalIMAP(cfg.LocalIMAP); err != nil {
+			return fmt.Errorf("CB_MAIL_LOCAL_IMAP: %w", err)
+		}
+		logger.Warn("mail: an IMAP server on this machine is allowed without TLS, as in the end-to-end tests",
+			"imap", cfg.LocalIMAP)
+	}
 	// A bank mail a pattern reads becomes a transaction the way an import does.
 	mailSvc.SetImporter(csvSvc)
 	rateProvider := &currency.Frankfurter{BaseURL: cfg.RateProviderURL}

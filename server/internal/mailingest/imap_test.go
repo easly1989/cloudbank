@@ -3,14 +3,25 @@ package mailingest
 import (
 	"bytes"
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"errors"
 	"fmt"
+	"math/big"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/emersion/go-imap/v2"
 	"github.com/emersion/go-imap/v2/imapclient"
 	"github.com/emersion/go-imap/v2/imapserver"
 	"github.com/emersion/go-imap/v2/imapserver/imapmemserver"
+
+	"github.com/easly1989/cloudbank/server/internal/netguard"
 )
 
 const testUser, testPass = "notifiche.demo@example.com", "app-password"
@@ -18,6 +29,14 @@ const testUser, testPass = "notifiche.demo@example.com", "app-password"
 // startIMAP runs an in-memory IMAP server with an INBOX and a "Banca" folder.
 // Once logged in it always announces IDLE.
 func startIMAP(t *testing.T) (Endpoint, *imapmemserver.User) {
+	t.Helper()
+	return startIMAPServer(t, nil, false)
+}
+
+// startIMAPServer is startIMAP with encryption: with cert, the server offers
+// STARTTLS, or speaks TLS from the first byte when implicit. The endpoint
+// returned trusts cert, and still needs TLS or StartTLS set to use it.
+func startIMAPServer(t *testing.T, cert *tls.Certificate, implicit bool) (Endpoint, *imapmemserver.User) {
 	t.Helper()
 	mem := imapmemserver.New()
 	u := imapmemserver.NewUser(testUser, testPass)
@@ -27,20 +46,64 @@ func startIMAP(t *testing.T) (Endpoint, *imapmemserver.User) {
 		}
 	}
 	mem.AddUser(u)
-	srv := imapserver.New(&imapserver.Options{
+	opts := &imapserver.Options{
 		NewSession: func(*imapserver.Conn) (imapserver.Session, *imapserver.GreetingData, error) {
 			return mem.NewSession(), nil, nil
 		},
 		Caps:         imap.CapSet{imap.CapIMAP4rev1: {}},
-		InsecureAuth: true,
-	})
+		InsecureAuth: cert == nil || implicit,
+	}
+	var cfg *tls.Config
+	if cert != nil {
+		cfg = &tls.Config{Certificates: []tls.Certificate{*cert}}
+		if !implicit {
+			opts.TLSConfig = cfg
+		}
+	}
+	srv := imapserver.New(opts)
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
+	if implicit {
+		ln = tls.NewListener(ln, cfg)
+	}
 	go func() { _ = srv.Serve(ln) }()
 	t.Cleanup(func() { _ = srv.Close() })
-	return Endpoint{Addr: ln.Addr().String()}, u
+	ep := Endpoint{Addr: ln.Addr().String()}
+	if cert != nil {
+		roots := x509.NewCertPool()
+		roots.AddCert(cert.Leaf)
+		ep.ServerName, ep.roots = "127.0.0.1", roots
+	}
+	return ep, u
+}
+
+// selfSigned is a certificate for 127.0.0.1, made for one test.
+func selfSigned(t *testing.T) *tls.Certificate {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpl := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "imap.test"},
+		IPAddresses:  []net.IP{net.IPv4(127, 0, 0, 1)},
+		NotBefore:    time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().Add(time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	leaf, err := x509.ParseCertificate(der)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key, Leaf: leaf}
 }
 
 func appendMail(t *testing.T, u *imapmemserver.User, folder string, n int) {
@@ -192,11 +255,62 @@ func TestSinceKeepsOnlyTheNewestWhenTooManyArrive(t *testing.T) {
 	}
 }
 
+// A wrong password is refused with the mail server's own words, which the
+// connect form shows.
 func TestConnectRejectsWrongPassword(t *testing.T) {
 	ep, _ := startIMAP(t)
 	_, err := Connect(context.Background(), ep, Credentials{Username: testUser, Password: "wrong"})
-	if err == nil {
-		t.Fatal("a wrong password must fail")
+	var le *LoginError
+	if !errors.Is(err, ErrLogin) || !errors.As(err, &le) || le.Text == "" {
+		t.Fatalf("err = %v, want a LoginError with the server's text", err)
+	}
+}
+
+func TestConnectOverSTARTTLS(t *testing.T) {
+	ep, _ := startIMAPServer(t, selfSigned(t), false)
+	ep.StartTLS = true
+	got, err := login(t, ep).Folders()
+	if err != nil || fmt.Sprint(got) != "[INBOX Banca]" {
+		t.Fatalf("folders = %v, %v", got, err)
+	}
+}
+
+func TestConnectOverImplicitTLS(t *testing.T) {
+	ep, _ := startIMAPServer(t, selfSigned(t), true)
+	ep.TLS = true
+	if _, err := login(t, ep).Folders(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// STARTTLS is not optional: a server that does not offer it gets no password.
+func TestSTARTTLSIsRequired(t *testing.T) {
+	ep, _ := startIMAP(t)
+	ep.StartTLS, ep.ServerName = true, "127.0.0.1"
+	_, err := Connect(context.Background(), ep, Credentials{Username: testUser, Password: testPass})
+	if !errors.Is(err, ErrTLS) {
+		t.Fatalf("err = %v, want ErrTLS", err)
+	}
+}
+
+// A certificate that is not trusted for the host ends the connection before
+// the login.
+func TestTLSChecksTheCertificate(t *testing.T) {
+	ep, _ := startIMAPServer(t, selfSigned(t), true)
+	ep.TLS, ep.roots = true, nil
+	_, err := Connect(context.Background(), ep, Credentials{Username: testUser, Password: testPass})
+	if !errors.Is(err, ErrTLS) {
+		t.Fatalf("err = %v, want ErrTLS", err)
+	}
+}
+
+// An endpoint a user named dials public addresses only.
+func TestPublicEndpointRefusesThisMachine(t *testing.T) {
+	ep, _ := startIMAP(t)
+	ep.Public = true
+	_, err := Connect(context.Background(), ep, Credentials{Username: testUser, Password: testPass})
+	if !errors.Is(err, netguard.ErrNotPublic) || !errors.Is(err, ErrUnreachable) {
+		t.Fatalf("err = %v, want ErrNotPublic", err)
 	}
 }
 

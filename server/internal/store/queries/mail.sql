@@ -3,6 +3,19 @@ INSERT INTO mailboxes (wallet_id, created_by, provider, address, secret)
 VALUES (?, ?, ?, ?, ?)
 RETURNING *;
 
+-- name: InsertIMAPMailbox :one
+-- Starts with its cursor at the inbox's end, read during the login that
+-- proved the settings work.
+INSERT INTO mailboxes (wallet_id, created_by, provider, address, secret, imap_host, imap_port, imap_security, imap_username, uid_validity, last_uid)
+VALUES (?, ?, 'imap', ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING *;
+
+-- name: SetMailboxIMAP :exec
+-- New settings for an IMAP mailbox, after a login with them worked.
+UPDATE mailboxes
+SET secret = ?, imap_host = ?, imap_port = ?, imap_security = ?, imap_username = ?
+WHERE id = ?;
+
 -- name: GetMailbox :one
 SELECT * FROM mailboxes WHERE id = ? AND wallet_id = ? LIMIT 1;
 

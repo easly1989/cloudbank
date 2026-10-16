@@ -46,9 +46,10 @@ services:
     volumes:
       - cb-sso-data:/data
 
-  # Bank mails end to end (#657), for `npm run test:mail`: a CloudBank that
-  # signs in to a pretend Microsoft and reads its IMAP server, both on this
-  # machine (CloudBank allows plain http and IMAP only there). The image is
+  # Bank mails end to end (#657, #658), for `npm run test:mail`: a CloudBank
+  # that signs in to a pretend Microsoft and reads its IMAP server, and logs in
+  # with an app password to a pretend provider's, all on this machine
+  # (CloudBank allows plain http and IMAP only there, and only when told). The image is
   # built by the CI e2e job; locally:
   #   docker build -f e2e/mail/Dockerfile -t cloudbank-e2e-mail ..
   e2e-mail:
@@ -57,6 +58,7 @@ services:
     environment:
       E2E_MAIL_HTTP: "127.0.0.1:9100"
       E2E_MAIL_IMAP: "127.0.0.1:1143"
+      E2E_MAIL_PASSWORD_IMAP: "127.0.0.1:1144"
   cloudbank-mail:
     image: cloudbank:e2e
     network_mode: host
@@ -73,6 +75,7 @@ services:
       CB_MS_CLIENT_ID: "e2e"
       CB_MS_AUTHORITY: "http://127.0.0.1:9100"
       CB_MS_IMAP: "127.0.0.1:1143"
+      CB_MAIL_LOCAL_IMAP: "127.0.0.1:1144"
     volumes:
       - cb-mail-data:/data
 

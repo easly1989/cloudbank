@@ -172,6 +172,9 @@ type Querier interface {
 	InsertEBankingAuth(ctx context.Context, arg InsertEBankingAuthParams) error
 	InsertEBankingConnection(ctx context.Context, arg InsertEBankingConnectionParams) (BankConnection, error)
 	InsertGoal(ctx context.Context, arg InsertGoalParams) (Goal, error)
+	// Starts with its cursor at the inbox's end, read during the login that
+	// proved the settings work.
+	InsertIMAPMailbox(ctx context.Context, arg InsertIMAPMailboxParams) (Mailbox, error)
 	// Returns the new row's id, or nothing when the mail was already there.
 	InsertMailMessage(ctx context.Context, arg InsertMailMessageParams) ([]int64, error)
 	InsertMailPattern(ctx context.Context, arg InsertMailPatternParams) (MailPattern, error)
@@ -349,6 +352,8 @@ type Querier interface {
 	SetMailboxAlerted(ctx context.Context, arg SetMailboxAlertedParams) (int64, error)
 	SetMailboxCursor(ctx context.Context, arg SetMailboxCursorParams) error
 	SetMailboxFolder(ctx context.Context, arg SetMailboxFolderParams) error
+	// New settings for an IMAP mailbox, after a login with them worked.
+	SetMailboxIMAP(ctx context.Context, arg SetMailboxIMAPParams) error
 	SetMailboxPaused(ctx context.Context, arg SetMailboxPausedParams) error
 	SetMailboxSecret(ctx context.Context, arg SetMailboxSecretParams) error
 	SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error
