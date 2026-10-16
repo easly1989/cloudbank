@@ -163,6 +163,45 @@ describe("saveMe", () => {
     expect(qc.getQueryData<User>(["me"])?.preferences).toEqual(srv.stored());
   });
 
+  it("shows a change before the server answers", async () => {
+    const srv = server({ tutorialSeen: true });
+    const done = savePreferences(qc, { registerColumnWidths: { memo: 240 } });
+    // The page reads its own change at once, not after the round trip.
+    expect(qc.getQueryData<User>(["me"])?.preferences).toEqual({
+      tutorialSeen: true,
+      registerColumnWidths: { memo: 240 },
+    });
+    // A second change made before the answer starts from the first.
+    const next = savePreferences(qc, {
+      registerColumnOrder: ["payee", "date"],
+    });
+    expect(qc.getQueryData<User>(["me"])?.preferences).toMatchObject({
+      registerColumnWidths: { memo: 240 },
+      registerColumnOrder: ["payee", "date"],
+    });
+    await settle();
+    await srv.answer();
+    await settle();
+    await srv.answer();
+    await Promise.all([done, next]);
+    expect(srv.stored()).toEqual({
+      tutorialSeen: true,
+      registerColumnWidths: { memo: 240 },
+      registerColumnOrder: ["payee", "date"],
+    });
+  });
+
+  it("puts the stored settings back when a write fails", async () => {
+    const srv = server({ tutorialSeen: true });
+    const bad = savePreferences(qc, { fail: true, sidebarCollapsed: true } as never);
+    expect(qc.getQueryData<User>(["me"])?.preferences).toMatchObject({ sidebarCollapsed: true });
+    await settle();
+    await srv.answer();
+    await expect(bad).rejects.toThrow("refused");
+    await settle();
+    expect(qc.getQueryData<User>(["me"])?.preferences).toEqual({ tutorialSeen: true });
+  });
+
   it("gives up after a few refusals in a row", async () => {
     const srv = server({ tutorialSeen: true }, 1);
     qc.setQueryData(["me"], user({ tutorialSeen: true }, 0));
