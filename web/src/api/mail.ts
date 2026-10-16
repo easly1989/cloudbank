@@ -4,11 +4,14 @@ import { api } from "./core";
 
 export interface Mailbox {
   id: number;
-  provider: "microsoft";
+  provider: "microsoft" | "imap";
   address: string;
   folder: string;
   paused: boolean;
-  /** "reauth" means the Microsoft sign-in has to be done again. */
+  /**
+   * "reauth" means the Microsoft sign-in has to be done again, or, for IMAP,
+   * that the server refused the app password and needs a new one.
+   */
   status: "ok" | "error" | "reauth";
   statusDetail: string;
   /** Last check, RFC3339 UTC. */
@@ -16,6 +19,8 @@ export interface Mailbox {
   /** Arrival of the newest mail read, RFC3339 UTC. */
   lastMailAt: string | null;
   createdAt: string;
+  /** Where an IMAP mailbox's server is; null for Microsoft. */
+  imap: IMAPSettings | null;
   /**
    * How the server reads the mailbox now: "idle" (told about new mail),
    * "polling" (asks on a timer), "retry" (lost the connection, about to try
@@ -26,9 +31,31 @@ export interface Mailbox {
   nextCheckAt: string | null;
 }
 
+/** An IMAP mailbox's server and login name (#658); never its password. */
+export interface IMAPSettings {
+  host: string;
+  port: number;
+  /** "tls": encrypted from the first byte; "starttls": switches before the login. */
+  security: "tls" | "starttls";
+  username: string;
+}
+
+/**
+ * What the IMAP connect form sends. A mailboxId gives that mailbox new
+ * settings (a new app password) and keeps its folder and history.
+ */
+export interface IMAPMailboxInput extends Omit<IMAPSettings, "username"> {
+  mailboxId?: number;
+  address?: string;
+  username?: string;
+  password: string;
+}
+
 export interface MailOverview {
   /** False when the server has no CB_SECRET_KEY. */
   available: boolean;
+  /** Whether Outlook.com mailboxes can be connected: also needs an application id. */
+  microsoft: boolean;
   mailboxes: Mailbox[];
 }
 
@@ -169,6 +196,9 @@ export const startMicrosoftMail = (walletId: number, mailboxId?: number) =>
 
 export const pollMicrosoftMail = (walletId: number, flowId: string) =>
   api.post<MailSignInStatus>(`${base(walletId)}/microsoft/${encodeURIComponent(flowId)}/poll`);
+
+export const connectIMAPMail = (walletId: number, input: IMAPMailboxInput) =>
+  api.post<Mailbox>(`${base(walletId)}/imap`, input);
 
 export const updateMailbox = (
   walletId: number,

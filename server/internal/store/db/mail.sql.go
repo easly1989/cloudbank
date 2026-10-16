@@ -45,7 +45,7 @@ func (q *Queries) DeleteMailbox(ctx context.Context, arg DeleteMailboxParams) (i
 }
 
 const findMailboxByAddress = `-- name: FindMailboxByAddress :one
-SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted FROM mailboxes WHERE wallet_id = ? AND provider = ? AND address = ? LIMIT 1
+SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username FROM mailboxes WHERE wallet_id = ? AND provider = ? AND address = ? LIMIT 1
 `
 
 type FindMailboxByAddressParams struct {
@@ -74,6 +74,10 @@ func (q *Queries) FindMailboxByAddress(ctx context.Context, arg FindMailboxByAdd
 		&i.LastMailAt,
 		&i.CreatedAt,
 		&i.Alerted,
+		&i.ImapHost,
+		&i.ImapPort,
+		&i.ImapSecurity,
+		&i.ImapUsername,
 	)
 	return i, err
 }
@@ -234,7 +238,7 @@ func (q *Queries) GetMailPattern(ctx context.Context, arg GetMailPatternParams) 
 }
 
 const getMailbox = `-- name: GetMailbox :one
-SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted FROM mailboxes WHERE id = ? AND wallet_id = ? LIMIT 1
+SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username FROM mailboxes WHERE id = ? AND wallet_id = ? LIMIT 1
 `
 
 type GetMailboxParams struct {
@@ -262,6 +266,70 @@ func (q *Queries) GetMailbox(ctx context.Context, arg GetMailboxParams) (Mailbox
 		&i.LastMailAt,
 		&i.CreatedAt,
 		&i.Alerted,
+		&i.ImapHost,
+		&i.ImapPort,
+		&i.ImapSecurity,
+		&i.ImapUsername,
+	)
+	return i, err
+}
+
+const insertIMAPMailbox = `-- name: InsertIMAPMailbox :one
+INSERT INTO mailboxes (wallet_id, created_by, provider, address, secret, imap_host, imap_port, imap_security, imap_username, uid_validity, last_uid)
+VALUES (?, ?, 'imap', ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username
+`
+
+type InsertIMAPMailboxParams struct {
+	WalletID     int64
+	CreatedBy    sql.NullInt64
+	Address      string
+	Secret       string
+	ImapHost     string
+	ImapPort     int64
+	ImapSecurity string
+	ImapUsername string
+	UidValidity  int64
+	LastUid      int64
+}
+
+// Starts with its cursor at the inbox's end, read during the login that
+// proved the settings work.
+func (q *Queries) InsertIMAPMailbox(ctx context.Context, arg InsertIMAPMailboxParams) (Mailbox, error) {
+	row := q.db.QueryRowContext(ctx, insertIMAPMailbox,
+		arg.WalletID,
+		arg.CreatedBy,
+		arg.Address,
+		arg.Secret,
+		arg.ImapHost,
+		arg.ImapPort,
+		arg.ImapSecurity,
+		arg.ImapUsername,
+		arg.UidValidity,
+		arg.LastUid,
+	)
+	var i Mailbox
+	err := row.Scan(
+		&i.ID,
+		&i.WalletID,
+		&i.CreatedBy,
+		&i.Provider,
+		&i.Address,
+		&i.Secret,
+		&i.Folder,
+		&i.Paused,
+		&i.UidValidity,
+		&i.LastUid,
+		&i.Status,
+		&i.StatusDetail,
+		&i.LastCheckAt,
+		&i.LastMailAt,
+		&i.CreatedAt,
+		&i.Alerted,
+		&i.ImapHost,
+		&i.ImapPort,
+		&i.ImapSecurity,
+		&i.ImapUsername,
 	)
 	return i, err
 }
@@ -396,7 +464,7 @@ func (q *Queries) InsertMailPattern(ctx context.Context, arg InsertMailPatternPa
 const insertMailbox = `-- name: InsertMailbox :one
 INSERT INTO mailboxes (wallet_id, created_by, provider, address, secret)
 VALUES (?, ?, ?, ?, ?)
-RETURNING id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted
+RETURNING id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username
 `
 
 type InsertMailboxParams struct {
@@ -433,6 +501,10 @@ func (q *Queries) InsertMailbox(ctx context.Context, arg InsertMailboxParams) (M
 		&i.LastMailAt,
 		&i.CreatedAt,
 		&i.Alerted,
+		&i.ImapHost,
+		&i.ImapPort,
+		&i.ImapSecurity,
+		&i.ImapUsername,
 	)
 	return i, err
 }
@@ -658,7 +730,7 @@ func (q *Queries) ListMailPatterns(ctx context.Context, mailboxID int64) ([]Mail
 }
 
 const listMailboxesForWallet = `-- name: ListMailboxesForWallet :many
-SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted FROM mailboxes WHERE wallet_id = ? ORDER BY created_at, id
+SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username FROM mailboxes WHERE wallet_id = ? ORDER BY created_at, id
 `
 
 func (q *Queries) ListMailboxesForWallet(ctx context.Context, walletID int64) ([]Mailbox, error) {
@@ -687,6 +759,10 @@ func (q *Queries) ListMailboxesForWallet(ctx context.Context, walletID int64) ([
 			&i.LastMailAt,
 			&i.CreatedAt,
 			&i.Alerted,
+			&i.ImapHost,
+			&i.ImapPort,
+			&i.ImapSecurity,
+			&i.ImapUsername,
 		); err != nil {
 			return nil, err
 		}
@@ -702,7 +778,7 @@ func (q *Queries) ListMailboxesForWallet(ctx context.Context, walletID int64) ([
 }
 
 const listMailboxesToWatch = `-- name: ListMailboxesToWatch :many
-SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted FROM mailboxes WHERE paused = 0 AND status != 'reauth' ORDER BY id
+SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username FROM mailboxes WHERE paused = 0 AND status != 'reauth' ORDER BY id
 `
 
 // Every mailbox the listener should keep open: not paused, and not waiting for
@@ -733,6 +809,10 @@ func (q *Queries) ListMailboxesToWatch(ctx context.Context) ([]Mailbox, error) {
 			&i.LastMailAt,
 			&i.CreatedAt,
 			&i.Alerted,
+			&i.ImapHost,
+			&i.ImapPort,
+			&i.ImapSecurity,
+			&i.ImapUsername,
 		); err != nil {
 			return nil, err
 		}
@@ -873,6 +953,34 @@ func (q *Queries) SetMailboxFolder(ctx context.Context, arg SetMailboxFolderPara
 		arg.Folder,
 		arg.UidValidity,
 		arg.LastUid,
+		arg.ID,
+	)
+	return err
+}
+
+const setMailboxIMAP = `-- name: SetMailboxIMAP :exec
+UPDATE mailboxes
+SET secret = ?, imap_host = ?, imap_port = ?, imap_security = ?, imap_username = ?
+WHERE id = ?
+`
+
+type SetMailboxIMAPParams struct {
+	Secret       string
+	ImapHost     string
+	ImapPort     int64
+	ImapSecurity string
+	ImapUsername string
+	ID           int64
+}
+
+// New settings for an IMAP mailbox, after a login with them worked.
+func (q *Queries) SetMailboxIMAP(ctx context.Context, arg SetMailboxIMAPParams) error {
+	_, err := q.db.ExecContext(ctx, setMailboxIMAP,
+		arg.Secret,
+		arg.ImapHost,
+		arg.ImapPort,
+		arg.ImapSecurity,
+		arg.ImapUsername,
 		arg.ID,
 	)
 	return err

@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/mailingest"
+	"github.com/easly1989/cloudbank/server/internal/netguard"
 )
 
 // mailHandlers serves the wallet-scoped bank-mail endpoints (#654).
@@ -21,6 +22,7 @@ func (h *mailHandlers) walletRoutes(r chi.Router) {
 	r.Get("/mail", h.overview)
 	r.Post("/mail/microsoft", h.startMicrosoft)
 	r.Post("/mail/microsoft/{flowId}/poll", h.pollMicrosoft)
+	r.Post("/mail/imap", h.connectIMAP)
 	r.Route("/mail/mailboxes/{mailboxId}", func(r chi.Router) {
 		r.Patch("/", h.update)
 		r.Delete("/", h.remove)
@@ -56,6 +58,7 @@ func (h *mailHandlers) mailboxID(w http.ResponseWriter, r *http.Request) (int64,
 
 func (h *mailHandlers) writeErr(w http.ResponseWriter, err error) {
 	var expr *mailingest.ExpressionError
+	var login *mailingest.LoginError
 	switch {
 	case errors.Is(err, mailingest.ErrUnavailable):
 		writeError(w, http.StatusConflict, "unavailable", "reading bank mails needs CB_SECRET_KEY on the server")
@@ -74,8 +77,18 @@ func (h *mailHandlers) writeErr(w http.ResponseWriter, err error) {
 		// The reason alone, without the package's prefixes.
 		msg := strings.TrimPrefix(err.Error(), "mailingest: ")
 		writeError(w, http.StatusBadRequest, "invalid", strings.TrimPrefix(msg, "invalid input: "))
+	case errors.As(err, &login):
+		// The mail server's own words: "invalid credentials", "application-
+		// specific password required" and the like say what to do next.
+		writeError(w, http.StatusBadRequest, "login_refused", login.Text)
 	case errors.Is(err, mailingest.ErrReauth):
 		writeError(w, http.StatusConflict, "reauth", "sign in to Microsoft again")
+	case errors.Is(err, netguard.ErrNotPublic):
+		writeError(w, http.StatusBadRequest, "host_not_public", "the mail server is not on the public internet")
+	case errors.Is(err, mailingest.ErrTLS):
+		writeError(w, http.StatusBadGateway, "tls_failed", strings.TrimPrefix(err.Error(), mailingest.ErrTLS.Error()+": "))
+	case errors.Is(err, mailingest.ErrUnreachable):
+		writeError(w, http.StatusBadGateway, "unreachable", strings.TrimPrefix(err.Error(), mailingest.ErrUnreachable.Error()+": "))
 	case errors.As(err, new(*mailingest.OAuthError)):
 		// Microsoft's own explanation, e.g. an app registration that does not
 		// allow the device-code flow.
@@ -97,7 +110,9 @@ func (h *mailHandlers) overview(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal", "could not list mailboxes")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"available": h.svc.Available(), "mailboxes": boxes})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"available": h.svc.Available(), "microsoft": h.svc.MicrosoftAvailable(), "mailboxes": boxes,
+	})
 }
 
 func (h *mailHandlers) startMicrosoft(w http.ResponseWriter, r *http.Request) {
@@ -124,6 +139,26 @@ func (h *mailHandlers) pollMicrosoft(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, st)
+}
+
+// connectIMAP connects a mailbox with an app password, or gives one new
+// settings. The password is only ever received: no answer carries it.
+func (h *mailHandlers) connectIMAP(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body mailingest.IMAPInput
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	status := http.StatusCreated
+	if body.MailboxID > 0 {
+		status = http.StatusOK
+	}
+	mb, err := h.svc.ConnectIMAP(r.Context(), wl.ID, userFromContext(r.Context()).ID, body)
+	if err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	writeJSON(w, status, mb)
 }
 
 func (h *mailHandlers) update(w http.ResponseWriter, r *http.Request) {

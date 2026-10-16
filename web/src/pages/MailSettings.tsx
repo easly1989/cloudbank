@@ -62,6 +62,8 @@ import { ErrorMessage } from "../components/ErrorMessage";
 import { useDateFormat } from "../dates";
 import { formatMinor } from "../money";
 import { notifyError } from "../notifyError";
+import { ImapConnect } from "./mail/ImapConnect";
+import { providerForServer } from "./mail/imapProviders";
 import { PatternList } from "./mail/PatternList";
 import { PatternSheet } from "./mail/PatternSheet";
 import { useWallet } from "../wallet/WalletProvider";
@@ -78,6 +80,8 @@ export function MailSettings() {
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
   const [signIn, setSignIn] = useState<{ mailboxId?: number } | null>(null);
+  // The IMAP connect form: a mailbox to give a new password, or a new one.
+  const [imap, setImap] = useState<{ mailbox?: Mailbox } | null>(null);
 
   const overview = useQuery({
     queryKey: ["mail", walletId],
@@ -89,19 +93,38 @@ export function MailSettings() {
   });
 
   if (!currentWallet || !overview.data) return null;
-  const { available, mailboxes } = overview.data;
+  const { available, microsoft, mailboxes } = overview.data;
 
   return (
     <Stack>
-      <ConnectCard available={available} onMicrosoft={() => setSignIn({})} />
+      <ConnectCard
+        available={available}
+        microsoft={microsoft}
+        onMicrosoft={() => setSignIn({})}
+        onImap={() => setImap({})}
+      />
       {mailboxes.map((m) => (
         <MailboxCard
           key={m.id}
           walletId={walletId}
           mailbox={m}
-          onSignInAgain={() => setSignIn({ mailboxId: m.id })}
+          onSignInAgain={() =>
+            m.provider === "imap" ? setImap({ mailbox: m }) : setSignIn({ mailboxId: m.id })
+          }
         />
       ))}
+      {imap && (
+        <ImapConnect
+          walletId={walletId}
+          mailbox={imap.mailbox}
+          microsoft={microsoft}
+          onMicrosoft={() => {
+            setImap(null);
+            setSignIn({});
+          }}
+          onClose={() => setImap(null)}
+        />
+      )}
       {signIn && (
         <MicrosoftSignIn
           walletId={walletId}
@@ -113,7 +136,17 @@ export function MailSettings() {
   );
 }
 
-function ConnectCard({ available, onMicrosoft }: { available: boolean; onMicrosoft: () => void }) {
+function ConnectCard({
+  available,
+  microsoft,
+  onMicrosoft,
+  onImap,
+}: {
+  available: boolean;
+  microsoft: boolean;
+  onMicrosoft: () => void;
+  onImap: () => void;
+}) {
   const { t } = useTranslation();
   return (
     <Card withBorder data-testid="mail-connect">
@@ -138,7 +171,7 @@ function ConnectCard({ available, onMicrosoft }: { available: boolean; onMicroso
             <Text size="xs" c="dimmed" mb="sm">
               {t("mail.microsoftHint")}
             </Text>
-            <Button size="xs" onClick={onMicrosoft} disabled={!available}>
+            <Button size="xs" onClick={onMicrosoft} disabled={!microsoft}>
               {t("mail.microsoftConnect")}
             </Button>
           </Paper>
@@ -148,14 +181,11 @@ function ConnectCard({ available, onMicrosoft }: { available: boolean; onMicroso
               <Text fw={600} size="sm">
                 {t("mail.imapTitle")}
               </Text>
-              <Badge size="xs" variant="light" color="gray">
-                {t("mail.soon")}
-              </Badge>
             </Group>
             <Text size="xs" c="dimmed" mb="sm">
               {t("mail.imapHint")}
             </Text>
-            <Button size="xs" variant="default" disabled>
+            <Button size="xs" onClick={onImap} disabled={!available}>
               {t("mail.imapConnect")}
             </Button>
           </Paper>
@@ -311,7 +341,7 @@ function MailboxCard({
   let parts: (string | null)[];
   if (mailbox.status === "reauth") {
     statusColor = "red";
-    parts = [t("mail.statusReauth")];
+    parts = [mailbox.provider === "imap" ? t("mail.imap.statusReauth") : t("mail.statusReauth")];
   } else if (mailbox.status === "error") {
     statusColor = "red";
     parts = [
@@ -335,6 +365,8 @@ function MailboxCard({
     ];
   }
   const statusText: ReactNode = parts.filter(Boolean).join(" · ");
+  const isImap = mailbox.provider === "imap";
+  const providerName = mailbox.imap ? providerForServer(mailbox.imap).name || "IMAP" : "Microsoft";
   if (mailbox.paused) statusColor = "gray";
 
   return (
@@ -343,7 +375,7 @@ function MailboxCard({
         <Group justify="space-between" wrap="nowrap" align="flex-start">
           <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
             <ThemeIcon variant="light" size={36} radius="md">
-              <IconBrandWindows size={20} />
+              {isImap ? <IconServer size={20} /> : <IconBrandWindows size={20} />}
             </ThemeIcon>
             <div style={{ minWidth: 0 }}>
               <Text fw={600} truncate data-cb-sensitive>
@@ -351,7 +383,7 @@ function MailboxCard({
               </Text>
               <Group gap={6}>
                 <Badge variant="light" size="sm">
-                  Microsoft
+                  {providerName}
                 </Badge>
                 {mailbox.paused && (
                   <Badge variant="light" size="sm" color="gray">
@@ -393,7 +425,9 @@ function MailboxCard({
                 <Menu.Item onClick={() => update.mutate({ paused: !mailbox.paused })}>
                   {mailbox.paused ? t("mail.resume") : t("mail.pause")}
                 </Menu.Item>
-                <Menu.Item onClick={onSignInAgain}>{t("mail.signInAgain")}</Menu.Item>
+                <Menu.Item onClick={onSignInAgain}>
+                  {isImap ? t("mail.imap.newPassword") : t("mail.signInAgain")}
+                </Menu.Item>
                 <Menu.Item color="red" onClick={() => void disconnect()}>
                   {t("mail.disconnect")}
                 </Menu.Item>
@@ -415,7 +449,7 @@ function MailboxCard({
           </Group>
           {mailbox.status === "reauth" && (
             <Button size="compact-xs" variant="light" onClick={onSignInAgain}>
-              {t("mail.signInAgain")}
+              {isImap ? t("mail.imap.newPassword") : t("mail.signInAgain")}
             </Button>
           )}
         </Group>

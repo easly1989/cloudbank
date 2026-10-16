@@ -450,7 +450,9 @@ paths:
       description: >-
         Bank-mail reading (#654) reads the bank's notification mails from one folder
         of a mailbox. `available` is false when the server has no CB_SECRET_KEY: a
-        mailbox credential is never stored in clear. Not mounted on the demo build.
+        mailbox credential is never stored in clear. `microsoft` is also false when
+        the server has no Microsoft application id (CB_MS_CLIENT_ID set empty). Not
+        mounted on the demo build.
       responses:
         "200": { description: The overview., content: { application/json: { schema: { $ref: "#/components/schemas/MailOverview" } } } }
   /api/v1/wallets/{walletId}/mail/microsoft:
@@ -472,6 +474,34 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { description: "unavailable: the server has no CB_SECRET_KEY." }
         "502": { description: "microsoft_error: Microsoft refused, with its explanation; or Microsoft could not be reached." }
+  /api/v1/wallets/{walletId}/mail/imap:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: connectIMAPMail
+      summary: Connect a mailbox over IMAP with an app password, or give one new settings
+      description: >-
+        Logs in first: nothing is saved or changed unless the mail server accepts
+        the login. The connection is always encrypted (TLS from the first byte, or
+        STARTTLS, which the server must offer), and the server must be on the public
+        internet: the address actually dialled is checked, so a name that resolves to
+        the server's own network is refused. The password is only ever received; no
+        answer carries it. A new mailbox reads its inbox from the current end. Pass a
+        mailboxId to give an IMAP mailbox new settings (a new app password), keeping
+        its folder and history; the address is then ignored. The same address again
+        is the same mailbox.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IMAPMailboxInput" }
+      responses:
+        "200": { description: The mailbox with its new settings., content: { application/json: { schema: { $ref: "#/components/schemas/Mailbox" } } } }
+        "201": { description: The new mailbox., content: { application/json: { schema: { $ref: "#/components/schemas/Mailbox" } } } }
+        "400": { description: "invalid: a value is missing or unusable, with the reason; host_not_public: the server is not on the public internet; login_refused: the mail server refused the login, with its own words." }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "unavailable: the server has no CB_SECRET_KEY." }
+        "502": { description: "unreachable: no connection to the mail server; tls_failed: the connection could not be encrypted (an untrusted certificate, or no STARTTLS); each with the reason." }
   /api/v1/wallets/{walletId}/mail/microsoft/{flowId}/poll:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -3077,14 +3107,15 @@ components:
       type: object
       properties:
         available: { type: boolean, description: "false when the server has no CB_SECRET_KEY" }
+        microsoft: { type: boolean, description: "whether Outlook.com mailboxes can be connected: available, and an application id to sign in with" }
         mailboxes: { type: array, items: { $ref: "#/components/schemas/Mailbox" } }
-      required: [available, mailboxes]
+      required: [available, microsoft, mailboxes]
     Mailbox:
       type: object
       description: A connected mailbox, never its credential.
       properties:
         id: { type: integer, format: int64 }
-        provider: { type: string, enum: [microsoft] }
+        provider: { type: string, enum: [microsoft, imap] }
         address: { type: string }
         folder: { type: string }
         paused: { type: boolean }
@@ -3093,6 +3124,10 @@ components:
         lastCheckAt: { type: string, nullable: true, description: "last check, RFC3339 UTC" }
         lastMailAt: { type: string, nullable: true, description: "arrival of the newest mail read, RFC3339 UTC" }
         createdAt: { type: string }
+        imap:
+          allOf: [{ $ref: "#/components/schemas/IMAPSettings" }]
+          nullable: true
+          description: "where an IMAP mailbox's server is; null for Microsoft"
         mode:
           type: string
           enum: ["idle", "polling", "retry", ""]
@@ -3102,7 +3137,27 @@ components:
             without IDLE), retry (the connection was lost and is about to be
             tried again), or empty when nothing is listening.
         nextCheckAt: { type: string, nullable: true, description: "the next full check, or the next attempt while retrying; RFC3339 UTC" }
-      required: [id, provider, address, folder, paused, status, statusDetail, lastCheckAt, lastMailAt, createdAt, mode, nextCheckAt]
+      required: [id, provider, address, folder, paused, status, statusDetail, lastCheckAt, lastMailAt, createdAt, imap, mode, nextCheckAt]
+    IMAPSettings:
+      type: object
+      description: An IMAP mailbox's server and login name; never its password.
+      properties:
+        host: { type: string }
+        port: { type: integer }
+        security: { type: string, enum: [tls, starttls] }
+        username: { type: string }
+      required: [host, port, security, username]
+    IMAPMailboxInput:
+      type: object
+      properties:
+        mailboxId: { type: integer, format: int64, description: "an IMAP mailbox to give new settings; omit for a new one" }
+        address: { type: string, description: "the mailbox's address; required for a new mailbox" }
+        username: { type: string, description: "the login name, when the provider wants other than the address" }
+        password: { type: string, format: password, writeOnly: true, description: "the app password; stored encrypted, never returned" }
+        host: { type: string }
+        port: { type: integer, minimum: 1, maximum: 65535 }
+        security: { type: string, enum: [tls, starttls], description: "tls: encrypted from the first byte (port 993); starttls: must switch before the login" }
+      required: [password, host, port, security]
     MailSignIn:
       type: object
       properties:

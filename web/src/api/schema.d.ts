@@ -412,7 +412,7 @@ export interface paths {
         };
         /**
          * The wallet's connected mailboxes, and whether one can be connected here
-         * @description Bank-mail reading (#654) reads the bank's notification mails from one folder of a mailbox. `available` is false when the server has no CB_SECRET_KEY: a mailbox credential is never stored in clear. Not mounted on the demo build.
+         * @description Bank-mail reading (#654) reads the bank's notification mails from one folder of a mailbox. `available` is false when the server has no CB_SECRET_KEY: a mailbox credential is never stored in clear. `microsoft` is also false when the server has no Microsoft application id (CB_MS_CLIENT_ID set empty). Not mounted on the demo build.
          */
         get: operations["getMailOverview"];
         put?: never;
@@ -439,6 +439,28 @@ export interface paths {
          * @description Returns the code the user types at the verification URI. Pass a mailboxId to sign an existing mailbox in again. The device code itself stays on the server.
          */
         post: operations["startMicrosoftMail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/imap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Connect a mailbox over IMAP with an app password, or give one new settings
+         * @description Logs in first: nothing is saved or changed unless the mail server accepts the login. The connection is always encrypted (TLS from the first byte, or STARTTLS, which the server must offer), and the server must be on the public internet: the address actually dialled is checked, so a name that resolves to the server's own network is refused. The password is only ever received; no answer carries it. A new mailbox reads its inbox from the current end. Pass a mailboxId to give an IMAP mailbox new settings (a new app password), keeping its folder and history; the address is then ignored. The same address again is the same mailbox.
+         */
+        post: operations["connectIMAPMail"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3210,6 +3232,8 @@ export interface components {
         MailOverview: {
             /** @description false when the server has no CB_SECRET_KEY */
             available: boolean;
+            /** @description whether Outlook.com mailboxes can be connected: available, and an application id to sign in with */
+            microsoft: boolean;
             mailboxes: components["schemas"]["Mailbox"][];
         };
         /** @description A connected mailbox, never its credential. */
@@ -3217,7 +3241,7 @@ export interface components {
             /** Format: int64 */
             id: number;
             /** @enum {string} */
-            provider: "microsoft";
+            provider: "microsoft" | "imap";
             address: string;
             folder: string;
             paused: boolean;
@@ -3229,6 +3253,8 @@ export interface components {
             /** @description arrival of the newest mail read, RFC3339 UTC */
             lastMailAt: string | null;
             createdAt: string;
+            /** @description where an IMAP mailbox's server is; null for Microsoft */
+            imap: components["schemas"]["IMAPSettings"] | null;
             /**
              * @description How the server is reading the mailbox right now: idle (the mail server announces new mail), polling (asked on a timer, for a server without IDLE), retry (the connection was lost and is about to be tried again), or empty when nothing is listening.
              * @enum {string}
@@ -3236,6 +3262,37 @@ export interface components {
             mode: "idle" | "polling" | "retry" | "";
             /** @description the next full check, or the next attempt while retrying; RFC3339 UTC */
             nextCheckAt: string | null;
+        };
+        /** @description An IMAP mailbox's server and login name; never its password. */
+        IMAPSettings: {
+            host: string;
+            port: number;
+            /** @enum {string} */
+            security: "tls" | "starttls";
+            username: string;
+        };
+        IMAPMailboxInput: {
+            /**
+             * Format: int64
+             * @description an IMAP mailbox to give new settings; omit for a new one
+             */
+            mailboxId?: number;
+            /** @description the mailbox's address; required for a new mailbox */
+            address?: string;
+            /** @description the login name, when the provider wants other than the address */
+            username?: string;
+            /**
+             * Format: password
+             * @description the app password; stored encrypted, never returned
+             */
+            password: string;
+            host: string;
+            port: number;
+            /**
+             * @description tls: encrypted from the first byte (port 993); starttls: must switch before the login
+             * @enum {string}
+             */
+            security: "tls" | "starttls";
         };
         MailSignIn: {
             flowId: string;
@@ -5744,6 +5801,63 @@ export interface operations {
                 content?: never;
             };
             /** @description microsoft_error: Microsoft refused, with its explanation; or Microsoft could not be reached. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connectIMAPMail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IMAPMailboxInput"];
+            };
+        };
+        responses: {
+            /** @description The mailbox with its new settings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Mailbox"];
+                };
+            };
+            /** @description The new mailbox. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Mailbox"];
+                };
+            };
+            /** @description invalid: a value is missing or unusable, with the reason; host_not_public: the server is not on the public internet; login_refused: the mail server refused the login, with its own words. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            /** @description unavailable: the server has no CB_SECRET_KEY. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unreachable: no connection to the mail server; tls_failed: the connection could not be encrypted (an untrusted certificate, or no STARTTLS); each with the reason. */
             502: {
                 headers: {
                     [name: string]: unknown;

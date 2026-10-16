@@ -35,6 +35,8 @@ const EXCEPTIONS = {
     "mail.imapHint": ["account"],
     "mail.warning": ["account"],
     "mail.step3": ["account"],
+    "mail.imap.hint.yahoo": ["account"],
+    "mail.imap.hint.fastmail": ["account"],
     // "Schedule" as the repetition settings, not a schedule.
     "schedules.transferNote": ["schedule"],
     // The verbs, not the statuses.
