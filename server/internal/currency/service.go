@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/dbconv"
+	"github.com/easly1989/cloudbank/server/internal/locale"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -124,9 +125,25 @@ func (s *Service) Get(ctx context.Context, id int64) (Currency, error) {
 	return toCurrency(c), nil
 }
 
-// AddCurrency adds an ISO currency to a wallet from the catalog. When makeBase
-// is set (or it is the wallet's first currency), it becomes the base currency.
-func (s *Service) AddCurrency(ctx context.Context, walletID int64, isoCode string, makeBase bool) (Currency, error) {
+// Separators are the decimal and group separators a language writes numbers
+// with: 1.234,56 in Italian, 1 234,56 in French, 1,234.56 in English. A
+// currency added by someone takes those of the language they use CloudBank
+// in; they can change them in Currencies.
+func Separators(lang string) (decimal, group string) {
+	code, _ := locale.Normalize(lang)
+	switch code {
+	case "fr":
+		return ",", " "
+	case "it", "es", "de", "pt-BR":
+		return ",", "."
+	}
+	return ".", ","
+}
+
+// AddCurrency adds an ISO currency to a wallet from the catalog, written with
+// the separators of lang (see Separators). When makeBase is set (or it is the
+// wallet's first currency), it becomes the base currency.
+func (s *Service) AddCurrency(ctx context.Context, walletID int64, isoCode string, makeBase bool, lang string) (Currency, error) {
 	entry, ok := Lookup(isoCode)
 	if !ok {
 		return Currency{}, ErrUnknownCode
@@ -137,6 +154,7 @@ func (s *Service) AddCurrency(ctx context.Context, walletID int64, isoCode strin
 		return Currency{}, err
 	}
 	base := makeBase || n == 0
+	decimal, group := Separators(lang)
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -152,7 +170,7 @@ func (s *Service) AddCurrency(ctx context.Context, walletID int64, isoCode strin
 	}
 	c, err := qtx.InsertCurrency(ctx, db.InsertCurrencyParams{
 		WalletID: walletID, IsoCode: entry.Code, Name: entry.Name, Symbol: entry.Symbol,
-		SymbolPrefix: dbconv.B2i(entry.SymbolPrefix), DecimalChar: ".", GroupChar: ",",
+		SymbolPrefix: dbconv.B2i(entry.SymbolPrefix), DecimalChar: decimal, GroupChar: group,
 		FracDigits: int64(entry.FracDigits), IsBase: dbconv.B2i(base), Rate: 1,
 	})
 	if err != nil {
