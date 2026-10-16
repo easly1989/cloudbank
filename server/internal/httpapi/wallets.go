@@ -233,7 +233,7 @@ func (h *walletHandlers) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if h.currencies != nil {
-		if _, err := h.currencies.AddCurrency(r.Context(), wl.ID, baseCode, true); err != nil {
+		if _, err := h.currencies.AddCurrency(r.Context(), wl.ID, baseCode, true, user.Locale); err != nil {
 			writeError(w, http.StatusInternalServerError, "internal", "could not set base currency")
 			return
 		}

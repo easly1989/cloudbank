@@ -33,11 +33,11 @@ func seedEURWallet(t *testing.T, s *Service, q *db.Queries, extra ...string) int
 	t.Helper()
 	ctx := context.Background()
 	wid := seedWallet(t, q)
-	if _, err := s.AddCurrency(ctx, wid, "EUR", true); err != nil {
+	if _, err := s.AddCurrency(ctx, wid, "EUR", true, ""); err != nil {
 		t.Fatalf("add EUR: %v", err)
 	}
 	for _, code := range extra {
-		if _, err := s.AddCurrency(ctx, wid, code, false); err != nil {
+		if _, err := s.AddCurrency(ctx, wid, code, false, ""); err != nil {
 			t.Fatalf("add %s: %v", code, err)
 		}
 	}
