@@ -203,3 +203,16 @@ func TestMicrosoftErrorCarriesItsExplanation(t *testing.T) {
 		t.Fatalf("message = %q", got)
 	}
 }
+
+func TestCheckAuthorityWantsHTTPSAwayFromThisMachine(t *testing.T) {
+	for _, ok := range []string{"", MicrosoftAuthority, "http://localhost:9100", "http://127.0.0.1:9100/x"} {
+		if err := CheckAuthority(ok); err != nil {
+			t.Errorf("%q: %v", ok, err)
+		}
+	}
+	for _, bad := range []string{"http://login.example.com", "ftp://localhost", "localhost:9100", "https://"} {
+		if err := CheckAuthority(bad); err == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+}

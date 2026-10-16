@@ -193,6 +193,15 @@ jobs:
             VERSION=e2e
           cache-from: type=gha,scope=app
           cache-to: type=gha,mode=max,scope=app
+      - name: Build the pretend Microsoft for the bank-mail e2e
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: e2e/mail/Dockerfile
+          load: true
+          tags: cloudbank-e2e-mail
+          cache-from: type=gha,scope=e2e-mail
+          cache-to: type=gha,mode=max,scope=e2e-mail
       - name: Start the app via compose
         run: docker compose -f e2e/docker-compose.ci.yml up -d
       - name: Wait for the app to be healthy
@@ -241,6 +250,18 @@ jobs:
         run: npm run test:sso
         env:
           E2E_SSO_BASE_URL: http://localhost:8081
+      - name: Wait for the bank-mail server
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8082/healthz; then ok=1; break; fi
+            sleep 2
+          done
+          test -n "$ok"
+      - name: Run the bank-mail e2e
+        working-directory: e2e
+        run: npm run test:mail
+        env:
+          E2E_MAIL_BASE_URL: http://127.0.0.1:8082
       - name: Container logs on failure
         if: failure()
         run: docker compose -f e2e/docker-compose.ci.yml logs
@@ -252,6 +273,7 @@ jobs:
           path: |
             e2e/test-results/
             e2e/test-results-sso/
+            e2e/test-results-mail/
             e2e/playwright-report/
           retention-days: 7
 

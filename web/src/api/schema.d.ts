@@ -591,7 +591,7 @@ export interface paths {
         put?: never;
         /**
          * Add a pattern at the end of the list
-         * @description The expression is compiled (RE2, linear time) and its accounts must be the wallet's; a pattern that fails is refused with the reason. Left out, direction is out, and applyRules and requireAuth are on.
+         * @description The expression is compiled (RE2, linear time) and its accounts must be the wallet's; a pattern that fails is refused with the reason. An expression RE2 cannot read is refused with the code invalid_expression (invalid_subject_expression for the subject's) and RE2's own reason as the message. Left out, direction is out, and applyRules and requireAuth are on.
          */
         post: operations["createMailPattern"];
         delete?: never;
@@ -3277,6 +3277,15 @@ export interface components {
             transactionId: number | null;
             /** Format: int64 */
             accountId: number | null;
+            /**
+             * Format: int64
+             * @description that transaction's amount, minor units
+             */
+            amount: number | null;
+            /** @description that transaction's memo */
+            memo: string | null;
+            /** @description that transaction's payee */
+            payee: string | null;
         };
         MailDetail: components["schemas"]["MailSummary"] & {
             body: string;

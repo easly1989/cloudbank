@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/easly1989/cloudbank/server/internal/secrets"
@@ -146,8 +145,8 @@ func TestMailPatternsAreCheckedByTheServer(t *testing.T) {
 	}
 	_ = json.NewDecoder(resp.Body).Decode(&e)
 	resp.Body.Close()
-	if resp.StatusCode != http.StatusBadRequest || e.Error.Code != "invalid" ||
-		!strings.Contains(e.Error.Message, "the expression is not valid") {
+	if resp.StatusCode != http.StatusBadRequest || e.Error.Code != "invalid_expression" ||
+		e.Error.Message != "missing closing ]: `[\\d.,+) EUR`" {
 		t.Fatalf("invalid expression = %d %+v", resp.StatusCode, e.Error)
 	}
 

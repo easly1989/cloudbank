@@ -25,6 +25,9 @@ Decided in issue #596. The research behind the choices, with its sources, is
 - **Payee:** the other side of a transaction, whether it receives or pays.
 - **Transfer:** money moved between two of your own accounts.
 - **Set aside:** the part of a balance earmarked for goals.
+- **Pattern:** how CloudBank reads one kind of bank mail: which mails it is
+  for, the pieces it takes from them and the account they go to. Not a
+  template, which fills in a new transaction.
 
 ## Terms
 
@@ -39,6 +42,7 @@ Decided in issue #596. The research behind the choices, with its sources, is
 | tag | tag | etiqueta | étiquette | Tag | tag |
 | rule | regola | regla | règle | Regel | regra |
 | template | modello | plantilla | modèle | Vorlage | modelo |
+| pattern (bank mails) | schema | patrón | motif | Muster | padrão |
 | schedule | programmata | movimiento programado | opération récurrente | wiederkehrende Buchung | agendamento |
 | occurrence | scadenza | vencimiento | échéance | Fälligkeit | vencimento |
 | Schedules (the page) | Programmate | Programados | Échéancier | Wiederkehrend | Agendamentos |

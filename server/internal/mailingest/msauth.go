@@ -49,6 +49,25 @@ func NewMicrosoft(clientID, authority string, hc *http.Client) *Microsoft {
 	return &Microsoft{clientID: clientID, authority: strings.TrimRight(authority, "/"), http: hc}
 }
 
+// CheckAuthority accepts an authority for NewMicrosoft: empty (Microsoft's
+// own), https, or plain http on this machine for a pretend one in tests.
+func CheckAuthority(raw string) error {
+	if raw == "" {
+		return nil
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		return fmt.Errorf("not a URL: %q", raw)
+	}
+	switch {
+	case u.Scheme == "https":
+		return nil
+	case u.Scheme == "http" && isLoopback(u.Hostname()):
+		return nil
+	}
+	return fmt.Errorf("want https (plain http only on localhost): %q", raw)
+}
+
 // DeviceCode is what the user needs to sign in on another device, plus the
 // code CloudBank keeps to collect the token. DeviceCode never leaves the
 // server.
