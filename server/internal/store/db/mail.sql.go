@@ -45,7 +45,7 @@ func (q *Queries) DeleteMailbox(ctx context.Context, arg DeleteMailboxParams) (i
 }
 
 const findMailboxByAddress = `-- name: FindMailboxByAddress :one
-SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username FROM mailboxes WHERE wallet_id = ? AND provider = ? AND address = ? LIMIT 1
+SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username, ai_mode, ai_account_id, ai_field, ai_senders FROM mailboxes WHERE wallet_id = ? AND provider = ? AND address = ? LIMIT 1
 `
 
 type FindMailboxByAddressParams struct {
@@ -78,6 +78,10 @@ func (q *Queries) FindMailboxByAddress(ctx context.Context, arg FindMailboxByAdd
 		&i.ImapPort,
 		&i.ImapSecurity,
 		&i.ImapUsername,
+		&i.AiMode,
+		&i.AiAccountID,
+		&i.AiField,
+		&i.AiSenders,
 	)
 	return i, err
 }
@@ -117,7 +121,7 @@ func (q *Queries) GetAccountFracDigits(ctx context.Context, arg GetAccountFracDi
 }
 
 const getMailMessage = `-- name: GetMailMessage :one
-SELECT id, mailbox_id, uid, message_id, sender, subject, received_at, body, outcome, created_at, authenticated, detail, pattern_id, transaction_id FROM mail_messages WHERE id = ? AND mailbox_id = ? LIMIT 1
+SELECT id, mailbox_id, uid, message_id, sender, subject, received_at, body, outcome, created_at, authenticated, detail, pattern_id, transaction_id, by_ai FROM mail_messages WHERE id = ? AND mailbox_id = ? LIMIT 1
 `
 
 type GetMailMessageParams struct {
@@ -143,6 +147,7 @@ func (q *Queries) GetMailMessage(ctx context.Context, arg GetMailMessageParams) 
 		&i.Detail,
 		&i.PatternID,
 		&i.TransactionID,
+		&i.ByAi,
 	)
 	return i, err
 }
@@ -150,7 +155,8 @@ func (q *Queries) GetMailMessage(ctx context.Context, arg GetMailMessageParams) 
 const getMailMessageView = `-- name: GetMailMessageView :one
 SELECT m.id, m.sender, m.subject, m.received_at, m.body, m.outcome, m.detail, m.authenticated,
        m.pattern_id, m.transaction_id, t.account_id,
-       t.amount AS transaction_amount, t.memo AS transaction_memo, p.name AS transaction_payee
+       t.amount AS transaction_amount, t.memo AS transaction_memo, p.name AS transaction_payee,
+       m.by_ai
 FROM mail_messages m
 LEFT JOIN transactions t ON t.id = m.transaction_id
 LEFT JOIN payees p ON p.id = t.payee_id
@@ -177,6 +183,7 @@ type GetMailMessageViewRow struct {
 	TransactionAmount sql.NullInt64
 	TransactionMemo   sql.NullString
 	TransactionPayee  sql.NullString
+	ByAi              int64
 }
 
 // One mail with the account of the transaction it made, for the history.
@@ -198,6 +205,7 @@ func (q *Queries) GetMailMessageView(ctx context.Context, arg GetMailMessageView
 		&i.TransactionAmount,
 		&i.TransactionMemo,
 		&i.TransactionPayee,
+		&i.ByAi,
 	)
 	return i, err
 }
@@ -238,7 +246,7 @@ func (q *Queries) GetMailPattern(ctx context.Context, arg GetMailPatternParams) 
 }
 
 const getMailbox = `-- name: GetMailbox :one
-SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username FROM mailboxes WHERE id = ? AND wallet_id = ? LIMIT 1
+SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username, ai_mode, ai_account_id, ai_field, ai_senders FROM mailboxes WHERE id = ? AND wallet_id = ? LIMIT 1
 `
 
 type GetMailboxParams struct {
@@ -270,6 +278,10 @@ func (q *Queries) GetMailbox(ctx context.Context, arg GetMailboxParams) (Mailbox
 		&i.ImapPort,
 		&i.ImapSecurity,
 		&i.ImapUsername,
+		&i.AiMode,
+		&i.AiAccountID,
+		&i.AiField,
+		&i.AiSenders,
 	)
 	return i, err
 }
@@ -277,7 +289,7 @@ func (q *Queries) GetMailbox(ctx context.Context, arg GetMailboxParams) (Mailbox
 const insertIMAPMailbox = `-- name: InsertIMAPMailbox :one
 INSERT INTO mailboxes (wallet_id, created_by, provider, address, secret, imap_host, imap_port, imap_security, imap_username, uid_validity, last_uid)
 VALUES (?, ?, 'imap', ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username
+RETURNING id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username, ai_mode, ai_account_id, ai_field, ai_senders
 `
 
 type InsertIMAPMailboxParams struct {
@@ -330,6 +342,10 @@ func (q *Queries) InsertIMAPMailbox(ctx context.Context, arg InsertIMAPMailboxPa
 		&i.ImapPort,
 		&i.ImapSecurity,
 		&i.ImapUsername,
+		&i.AiMode,
+		&i.AiAccountID,
+		&i.AiField,
+		&i.AiSenders,
 	)
 	return i, err
 }
@@ -464,7 +480,7 @@ func (q *Queries) InsertMailPattern(ctx context.Context, arg InsertMailPatternPa
 const insertMailbox = `-- name: InsertMailbox :one
 INSERT INTO mailboxes (wallet_id, created_by, provider, address, secret)
 VALUES (?, ?, ?, ?, ?)
-RETURNING id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username
+RETURNING id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username, ai_mode, ai_account_id, ai_field, ai_senders
 `
 
 type InsertMailboxParams struct {
@@ -505,6 +521,10 @@ func (q *Queries) InsertMailbox(ctx context.Context, arg InsertMailboxParams) (M
 		&i.ImapPort,
 		&i.ImapSecurity,
 		&i.ImapUsername,
+		&i.AiMode,
+		&i.AiAccountID,
+		&i.AiField,
+		&i.AiSenders,
 	)
 	return i, err
 }
@@ -513,7 +533,7 @@ const listMailMessages = `-- name: ListMailMessages :many
 SELECT m.id, m.mailbox_id, m.uid, m.message_id, m.sender, m.subject, m.received_at, m.outcome,
        m.detail, m.authenticated, m.pattern_id, m.transaction_id, t.account_id,
        t.amount AS transaction_amount, t.memo AS transaction_memo, p.name AS transaction_payee,
-       m.created_at
+       m.created_at, m.by_ai
 FROM mail_messages m
 LEFT JOIN transactions t ON t.id = m.transaction_id
 LEFT JOIN payees p ON p.id = t.payee_id
@@ -543,6 +563,7 @@ type ListMailMessagesRow struct {
 	TransactionMemo   sql.NullString
 	TransactionPayee  sql.NullString
 	CreatedAt         string
+	ByAi              int64
 }
 
 func (q *Queries) ListMailMessages(ctx context.Context, arg ListMailMessagesParams) ([]ListMailMessagesRow, error) {
@@ -572,6 +593,7 @@ func (q *Queries) ListMailMessages(ctx context.Context, arg ListMailMessagesPara
 			&i.TransactionMemo,
 			&i.TransactionPayee,
 			&i.CreatedAt,
+			&i.ByAi,
 		); err != nil {
 			return nil, err
 		}
@@ -587,7 +609,7 @@ func (q *Queries) ListMailMessages(ctx context.Context, arg ListMailMessagesPara
 }
 
 const listMailMessagesFrom = `-- name: ListMailMessagesFrom :many
-SELECT id, mailbox_id, uid, message_id, sender, subject, received_at, body, outcome, created_at, authenticated, detail, pattern_id, transaction_id FROM mail_messages
+SELECT id, mailbox_id, uid, message_id, sender, subject, received_at, body, outcome, created_at, authenticated, detail, pattern_id, transaction_id, by_ai FROM mail_messages
 WHERE mailbox_id = ? AND sender = ?
 ORDER BY id DESC LIMIT ?
 `
@@ -623,6 +645,7 @@ func (q *Queries) ListMailMessagesFrom(ctx context.Context, arg ListMailMessages
 			&i.Detail,
 			&i.PatternID,
 			&i.TransactionID,
+			&i.ByAi,
 		); err != nil {
 			return nil, err
 		}
@@ -638,7 +661,7 @@ func (q *Queries) ListMailMessagesFrom(ctx context.Context, arg ListMailMessages
 }
 
 const listMailMessagesToRetry = `-- name: ListMailMessagesToRetry :many
-SELECT id, mailbox_id, uid, message_id, sender, subject, received_at, body, outcome, created_at, authenticated, detail, pattern_id, transaction_id FROM mail_messages
+SELECT id, mailbox_id, uid, message_id, sender, subject, received_at, body, outcome, created_at, authenticated, detail, pattern_id, transaction_id, by_ai FROM mail_messages
 WHERE mailbox_id = ? AND outcome IN ('unrecognized', 'unverified', 'failed')
 ORDER BY id
 `
@@ -669,6 +692,7 @@ func (q *Queries) ListMailMessagesToRetry(ctx context.Context, mailboxID int64) 
 			&i.Detail,
 			&i.PatternID,
 			&i.TransactionID,
+			&i.ByAi,
 		); err != nil {
 			return nil, err
 		}
@@ -730,7 +754,7 @@ func (q *Queries) ListMailPatterns(ctx context.Context, mailboxID int64) ([]Mail
 }
 
 const listMailboxesForWallet = `-- name: ListMailboxesForWallet :many
-SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username FROM mailboxes WHERE wallet_id = ? ORDER BY created_at, id
+SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username, ai_mode, ai_account_id, ai_field, ai_senders FROM mailboxes WHERE wallet_id = ? ORDER BY created_at, id
 `
 
 func (q *Queries) ListMailboxesForWallet(ctx context.Context, walletID int64) ([]Mailbox, error) {
@@ -763,6 +787,10 @@ func (q *Queries) ListMailboxesForWallet(ctx context.Context, walletID int64) ([
 			&i.ImapPort,
 			&i.ImapSecurity,
 			&i.ImapUsername,
+			&i.AiMode,
+			&i.AiAccountID,
+			&i.AiField,
+			&i.AiSenders,
 		); err != nil {
 			return nil, err
 		}
@@ -778,7 +806,7 @@ func (q *Queries) ListMailboxesForWallet(ctx context.Context, walletID int64) ([
 }
 
 const listMailboxesToWatch = `-- name: ListMailboxesToWatch :many
-SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username FROM mailboxes WHERE paused = 0 AND status != 'reauth' ORDER BY id
+SELECT id, wallet_id, created_by, provider, address, secret, folder, paused, uid_validity, last_uid, status, status_detail, last_check_at, last_mail_at, created_at, alerted, imap_host, imap_port, imap_security, imap_username, ai_mode, ai_account_id, ai_field, ai_senders FROM mailboxes WHERE paused = 0 AND status != 'reauth' ORDER BY id
 `
 
 // Every mailbox the listener should keep open: not paused, and not waiting for
@@ -813,6 +841,10 @@ func (q *Queries) ListMailboxesToWatch(ctx context.Context) ([]Mailbox, error) {
 			&i.ImapPort,
 			&i.ImapSecurity,
 			&i.ImapUsername,
+			&i.AiMode,
+			&i.AiAccountID,
+			&i.AiField,
+			&i.AiSenders,
 		); err != nil {
 			return nil, err
 		}
@@ -864,7 +896,7 @@ func (q *Queries) RecordMailboxCheck(ctx context.Context, arg RecordMailboxCheck
 }
 
 const setMailMessageOutcome = `-- name: SetMailMessageOutcome :exec
-UPDATE mail_messages SET outcome = ?, detail = ?, pattern_id = ?, transaction_id = ?
+UPDATE mail_messages SET outcome = ?, detail = ?, pattern_id = ?, transaction_id = ?, by_ai = ?
 WHERE id = ?
 `
 
@@ -873,6 +905,7 @@ type SetMailMessageOutcomeParams struct {
 	Detail        string
 	PatternID     sql.NullInt64
 	TransactionID sql.NullInt64
+	ByAi          int64
 	ID            int64
 }
 
@@ -882,6 +915,7 @@ func (q *Queries) SetMailMessageOutcome(ctx context.Context, arg SetMailMessageO
 		arg.Detail,
 		arg.PatternID,
 		arg.TransactionID,
+		arg.ByAi,
 		arg.ID,
 	)
 	return err
@@ -899,6 +933,29 @@ type SetMailPatternPositionParams struct {
 
 func (q *Queries) SetMailPatternPosition(ctx context.Context, arg SetMailPatternPositionParams) error {
 	_, err := q.db.ExecContext(ctx, setMailPatternPosition, arg.Position, arg.ID, arg.MailboxID)
+	return err
+}
+
+const setMailboxAI = `-- name: SetMailboxAI :exec
+UPDATE mailboxes SET ai_mode = ?, ai_account_id = ?, ai_field = ?, ai_senders = ? WHERE id = ?
+`
+
+type SetMailboxAIParams struct {
+	AiMode      string
+	AiAccountID sql.NullInt64
+	AiField     string
+	AiSenders   string
+	ID          int64
+}
+
+func (q *Queries) SetMailboxAI(ctx context.Context, arg SetMailboxAIParams) error {
+	_, err := q.db.ExecContext(ctx, setMailboxAI,
+		arg.AiMode,
+		arg.AiAccountID,
+		arg.AiField,
+		arg.AiSenders,
+		arg.ID,
+	)
 	return err
 }
 

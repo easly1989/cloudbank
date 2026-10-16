@@ -44,6 +44,9 @@ UPDATE mailboxes SET secret = ? WHERE id = ?;
 -- name: SetMailboxFolder :exec
 UPDATE mailboxes SET folder = ?, uid_validity = ?, last_uid = ? WHERE id = ?;
 
+-- name: SetMailboxAI :exec
+UPDATE mailboxes SET ai_mode = ?, ai_account_id = ?, ai_field = ?, ai_senders = ? WHERE id = ?;
+
 -- name: SetMailboxPaused :exec
 UPDATE mailboxes SET paused = ? WHERE id = ?;
 
@@ -69,7 +72,7 @@ RETURNING id;
 SELECT m.id, m.mailbox_id, m.uid, m.message_id, m.sender, m.subject, m.received_at, m.outcome,
        m.detail, m.authenticated, m.pattern_id, m.transaction_id, t.account_id,
        t.amount AS transaction_amount, t.memo AS transaction_memo, p.name AS transaction_payee,
-       m.created_at
+       m.created_at, m.by_ai
 FROM mail_messages m
 LEFT JOIN transactions t ON t.id = m.transaction_id
 LEFT JOIN payees p ON p.id = t.payee_id
@@ -82,7 +85,8 @@ SELECT * FROM mail_messages WHERE id = ? AND mailbox_id = ? LIMIT 1;
 -- One mail with the account of the transaction it made, for the history.
 SELECT m.id, m.sender, m.subject, m.received_at, m.body, m.outcome, m.detail, m.authenticated,
        m.pattern_id, m.transaction_id, t.account_id,
-       t.amount AS transaction_amount, t.memo AS transaction_memo, p.name AS transaction_payee
+       t.amount AS transaction_amount, t.memo AS transaction_memo, p.name AS transaction_payee,
+       m.by_ai
 FROM mail_messages m
 LEFT JOIN transactions t ON t.id = m.transaction_id
 LEFT JOIN payees p ON p.id = t.payee_id
@@ -102,7 +106,7 @@ WHERE mailbox_id = ? AND sender = ?
 ORDER BY id DESC LIMIT ?;
 
 -- name: SetMailMessageOutcome :exec
-UPDATE mail_messages SET outcome = ?, detail = ?, pattern_id = ?, transaction_id = ?
+UPDATE mail_messages SET outcome = ?, detail = ?, pattern_id = ?, transaction_id = ?, by_ai = ?
 WHERE id = ?;
 
 -- name: ListMailPatterns :many

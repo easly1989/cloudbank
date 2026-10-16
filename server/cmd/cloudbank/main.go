@@ -208,6 +208,8 @@ func run() error {
 	}
 	// A bank mail a pattern reads becomes a transaction the way an import does.
 	mailSvc.SetImporter(csvSvc)
+	// The AI of whoever connected a mailbox can read what no pattern reads (#659).
+	mailSvc.SetAI(aiSvc)
 	rateProvider := &currency.Frankfurter{BaseURL: cfg.RateProviderURL}
 	integritySvc := integrity.NewServiceWithRead(st.Read(), st.Write())
 	backupSvc := backup.NewService(st.Write())

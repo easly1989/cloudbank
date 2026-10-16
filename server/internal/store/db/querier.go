@@ -347,6 +347,7 @@ type Querier interface {
 	SetInstanceSetting(ctx context.Context, arg SetInstanceSettingParams) error
 	SetMailMessageOutcome(ctx context.Context, arg SetMailMessageOutcomeParams) error
 	SetMailPatternPosition(ctx context.Context, arg SetMailPatternPositionParams) error
+	SetMailboxAI(ctx context.Context, arg SetMailboxAIParams) error
 	// Changes the flag only when it differs, so the caller learns from the row
 	// count whether this is the moment it changed.
 	SetMailboxAlerted(ctx context.Context, arg SetMailboxAlertedParams) (int64, error)
