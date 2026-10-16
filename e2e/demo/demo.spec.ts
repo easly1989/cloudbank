@@ -66,8 +66,10 @@ test("what the demo switched off is not offered", async ({ page }) => {
   await page.goto("/settings/general");
   const rail = page.getByRole("navigation", { name: "Settings" });
   await expect(rail.getByRole("link", { name: "General" })).toBeVisible();
-  for (const gone of ["Security", "People", "Bank sync, mail & AI"]) {
-    await expect(rail.getByRole("link", { name: gone })).toHaveCount(0);
+  for (const gone of ["Security", "People", "Bank mails", "AI"]) {
+    await expect(
+      rail.getByRole("link", { name: gone, exact: true }),
+    ).toHaveCount(0);
   }
   await expect(rail.getByRole("link", { name: "Bank sync" })).toBeVisible();
 
@@ -92,7 +94,7 @@ test("the pretend bank syncs", async ({ page }) => {
     .click();
   await noTourOffers(page);
 
-  await page.goto("/settings/integrations");
+  await page.goto("/settings/bank-sync");
   await expect(page.getByText("Pretend bank").first()).toBeVisible();
   await expect(page.getByText("SimpleFIN")).toHaveCount(0);
   await page.getByRole("button", { name: "Sync now" }).first().click();

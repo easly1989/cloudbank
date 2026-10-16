@@ -2,9 +2,11 @@ import {
   IconBuildingBank,
   IconDatabase,
   IconInfoCircle,
+  IconMail,
   IconPalette,
   IconSettings,
   IconShieldLock,
+  IconSparkles,
   IconUsers,
   IconWallet,
   type Icon,
@@ -21,7 +23,7 @@ export interface SettingsSection {
 }
 
 /**
- * The eight sections of the settings screen, in the tile's order.
+ * The ten sections of the settings screen, in the tile's order.
  *
  * The order is not alphabetical and not by size: it runs from what everyone
  * changes on day one to what most people never touch, so the thing you came for
@@ -48,12 +50,21 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     icon: IconShieldLock,
     notInDemo: true,
   },
+  // Three sections, not one: each is set up on its own, by a different reader,
+  // and together they made one long page of unrelated cards.
   {
-    id: "integrations",
-    // The demo build has no AI, so the section is the bank sync alone.
-    labelKey: __DEMO__ ? "banksync.title" : "settings.integrations",
-    hintKey: __DEMO__ ? "settings.bankSyncHint" : "settings.integrationsHint",
+    id: "bank-sync",
+    labelKey: "banksync.title",
+    hintKey: "settings.bankSyncHint",
     icon: IconBuildingBank,
+  },
+  { id: "mail", labelKey: "mail.title", hintKey: "mail.hint", icon: IconMail, notInDemo: true },
+  {
+    id: "ai",
+    labelKey: "settings.ai",
+    hintKey: "settings.aiHint",
+    icon: IconSparkles,
+    notInDemo: true,
   },
   { id: "data", labelKey: "settings.data", hintKey: "settings.dataHint", icon: IconDatabase },
   {
