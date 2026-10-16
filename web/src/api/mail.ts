@@ -67,6 +67,88 @@ export interface MailSummary {
   /** The transaction it made or duplicates, while it exists, and its account. */
   transactionId: number | null;
   accountId: number | null;
+  /** That transaction's amount (minor units), memo and payee, as the register has them. */
+  amount: number | null;
+  memo: string | null;
+  payee: string | null;
+}
+
+/** One mail with its text, for the pattern editor. */
+export interface MailDetail extends MailSummary {
+  body: string;
+}
+
+/** Sends one card's mails to its own account. */
+export interface MailCardAccount {
+  digits: string;
+  accountId: number;
+}
+
+/**
+ * How to read one kind of bank mail (#657): an RE2 expression with named
+ * groups, matched against the subject, a newline and the body, and the fixed
+ * values that complete the transaction.
+ */
+export interface MailPatternInput {
+  name: string;
+  sender: string;
+  subjectMode: "" | "contains" | "regex";
+  subject: string;
+  body: string;
+  accountId: number;
+  cards: MailCardAccount[];
+  direction: "out" | "in" | "capture";
+  /** Comma-separated words that mean money in, for direction "capture". */
+  inWords: string;
+  paymentMode: number;
+  applyRules: boolean;
+  /** How the date group is written, e.g. DD.MM; "" without a date group. */
+  dateFormat: string;
+  /** Read only mails the sender's domain signed (DMARC or DKIM). */
+  requireAuth: boolean;
+  /** The editor's own state, opaque to the server. */
+  editor: string;
+}
+
+export interface MailPattern extends MailPatternInput {
+  id: number;
+  mailboxId: number;
+  position: number;
+}
+
+/** The transaction a mail becomes, before assignment rules. */
+export interface MailExtracted {
+  accountId: number;
+  date: string;
+  amount: number;
+  memo: string;
+  payee: string;
+  info: string;
+  category: string;
+  tags: string[];
+  paymentMode: number;
+}
+
+export interface MailPatternTest {
+  matched: number;
+  total: number;
+  mails: {
+    id: number;
+    subject: string;
+    receivedAt: string;
+    authenticated: boolean;
+    matched: boolean;
+    transaction?: MailExtracted;
+    error?: string;
+  }[];
+  /** Mails no pattern read that this one would. */
+  retry: number;
+}
+
+export interface MailApplyResult {
+  created: number;
+  duplicate: number;
+  failed: number;
 }
 
 export interface MailCheckResult {
@@ -105,3 +187,35 @@ export const checkMailbox = (walletId: number, id: number) =>
 
 export const listMailboxMessages = (walletId: number, id: number) =>
   api.get<MailSummary[]>(`${base(walletId)}/mailboxes/${id}/messages`);
+
+export const getMailboxMessage = (walletId: number, id: number, messageId: number) =>
+  api.get<MailDetail>(`${base(walletId)}/mailboxes/${id}/messages/${messageId}`);
+
+const patterns = (walletId: number, id: number) => `${base(walletId)}/mailboxes/${id}/patterns`;
+
+export const listMailPatterns = (walletId: number, id: number) =>
+  api.get<MailPattern[]>(patterns(walletId, id));
+
+export const createMailPattern = (walletId: number, id: number, p: MailPatternInput) =>
+  api.post<MailPattern>(patterns(walletId, id), p);
+
+export const updateMailPattern = (
+  walletId: number,
+  id: number,
+  patternId: number,
+  p: MailPatternInput,
+) => api.put<MailPattern>(`${patterns(walletId, id)}/${patternId}`, p);
+
+export const deleteMailPattern = (walletId: number, id: number, patternId: number) =>
+  api.del<void>(`${patterns(walletId, id)}/${patternId}`);
+
+export const reorderMailPatterns = (walletId: number, id: number, ids: number[]) =>
+  api.put<MailPattern[]>(`${patterns(walletId, id)}/order`, { ids });
+
+/** Tries a pattern, saved or not, on the sender's latest mails; writes nothing. */
+export const testMailPattern = (walletId: number, id: number, p: MailPatternInput) =>
+  api.post<MailPatternTest>(`${patterns(walletId, id)}/test`, p);
+
+/** Runs a saved pattern over the mails that made no transaction yet. */
+export const applyMailPattern = (walletId: number, id: number, patternId: number) =>
+  api.post<MailApplyResult>(`${patterns(walletId, id)}/${patternId}/apply`);

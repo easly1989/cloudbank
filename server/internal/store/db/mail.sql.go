@@ -145,9 +145,11 @@ func (q *Queries) GetMailMessage(ctx context.Context, arg GetMailMessageParams) 
 
 const getMailMessageView = `-- name: GetMailMessageView :one
 SELECT m.id, m.sender, m.subject, m.received_at, m.body, m.outcome, m.detail, m.authenticated,
-       m.pattern_id, m.transaction_id, t.account_id
+       m.pattern_id, m.transaction_id, t.account_id,
+       t.amount AS transaction_amount, t.memo AS transaction_memo, p.name AS transaction_payee
 FROM mail_messages m
 LEFT JOIN transactions t ON t.id = m.transaction_id
+LEFT JOIN payees p ON p.id = t.payee_id
 WHERE m.id = ? AND m.mailbox_id = ? LIMIT 1
 `
 
@@ -157,17 +159,20 @@ type GetMailMessageViewParams struct {
 }
 
 type GetMailMessageViewRow struct {
-	ID            int64
-	Sender        string
-	Subject       string
-	ReceivedAt    string
-	Body          string
-	Outcome       string
-	Detail        string
-	Authenticated int64
-	PatternID     sql.NullInt64
-	TransactionID sql.NullInt64
-	AccountID     sql.NullInt64
+	ID                int64
+	Sender            string
+	Subject           string
+	ReceivedAt        string
+	Body              string
+	Outcome           string
+	Detail            string
+	Authenticated     int64
+	PatternID         sql.NullInt64
+	TransactionID     sql.NullInt64
+	AccountID         sql.NullInt64
+	TransactionAmount sql.NullInt64
+	TransactionMemo   sql.NullString
+	TransactionPayee  sql.NullString
 }
 
 // One mail with the account of the transaction it made, for the history.
@@ -186,6 +191,9 @@ func (q *Queries) GetMailMessageView(ctx context.Context, arg GetMailMessageView
 		&i.PatternID,
 		&i.TransactionID,
 		&i.AccountID,
+		&i.TransactionAmount,
+		&i.TransactionMemo,
+		&i.TransactionPayee,
 	)
 	return i, err
 }
@@ -431,9 +439,12 @@ func (q *Queries) InsertMailbox(ctx context.Context, arg InsertMailboxParams) (M
 
 const listMailMessages = `-- name: ListMailMessages :many
 SELECT m.id, m.mailbox_id, m.uid, m.message_id, m.sender, m.subject, m.received_at, m.outcome,
-       m.detail, m.authenticated, m.pattern_id, m.transaction_id, t.account_id, m.created_at
+       m.detail, m.authenticated, m.pattern_id, m.transaction_id, t.account_id,
+       t.amount AS transaction_amount, t.memo AS transaction_memo, p.name AS transaction_payee,
+       m.created_at
 FROM mail_messages m
 LEFT JOIN transactions t ON t.id = m.transaction_id
+LEFT JOIN payees p ON p.id = t.payee_id
 WHERE m.mailbox_id = ? ORDER BY m.id DESC LIMIT ?
 `
 
@@ -443,20 +454,23 @@ type ListMailMessagesParams struct {
 }
 
 type ListMailMessagesRow struct {
-	ID            int64
-	MailboxID     int64
-	Uid           int64
-	MessageID     string
-	Sender        string
-	Subject       string
-	ReceivedAt    string
-	Outcome       string
-	Detail        string
-	Authenticated int64
-	PatternID     sql.NullInt64
-	TransactionID sql.NullInt64
-	AccountID     sql.NullInt64
-	CreatedAt     string
+	ID                int64
+	MailboxID         int64
+	Uid               int64
+	MessageID         string
+	Sender            string
+	Subject           string
+	ReceivedAt        string
+	Outcome           string
+	Detail            string
+	Authenticated     int64
+	PatternID         sql.NullInt64
+	TransactionID     sql.NullInt64
+	AccountID         sql.NullInt64
+	TransactionAmount sql.NullInt64
+	TransactionMemo   sql.NullString
+	TransactionPayee  sql.NullString
+	CreatedAt         string
 }
 
 func (q *Queries) ListMailMessages(ctx context.Context, arg ListMailMessagesParams) ([]ListMailMessagesRow, error) {
@@ -482,6 +496,9 @@ func (q *Queries) ListMailMessages(ctx context.Context, arg ListMailMessagesPara
 			&i.PatternID,
 			&i.TransactionID,
 			&i.AccountID,
+			&i.TransactionAmount,
+			&i.TransactionMemo,
+			&i.TransactionPayee,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err

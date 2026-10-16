@@ -29,6 +29,28 @@ type Endpoint struct {
 // OutlookEndpoint is Microsoft's IMAP server for Outlook.com, Hotmail and Live.
 var OutlookEndpoint = Endpoint{Addr: "outlook.office365.com:993", TLS: true, ServerName: "outlook.office365.com"}
 
+// EndpointFor is the IMAP server at addr (host:port). One on this machine
+// (localhost or a loopback address) is reached without TLS: that is the
+// end-to-end tests' pretend server. Any other is reached with TLS.
+func EndpointFor(addr string) (Endpoint, error) {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil || host == "" || port == "" {
+		return Endpoint{}, fmt.Errorf("want host:port, got %q", addr)
+	}
+	if isLoopback(host) {
+		return Endpoint{Addr: addr}, nil
+	}
+	return Endpoint{Addr: addr, TLS: true, ServerName: host}, nil
+}
+
+func isLoopback(host string) bool {
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
 // Credentials log in either with an OAuth access token (SASL XOAUTH2) or with
 // a password.
 type Credentials struct {

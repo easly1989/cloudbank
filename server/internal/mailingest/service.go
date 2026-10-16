@@ -90,6 +90,11 @@ type MailSummary struct {
 	// the one it duplicates, while it exists.
 	TransactionID *int64 `json:"transactionId"`
 	AccountID     *int64 `json:"accountId"`
+	// Amount, Memo and Payee are that transaction's, as the register has
+	// them now.
+	Amount *int64  `json:"amount"`
+	Memo   *string `json:"memo"`
+	Payee  *string `json:"payee"`
 }
 
 // MailDetail is one mail with its text, for the pattern editor.
@@ -188,6 +193,10 @@ func NewService(read, write *sql.DB, ms *Microsoft) *Service {
 		kick:    make(chan struct{}, 1),
 	}
 }
+
+// SetOutlook reaches Outlook.com mailboxes at ep instead of Microsoft's IMAP
+// server: the end-to-end tests' pretend one.
+func (s *Service) SetOutlook(ep Endpoint) { s.outlook = ep }
 
 // Available reports whether mailboxes can be connected here.
 func (s *Service) Available() bool { return s.enabled() && s.ms != nil }
@@ -724,6 +733,8 @@ func (s *Service) Messages(ctx context.Context, walletID, id int64) ([]MailSumma
 			ID: r.ID, Sender: r.Sender, Subject: r.Subject, ReceivedAt: r.ReceivedAt,
 			Outcome: r.Outcome, Detail: r.Detail, Authenticated: r.Authenticated != 0,
 			PatternID: nullID(r.PatternID), TransactionID: nullID(r.TransactionID), AccountID: nullID(r.AccountID),
+			Amount: nullID(r.TransactionAmount), Memo: nullText(r.TransactionMemo),
+			Payee: nullText(r.TransactionPayee),
 		})
 	}
 	return out, nil
@@ -746,9 +757,18 @@ func (s *Service) Message(ctx context.Context, walletID, mailboxID, id int64) (M
 			ID: m.ID, Sender: m.Sender, Subject: m.Subject, ReceivedAt: m.ReceivedAt,
 			Outcome: m.Outcome, Detail: m.Detail, Authenticated: m.Authenticated != 0,
 			PatternID: nullID(m.PatternID), TransactionID: nullID(m.TransactionID), AccountID: nullID(m.AccountID),
+			Amount: nullID(m.TransactionAmount), Memo: nullText(m.TransactionMemo),
+			Payee: nullText(m.TransactionPayee),
 		},
 		Body: m.Body,
 	}, nil
+}
+
+func nullText(v sql.NullString) *string {
+	if !v.Valid {
+		return nil
+	}
+	return &v.String
 }
 
 func nullID(v sql.NullInt64) *int64 {

@@ -8,6 +8,7 @@
     "test:demo": "playwright test -c playwright.demo.config.ts",
     "test:i18n": "playwright test -c playwright.i18n.config.ts",
     "test:sso": "playwright test -c playwright.sso.config.ts",
+    "test:mail": "playwright test -c playwright.mail.config.ts",
     "report": "playwright show-report"
   },
   "devDependencies": {

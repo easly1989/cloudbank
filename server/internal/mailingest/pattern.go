@@ -103,6 +103,24 @@ type compiled struct {
 	date    *dateLayout
 }
 
+// ExpressionError is an expression RE2 cannot read: the body's, or with
+// Subject the subject's. Reason is RE2's own words, which the editor shows
+// under a heading in the reader's language.
+type ExpressionError struct {
+	Subject bool
+	Reason  string
+}
+
+func (e *ExpressionError) Error() string {
+	what := "the expression"
+	if e.Subject {
+		what = "the subject expression"
+	}
+	return fmt.Sprintf("%v: %s is not valid: %s", ErrInvalid, what, e.Reason)
+}
+
+func (e *ExpressionError) Unwrap() error { return ErrInvalid }
+
 // errPattern wraps what makes a pattern unusable, in words the editor shows.
 func errPattern(format string, a ...any) error {
 	return fmt.Errorf("%w: %s", ErrInvalid, fmt.Sprintf(format, a...))
@@ -121,7 +139,7 @@ func compile(p Pattern) (*compiled, error) {
 	c := &compiled{p: p}
 	body, err := regexp.Compile(p.Body)
 	if err != nil || strings.TrimSpace(p.Body) == "" {
-		return nil, errPattern("the expression is not valid: %s", regexError(err))
+		return nil, &ExpressionError{Reason: regexError(err)}
 	}
 	c.body = body
 	groups := map[string]bool{}
@@ -146,7 +164,7 @@ func compile(p Pattern) (*compiled, error) {
 	case "regex":
 		re, err := regexp.Compile(p.Subject)
 		if err != nil || p.Subject == "" {
-			return nil, errPattern("the subject expression is not valid: %s", regexError(err))
+			return nil, &ExpressionError{Subject: true, Reason: regexError(err)}
 		}
 		c.subject = re
 	default:

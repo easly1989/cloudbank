@@ -118,7 +118,9 @@ func TestAMailAPatternReadsBecomesAClearedTransaction(t *testing.T) {
 	msgs, _ := f.svc.Messages(ctx, f.wallet, mb.ID)
 	m := msgs[1] // newest first: a1 is the older
 	if m.Outcome != OutcomeCreated || m.TransactionID == nil || *m.TransactionID != tx.ID ||
-		m.AccountID == nil || *m.AccountID != acc || m.PatternID == nil || *m.PatternID != saved.ID || !m.Authenticated {
+		m.AccountID == nil || *m.AccountID != acc || m.PatternID == nil || *m.PatternID != saved.ID || !m.Authenticated ||
+		m.Amount == nil || *m.Amount != -123456 || m.Memo == nil || *m.Memo != "Supermercato Demo" ||
+		m.Payee != nil { // the pattern reads no payee
 		t.Fatalf("history = %+v", m)
 	}
 	d, err := f.svc.Message(ctx, f.wallet, mb.ID, m.ID)
