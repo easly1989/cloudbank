@@ -42,6 +42,19 @@ func withKey(t *testing.T) {
 // the token, and the test server checks it as a password.
 func newFixture(t *testing.T, tokenReplies ...func(http.ResponseWriter, *http.Request)) *fixture {
 	t.Helper()
+	return newFixtureWith(t, fixtureOpts{}, tokenReplies...)
+}
+
+// fixtureOpts vary the mail server: whether it is treated as one without IDLE
+// (the test server always announces it), and an endpoint to reach it through
+// (a proxy that can cut connections).
+type fixtureOpts struct {
+	noIdle bool
+	route  func(Endpoint) Endpoint
+}
+
+func newFixtureWith(t *testing.T, o fixtureOpts, tokenReplies ...func(http.ResponseWriter, *http.Request)) *fixture {
+	t.Helper()
 	st, err := store.Open(t.TempDir())
 	if err != nil {
 		t.Fatal(err)
@@ -60,6 +73,9 @@ func newFixture(t *testing.T, tokenReplies ...func(http.ResponseWriter, *http.Re
 	ms, _ := fakeMicrosoft(t, tokenReplies...)
 
 	ep, u := startIMAP(t)
+	if o.route != nil {
+		ep = o.route(ep)
+	}
 	// The fake token endpoint always issues "access-1".
 	if err := u.Login(testUser, testPass); err != nil {
 		t.Fatal(err)
@@ -71,6 +87,9 @@ func newFixture(t *testing.T, tokenReplies ...func(http.ResponseWriter, *http.Re
 			return Credentials{Username: user, Password: testPass}
 		}
 		return Credentials{Username: user, Password: "wrong"}
+	}
+	if o.noIdle {
+		svc.canIdle = func(*Session) bool { return false }
 	}
 	clock := time.Date(2026, 10, 15, 12, 0, 0, 0, time.UTC)
 	svc.now = func() time.Time { return clock }

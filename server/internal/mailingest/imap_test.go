@@ -16,6 +16,7 @@ import (
 const testUser, testPass = "notifiche.demo@example.com", "app-password"
 
 // startIMAP runs an in-memory IMAP server with an INBOX and a "Banca" folder.
+// Once logged in it always announces IDLE.
 func startIMAP(t *testing.T) (Endpoint, *imapmemserver.User) {
 	t.Helper()
 	mem := imapmemserver.New()

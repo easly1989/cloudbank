@@ -3098,6 +3098,13 @@ export interface components {
             /** @description arrival of the newest mail read, RFC3339 UTC */
             lastMailAt: string | null;
             createdAt: string;
+            /**
+             * @description How the server is reading the mailbox right now: idle (the mail server announces new mail), polling (asked on a timer, for a server without IDLE), retry (the connection was lost and is about to be tried again), or empty when nothing is listening.
+             * @enum {string}
+             */
+            mode: "idle" | "polling" | "retry" | "";
+            /** @description the next full check, or the next attempt while retrying; RFC3339 UTC */
+            nextCheckAt: string | null;
         };
         MailSignIn: {
             flowId: string;

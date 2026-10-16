@@ -2,10 +2,10 @@
 // mailbox the user connects, so a card payment reaches the register before the
 // bank books it (#654).
 //
-// This first slice (#655) connects a Microsoft mailbox with the device-code
-// flow, picks the folder, and reads what arrives after the connection into a
-// short history. Turning those mails into transactions comes with the models
-// (#657); listening continuously comes with IDLE (#656).
+// A Microsoft mailbox is connected with the device-code flow (#655); the
+// folder chosen is then listened to with IDLE, with a full check on a timer as
+// a safety net (#656, watch.go). What arrives is kept in a short history;
+// turning those mails into transactions comes with the models (#657).
 package mailingest
 
 import (
@@ -64,6 +64,13 @@ type Mailbox struct {
 	LastCheckAt  *string `json:"lastCheckAt"`
 	LastMailAt   *string `json:"lastMailAt"`
 	CreatedAt    string  `json:"createdAt"`
+	// Mode is how the listener is reading the mailbox right now: "idle" (the
+	// server tells it about new mail), "polling" (it asks on a timer, for a
+	// server without IDLE), "retry" (it lost the connection and waits to try
+	// again), or "" when nothing is listening.
+	Mode string `json:"mode"`
+	// NextCheckAt is the next full check, or the next attempt while retrying.
+	NextCheckAt *string `json:"nextCheckAt"`
 }
 
 // MailSummary is one mail of a mailbox's history.
@@ -126,11 +133,18 @@ type Service struct {
 	tokenAuth func(user, token string) Credentials
 	now       func() time.Time
 	keep      int
+	timing    watchTiming
+	canIdle   func(*Session) bool
+	notify    Notify
 
 	mu     sync.Mutex
 	flows  map[string]*flow
 	locks  map[int64]*sync.Mutex
 	tokens map[int64]cachedToken
+	live   map[int64]liveState
+	// kick wakes the listener's supervisor when a mailbox is added, changed or
+	// removed, instead of waiting for its next look.
+	kick chan struct{}
 }
 
 // NewService builds the service. ms signs in to Microsoft; nil disables the
@@ -143,18 +157,22 @@ func NewService(read, write *sql.DB, ms *Microsoft) *Service {
 		tokenAuth: func(user, token string) Credentials {
 			return Credentials{Username: user, AccessToken: token}
 		},
-		now:    time.Now,
-		keep:   keepMessages,
-		flows:  map[string]*flow{},
-		locks:  map[int64]*sync.Mutex{},
-		tokens: map[int64]cachedToken{},
+		now:     time.Now,
+		keep:    keepMessages,
+		timing:  defaultTiming,
+		canIdle: (*Session).CanIdle,
+		flows:   map[string]*flow{},
+		locks:   map[int64]*sync.Mutex{},
+		tokens:  map[int64]cachedToken{},
+		live:    map[int64]liveState{},
+		kick:    make(chan struct{}, 1),
 	}
 }
 
 // Available reports whether mailboxes can be connected here.
 func (s *Service) Available() bool { return s.enabled() && s.ms != nil }
 
-func toMailbox(m db.Mailbox) Mailbox {
+func (s *Service) view(m db.Mailbox) Mailbox {
 	out := Mailbox{
 		ID: m.ID, Provider: m.Provider, Address: m.Address, Folder: m.Folder,
 		Paused: m.Paused != 0, Status: m.Status, StatusDetail: m.StatusDetail,
@@ -165,6 +183,16 @@ func toMailbox(m db.Mailbox) Mailbox {
 	}
 	if m.LastMailAt.Valid {
 		out.LastMailAt = &m.LastMailAt.String
+	}
+	s.mu.Lock()
+	l, ok := s.live[m.ID]
+	s.mu.Unlock()
+	if ok {
+		out.Mode = l.mode
+		if !l.next.IsZero() {
+			at := l.next.UTC().Format(time.RFC3339)
+			out.NextCheckAt = &at
+		}
 	}
 	return out
 }
@@ -177,7 +205,7 @@ func (s *Service) ListMailboxes(ctx context.Context, walletID int64) ([]Mailbox,
 	}
 	out := make([]Mailbox, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, toMailbox(r))
+		out = append(out, s.view(r))
 	}
 	return out, nil
 }
@@ -349,7 +377,8 @@ func (s *Service) saveMicrosoft(ctx context.Context, f *flow, tok Token) (Mailbo
 			UidValidity: int64(cur.UIDValidity), LastUid: int64(cur.LastUID), ID: mb.ID,
 		})
 	})
-	s.record(ctx, mb.ID, err)
+	s.record(ctx, mb, err)
+	s.wake()
 	return s.reload(ctx, f.walletID, mb.ID)
 }
 
@@ -358,7 +387,7 @@ func (s *Service) reload(ctx context.Context, walletID, id int64) (Mailbox, erro
 	if err != nil {
 		return Mailbox{}, err
 	}
-	return toMailbox(m), nil
+	return s.view(m), nil
 }
 
 func (s *Service) lockFor(id int64) *sync.Mutex {
@@ -404,27 +433,38 @@ func (s *Service) withSession(ctx context.Context, mb db.Mailbox, fn func(*Sessi
 	if mb.Provider != ProviderMicrosoft || s.ms == nil {
 		return fmt.Errorf("%w: unknown provider %q", ErrInvalid, mb.Provider)
 	}
-	token, err := s.accessToken(ctx, mb)
+	sess, err := s.login(ctx, mb, func(cred Credentials) (*Session, error) {
+		return Connect(ctx, s.outlook, cred)
+	})
 	if err != nil {
-		return err
-	}
-	sess, err := Connect(ctx, s.outlook, s.tokenAuth(mb.Address, token))
-	if err != nil {
-		if errors.Is(err, ErrLogin) {
-			// A refused token is most likely a stale cached one: drop it, so
-			// the next attempt renews it.
-			s.mu.Lock()
-			delete(s.tokens, mb.ID)
-			s.mu.Unlock()
-		}
 		return err
 	}
 	defer sess.Close()
 	return fn(sess)
 }
 
-// record stores the outcome of talking to the mailbox.
-func (s *Service) record(ctx context.Context, id int64, err error) {
+// login connects with the mailbox's access token. A refused token is most
+// likely a stale cached one, so it is dropped and the login tried once more
+// with a fresh one before the refusal counts.
+func (s *Service) login(ctx context.Context, mb db.Mailbox, connect func(Credentials) (*Session, error)) (*Session, error) {
+	for attempt := 0; ; attempt++ {
+		token, err := s.accessToken(ctx, mb)
+		if err != nil {
+			return nil, err
+		}
+		sess, err := connect(s.tokenAuth(mb.Address, token))
+		if err == nil || !errors.Is(err, ErrLogin) || attempt > 0 {
+			return sess, err
+		}
+		s.mu.Lock()
+		delete(s.tokens, mb.ID)
+		s.mu.Unlock()
+	}
+}
+
+// record stores the outcome of talking to the mailbox. A refused sign-in also
+// tells the person who connected it, once, until a check works again.
+func (s *Service) record(ctx context.Context, mb db.Mailbox, err error) {
 	status, detail := StatusOK, ""
 	switch {
 	case err == nil:
@@ -433,7 +473,16 @@ func (s *Service) record(ctx context.Context, id int64, err error) {
 	default:
 		status, detail = StatusError, err.Error()
 	}
-	_ = s.q.RecordMailboxCheck(ctx, db.RecordMailboxCheckParams{Status: status, StatusDetail: detail, ID: id})
+	_ = s.q.RecordMailboxCheck(ctx, db.RecordMailboxCheckParams{Status: status, StatusDetail: detail, ID: mb.ID})
+	switch {
+	case err == nil:
+		_, _ = s.q.SetMailboxAlerted(ctx, db.SetMailboxAlertedParams{Alerted: 0, ID: mb.ID, Alerted_2: 0})
+	case errors.Is(err, ErrReauth) || errors.Is(err, ErrLogin):
+		n, aerr := s.q.SetMailboxAlerted(ctx, db.SetMailboxAlertedParams{Alerted: 1, ID: mb.ID, Alerted_2: 1})
+		if aerr == nil && n > 0 {
+			s.alertStopped(ctx, mb)
+		}
+	}
 }
 
 // Folders lists the folders of a mailbox.
@@ -453,7 +502,7 @@ func (s *Service) Folders(ctx context.Context, walletID, id int64) ([]string, er
 		return ferr
 	})
 	if err != nil {
-		s.record(ctx, id, err)
+		s.record(ctx, mb, err)
 		return nil, err
 	}
 	return out, nil
@@ -486,7 +535,7 @@ func (s *Service) Update(ctx context.Context, walletID, id int64, folder *string
 		})
 		if err != nil {
 			if !errors.Is(err, ErrInvalid) {
-				s.record(ctx, id, err)
+				s.record(ctx, mb, err)
 			}
 			return Mailbox{}, err
 		}
@@ -500,6 +549,7 @@ func (s *Service) Update(ctx context.Context, walletID, id int64, folder *string
 			return Mailbox{}, err
 		}
 	}
+	s.wake()
 	return s.reload(ctx, walletID, id)
 }
 
@@ -516,19 +566,34 @@ func (s *Service) Remove(ctx context.Context, walletID, id int64) error {
 	delete(s.tokens, id)
 	delete(s.locks, id)
 	s.mu.Unlock()
+	s.wake()
 	return nil
 }
 
 // Check reads the mails that arrived in the mailbox's folder since the last
 // check, and keeps them in its history.
 func (s *Service) Check(ctx context.Context, walletID, id int64) (CheckResult, error) {
+	res, mb, err := s.checkLocked(ctx, walletID, id)
+	if err != nil {
+		return CheckResult{}, err
+	}
+	// Until the models (#657) read them, every new mail is one CloudBank did
+	// not recognise. Announced after the lock is let go, so a slow push
+	// service holds up no other check.
+	if res.New > 0 {
+		s.alertUnrecognized(ctx, mb, res.New)
+	}
+	return res, nil
+}
+
+func (s *Service) checkLocked(ctx context.Context, walletID, id int64) (CheckResult, db.Mailbox, error) {
 	lock := s.lockFor(id)
 	lock.Lock()
 	defer lock.Unlock()
 	// Read under the lock: a check that just finished moved the cursor.
 	mb, err := s.get(ctx, walletID, id)
 	if err != nil {
-		return CheckResult{}, err
+		return CheckResult{}, mb, err
 	}
 	var res CheckResult
 	err = s.withSession(ctx, mb, func(sess *Session) error {
@@ -578,11 +643,8 @@ func (s *Service) Check(ctx context.Context, walletID, id int64) (CheckResult, e
 		}
 		return nil
 	})
-	s.record(ctx, id, err)
-	if err != nil {
-		return CheckResult{}, err
-	}
-	return res, nil
+	s.record(ctx, mb, err)
+	return res, mb, err
 }
 
 // Messages returns the mailbox's history, newest first.

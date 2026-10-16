@@ -162,6 +162,16 @@ func (s *Service) sendToUser(ctx context.Context, userID int64, p Payload) error
 	return nil
 }
 
+// SendOnce pushes p to the user unless something with the same ref was already
+// sent to them, so a caller that runs often still announces each thing once.
+func (s *Service) SendOnce(ctx context.Context, userID int64, ref string, p Payload) error {
+	n, err := s.q.InsertReminderIfNew(ctx, db.InsertReminderIfNewParams{UserID: userID, Ref: ref})
+	if err != nil || n == 0 {
+		return err
+	}
+	return s.sendToUser(ctx, userID, p)
+}
+
 // RunBillsReminders sends each subscribed user a one-time reminder for their
 // unpaid bills that are overdue or due within the lead window. It is safe to run
 // daily: a given bill occurrence is announced only once (deduped by ref).

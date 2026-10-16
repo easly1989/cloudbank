@@ -277,6 +277,7 @@ type Mailbox struct {
 	LastCheckAt  sql.NullString
 	LastMailAt   sql.NullString
 	CreatedAt    string
+	Alerted      int64
 }
 
 type MfaRecoveryCode struct {
