@@ -6,6 +6,57 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
+## [3.8.1] — 2026-10-16
+
+CloudBank can read your bank's notification mails and write them into the
+register as cleared transactions. This is a preview. For now it reads
+Outlook.com, Hotmail and Live mailboxes only; other mailboxes, over IMAP with
+an app password, come next.
+
+### Added
+
+- **Bank mails** (Settings › Bank mails, preview). Connect an Outlook.com,
+  Hotmail or Live mailbox by signing in to Microsoft, which can be done from
+  your phone with a QR code. CloudBank only reads: nothing is marked read,
+  moved or deleted. It reads one folder you choose, and only the mails that
+  arrive there from the moment you connect. It needs `CB_SECRET_KEY` on the
+  server, because the Microsoft credential is stored encrypted. Three
+  migrations run at startup, for the mailboxes, their mails and the patterns.
+- **Mails arrive on their own.** The server listens to the mailbox (IMAP
+  IDLE), falls back to a check every few minutes where a server cannot listen,
+  and runs a full check every 15 minutes, so a mail is never lost or read
+  twice. The card says whether it is listening, checking or reconnecting.
+  Whoever connected the mailbox gets a push notification when it stops working
+  or the Microsoft sign-in expires, and, at most once a day, when mails arrive
+  that no pattern recognises.
+- **Patterns turn a mail into a transaction.** Start from a real bank mail,
+  select what to take with the mouse or a finger (amount, memo, payee, card,
+  date…) and choose the account and whether it is money out or money in.
+  CloudBank writes the pattern, tries it on the sender's latest mails and
+  shows the transaction each one becomes. Saving it can also apply it to the
+  mails already waiting. A transaction from a mail is **cleared**, goes through
+  your assignment rules, and is merged, not duplicated, when bank sync brings
+  the same payment. Advanced shows the pattern's expression, which can also be
+  written by hand.
+- **Only authenticated mails write anything** by default: a mail whose sender
+  the receiving server did not vouch for (DMARC or DKIM) shows as *not
+  authenticated*, so a forged notification cannot fill your register.
+- **The history of the latest mails** names what became of each one. A created
+  transaction links to its row in the register, and a mail no pattern reads
+  offers to make one.
+
+### Fixed
+
+- **A new currency follows your language.** Every currency added in CloudBank,
+  including the one a new wallet starts with, used a dot for decimals, so a
+  wallet made from scratch in Italian showed "1,234.56 €". A new currency now
+  takes your language's separators: "1.234,56 €" in Italian, Spanish, German
+  and Portuguese, "1 234,56 €" in French. Currencies you already have are left
+  as they are; change them in Currencies.
+- **A widened register column keeps its width.** It snapped back as soon as
+  you let go. Two quick changes in the Columns menu no longer undo each other,
+  and every preference shows at once instead of after the server answers.
+
 ## [3.8.0] — 2026-10-15
 
 CloudBank speaks four more languages: Spanish, French, German and Brazilian
@@ -903,6 +954,7 @@ HomeBank feature parity, shipped as a single Docker container.
   publishing (`:latest` nightly, `:main` stable, `:vX.Y.Z` per release).
 
 [Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.8.0...HEAD
+[3.8.1]: https://github.com/easly1989/cloudbank/compare/v3.8.0...v3.8.1
 [3.8.0]: https://github.com/easly1989/cloudbank/compare/v3.7.0...v3.8.0
 [3.7.0]: https://github.com/easly1989/cloudbank/compare/v3.6.1...v3.7.0
 [3.6.1]: https://github.com/easly1989/cloudbank/compare/v3.6.0...v3.6.1
