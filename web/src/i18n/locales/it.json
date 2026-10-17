@@ -951,7 +951,19 @@
     "manual": "Manuale",
     "noMemo": "(nessuna descrizione)",
     "confirmDismissAllTitle": "Segnare tutte le {{count}} coppie come non duplicati?",
-    "confirmDismissAllBody": "Non verranno più mostrate qui. I veri duplicati restano comunque trovabili per importo e data."
+    "confirmDismissAllBody": "Non verranno più mostrate qui. I veri duplicati restano comunque trovabili per importo e data.",
+    "fromMail": "Dalla mail",
+    "unconfirmed": "Non confermate dalla banca ({{count}})",
+    "unconfirmedHint": "Lette da una mail, dopo 5 giorni la banca non le ha ancora confermate. Spesso l'addebito vero è diverso: un distributore che blocca 100 € e ne addebita 40, un albergo, un pagamento in valuta. <b>Unisci</b> tiene importo, data e riferimento della banca, e memo, categoria e tag della mail.",
+    "mailAge_one": "dalla mail, {{count}} giorno fa",
+    "mailAge_other": "dalla mail, {{count}} giorni fa",
+    "bankRows": "Righe della banca vicine",
+    "noBankRows": "Nessuna riga della banca vicina: se il pagamento non c'è stato, eliminala.",
+    "merge": "Unisci",
+    "reversal": "Pagamento stornato",
+    "reversalHint": "{{account}} · due righe dalla mail che si annullano: di solito la banca non registra nessuna delle due",
+    "deleteBoth": "Elimina tutte e due",
+    "confirmDeleteBothTitle": "Eliminare tutte e due le righe?"
   },
   "banksync": {
     "title": "Sync bancario",
@@ -1440,7 +1452,8 @@
     "reconciledAll": "tutto riconciliato fino a qui",
     "setAside": "Messo da parte per obiettivi",
     "setAsideFree": "{{amount}} liberi",
-    "setAsideShort": "{{amount}} più di quanto contiene il conto"
+    "setAsideShort": "{{amount}} più di quanto contiene il conto",
+    "fromMail": "Dalla mail: la banca non l'ha ancora confermata"
   },
   "figureStrip": {
     "show": "Mostra il valore {{n}} di {{count}}"

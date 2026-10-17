@@ -951,7 +951,19 @@
     "manual": "Manual",
     "noMemo": "(sem descrição)",
     "confirmDismissAllTitle": "Marcar os {{count}} pares como não duplicatas?",
-    "confirmDismissAllBody": "Eles não vão mais aparecer aqui. Duplicatas reais ainda podem ser encontradas por valor e data."
+    "confirmDismissAllBody": "Eles não vão mais aparecer aqui. Duplicatas reais ainda podem ser encontradas por valor e data.",
+    "fromMail": "Do e-mail",
+    "unconfirmed": "Não confirmadas pelo banco ({{count}})",
+    "unconfirmedHint": "Lidas de um e-mail, depois de 5 dias o banco ainda não as confirmou. Muitas vezes a cobrança real é diferente: um posto que bloqueia R$ 100 e cobra 40, um hotel, um pagamento em outra moeda. <b>Mesclar</b> mantém o valor, a data e a referência do banco, e a nota, a categoria e as tags do e-mail.",
+    "mailAge_one": "do e-mail, há {{count}} dia",
+    "mailAge_other": "do e-mail, há {{count}} dias",
+    "bankRows": "Linhas do banco próximas",
+    "noBankRows": "Nenhuma linha do banco próxima: se o pagamento não aconteceu, exclua-a.",
+    "merge": "Mesclar",
+    "reversal": "Pagamento estornado",
+    "reversalHint": "{{account}} · duas linhas de e-mails que se anulam: o banco costuma não registrar nenhuma",
+    "deleteBoth": "Excluir as duas",
+    "confirmDeleteBothTitle": "Excluir as duas linhas?"
   },
   "banksync": {
     "title": "Sincronização bancária",
@@ -1440,7 +1452,8 @@
     "reconciledAll": "tudo conciliado até aqui",
     "setAside": "Guardado para metas",
     "setAsideFree": "{{amount}} livres",
-    "setAsideShort": "{{amount}} a mais do que a conta tem"
+    "setAsideShort": "{{amount}} a mais do que a conta tem",
+    "fromMail": "Do e-mail: o banco ainda não a confirmou"
   },
   "figureStrip": {
     "show": "Mostrar o número {{n}} de {{count}}"

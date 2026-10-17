@@ -192,6 +192,7 @@ SELECT
     ot.account_id AS transfer_account_id,
     COALESCE((SELECT group_concat(tg.name, ',') FROM transaction_tags tt JOIN tags tg ON tg.id = tt.tag_id WHERE tt.transaction_id = t.id), '') AS tags,
     (SELECT COUNT(*) FROM attachments a WHERE a.transaction_id = t.id) AS attachment_count,
+    CAST(t.import_ref LIKE 'mail:%' AS INTEGER) AS from_mail,
     CAST(SUM(t.amount) OVER (ORDER BY t.date, t.id ROWS UNBOUNDED PRECEDING) AS INTEGER) AS running_delta
 FROM transactions t
 LEFT JOIN payees p ON p.id = t.payee_id
@@ -222,6 +223,7 @@ type ListAccountRegisterRow struct {
 	TransferAccountID sql.NullInt64
 	Tags              interface{}
 	AttachmentCount   int64
+	FromMail          int64
 	RunningDelta      int64
 }
 
@@ -257,6 +259,7 @@ func (q *Queries) ListAccountRegister(ctx context.Context, accountID int64) ([]L
 			&i.TransferAccountID,
 			&i.Tags,
 			&i.AttachmentCount,
+			&i.FromMail,
 			&i.RunningDelta,
 		); err != nil {
 			return nil, err

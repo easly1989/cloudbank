@@ -10,6 +10,7 @@ import {
   Menu,
   Stack,
   Text,
+  Tooltip,
   UnstyledButton,
 } from "@mantine/core";
 import {
@@ -23,6 +24,7 @@ import {
   IconCopy,
   IconDeviceFloppy,
   IconLock,
+  IconMail,
   IconPaperclip,
   IconPencil,
   IconTrash,
@@ -386,7 +388,20 @@ export function RegisterTable({
                 ? (accountName(row.original.transferAccountId) ?? t("transfers.transfer"))
                 : row.original.payeeName
             }
-            icon={row.original.transferId != null ? <IconArrowsExchange size={14} /> : undefined}
+            icon={
+              row.original.transferId != null ? (
+                <IconArrowsExchange size={14} />
+              ) : row.original.fromMail ? (
+                <Tooltip label={t("register.fromMail")} withArrow>
+                  <IconMail
+                    size={14}
+                    style={{ flexShrink: 0, opacity: 0.6 }}
+                    aria-label={t("register.fromMail")}
+                    data-testid="from-mail"
+                  />
+                </Tooltip>
+              ) : undefined
+            }
             sub={leadSub("payee", row.original, t)}
           />
         ),
@@ -1282,15 +1297,19 @@ function LeadCell({ lead, sub, icon }: { lead?: string; sub?: Sub; icon?: ReactN
   return (
     <Stack gap={2} style={{ minWidth: 0 }}>
       <Group gap={4} wrap="nowrap" style={{ minWidth: 0 }}>
-        {icon}
+        {(lead || !sub) && icon}
         <Text fz={ROW_TYPE.lead.fz} fw={ROW_TYPE.lead.fw} truncate>
           {lead}
         </Text>
       </Group>
       {sub && (
-        <Text fz={ROW_TYPE.subLine.fz} c={sub.attention ? attentionColor : "dimmed"} truncate>
-          {sub.text}
-        </Text>
+        // With nothing to lead, the mark goes before the line under it.
+        <Group gap={4} wrap="nowrap" style={{ minWidth: 0 }}>
+          {!lead && icon}
+          <Text fz={ROW_TYPE.subLine.fz} c={sub.attention ? attentionColor : "dimmed"} truncate>
+            {sub.text}
+          </Text>
+        </Group>
       )}
     </Stack>
   );

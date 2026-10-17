@@ -2027,6 +2027,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/transactions/merge-mail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Merge a row read from a bank mail into the bank row that booked it (#660)
+         * @description The bank row keeps its amount, date, import ref and status, and takes the mail row's memo, category, payee and tags where the mail row has them. The mails that wrote the mail row then point at the bank row, and the mail row is deleted.
+         */
+        post: operations["mergeMailTransaction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/transactions/register": {
         parameters: {
             query?: never;
@@ -4290,6 +4312,8 @@ export interface components {
              * @description initial balance + cumulative amount through this row (chronological)
              */
             runningBalance: number;
+            /** @description read from a bank mail, and not booked by the bank yet (#660) */
+            fromMail: boolean;
         };
         SearchRow: components["schemas"]["Transaction"] & {
             /** @description name of the account this hit belongs to (results span accounts) */
@@ -4513,10 +4537,21 @@ export interface components {
             a: components["schemas"]["ReviewTxn"];
             b: components["schemas"]["ReviewTxn"];
         };
-        /** @description Bank-sync review: imported rows missing a category, and suspected duplicate pairs. */
+        /** @description A row read from a bank mail that the bank has not booked 5 days after its date, with up to 3 bank rows of its account within 7 days, nearest first. */
+        UnconfirmedRow: components["schemas"]["ReviewTxn"] & {
+            bankRows: components["schemas"]["ReviewTxn"][];
+        };
+        /** @description A refused card's payment and its reversal, both read from mails and unbooked, with opposite amounts within 3 days; shown once the older is 5 days old. */
+        ReversalPair: {
+            payment: components["schemas"]["ReviewTxn"];
+            reversal: components["schemas"]["ReviewTxn"];
+        };
+        /** @description Bank-sync review: imported rows missing a category, suspected duplicate pairs, and rows from bank mails the bank has not booked. */
         ReviewResult: {
             needsCategory: components["schemas"]["ReviewTxn"][];
             duplicates: components["schemas"]["DuplicatePair"][];
+            unconfirmed: components["schemas"]["UnconfirmedRow"][];
+            reversals: components["schemas"]["ReversalPair"][];
         };
         /** @description The Bills view: scheduled outflows classified over a date window. */
         BillsSummary: {
@@ -8859,6 +8894,45 @@ export interface operations {
                 content?: never;
             };
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    mergeMailTransaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    mailId: number;
+                    /** Format: int64 */
+                    bankId: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Merged. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `not_mail_pair`: not a row from a mail and a bank row of the same account. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             404: components["responses"]["NotFound"];
         };
     };

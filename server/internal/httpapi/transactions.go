@@ -27,6 +27,7 @@ func (h *transactionHandlers) walletRoutes(r chi.Router) {
 	r.Post("/transactions/duplicates/dismiss", h.dismissDuplicate)
 	r.Post("/transactions/duplicates/dismiss-all", h.dismissAllDuplicates)
 	r.Post("/transactions/merge", h.mergeTransactions)
+	r.Post("/transactions/merge-mail", h.mergeMail)
 	r.Get("/transactions/register", h.register)
 	r.Get("/transactions/search", h.search)
 	r.Get("/transactions/duplicates", h.duplicates)
@@ -229,6 +230,30 @@ func (h *transactionHandlers) mergeTransactions(w http.ResponseWriter, r *http.R
 		w.WriteHeader(http.StatusNoContent)
 	case errors.Is(err, transaction.ErrNotFound):
 		writeError(w, http.StatusNotFound, "not_found", "transaction not found")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", "could not merge")
+	}
+}
+
+// mergeMail folds a row read from a bank mail into the bank row that booked
+// it (#660).
+func (h *transactionHandlers) mergeMail(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body struct {
+		MailID int64 `json:"mailId"`
+		BankID int64 `json:"bankId"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	err := h.svc.MergeMail(r.Context(), wl.ID, body.MailID, body.BankID)
+	switch {
+	case err == nil:
+		w.WriteHeader(http.StatusNoContent)
+	case errors.Is(err, transaction.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "transaction not found")
+	case errors.Is(err, transaction.ErrNotMailPair):
+		writeError(w, http.StatusBadRequest, "not_mail_pair", "merge a row from a mail into a bank row of the same account")
 	default:
 		writeError(w, http.StatusInternalServerError, "internal", "could not merge")
 	}
