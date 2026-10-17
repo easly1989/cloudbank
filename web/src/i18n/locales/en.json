@@ -1289,7 +1289,8 @@
       "expects": "The pattern looks for",
       "mailHas": "This mail has",
       "addSample": "Mark the fields in this mail too",
-      "addSampleHint": "The pattern will keep only what the marked mails have in common."
+      "addSampleHint": "The pattern will keep only what the marked mails have in common.",
+      "testHint": "Select the amount and choose the account: CloudBank then tries the pattern on this sender's latest mails."
     },
     "imap": {
       "title": "Connect with IMAP",
@@ -2691,6 +2692,37 @@
       "connect": {
         "title": "Connect a mailbox",
         "body": "Microsoft for Outlook.com, Hotmail and Live; an app password for the others. A mailbox that only receives the bank's mails is the safest."
+      }
+    },
+    "patternEditor": {
+      "offer": "First pattern? Take the editor tour",
+      "mail": {
+        "title": "The example mail",
+        "body": "A real mail from your bank. Select a piece of its text with the mouse or your finger."
+      },
+      "pick": {
+        "title": "Say what it is",
+        "body": "Once you select, a bar appears here. Start with the amount; the merchant goes to Memo or Payee."
+      },
+      "fields": {
+        "title": "Fields",
+        "body": "What the pattern takes from every mail like this one."
+      },
+      "when": {
+        "title": "When it applies",
+        "body": "Narrow it with the subject when one sender writes several kinds of mail."
+      },
+      "account": {
+        "title": "Account and direction",
+        "body": "The account is never guessed. Below it, From the mail when one kind of mail covers both money in and money out."
+      },
+      "test": {
+        "title": "The test",
+        "body": "Tried on this sender's latest mails as you go: what each one becomes, and where a mail it does not read stops matching."
+      },
+      "advanced": {
+        "title": "Advanced",
+        "body": "The expression the selections build, for the cases selections cannot express."
       }
     }
   },

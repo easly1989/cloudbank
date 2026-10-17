@@ -95,6 +95,20 @@ export const TOURS = {
     step("mail", "history", "mail-history"),
     step("mail", "connect", "mail-connect"),
   ],
+  // The pattern editor's (#678): not a page's, so not offered by the corner
+  // card, which sits below dialogs. The sheet offers it itself, at its top,
+  // the first time a pattern is made; its ? plays it again. The second step
+  // points at the hint under the mail, where the field toolbar appears once
+  // text is selected: both carry its target.
+  patternEditor: [
+    step("patternEditor", "mail", "pattern-sample"),
+    step("patternEditor", "pick", "pattern-pick"),
+    step("patternEditor", "fields", "pattern-fields"),
+    step("patternEditor", "when", "pattern-when"),
+    step("patternEditor", "account", "pattern-account"),
+    step("patternEditor", "test", "pattern-test"),
+    step("patternEditor", "advanced", "pattern-advanced"),
+  ],
 } satisfies Record<string, TourStep[]>;
 
 export type TourId = keyof typeof TOURS;

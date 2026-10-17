@@ -99,6 +99,7 @@ export default function TourOverlay({
   const [rect, setRect] = useState<Rect | null>(null);
   const [pos, setPos] = useState<CSSProperties | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
 
   const current = steps[step];
   const isFirst = step === 0;
@@ -138,21 +139,39 @@ export default function TourOverlay({
     };
   }, [step, current.target]);
 
+  // The reader is on the card now: keys go to it, not to the page under it.
+  // Once it is shown, since a hidden button takes no focus.
+  const shown = pos !== null;
+  useEffect(() => {
+    if (shown) nextRef.current?.focus({ preventScroll: true });
+  }, [step, shown]);
+
   // Keyboard navigation (no dep array so the handlers always see fresh state).
+  // Escape leaves the tour only, not a sheet it runs over (#678), which would
+  // lose a draft: the sheet's own handler runs first, and skips an Escape
+  // pressed on an element marked data-mantine-stop-propagation. Everything
+  // the tour shows is, and takes focus when clicked, so the Escape is pressed
+  // on it wherever the reader clicked last.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose(false);
-      else if (e.key === "ArrowRight") next();
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose(false);
+      } else if (e.key === "ArrowRight") next();
       else if (e.key === "ArrowLeft") back();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   });
 
   return createPortal(
     <>
       {/* Click-blocker so the app underneath can't be interacted with mid-tour. */}
-      <Box style={{ position: "fixed", inset: 0, zIndex: 1999 }} />
+      <Box
+        tabIndex={-1}
+        data-mantine-stop-propagation
+        style={{ position: "fixed", inset: 0, zIndex: 1999 }}
+      />
       {rect ? (
         <Box
           style={{
@@ -171,11 +190,15 @@ export default function TourOverlay({
         />
       ) : (
         <Box
+          tabIndex={-1}
+          data-mantine-stop-propagation
           style={{ position: "fixed", inset: 0, background: "rgba(0, 0, 0, 0.55)", zIndex: 2000 }}
         />
       )}
       <Paper
         ref={cardRef}
+        tabIndex={-1}
+        data-mantine-stop-propagation
         data-tour-step={current.target ?? ""}
         data-tour-skipped={all.length - steps.length}
         // A step that points at something but found nothing to point at: the
@@ -204,16 +227,22 @@ export default function TourOverlay({
           {t(current.bodyKey)}
         </Text>
         <Group justify="space-between" mt="md">
-          <Button variant="subtle" color="gray" size="xs" onClick={() => onClose(false)}>
+          <Button
+            variant="subtle"
+            color="gray"
+            size="xs"
+            onClick={() => onClose(false)}
+            data-mantine-stop-propagation
+          >
             {t("tour.skip")}
           </Button>
           <Group gap="xs">
             {!isFirst && (
-              <Button variant="default" size="xs" onClick={back}>
+              <Button variant="default" size="xs" onClick={back} data-mantine-stop-propagation>
                 {t("tour.back")}
               </Button>
             )}
-            <Button size="xs" onClick={next}>
+            <Button ref={nextRef} size="xs" onClick={next} data-mantine-stop-propagation>
               {isLast ? t("tour.finish") : t("tour.next")}
             </Button>
           </Group>

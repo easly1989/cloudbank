@@ -1289,7 +1289,8 @@
       "expects": "Le motif cherche",
       "mailHas": "Cet e-mail contient",
       "addSample": "Marquer les champs dans cet e-mail aussi",
-      "addSampleHint": "Le motif ne gardera que ce que les e-mails marqués ont en commun."
+      "addSampleHint": "Le motif ne gardera que ce que les e-mails marqués ont en commun.",
+      "testHint": "Sélectionnez le montant et choisissez le compte : CloudBank essaie alors le motif sur les derniers e-mails de cet expéditeur."
     },
     "imap": {
       "title": "Connecter en IMAP",
@@ -2691,6 +2692,37 @@
       "connect": {
         "title": "Connecter une boîte mail",
         "body": "Microsoft pour Outlook.com, Hotmail et Live ; un mot de passe d’application pour les autres. Le plus sûr est une boîte qui ne reçoit que les e-mails de la banque."
+      }
+    },
+    "patternEditor": {
+      "offer": "Premier motif ? Visitez l’éditeur",
+      "mail": {
+        "title": "L’e-mail d’exemple",
+        "body": "Un vrai e-mail de votre banque. Sélectionnez un morceau de son texte à la souris ou au doigt."
+      },
+      "pick": {
+        "title": "Dites ce que c’est",
+        "body": "Dès que vous sélectionnez, une barre apparaît ici. Commencez par le montant ; le commerçant va dans Note ou Tiers."
+      },
+      "fields": {
+        "title": "Champs",
+        "body": "Ce que le motif prend dans chaque e-mail comme celui-ci."
+      },
+      "when": {
+        "title": "Quand il s’applique",
+        "body": "Restreignez-le par l’objet quand un même expéditeur écrit plusieurs types d’e-mails."
+      },
+      "account": {
+        "title": "Compte et sens",
+        "body": "Le compte n’est jamais deviné. En dessous, Selon l’e-mail quand un même type d’e-mail couvre entrées et sorties."
+      },
+      "test": {
+        "title": "L’essai",
+        "body": "Essayé au fur et à mesure sur les derniers e-mails de l’expéditeur : ce que devient chacun, et où un e-mail qu’il ne lit pas cesse de correspondre."
+      },
+      "advanced": {
+        "title": "Avancé",
+        "body": "L’expression que construisent les sélections, pour les cas qu’elles ne savent pas exprimer."
       }
     }
   },
