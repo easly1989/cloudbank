@@ -52,7 +52,10 @@ export function RegisterBankRow({
     (review.data?.needsCategory ?? []).filter((r) => r.accountId === accountId).length +
     (review.data?.duplicates ?? []).filter(
       (p) => p.a.accountId === accountId || p.b.accountId === accountId,
-    ).length;
+    ).length +
+    // Rows from bank mails the bank has not booked (#660).
+    (review.data?.unconfirmed ?? []).filter((r) => r.accountId === accountId).length +
+    (review.data?.reversals ?? []).filter((p) => p.payment.accountId === accountId).length;
 
   const sync = useMutation({
     mutationFn: () => syncBankConnection(walletId, connection!.id),

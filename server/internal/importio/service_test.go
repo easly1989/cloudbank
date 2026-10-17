@@ -259,4 +259,15 @@ func TestBankSyncMergesIntoATransactionFromAMail(t *testing.T) {
 	if pv.Rows[0].Match != "" {
 		t.Fatalf("file import row = %+v", pv.Rows[0])
 	}
+	// Committed, the bank's ref replaces the mail's: the row is confirmed (#660).
+	pv, _ = s.PreviewParsed(ctx, wid, acc, booked, false, true)
+	r := pv.Rows[0]
+	if _, err := s.Commit(ctx, wid, acc, []CommitRow{{
+		Date: r.Date, Amount: r.Amount, Memo: r.Memo, Status: r.Status, ImportRef: r.ImportRef, UpdateID: r.MatchID,
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := q.GetTransaction(ctx, fromMail.ID); got.ImportRef != "eb:booked:1" {
+		t.Fatalf("after the sync the ref is %q, want the bank's", got.ImportRef)
+	}
 }

@@ -48,10 +48,13 @@ type DuplicatePair struct {
 }
 
 // ReviewResult is the bank-sync review payload: imported rows still missing a
-// category, and pairs of suspected duplicates (dismissed pairs excluded).
+// category, pairs of suspected duplicates (dismissed pairs excluded), and the
+// rows read from bank mails that the bank has not booked (#660).
 type ReviewResult struct {
-	NeedsCategory []ReviewTxn     `json:"needsCategory"`
-	Duplicates    []DuplicatePair `json:"duplicates"`
+	NeedsCategory []ReviewTxn      `json:"needsCategory"`
+	Duplicates    []DuplicatePair  `json:"duplicates"`
+	Unconfirmed   []UnconfirmedRow `json:"unconfirmed"`
+	Reversals     []ReversalPair   `json:"reversals"`
 }
 
 func reviewTxn(r db.Transaction) ReviewTxn {
@@ -124,6 +127,10 @@ func (s *Service) Review(ctx context.Context, walletID int64) (ReviewResult, err
 		return ReviewResult{}, err
 	}
 	out.Duplicates = pairs
+
+	if out.Unconfirmed, out.Reversals, err = s.unconfirmed(ctx, walletID, time.Now().UTC()); err != nil {
+		return ReviewResult{}, err
+	}
 	return out, nil
 }
 

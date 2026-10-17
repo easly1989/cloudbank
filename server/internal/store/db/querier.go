@@ -221,6 +221,9 @@ type Querier interface {
 	ListAutoSyncConnections(ctx context.Context) ([]ListAutoSyncConnectionsRow, error)
 	ListBankConnectionsForWallet(ctx context.Context, walletID int64) ([]BankConnection, error)
 	ListBankLinks(ctx context.Context, connectionID int64) ([]ListBankLinksRow, error)
+	// An account's rows booked by the bank (an import ref that is not a mail's)
+	// dated between two days: what an unconfirmed mail row may be merged with.
+	ListBankRowsNear(ctx context.Context, arg ListBankRowsNearParams) ([]Transaction, error)
 	ListBankSyncRuns(ctx context.Context, arg ListBankSyncRunsParams) ([]BankSyncRun, error)
 	ListBudgetsForWallet(ctx context.Context, walletID int64) ([]Budget, error)
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
@@ -276,6 +279,10 @@ type Querier interface {
 	ListTransactionsByIDs(ctx context.Context, arg ListTransactionsByIDsParams) ([]Transaction, error)
 	ListTransactionsForAccount(ctx context.Context, arg ListTransactionsForAccountParams) ([]ListTransactionsForAccountRow, error)
 	ListTransfersForWallet(ctx context.Context, walletID int64) ([]Transfer, error)
+	// Transactions read from a bank mail (#660) that the bank has still not
+	// booked, dated on or before a day: a bank-sync merge would have replaced
+	// their mail: ref with the bank's.
+	ListUnconfirmedMailRows(ctx context.Context, arg ListUnconfirmedMailRowsParams) ([]Transaction, error)
 	ListUpcomingSchedules(ctx context.Context, arg ListUpcomingSchedulesParams) ([]ListUpcomingSchedulesRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
 	ListValuationsForAccount(ctx context.Context, accountID int64) ([]AssetValuation, error)
@@ -294,6 +301,8 @@ type Querier interface {
 	// excluding internal transfers (payment_mode 5), with each row's account
 	// currency for base conversion. Drives the dashboard income/expense chart.
 	MonthlyIncomeExpense(ctx context.Context, arg MonthlyIncomeExpenseParams) ([]MonthlyIncomeExpenseRow, error)
+	// The mails that wrote a transaction now point at the one it was merged into.
+	MoveMailMessagesToTransaction(ctx context.Context, arg MoveMailMessagesToTransactionParams) error
 	NextAccountPosition(ctx context.Context, walletID int64) (int64, error)
 	NextAssignmentPosition(ctx context.Context, walletID int64) (int64, error)
 	// What each payee holds, per account currency: its transactions dated in

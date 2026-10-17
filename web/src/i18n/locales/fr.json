@@ -951,7 +951,19 @@
     "manual": "Manuelle",
     "noMemo": "(sans description)",
     "confirmDismissAllTitle": "Marquer les {{count}} paires comme non-doublons ?",
-    "confirmDismissAllBody": "Elles ne seront plus affichées ici. Les vrais doublons se retrouvent toujours par montant et par date."
+    "confirmDismissAllBody": "Elles ne seront plus affichées ici. Les vrais doublons se retrouvent toujours par montant et par date.",
+    "fromMail": "De l’e-mail",
+    "unconfirmed": "Non confirmées par la banque ({{count}})",
+    "unconfirmedHint": "Lues dans un e-mail, la banque ne les a toujours pas confirmées après 5 jours. Le débit réel est souvent différent : une station-service qui bloque 100 € et en débite 40, un hôtel, un paiement en devise. <b>Fusionner</b> garde le montant, la date et la référence de la banque, et la note, la catégorie et les étiquettes de l’e-mail.",
+    "mailAge_one": "de l’e-mail, il y a {{count}} jour",
+    "mailAge_other": "de l’e-mail, il y a {{count}} jours",
+    "bankRows": "Lignes de la banque proches",
+    "noBankRows": "Aucune ligne de la banque proche : si le paiement n’a pas eu lieu, supprimez-la.",
+    "merge": "Fusionner",
+    "reversal": "Paiement annulé",
+    "reversalHint": "{{account}} · deux lignes d’e-mails qui s’annulent : d’habitude la banque n’enregistre ni l’une ni l’autre",
+    "deleteBoth": "Supprimer les deux",
+    "confirmDeleteBothTitle": "Supprimer les deux lignes ?"
   },
   "banksync": {
     "title": "Connexion bancaire",
@@ -1440,7 +1452,8 @@
     "reconciledAll": "tout est rapproché jusqu’ici",
     "setAside": "Mis de côté pour les objectifs",
     "setAsideFree": "{{amount}} disponibles",
-    "setAsideShort": "{{amount}} de plus que ce que contient le compte"
+    "setAsideShort": "{{amount}} de plus que ce que contient le compte",
+    "fromMail": "De l’e-mail : la banque ne l’a pas encore confirmée"
   },
   "figureStrip": {
     "show": "Afficher le chiffre {{n}} sur {{count}}"

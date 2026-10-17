@@ -31,3 +31,23 @@ ORDER BY n.account_id, n.amount, n.date, n.id;
 -- name: ListTransactionsByIDs :many
 SELECT * FROM transactions
 WHERE wallet_id = sqlc.arg(wallet_id) AND id IN (sqlc.slice(ids));
+
+-- name: ListUnconfirmedMailRows :many
+-- Transactions read from a bank mail (#660) that the bank has still not
+-- booked, dated on or before a day: a bank-sync merge would have replaced
+-- their mail: ref with the bank's.
+SELECT * FROM transactions
+WHERE wallet_id = ? AND import_ref LIKE 'mail:%' AND date <= ?
+ORDER BY date DESC, id DESC;
+
+-- name: ListBankRowsNear :many
+-- An account's rows booked by the bank (an import ref that is not a mail's)
+-- dated between two days: what an unconfirmed mail row may be merged with.
+SELECT * FROM transactions
+WHERE account_id = sqlc.arg(account_id) AND import_ref <> '' AND import_ref NOT LIKE 'mail:%'
+  AND date >= sqlc.arg(date_from) AND date <= sqlc.arg(date_to)
+ORDER BY date, id;
+
+-- name: MoveMailMessagesToTransaction :exec
+-- The mails that wrote a transaction now point at the one it was merged into.
+UPDATE mail_messages SET transaction_id = sqlc.arg(to_id) WHERE transaction_id = sqlc.arg(from_id);
