@@ -586,6 +586,11 @@ body {
   padding-bottom: 20px;
   background: var(--mantine-color-body);
 }
+/* What is scrolled into view (a focused field, a tour's step) stops clear of
+   the sticky header and foot rather than under them (#678). */
+.cb-entry {
+  scroll-padding: 64px 0 80px;
+}
 .cb-entry .mantine-InputWrapper-label {
   font-size: 12px;
   font-weight: 600;

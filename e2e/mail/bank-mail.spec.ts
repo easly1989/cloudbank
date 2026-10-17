@@ -155,6 +155,72 @@ test("the bank's mails arrive, and none is recognised yet", async ({
   await expect(history(page).getByText("Pagamento con carta")).toHaveCount(2);
 });
 
+test("the first pattern offers the editor's tour, once, and Escape leaves the draft", async ({
+  page,
+}) => {
+  // #678: offered at the top of the sheet, since the page's corner card sits
+  // below dialogs. The page's own tour counts as seen, so it offers nothing.
+  await signIn(page);
+  const prefs = (tourOffers: boolean) =>
+    page.request.patch("/api/v1/auth/me", {
+      headers: H,
+      data: {
+        preferences: {
+          tutorialSeen: true,
+          tourOffers,
+          tourSkipAsked: true,
+          toursSeen: ["mail"],
+        },
+      },
+    });
+  await prefs(true);
+  const create = history(page)
+    .getByRole("button", { name: "Create a pattern from this mail" })
+    .first();
+  const sheet = page.getByTestId("pattern-sheet");
+  const offer = sheet.locator("[data-tour-offer]");
+  const card = page.locator("[data-tour-step]");
+
+  await page.goto("/settings/mail");
+  await create.click();
+  await offer.getByRole("button", { name: /Show me/ }).click();
+  await expect(offer).toHaveCount(0);
+  // No step left out for want of its element, none centred for want of size.
+  await expect(card).toHaveAttribute("data-tour-skipped", "0");
+  for (let i = 1; i <= 7; i++) {
+    await expect(card.getByText(`${i} / 7`)).toBeVisible();
+    await expect(card, `step ${i}`).not.toHaveAttribute(
+      "data-tour-centred",
+      /.*/,
+    );
+    await card.getByRole("button", { name: i < 7 ? "Next" : "Done" }).click();
+  }
+  await expect(card).toHaveCount(0);
+
+  // Escape leaves the tour, not the pattern being made.
+  await sheet.locator('[data-tour-replay="patternEditor"]').click();
+  await expect(card).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(card).toHaveCount(0);
+  await expect(sheet).toBeVisible();
+  // Also when the reader last clicked the card's text, not a button.
+  await sheet.locator('[data-tour-replay="patternEditor"]').click();
+  await card.getByText("The example mail").click();
+  await page.keyboard.press("Escape");
+  await expect(card).toHaveCount(0);
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole("button", { name: "Cancel" }).click();
+  await expect(sheet).toHaveCount(0);
+
+  // Offered once: the next pattern starts without it.
+  await page.reload();
+  await create.click();
+  await expect(page.getByTestId("pattern-sample")).toBeVisible();
+  await expect(offer).toHaveCount(0);
+  await sheet.getByRole("button", { name: "Cancel" }).click();
+  await prefs(false);
+});
+
 test("a pattern made from one mail writes the transactions of all its kind", async ({
   page,
 }) => {

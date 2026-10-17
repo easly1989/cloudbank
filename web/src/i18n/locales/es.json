@@ -1289,7 +1289,8 @@
       "expects": "El patrón busca",
       "mailHas": "Este correo tiene",
       "addSample": "Marcar los campos también en este correo",
-      "addSampleHint": "El patrón conservará solo lo que los correos marcados tienen en común."
+      "addSampleHint": "El patrón conservará solo lo que los correos marcados tienen en común.",
+      "testHint": "Selecciona el importe y elige la cuenta: CloudBank prueba entonces el patrón con los últimos correos de este remitente."
     },
     "imap": {
       "title": "Conectar por IMAP",
@@ -2691,6 +2692,37 @@
       "connect": {
         "title": "Conectar un buzón",
         "body": "Microsoft para Outlook.com, Hotmail y Live; una contraseña de aplicación para los demás. Lo más seguro es un buzón que reciba solo los correos del banco."
+      }
+    },
+    "patternEditor": {
+      "offer": "¿Primer patrón? Haz el recorrido del editor",
+      "mail": {
+        "title": "El correo de ejemplo",
+        "body": "Un correo real de tu banco. Selecciona un trozo de su texto con el ratón o con el dedo."
+      },
+      "pick": {
+        "title": "Di qué es",
+        "body": "Al seleccionar, aquí aparece una barra. Empieza por el importe; el comercio va en Nota o Beneficiario."
+      },
+      "fields": {
+        "title": "Campos",
+        "body": "Lo que el patrón toma de cada correo como este."
+      },
+      "when": {
+        "title": "Cuándo se aplica",
+        "body": "Acótalo con el asunto cuando un mismo remitente escribe varios tipos de correo."
+      },
+      "account": {
+        "title": "Cuenta y dirección",
+        "body": "La cuenta nunca se adivina. Debajo, Según el correo cuando un mismo tipo de correo cubre entradas y salidas."
+      },
+      "test": {
+        "title": "La prueba",
+        "body": "Probado sobre la marcha con los últimos correos del remitente: en qué se convierte cada uno, y dónde deja de coincidir un correo que no lee."
+      },
+      "advanced": {
+        "title": "Avanzado",
+        "body": "La expresión que construyen las selecciones, para los casos que las selecciones no pueden expresar."
       }
     }
   },

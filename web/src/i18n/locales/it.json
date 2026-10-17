@@ -1289,7 +1289,8 @@
       "expects": "Lo schema cerca",
       "mailHas": "Questa mail ha",
       "addSample": "Segna i campi anche in questa mail",
-      "addSampleHint": "Lo schema terrà solo ciò che le mail segnate hanno in comune."
+      "addSampleHint": "Lo schema terrà solo ciò che le mail segnate hanno in comune.",
+      "testHint": "Seleziona l'importo e scegli il conto: CloudBank prova lo schema sulle ultime mail di questo mittente."
     },
     "imap": {
       "title": "Collega con IMAP",
@@ -2691,6 +2692,37 @@
       "connect": {
         "title": "Collega una casella",
         "body": "Microsoft per Outlook.com, Hotmail e Live; una password per app per le altre. La più sicura è una casella che riceve solo le mail della banca."
+      }
+    },
+    "patternEditor": {
+      "offer": "Primo schema? Fai il giro dell'editor",
+      "mail": {
+        "title": "La mail di esempio",
+        "body": "Una mail vera della tua banca. Seleziona un pezzo del suo testo con il mouse o con il dito."
+      },
+      "pick": {
+        "title": "Di' cos'è",
+        "body": "Quando selezioni, qui compare una barra. Comincia dall'importo; il commerciante va in Note o Beneficiario."
+      },
+      "fields": {
+        "title": "Campi",
+        "body": "Cosa prende lo schema da ogni mail come questa."
+      },
+      "when": {
+        "title": "Quando si applica",
+        "body": "Restringilo con l'oggetto quando lo stesso mittente scrive più tipi di mail."
+      },
+      "account": {
+        "title": "Conto e direzione",
+        "body": "Il conto non viene mai indovinato. Sotto, Dalla mail quando lo stesso tipo di mail copre entrate e uscite."
+      },
+      "test": {
+        "title": "La prova",
+        "body": "Provato man mano sulle ultime mail del mittente: cosa diventa ognuna, e dove smette di corrispondere una mail che non legge."
+      },
+      "advanced": {
+        "title": "Avanzate",
+        "body": "L'espressione costruita dalle selezioni, per i casi che le selezioni non sanno esprimere."
       }
     }
   },
