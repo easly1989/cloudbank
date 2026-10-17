@@ -2634,6 +2634,10 @@
       "duplicates": {
         "title": "O mesmo lançamento duas vezes?",
         "body": "As importações que parecem um lançamento que você já tem aparecem aqui, para você decidir qual manter."
+      },
+      "unconfirmed": {
+        "title": "Não confirmadas pelo banco",
+        "body": "Linhas lidas de um e-mail do banco que o banco não registrou depois de 5 dias. Mescle cada uma com a linha do banco, ou exclua-a se o pagamento não aconteceu."
       }
     },
     "settings": {
@@ -2660,6 +2664,33 @@
       "backup": {
         "title": "Guarde uma cópia",
         "body": "Baixe uma cópia da qual você pode restaurar, e verifique se o banco de dados está íntegro."
+      }
+    },
+    "mail": {
+      "offer": "Primeira vez aqui? Faça o tour dos e-mails do banco",
+      "mailbox": {
+        "title": "Sua caixa de e-mail",
+        "body": "O CloudBank fica conectado e lê cada e-mail novo assim que chega. Verificar agora lê na hora; para pausar ou desconectar, abra Mais."
+      },
+      "folder": {
+        "title": "Uma pasta",
+        "body": "Só são lidos os e-mails que chegam a esta pasta daqui em diante. O mais seguro é uma pasta que recebe apenas os e-mails do banco."
+      },
+      "mode": {
+        "title": "Como os e-mails são lidos",
+        "body": "Um padrão lê um tipo de e-mail e não o envia a lugar nenhum. A IA pode ler os que nenhum padrão lê, depois de configurada em Configurações › IA."
+      },
+      "patterns": {
+        "title": "Padrões",
+        "body": "Cada um transforma um tipo de e-mail do banco em um lançamento na conta que você escolheu. Vence o primeiro padrão que lê um e-mail: arraste para mudar a ordem."
+      },
+      "history": {
+        "title": "Últimos e-mails",
+        "body": "O que aconteceu com cada e-mail. Criado abre o lançamento; em Não reconhecido você pode criar um padrão; Não autenticado quer dizer que o remetente pode ser falso."
+      },
+      "connect": {
+        "title": "Conectar uma caixa de e-mail",
+        "body": "Microsoft para Outlook.com, Hotmail e Live; uma senha de app para as demais. O mais seguro é uma caixa que recebe apenas os e-mails do banco."
       }
     }
   },
