@@ -951,7 +951,19 @@
     "manual": "Manuell",
     "noMemo": "(keine Beschreibung)",
     "confirmDismissAllTitle": "Alle {{count}} Paare als kein Duplikat markieren?",
-    "confirmDismissAllBody": "Sie werden hier nicht mehr angezeigt. Echte Duplikate lassen sich weiterhin über Betrag und Datum finden."
+    "confirmDismissAllBody": "Sie werden hier nicht mehr angezeigt. Echte Duplikate lassen sich weiterhin über Betrag und Datum finden.",
+    "fromMail": "Aus der E-Mail",
+    "unconfirmed": "Von der Bank nicht bestätigt ({{count}})",
+    "unconfirmedHint": "Aus einer E-Mail gelesen, und nach 5 Tagen hat die Bank sie noch nicht bestätigt. Oft ist die echte Belastung anders: eine Tankstelle, die 100 € reserviert und 40 abbucht, ein Hotel, eine Zahlung in Fremdwährung. <b>Zusammenführen</b> behält Betrag, Datum und Referenz der Bank und Notiz, Kategorie und Tags der E-Mail.",
+    "mailAge_one": "aus der E-Mail, vor {{count}} Tag",
+    "mailAge_other": "aus der E-Mail, vor {{count}} Tagen",
+    "bankRows": "Bankzeilen in der Nähe",
+    "noBankRows": "Keine Bankzeile in der Nähe: Wenn die Zahlung nie stattfand, lösche sie.",
+    "merge": "Zusammenführen",
+    "reversal": "Zahlung storniert",
+    "reversalHint": "{{account}} · zwei Zeilen aus E-Mails, die sich aufheben: Meist bucht die Bank keine der beiden",
+    "deleteBoth": "Beide löschen",
+    "confirmDeleteBothTitle": "Beide Zeilen löschen?"
   },
   "banksync": {
     "title": "Bankanbindung",
@@ -1440,7 +1452,8 @@
     "reconciledAll": "bis hier alles abgeglichen",
     "setAside": "Für Sparziele zurückgelegt",
     "setAsideFree": "{{amount}} frei",
-    "setAsideShort": "{{amount}} mehr, als auf dem Konto ist"
+    "setAsideShort": "{{amount}} mehr, als auf dem Konto ist",
+    "fromMail": "Aus der E-Mail: Die Bank hat sie noch nicht bestätigt"
   },
   "figureStrip": {
     "show": "Kennzahl {{n}} von {{count}} anzeigen"

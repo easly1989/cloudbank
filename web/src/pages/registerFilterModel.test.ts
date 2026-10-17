@@ -31,6 +31,7 @@ function row(p: Partial<RegisterRow>): RegisterRow {
     isSplit: false,
     tags: [],
     runningBalance: 0,
+    fromMail: false,
     createdAt: "",
     updatedAt: "",
     ...p,

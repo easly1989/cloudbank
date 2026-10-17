@@ -384,7 +384,7 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 // MailRefPrefix starts the import ref of a transaction read from a bank mail
 // (#657). The bank has not booked it yet, so bank sync may still merge its own
 // row into it, as into one entered by hand.
-const MailRefPrefix = "mail:"
+const MailRefPrefix = transaction.MailRefPrefix
 
 // bankless says no bank booking stands behind a transaction yet: entered by
 // hand, posted by a schedule, or read from a bank mail.

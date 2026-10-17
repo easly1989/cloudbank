@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 )
 
@@ -25,6 +26,62 @@ type InsertDuplicateDismissalParams struct {
 func (q *Queries) InsertDuplicateDismissal(ctx context.Context, arg InsertDuplicateDismissalParams) error {
 	_, err := q.db.ExecContext(ctx, insertDuplicateDismissal, arg.WalletID, arg.TxnAID, arg.TxnBID)
 	return err
+}
+
+const listBankRowsNear = `-- name: ListBankRowsNear :many
+SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id FROM transactions
+WHERE account_id = ?1 AND import_ref <> '' AND import_ref NOT LIKE 'mail:%'
+  AND date >= ?2 AND date <= ?3
+ORDER BY date, id
+`
+
+type ListBankRowsNearParams struct {
+	AccountID int64
+	DateFrom  string
+	DateTo    string
+}
+
+// An account's rows booked by the bank (an import ref that is not a mail's)
+// dated between two days: what an unconfirmed mail row may be merged with.
+func (q *Queries) ListBankRowsNear(ctx context.Context, arg ListBankRowsNearParams) ([]Transaction, error) {
+	rows, err := q.db.QueryContext(ctx, listBankRowsNear, arg.AccountID, arg.DateFrom, arg.DateTo)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Transaction{}
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.WalletID,
+			&i.AccountID,
+			&i.Date,
+			&i.Amount,
+			&i.PaymentMode,
+			&i.Status,
+			&i.Info,
+			&i.PayeeID,
+			&i.CategoryID,
+			&i.Memo,
+			&i.IsSplit,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.TemplateID,
+			&i.ImportRef,
+			&i.VehicleID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listDuplicateCandidates = `-- name: ListDuplicateCandidates :many
@@ -216,6 +273,76 @@ func (q *Queries) ListTransactionsByIDs(ctx context.Context, arg ListTransaction
 		return nil, err
 	}
 	return items, nil
+}
+
+const listUnconfirmedMailRows = `-- name: ListUnconfirmedMailRows :many
+SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id FROM transactions
+WHERE wallet_id = ? AND import_ref LIKE 'mail:%' AND date <= ?
+ORDER BY date DESC, id DESC
+`
+
+type ListUnconfirmedMailRowsParams struct {
+	WalletID int64
+	Date     string
+}
+
+// Transactions read from a bank mail (#660) that the bank has still not
+// booked, dated on or before a day: a bank-sync merge would have replaced
+// their mail: ref with the bank's.
+func (q *Queries) ListUnconfirmedMailRows(ctx context.Context, arg ListUnconfirmedMailRowsParams) ([]Transaction, error) {
+	rows, err := q.db.QueryContext(ctx, listUnconfirmedMailRows, arg.WalletID, arg.Date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Transaction{}
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.WalletID,
+			&i.AccountID,
+			&i.Date,
+			&i.Amount,
+			&i.PaymentMode,
+			&i.Status,
+			&i.Info,
+			&i.PayeeID,
+			&i.CategoryID,
+			&i.Memo,
+			&i.IsSplit,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.TemplateID,
+			&i.ImportRef,
+			&i.VehicleID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const moveMailMessagesToTransaction = `-- name: MoveMailMessagesToTransaction :exec
+UPDATE mail_messages SET transaction_id = ?1 WHERE transaction_id = ?2
+`
+
+type MoveMailMessagesToTransactionParams struct {
+	ToID   sql.NullInt64
+	FromID sql.NullInt64
+}
+
+// The mails that wrote a transaction now point at the one it was merged into.
+func (q *Queries) MoveMailMessagesToTransaction(ctx context.Context, arg MoveMailMessagesToTransactionParams) error {
+	_, err := q.db.ExecContext(ctx, moveMailMessagesToTransaction, arg.ToID, arg.FromID)
+	return err
 }
 
 const setTransactionImportRef = `-- name: SetTransactionImportRef :exec
