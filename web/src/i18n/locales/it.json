@@ -1296,6 +1296,28 @@
       "errPassword": "Per collegarsi serve la password",
       "errHost": "Il server è un nome come imap.example.com",
       "errPort": "Un numero da 1 a 65535"
+    },
+    "ai": {
+      "mode": "Come leggere le mail",
+      "modeHint": "L'AI può leggere le mail che nessuno schema riconosce, oppure prendere il posto degli schemi.",
+      "modes": {
+        "patterns": "Solo gli schemi",
+        "patterns_ai": "Prima gli schemi, poi l'AI",
+        "ai_patterns": "Prima l'AI, poi gli schemi",
+        "ai": "Solo l'AI"
+      },
+      "needAI": "Per usare l'AI, configurala prima in <a>Impostazioni › AI</a>.",
+      "warning": "Il testo delle mail dei mittenti indicati va <b>al provider AI configurato in Impostazioni › AI</b>, con numeri di carta e IBAN oscurati. L'AI può sbagliare un importo, una data o la direzione: controlla quello che scrive.",
+      "account": "Conto",
+      "accountHint": "Dove va quello che legge l'AI: il conto non lo sceglie mai l'AI.",
+      "field": "La descrizione va in",
+      "senders": "Mittenti della banca",
+      "sendersHint": "All'AI vanno solo le mail autenticate di questi indirizzi o domini.",
+      "errAccount": "Scegli il conto",
+      "errSenders": "Indica almeno un mittente",
+      "save": "Salva",
+      "saved": "Il modo di leggere le mail è salvato.",
+      "readByAI": "Letta dall'AI"
     }
   },
   "search": {
@@ -2765,6 +2787,7 @@
     },
     "host_not_public": "Quel server non è su internet: CloudBank non si collega alla propria rete.",
     "unreachable": "Il server di posta non risponde: controlla nome e porta.",
-    "tls_failed": "Non è stato possibile cifrare la connessione al server di posta."
+    "tls_failed": "Non è stato possibile cifrare la connessione al server di posta.",
+    "ai_not_configured": "Prima configura l'AI, in Impostazioni › AI."
   }
 }

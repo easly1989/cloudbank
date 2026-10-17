@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 func configure(t *testing.T, svc *Service, uid int64) {
@@ -101,14 +102,14 @@ func TestReadBankMailHidesCardsAndIBANs(t *testing.T) {
 	m := &mockDoer{reply: `{"payment":false}`}
 	svc.hc = m
 	body := "Pagamento di 1.234,56 EUR il 15/10/2026 alle 17:56 con la carta 4532 0151 1283 0366.\n" +
-		"Carta 4532-0151-1283-0366, altra carta 4532015112830366, mascherata 1234_*_*_5678 o **** **** **** 5678.\n" +
+		"Carta 4532-0151-1283-0366, altra carta 4532015112830366, mascherata 1234_*_*_5678 o **** **** **** 5678, XXXX XXXX XXXX 9012, xxxx-7788, ____4455.\n" +
 		"Addebito sul conto IT60 X054 2811 1010 0000 0123 456 (IBAN IT60X0542811101000000123456).\n" +
 		"Bonifico da DE89 3704 0044 0532 0130 00, rif. 12345678901."
 	if _, err := svc.ReadBankMail(context.Background(), uid, "Carta 5500 0000 0000 0004", body, "2026-10-15"); err != nil {
 		t.Fatal(err)
 	}
 	sent := sentText(t, m)
-	for _, leak := range []string{"4532", "0366", "5678", "5500", "0004", "IT60", "0123", "DE89", "3704", "12345678901"} {
+	for _, leak := range []string{"4532", "0366", "5678", "9012", "7788", "4455", "5500", "0004", "IT60", "0123", "DE89", "3704", "12345678901"} {
 		if strings.Contains(sent, leak) {
 			t.Errorf("%q reached the provider:\n%s", leak, sent)
 		}
@@ -121,5 +122,21 @@ func TestReadBankMailHidesCardsAndIBANs(t *testing.T) {
 		if !strings.Contains(sent, keep) {
 			t.Errorf("%q was hidden too:\n%s", keep, sent)
 		}
+	}
+}
+
+func TestReadBankMailCutsALongMailOnACharacter(t *testing.T) {
+	svc, _, uid, _ := newFixture(t)
+	configure(t, svc, uid)
+	m := &mockDoer{reply: `{"payment":false}`}
+	svc.hc = m
+	// A stray byte early on, and a cut that splits the euro sign.
+	body := "Pagamento\xff " + strings.Repeat("a", mailMax-12) + "€ fine"
+	if _, err := svc.ReadBankMail(context.Background(), uid, "Avviso", body, "2026-10-15"); err != nil {
+		t.Fatal(err)
+	}
+	sent := sentText(t, m)
+	if !utf8.ValidString(sent) || !strings.Contains(sent, strings.Repeat("a", mailMax-12)) || strings.Contains(sent, "fine") {
+		t.Errorf("the mail was not cut where it should be:\n%.80q", sent)
 	}
 }

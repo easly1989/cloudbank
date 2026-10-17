@@ -1296,6 +1296,28 @@
       "errPassword": "Zum Verbinden wird das Passwort gebraucht",
       "errHost": "Der Server ist ein Name wie imap.example.com",
       "errPort": "Eine Zahl von 1 bis 65535"
+    },
+    "ai": {
+      "mode": "Wie E-Mails gelesen werden",
+      "modeHint": "Die KI kann die E-Mails lesen, die kein Muster liest, oder die Muster ersetzen.",
+      "modes": {
+        "patterns": "Nur die Muster",
+        "patterns_ai": "Erst die Muster, dann die KI",
+        "ai_patterns": "Erst die KI, dann die Muster",
+        "ai": "Nur die KI"
+      },
+      "needAI": "Um die KI zu nutzen, richte sie zuerst unter <a>Einstellungen › KI</a> ein.",
+      "warning": "Der Text der E-Mails der angegebenen Absender geht <b>an den KI-Anbieter aus Einstellungen › KI</b>, mit verborgenen Kartennummern und IBANs. Die KI kann sich bei Betrag, Datum oder Richtung irren: Prüfe, was sie schreibt.",
+      "account": "Konto",
+      "accountHint": "Wohin geht, was die KI liest: Das Konto wählt nie die KI.",
+      "field": "Die Beschreibung kommt in",
+      "senders": "Absender der Bank",
+      "sendersHint": "Nur authentifizierte E-Mails dieser Adressen oder Domains gehen an die KI.",
+      "errAccount": "Wähle das Konto",
+      "errSenders": "Gib mindestens einen Absender an",
+      "save": "Speichern",
+      "saved": "Wie E-Mails gelesen werden, ist gespeichert.",
+      "readByAI": "Von der KI gelesen"
     }
   },
   "search": {
@@ -2765,6 +2787,7 @@
     },
     "host_not_public": "Dieser Server ist nicht im Internet: CloudBank verbindet sich nicht mit seinem eigenen Netz.",
     "unreachable": "Der Mailserver antwortet nicht: Prüfe Name und Port.",
-    "tls_failed": "Die Verbindung zum Mailserver konnte nicht verschlüsselt werden."
+    "tls_failed": "Die Verbindung zum Mailserver konnte nicht verschlüsselt werden.",
+    "ai_not_configured": "Richte zuerst die KI ein, unter Einstellungen › KI."
   }
 }

@@ -36,9 +36,9 @@ var (
 	// An IBAN: two letters, two check digits, then groups of four, spaced or
 	// not, ending in a shorter group.
 	reIBAN = regexp.MustCompile(`\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,3})?\b`)
-	// A run of digits joined by spaces, dashes or the stars and underscores a
-	// bank masks a card with.
-	reDigitRun = regexp.MustCompile(`[\d*•][\d \-_*•xX]*\d`)
+	// A run of digits joined by spaces, dashes or the stars, underscores and
+	// x's a bank masks a card with, which may come first ("XXXX XXXX 5678").
+	reDigitRun = regexp.MustCompile(`[\d*•_xX][\d \-_*•xX]*\d`)
 	reAmount   = regexp.MustCompile(`^\d[\d.,' ]*$`)
 )
 
@@ -90,10 +90,8 @@ func (s *Service) ReadBankMail(ctx context.Context, userID int64, subject, body,
 		admin = u.IsAdmin != 0
 	}
 	if len(body) > mailMax {
-		body = body[:mailMax]
-		for !utf8.ValidString(body) {
-			body = body[:len(body)-1]
-		}
+		// The cut can split a character; drop what is left of it.
+		body = strings.ToValidUTF8(body[:mailMax], "")
 	}
 	system := "You read one notification mail from a bank and reply with ONLY a minified JSON object, " +
 		"no prose, no code fences. If the mail reports one movement of money on the account (a card " +
