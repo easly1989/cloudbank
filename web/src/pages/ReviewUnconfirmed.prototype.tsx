@@ -2,7 +2,13 @@
 // review, in two variants, with invented rows. Shown only with
 // ?mock=unconfirmed&v=a|b on /review. Not for main.
 import { Box, Button, Card, Group, Select, Stack, Text } from "@mantine/core";
-import { IconBuildingBank, IconGitMerge, IconMail, IconTrash } from "@tabler/icons-react";
+import {
+  IconArrowBackUp,
+  IconBuildingBank,
+  IconGitMerge,
+  IconMail,
+  IconTrash,
+} from "@tabler/icons-react";
 import { useMediaQuery } from "@mantine/hooks";
 import { useState } from "react";
 
@@ -106,11 +112,17 @@ export function UnconfirmedPrototype({
     </Button>
   );
 
+  const removeBoth = (
+    <Button size="xs" variant="subtle" color="red" leftSection={<IconTrash size={14} />}>
+      Elimina tutte e due
+    </Button>
+  );
+
   return (
     <Card withBorder data-testid="review-unconfirmed">
       <Stack gap="sm">
         <Stack gap={4}>
-          <Text fw={600}>Non confermate dalla banca ({ROWS.length})</Text>
+          <Text fw={600}>Non confermate dalla banca ({ROWS.length + 1})</Text>
           <Text size="sm" c="dimmed" maw={720}>
             Lette da una mail, dopo 5 giorni la banca non le ha ancora confermate. Spesso l'addebito
             vero è diverso: un distributore che blocca 100 € e ne addebita 40, un albergo, un
@@ -118,6 +130,57 @@ export function UnconfirmedPrototype({
             memo, categoria e tag della mail.
           </Text>
         </Stack>
+
+        {/* A refused card: the payment and its reversal, which the bank never books. */}
+        <Box pt="sm" style={{ borderTop: RULE }} data-testid="review-reversal">
+          <Group justify="space-between" align="flex-start" wrap="nowrap" gap="md">
+            <Box style={{ flex: 1, minWidth: 0 }}>
+              <Group gap={6} wrap="nowrap">
+                <IconArrowBackUp size={15} style={{ flexShrink: 0, opacity: 0.6 }} />
+                <Text size="sm" fw={600}>
+                  Pagamento stornato
+                </Text>
+              </Group>
+              <Text size="xs" c="dimmed">
+                {acc?.name} · due righe dalla mail che si annullano: di solito la banca non registra
+                nessuna delle due
+              </Text>
+            </Box>
+            {!phone && removeBoth}
+          </Group>
+          <Stack gap={0} mt={8} ml={21}>
+            {[
+              { id: 91, date: ago(8), memo: "Bar Demo", amount: -750 },
+              { id: 92, date: ago(8), memo: "Storno · Bar Demo", amount: 750 },
+            ].map((c) => (
+              <Group
+                key={c.id}
+                gap="sm"
+                wrap="nowrap"
+                py={6}
+                style={{ borderTop: "1px dashed var(--mantine-color-default-border)" }}
+              >
+                <IconMail size={14} style={{ flexShrink: 0, opacity: 0.6 }} />
+                <Text size="xs" ff="monospace" style={{ flexShrink: 0 }}>
+                  {fmtDate(c.date)}
+                </Text>
+                <Text size="xs" truncate style={{ flex: 1, minWidth: 0 }}>
+                  {c.memo}
+                </Text>
+                <Text
+                  size="xs"
+                  ff="monospace"
+                  fw={600}
+                  c={amountColor(c.amount)}
+                  style={{ flexShrink: 0 }}
+                >
+                  {money(c.amount)}
+                </Text>
+              </Group>
+            ))}
+          </Stack>
+          {phone && <Box mt={4}>{removeBoth}</Box>}
+        </Box>
 
         {ROWS.map((r) =>
           variant === "b" ? (
@@ -151,8 +214,7 @@ export function UnconfirmedPrototype({
               </Group>
               {r.cands.length > 0 &&
                 (() => {
-                  const c =
-                    r.cands.find((x) => String(x.id) === pick[r.id]) ?? r.cands[0];
+                  const c = r.cands.find((x) => String(x.id) === pick[r.id]) ?? r.cands[0];
                   return (
                     <Text size="xs" c="dimmed" mt={6}>
                       Resterà {money(c.amount)} del {fmtDate(c.date)}, dalla banca, con memo «
