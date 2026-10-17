@@ -297,6 +297,128 @@ test("a mail whose sender is not authenticated writes nothing", async ({
   ).toHaveCount(0);
 });
 
+test("one pattern covers two wordings of a notice, marked in a mail of each", async ({
+  page,
+}) => {
+  // Another bank (#674): the card written with and without a space, and
+  // another ending after the merchant.
+  const OTHER = "notifiche@altra-banca.example";
+  const mail = (subject: string, body: string) => ({
+    folder: "Banca",
+    from: OTHER,
+    subject,
+    body,
+    authenticated: true,
+  });
+  await signIn(page);
+  await deliver(
+    page,
+    mail(
+      "Bonifico in arrivo",
+      "Sul tuo conto è arrivato un bonifico di 80,00 EUR.",
+    ),
+  );
+  await deliver(
+    page,
+    mail(
+      "Pagamento con carta",
+      "È stato effettuato un pagamento di 41,00 EUR con la carta 1234_*_*_ 5678 presso Farmacia Esempio .",
+    ),
+  );
+  await deliver(
+    page,
+    mail(
+      "Pagamento con carta",
+      "È stato richiesto un pagamento di 12,50 EUR con la carta 1234_*_*_5678 presso Bar Esempio, - ore 08:12",
+    ),
+  );
+  await page.goto("/settings/mail");
+  await history(page).getByRole("button", { name: "Check now" }).click();
+  await expect(
+    history(page).getByText("Not recognised", { exact: true }),
+  ).toHaveCount(3);
+
+  // The newest mail is first: the bar.
+  await history(page)
+    .getByRole("button", { name: "Create a pattern from this mail" })
+    .first()
+    .click();
+  const sheet = page.getByTestId("pattern-sheet");
+  await expect(page.getByTestId("pattern-sample")).toContainText("Bar Esempio");
+  const mark = async (amount: string, memo: string) => {
+    for (const [piece, field] of [
+      [amount, "Amount"],
+      [memo, "Memo"],
+    ]) {
+      await select(page, piece);
+      await page
+        .getByTestId("pattern-pick")
+        .getByRole("button", { name: field, exact: true })
+        .click();
+    }
+  };
+  await mark("12,50", "Bar Esempio");
+  await sheet
+    .getByLabel(/^Account/)
+    .first()
+    .click();
+  await page.getByRole("option", { name: "Checking", exact: true }).click();
+  await expect(page.getByTestId("pattern-test")).toContainText("1 of 3 match");
+
+  // The transfer differs from the start: another kind of notice, no button.
+  const unread = page.locator(
+    '[data-testid="pattern-test-mail"][data-read="false"]',
+  );
+  await expect(unread.filter({ hasText: "Bonifico in arrivo" })).toContainText(
+    "another kind of notice?",
+  );
+  // The pharmacy stops at the card, written with a space.
+  await unread
+    .filter({ hasText: "Pagamento con carta" })
+    .getByRole("button")
+    .click();
+  const stop = page.getByTestId("pattern-stop");
+  await expect(stop).toContainText("1234_*_*_5678 presso");
+  await expect(stop).toContainText("1234_*_*_ 5678 presso");
+  await stop
+    .getByRole("button", { name: "Mark the fields in this mail too" })
+    .click();
+
+  await expect(page.getByTestId("pattern-samples")).toBeVisible();
+  await expect(page.getByTestId("pattern-sample")).toContainText(
+    "Farmacia Esempio",
+  );
+  await expect(page.getByTestId("pattern-same-fields")).toContainText(
+    "Amount, Memo",
+  );
+  await mark("41,00", "Farmacia Esempio");
+  await expect(page.getByTestId("pattern-test")).toContainText("2 of 3 match");
+  await expect(
+    page.getByText("Now it also reads 1 mail it did not read before: check it"),
+  ).toBeVisible();
+
+  await sheet
+    .getByRole("checkbox", { name: /Also apply it to the 2 waiting mails/ })
+    .check();
+  await sheet.getByRole("button", { name: "Save the pattern" }).click();
+  await expect(
+    page.getByText("Pattern saved: 2 transactions created"),
+  ).toBeVisible();
+  await expect(
+    history(page).getByRole("link", { name: /Farmacia Esempio/ }),
+  ).toBeVisible();
+
+  // It reopens on both example mails.
+  await page
+    .getByRole("button", { name: /Actions for Pagamento con carta/ })
+    .last()
+    .click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await expect(page.getByTestId("pattern-samples")).toContainText(
+    "Farmacia Esempio",
+  );
+});
+
 test("the written transactions are in the register, opened from the mail", async ({
   page,
 }) => {
