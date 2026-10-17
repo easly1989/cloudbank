@@ -1296,6 +1296,28 @@
       "errPassword": "The password is needed to connect",
       "errHost": "The server is a name like imap.example.com",
       "errPort": "A number from 1 to 65535"
+    },
+    "ai": {
+      "mode": "How mails are read",
+      "modeHint": "The AI can read the mails no pattern reads, or take the patterns' place.",
+      "modes": {
+        "patterns": "Patterns only",
+        "patterns_ai": "Patterns first, then the AI",
+        "ai_patterns": "The AI first, then the patterns",
+        "ai": "The AI only"
+      },
+      "needAI": "To use the AI, set it up first in <a>Settings › AI</a>.",
+      "warning": "The text of the listed senders' mails goes to <b>the AI provider set up in Settings › AI</b>, with card numbers and IBANs hidden. The AI can get an amount, a date or the direction wrong: check what it writes.",
+      "account": "Account",
+      "accountHint": "Where what the AI reads goes: the AI never chooses the account.",
+      "field": "The description goes in",
+      "senders": "The bank's senders",
+      "sendersHint": "Only authenticated mails from these addresses or domains are sent to the AI.",
+      "errAccount": "Choose the account",
+      "errSenders": "Name at least one sender",
+      "save": "Save",
+      "saved": "How mails are read is saved.",
+      "readByAI": "Read by the AI"
     }
   },
   "search": {
@@ -2765,6 +2787,7 @@
     },
     "host_not_public": "That server is not on the internet: CloudBank does not connect to its own network.",
     "unreachable": "The mail server does not answer: check its name and port.",
-    "tls_failed": "The connection to the mail server could not be encrypted."
+    "tls_failed": "The connection to the mail server could not be encrypted.",
+    "ai_not_configured": "Set up the AI first, in Settings › AI."
   }
 }
