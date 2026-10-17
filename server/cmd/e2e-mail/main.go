@@ -2,8 +2,11 @@
 // (#657): the identity platform's device-code sign-in, and an Outlook IMAP
 // server that takes only the access tokens it issued (SASL XOAUTH2), as the
 // real one does. Beside it runs a pretend provider with app passwords (#658),
-// a second IMAP server whose one mailbox logs in with a password. It never
-// leaves this machine and holds only invented mail.
+// a second IMAP server whose one mailbox logs in with a password, and a
+// pretend AI provider (#659) with the OpenAI-compatible chat API, which reads
+// a notice with two fixed sentences and remembers the last text it was sent
+// (GET /ai/last), so a test can see what left CloudBank. It never leaves this
+// machine and holds only invented mail.
 //
 // The tests deliver mail with POST /deliver, a JSON {mailbox, folder, from,
 // subject, body, authenticated}, where mailbox "imap" is the app-password one;
@@ -13,7 +16,8 @@
 //	E2E_MAIL_PASSWORD_IMAP=127.0.0.1:1144 go run ./cmd/e2e-mail
 //
 // CloudBank reaches it with CB_MS_AUTHORITY=http://127.0.0.1:9100,
-// CB_MS_IMAP=127.0.0.1:1143 and CB_MAIL_LOCAL_IMAP=127.0.0.1:1144.
+// CB_MS_IMAP=127.0.0.1:1143 and CB_MAIL_LOCAL_IMAP=127.0.0.1:1144; an
+// administrator's AI settings point at http://127.0.0.1:9100/v1.
 package main
 
 import (
@@ -29,6 +33,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -69,6 +74,7 @@ type fake struct {
 
 	mu      sync.Mutex
 	codes   map[string]*signIn // device code → sign-in
+	aiLast  string             // the last text the pretend AI was sent
 	access  map[string]bool
 	refresh map[string]bool
 	n       int
@@ -137,6 +143,8 @@ func main() {
 	mux.HandleFunc("POST /device", f.approve)
 	mux.HandleFunc("POST /token", f.token)
 	mux.HandleFunc("POST /deliver", f.deliver)
+	mux.HandleFunc("POST /v1/chat/completions", f.chat)
+	mux.HandleFunc("GET /ai/last", f.aiLastText)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
 	log.Printf("pretend Microsoft on http://%s, IMAP on %s; app-password IMAP on %s", f.httpAddr, ln.Addr(), pln.Addr())
 	hs := &http.Server{Addr: f.httpAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
@@ -274,6 +282,48 @@ func (f *fake) deliver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+var (
+	// The two sentences the pretend AI understands, as the e2e mails write
+	// them: a card payment and a transfer received.
+	rePaid     = regexp.MustCompile(`pagamento di ([\d.,]+) EUR .*?presso (.+?)[,.]`)
+	reReceived = regexp.MustCompile(`ricevuto un bonifico di ([\d.,]+) EUR da (.+?)\.`)
+)
+
+// chat answers an OpenAI-compatible chat completion the way the bank-mail
+// reader asks it to: a payment, or {"payment":false}.
+func (f *fake) chat(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Messages []struct {
+			Content string `json:"content"`
+		} `json:"messages"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil || len(in.Messages) == 0 {
+		http.Error(w, "want a chat completion", http.StatusBadRequest)
+		return
+	}
+	text := in.Messages[len(in.Messages)-1].Content
+	f.mu.Lock()
+	f.aiLast = text
+	f.mu.Unlock()
+	answer := map[string]any{"payment": false}
+	if m := rePaid.FindStringSubmatch(text); m != nil {
+		answer = map[string]any{"payment": true, "amount": m[1], "direction": "out", "date": "", "text": m[2]}
+	} else if m := reReceived.FindStringSubmatch(text); m != nil {
+		answer = map[string]any{"payment": true, "amount": m[1], "direction": "in", "date": "", "text": m[2]}
+	}
+	content, _ := json.Marshal(answer)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"choices": []map[string]any{{"message": map[string]string{"role": "assistant", "content": string(content)}}},
+	})
+}
+
+func (f *fake) aiLastText(w http.ResponseWriter, _ *http.Request) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	_, _ = w.Write([]byte(f.aiLast))
 }
 
 // session is the mailbox's IMAP session: XOAUTH2 with an issued access token

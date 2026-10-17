@@ -263,6 +263,7 @@ type MailMessage struct {
 	Detail        string
 	PatternID     sql.NullInt64
 	TransactionID sql.NullInt64
+	ByAi          int64
 }
 
 type MailPattern struct {
@@ -307,6 +308,10 @@ type Mailbox struct {
 	ImapPort     int64
 	ImapSecurity string
 	ImapUsername string
+	AiMode       string
+	AiAccountID  sql.NullInt64
+	AiField      string
+	AiSenders    string
 }
 
 type MfaRecoveryCode struct {

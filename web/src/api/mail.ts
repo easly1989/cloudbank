@@ -21,6 +21,10 @@ export interface Mailbox {
   createdAt: string;
   /** Where an IMAP mailbox's server is; null for Microsoft. */
   imap: IMAPSettings | null;
+  /** How the mailbox's mails are read, with the patterns, the AI or both (#659). */
+  ai: MailboxAI;
+  /** Whether whoever connected the mailbox has AI set up. */
+  aiReady: boolean;
   /**
    * How the server reads the mailbox now: "idle" (told about new mail),
    * "polling" (asks on a timer), "retry" (lost the connection, about to try
@@ -29,6 +33,18 @@ export interface Mailbox {
   mode: "idle" | "polling" | "retry" | "";
   /** The next full check, or the next attempt while retrying; RFC3339 UTC. */
   nextCheckAt: string | null;
+}
+
+/**
+ * How a mailbox uses the AI (#659): the order of patterns and AI, the account
+ * what the AI reads goes to, the field its description fills, and the only
+ * senders whose mails are sent to it.
+ */
+export interface MailboxAI {
+  mode: "patterns" | "patterns_ai" | "ai_patterns" | "ai";
+  accountId: number | null;
+  field: "memo" | "payee";
+  senders: string[];
 }
 
 /** An IMAP mailbox's server and login name (#658); never its password. */
@@ -98,6 +114,8 @@ export interface MailSummary {
   amount: number | null;
   memo: string | null;
   payee: string | null;
+  /** The AI, not a pattern, read the mail. */
+  byAi: boolean;
 }
 
 /** One mail with its text, for the pattern editor. */
@@ -199,6 +217,9 @@ export const pollMicrosoftMail = (walletId: number, flowId: string) =>
 
 export const connectIMAPMail = (walletId: number, input: IMAPMailboxInput) =>
   api.post<Mailbox>(`${base(walletId)}/imap`, input);
+
+export const updateMailboxAI = (walletId: number, id: number, ai: MailboxAI) =>
+  api.put<Mailbox>(`${base(walletId)}/mailboxes/${id}/ai`, ai);
 
 export const updateMailbox = (
   walletId: number,

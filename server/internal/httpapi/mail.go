@@ -25,6 +25,7 @@ func (h *mailHandlers) walletRoutes(r chi.Router) {
 	r.Post("/mail/imap", h.connectIMAP)
 	r.Route("/mail/mailboxes/{mailboxId}", func(r chi.Router) {
 		r.Patch("/", h.update)
+		r.Put("/ai", h.updateAI)
 		r.Delete("/", h.remove)
 		r.Get("/folders", h.folders)
 		r.Post("/check", h.check)
@@ -81,6 +82,8 @@ func (h *mailHandlers) writeErr(w http.ResponseWriter, err error) {
 		// The mail server's own words: "invalid credentials", "application-
 		// specific password required" and the like say what to do next.
 		writeError(w, http.StatusBadRequest, "login_refused", login.Text)
+	case errors.Is(err, mailingest.ErrAINotConfigured):
+		writeError(w, http.StatusConflict, "ai_not_configured", "set up the AI first, in Settings › AI")
 	case errors.Is(err, mailingest.ErrReauth):
 		writeError(w, http.StatusConflict, "reauth", "sign in to Microsoft again")
 	case errors.Is(err, netguard.ErrNotPublic):
@@ -175,6 +178,25 @@ func (h *mailHandlers) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	mb, err := h.svc.Update(r.Context(), wl.ID, id, body.Folder, body.Paused)
+	if err != nil {
+		h.writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, mb)
+}
+
+// updateAI sets how a mailbox uses the AI (#659).
+func (h *mailHandlers) updateAI(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, ok := h.mailboxID(w, r)
+	if !ok {
+		return
+	}
+	var body mailingest.MailboxAI
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	mb, err := h.svc.UpdateAI(r.Context(), wl.ID, id, body)
 	if err != nil {
 		h.writeErr(w, err)
 		return
