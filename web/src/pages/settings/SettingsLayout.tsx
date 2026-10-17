@@ -15,11 +15,12 @@ import { RAIL, SECTION } from "./settingsTheme";
 import { SETTINGS_SECTIONS } from "./sections";
 
 // The sections with a tour of their own (#421): General, where the screen as a
-// whole is introduced, Data, where import and export live, and the bank sync,
-// which moved here from a page of its own (#504).
+// whole is introduced, Data, where import and export live, the bank sync,
+// which moved here from a page of its own (#504), and the bank mails (#677).
 const SECTION_TOURS: Partial<Record<string, TourId>> = {
   general: "settings",
   "bank-sync": "bankSync",
+  mail: "mail",
   data: "data",
 };
 

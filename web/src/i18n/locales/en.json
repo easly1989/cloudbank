@@ -2634,6 +2634,10 @@
       "duplicates": {
         "title": "The same transaction twice?",
         "body": "Imports that look like a transaction you already have show up here, so you can decide which to keep."
+      },
+      "unconfirmed": {
+        "title": "Not confirmed by the bank",
+        "body": "Rows read from a bank mail that the bank has not booked after 5 days. Merge each into the bank's own row, or delete it if the payment never happened."
       }
     },
     "settings": {
@@ -2660,6 +2664,33 @@
       "backup": {
         "title": "Keep a copy",
         "body": "Download a copy you can restore from, and check that the database is sound."
+      }
+    },
+    "mail": {
+      "offer": "New here? Take the bank mails tour",
+      "mailbox": {
+        "title": "Your mailbox",
+        "body": "CloudBank stays connected and reads each new mail as it arrives. Check now reads at once; pause or disconnect it under More."
+      },
+      "folder": {
+        "title": "One folder",
+        "body": "Only the mails that arrive in this folder from now on are read. A folder your mailbox fills with the bank's mails alone is the safest."
+      },
+      "mode": {
+        "title": "How mails are read",
+        "body": "A pattern reads one kind of mail and sends it nowhere. The AI can read the mails no pattern reads, once it is set up in Settings › AI."
+      },
+      "patterns": {
+        "title": "Patterns",
+        "body": "Each turns one kind of bank mail into a transaction on the account you chose. The first pattern that reads a mail wins: drag to change the order."
+      },
+      "history": {
+        "title": "Latest mails",
+        "body": "What became of each mail. Created opens its transaction; Not recognised can start a pattern; Not authenticated means its sender may be forged."
+      },
+      "connect": {
+        "title": "Connect a mailbox",
+        "body": "Microsoft for Outlook.com, Hotmail and Live; an app password for the others. A mailbox that only receives the bank's mails is the safest."
       }
     }
   },
