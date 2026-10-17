@@ -2634,6 +2634,10 @@
       "duplicates": {
         "title": "La même opération deux fois ?",
         "body": "Les imports qui ressemblent à une opération que vous avez déjà apparaissent ici, pour que vous décidiez laquelle garder."
+      },
+      "unconfirmed": {
+        "title": "Non confirmées par la banque",
+        "body": "Des lignes lues dans un e-mail de la banque que la banque n’a pas enregistrées après 5 jours. Fusionnez chacune avec la ligne de la banque, ou supprimez-la si le paiement n’a pas eu lieu."
       }
     },
     "settings": {
@@ -2660,6 +2664,33 @@
       "backup": {
         "title": "Gardez une copie",
         "body": "Téléchargez une copie à partir de laquelle restaurer, et vérifiez que la base de données est saine."
+      }
+    },
+    "mail": {
+      "offer": "Nouveau ici ? Visitez les e-mails de la banque",
+      "mailbox": {
+        "title": "Votre boîte mail",
+        "body": "CloudBank reste connecté et lit chaque nouvel e-mail dès son arrivée. Vérifier maintenant le lit tout de suite ; pour la mettre en pause ou la déconnecter, ouvrez Plus."
+      },
+      "folder": {
+        "title": "Un dossier",
+        "body": "Seuls les e-mails qui arrivent dans ce dossier à partir de maintenant sont lus. Le plus sûr est un dossier qui ne reçoit que les e-mails de la banque."
+      },
+      "mode": {
+        "title": "Lecture des e-mails",
+        "body": "Un motif lit un type d’e-mail et ne l’envoie nulle part. L’IA peut lire ceux qu’aucun motif ne lit, une fois configurée dans Paramètres › IA."
+      },
+      "patterns": {
+        "title": "Motifs",
+        "body": "Chacun transforme un type d’e-mail de la banque en opération sur le compte choisi. Le premier motif qui lit un e-mail l’emporte : faites-les glisser pour changer l’ordre."
+      },
+      "history": {
+        "title": "Derniers e-mails",
+        "body": "Ce qu’est devenu chaque e-mail. Créée ouvre son opération ; depuis Non reconnu, vous pouvez créer un motif ; Non authentifié veut dire que l’expéditeur pourrait être falsifié."
+      },
+      "connect": {
+        "title": "Connecter une boîte mail",
+        "body": "Microsoft pour Outlook.com, Hotmail et Live ; un mot de passe d’application pour les autres. Le plus sûr est une boîte qui ne reçoit que les e-mails de la banque."
       }
     }
   },

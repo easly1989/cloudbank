@@ -2634,6 +2634,10 @@
       "duplicates": {
         "title": "Dieselbe Buchung zweimal?",
         "body": "Importe, die wie eine schon vorhandene Buchung aussehen, erscheinen hier, damit du entscheiden kannst, welche du behältst."
+      },
+      "unconfirmed": {
+        "title": "Von der Bank nicht bestätigt",
+        "body": "Zeilen aus einer Bank-E-Mail, die die Bank nach 5 Tagen noch nicht gebucht hat. Führe jede mit der Zeile der Bank zusammen oder lösche sie, wenn die Zahlung nie stattfand."
       }
     },
     "settings": {
@@ -2660,6 +2664,33 @@
       "backup": {
         "title": "Eine Kopie aufbewahren",
         "body": "Lade eine Kopie zum Wiederherstellen herunter und prüfe, ob die Datenbank in Ordnung ist."
+      }
+    },
+    "mail": {
+      "offer": "Neu hier? Mach den Rundgang durch die Bank-E-Mails",
+      "mailbox": {
+        "title": "Dein Postfach",
+        "body": "CloudBank bleibt verbunden und liest jede neue E-Mail, sobald sie ankommt. Jetzt prüfen liest sofort; pausieren oder trennen kannst du es unter Mehr."
+      },
+      "folder": {
+        "title": "Ein Ordner",
+        "body": "Gelesen werden nur die E-Mails, die ab jetzt in diesem Ordner ankommen. Am sichersten ist ein Ordner, der nur die E-Mails der Bank bekommt."
+      },
+      "mode": {
+        "title": "Wie E-Mails gelesen werden",
+        "body": "Ein Muster liest eine Art E-Mail und schickt sie nirgendwohin. Die KI kann die E-Mails lesen, die kein Muster liest, sobald sie unter Einstellungen › KI eingerichtet ist."
+      },
+      "patterns": {
+        "title": "Muster",
+        "body": "Jedes macht aus einer Art Bank-E-Mail eine Buchung auf dem gewählten Konto. Das erste Muster, das eine E-Mail liest, gewinnt: Zieh sie, um die Reihenfolge zu ändern."
+      },
+      "history": {
+        "title": "Neueste E-Mails",
+        "body": "Was aus jeder E-Mail wurde. Erstellt öffnet ihre Buchung; bei Nicht erkannt kannst du ein Muster erstellen; Nicht authentifiziert heißt, der Absender könnte gefälscht sein."
+      },
+      "connect": {
+        "title": "Postfach verbinden",
+        "body": "Microsoft für Outlook.com, Hotmail und Live; ein App-Passwort für die anderen. Am sichersten ist ein Postfach, das nur die E-Mails der Bank bekommt."
       }
     }
   },

@@ -81,7 +81,7 @@ export function MailAI({
   const ready = !problems.account && !problems.senders;
 
   return (
-    <Stack gap="sm" data-testid="mail-ai">
+    <Stack gap="sm" data-testid="mail-ai" data-tour="mail-mode">
       <Select
         label={t("mail.ai.mode")}
         description={t("mail.ai.modeHint")}
