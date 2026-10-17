@@ -24,6 +24,7 @@ import {
   IconDeviceFloppy,
   IconLock,
   IconPaperclip,
+  IconMail,
   IconPencil,
   IconTrash,
 } from "@tabler/icons-react";
@@ -386,7 +387,16 @@ export function RegisterTable({
                 ? (accountName(row.original.transferAccountId) ?? t("transfers.transfer"))
                 : row.original.payeeName
             }
-            icon={row.original.transferId != null ? <IconArrowsExchange size={14} /> : undefined}
+            icon={
+              row.original.transferId != null ? (
+                <IconArrowsExchange size={14} />
+              ) : window.location.search.includes("mock=mail") && (row.index === 1 || row.index === 3) ? (
+                // PROTOTYPE (#660): the "from a mail" mark.
+                <span title="Dalla mail: la banca non l'ha ancora confermata" style={{ display: "flex" }}>
+                  <IconMail size={14} style={{ flexShrink: 0, opacity: 0.6 }} />
+                </span>
+              ) : undefined
+            }
             sub={leadSub("payee", row.original, t)}
           />
         ),
@@ -1282,15 +1292,18 @@ function LeadCell({ lead, sub, icon }: { lead?: string; sub?: Sub; icon?: ReactN
   return (
     <Stack gap={2} style={{ minWidth: 0 }}>
       <Group gap={4} wrap="nowrap" style={{ minWidth: 0 }}>
-        {icon}
+        {lead && icon}
         <Text fz={ROW_TYPE.lead.fz} fw={ROW_TYPE.lead.fw} truncate>
           {lead}
         </Text>
       </Group>
       {sub && (
-        <Text fz={ROW_TYPE.subLine.fz} c={sub.attention ? attentionColor : "dimmed"} truncate>
-          {sub.text}
-        </Text>
+        <Group gap={4} wrap="nowrap" style={{ minWidth: 0 }}>
+          {!lead && icon}
+          <Text fz={ROW_TYPE.subLine.fz} c={sub.attention ? attentionColor : "dimmed"} truncate>
+            {sub.text}
+          </Text>
+        </Group>
       )}
     </Stack>
   );

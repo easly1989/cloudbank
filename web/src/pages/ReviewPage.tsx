@@ -50,6 +50,7 @@ import { PageHeader } from "../components/PageHeader";
 import { amountColor, errorColor } from "../amountTone";
 import { compareRows, type CompareField, type CompareRow, type Described } from "./reviewCompare";
 import { notifyError } from "../notifyError";
+import { UnconfirmedPrototype } from "./ReviewUnconfirmed.prototype";
 
 // The label each compared field goes by (#484).
 // Compared fields hidden in privacy mode (#626): who, and what was written.
@@ -429,7 +430,8 @@ export function ReviewPage() {
     );
   };
 
-  const done = review.isSuccess && needs.length === 0 && dups.length === 0;
+  const mock = params.get("mock") === "unconfirmed";
+  const done = review.isSuccess && needs.length === 0 && dups.length === 0 && !mock;
   const scopeName = onlyAccount ? accountById.get(onlyAccount)?.name : undefined;
 
   return (
@@ -501,6 +503,8 @@ export function ReviewPage() {
           )}
         </Box>
       )}
+
+      {mock && <UnconfirmedPrototype accounts={accounts} variant={params.get("v") ?? "a"} />}
 
       {!done && (
         <Card withBorder data-tour="review-categories">
