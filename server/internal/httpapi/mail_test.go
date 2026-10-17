@@ -68,6 +68,7 @@ func TestMailStaysInItsWallet(t *testing.T) {
 		{http.MethodPost, base + "/imap"},
 		{http.MethodGet, base + "/mailboxes/1/folders"},
 		{http.MethodPatch, base + "/mailboxes/1"},
+		{http.MethodPut, base + "/mailboxes/1/ai"},
 		{http.MethodPost, base + "/mailboxes/1/check"},
 		{http.MethodGet, base + "/mailboxes/1/messages"},
 		{http.MethodDelete, base + "/mailboxes/1"},
@@ -219,5 +220,48 @@ func TestMailIMAPRefusesThisMachine(t *testing.T) {
 	resp.Body.Close()
 	if !ov.Available || !ov.Microsoft || len(ov.Mailboxes) != 0 {
 		t.Fatalf("overview = %+v", ov)
+	}
+}
+
+// A mode with the AI needs the AI set up by whoever connected the mailbox.
+func TestMailAINeedsTheAISetUp(t *testing.T) {
+	k, err := secrets.New("test-secret-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	secrets.Configure(k)
+	t.Cleanup(func() { secrets.Configure(nil) })
+
+	c := newTestAPI(t)
+	wid := createWalletWithBase(t, c, "EUR")
+	mb, err := db.New(c.st.Write()).InsertMailbox(context.Background(), db.InsertMailboxParams{
+		WalletID: wid, Provider: "microsoft", Address: "notifiche.demo@example.com", Secret: "x",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := "/api/v1/wallets/" + strconv.FormatInt(wid, 10) + "/mail/mailboxes/" + strconv.FormatInt(mb.ID, 10) + "/ai"
+	resp := c.do(http.MethodPut, path, map[string]any{"mode": "ai", "senders": []string{"banca.example"}}, true)
+	var e struct {
+		Error struct {
+			Code string `json:"code"`
+		} `json:"error"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&e)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusConflict || e.Error.Code != "ai_not_configured" {
+		t.Fatalf("ai mode = %d %q, want 409 ai_not_configured", resp.StatusCode, e.Error.Code)
+	}
+	resp = c.do(http.MethodPut, path, map[string]any{"mode": "patterns"}, true)
+	var got struct {
+		AI struct {
+			Mode string `json:"mode"`
+		} `json:"ai"`
+		AIReady bool `json:"aiReady"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&got)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK || got.AI.Mode != "patterns" || got.AIReady {
+		t.Fatalf("patterns = %d %+v", resp.StatusCode, got)
 	}
 }

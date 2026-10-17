@@ -1296,6 +1296,28 @@
       "errPassword": "Para conectar é preciso a senha",
       "errHost": "O servidor é um nome como imap.example.com",
       "errPort": "Um número de 1 a 65535"
+    },
+    "ai": {
+      "mode": "Como os e-mails são lidos",
+      "modeHint": "A IA pode ler os e-mails que nenhum padrão lê, ou substituir os padrões.",
+      "modes": {
+        "patterns": "Só os padrões",
+        "patterns_ai": "Primeiro os padrões, depois a IA",
+        "ai_patterns": "Primeiro a IA, depois os padrões",
+        "ai": "Só a IA"
+      },
+      "needAI": "Para usar a IA, configure-a antes em <a>Configurações › IA</a>.",
+      "warning": "O texto dos e-mails dos remetentes indicados vai <b>para o provedor de IA configurado em Configurações › IA</b>, com números de cartão e IBANs ocultos. A IA pode errar um valor, uma data ou a direção: confira o que ela escreve.",
+      "account": "Conta",
+      "accountHint": "Para onde vai o que a IA lê: a conta nunca é escolhida pela IA.",
+      "field": "A descrição vai em",
+      "senders": "Remetentes do banco",
+      "sendersHint": "Para a IA vão só os e-mails autenticados desses endereços ou domínios.",
+      "errAccount": "Escolha a conta",
+      "errSenders": "Indique pelo menos um remetente",
+      "save": "Salvar",
+      "saved": "O modo de ler os e-mails foi salvo.",
+      "readByAI": "Lido pela IA"
     }
   },
   "search": {
@@ -2765,6 +2787,7 @@
     },
     "host_not_public": "Esse servidor não está na internet: o CloudBank não se conecta à própria rede.",
     "unreachable": "O servidor de e-mail não responde: confira o nome e a porta.",
-    "tls_failed": "Não foi possível criptografar a conexão com o servidor de e-mail."
+    "tls_failed": "Não foi possível criptografar a conexão com o servidor de e-mail.",
+    "ai_not_configured": "Configure antes a IA, em Configurações › IA."
   }
 }

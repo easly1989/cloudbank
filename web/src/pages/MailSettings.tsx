@@ -34,6 +34,7 @@ import {
   IconMail,
   IconRefresh,
   IconServer,
+  IconSparkles,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
@@ -63,6 +64,7 @@ import { useDateFormat } from "../dates";
 import { formatMinor } from "../money";
 import { notifyError } from "../notifyError";
 import { ImapConnect } from "./mail/ImapConnect";
+import { MailAI } from "./mail/MailAI";
 import { providerForServer } from "./mail/imapProviders";
 import { PatternList } from "./mail/PatternList";
 import { PatternSheet } from "./mail/PatternSheet";
@@ -469,6 +471,15 @@ function MailboxCard({
           disabled={update.isPending}
         />
 
+        <MailAI
+          // A change saved elsewhere starts the form again from it.
+          key={JSON.stringify(mailbox.ai)}
+          walletId={walletId}
+          mailbox={mailbox}
+          accounts={accounts.data ?? []}
+          patterns={patterns.data ?? []}
+        />
+
         <Divider />
 
         <PatternList
@@ -636,6 +647,20 @@ function MailOutcome({
   return (
     <Group gap={6} wrap="wrap" style={{ minWidth: 0, maxWidth: "100%", rowGap: 4 }}>
       {badge}
+      {mail.byAi && (
+        <Tooltip label={t("mail.ai.readByAI")}>
+          <Badge
+            color="violet"
+            variant="outline"
+            size="sm"
+            leftSection={<IconSparkles size={11} />}
+            style={{ flexShrink: 0 }}
+            aria-label={t("mail.ai.readByAI")}
+          >
+            AI
+          </Badge>
+        </Tooltip>
+      )}
       {next}
     </Group>
   );

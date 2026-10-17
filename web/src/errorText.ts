@@ -62,6 +62,7 @@ const TRANSLATED = new Set([
   "host_not_public",
   "unreachable",
   "tls_failed",
+  "ai_not_configured",
 ]);
 
 /**

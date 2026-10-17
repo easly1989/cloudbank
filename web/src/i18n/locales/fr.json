@@ -1296,6 +1296,28 @@
       "errPassword": "Le mot de passe est nécessaire pour se connecter",
       "errHost": "Le serveur est un nom comme imap.example.com",
       "errPort": "Un nombre de 1 à 65535"
+    },
+    "ai": {
+      "mode": "Lecture des e-mails",
+      "modeHint": "L’IA peut lire les e-mails qu’aucun motif ne lit, ou remplacer les motifs.",
+      "modes": {
+        "patterns": "Les motifs seulement",
+        "patterns_ai": "D’abord les motifs, puis l’IA",
+        "ai_patterns": "D’abord l’IA, puis les motifs",
+        "ai": "L’IA seulement"
+      },
+      "needAI": "Pour utiliser l’IA, configurez-la d’abord dans <a>Paramètres › IA</a>.",
+      "warning": "Le texte des e-mails des expéditeurs indiqués est envoyé <b>au fournisseur d’IA configuré dans Paramètres › IA</b>, numéros de carte et IBAN masqués. L’IA peut se tromper sur un montant, une date ou le sens : vérifiez ce qu’elle écrit.",
+      "account": "Compte",
+      "accountHint": "Où va ce que lit l’IA : ce n’est jamais l’IA qui choisit le compte.",
+      "field": "La description va dans",
+      "senders": "Expéditeurs de la banque",
+      "sendersHint": "Seuls les e-mails authentifiés de ces adresses ou domaines sont envoyés à l’IA.",
+      "errAccount": "Choisissez le compte",
+      "errSenders": "Indiquez au moins un expéditeur",
+      "save": "Enregistrer",
+      "saved": "La lecture des e-mails est enregistrée.",
+      "readByAI": "Lu par l’IA"
     }
   },
   "search": {
@@ -2765,6 +2787,7 @@
     },
     "host_not_public": "Ce serveur n’est pas sur internet : CloudBank ne se connecte pas à son propre réseau.",
     "unreachable": "Le serveur de messagerie ne répond pas : vérifiez son nom et son port.",
-    "tls_failed": "La connexion au serveur de messagerie n’a pas pu être chiffrée."
+    "tls_failed": "La connexion au serveur de messagerie n’a pas pu être chiffrée.",
+    "ai_not_configured": "Configurez d’abord l’IA, dans Paramètres › IA."
   }
 }

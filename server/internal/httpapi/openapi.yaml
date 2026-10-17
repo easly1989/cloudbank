@@ -540,6 +540,31 @@ paths:
       responses:
         "204": { description: Removed. }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/ai:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
+    put:
+      operationId: updateMailboxAI
+      summary: Choose how the mailbox's mails are read, with the patterns, the AI or both
+      description: >-
+        A mode with the AI uses the AI settings of whoever connected the mailbox, and
+        needs them complete. Only authenticated mails from the listed senders (addresses,
+        or domains with their subdomains) are ever sent to the AI provider, with card
+        numbers, IBANs and other long numbers hidden first. The AI reads the amount, the
+        date, the direction and a description, which fills the chosen field; the account
+        is always the one given here. An AI answer that is not a usable payment leaves the
+        mail unrecognised.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MailboxAI" }
+      responses:
+        "200": { description: The mailbox., content: { application/json: { schema: { $ref: "#/components/schemas/Mailbox" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "ai_not_configured: a mode with the AI was chosen, and whoever connected the mailbox has no AI set up." }
   /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/folders:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -3128,6 +3153,8 @@ components:
           allOf: [{ $ref: "#/components/schemas/IMAPSettings" }]
           nullable: true
           description: "where an IMAP mailbox's server is; null for Microsoft"
+        ai: { $ref: "#/components/schemas/MailboxAI" }
+        aiReady: { type: boolean, description: "whether whoever connected the mailbox has AI set up, so a mode with the AI can be chosen" }
         mode:
           type: string
           enum: ["idle", "polling", "retry", ""]
@@ -3137,7 +3164,19 @@ components:
             without IDLE), retry (the connection was lost and is about to be
             tried again), or empty when nothing is listening.
         nextCheckAt: { type: string, nullable: true, description: "the next full check, or the next attempt while retrying; RFC3339 UTC" }
-      required: [id, provider, address, folder, paused, status, statusDetail, lastCheckAt, lastMailAt, createdAt, imap, mode, nextCheckAt]
+      required: [id, provider, address, folder, paused, status, statusDetail, lastCheckAt, lastMailAt, createdAt, imap, ai, aiReady, mode, nextCheckAt]
+    MailboxAI:
+      type: object
+      description: How a mailbox uses the AI (#659).
+      properties:
+        mode:
+          type: string
+          enum: [patterns, patterns_ai, ai_patterns, ai]
+          description: "patterns only; the patterns, then the AI for what none read; the AI, then the patterns for what it did not take for a payment; the AI only"
+        accountId: { type: integer, format: int64, nullable: true, description: "where what the AI reads goes; required with the AI" }
+        field: { type: string, enum: [memo, payee], description: "the field the AI's description fills" }
+        senders: { type: array, items: { type: string }, description: "the bank's senders, addresses or domains; required with the AI" }
+      required: [mode]
     IMAPSettings:
       type: object
       description: An IMAP mailbox's server and login name; never its password.
@@ -3185,8 +3224,9 @@ components:
           type: string
           enum: [unrecognized, unverified, created, duplicate, failed]
           description: >-
-            unverified: a pattern would read it, but the sender was not
-            authenticated; duplicate: the account already has its transaction.
+            unverified: a pattern would read it, or it is from one of the
+            senders the AI reads, but the sender was not authenticated;
+            duplicate: the account already has its transaction.
         detail: { type: string, description: "why it failed" }
         authenticated: { type: boolean }
         patternId: { type: integer, format: int64, nullable: true }
@@ -3195,7 +3235,8 @@ components:
         amount: { type: integer, format: int64, nullable: true, description: "that transaction's amount, minor units" }
         memo: { type: string, nullable: true, description: "that transaction's memo" }
         payee: { type: string, nullable: true, description: "that transaction's payee" }
-      required: [id, sender, subject, receivedAt, outcome, detail, authenticated, patternId, transactionId, accountId, amount, memo, payee]
+        byAi: { type: boolean, description: "the AI, not a pattern, read the mail (#659)" }
+      required: [id, sender, subject, receivedAt, outcome, detail, authenticated, patternId, transactionId, accountId, amount, memo, payee, byAi]
     MailDetail:
       allOf:
         - { $ref: "#/components/schemas/MailSummary" }
