@@ -36,15 +36,21 @@ import {
   type MailPattern,
   type MailPatternInput,
   type MailSummary,
+  savePreferences,
   testMailPattern,
   updateMailPattern,
 } from "../../api/client";
 import { ApiError } from "../../api/core";
+import { useAuth } from "../../auth/AuthProvider";
 import { ErrorMessage } from "../../components/ErrorMessage";
 import { SideSheet } from "../../components/SideSheet";
 import { useDateFormat } from "../../dates";
 import { formatMinor } from "../../money";
 import { notifyError } from "../../notifyError";
+import { TourButton } from "../../onboarding/TourButton";
+import { useTour } from "../../onboarding/tourContext";
+import { TourOffer } from "../../onboarding/TourOffer";
+import { TOURS, toursSeen } from "../../onboarding/tours";
 import { PAYMENT_MODES } from "../../transactionEnums";
 import {
   buildPattern,
@@ -111,6 +117,24 @@ export function PatternSheet({
   const qc = useQueryClient();
   const fmtDate = useDateFormat();
   const saved = useMemo(() => (pattern ? readEditorState(pattern.editor) : null), [pattern]);
+
+  // The editor's tour is offered once, the first time a pattern is made, and
+  // being offered counts as seen, as a page's tour does (#678).
+  const { user } = useAuth();
+  const { start } = useTour();
+  const [offer, setOffer] = useState(
+    () =>
+      !pattern &&
+      (user?.preferences?.tourOffers ?? true) &&
+      !toursSeen(user?.preferences).includes("patternEditor"),
+  );
+  useEffect(() => {
+    if (!offer) return;
+    const seen = toursSeen(user?.preferences);
+    void savePreferences(qc, { toursSeen: [...seen, "patternEditor"], tutorialSeen: undefined });
+    // Once, as the sheet opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Left unset, a new pattern's name and sender come from its mail.
   const [nameSet, setName] = useState<string | null>(pattern ? pattern.name : null);
@@ -411,6 +435,7 @@ export function PatternSheet({
       onClose={onClose}
       title={pattern ? t("mail.editor.editTitle") : t("mail.editor.newTitle")}
       testId="pattern-sheet"
+      headerActions={<TourButton id="patternEditor" size={28} round />}
       foot={
         <>
           <Button variant="default" onClick={onClose}>
@@ -422,6 +447,18 @@ export function PatternSheet({
         </>
       }
     >
+      {offer && (
+        <TourOffer
+          inline
+          id="patternEditor"
+          steps={TOURS.patternEditor.length}
+          onAccept={() => {
+            setOffer(false);
+            start("patternEditor");
+          }}
+          onDecline={() => setOffer(false)}
+        />
+      )}
       {samples.length === 1 ? (
         <Select
           label={t("mail.editor.sample")}
@@ -482,6 +519,7 @@ export function PatternSheet({
             radius="md"
             ref={sampleRef}
             data-testid="pattern-sample"
+            data-tour="pattern-sample"
             data-cb-sensitive
             style={{
               lineHeight: 1.9,
@@ -527,7 +565,14 @@ export function PatternSheet({
           </Paper>
         )}
         {pick && !manual ? (
-          <Paper withBorder shadow="sm" p={6} radius="md" data-testid="pattern-pick">
+          <Paper
+            withBorder
+            shadow="sm"
+            p={6}
+            radius="md"
+            data-testid="pattern-pick"
+            data-tour="pattern-pick"
+          >
             <Group gap={4} wrap="wrap">
               <Text size="xs" c="dimmed" px={4} truncate maw="100%" data-cb-sensitive>
                 {t("mail.editor.is", { text: text.slice(pick.start, pick.end) })}
@@ -570,7 +615,7 @@ export function PatternSheet({
           </Paper>
         ) : (
           !manual && (
-            <Text size="xs" c="dimmed">
+            <Text size="xs" c="dimmed" data-tour="pattern-pick">
               {t("mail.editor.pickHint")}
             </Text>
           )
@@ -578,7 +623,7 @@ export function PatternSheet({
       </Stack>
 
       {!manual && (
-        <Stack gap={6}>
+        <Stack gap={6} data-tour="pattern-fields">
           <Text size="sm" fw={500}>
             {t("mail.editor.fields")}
           </Text>
@@ -628,7 +673,7 @@ export function PatternSheet({
         </Stack>
       )}
 
-      <Stack gap="xs">
+      <Stack gap="xs" data-tour="pattern-when">
         <Text size="sm" fw={500}>
           {t("mail.editor.when")}
         </Text>
@@ -664,6 +709,7 @@ export function PatternSheet({
       </Stack>
 
       <Select
+        wrapperProps={{ "data-tour": "pattern-account" }}
         label={t("mail.editor.account")}
         description={t("mail.editor.accountHint")}
         withAsterisk
@@ -785,15 +831,20 @@ export function PatternSheet({
         onChange={(e) => setApplyRules(e.currentTarget.checked)}
       />
 
-      {!ready && !input.accountId && body.includes("(?P<amount>") && (
-        <Text size="xs" c="dimmed">
-          {t("mail.editor.needAccount")}
+      {!ready && (
+        // Where the test will be, so the tour has something to point at.
+        <Text size="xs" c="dimmed" data-tour="pattern-test">
+          {t(
+            !input.accountId && body.includes("(?P<amount>")
+              ? "mail.editor.needAccount"
+              : "mail.editor.testHint",
+          )}
         </Text>
       )}
       {ready && (
         // Announced as it changes: the result arrives while the reader is
         // still selecting or typing.
-        <div role="status" aria-atomic="true">
+        <div role="status" aria-atomic="true" data-tour="pattern-test">
           <TestResult
             pending={test.isFetching && !tried}
             error={test.error}
@@ -895,6 +946,7 @@ export function PatternSheet({
         type="button"
         onClick={() => setAdvanced((a) => !a)}
         style={{ alignSelf: "flex-start" }}
+        data-tour="pattern-advanced"
       >
         {advanced ? t("mail.editor.hideAdvanced") : t("mail.editor.advanced")}
       </Anchor>

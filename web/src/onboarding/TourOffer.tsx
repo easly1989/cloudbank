@@ -14,18 +14,21 @@ export function TourOffer({
   steps,
   onAccept,
   onDecline,
+  inline = false,
 }: {
   id: TourId;
   steps: number;
   onAccept: () => void;
   onDecline: () => void;
+  /** In the flow of a sheet rather than in the page's corner. */
+  inline?: boolean;
 }) {
   const { t } = useTranslation();
   const titleId = useId();
   return (
     <Paper
       component="section"
-      className="cb-tour-offer"
+      className={inline ? undefined : "cb-tour-offer"}
       aria-labelledby={titleId}
       aria-live="polite"
       data-tour-offer={id}

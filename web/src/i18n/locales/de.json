@@ -1289,7 +1289,8 @@
       "expects": "Das Muster sucht",
       "mailHas": "Diese E-Mail hat",
       "addSample": "Die Felder auch in dieser E-Mail markieren",
-      "addSampleHint": "Das Muster behält nur, was die markierten E-Mails gemeinsam haben."
+      "addSampleHint": "Das Muster behält nur, was die markierten E-Mails gemeinsam haben.",
+      "testHint": "Markiere den Betrag und wähle das Konto: Dann probiert CloudBank das Muster an den letzten E-Mails dieses Absenders aus."
     },
     "imap": {
       "title": "Per IMAP verbinden",
@@ -2691,6 +2692,37 @@
       "connect": {
         "title": "Postfach verbinden",
         "body": "Microsoft für Outlook.com, Hotmail und Live; ein App-Passwort für die anderen. Am sichersten ist ein Postfach, das nur die E-Mails der Bank bekommt."
+      }
+    },
+    "patternEditor": {
+      "offer": "Erstes Muster? Mach den Rundgang durch den Editor",
+      "mail": {
+        "title": "Die Beispiel-E-Mail",
+        "body": "Eine echte E-Mail deiner Bank. Markiere ein Stück ihres Textes mit der Maus oder dem Finger."
+      },
+      "pick": {
+        "title": "Sag, was es ist",
+        "body": "Sobald du markierst, erscheint hier eine Leiste. Fang mit dem Betrag an; der Händler kommt in Notiz oder Zahlungspartner."
+      },
+      "fields": {
+        "title": "Felder",
+        "body": "Was das Muster aus jeder solchen E-Mail übernimmt."
+      },
+      "when": {
+        "title": "Wann es gilt",
+        "body": "Grenze es über den Betreff ein, wenn ein Absender mehrere Arten von E-Mails schreibt."
+      },
+      "account": {
+        "title": "Konto und Richtung",
+        "body": "Das Konto wird nie geraten. Darunter Laut E-Mail, wenn eine Art E-Mail Ein- und Ausgänge abdeckt."
+      },
+      "test": {
+        "title": "Der Test",
+        "body": "Laufend an den letzten E-Mails des Absenders ausprobiert: was aus jeder wird und wo eine E-Mail, die es nicht liest, nicht mehr passt."
+      },
+      "advanced": {
+        "title": "Erweitert",
+        "body": "Der Ausdruck, den die Markierungen bilden, für Fälle, die Markierungen nicht ausdrücken können."
       }
     }
   },

@@ -1289,7 +1289,8 @@
       "expects": "O padrão procura",
       "mailHas": "Este e-mail tem",
       "addSample": "Marcar os campos neste e-mail também",
-      "addSampleHint": "O padrão manterá só o que os e-mails marcados têm em comum."
+      "addSampleHint": "O padrão manterá só o que os e-mails marcados têm em comum.",
+      "testHint": "Selecione o valor e escolha a conta: o CloudBank então testa o padrão nos últimos e-mails deste remetente."
     },
     "imap": {
       "title": "Conectar por IMAP",
@@ -2691,6 +2692,37 @@
       "connect": {
         "title": "Conectar uma caixa de e-mail",
         "body": "Microsoft para Outlook.com, Hotmail e Live; uma senha de app para as demais. O mais seguro é uma caixa que recebe apenas os e-mails do banco."
+      }
+    },
+    "patternEditor": {
+      "offer": "Primeiro padrão? Faça o tour do editor",
+      "mail": {
+        "title": "O e-mail de exemplo",
+        "body": "Um e-mail real do seu banco. Selecione um trecho do texto com o mouse ou com o dedo."
+      },
+      "pick": {
+        "title": "Diga o que é",
+        "body": "Ao selecionar, aparece uma barra aqui. Comece pelo valor; o estabelecimento vai em Observação ou Beneficiário."
+      },
+      "fields": {
+        "title": "Campos",
+        "body": "O que o padrão pega de cada e-mail como este."
+      },
+      "when": {
+        "title": "Quando se aplica",
+        "body": "Restrinja pelo assunto quando um mesmo remetente envia vários tipos de e-mail."
+      },
+      "account": {
+        "title": "Conta e direção",
+        "body": "A conta nunca é adivinhada. Abaixo, Conforme o e-mail quando um mesmo tipo de e-mail cobre entradas e saídas."
+      },
+      "test": {
+        "title": "O teste",
+        "body": "Testado à medida que você avança nos últimos e-mails do remetente: no que cada um se transforma, e onde um e-mail que ele não lê deixa de corresponder."
+      },
+      "advanced": {
+        "title": "Avançado",
+        "body": "A expressão que as seleções constroem, para os casos que as seleções não conseguem expressar."
       }
     }
   },
