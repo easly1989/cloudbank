@@ -951,7 +951,19 @@
     "manual": "Manual",
     "noMemo": "(no description)",
     "confirmDismissAllTitle": "Mark all {{count}} pairs as not duplicates?",
-    "confirmDismissAllBody": "They will not be shown here again. Real duplicates can still be found by amount and date."
+    "confirmDismissAllBody": "They will not be shown here again. Real duplicates can still be found by amount and date.",
+    "fromMail": "From a mail",
+    "unconfirmed": "Not confirmed by the bank ({{count}})",
+    "unconfirmedHint": "Read from a mail, and after 5 days the bank has still not confirmed them. The real charge is often different: a fuel pump that holds €100 and charges €40, a hotel, a payment in another currency. <b>Merge</b> keeps the bank's amount, date and reference, and the mail's memo, category and tags.",
+    "mailAge_one": "from a mail, {{count}} day ago",
+    "mailAge_other": "from a mail, {{count}} days ago",
+    "bankRows": "Bank rows nearby",
+    "noBankRows": "No bank row nearby: if the payment never happened, delete it.",
+    "merge": "Merge",
+    "reversal": "Payment reversed",
+    "reversalHint": "{{account}} · two rows from mails that cancel out: the bank usually books neither",
+    "deleteBoth": "Delete both",
+    "confirmDeleteBothTitle": "Delete both rows?"
   },
   "banksync": {
     "title": "Bank sync",
@@ -1440,7 +1452,8 @@
     "reconciledAll": "everything reconciled up to here",
     "setAside": "Set aside for goals",
     "setAsideFree": "{{amount}} free",
-    "setAsideShort": "{{amount}} more than the account holds"
+    "setAsideShort": "{{amount}} more than the account holds",
+    "fromMail": "From a mail: the bank has not confirmed it yet"
   },
   "figureStrip": {
     "show": "Show figure {{n}} of {{count}}"

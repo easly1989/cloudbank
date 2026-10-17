@@ -50,6 +50,7 @@ import { PageHeader } from "../components/PageHeader";
 import { amountColor, errorColor } from "../amountTone";
 import { compareRows, type CompareField, type CompareRow, type Described } from "./reviewCompare";
 import { notifyError } from "../notifyError";
+import { ReviewUnconfirmed } from "./ReviewUnconfirmed";
 
 // The label each compared field goes by (#484).
 // Compared fields hidden in privacy mode (#626): who, and what was written.
@@ -129,6 +130,12 @@ export function ReviewPage() {
   );
   const dups = (review.data?.duplicates ?? []).filter(
     (p) => !onlyAccount || p.a.accountId === onlyAccount || p.b.accountId === onlyAccount,
+  );
+  const unconfirmed = (review.data?.unconfirmed ?? []).filter(
+    (r) => !onlyAccount || r.accountId === onlyAccount,
+  );
+  const reversals = (review.data?.reversals ?? []).filter(
+    (p) => !onlyAccount || p.payment.accountId === onlyAccount,
   );
   const accountById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
   // Where the page was opened from, and so where its way out goes (#570):
@@ -309,7 +316,11 @@ export function ReviewPage() {
       <Text fw={700} size="sm" ff="monospace">
         {fmtDate(tx.date)}
       </Text>
-      {tx.importRef ? (
+      {tx.importRef?.startsWith("mail:") ? (
+        <Badge size="xs" variant="dot" color="violet">
+          {t("review.fromMail")}
+        </Badge>
+      ) : tx.importRef ? (
         <Badge size="xs" variant="dot" color="blue">
           {t("review.fromBank")}
         </Badge>
@@ -429,7 +440,12 @@ export function ReviewPage() {
     );
   };
 
-  const done = review.isSuccess && needs.length === 0 && dups.length === 0;
+  const done =
+    review.isSuccess &&
+    needs.length === 0 &&
+    dups.length === 0 &&
+    unconfirmed.length === 0 &&
+    reversals.length === 0;
   const scopeName = onlyAccount ? accountById.get(onlyAccount)?.name : undefined;
 
   return (
@@ -500,6 +516,18 @@ export function ReviewPage() {
             </Button>
           )}
         </Box>
+      )}
+
+      {(unconfirmed.length > 0 || reversals.length > 0) && (
+        <ReviewUnconfirmed
+          walletId={walletId}
+          unconfirmed={unconfirmed}
+          reversals={reversals}
+          accountById={accountById}
+          fmtFor={fmtFor}
+          categoryName={categoryName}
+          onChanged={refresh}
+        />
       )}
 
       {!done && (

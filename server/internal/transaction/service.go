@@ -436,6 +436,9 @@ func (s *Service) List(ctx context.Context, accountID int64, limit, offset int64
 type RegisterRow struct {
 	Transaction
 	RunningBalance int64 `json:"runningBalance"`
+	// FromMail marks a row read from a bank mail that the bank has not booked
+	// yet (#660).
+	FromMail bool `json:"fromMail"`
 }
 
 // RegisterSummary holds an account's headline balances (HomeBank semantics).
@@ -473,6 +476,7 @@ func (s *Service) Register(ctx context.Context, accountID int64) ([]RegisterRow,
 				AttachmentCount: int(r.AttachmentCount),
 			},
 			RunningBalance: acc.InitialBalance + r.RunningDelta,
+			FromMail:       r.FromMail != 0,
 		}
 		if r.PayeeName.Valid {
 			row.PayeeName = r.PayeeName.String

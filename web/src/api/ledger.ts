@@ -183,6 +183,8 @@ export const deleteTag = (walletId: number, tagId: number) =>
 
 export interface RegisterRow extends Transaction {
   runningBalance: number;
+  /** Read from a bank mail, and not booked by the bank yet (#660). */
+  fromMail: boolean;
 }
 
 export interface RegisterSummary {
@@ -294,9 +296,21 @@ export interface DuplicatePair {
   a: ReviewTxn;
   b: ReviewTxn;
 }
+/** A row from a bank mail the bank has not booked after 5 days (#660). */
+export interface UnconfirmedRow extends ReviewTxn {
+  /** Up to 3 bank rows of its account within 7 days, nearest amount first, then date. */
+  bankRows: ReviewTxn[];
+}
+/** A refused card's payment and its reversal, both from mails, never booked. */
+export interface ReversalPair {
+  payment: ReviewTxn;
+  reversal: ReviewTxn;
+}
 export interface ReviewResult {
   needsCategory: ReviewTxn[];
   duplicates: DuplicatePair[];
+  unconfirmed: UnconfirmedRow[];
+  reversals: ReversalPair[];
 }
 
 export const getTransactionReview = (walletId: number) =>
@@ -313,3 +327,6 @@ export const dismissAllDuplicatePairs = (walletId: number) =>
 
 export const mergeTransactions = (walletId: number, keepId: number, dropId: number) =>
   api.post<void>(`/api/v1/wallets/${walletId}/transactions/merge`, { keepId, dropId });
+
+export const mergeMailTransaction = (walletId: number, mailId: number, bankId: number) =>
+  api.post<void>(`/api/v1/wallets/${walletId}/transactions/merge-mail`, { mailId, bankId });

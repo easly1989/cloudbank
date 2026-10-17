@@ -951,7 +951,19 @@
     "manual": "Manual",
     "noMemo": "(sin descripción)",
     "confirmDismissAllTitle": "¿Marcar las {{count}} parejas como no duplicados?",
-    "confirmDismissAllBody": "Ya no se mostrarán aquí. Los duplicados de verdad se pueden seguir encontrando por importe y fecha."
+    "confirmDismissAllBody": "Ya no se mostrarán aquí. Los duplicados de verdad se pueden seguir encontrando por importe y fecha.",
+    "fromMail": "Del correo",
+    "unconfirmed": "Sin confirmar por el banco ({{count}})",
+    "unconfirmedHint": "Leídas de un correo, tras 5 días el banco aún no las ha confirmado. A menudo el cargo real es distinto: una gasolinera que bloquea 100 € y cobra 40, un hotel, un pago en otra moneda. <b>Fusionar</b> conserva el importe, la fecha y la referencia del banco, y la nota, la categoría y las etiquetas del correo.",
+    "mailAge_one": "del correo, hace {{count}} día",
+    "mailAge_other": "del correo, hace {{count}} días",
+    "bankRows": "Filas del banco cercanas",
+    "noBankRows": "Ninguna fila del banco cercana: si el pago no se produjo, elimínala.",
+    "merge": "Fusionar",
+    "reversal": "Pago anulado",
+    "reversalHint": "{{account}} · dos filas de correos que se anulan: el banco no suele registrar ninguna",
+    "deleteBoth": "Eliminar ambas",
+    "confirmDeleteBothTitle": "¿Eliminar ambas filas?"
   },
   "banksync": {
     "title": "Conexión bancaria",
@@ -1440,7 +1452,8 @@
     "reconciledAll": "todo conciliado hasta aquí",
     "setAside": "Reservado para metas",
     "setAsideFree": "{{amount}} disponibles",
-    "setAsideShort": "{{amount}} más de lo que tiene la cuenta"
+    "setAsideShort": "{{amount}} más de lo que tiene la cuenta",
+    "fromMail": "Del correo: el banco aún no la ha confirmado"
   },
   "figureStrip": {
     "show": "Mostrar la cifra {{n}} de {{count}}"

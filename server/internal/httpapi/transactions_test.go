@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
+	"time"
 )
 
 // makeAccount sets up admin + wallet (EUR base) + an account, returning the
@@ -306,5 +307,61 @@ func TestTransactionCrossUserIsolation(t *testing.T) {
 	}
 	if r := bob.do(http.MethodGet, txns+"/"+strconv.FormatInt(id, 10), nil, false); r.StatusCode != http.StatusNotFound {
 		t.Fatalf("bob get = %d, want 404", r.StatusCode)
+	}
+}
+
+// A row read from a bank mail that the bank has not booked shows in the review
+// with the bank rows near it, and merges into one of them (#660).
+func TestUnconfirmedMailRowsInTheReview(t *testing.T) {
+	admin := newTestAPI(t)
+	wid, acc := makeAccount(t, admin)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	day := func(n int) string { return time.Now().UTC().AddDate(0, 0, -n).Format("2006-01-02") }
+	admin.do(http.MethodPost, base+"/import/commit", map[string]any{
+		"accountId": acc, "rows": []map[string]any{
+			{"date": day(7), "amount": -10000, "memo": "Distributore Demo", "importRef": "mail:1"},
+			{"date": day(6), "amount": -4000, "memo": "POS STAZIONE DEMO", "importRef": "eb:1"},
+			{"date": day(8), "amount": -750, "memo": "Bar Demo", "importRef": "mail:2"},
+			{"date": day(8), "amount": 750, "memo": "Storno Bar Demo", "importRef": "mail:3"},
+		},
+	}, true).Body.Close()
+
+	var rev struct {
+		Unconfirmed []struct {
+			ID       int64 `json:"id"`
+			BankRows []struct {
+				ID int64 `json:"id"`
+			} `json:"bankRows"`
+		} `json:"unconfirmed"`
+		Reversals []struct {
+			Payment  struct{ ID int64 } `json:"payment"`
+			Reversal struct{ ID int64 } `json:"reversal"`
+		} `json:"reversals"`
+	}
+	r := admin.do(http.MethodGet, base+"/transactions/review", nil, false)
+	if err := json.NewDecoder(r.Body).Decode(&rev); err != nil {
+		t.Fatal(err)
+	}
+	r.Body.Close()
+	if len(rev.Unconfirmed) != 1 || len(rev.Unconfirmed[0].BankRows) != 1 || len(rev.Reversals) != 1 {
+		t.Fatalf("review = %+v, want one unconfirmed row with one bank row, and one reversal", rev)
+	}
+	mail, bank := rev.Unconfirmed[0].ID, rev.Unconfirmed[0].BankRows[0].ID
+
+	if r := admin.do(http.MethodPost, base+"/transactions/merge-mail", map[string]any{"mailId": bank, "bankId": mail}, true); r.StatusCode != http.StatusBadRequest {
+		t.Fatalf("merge the wrong way round = %d, want 400", r.StatusCode)
+	}
+	admin.do(http.MethodPost, "/api/v1/admin/users", map[string]any{"username": "bob", "password": "bobssecret"}, true).Body.Close()
+	bob := admin.fork()
+	bob.do(http.MethodPost, "/api/v1/auth/login", map[string]any{"username": "bob", "password": "bobssecret"}, true).Body.Close()
+	if r := bob.do(http.MethodPost, base+"/transactions/merge-mail", map[string]any{"mailId": mail, "bankId": bank}, true); r.StatusCode != http.StatusNotFound {
+		t.Fatalf("bob merge = %d, want 404", r.StatusCode)
+	}
+	if r := admin.do(http.MethodPost, base+"/transactions/merge-mail", map[string]any{"mailId": mail, "bankId": bank}, true); r.StatusCode != http.StatusNoContent {
+		t.Fatalf("merge = %d, want 204", r.StatusCode)
+	}
+	got := decodeTxn(t, admin.do(http.MethodGet, base+"/transactions/"+strconv.FormatInt(bank, 10), nil, false))
+	if got["memo"] != "Distributore Demo" || got["amount"].(float64) != -4000 {
+		t.Fatalf("merged = %+v, want the bank's amount with the mail's memo", got)
 	}
 }

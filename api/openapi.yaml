@@ -2011,6 +2011,32 @@ paths:
         "204": { description: Merged. }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/merge-mail:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: mergeMailTransaction
+      summary: Merge a row read from a bank mail into the bank row that booked it (#660)
+      description: >-
+        The bank row keeps its amount, date, import ref and status, and takes the mail row's memo,
+        category, payee and tags where the mail row has them. The mails that wrote the mail row then
+        point at the bank row, and the mail row is deleted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mailId: { type: integer, format: int64 }
+                bankId: { type: integer, format: int64 }
+              required: [mailId, bankId]
+      responses:
+        "204": { description: Merged. }
+        "400":
+          description: "`not_mail_pair`: not a row from a mail and a bank row of the same account."
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/transactions/register:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -3950,7 +3976,8 @@ components:
         - type: object
           properties:
             runningBalance: { type: integer, format: int64, description: "initial balance + cumulative amount through this row (chronological)" }
-          required: [runningBalance]
+            fromMail: { type: boolean, description: "read from a bank mail, and not booked by the bank yet (#660)" }
+          required: [runningBalance, fromMail]
     SearchRow:
       allOf:
         - $ref: "#/components/schemas/Transaction"
@@ -4121,9 +4148,26 @@ components:
         a: { $ref: "#/components/schemas/ReviewTxn" }
         b: { $ref: "#/components/schemas/ReviewTxn" }
       required: [a, b]
+    UnconfirmedRow:
+      description: A row read from a bank mail that the bank has not booked 5 days after its date, with up to 3 bank rows of its account within 7 days, nearest amount first, then nearest date.
+      allOf:
+        - $ref: "#/components/schemas/ReviewTxn"
+        - type: object
+          properties:
+            bankRows:
+              type: array
+              items: { $ref: "#/components/schemas/ReviewTxn" }
+          required: [bankRows]
+    ReversalPair:
+      type: object
+      description: A refused card's payment and its reversal, both read from mails and unbooked, with opposite amounts within 3 days; shown once the older is 5 days old.
+      properties:
+        payment: { $ref: "#/components/schemas/ReviewTxn" }
+        reversal: { $ref: "#/components/schemas/ReviewTxn" }
+      required: [payment, reversal]
     ReviewResult:
       type: object
-      description: "Bank-sync review: imported rows missing a category, and suspected duplicate pairs."
+      description: "Bank-sync review: imported rows missing a category, suspected duplicate pairs, and rows from bank mails the bank has not booked."
       properties:
         needsCategory:
           type: array
@@ -4131,7 +4175,13 @@ components:
         duplicates:
           type: array
           items: { $ref: "#/components/schemas/DuplicatePair" }
-      required: [needsCategory, duplicates]
+        unconfirmed:
+          type: array
+          items: { $ref: "#/components/schemas/UnconfirmedRow" }
+        reversals:
+          type: array
+          items: { $ref: "#/components/schemas/ReversalPair" }
+      required: [needsCategory, duplicates, unconfirmed, reversals]
     BillsSummary:
       type: object
       description: "The Bills view: scheduled outflows classified over a date window."
