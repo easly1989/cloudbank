@@ -68,12 +68,14 @@ func TestAMailRowTheBankHasNotBookedShowsAfterFiveDays(t *testing.T) {
 	old := mk(daysAgo(5), "mail:old", -10000)
 	young := mk(daysAgo(4), "mail:young", -2000)
 	// What a bank-sync merge leaves behind: the bank's ref in place of the mail's.
-	confirmed := mk(daysAgo(12), "eb:confirmed", -3000)
+	confirmed := mk(daysAgo(12), "eb:confirmed", -100)
 	manual := mk(daysAgo(9), "", -4000)
-	// The bank rows near the old mail row, nearest first, at most three.
-	b1 := mk(daysAgo(4), "eb:b1", -4000)
-	b2 := mk(daysAgo(7), "eb:b2", -2310)
-	b3 := mk(daysAgo(1), "eb:b3", -999)
+	// The bank rows near the old mail row: nearest amount first, then nearest
+	// date, at most three; a row past the window is never offered.
+	b1 := mk(daysAgo(1), "eb:b1", -4000)
+	b2 := mk(daysAgo(4), "eb:b2", -2310)
+	b3 := mk(daysAgo(8), "eb:b3", -2310)
+	mk(daysAgo(2), "eb:b4", -999)
 	mk(daysAgo(13), "eb:far", -10000)
 
 	rev, err := s.Review(ctx, wid)
@@ -88,7 +90,7 @@ func TestAMailRowTheBankHasNotBookedShowsAfterFiveDays(t *testing.T) {
 		near = append(near, b.ID)
 	}
 	if !slices.Equal(near, []int64{b1, b2, b3}) {
-		t.Errorf("bank rows offered = %v, want %v (nearest first, three at most)", near, []int64{b1, b2, b3})
+		t.Errorf("bank rows offered = %v, want %v (nearest amount, then date, three at most)", near, []int64{b1, b2, b3})
 	}
 	if len(rev.Reversals) != 0 {
 		t.Errorf("reversals = %+v, want none", rev.Reversals)
