@@ -202,20 +202,44 @@ con la carta 1234_*_*_ 5678 presso BIRRERIA DEMO .
 ```
 
 The card mask has a space, and the merchant ends with ` .` instead of `, -`. A
-pattern made from the first mail stops at those differences, and the test then
-says "1 of 2 match". You can make a second pattern from the second mail, or widen
-the first one. **Advanced: see and edit the pattern** shows the expression the
-selections built: [RE2](https://github.com/google/re2/wiki/Syntax), with one
-named group per field, matched against the subject, a new line and the body.
-This one reads both wordings: it skips the card and accepts either ending.
+pattern made from the first mail stops at those differences, and the test says
+how many of the sender's mails it reads. Under it, every mail it does not read
+is listed: tap one to see **where it stops matching**. The part the pattern read
+is green, the text that differs is orange, and below it **The pattern looks
+for** and **This mail has** sit side by side, so a single extra space shows.
+
+![A mail the pattern does not read, and where it stops matching](img/mail-stop.png)
+
+**Mark the fields in this mail too** adds it to the **Example mails**. Select the
+same fields in it (here the amount and the merchant), and the pattern keeps only
+what the marked mails have in common: it skips the card, which differs, and
+accepts either ending. Add as many example mails as the bank has wordings.
+
+![After marking a second mail: the mails it now reads too, to check](img/mail-two-wordings.png)
+
+Two things stop a pattern from growing too loose:
+
+- The mails it **now reads that it did not read before** are listed first, as
+  **New**, with the amount and memo each one gives. Check them before saving.
+- A mail that differs from the very first words is marked as **another kind of
+  notice** (a transfer, from the same sender) and offers no button: it needs a
+  pattern of its own. If two example mails have nothing in common before a
+  field, or have their fields in another order, the editor says so and does not
+  merge them.
+
+**Advanced: see and edit the pattern** shows the expression the selections
+built: [RE2](https://github.com/google/re2/wiki/Syntax), with one named group per
+field, matched against the subject, a new line and the body. For the two
+wordings above it is:
 
 ```text
-pagamento\s+di\s+(?P<amount>\d(?:[\d.,]*\d)?)\s+EUR[\s\S]*?\spresso\s+(?P<memo>.+?)(?:,\s+-|\s+\.)
+pagamento\s+di\s+(?P<amount>\d(?:[\d.,]*\d)?)[\s\S]*?\spresso\s+(?P<memo>.+?)(?:,\s+-|\s+\.)
 ```
 
-An expression edited by hand stays as written; **Back to the selections**
-returns to the one built from the mail. RE2 runs in linear time, so a badly
-written expression cannot stall the server.
+An expression edited by hand stays as written, and the list of mails no longer
+says where each one stops; **Back to the selections** returns to the one built
+from the mails. RE2 runs in linear time, so a badly written expression cannot
+stall the server.
 
 ### Authenticated senders only
 

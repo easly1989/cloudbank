@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildExpression,
+  buildPattern,
   guessDateFormat,
   literal,
   mailText,
   type Mark,
   readEditorState,
+  type Sample,
+  toJS,
+  whereItStops,
 } from "./patternBuilder";
 
 // Invented mails, shaped like a card-payment notice. None is a real bank's.
@@ -132,27 +136,145 @@ describe("guessDateFormat", () => {
   });
 });
 
-describe("readEditorState", () => {
-  it("reads back what the editor saved, and nothing else", () => {
-    const state = {
-      v: 1,
-      mailId: 7,
-      text: "ab",
-      marks: [{ field: "amount", start: 0, end: 2 }],
-      manual: false,
+// One bank, two wordings of the same notice (#674): the card written with
+// and without a space, and a different ending after the merchant.
+const asked = (amount: string, shop: string) =>
+  mailText(
+    SUBJECT,
+    `Gentile cliente,\nti informiamo che in data 10.16 è stato richiesto un pagamento di ${amount} EUR ` +
+      `con la carta 1111_*_*_2222 presso ${shop}, - 10.16 ore 17:50\nCordiali saluti`,
+  );
+const made = (amount: string, shop: string) =>
+  mailText(
+    SUBJECT,
+    `Gentile cliente,\nti informiamo che è stato effettuato un pagamento di ${amount} EUR ` +
+      `con la carta 1111_*_*_ 2222 presso ${shop} .\nCordiali saluti`,
+  );
+const sample = (text: string, amount: string, shop: string): Sample => ({
+  mailId: null,
+  text,
+  marks: [mark("amount", amount, text), mark("memo", shop, text)],
+});
+
+describe("buildPattern", () => {
+  const one = sample(asked("12,50", "BAR DEMO"), "12,50", "BAR DEMO");
+  const two = sample(made("41,00", "FARMACIA DEMO"), "41,00", "FARMACIA DEMO");
+
+  it("is the first mail's pattern while it has one mail", () => {
+    expect(buildPattern([one]).expression).toBe(buildExpression(one.text, one.marks));
+  });
+
+  it("covers both wordings once the fields are marked in a mail of each", () => {
+    const { expression, problem } = buildPattern([one, two]);
+    expect(problem).toBeUndefined();
+    const read = (text: string) => run(toJS(expression), text);
+    expect(read(asked("23,90", "EDICOLA DEMO"))).toEqual({ amount: "23,90", memo: "EDICOLA DEMO" });
+    expect(read(made("7,80", "PANETTERIA DEMO"))).toEqual({
+      amount: "7,80",
+      memo: "PANETTERIA DEMO",
+    });
+    // Another notice from the same sender stays unread.
+    expect(read(mailText("Bonifico in arrivo", "accreditato un bonifico di 1.200,00 EUR"))).toBe(
+      undefined,
+    );
+  });
+
+  it("waits for a mail to have the first one's fields", () => {
+    const half = { ...two, marks: two.marks.slice(0, 1) };
+    expect(buildPattern([one, half]).expression).toBe(buildExpression(one.text, one.marks));
+  });
+
+  it("refuses mails with nothing in common before a field", () => {
+    const text = mailText("Avviso", "Totale 9,99 EUR");
+    const other = { mailId: null, text, marks: [mark("amount", "9,99", text)] };
+    const first = { ...one, marks: one.marks.slice(0, 1) };
+    expect(buildPattern([first, other]).problem).toEqual({ code: "nothing", field: "amount" });
+  });
+
+  it("refuses fields in another order", () => {
+    const text = mailText("Avviso", "Presso BAR DEMO, importo 3,00 EUR");
+    const other = {
+      mailId: null,
+      text,
+      marks: [mark("memo", "BAR DEMO", text), mark("amount", "3,00", text)],
     };
+    expect(buildPattern([one, other]).problem).toEqual({ code: "order" });
+  });
+});
+
+describe("whereItStops", () => {
+  const { steps } = buildPattern([sample(asked("12,50", "BAR DEMO"), "12,50", "BAR DEMO")]);
+
+  it("shows the card written another way", () => {
+    const text = made("41,00", "FARMACIA DEMO");
+    const stop = whereItStops(steps, text)!;
+    expect(stop.fromStart).toBe(false);
+    expect(stop.step).toMatchObject({ kind: "before", field: "memo" });
+    expect(stop.step.looksFor).toEqual(["1111_*_*_2222 presso"]);
+    expect(text.slice(...stop.diff)).toBe("1111_*_*_ 2222 presso");
+    expect(text.slice(...stop.read!)).toBe("pagamento di 41,00");
+  });
+
+  it("shows the ending after the merchant", () => {
+    const loose = steps.map((s) =>
+      s.kind === "before" && s.field === "memo" ? { ...s, re: String.raw`[\s\S]*?\spresso\s+` } : s,
+    );
+    const text = made("41,00", "FARMACIA DEMO");
+    const stop = whereItStops(loose, text)!;
+    expect(stop.step).toMatchObject({ kind: "end", field: "memo", looksFor: [", -"] });
+    expect(text.slice(...stop.diff)).toBe("FARMACIA DEMO .");
+  });
+
+  it("tells another kind of mail", () => {
+    const stop = whereItStops(steps, mailText("Bonifico in arrivo", "un bonifico di 5,00 EUR"))!;
+    expect(stop.fromStart).toBe(true);
+  });
+
+  it("is null for a mail that matches", () => {
+    expect(whereItStops(steps, asked("1,00", "BAR DEMO"))).toBeNull();
+  });
+});
+
+describe("toJS", () => {
+  it("keeps RE2's meaning of spaces and dots", () => {
+    // RE2's \s is ASCII only: a no-break space is not a space to it.
+    expect(new RegExp(toJS(String.raw`a\sb`), "u").test("a b")).toBe(false);
+    expect(new RegExp(toJS("a.b"), "u").test("a\rb")).toBe(true);
+    expect(new RegExp(toJS(String.raw`[\s\S]*?[\d.,]`), "u").exec("x\n,")?.[0]).toBe("x\n,");
+  });
+});
+
+describe("readEditorState", () => {
+  const state = {
+    v: 2,
+    samples: [{ mailId: 7, text: "ab", marks: [{ field: "amount", start: 0, end: 2 }] }],
+    manual: false,
+  };
+
+  it("reads back what the editor saved, and nothing else", () => {
     expect(readEditorState(JSON.stringify(state))).toEqual(state);
     expect(readEditorState("")).toBeNull();
     expect(readEditorState("{not json")).toBeNull();
-    expect(readEditorState(JSON.stringify({ ...state, v: 2 }))).toBeNull();
+    expect(readEditorState(JSON.stringify({ ...state, v: 3 }))).toBeNull();
+    expect(readEditorState(JSON.stringify({ ...state, samples: [] }))).toBeNull();
     // A piece beyond the text, or of no known field, is dropped.
     const bad = {
       ...state,
-      marks: [
-        { field: "amount", start: 0, end: 9 },
-        { field: "x", start: 0, end: 1 },
+      samples: [
+        {
+          ...state.samples[0],
+          marks: [
+            { field: "amount", start: 0, end: 9 },
+            { field: "x", start: 0, end: 1 },
+          ],
+        },
       ],
     };
-    expect(readEditorState(JSON.stringify(bad))?.marks).toEqual([]);
+    expect(readEditorState(JSON.stringify(bad))?.samples[0].marks).toEqual([]);
+  });
+
+  it("reads the single mail an earlier version saved", () => {
+    const v1 = { v: 1, ...state.samples[0], manual: true };
+    expect(readEditorState(JSON.stringify(v1))).toEqual({ ...state, manual: true });
   });
 });

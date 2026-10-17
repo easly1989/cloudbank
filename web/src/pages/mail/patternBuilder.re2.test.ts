@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { buildExpression, type Field, guessDateFormat, mailText } from "./patternBuilder";
+import { buildPattern, type Field, guessDateFormat, mailText } from "./patternBuilder";
 
 // The editor builds expressions in the browser, the server runs them with
 // Go's RE2. These cases are written to a file the Go tests read
@@ -16,6 +16,8 @@ interface Case {
   subject: string;
   body: string;
   marks: [Field, string][];
+  /** More example mails of the kind, marked the same way (#674). */
+  also?: { subject: string; body: string; marks: [Field, string][] }[];
   /** Other mails of the kind, with what each piece reads in them. */
   others: { subject: string; body: string; want: Partial<Record<Field, string>> }[];
 }
@@ -23,6 +25,17 @@ interface Case {
 const card = (date: string, amount: string, digits: string, shop: string, time: string) =>
   `Gentile cliente, ti informiamo che in data ${date} è stato richiesto un pagamento di ${amount} EUR ` +
   `con la carta 1234_*_*_${digits} presso ${shop}, - ${date} ore ${time}\nCordiali saluti`;
+
+const asked = (amount: string, shop: string) =>
+  `Gentile cliente,
+ti informiamo che in data 10.16 è stato richiesto un pagamento di ${amount} EUR ` +
+  `con la carta 1111_*_*_2222 presso ${shop}, - 10.16 ore 17:50
+Cordiali saluti`;
+const made = (amount: string, shop: string) =>
+  `Gentile cliente,
+ti informiamo che è stato effettuato un pagamento di ${amount} EUR ` +
+  `con la carta 1111_*_*_ 2222 presso ${shop} .
+Cordiali saluti`;
 
 const CASES: Case[] = [
   {
@@ -83,6 +96,37 @@ const CASES: Case[] = [
       },
     ],
   },
+  {
+    name: "two wordings of one notice, from two example mails",
+    subject: "Pagamento con carta",
+    body: asked("12,50", "BAR DEMO"),
+    marks: [
+      ["amount", "12,50"],
+      ["memo", "BAR DEMO"],
+    ],
+    also: [
+      {
+        subject: "Pagamento con carta",
+        body: made("41,00", "FARMACIA DEMO"),
+        marks: [
+          ["amount", "41,00"],
+          ["memo", "FARMACIA DEMO"],
+        ],
+      },
+    ],
+    others: [
+      {
+        subject: "Pagamento con carta",
+        body: asked("23,90", "EDICOLA DEMO"),
+        want: { amount: "23,90", memo: "EDICOLA DEMO" },
+      },
+      {
+        subject: "Pagamento con carta",
+        body: made("7,80", "PANETTERIA DEMO"),
+        want: { amount: "7,80", memo: "PANETTERIA DEMO" },
+      },
+    ],
+  },
 ];
 
 interface Written {
@@ -93,17 +137,24 @@ interface Written {
   checks: { text: string; want: Partial<Record<Field, string>> }[];
 }
 
-function written(c: Case): Written {
-  const text = mailText(c.subject, c.body);
-  const marks = c.marks.map(([field, piece]) => {
+function sample(name: string, subject: string, body: string, pieces: [Field, string][]) {
+  const text = mailText(subject, body);
+  const marks = pieces.map(([field, piece]) => {
     const start = text.indexOf(piece);
-    if (start < 0) throw new Error(`${c.name}: no ${piece}`);
+    if (start < 0) throw new Error(`${name}: no ${piece}`);
     return { field, start, end: start + piece.length };
   });
+  return { mailId: null, text, marks };
+}
+
+function written(c: Case): Written {
+  const first = sample(c.name, c.subject, c.body, c.marks);
+  const text = first.text;
+  const also = (c.also ?? []).map((a) => sample(c.name, a.subject, a.body, a.marks));
   const own = Object.fromEntries(c.marks) as Partial<Record<Field, string>>;
   return {
     name: c.name,
-    expression: buildExpression(text, marks),
+    expression: buildPattern([first, ...also]).expression,
     dateFormat: own.date ? guessDateFormat(own.date) : "",
     checks: [
       { text, want: own },
