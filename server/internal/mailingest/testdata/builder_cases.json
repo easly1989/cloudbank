@@ -86,5 +86,33 @@
         }
       }
     ]
+  },
+  {
+    "name": "two wordings of one notice, from two example mails",
+    "expression": "pagamento\\s+di\\s+(?P<amount>\\d(?:[\\d.,]*\\d)?)[\\s\\S]*?\\spresso\\s+(?P<memo>.+?)(?:,\\s+-|\\s+\\.)",
+    "dateFormat": "",
+    "checks": [
+      {
+        "text": "Pagamento con carta\nGentile cliente,\nti informiamo che in data 10.16 è stato richiesto un pagamento di 12,50 EUR con la carta 1111_*_*_2222 presso BAR DEMO, - 10.16 ore 17:50\nCordiali saluti",
+        "want": {
+          "amount": "12,50",
+          "memo": "BAR DEMO"
+        }
+      },
+      {
+        "text": "Pagamento con carta\nGentile cliente,\nti informiamo che in data 10.16 è stato richiesto un pagamento di 23,90 EUR con la carta 1111_*_*_2222 presso EDICOLA DEMO, - 10.16 ore 17:50\nCordiali saluti",
+        "want": {
+          "amount": "23,90",
+          "memo": "EDICOLA DEMO"
+        }
+      },
+      {
+        "text": "Pagamento con carta\nGentile cliente,\nti informiamo che è stato effettuato un pagamento di 7,80 EUR con la carta 1111_*_*_ 2222 presso PANETTERIA DEMO .\nCordiali saluti",
+        "want": {
+          "amount": "7,80",
+          "memo": "PANETTERIA DEMO"
+        }
+      }
+    ]
   }
 ]

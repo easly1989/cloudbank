@@ -6,10 +6,12 @@ import {
   Box,
   Button,
   Checkbox,
+  CloseButton,
   Collapse,
   Group,
   Loader,
   Paper,
+  SegmentedControl,
   Select,
   SimpleGrid,
   Stack,
@@ -45,7 +47,7 @@ import { formatMinor } from "../../money";
 import { notifyError } from "../../notifyError";
 import { PAYMENT_MODES } from "../../transactionEnums";
 import {
-  buildExpression,
+  buildPattern,
   FIELDS,
   type Field,
   guessDateFormat,
@@ -53,7 +55,10 @@ import {
   type Mark,
   orderedMarks,
   readEditorState,
+  type Sample,
+  sampleFields,
 } from "./patternBuilder";
+import { PatternTestMails } from "./PatternTestMails";
 
 /** Each field's colour, the same in the mail and in the list of fields. */
 const FIELD_COLOR: Record<Field, string> = {
@@ -80,6 +85,9 @@ interface Pick {
  * pattern from those pieces, tries it on the sender's latest mails and shows
  * the transaction the mail becomes. Advanced shows the expression, which can
  * also be written by hand.
+ *
+ * A mail the pattern does not read shows where it stops matching; marking
+ * the same fields in it too makes one pattern of both wordings (#674).
  */
 export function PatternSheet({
   walletId,
@@ -125,13 +133,12 @@ export function PatternSheet({
   const [dateFormat, setDateFormat] = useState(pattern?.dateFormat ?? "");
   const [requireAuth, setRequireAuth] = useState(pattern?.requireAuth ?? true);
 
-  // The mail the pieces are chosen in. A saved pattern reopens on the text it
-  // was made from, which may have left the history since.
+  // The mails the pieces are chosen in. A saved pattern reopens on the texts
+  // it was made from, which may have left the history since.
   const firstMail =
     startMailId ?? mails.find((m) => m.outcome === "unrecognized")?.id ?? mails[0]?.id ?? null;
-  const [mailId, setMailId] = useState<number | null>(saved ? saved.mailId : firstMail);
-  const [textSet, setText] = useState<string | null>(saved?.text ?? null);
-  const [marks, setMarks] = useState<Mark[]>(saved?.marks ?? []);
+  const [samplesSet, setSamples] = useState<Sample[] | null>(saved?.samples ?? null);
+  const [cur, setCur] = useState(0);
   const [manual, setManual] = useState(pattern ? (saved?.manual ?? true) : false);
   const [expr, setExpr] = useState(pattern?.body ?? "");
   const [advanced, setAdvanced] = useState(!!pattern && (!saved || saved.manual));
@@ -153,33 +160,50 @@ export function PatternSheet({
     queryFn: () => getMailboxMessage(walletId, mailboxId, firstMail ?? 0),
     enabled: !pattern && firstMail != null,
   });
-  const text = textSet ?? (first.data ? mailText(first.data.subject, first.data.body) : "");
+  const samples: Sample[] = samplesSet ?? [
+    {
+      mailId: firstMail,
+      text: first.data ? mailText(first.data.subject, first.data.body) : "",
+      marks: [],
+    },
+  ];
+  const current = samples[Math.min(cur, samples.length - 1)];
+  const { mailId, text, marks } = current;
+  const editCurrent = (change: (prev: Mark[]) => Mark[]) =>
+    setSamples(samples.map((s) => (s === current ? { ...s, marks: change(s.marks) } : s)));
   const name = nameSet ?? first.data?.subject ?? "";
   const sender = senderSet ?? first.data?.sender ?? "";
 
-  // Another mail to choose the pieces in: its text replaces the sample, and
-  // the pieces chosen in the old one go.
+  // Another mail to choose the pieces in: either it replaces the only one,
+  // and the pieces chosen in it go, or it joins the example mails.
   const [loading, setLoading] = useState(false);
-  const loadMail = (id: number) => {
-    setMailId(id);
+  const loadMail = (id: number, join: boolean) => {
     setLoading(true);
     qc.fetchQuery({
       queryKey: ["mailMessage", walletId, mailboxId, id],
       queryFn: () => getMailboxMessage(walletId, mailboxId, id),
     })
       .then((d) => {
-        setText(mailText(d.subject, d.body));
-        setMarks([]);
+        const s = { mailId: id, text: mailText(d.subject, d.body), marks: [] };
+        // From the list as it is now: marks may have changed while it loaded.
+        setSamples((prev) => (join ? [...(prev ?? samples), s] : [s]));
+        // Past the end means the last one: the mail just added.
+        setCur(join ? Infinity : 0);
         setManual(false);
         setPick(null);
       })
       .catch(notifyError)
       .finally(() => setLoading(false));
   };
-  const generated = useMemo(() => buildExpression(text, marks), [text, marks]);
-  const body = manual ? expr : generated;
+  const built = buildPattern(samples);
+  const body = manual ? expr : built.expression;
+  const lead = samples[0];
   const has = (f: Field) =>
-    manual ? body.includes(`(?P<${f}>`) : marks.some((m) => m.field === f);
+    manual ? body.includes(`(?P<${f}>`) : lead.marks.some((m) => m.field === f);
+  // The mail on screen has other fields marked than the first one.
+  const leadFields = sampleFields(lead);
+  const unlike =
+    current !== lead && [...sampleFields(current)].sort().join() !== [...leadFields].sort().join();
   const words = inWords
     .split(",")
     .map((w) => w.trim().toLowerCase())
@@ -188,7 +212,11 @@ export function PatternSheet({
   const chooseDirection = (v: string | null) => {
     const d = (v ?? "out") as MailPatternInput["direction"];
     setDirection(d);
-    if (d !== "capture") setMarks((prev) => prev.filter((m) => m.field !== "direction"));
+    if (d !== "capture") {
+      setSamples(
+        samples.map((s) => ({ ...s, marks: s.marks.filter((m) => m.field !== "direction") })),
+      );
+    }
   };
 
   const input: MailPatternInput = {
@@ -205,7 +233,11 @@ export function PatternSheet({
     applyRules,
     dateFormat: has("date") ? dateFormat : "",
     requireAuth,
-    editor: JSON.stringify({ v: 1, mailId, text, marks: orderedMarks(marks), manual }),
+    editor: JSON.stringify({
+      v: 2,
+      samples: samples.map((s) => ({ ...s, marks: orderedMarks(s.marks) })),
+      manual,
+    }),
   };
   // What would make the server refuse the pattern, said by the field it is
   // about and in the reader's language. Only an expression's own syntax is
@@ -222,6 +254,12 @@ export function PatternSheet({
       has("date") && !(dateFormat.includes("DD") && dateFormat.includes("MM"))
         ? t("mail.editor.errDateFormat")
         : "",
+    samples:
+      manual || !built.problem
+        ? ""
+        : built.problem.code === "order"
+          ? t("mail.editor.errOrder")
+          : t("mail.editor.errNothing", { field: t(`mail.field.${built.problem.field}`) }),
   };
   const ready =
     Object.values(problems).every((p) => !p) && input.accountId > 0 && body.includes("(?P<amount>");
@@ -237,6 +275,26 @@ export function PatternSheet({
     placeholderData: (prev) => prev,
   });
   const tried = ready ? test.data : undefined;
+
+  // The mails the last change to the expression made it read, to check.
+  const [reads, setReads] = useState<{
+    body: string;
+    ids: Set<number>;
+    before: Set<number> | null;
+  }>();
+  if (test.data && !test.isPlaceholderData) {
+    const tested = (JSON.parse(debounced) as MailPatternInput).body;
+    if (reads?.body !== tested) {
+      const ids = new Set(test.data.mails.filter((m) => m.matched).map((m) => m.id));
+      setReads({ body: tested, ids, before: reads?.ids ?? null });
+    }
+  }
+  const before = reads?.body === body ? reads.before : null;
+  const fresh = new Set(
+    tried && before
+      ? tried.mails.filter((m) => m.matched && !before.has(m.id)).map((m) => m.id)
+      : [],
+  );
   const sample = tried?.mails.find((m) => m.id === mailId);
   const shown = sample?.matched ? sample : tried?.mails.find((m) => m.transaction);
 
@@ -268,7 +326,7 @@ export function PatternSheet({
     if (!pick) return;
     const piece = text.slice(pick.start, pick.end);
     // One piece per field, and none overlapping another.
-    setMarks((prev) => [
+    editCurrent((prev) => [
       ...prev.filter((m) => m.field !== field && (m.end <= pick.start || m.start >= pick.end)),
       { field, start: pick.start, end: pick.end },
     ]);
@@ -282,7 +340,7 @@ export function PatternSheet({
   };
   const unmark = () => {
     if (!picked) return;
-    setMarks((prev) => prev.filter((m) => m !== picked));
+    editCurrent((prev) => prev.filter((m) => m !== picked));
     setPick(null);
   };
 
@@ -316,7 +374,11 @@ export function PatternSheet({
     value: String(m.id),
     label: `${when(m.receivedAt, i18n.language)} · ${m.subject || m.sender}`,
   }));
-  if (mailId != null && saved?.mailId === mailId && !mails.some((m) => m.id === mailId)) {
+  if (
+    mailId != null &&
+    saved?.samples.some((s) => s.mailId === mailId) &&
+    !mails.some((m) => m.id === mailId)
+  ) {
     mailOptions.unshift({ value: String(mailId), label: t("mail.editor.savedMail") });
   }
 
@@ -360,15 +422,50 @@ export function PatternSheet({
         </>
       }
     >
-      <Select
-        label={t("mail.editor.sample")}
-        data={mailOptions}
-        value={mailId != null ? String(mailId) : null}
-        onChange={(v) => v && Number(v) !== mailId && loadMail(Number(v))}
-        allowDeselect={false}
-        comboboxProps={{ withinPortal: true }}
-        data-cb-sensitive
-      />
+      {samples.length === 1 ? (
+        <Select
+          label={t("mail.editor.sample")}
+          data={mailOptions}
+          value={mailId != null ? String(mailId) : null}
+          onChange={(v) => v && Number(v) !== mailId && loadMail(Number(v), false)}
+          allowDeselect={false}
+          comboboxProps={{ withinPortal: true }}
+          data-cb-sensitive
+        />
+      ) : (
+        <Stack gap={6}>
+          <Text size="sm" fw={500} id="pattern-samples">
+            {t("mail.editor.samples")}
+          </Text>
+          <Group gap={6} wrap="nowrap">
+            <SegmentedControl
+              size="xs"
+              aria-labelledby="pattern-samples"
+              value={String(samples.indexOf(current))}
+              onChange={(v) => {
+                setCur(Number(v));
+                setPick(null);
+              }}
+              data={samples.map((s, i) => ({ value: String(i), label: sampleLabel(s, i) }))}
+              style={{ flex: 1, minWidth: 0 }}
+              data-testid="pattern-samples"
+              data-cb-sensitive
+            />
+            <CloseButton
+              size="sm"
+              aria-label={t("mail.editor.removeSample")}
+              onClick={() => {
+                setSamples(samples.filter((s) => s !== current));
+                setCur(0);
+                setPick(null);
+              }}
+            />
+          </Group>
+          <Text size="xs" c="dimmed">
+            {t("mail.editor.samplesHint")}
+          </Text>
+        </Stack>
+      )}
 
       <Stack gap={6}>
         <Text size="sm" fw={500}>
@@ -485,12 +582,12 @@ export function PatternSheet({
           <Text size="sm" fw={500}>
             {t("mail.editor.fields")}
           </Text>
-          {marks.length === 0 ? (
+          {lead.marks.length === 0 ? (
             <Text size="sm" c="dimmed">
               {t("mail.editor.noFields")}
             </Text>
           ) : (
-            orderedMarks(marks).map((m) => (
+            orderedMarks(lead.marks).map((m) => (
               <Group key={m.field} gap="xs" wrap="nowrap">
                 <Badge
                   color={FIELD_COLOR[m.field]}
@@ -501,14 +598,31 @@ export function PatternSheet({
                   {t(`mail.field.${m.field}`)}
                 </Badge>
                 <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }} data-cb-sensitive>
-                  {text.slice(m.start, m.end)}
+                  {samples
+                    .flatMap((s) => {
+                      const x = s.marks.find((y) => y.field === m.field);
+                      return x ? [s.text.slice(x.start, x.end)] : [];
+                    })
+                    .join(" · ")}
                 </Text>
               </Group>
             ))
           )}
-          {marks.length > 0 && !has("amount") && (
+          {lead.marks.length > 0 && !has("amount") && (
             <Text size="xs" c="red">
               {t("mail.editor.needAmount")}
+            </Text>
+          )}
+          {unlike && leadFields.length > 0 && (
+            <Text size="xs" c="dimmed" data-testid="pattern-same-fields">
+              {t("mail.editor.sameFields", {
+                fields: leadFields.map((f) => t(`mail.field.${f}`)).join(", "),
+              })}
+            </Text>
+          )}
+          {problems.samples && (
+            <Text size="xs" c="red" data-testid="pattern-merge-problem">
+              {problems.samples}
             </Text>
           )}
         </Stack>
@@ -687,6 +801,31 @@ export function PatternSheet({
             total={tried?.total}
           />
         </div>
+      )}
+      {tried && !test.error && (
+        <PatternTestMails
+          walletId={walletId}
+          mailboxId={mailboxId}
+          tried={tried}
+          steps={manual ? null : built.steps}
+          fresh={fresh}
+          examples={samples.map((s) => s.mailId)}
+          adding={loading}
+          onAdd={(id) => loadMail(id, true)}
+          amount={(tx) => {
+            const a = accountById.get(tx.accountId);
+            return a
+              ? formatMinor(tx.amount, {
+                  fracDigits: a.currencyFracDigits,
+                  decimalChar: a.currencyDecimalChar,
+                  groupChar: a.currencyGroupChar,
+                  symbol: a.currencySymbol,
+                  symbolPrefix: a.currencySymbolPrefix,
+                })
+              : "";
+          }}
+          when={(iso) => when(iso, i18n.language)}
+        />
       )}
       {sample && !sample.authenticated && requireAuth && (
         <Text size="xs" c="orange">
@@ -874,6 +1013,12 @@ function TestResult({
       <Text size="sm">{t("mail.editor.tested", { matched, total })}</Text>
     </Alert>
   );
+}
+
+/** An example mail's name: what its first text field reads, else its number. */
+function sampleLabel(s: Sample, i: number): string {
+  const m = orderedMarks(s.marks).find((x) => x.field !== "amount");
+  return m ? `${i + 1} · ${s.text.slice(m.start, m.end)}` : String(i + 1);
 }
 
 /** A mail's arrival, short, for the list of mails to start from. */
