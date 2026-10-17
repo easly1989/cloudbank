@@ -124,6 +124,9 @@ If a mailbox stops working (a refused password, an expired Microsoft sign-in),
 the mailbox turns red, and the person who connected it gets a push notification,
 if notifications are on.
 
+Once a mailbox is connected, the page offers a short tour of its parts; the
+**?** beside the section title plays it again.
+
 ## Patterns: teaching CloudBank a bank's mail
 
 A **pattern** says how to read one kind of bank mail: where the amount is, what

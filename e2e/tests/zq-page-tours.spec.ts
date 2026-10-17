@@ -120,6 +120,26 @@ async function ready(
           body: JSON.stringify({ name: "Tour probe", type: "bank" }),
         })
       ).json();
+      // The review's tour also points at the rows from bank mails the bank
+      // never booked (#660, #677): one read from a mail a week ago.
+      await fetch(`${wbase}/import/commit`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: H,
+        body: JSON.stringify({
+          accountId: acc.id,
+          rows: [
+            {
+              date: new Date(Date.now() - 7 * 86_400_000)
+                .toISOString()
+                .slice(0, 10),
+              amount: -4200,
+              memo: "Tour mail row",
+              importRef: "mail:tour-unconfirmed",
+            },
+          ],
+        }),
+      });
       // The review's tour points at its two cards, which a wallet with
       // nothing to review replaces with its end (#570): a duplicate pair.
       for (let i = 0; i < 2; i++)
