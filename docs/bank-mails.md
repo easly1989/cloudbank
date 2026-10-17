@@ -137,7 +137,8 @@ by selecting text in it.
 ### Making a pattern
 
 Under **Latest mails**, a mail no pattern reads shows **Not recognised**, with
-**Create a pattern from this mail**.
+**Create a pattern from this mail**. The first time, the editor offers a short
+tour of its parts at its top; the **?** in its header plays it again.
 
 ![Selecting the amount in the mail, and saying what it is](img/mail-select.png)
 
