@@ -86,6 +86,21 @@ test("a fresh server, with a wallet and an account", async ({ page }) => {
   expect(acc.status()).toBe(201);
 });
 
+test("with no mailbox, the page's tour only says how to connect one", async ({
+  page,
+}) => {
+  // #677: the tour's first step is the mailbox, so the page offers nothing
+  // yet, and its ? shows the one step that applies.
+  await signIn(page);
+  await page.goto("/settings/mail");
+  await page.locator('[data-tour-replay="mail"]').click();
+  const card = page.locator("[data-tour-step]");
+  await expect(card).toContainText("Connect a mailbox");
+  await expect(card.getByText("1 / 1")).toBeVisible();
+  await card.getByRole("button", { name: "Done" }).click();
+  await expect(card).toHaveCount(0);
+});
+
 test("signing in to Microsoft connects the mailbox", async ({
   page,
   context,
@@ -438,4 +453,24 @@ test("the written transactions are in the register, opened from the mail", async
     await expect(grid.getByText(memo, { exact: true }).first()).toBeVisible();
   }
   await expect(grid.getByText("Negozio Falso")).toHaveCount(0);
+});
+
+test("the page's tour points at every part of a connected mailbox", async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.goto("/settings/mail");
+  await page.locator('[data-tour-replay="mail"]').click();
+  const card = page.locator("[data-tour-step]");
+  // No step left out for want of its element, none centred for want of size.
+  await expect(card).toHaveAttribute("data-tour-skipped", "0");
+  for (let i = 1; i <= 6; i++) {
+    await expect(card.getByText(`${i} / 6`)).toBeVisible();
+    await expect(card, `step ${i}`).not.toHaveAttribute(
+      "data-tour-centred",
+      /.*/,
+    );
+    await card.getByRole("button", { name: i < 6 ? "Next" : "Done" }).click();
+  }
+  await expect(card).toHaveCount(0);
 });
