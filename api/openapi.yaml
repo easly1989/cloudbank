@@ -4149,7 +4149,7 @@ components:
         b: { $ref: "#/components/schemas/ReviewTxn" }
       required: [a, b]
     UnconfirmedRow:
-      description: A row read from a bank mail that the bank has not booked 5 days after its date, with up to 3 bank rows of its account within 7 days, nearest first.
+      description: A row read from a bank mail that the bank has not booked 5 days after its date, with up to 3 bank rows of its account within 7 days, nearest amount first, then nearest date.
       allOf:
         - $ref: "#/components/schemas/ReviewTxn"
         - type: object

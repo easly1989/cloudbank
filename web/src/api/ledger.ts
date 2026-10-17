@@ -298,7 +298,7 @@ export interface DuplicatePair {
 }
 /** A row from a bank mail the bank has not booked after 5 days (#660). */
 export interface UnconfirmedRow extends ReviewTxn {
-  /** Up to 3 bank rows of its account within 7 days, nearest first. */
+  /** Up to 3 bank rows of its account within 7 days, nearest amount first, then date. */
   bankRows: ReviewTxn[];
 }
 /** A refused card's payment and its reversal, both from mails, never booked. */

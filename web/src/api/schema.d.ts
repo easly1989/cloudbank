@@ -4537,7 +4537,7 @@ export interface components {
             a: components["schemas"]["ReviewTxn"];
             b: components["schemas"]["ReviewTxn"];
         };
-        /** @description A row read from a bank mail that the bank has not booked 5 days after its date, with up to 3 bank rows of its account within 7 days, nearest first. */
+        /** @description A row read from a bank mail that the bank has not booked 5 days after its date, with up to 3 bank rows of its account within 7 days, nearest amount first, then nearest date. */
         UnconfirmedRow: components["schemas"]["ReviewTxn"] & {
             bankRows: components["schemas"]["ReviewTxn"][];
         };

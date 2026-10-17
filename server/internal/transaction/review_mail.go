@@ -34,7 +34,8 @@ const (
 var ErrNotMailPair = errors.New("transaction: not a mail row and a bank row of one account")
 
 // UnconfirmedRow is a mail row the bank has not booked after
-// unconfirmedAfterDays, with the bank rows near it it may be merged with.
+// unconfirmedAfterDays, with the bank rows near it it may be merged with,
+// nearest amount first.
 type UnconfirmedRow struct {
 	ReviewTxn
 	BankRows []ReviewTxn `json:"bankRows"`
@@ -109,7 +110,15 @@ func (s *Service) unconfirmed(ctx context.Context, walletID int64, today time.Ti
 		if err != nil {
 			return nil, nil, err
 		}
-		sort.SliceStable(near, func(i, j int) bool { return daysApart(near[i].Date, r.Date) < daysApart(near[j].Date, r.Date) })
+		// The nearest amount first (a held 100 is often charged 40, but a hotel's
+		// 180 is not the pump's 40), then the nearest date.
+		gap := func(b db.Transaction) int64 { return max(b.Amount-r.Amount, r.Amount-b.Amount) }
+		sort.SliceStable(near, func(i, j int) bool {
+			if gi, gj := gap(near[i]), gap(near[j]); gi != gj {
+				return gi < gj
+			}
+			return daysApart(near[i].Date, r.Date) < daysApart(near[j].Date, r.Date)
+		})
 		for _, b := range near[:min(len(near), bankRowsOffered)] {
 			u.BankRows = append(u.BankRows, reviewTxn(b))
 		}
