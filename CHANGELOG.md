@@ -6,6 +6,63 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
+## [3.9.0] — 2026-10-17
+
+Bank mails read any mailbox now: Gmail, Libero, iCloud and the others over IMAP
+with an app password, beside Outlook.com. The AI can read the mails no pattern
+reads, Review asks about the ones the bank never booked, and one pattern can
+cover every wording of a bank's notice. A guide walks through all of it.
+
+### Added
+
+- **Any mailbox, with an app password.** **Connect with IMAP** asks for the
+  address, the provider (picked from the address, with its server filled in
+  and a link to its guide on app passwords) and the app password, never your
+  main one. CloudBank logs in first and saves nothing unless the server accepts
+  it. The connection is always encrypted, to a server on the public internet.
+  The app password is stored encrypted and never shown again; **New app
+  password** checks a new one before it replaces the old. A password the server
+  later refuses stops the mailbox until you enter a new one.
+- **The AI can read bank mails.** Each mailbox chooses **How mails are read**:
+  patterns only (the default), patterns then the AI, the AI then the patterns,
+  or the AI only. It uses the AI set up in Settings › AI by whoever connected
+  the mailbox. Only authenticated mails from the senders you list ever reach
+  the AI provider, with card numbers, IBANs and other long numbers hidden
+  first. The AI never chooses the account. A mail it wrote carries an **AI**
+  badge in the history.
+- **Review asks about mails the bank never booked.** A transaction read from a
+  mail that the bank has not booked five days on shows under **Not confirmed
+  by the bank**, with the nearest bank rows of its account. **Merge** keeps the
+  bank's amount, date and reference and the mail's memo, category, payee and
+  tags. A refused payment and its reversal show as one **Payment reversed**
+  item, deleted together. The register marks transactions from mails with an
+  envelope until the bank confirms them.
+- **One pattern for every wording of a notice.** The pattern editor lists the
+  mails it was tried on, and shows where a mail it does not read stops
+  matching. Mark the same fields in that mail too and the pattern accepts both
+  wordings. Mails it would newly read are listed as **New**, to check before
+  saving.
+- **Tours of Bank mails and of the pattern editor.** The Bank mails page has
+  its tour; the editor offers its own the first time you make a pattern, and
+  its **?** plays it again. Review's tour gains a step for unconfirmed rows.
+- **[The bank mails guide](docs/bank-mails.md)**: a mailbox only for the bank,
+  connecting each kind of mailbox, making patterns with an example, the AI,
+  and what happens when the bank's own row arrives.
+- Two migrations run at startup, for IMAP mailboxes and for the AI's settings
+  of each mailbox.
+
+### Fixed
+
+- **Escape during a tour closes only the tour.** Over a sheet, such as the
+  pattern editor, it also closed the sheet and lost what you had entered.
+  Tours can also be followed with the keyboard: the card's **Next** button
+  takes the focus.
+- **A sheet scrolls what you focus clear of its header and foot**, instead of
+  under the sticky Save bar.
+- **Review offers the bank row nearest in amount first** when merging a
+  transaction read from a mail, so a hotel's 180 meets the hotel's 205.40
+  before the petrol station's 40 booked the day before.
+
 ## [3.8.1] — 2026-10-16
 
 CloudBank can read your bank's notification mails and write them into the
@@ -953,7 +1010,8 @@ HomeBank feature parity, shipped as a single Docker container.
 - CI (lint, race tests, build, Docker smoke, Playwright e2e) and automated GHCR
   publishing (`:latest` nightly, `:main` stable, `:vX.Y.Z` per release).
 
-[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.8.0...HEAD
+[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.9.0...HEAD
+[3.9.0]: https://github.com/easly1989/cloudbank/compare/v3.8.1...v3.9.0
 [3.8.1]: https://github.com/easly1989/cloudbank/compare/v3.8.0...v3.8.1
 [3.8.0]: https://github.com/easly1989/cloudbank/compare/v3.7.0...v3.8.0
 [3.7.0]: https://github.com/easly1989/cloudbank/compare/v3.6.1...v3.7.0
