@@ -270,6 +270,8 @@ widens it again).
   share dimmed, so the differences stand out. For each pair you can **merge** (keep one,
   carrying the bank reference over), **edit** or **delete** a row, or mark it **"not
   a duplicate"** so it is never shown again.
+- **Not confirmed by the bank** lists transactions read from [bank mails](bank-mails.md)
+  that the bank has not booked five days on, to merge into the bank's row or delete.
 
 ## Current limitations
 

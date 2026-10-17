@@ -437,7 +437,7 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | *Your wallet* | Name, owner, pre-registered schedules, the bills category the dashboard's Bills widget lists |
 | **Security** | Two-factor sign-in, API tokens, notifications |
 | **Bank sync** | Bank connections ([Automatic bank sync](bank-sync.md)) |
-| **Bank mails** | The bank's notification mails, read from one folder of a mailbox |
+| **Bank mails** | The bank's notification mails, read from one folder of a mailbox ([the guide](bank-mails.md)) |
 | **AI** | The optional AI category suggestions, with your own key |
 | **Import & export** | Imports ([Importing transactions](import.md)), exports, backups and a database check |
 | **People** | Administrators only: the people who can sign in |

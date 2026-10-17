@@ -20,6 +20,9 @@ pull request: an edit made in the wiki is overwritten.
   column mapping, the review, and what to do when rows come in wrong.
 - [Automatic bank sync](bank-sync.md): connecting a bank through SimpleFIN,
   Enable Banking or Pluggy.
+- [Bank mails](bank-mails.md): reading the bank's payment notices from a
+  mailbox, with patterns you make by selecting text in a mail, or with the AI;
+  and what happens when the bank's own row arrives.
 
 ## Running CloudBank
 
