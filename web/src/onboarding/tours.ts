@@ -73,6 +73,8 @@ export const TOURS = {
     step("bankSync", "connections", "banksync-connections"),
   ],
   review: [
+    // Shown only while some rows from bank mails wait (#660): skipped otherwise.
+    step("review", "unconfirmed", "review-unconfirmed"),
     step("review", "categories", "review-categories"),
     step("review", "duplicates", "review-duplicates"),
   ],
@@ -82,6 +84,17 @@ export const TOURS = {
     step("settings", "back", "settings-back"),
   ],
   data: [step("data", "import", "data-import"), step("data", "backup", "data-backup")],
+  // Bank mails (#677). The mailbox comes first on purpose: a tour is offered
+  // once its first target is on the page, so a page with no mailbox yet offers
+  // nothing, and its ? shows only the last step, how to connect one.
+  mail: [
+    step("mail", "mailbox", "mail-mailbox"),
+    step("mail", "folder", "mail-folder"),
+    step("mail", "mode", "mail-mode"),
+    step("mail", "patterns", "mail-patterns"),
+    step("mail", "history", "mail-history"),
+    step("mail", "connect", "mail-connect"),
+  ],
 } satisfies Record<string, TourStep[]>;
 
 export type TourId = keyof typeof TOURS;

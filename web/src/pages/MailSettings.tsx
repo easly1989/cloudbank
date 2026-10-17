@@ -151,7 +151,7 @@ function ConnectCard({
 }) {
   const { t } = useTranslation();
   return (
-    <Card withBorder data-testid="mail-connect">
+    <Card withBorder data-testid="mail-connect" data-tour="mail-connect">
       <Stack gap="sm">
         <Group gap="xs">
           <IconMail size={18} />
@@ -374,7 +374,7 @@ function MailboxCard({
   return (
     <Card withBorder data-testid="mailbox-card">
       <Stack gap="md">
-        <Group justify="space-between" wrap="nowrap" align="flex-start">
+        <Group justify="space-between" wrap="nowrap" align="flex-start" data-tour="mail-mailbox">
           <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
             <ThemeIcon variant="light" size={36} radius="md">
               {isImap ? <IconServer size={20} /> : <IconBrandWindows size={20} />}
@@ -457,6 +457,7 @@ function MailboxCard({
         </Group>
 
         <Select
+          wrapperProps={{ "data-tour": "mail-folder" }}
           label={t("mail.folder")}
           description={t("mail.folderHint")}
           data={folderOptions}
@@ -493,49 +494,56 @@ function MailboxCard({
 
         <Divider />
 
-        <Text fw={600}>{t("mail.recent")}</Text>
-        {list.length === 0 ? (
-          <Text size="sm" c="dimmed">
-            {t("mail.recentEmpty")}
-          </Text>
-        ) : (
-          <Stack gap={0}>
-            {shown.map((m) => (
-              <Group
-                key={m.id}
-                gap="xs"
-                py={8}
-                wrap="wrap"
-                style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}
-              >
-                <Text size="sm" c="dimmed" w={{ base: "100%", sm: 150 }} style={{ flexShrink: 0 }}>
-                  {when(m.receivedAt)}
-                </Text>
-                <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }} data-cb-sensitive>
-                  {m.subject || m.sender}
-                </Text>
-                {/* On a phone the outcome takes its own line, so the subject
+        <Stack gap="md" data-tour="mail-history">
+          <Text fw={600}>{t("mail.recent")}</Text>
+          {list.length === 0 ? (
+            <Text size="sm" c="dimmed">
+              {t("mail.recentEmpty")}
+            </Text>
+          ) : (
+            <Stack gap={0}>
+              {shown.map((m) => (
+                <Group
+                  key={m.id}
+                  gap="xs"
+                  py={8}
+                  wrap="wrap"
+                  style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}
+                >
+                  <Text
+                    size="sm"
+                    c="dimmed"
+                    w={{ base: "100%", sm: 150 }}
+                    style={{ flexShrink: 0 }}
+                  >
+                    {when(m.receivedAt)}
+                  </Text>
+                  <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }} data-cb-sensitive>
+                    {m.subject || m.sender}
+                  </Text>
+                  {/* On a phone the outcome takes its own line, so the subject
                     keeps the width it needs. */}
-                <Box w={{ base: "100%", sm: "auto" }} style={{ minWidth: 0 }}>
-                  <MailOutcome
-                    mail={m}
-                    accounts={accounts.data ?? []}
-                    onCreate={() => setEditor({ mailId: m.id })}
-                    onFix={() => {
-                      const p = patterns.data?.find((x) => x.id === m.patternId);
-                      if (p) setEditor({ pattern: p });
-                    }}
-                  />
-                </Box>
-              </Group>
-            ))}
-            {list.length > RECENT_SHOWN && (
-              <Button variant="subtle" size="xs" mt={4} onClick={() => setShowAll((s) => !s)}>
-                {showAll ? t("mail.showFewer") : t("mail.showAll", { count: list.length })}
-              </Button>
-            )}
-          </Stack>
-        )}
+                  <Box w={{ base: "100%", sm: "auto" }} style={{ minWidth: 0 }}>
+                    <MailOutcome
+                      mail={m}
+                      accounts={accounts.data ?? []}
+                      onCreate={() => setEditor({ mailId: m.id })}
+                      onFix={() => {
+                        const p = patterns.data?.find((x) => x.id === m.patternId);
+                        if (p) setEditor({ pattern: p });
+                      }}
+                    />
+                  </Box>
+                </Group>
+              ))}
+              {list.length > RECENT_SHOWN && (
+                <Button variant="subtle" size="xs" mt={4} onClick={() => setShowAll((s) => !s)}>
+                  {showAll ? t("mail.showFewer") : t("mail.showAll", { count: list.length })}
+                </Button>
+              )}
+            </Stack>
+          )}
+        </Stack>
       </Stack>
       {editor && (
         <PatternSheet

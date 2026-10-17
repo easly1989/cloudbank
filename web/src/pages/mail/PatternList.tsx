@@ -116,7 +116,7 @@ export function PatternList({
   );
 
   return (
-    <Stack gap="xs" data-testid="mail-patterns">
+    <Stack gap="xs" data-testid="mail-patterns" data-tour="mail-patterns">
       <Group justify="space-between">
         <Text fw={600}>{t("mail.patterns.title")}</Text>
         {canCreate ? (

@@ -147,7 +147,7 @@ export function ReviewUnconfirmed({
   const iconStyle = { flexShrink: 0, opacity: 0.6 };
 
   return (
-    <Card withBorder data-testid="review-unconfirmed">
+    <Card withBorder data-testid="review-unconfirmed" data-tour="review-unconfirmed">
       <Stack gap="sm">
         <Stack gap={4}>
           <Text fw={600}>

@@ -2634,6 +2634,10 @@
       "duplicates": {
         "title": "La stessa transazione due volte?",
         "body": "Qui compaiono le importazioni che somigliano a una transazione che hai già, così decidi quale tenere."
+      },
+      "unconfirmed": {
+        "title": "Non confermate dalla banca",
+        "body": "Righe lette da una mail della banca che dopo 5 giorni la banca non ha ancora registrato. Uniscile alla riga della banca, oppure eliminale se il pagamento non c'è stato."
       }
     },
     "settings": {
@@ -2660,6 +2664,33 @@
       "backup": {
         "title": "Tieni una copia",
         "body": "Scarica una copia da cui ripristinare e controlla che il database sia integro."
+      }
+    },
+    "mail": {
+      "offer": "Prima volta qui? Fai il giro delle mail della banca",
+      "mailbox": {
+        "title": "La tua casella",
+        "body": "CloudBank resta collegato e legge ogni nuova mail appena arriva. Controlla ora legge subito; per sospenderla o scollegarla c'è Altro."
+      },
+      "folder": {
+        "title": "Una cartella",
+        "body": "Vengono lette solo le mail che arrivano in questa cartella da adesso in poi. La più sicura è una cartella che riceve solo le mail della banca."
+      },
+      "mode": {
+        "title": "Come leggere le mail",
+        "body": "Uno schema legge un tipo di mail e non la manda da nessuna parte. L'AI può leggere quelle che nessuno schema riconosce, se la configuri in Impostazioni › AI."
+      },
+      "patterns": {
+        "title": "Schemi",
+        "body": "Ognuno trasforma un tipo di mail della banca in una transazione sul conto che hai scelto. Vince il primo schema che legge una mail: trascinali per cambiare l'ordine."
+      },
+      "history": {
+        "title": "Ultime mail",
+        "body": "Che fine ha fatto ogni mail. Creata apre la sua transazione; da Non riconosciuta puoi creare uno schema; Non autenticata vuol dire che il mittente potrebbe essere falso."
+      },
+      "connect": {
+        "title": "Collega una casella",
+        "body": "Microsoft per Outlook.com, Hotmail e Live; una password per app per le altre. La più sicura è una casella che riceve solo le mail della banca."
       }
     }
   },

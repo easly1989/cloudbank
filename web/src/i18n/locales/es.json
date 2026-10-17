@@ -2634,6 +2634,10 @@
       "duplicates": {
         "title": "¿El mismo movimiento dos veces?",
         "body": "Las importaciones que se parecen a un movimiento que ya tienes aparecen aquí, para que decidas cuál conservar."
+      },
+      "unconfirmed": {
+        "title": "Sin confirmar por el banco",
+        "body": "Filas leídas de un correo del banco que el banco no ha registrado tras 5 días. Fusiona cada una con la fila del banco, o elimínala si el pago no llegó a hacerse."
       }
     },
     "settings": {
@@ -2660,6 +2664,33 @@
       "backup": {
         "title": "Guarda una copia",
         "body": "Descarga una copia desde la que restaurar, y comprueba que la base de datos está sana."
+      }
+    },
+    "mail": {
+      "offer": "¿Eres nuevo? Haz el recorrido de los correos del banco",
+      "mailbox": {
+        "title": "Tu buzón",
+        "body": "CloudBank sigue conectado y lee cada correo nuevo en cuanto llega. Comprobar ahora lo lee al momento; para pausarlo o desconectarlo, abre Más."
+      },
+      "folder": {
+        "title": "Una carpeta",
+        "body": "Solo se leen los correos que llegan a esta carpeta a partir de ahora. Lo más seguro es una carpeta que reciba solo los correos del banco."
+      },
+      "mode": {
+        "title": "Cómo se leen los correos",
+        "body": "Un patrón lee un tipo de correo y no lo envía a ningún sitio. La IA puede leer los que ningún patrón lee, si la configuras en Ajustes › IA."
+      },
+      "patterns": {
+        "title": "Patrones",
+        "body": "Cada uno convierte un tipo de correo del banco en un movimiento en la cuenta que elegiste. Gana el primer patrón que lee un correo: arrástralos para cambiar el orden."
+      },
+      "history": {
+        "title": "Últimos correos",
+        "body": "Qué fue de cada correo. Creado abre su movimiento; desde No reconocido puedes crear un patrón; No autenticado significa que el remitente podría ser falso."
+      },
+      "connect": {
+        "title": "Conectar un buzón",
+        "body": "Microsoft para Outlook.com, Hotmail y Live; una contraseña de aplicación para los demás. Lo más seguro es un buzón que reciba solo los correos del banco."
       }
     }
   },
