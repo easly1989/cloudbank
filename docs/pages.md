@@ -405,7 +405,8 @@ partial: its distance carries on to the next full fill.
 
 ## Review
 
-Review collects the imported and bank-synced transactions that need you:
+Review collects the imported, bank-synced and mail-read transactions that need
+you:
 
 - **Needs a category.** Transactions that arrived without a category. Set one
   and they leave the list.
@@ -413,6 +414,11 @@ Review collects the imported and bank-synced transactions that need you:
   one from the bank and one by hand.
   - **Keep this** merges the pair into the side you chose.
   - **Not a duplicate** keeps both and stops asking.
+- **Not confirmed by the bank.** Transactions read from a
+  [bank mail](bank-mails.md) that the bank has not booked five days on. Often
+  the real charge differs: a petrol station that holds 100 and takes 40, a
+  hotel, a payment in another currency. **Merge** them into the bank's row, or
+  delete them.
 
 Review has no place in the sidebar. You reach it from the **to review** button in
 an account's register, and from the dashboard's list of what wants your
@@ -438,7 +444,7 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | **Security** | Two-factor sign-in, API tokens, notifications |
 | **Bank sync** | Bank connections ([Automatic bank sync](bank-sync.md)) |
 | **Bank mails** | The bank's notification mails, read from one folder of a mailbox ([the guide](bank-mails.md)) |
-| **AI** | The optional AI category suggestions, with your own key |
+| **AI** | The optional AI, with your own key: category suggestions, and reading [bank mails](bank-mails.md) no pattern reads |
 | **Import & export** | Imports ([Importing transactions](import.md)), exports, backups and a database check |
 | **People** | Administrators only: the people who can sign in |
 | **About** | The version, the licence and the source code; for administrators, whether a newer CloudBank is out and the switch for the daily check ([Upgrading](backup.md#upgrading)) |
