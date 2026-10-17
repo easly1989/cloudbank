@@ -54,6 +54,7 @@ import {
   orderedMarks,
   readEditorState,
 } from "./patternBuilder";
+import { mock674, Proto674Fields, Proto674Samples, Proto674Test } from "./PatternSheet.proto674";
 
 /** Each field's colour, the same in the mail and in the list of fields. */
 const FIELD_COLOR: Record<Field, string> = {
@@ -100,6 +101,7 @@ export function PatternSheet({
   onClose: () => void;
 }) {
   const { t, i18n } = useTranslation();
+  const mock = mock674();
   const qc = useQueryClient();
   const fmtDate = useDateFormat();
   const saved = useMemo(() => (pattern ? readEditorState(pattern.editor) : null), [pattern]);
@@ -360,7 +362,7 @@ export function PatternSheet({
         </>
       }
     >
-      <Select
+      {!(mock?.v === "a" && mock.s >= 2) && <Select
         label={t("mail.editor.sample")}
         data={mailOptions}
         value={mailId != null ? String(mailId) : null}
@@ -368,8 +370,9 @@ export function PatternSheet({
         allowDeselect={false}
         comboboxProps={{ withinPortal: true }}
         data-cb-sensitive
-      />
+      />}
 
+      {mock && <Proto674Samples {...mock} />}
       <Stack gap={6}>
         <Text size="sm" fw={500}>
           {t("mail.editor.pick")}
@@ -480,7 +483,9 @@ export function PatternSheet({
         )}
       </Stack>
 
-      {!manual && (
+      {mock && Proto674Fields(mock) ? (
+        <Proto674Fields {...mock} />
+      ) : !manual && (
         <Stack gap={6}>
           <Text size="sm" fw={500}>
             {t("mail.editor.fields")}
@@ -680,12 +685,16 @@ export function PatternSheet({
         // Announced as it changes: the result arrives while the reader is
         // still selecting or typing.
         <div role="status" aria-atomic="true">
-          <TestResult
-            pending={test.isFetching && !tried}
-            error={test.error}
-            matched={tried?.matched}
-            total={tried?.total}
-          />
+          {mock ? (
+            <Proto674Test {...mock} />
+          ) : (
+            <TestResult
+              pending={test.isFetching && !tried}
+              error={test.error}
+              matched={tried?.matched}
+              total={tried?.total}
+            />
+          )}
         </div>
       )}
       {sample && !sample.authenticated && requireAuth && (
