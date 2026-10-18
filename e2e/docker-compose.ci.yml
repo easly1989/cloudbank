@@ -46,7 +46,8 @@ services:
     volumes:
       - cb-sso-data:/data
 
-  # Bank mails end to end (#657, #658, #659), for `npm run test:mail`: a
+  # Bank mails end to end (#657, #658, #659) and the notification channels
+  # (#686), for `npm run test:mail`: a
   # CloudBank that signs in to a pretend Microsoft and reads its IMAP server,
   # logs in with an app password to a pretend provider's, and has the mails no
   # pattern reads read by a pretend AI, all on this machine
@@ -60,6 +61,7 @@ services:
       E2E_MAIL_HTTP: "127.0.0.1:9100"
       E2E_MAIL_IMAP: "127.0.0.1:1143"
       E2E_MAIL_PASSWORD_IMAP: "127.0.0.1:1144"
+      E2E_MAIL_SMTP: "127.0.0.1:1025"
   cloudbank-mail:
     image: cloudbank:e2e
     network_mode: host
@@ -77,6 +79,12 @@ services:
       CB_MS_AUTHORITY: "http://127.0.0.1:9100"
       CB_MS_IMAP: "127.0.0.1:1143"
       CB_MAIL_LOCAL_IMAP: "127.0.0.1:1144"
+      # Notifications by email (#686) go to the pretend server's SMTP, which
+      # takes plain text on this machine only.
+      CB_SMTP_HOST: "127.0.0.1"
+      CB_SMTP_PORT: "1025"
+      CB_SMTP_TLS: "none"
+      CB_SMTP_FROM: "cloudbank@example.com"
     volumes:
       - cb-mail-data:/data
 

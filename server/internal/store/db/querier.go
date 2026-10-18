@@ -82,6 +82,8 @@ type Querier interface {
 	DeleteGoal(ctx context.Context, id int64) error
 	DeleteMailPattern(ctx context.Context, arg DeleteMailPatternParams) (int64, error)
 	DeleteMailbox(ctx context.Context, arg DeleteMailboxParams) (int64, error)
+	DeleteNotificationChannel(ctx context.Context, arg DeleteNotificationChannelParams) error
+	DeleteNotificationDelivery(ctx context.Context, id int64) error
 	DeleteOtherUserSessions(ctx context.Context, arg DeleteOtherUserSessionsParams) error
 	DeletePayee(ctx context.Context, id int64) error
 	DeletePluggyConfig(ctx context.Context, walletID int64) error
@@ -139,6 +141,7 @@ type Querier interface {
 	GetMailMessageView(ctx context.Context, arg GetMailMessageViewParams) (GetMailMessageViewRow, error)
 	GetMailPattern(ctx context.Context, arg GetMailPatternParams) (MailPattern, error)
 	GetMailbox(ctx context.Context, arg GetMailboxParams) (Mailbox, error)
+	GetNotificationChannel(ctx context.Context, arg GetNotificationChannelParams) (NotificationChannel, error)
 	GetPayee(ctx context.Context, id int64) (Payee, error)
 	GetPluggyConfig(ctx context.Context, walletID int64) (BankPluggyConfig, error)
 	GetSchedule(ctx context.Context, id int64) (Schedule, error)
@@ -181,6 +184,7 @@ type Querier interface {
 	InsertMailPattern(ctx context.Context, arg InsertMailPatternParams) (MailPattern, error)
 	InsertMailbox(ctx context.Context, arg InsertMailboxParams) (Mailbox, error)
 	InsertNotification(ctx context.Context, arg InsertNotificationParams) error
+	InsertNotificationDelivery(ctx context.Context, arg InsertNotificationDeliveryParams) error
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
 	InsertRecoveryCode(ctx context.Context, arg InsertRecoveryCodeParams) error
 	InsertReminderIfNew(ctx context.Context, arg InsertReminderIfNewParams) (int64, error)
@@ -231,6 +235,7 @@ type Querier interface {
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
 	ListContributionsForGoal(ctx context.Context, goalID int64) ([]GoalContribution, error)
 	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)
+	ListDueNotificationDeliveries(ctx context.Context, arg ListDueNotificationDeliveriesParams) ([]NotificationDelivery, error)
 	// Every transaction of the wallet, reduced to what the duplicate finder compares
 	// and ordered for it: by account, amount, then date. The account/date index
 	// holds all four columns, so this reads no table rows (#541).
@@ -257,6 +262,7 @@ type Querier interface {
 	// Every mailbox the listener should keep open: not paused, and not waiting for
 	// a new sign-in, across all wallets.
 	ListMailboxesToWatch(ctx context.Context) ([]Mailbox, error)
+	ListNotificationChannels(ctx context.Context, userID int64) ([]NotificationChannel, error)
 	ListNotificationPrefs(ctx context.Context, userID int64) ([]ListNotificationPrefsRow, error)
 	// Newest first; a notification about a wallet the person has left is hidden.
 	ListNotifications(ctx context.Context, arg ListNotificationsParams) ([]ListNotificationsRow, error)
@@ -345,6 +351,7 @@ type Querier interface {
 	RefreshEBankingConnectionSession(ctx context.Context, arg RefreshEBankingConnectionSessionParams) (BankConnection, error)
 	RenameTag(ctx context.Context, arg RenameTagParams) error
 	ReparentChildren(ctx context.Context, arg ReparentChildrenParams) error
+	RescheduleNotificationDelivery(ctx context.Context, arg RescheduleNotificationDeliveryParams) error
 	// Rates are what one unit is worth in the base; a new base divides them all by
 	// its own old rate, so they read against it (#558).
 	ScaleWalletRates(ctx context.Context, arg ScaleWalletRatesParams) error
@@ -374,6 +381,8 @@ type Querier interface {
 	SetMailboxIMAP(ctx context.Context, arg SetMailboxIMAPParams) error
 	SetMailboxPaused(ctx context.Context, arg SetMailboxPausedParams) error
 	SetMailboxSecret(ctx context.Context, arg SetMailboxSecretParams) error
+	SetNotificationChannelError(ctx context.Context, arg SetNotificationChannelErrorParams) error
+	SetNotificationChannelOK(ctx context.Context, arg SetNotificationChannelOKParams) error
 	SetNotificationPref(ctx context.Context, arg SetNotificationPrefParams) error
 	SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error
 	SetTransactionImportRef(ctx context.Context, arg SetTransactionImportRefParams) error
@@ -427,6 +436,7 @@ type Querier interface {
 	UpsertBankLink(ctx context.Context, arg UpsertBankLinkParams) error
 	UpsertEBankingConfig(ctx context.Context, arg UpsertEBankingConfigParams) error
 	UpsertExchangeRate(ctx context.Context, arg UpsertExchangeRateParams) error
+	UpsertNotificationChannel(ctx context.Context, arg UpsertNotificationChannelParams) error
 	UpsertPluggyConfig(ctx context.Context, arg UpsertPluggyConfigParams) error
 	UpsertPushSubscription(ctx context.Context, arg UpsertPushSubscriptionParams) error
 }

@@ -1,10 +1,11 @@
-import { Card, Group, Switch, Text, Title } from "@mantine/core";
+import { Button, Card, Group, Switch, Text, Title } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconBell } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { errorColor } from "../amountTone";
 
+import { testNotificationChannel } from "../api/client";
 import { currentPushSubscription, disablePush, enablePush, pushSupported } from "../push";
 import { notifyError } from "../notifyError";
 
@@ -66,6 +67,21 @@ export function NotificationsCard() {
             <Text size="xs" c="dimmed" mt={4}>
               {t("notif.unsupported")}
             </Text>
+          )}
+          {subscribed && (
+            <Button
+              variant="default"
+              size="xs"
+              mt="sm"
+              onClick={() =>
+                testNotificationChannel("push").then(
+                  () => notifications.show({ color: "green", message: t("notif.testSent") }),
+                  notifyError,
+                )
+              }
+            >
+              {t("notif.sendTest")}
+            </Button>
           )}
         </div>
         <Switch
