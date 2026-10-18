@@ -343,6 +343,7 @@ type NotificationChannel struct {
 	LastError   string
 	LastErrorAt sql.NullString
 	LastOkAt    sql.NullString
+	Server      string
 }
 
 type NotificationDelivery struct {

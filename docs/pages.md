@@ -442,7 +442,7 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | **Appearance** | Theme and accent, the balances shown, account balances in the sidebar, the footer; the sidebar's navigation |
 | *Your wallet* | Name, owner, pre-registered schedules, the bills category the dashboard's Bills widget lists |
 | **Security** | Two-factor sign-in, API tokens |
-| **Notifications** | Which events reach you, in the bell, by push on this device, by email or through a webhook ([the guide](notifications.md)); the bell itself sits in every page header |
+| **Notifications** | Which events reach you, in the bell, by push on this device, by email, in a Matrix room or through a webhook ([the guide](notifications.md)); the bell itself sits in every page header |
 | **Bank sync** | Bank connections ([Automatic bank sync](bank-sync.md)) |
 | **Bank mails** | The bank's notification mails, read from one folder of a mailbox ([the guide](bank-mails.md)) |
 | **AI** | The optional AI, with your own key: category suggestions, and reading [bank mails](bank-mails.md) no pattern reads |

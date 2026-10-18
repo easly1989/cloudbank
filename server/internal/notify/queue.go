@@ -126,7 +126,7 @@ func (s *Service) recipient(ctx context.Context, userID int64, ch Channel) (Reci
 	if err != nil {
 		return to, false, err
 	}
-	to.Target, to.Secret, to.LocalOK = secrets.Open(row.Target), secrets.Open(row.Secret), row.LocalOk != 0
+	to.Target, to.Secret, to.Server, to.LocalOK = secrets.Open(row.Target), secrets.Open(row.Secret), row.Server, row.LocalOk != 0
 	return to, true, nil
 }
 

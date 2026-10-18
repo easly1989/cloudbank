@@ -10,7 +10,7 @@ import {
   Title,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconMail, IconWebhook } from "@tabler/icons-react";
+import { IconBrandMatrix, IconMail, IconWebhook } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -144,11 +144,57 @@ function useChannelActions(channel: AddressedChannel) {
   return { save, test, remove };
 }
 
+/** How the last delivery went, with Remove and Send a test, once saved. */
+function Footer({
+  state,
+  actions: { test, remove },
+}: {
+  state: NotificationChannelState;
+  actions: ReturnType<typeof useChannelActions>;
+}) {
+  const { t } = useTranslation();
+  if (!state.configured) return null;
+  return (
+    <Group justify="space-between" gap="xs" wrap="wrap">
+      <Status state={state} />
+      <Group gap="xs" ml="auto">
+        <Button
+          variant="subtle"
+          color="red"
+          loading={remove.isPending}
+          onClick={() => remove.mutate()}
+        >
+          {t("notif.remove")}
+        </Button>
+        <Button variant="default" loading={test.isPending} onClick={() => test.mutate()}>
+          {t("notif.sendTest")}
+        </Button>
+      </Group>
+    </Group>
+  );
+}
+
+/** The guide's section on a channel, after the card's hint. */
+function GuideLink({ section }: { section: string }) {
+  const { t } = useTranslation();
+  return (
+    <Anchor
+      href={`${GUIDE_BASE_URL}notifications.md#${section}`}
+      target="_blank"
+      rel="noreferrer"
+      size="sm"
+    >
+      {t("notif.webhookGuide")}
+    </Anchor>
+  );
+}
+
 export function EmailChannelCard() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const state = useChannel("email");
-  const { save, test, remove } = useChannelActions("email");
+  const actions = useChannelActions("email");
+  const { save } = actions;
   const [address, setAddress] = useState<string | null>(null);
   if (!state) return null;
   const value = address ?? (state.configured ? state.target : (user?.email ?? ""));
@@ -181,24 +227,7 @@ export function EmailChannelCard() {
               {t("common.save")}
             </Button>
           </Group>
-          {state.configured && (
-            <Group justify="space-between" gap="xs" wrap="wrap">
-              <Status state={state} />
-              <Group gap="xs" ml="auto">
-                <Button
-                  variant="subtle"
-                  color="red"
-                  loading={remove.isPending}
-                  onClick={() => remove.mutate()}
-                >
-                  {t("notif.remove")}
-                </Button>
-                <Button variant="default" loading={test.isPending} onClick={() => test.mutate()}>
-                  {t("notif.sendTest")}
-                </Button>
-              </Group>
-            </Group>
-          )}
+          <Footer state={state} actions={actions} />
         </>
       )}
     </ChannelCard>
@@ -208,7 +237,8 @@ export function EmailChannelCard() {
 export function WebhookChannelCard() {
   const { t } = useTranslation();
   const state = useChannel("webhook");
-  const { save, test, remove } = useChannelActions("webhook");
+  const actions = useChannelActions("webhook");
+  const { save } = actions;
   const [url, setUrl] = useState("");
   const [secret, setSecret] = useState("");
   if (!state || !state.available) return null;
@@ -231,15 +261,7 @@ export function WebhookChannelCard() {
       title={t("notif.webhook")}
       hint={
         <>
-          {t("notif.webhookHint")}{" "}
-          <Anchor
-            href={`${GUIDE_BASE_URL}notifications.md`}
-            target="_blank"
-            rel="noreferrer"
-            size="sm"
-          >
-            {t("notif.webhookGuide")}
-          </Anchor>
+          {t("notif.webhookHint")} <GuideLink section="the-webhook" />
         </>
       }
     >
@@ -272,24 +294,96 @@ export function WebhookChannelCard() {
           {t("common.save")}
         </Button>
       </Group>
-      {state.configured && (
-        <Group justify="space-between" gap="xs" wrap="wrap">
-          <Status state={state} />
-          <Group gap="xs" ml="auto">
-            <Button
-              variant="subtle"
-              color="red"
-              loading={remove.isPending}
-              onClick={() => remove.mutate()}
-            >
-              {t("notif.remove")}
-            </Button>
-            <Button variant="default" loading={test.isPending} onClick={() => test.mutate()}>
-              {t("notif.sendTest")}
-            </Button>
-          </Group>
-        </Group>
-      )}
+      <Footer state={state} actions={actions} />
+    </ChannelCard>
+  );
+}
+
+export function MatrixChannelCard() {
+  const { t } = useTranslation();
+  const state = useChannel("matrix");
+  const actions = useChannelActions("matrix");
+  const { save } = actions;
+  const [room, setRoom] = useState<string | null>(null);
+  const [server, setServer] = useState<string | null>(null);
+  const [token, setToken] = useState("");
+  if (!state || !state.available) return null;
+
+  // A bot of the reader's own, unless the installation has a shared one and
+  // the reader has not saved their own.
+  const own = state.server !== "" || !state.shared;
+  const roomValue = room ?? state.target;
+  const serverValue = server ?? state.server;
+  const changed =
+    roomValue.trim() !== state.target ||
+    (own && serverValue.trim() !== state.server) ||
+    token.trim() !== "";
+  const complete =
+    roomValue.trim() !== "" &&
+    (!own || (serverValue.trim() !== "" && (token.trim() !== "" || state.hasSecret)));
+  const hint = !own
+    ? state.bot
+      ? t("notif.matrixHintShared", { bot: state.bot })
+      : t("notif.matrixHintSharedNoBot")
+    : t("notif.matrixHint");
+
+  const submit = () => {
+    const body: { target: string; server?: string; secret?: string } = { target: roomValue.trim() };
+    if (own) body.server = serverValue.trim();
+    if (token.trim()) body.secret = token.trim();
+    save.mutate(body, {
+      onSuccess: () => {
+        setRoom(null);
+        setServer(null);
+        setToken("");
+      },
+    });
+  };
+
+  return (
+    <ChannelCard
+      icon={<IconBrandMatrix size={18} />}
+      title={t("notif.matrix")}
+      hint={
+        <>
+          {hint} <GuideLink section="matrix" />
+        </>
+      }
+    >
+      <Group align="flex-end" gap="xs" wrap="wrap">
+        {own && (
+          <TextInput
+            label={t("notif.matrixServer")}
+            placeholder="https://matrix.org"
+            value={serverValue}
+            onChange={(e) => setServer(e.currentTarget.value)}
+            autoComplete="off"
+            style={{ flex: "1 1 200px", maxWidth: 300 }}
+          />
+        )}
+        <TextInput
+          label={t("notif.matrixRoom")}
+          placeholder="!abcdefgh:matrix.org"
+          value={roomValue}
+          onChange={(e) => setRoom(e.currentTarget.value)}
+          autoComplete="off"
+          style={{ flex: "1 1 220px", maxWidth: own ? 300 : 420 }}
+        />
+        {own && (
+          <PasswordInput
+            label={t("notif.matrixToken")}
+            placeholder={state.hasSecret ? t("notif.secretSaved") : undefined}
+            value={token}
+            onChange={(e) => setToken(e.currentTarget.value)}
+            autoComplete="new-password"
+            style={{ flex: "1 1 180px", maxWidth: 240 }}
+          />
+        )}
+        <Button disabled={!changed || !complete} loading={save.isPending} onClick={submit}>
+          {t("common.save")}
+        </Button>
+      </Group>
+      <Footer state={state} actions={actions} />
     </ChannelCard>
   );
 }

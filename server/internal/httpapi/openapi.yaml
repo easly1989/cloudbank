@@ -440,25 +440,28 @@ paths:
   /api/v1/notifications/channels:
     get:
       operationId: listNotificationChannels
-      summary: The channels the current user sets up with an address (email, webhook)
+      summary: The channels the current user sets up with an address (email, Matrix, webhook)
       description: >-
         A webhook's URL is never sent back, only its host: its path is often its
         key. Email is available only where the administrator configured a mail
-        server (CB_SMTP_*).
+        server (CB_SMTP_*). A Matrix access token is never sent back either;
+        shared says the installation has a shared bot (CB_MATRIX_*).
       responses:
         "200": { description: The channels., content: { application/json: { schema: { type: object, properties: { channels: { type: array, items: { $ref: "#/components/schemas/NotificationChannelState" } } }, required: [channels] } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
   /api/v1/notifications/channels/{channel}:
     parameters:
-      - { name: channel, in: path, required: true, schema: { type: string, enum: [email, webhook] } }
+      - { name: channel, in: path, required: true, schema: { type: string, enum: [email, matrix, webhook] } }
     put:
       operationId: saveNotificationChannel
       summary: Set the current user's address on a channel
       description: >-
         Omit target to keep the stored one (a webhook's URL is never sent back);
         omit secret to keep the stored signing secret, send "" to remove it. A
-        webhook on the local network may be saved only by an administrator:
-        anyone else gets 400 local_network.
+        webhook or a Matrix homeserver on the local network may be saved only by
+        an administrator: anyone else gets 400 local_network. Matrix takes a room
+        ID as target and, without a shared bot, a homeserver and an access token;
+        send server "" to post as the shared bot.
       requestBody:
         required: true
         content:
@@ -466,8 +469,9 @@ paths:
             schema:
               type: object
               properties:
-                target: { type: string, description: The email address, or the webhook URL. }
-                secret: { type: string, description: The webhook's signing secret (HMAC-SHA256 in X-CloudBank-Signature). }
+                target: { type: string, description: "The email address, the Matrix room ID (!id:server) or the webhook URL." }
+                secret: { type: string, description: The webhook's signing secret (HMAC-SHA256 in X-CloudBank-Signature), or the Matrix access token. }
+                server: { type: string, description: The Matrix homeserver URL; empty for the shared bot. }
       responses:
         "204": { description: Saved. }
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -482,7 +486,7 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/notifications/channels/{channel}/test:
     parameters:
-      - { name: channel, in: path, required: true, schema: { type: string, enum: [push, email, webhook] } }
+      - { name: channel, in: path, required: true, schema: { type: string, enum: [push, email, matrix, webhook] } }
     post:
       operationId: testNotificationChannel
       summary: Send a test message on a channel now
@@ -3607,7 +3611,7 @@ components:
       enum: [mail_stopped, mail_unrecognized, bills]
     NotificationChannel:
       type: string
-      enum: [inapp, push, email, webhook]
+      enum: [inapp, push, email, matrix, webhook]
     Notification:
       type: object
       properties:
@@ -3623,15 +3627,18 @@ components:
     NotificationChannelState:
       type: object
       properties:
-        channel: { type: string, enum: [email, webhook] }
+        channel: { type: string, enum: [email, matrix, webhook] }
         available: { type: boolean, description: False when this installation cannot send on it. }
         configured: { type: boolean }
-        target: { type: string, description: The email address, or only the webhook's host. }
+        target: { type: string, description: "The email address, the Matrix room, or only the webhook's host." }
         hasSecret: { type: boolean }
+        server: { type: string, description: The person's own Matrix homeserver; empty for the shared bot. }
+        shared: { type: boolean, description: The installation has a shared Matrix bot. }
+        bot: { type: string, description: "The shared bot's Matrix ID, to invite to the room; empty when unknown." }
         lastError: { type: string, description: Empty after a success; else the status or the reason of the last failure. }
         lastErrorAt: { type: string, format: date-time, nullable: true }
         lastOkAt: { type: string, format: date-time, nullable: true }
-      required: [channel, available, configured, target, hasSecret, lastError, lastErrorAt, lastOkAt]
+      required: [channel, available, configured, target, hasSecret, server, shared, bot, lastError, lastErrorAt, lastOkAt]
     NotificationList:
       type: object
       properties:
@@ -3649,8 +3656,9 @@ components:
             inapp: { type: boolean }
             push: { type: boolean }
             email: { type: boolean }
+            matrix: { type: boolean }
             webhook: { type: boolean }
-          required: [inapp, push, email, webhook]
+          required: [inapp, push, email, matrix, webhook]
       required: [kind, group, channels]
     PushSubscription:
       type: object

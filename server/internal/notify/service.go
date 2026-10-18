@@ -40,20 +40,21 @@ const (
 type Channel string
 
 // The channels: the bell, push, and the ones a person sets up with an
-// address (#686).
+// address (#686, #687).
 const (
 	ChannelInApp   Channel = "inapp"
 	ChannelPush    Channel = "push"
 	ChannelEmail   Channel = "email"
+	ChannelMatrix  Channel = "matrix"
 	ChannelWebhook Channel = "webhook"
 )
 
 // Channels lists every channel, in the order the settings page shows them.
-var Channels = []Channel{ChannelInApp, ChannelPush, ChannelEmail, ChannelWebhook}
+var Channels = []Channel{ChannelInApp, ChannelPush, ChannelEmail, ChannelMatrix, ChannelWebhook}
 
 // addressed reports whether a channel needs the person's own address (a row
 // in notification_channels) before anything can be sent on it.
-func addressed(ch Channel) bool { return ch == ChannelEmail || ch == ChannelWebhook }
+func addressed(ch Channel) bool { return ch != ChannelInApp && ch != ChannelPush }
 
 // EventInfo is one entry of the catalog: the event's group and whether it is
 // on for someone who never changed it.
@@ -101,10 +102,13 @@ type Event struct {
 // channel their address on it.
 type Recipient struct {
 	UserID int64
-	// Target is the email address or the webhook URL, opened.
+	// Target is the email address, the Matrix room or the webhook URL, opened.
 	Target string
-	// Secret is the webhook's signing secret, opened; empty for none.
+	// Secret is the webhook's signing secret or the Matrix access token,
+	// opened; empty for none.
 	Secret string
+	// Server is the person's Matrix homeserver; empty for the shared bot.
+	Server string
 	// LocalOK lets the delivery reach the local network: the channel was saved
 	// by an administrator.
 	LocalOK bool

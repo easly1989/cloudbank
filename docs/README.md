@@ -23,7 +23,7 @@ pull request: an edit made in the wiki is overwritten.
 - [Bank mails](bank-mails.md): reading the bank's payment notices from a
   mailbox, with patterns you make by selecting text in a mail, or with the AI;
   and what happens when the bank's own row arrives.
-- [Notifications](notifications.md): the bell, push, email and webhooks; which
+- [Notifications](notifications.md): the bell, push, email, Matrix and webhooks; which
   events go where, and connecting Home Assistant.
 
 ## Running CloudBank
