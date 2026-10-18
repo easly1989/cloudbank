@@ -1,4 +1,5 @@
 import {
+  IconBell,
   IconBuildingBank,
   IconDatabase,
   IconInfoCircle,
@@ -23,7 +24,8 @@ export interface SettingsSection {
 }
 
 /**
- * The ten sections of the settings screen, in the tile's order.
+ * The sections of the settings screen, in the tile's order; Notifications
+ * (#685) came after it, beside Security, where push used to live.
  *
  * The order is not alphabetical and not by size: it runs from what everyone
  * changes on day one to what most people never touch, so the thing you came for
@@ -49,6 +51,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     hintKey: "settings.securityHint",
     icon: IconShieldLock,
     notInDemo: true,
+  },
+  {
+    id: "notifications",
+    labelKey: "notif.title",
+    hintKey: "settings.notificationsHint",
+    icon: IconBell,
   },
   // Three sections, not one: each is set up on its own, by a different reader,
   // and together they made one long page of unrelated cards.

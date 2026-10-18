@@ -35,6 +35,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
 	"github.com/easly1989/cloudbank/server/internal/mailingest"
+	"github.com/easly1989/cloudbank/server/internal/notify"
 	"github.com/easly1989/cloudbank/server/internal/oidc"
 	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/push"
@@ -225,14 +226,17 @@ func run() error {
 	if ps, err := push.NewService(st.Read(), st.Write(), cfg.VAPIDSubject, logger); err != nil {
 		logger.Warn("web push disabled: could not prepare VAPID keys", "error", err)
 	} else {
-		ps.SetBills(billsSvc)
 		pushSvc = ps
-		// A bank mailbox that stops working, or mails nobody could read, are
-		// announced to whoever connected it (#656).
-		mailSvc.SetNotify(func(ctx context.Context, userID int64, ref, title, body, url string) error {
-			return ps.SendOnce(ctx, userID, ref, push.Payload{Title: title, Body: body, URL: url, Tag: "mail"})
-		})
 	}
+	// Everything CloudBank tells a person goes through one dispatcher (#685):
+	// the bell, and push where it is on.
+	notifySvc := notify.NewService(st.Read(), st.Write(), logger)
+	notifySvc.SetBills(billsSvc)
+	// A bank mailbox that stops working, or mails nobody could read, are
+	// announced to whoever connected it (#656).
+	mailSvc.SetNotify(func(ctx context.Context, userID int64, kind, ref, title, body, url string) error {
+		return notifySvc.Notify(ctx, userID, notify.Event{Kind: notify.Kind(kind), Ref: ref, Title: title, Body: body, URL: url})
+	})
 
 	opts := httpapi.Options{
 		Logger:            logger,
@@ -252,6 +256,7 @@ func run() error {
 		Dashboard:         dashboardSvc,
 		Bills:             billsSvc,
 		Push:              pushSvc,
+		Notifications:     notifySvc,
 		AI:                aiSvc,
 		BankSync:          bankSyncSvc,
 		Mail:              mailSvc,
@@ -282,6 +287,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// After the demo had its say: the demo build has no push.
+	if opts.Push != nil {
+		ps := opts.Push
+		notifySvc.SetSender(notify.ChannelPush, notify.SenderFunc(func(ctx context.Context, userID int64, e notify.Event) error {
+			return ps.SendToUser(ctx, userID, push.Payload{Title: e.Title, Body: e.Body, URL: e.URL, Tag: string(e.Kind)})
+		}))
+	}
 	handler := httpapi.New(opts)
 
 	srv := &http.Server{
@@ -311,10 +323,9 @@ func run() error {
 	// Refresh online exchange rates at startup, then once a day.
 	go runRateRefresh(ctx, currencySvc, rateProvider, logger)
 
-	// Send bills reminders (Web Push) at startup, then once a day.
-	if opts.Push != nil {
-		go runBillsReminders(ctx, opts.Push, logger)
-	}
+	// Send bills reminders and clear the bell's old entries at startup, then
+	// once a day.
+	go notifySvc.Run(ctx)
 
 	// The demo's accounts: idle ones deleted every few minutes, all of them
 	// every night.
@@ -415,8 +426,7 @@ func runRateRefresh(ctx context.Context, svc *currency.Service, provider currenc
 	}
 }
 
-// runBillsReminders sends due-bill reminders at startup and then once a day.
-// Each bill occurrence is announced only once (deduped in the push service).
+// runBankSync keeps the auto-sync bank connections up to date.
 func runBankSync(ctx context.Context, svc *banksync.Service, interval time.Duration, logger *slog.Logger) {
 	// Wake at most hourly (or every interval, if shorter); SyncDue only re-syncs
 	// connections whose last sync is older than their own configured interval, so
@@ -441,25 +451,6 @@ func runBankSync(ctx context.Context, svc *banksync.Service, interval time.Durat
 	}
 	run()
 	ticker := time.NewTicker(check)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			run()
-		}
-	}
-}
-
-func runBillsReminders(ctx context.Context, svc *push.Service, logger *slog.Logger) {
-	run := func() {
-		if err := svc.RunBillsReminders(ctx, time.Now().UTC()); err != nil {
-			logger.Error("bills reminders job failed", "error", err)
-		}
-	}
-	run()
-	ticker := time.NewTicker(24 * time.Hour)
 	defer ticker.Stop()
 	for {
 		select {

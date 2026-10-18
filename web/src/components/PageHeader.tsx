@@ -3,6 +3,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import type { ReactNode } from "react";
 
 import { TourButton } from "../onboarding/TourButton";
+import { NotificationBell } from "./NotificationBell";
 import { PrivacyButton } from "./PrivacyButton";
 import { usePageTour } from "../onboarding/tourContext";
 import type { TourId } from "../onboarding/tours";
@@ -25,7 +26,8 @@ import type { TourId } from "../onboarding/tours";
 // action, and so took a 60px row to itself; beside the title it takes none.
 //
 // The privacy eye (#626) comes first, beside the ?, on every page that has this
-// header — which is every page but Settings, whose layout has its own.
+// header — which is every page but Settings, whose layout has its own. The
+// bell (#685) goes before the eye; on a phone it lives in the top bar instead.
 export function PageHeader({
   title,
   hint,
@@ -115,6 +117,7 @@ export function PageHeader({
         justify="flex-end"
         style={{ minWidth: 0 }}
       >
+        <NotificationBell size={prominent ? 44 : 40} />
         <PrivacyButton size={prominent ? 44 : 40} />
         {tour && <TourButton id={tour} size={prominent ? 44 : 40} />}
         {actions}

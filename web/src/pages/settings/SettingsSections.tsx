@@ -16,6 +16,7 @@ import { AiSettingsCard } from "../../components/AiSettingsCard";
 import { EntryFieldsCard } from "../../components/EntryFieldsCard";
 import { Logo } from "../../components/Logo";
 import { NavLayoutEditor } from "../../components/NavLayoutEditor";
+import { NotificationPrefsCard } from "../../components/NotificationPrefsCard";
 import { NotificationsCard } from "../../components/NotificationsCard";
 import { PasswordCard } from "../../components/PasswordCard";
 import { TwoFactorCard } from "../../components/TwoFactorCard";
@@ -89,8 +90,23 @@ export function SecuritySection() {
       <SettingsGroup title={t("settings.apiTokens")} hint={t("settings.apiTokensHint")}>
         <ApiTokensPage />
       </SettingsGroup>
-      <SettingsGroup title={t("notif.title")} hint={t("settings.notificationsHint")}>
-        <NotificationsCard />
+    </Stack>
+  );
+}
+
+// Where CloudBank reaches the reader, and with what (#685). Push moved here
+// from Security; the demo build has none.
+export function NotificationsSection() {
+  const { t } = useTranslation();
+  return (
+    <Stack gap="xl">
+      {!__DEMO__ && (
+        <SettingsGroup title={t("notif.channels")} hint={t("notif.channelsHint")}>
+          <NotificationsCard />
+        </SettingsGroup>
+      )}
+      <SettingsGroup title={t("notif.events")} hint={t("notif.eventsHint")}>
+        <NotificationPrefsCard />
       </SettingsGroup>
     </Stack>
   );

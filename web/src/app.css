@@ -919,3 +919,49 @@ body {
     min-height: 44px;
   }
 }
+
+/* The bell's panel (#685): one row per notification, its kind in a disc, the
+   unread dot in the badge's blue. */
+:root {
+  --cb-note-kind: #f1f4f9;
+}
+[data-mantine-color-scheme="dark"] {
+  --cb-note-kind: #1f2733;
+}
+.cb-note {
+  display: grid;
+  grid-template-columns: 32px 1fr 10px;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  align-items: start;
+  cursor: pointer;
+}
+.cb-note:hover {
+  background: var(--cb-band-notice);
+}
+.cb-note:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: -2px;
+}
+.cb-note-kind {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--cb-note-kind);
+}
+.cb-note-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mantine-color-blue-filled);
+  margin-top: 6px;
+}

@@ -1690,10 +1690,44 @@
   },
   "notif": {
     "title": "Notifiche",
-    "hint": "Ricevi un promemoria push su questo dispositivo quando ci sono scadenze in arrivo o scadute.",
+    "hint": "Ricevi anche su questo dispositivo gli eventi segnati per il push qui sotto.",
     "denied": "Le notifiche sono bloccate — consentile nel browser per attivarle.",
     "blocked": "Bloccate nelle impostazioni del browser.",
-    "unsupported": "Questo browser non supporta le notifiche push."
+    "unsupported": "Questo browser non supporta le notifiche push.",
+    "bellLabel_one": "Notifiche, {{count}} da leggere",
+    "bellLabel_other": "Notifiche, {{count}} da leggere",
+    "markAll": "Segna tutte come lette",
+    "settingsLink": "Impostazioni delle notifiche",
+    "empty": "Niente di nuovo. Quando qualcosa ti richiede, compare qui.",
+    "today": "Oggi",
+    "week": "Questa settimana",
+    "earlier": "Prima",
+    "yesterday": "ieri",
+    "unread": "Da leggere",
+    "pushTitle": "Push su questo dispositivo",
+    "channels": "Canali",
+    "channelsHint": "Dove ti raggiungono le notifiche, oltre alla campanella.",
+    "events": "Eventi",
+    "eventsHint": "Cosa ti viene detto, e dove. La campanella tiene tutto per 90 giorni.",
+    "eventHeader": "Evento",
+    "channel": {
+      "inapp": "In app",
+      "push": "Push"
+    },
+    "group": {
+      "problems": "Problemi",
+      "bills": "Scadenze"
+    },
+    "kind": {
+      "mail_stopped": "Una casella della banca si ferma",
+      "mail_unrecognized": "Mail della banca non riconosciute",
+      "bills": "Scadenze in arrivo"
+    },
+    "kindHint": {
+      "mail_stopped": "CloudBank non riesce più ad accedere e la casella va ricollegata.",
+      "mail_unrecognized": "Arrivano mail che nessun modello sa leggere.",
+      "bills": "Programmate in scadenza nei prossimi 3 giorni, o già scadute."
+    }
   },
   "ai": {
     "title": "AI (con la tua chiave)",

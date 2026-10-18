@@ -179,7 +179,7 @@ func TestAnUnauthenticatedMailWritesNothing(t *testing.T) {
 	ctx := context.Background()
 	acc, _ := f.ledger(t)
 	var alerts []string
-	f.svc.SetNotify(func(_ context.Context, _ int64, _, _, body, _ string) error {
+	f.svc.SetNotify(func(_ context.Context, _ int64, _, _, _, body, _ string) error {
 		alerts = append(alerts, body)
 		return nil
 	})
