@@ -70,6 +70,11 @@ type Config struct {
 	// tls for implicit TLS on 465; none for a relay on a trusted network).
 	// Without a host and a from address there is no email channel.
 	SMTP SMTP
+	// MatrixHomeserver and MatrixToken are an optional shared Matrix bot
+	// (#687), CB_MATRIX_HOMESERVER and CB_MATRIX_TOKEN: with both set, a person
+	// gives only the room to be notified there. Without them, each person uses
+	// a bot of their own.
+	MatrixHomeserver, MatrixToken string
 
 	// OIDC/SSO login. When Issuer, ClientID, ClientSecret and RedirectURL are all
 	// set (see OIDCEnabled), a "Sign in with <OIDCName>" button is offered on the
@@ -158,6 +163,8 @@ func Load() Config {
 			From:     strings.TrimSpace(getenv("CB_SMTP_FROM", "")),
 			TLS:      strings.ToLower(strings.TrimSpace(getenv("CB_SMTP_TLS", "starttls"))),
 		},
+		MatrixHomeserver: strings.TrimRight(strings.TrimSpace(getenv("CB_MATRIX_HOMESERVER", "")), "/"),
+		MatrixToken:      strings.TrimSpace(getenv("CB_MATRIX_TOKEN", "")),
 
 		OIDCIssuer:        getenv("CB_OIDC_ISSUER", ""),
 		OIDCClientID:      getenv("CB_OIDC_CLIENT_ID", ""),

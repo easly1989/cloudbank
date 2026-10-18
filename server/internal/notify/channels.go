@@ -20,7 +20,8 @@ var (
 	// ErrChannelUnavailable means this installation cannot send on that channel
 	// (email with no SMTP server configured), or it is not one a person sets up.
 	ErrChannelUnavailable = errors.New("notify: channel not available")
-	// ErrBadTarget means the target is not an email address, or not an http(s) URL.
+	// ErrBadTarget means the target is not an email address, a Matrix room ID
+	// or an http(s) URL, or a part the channel needs is missing.
 	ErrBadTarget = errors.New("notify: invalid address")
 	// ErrLocalTarget means a webhook on the local network, saved by someone who is
 	// not an administrator.
@@ -41,10 +42,17 @@ type ChannelInfo struct {
 	// Available is false when the installation cannot send on it.
 	Available  bool
 	Configured bool
-	// Target is the email address, or only the webhook's host: the rest of
-	// its URL is often its key and never leaves the server.
-	Target      string
-	HasSecret   bool
+	// Target is the email address, the Matrix room, or only the webhook's
+	// host: the rest of its URL is often its key and never leaves the server.
+	Target    string
+	HasSecret bool
+	// Server is the person's Matrix homeserver, empty when the shared bot
+	// posts.
+	Server string
+	// Shared is true when the installation has a shared Matrix bot, and Bot
+	// is that bot's Matrix ID when its homeserver told it.
+	Shared      bool
+	Bot         string
 	LastError   string
 	LastErrorAt string
 	LastOKAt    string
@@ -67,10 +75,14 @@ func (s *Service) AddressedChannels(ctx context.Context, userID int64) ([]Channe
 			continue
 		}
 		info := ChannelInfo{Channel: ch, Available: s.senders[ch] != nil}
+		if m, ok := s.senders[ch].(*MatrixSender); ok {
+			info.Shared, info.Bot = m.Shared(), m.BotUser(ctx)
+		}
 		if r, ok := byCh[ch]; ok {
 			info.Configured = true
 			info.Target = shownTarget(ch, secrets.Open(r.Target))
 			info.HasSecret = r.Secret != ""
+			info.Server = r.Server
 			info.LastError, info.LastErrorAt, info.LastOKAt = r.LastError, r.LastErrorAt.String, r.LastOkAt.String
 		}
 		out = append(out, info)
@@ -88,12 +100,22 @@ func shownTarget(ch Channel, target string) string {
 	return ""
 }
 
-// SaveChannel sets a person's address on a channel. A nil target keeps the
-// stored one (the webhook URL is never sent back, so the page cannot resend
-// it), a nil secret keeps the stored secret and an empty one removes it. A
-// webhook on the local network needs admin; the address is checked again with
-// the current role on every save.
-func (s *Service) SaveChannel(ctx context.Context, userID int64, admin bool, ch Channel, target, secret *string) error {
+// ChannelInput is what a person saves on a channel. A nil field keeps the
+// stored value (the webhook URL and the secrets are never sent back, so the
+// page cannot resend them); an empty secret or server removes it.
+type ChannelInput struct {
+	// Target is the email address, the Matrix room ID or the webhook URL.
+	Target *string
+	// Secret is the webhook's signing secret or the Matrix access token.
+	Secret *string
+	// Server is the Matrix homeserver; empty to post as the shared bot.
+	Server *string
+}
+
+// SaveChannel sets a person's address on a channel. A webhook or homeserver
+// on the local network needs admin; the address is checked again with the
+// current role on every save.
+func (s *Service) SaveChannel(ctx context.Context, userID int64, admin bool, ch Channel, in ChannelInput) error {
 	if !addressed(ch) || s.senders[ch] == nil {
 		return ErrChannelUnavailable
 	}
@@ -103,23 +125,47 @@ func (s *Service) SaveChannel(ctx context.Context, userID int64, admin bool, ch 
 	}
 	exists := err == nil
 	t := secrets.Open(old.Target)
-	if target != nil {
-		t = strings.TrimSpace(*target)
+	if in.Target != nil {
+		t = strings.TrimSpace(*in.Target)
 	} else if !exists {
 		return ErrBadTarget
 	}
 	sec := secrets.Open(old.Secret)
-	if secret != nil {
-		sec = strings.TrimSpace(*secret)
+	if in.Secret != nil {
+		sec = strings.TrimSpace(*in.Secret)
 	}
-	if ch == ChannelEmail {
+	srv := old.Server
+	if in.Server != nil {
+		srv = strings.TrimRight(strings.TrimSpace(*in.Server), "/")
+	}
+	switch ch {
+	case ChannelEmail:
 		a, err := mail.ParseAddress(t)
 		if err != nil {
 			return ErrBadTarget
 		}
-		t, sec = a.Address, ""
-	} else if err := checkWebhook(ctx, t, admin); err != nil {
-		return err
+		t, sec, srv = a.Address, "", ""
+	case ChannelMatrix:
+		// A room ID, "!opaque:server"; an alias would need resolving.
+		if !strings.HasPrefix(t, "!") || !strings.Contains(t, ":") {
+			return ErrBadTarget
+		}
+		if srv == "" {
+			// The shared bot posts: nothing of the person's own to keep.
+			if !s.senders[ch].(*MatrixSender).Shared() {
+				return ErrBadTarget
+			}
+			sec = ""
+		} else if sec == "" {
+			return ErrBadTarget
+		} else if err := checkServerURL(ctx, srv, admin); err != nil {
+			return err
+		}
+	default:
+		if err := checkServerURL(ctx, t, admin); err != nil {
+			return err
+		}
+		srv = ""
 	}
 	sealed := ""
 	if sec != "" {
@@ -130,11 +176,13 @@ func (s *Service) SaveChannel(ctx context.Context, userID int64, admin bool, ch 
 		localOK = 1
 	}
 	return s.q.UpsertNotificationChannel(ctx, db.UpsertNotificationChannelParams{
-		UserID: userID, Channel: string(ch), Target: secrets.Seal(t), Secret: sealed, LocalOk: localOK,
+		UserID: userID, Channel: string(ch), Target: secrets.Seal(t), Secret: sealed, Server: srv, LocalOk: localOK,
 	})
 }
 
-func checkWebhook(ctx context.Context, raw string, admin bool) error {
+// checkServerURL checks a URL CloudBank will call: http(s), no credentials in
+// it, and on the public internet unless an administrator saves it.
+func checkServerURL(ctx context.Context, raw string, admin bool) error {
 	u, err := url.Parse(raw)
 	if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") || u.User != nil {
 		return ErrBadTarget
@@ -187,7 +235,8 @@ func (s *Service) TestChannel(ctx context.Context, userID int64, lang string, ch
 	if !ok {
 		return ErrNotSetUp
 	}
-	key := fmt.Sprint(userID, ch, to.Target)
+	// A fixed token or homeserver deserves a test at once, like a new address.
+	key := fmt.Sprint(userID, ch, to.Target, to.Server, to.Secret)
 	s.testMu.Lock()
 	if last, seen := s.tested[key]; seen && s.now().Sub(last) < testEvery {
 		s.testMu.Unlock()

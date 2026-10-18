@@ -16,7 +16,11 @@ import { AiSettingsCard } from "../../components/AiSettingsCard";
 import { EntryFieldsCard } from "../../components/EntryFieldsCard";
 import { Logo } from "../../components/Logo";
 import { NavLayoutEditor } from "../../components/NavLayoutEditor";
-import { EmailChannelCard, WebhookChannelCard } from "../../components/NotificationChannelCards";
+import {
+  EmailChannelCard,
+  MatrixChannelCard,
+  WebhookChannelCard,
+} from "../../components/NotificationChannelCards";
 import { NotificationPrefsCard } from "../../components/NotificationPrefsCard";
 import { NotificationsCard } from "../../components/NotificationsCard";
 import { PasswordCard } from "../../components/PasswordCard";
@@ -105,6 +109,7 @@ export function NotificationsSection() {
         <SettingsGroup title={t("notif.channels")} hint={t("notif.channelsHint")}>
           <NotificationsCard />
           <EmailChannelCard />
+          <MatrixChannelCard />
           <WebhookChannelCard />
         </SettingsGroup>
       )}

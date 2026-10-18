@@ -425,8 +425,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * The channels the current user sets up with an address (email, webhook)
-         * @description A webhook's URL is never sent back, only its host: its path is often its key. Email is available only where the administrator configured a mail server (CB_SMTP_*).
+         * The channels the current user sets up with an address (email, Matrix, webhook)
+         * @description A webhook's URL is never sent back, only its host: its path is often its key. Email is available only where the administrator configured a mail server (CB_SMTP_*). A Matrix access token is never sent back either; shared says the installation has a shared bot (CB_MATRIX_*).
          */
         get: operations["listNotificationChannels"];
         put?: never;
@@ -442,14 +442,14 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                channel: "email" | "webhook";
+                channel: "email" | "matrix" | "webhook";
             };
             cookie?: never;
         };
         get?: never;
         /**
          * Set the current user's address on a channel
-         * @description Omit target to keep the stored one (a webhook's URL is never sent back); omit secret to keep the stored signing secret, send "" to remove it. A webhook on the local network may be saved only by an administrator: anyone else gets 400 local_network.
+         * @description Omit target to keep the stored one (a webhook's URL is never sent back); omit secret to keep the stored signing secret, send "" to remove it. A webhook or a Matrix homeserver on the local network may be saved only by an administrator: anyone else gets 400 local_network. Matrix takes a room ID as target and, without a shared bot, a homeserver and an access token; send server "" to post as the shared bot.
          */
         put: operations["saveNotificationChannel"];
         post?: never;
@@ -465,7 +465,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                channel: "push" | "email" | "webhook";
+                channel: "push" | "email" | "matrix" | "webhook";
             };
             cookie?: never;
         };
@@ -3825,7 +3825,7 @@ export interface components {
         /** @enum {string} */
         NotificationKind: "mail_stopped" | "mail_unrecognized" | "bills";
         /** @enum {string} */
-        NotificationChannel: "inapp" | "push" | "email" | "webhook";
+        NotificationChannel: "inapp" | "push" | "email" | "matrix" | "webhook";
         Notification: {
             /** Format: int64 */
             id: number;
@@ -3845,13 +3845,19 @@ export interface components {
         };
         NotificationChannelState: {
             /** @enum {string} */
-            channel: "email" | "webhook";
+            channel: "email" | "matrix" | "webhook";
             /** @description False when this installation cannot send on it. */
             available: boolean;
             configured: boolean;
-            /** @description The email address */
+            /** @description The email address, the Matrix room, or only the webhook's host. */
             target: string;
             hasSecret: boolean;
+            /** @description The person's own Matrix homeserver; empty for the shared bot. */
+            server: string;
+            /** @description The installation has a shared Matrix bot. */
+            shared: boolean;
+            /** @description The shared bot's Matrix ID, to invite to the room; empty when unknown. */
+            bot: string;
             /** @description Empty after a success; else the status or the reason of the last failure. */
             lastError: string;
             /** Format: date-time */
@@ -3871,6 +3877,7 @@ export interface components {
                 inapp: boolean;
                 push: boolean;
                 email: boolean;
+                matrix: boolean;
                 webhook: boolean;
             };
         };
@@ -6038,17 +6045,19 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                channel: "email" | "webhook";
+                channel: "email" | "matrix" | "webhook";
             };
             cookie?: never;
         };
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description The email address */
+                    /** @description The email address, the Matrix room ID (!id:server) or the webhook URL. */
                     target?: string;
-                    /** @description The webhook's signing secret (HMAC-SHA256 in X-CloudBank-Signature). */
+                    /** @description The webhook's signing secret (HMAC-SHA256 in X-CloudBank-Signature) */
                     secret?: string;
+                    /** @description The Matrix homeserver URL; empty for the shared bot. */
+                    server?: string;
                 };
             };
         };
@@ -6070,7 +6079,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                channel: "email" | "webhook";
+                channel: "email" | "matrix" | "webhook";
             };
             cookie?: never;
         };
@@ -6092,7 +6101,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                channel: "push" | "email" | "webhook";
+                channel: "push" | "email" | "matrix" | "webhook";
             };
             cookie?: never;
         };
