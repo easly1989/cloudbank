@@ -24,6 +24,54 @@ func (q *Queries) CountUnreadNotifications(ctx context.Context, userID int64) (i
 	return count, err
 }
 
+const deleteNotificationChannel = `-- name: DeleteNotificationChannel :exec
+DELETE FROM notification_channels WHERE user_id = ? AND channel = ?
+`
+
+type DeleteNotificationChannelParams struct {
+	UserID  int64
+	Channel string
+}
+
+func (q *Queries) DeleteNotificationChannel(ctx context.Context, arg DeleteNotificationChannelParams) error {
+	_, err := q.db.ExecContext(ctx, deleteNotificationChannel, arg.UserID, arg.Channel)
+	return err
+}
+
+const deleteNotificationDelivery = `-- name: DeleteNotificationDelivery :exec
+DELETE FROM notification_deliveries WHERE id = ?
+`
+
+func (q *Queries) DeleteNotificationDelivery(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteNotificationDelivery, id)
+	return err
+}
+
+const getNotificationChannel = `-- name: GetNotificationChannel :one
+SELECT user_id, channel, target, secret, local_ok, last_error, last_error_at, last_ok_at FROM notification_channels WHERE user_id = ? AND channel = ?
+`
+
+type GetNotificationChannelParams struct {
+	UserID  int64
+	Channel string
+}
+
+func (q *Queries) GetNotificationChannel(ctx context.Context, arg GetNotificationChannelParams) (NotificationChannel, error) {
+	row := q.db.QueryRowContext(ctx, getNotificationChannel, arg.UserID, arg.Channel)
+	var i NotificationChannel
+	err := row.Scan(
+		&i.UserID,
+		&i.Channel,
+		&i.Target,
+		&i.Secret,
+		&i.LocalOk,
+		&i.LastError,
+		&i.LastErrorAt,
+		&i.LastOkAt,
+	)
+	return i, err
+}
+
 const insertNotification = `-- name: InsertNotification :exec
 INSERT INTO notifications (user_id, kind, title, body, url, wallet_id)
 VALUES (?, ?, ?, ?, ?, ?)
@@ -48,6 +96,102 @@ func (q *Queries) InsertNotification(ctx context.Context, arg InsertNotification
 		arg.WalletID,
 	)
 	return err
+}
+
+const insertNotificationDelivery = `-- name: InsertNotificationDelivery :exec
+INSERT INTO notification_deliveries (user_id, channel, payload, next_at) VALUES (?, ?, ?, ?)
+`
+
+type InsertNotificationDeliveryParams struct {
+	UserID  int64
+	Channel string
+	Payload string
+	NextAt  string
+}
+
+func (q *Queries) InsertNotificationDelivery(ctx context.Context, arg InsertNotificationDeliveryParams) error {
+	_, err := q.db.ExecContext(ctx, insertNotificationDelivery,
+		arg.UserID,
+		arg.Channel,
+		arg.Payload,
+		arg.NextAt,
+	)
+	return err
+}
+
+const listDueNotificationDeliveries = `-- name: ListDueNotificationDeliveries :many
+SELECT id, user_id, channel, payload, attempts, next_at FROM notification_deliveries WHERE next_at <= ? ORDER BY next_at, id LIMIT ?
+`
+
+type ListDueNotificationDeliveriesParams struct {
+	NextAt string
+	Limit  int64
+}
+
+func (q *Queries) ListDueNotificationDeliveries(ctx context.Context, arg ListDueNotificationDeliveriesParams) ([]NotificationDelivery, error) {
+	rows, err := q.db.QueryContext(ctx, listDueNotificationDeliveries, arg.NextAt, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []NotificationDelivery{}
+	for rows.Next() {
+		var i NotificationDelivery
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Channel,
+			&i.Payload,
+			&i.Attempts,
+			&i.NextAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listNotificationChannels = `-- name: ListNotificationChannels :many
+SELECT user_id, channel, target, secret, local_ok, last_error, last_error_at, last_ok_at FROM notification_channels WHERE user_id = ?
+`
+
+func (q *Queries) ListNotificationChannels(ctx context.Context, userID int64) ([]NotificationChannel, error) {
+	rows, err := q.db.QueryContext(ctx, listNotificationChannels, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []NotificationChannel{}
+	for rows.Next() {
+		var i NotificationChannel
+		if err := rows.Scan(
+			&i.UserID,
+			&i.Channel,
+			&i.Target,
+			&i.Secret,
+			&i.LocalOk,
+			&i.LastError,
+			&i.LastErrorAt,
+			&i.LastOkAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listNotificationPrefs = `-- name: ListNotificationPrefs :many
@@ -182,6 +326,54 @@ func (q *Queries) PurgeNotificationsBefore(ctx context.Context, createdAt string
 	return result.RowsAffected()
 }
 
+const rescheduleNotificationDelivery = `-- name: RescheduleNotificationDelivery :exec
+UPDATE notification_deliveries SET attempts = ?, next_at = ? WHERE id = ?
+`
+
+type RescheduleNotificationDeliveryParams struct {
+	Attempts int64
+	NextAt   string
+	ID       int64
+}
+
+func (q *Queries) RescheduleNotificationDelivery(ctx context.Context, arg RescheduleNotificationDeliveryParams) error {
+	_, err := q.db.ExecContext(ctx, rescheduleNotificationDelivery, arg.Attempts, arg.NextAt, arg.ID)
+	return err
+}
+
+const setNotificationChannelError = `-- name: SetNotificationChannelError :exec
+UPDATE notification_channels
+SET last_error = ?, last_error_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE user_id = ? AND channel = ?
+`
+
+type SetNotificationChannelErrorParams struct {
+	LastError string
+	UserID    int64
+	Channel   string
+}
+
+func (q *Queries) SetNotificationChannelError(ctx context.Context, arg SetNotificationChannelErrorParams) error {
+	_, err := q.db.ExecContext(ctx, setNotificationChannelError, arg.LastError, arg.UserID, arg.Channel)
+	return err
+}
+
+const setNotificationChannelOK = `-- name: SetNotificationChannelOK :exec
+UPDATE notification_channels
+SET last_error = '', last_error_at = NULL, last_ok_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE user_id = ? AND channel = ?
+`
+
+type SetNotificationChannelOKParams struct {
+	UserID  int64
+	Channel string
+}
+
+func (q *Queries) SetNotificationChannelOK(ctx context.Context, arg SetNotificationChannelOKParams) error {
+	_, err := q.db.ExecContext(ctx, setNotificationChannelOK, arg.UserID, arg.Channel)
+	return err
+}
+
 const setNotificationPref = `-- name: SetNotificationPref :exec
 INSERT INTO notification_prefs (user_id, kind, channel, enabled) VALUES (?, ?, ?, ?)
 ON CONFLICT (user_id, kind, channel) DO UPDATE SET enabled = excluded.enabled
@@ -200,6 +392,33 @@ func (q *Queries) SetNotificationPref(ctx context.Context, arg SetNotificationPr
 		arg.Kind,
 		arg.Channel,
 		arg.Enabled,
+	)
+	return err
+}
+
+const upsertNotificationChannel = `-- name: UpsertNotificationChannel :exec
+INSERT INTO notification_channels (user_id, channel, target, secret, local_ok)
+VALUES (?, ?, ?, ?, ?)
+ON CONFLICT (user_id, channel) DO UPDATE SET
+    target = excluded.target, secret = excluded.secret, local_ok = excluded.local_ok,
+    last_error = '', last_error_at = NULL
+`
+
+type UpsertNotificationChannelParams struct {
+	UserID  int64
+	Channel string
+	Target  string
+	Secret  string
+	LocalOk int64
+}
+
+func (q *Queries) UpsertNotificationChannel(ctx context.Context, arg UpsertNotificationChannelParams) error {
+	_, err := q.db.ExecContext(ctx, upsertNotificationChannel,
+		arg.UserID,
+		arg.Channel,
+		arg.Target,
+		arg.Secret,
+		arg.LocalOk,
 	)
 	return err
 }

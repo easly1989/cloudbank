@@ -13,14 +13,17 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
-// fakeSender records what reached its channel; err makes every send fail.
+// fakeSender records what reached its channel and to whom; err makes every
+// send fail.
 type fakeSender struct {
 	got []Event
+	to  []Recipient
 	err error
 }
 
-func (f *fakeSender) Send(_ context.Context, _ int64, e Event) error {
+func (f *fakeSender) Send(_ context.Context, to Recipient, e Event) error {
 	f.got = append(f.got, e)
+	f.to = append(f.to, to)
 	return f.err
 }
 
@@ -71,6 +74,7 @@ func TestNotifyDefaultsReachEveryChannel(t *testing.T) {
 	if err := f.svc.Notify(context.Background(), u.ID, e); err != nil {
 		t.Fatal(err)
 	}
+	f.svc.deliverDue(context.Background())
 	items, unread := f.bell(t, u.ID)
 	if len(items) != 1 || unread != 1 || items[0].Title != "Stopped" || items[0].URL != "/settings/mail" || items[0].Read {
 		t.Fatalf("bell = %+v (unread %d)", items, unread)
@@ -91,6 +95,7 @@ func TestNotifyFollowsPreferences(t *testing.T) {
 	if err := f.svc.Notify(ctx, u.ID, Event{Kind: KindBills, Title: "Bills"}); err != nil {
 		t.Fatal(err)
 	}
+	f.svc.deliverDue(ctx)
 	if items, _ := f.bell(t, u.ID); len(items) != 1 {
 		t.Fatalf("bell has %d, want 1", len(items))
 	}
@@ -136,6 +141,7 @@ func TestNotifyRefOnce(t *testing.T) {
 	if items, _ := f.bell(t, b.ID); len(items) != 1 {
 		t.Fatalf("b's bell has %d, want 1", len(items))
 	}
+	f.svc.deliverDue(ctx)
 	if len(f.push.got) != 2 {
 		t.Fatalf("pushes = %d, want 2", len(f.push.got))
 	}
@@ -262,6 +268,7 @@ func TestBillsRemindersReachEveryMemberOnce(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	f.svc.deliverDue(ctx)
 	for _, u := range []db.User{a, b} {
 		items, _ := f.bell(t, u.ID)
 		if len(items) != 1 || items[0].Body != "Rent is due or overdue" || items[0].URL != "/schedules" || items[0].WalletID != w.ID {

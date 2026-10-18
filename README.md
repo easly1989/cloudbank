@@ -228,6 +228,11 @@ Every guide, grouped by what you are trying to do: **[docs/README.md](docs/READM
 | `CB_LOG_LEVEL`      | `info`              | `debug`, `info`, `warn`, or `error`.                        |
 | `CB_SECURE_COOKIES` | `true`              | Set `false` for plain-HTTP LAN installs (no TLS).           |
 | `CB_RATE_URL`       | _(frankfurter.app)_ | Override the online exchange-rate API root (e.g. a mirror). |
+| `CB_SMTP_HOST`      | _(none)_            | SMTP server for notifications by email. Without it, or without `CB_SMTP_FROM`, there is no email channel ([notifications](docs/notifications.md#for-the-administrator-the-mail-server)). |
+| `CB_SMTP_PORT`      | `587`               | SMTP port. |
+| `CB_SMTP_USERNAME`, `CB_SMTP_PASSWORD` | _(none)_ | SMTP sign-in, when the server wants one. |
+| `CB_SMTP_FROM`      | _(none)_            | Sender address of notification mails. |
+| `CB_SMTP_TLS`       | `starttls`          | `starttls` (required), `tls` (implicit, port 465) or `none` (plain text, password included: only for a server on the same machine). |
 | `CB_VAPID_SUBJECT`  | `mailto:cloudbank@localhost` | Contact sent to browser push services with each web-push message. Set it to a `mailto:` or `https:` address of yours. |
 | `CB_SECRET_KEY`     | _(none)_            | If set, encrypts secrets at rest (bank credentials, mailbox sign-ins and app passwords, AI keys, 2FA & push keys). Reading bank mails needs it. Use a **strong, high-entropy** value — generate one with `openssl rand -base64 48` rather than a hand-picked passphrase. Keep it **stable** — losing it makes encrypted secrets unrecoverable. |
 | `CB_BANK_SYNC_INTERVAL` | `1h`            | How often the background job checks for connections due to sync. Each connection has its own interval (default daily, configurable per connection), so this only bounds how promptly a due one is picked up. Set `0`/`off` to disable background sync (manual "Sync now" still works). |

@@ -35,3 +35,41 @@ SELECT kind, channel, enabled FROM notification_prefs WHERE user_id = ?;
 -- name: SetNotificationPref :exec
 INSERT INTO notification_prefs (user_id, kind, channel, enabled) VALUES (?, ?, ?, ?)
 ON CONFLICT (user_id, kind, channel) DO UPDATE SET enabled = excluded.enabled;
+
+-- name: ListNotificationChannels :many
+SELECT * FROM notification_channels WHERE user_id = ?;
+
+-- name: GetNotificationChannel :one
+SELECT * FROM notification_channels WHERE user_id = ? AND channel = ?;
+
+-- name: UpsertNotificationChannel :exec
+INSERT INTO notification_channels (user_id, channel, target, secret, local_ok)
+VALUES (?, ?, ?, ?, ?)
+ON CONFLICT (user_id, channel) DO UPDATE SET
+    target = excluded.target, secret = excluded.secret, local_ok = excluded.local_ok,
+    last_error = '', last_error_at = NULL;
+
+-- name: DeleteNotificationChannel :exec
+DELETE FROM notification_channels WHERE user_id = ? AND channel = ?;
+
+-- name: SetNotificationChannelOK :exec
+UPDATE notification_channels
+SET last_error = '', last_error_at = NULL, last_ok_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE user_id = ? AND channel = ?;
+
+-- name: SetNotificationChannelError :exec
+UPDATE notification_channels
+SET last_error = ?, last_error_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE user_id = ? AND channel = ?;
+
+-- name: InsertNotificationDelivery :exec
+INSERT INTO notification_deliveries (user_id, channel, payload, next_at) VALUES (?, ?, ?, ?);
+
+-- name: ListDueNotificationDeliveries :many
+SELECT * FROM notification_deliveries WHERE next_at <= ? ORDER BY next_at, id LIMIT ?;
+
+-- name: RescheduleNotificationDelivery :exec
+UPDATE notification_deliveries SET attempts = ?, next_at = ? WHERE id = ?;
+
+-- name: DeleteNotificationDelivery :exec
+DELETE FROM notification_deliveries WHERE id = ?;

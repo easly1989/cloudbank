@@ -417,6 +417,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications/channels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The channels the current user sets up with an address (email, webhook)
+         * @description A webhook's URL is never sent back, only its host: its path is often its key. Email is available only where the administrator configured a mail server (CB_SMTP_*).
+         */
+        get: operations["listNotificationChannels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/channels/{channel}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel: "email" | "webhook";
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the current user's address on a channel
+         * @description Omit target to keep the stored one (a webhook's URL is never sent back); omit secret to keep the stored signing secret, send "" to remove it. A webhook on the local network may be saved only by an administrator: anyone else gets 400 local_network.
+         */
+        put: operations["saveNotificationChannel"];
+        post?: never;
+        /** Remove the current user's address on a channel */
+        delete: operations["deleteNotificationChannel"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/channels/{channel}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel: "push" | "email" | "webhook";
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a test message on a channel now
+         * @description The outcome is also written on the channel: a failure shows as its last error, a success clears it. A second test to the same address within ten seconds gets 429 rate_limited.
+         */
+        post: operations["testNotificationChannel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/settings": {
         parameters: {
             query?: never;
@@ -3760,7 +3825,7 @@ export interface components {
         /** @enum {string} */
         NotificationKind: "mail_stopped" | "mail_unrecognized" | "bills";
         /** @enum {string} */
-        NotificationChannel: "inapp" | "push";
+        NotificationChannel: "inapp" | "push" | "email" | "webhook";
         Notification: {
             /** Format: int64 */
             id: number;
@@ -3778,6 +3843,22 @@ export interface components {
             createdAt: string;
             read: boolean;
         };
+        NotificationChannelState: {
+            /** @enum {string} */
+            channel: "email" | "webhook";
+            /** @description False when this installation cannot send on it. */
+            available: boolean;
+            configured: boolean;
+            /** @description The email address */
+            target: string;
+            hasSecret: boolean;
+            /** @description Empty after a success; else the status or the reason of the last failure. */
+            lastError: string;
+            /** Format: date-time */
+            lastErrorAt: string | null;
+            /** Format: date-time */
+            lastOkAt: string | null;
+        };
         NotificationList: {
             items: components["schemas"]["Notification"][];
             unread: number;
@@ -3789,6 +3870,8 @@ export interface components {
             channels: {
                 inapp: boolean;
                 push: boolean;
+                email: boolean;
+                webhook: boolean;
             };
         };
         /** @description The browser's PushSubscription (endpoint + keys). */
@@ -5925,6 +6008,120 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    listNotificationChannels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The channels. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        channels: components["schemas"]["NotificationChannelState"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    saveNotificationChannel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel: "email" | "webhook";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The email address */
+                    target?: string;
+                    /** @description The webhook's signing secret (HMAC-SHA256 in X-CloudBank-Signature). */
+                    secret?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Saved. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteNotificationChannel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel: "email" | "webhook";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    testNotificationChannel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel: "push" | "email" | "webhook";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tried. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                        /** @description The status */
+                        error?: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description A test went to this address moments ago. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     getAISettings: {
