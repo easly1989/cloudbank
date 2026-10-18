@@ -53,6 +53,7 @@ type Querier interface {
 	CountTransactionsForAccount(ctx context.Context, accountID int64) (int64, error)
 	CountTransactionsWithCategory(ctx context.Context, categoryID sql.NullInt64) (int64, error)
 	CountTransactionsWithPayee(ctx context.Context, payeeID sql.NullInt64) (int64, error)
+	CountUnreadNotifications(ctx context.Context, userID int64) (int64, error)
 	CountUnusedAccessRecoveryCodes(ctx context.Context, userID int64) (int64, error)
 	CountUnusedRecoveryCodes(ctx context.Context, userID int64) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
@@ -179,6 +180,7 @@ type Querier interface {
 	InsertMailMessage(ctx context.Context, arg InsertMailMessageParams) ([]int64, error)
 	InsertMailPattern(ctx context.Context, arg InsertMailPatternParams) (MailPattern, error)
 	InsertMailbox(ctx context.Context, arg InsertMailboxParams) (Mailbox, error)
+	InsertNotification(ctx context.Context, arg InsertNotificationParams) error
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
 	InsertRecoveryCode(ctx context.Context, arg InsertRecoveryCodeParams) error
 	InsertReminderIfNew(ctx context.Context, arg InsertReminderIfNewParams) (int64, error)
@@ -255,6 +257,9 @@ type Querier interface {
 	// Every mailbox the listener should keep open: not paused, and not waiting for
 	// a new sign-in, across all wallets.
 	ListMailboxesToWatch(ctx context.Context) ([]Mailbox, error)
+	ListNotificationPrefs(ctx context.Context, userID int64) ([]ListNotificationPrefsRow, error)
+	// Newest first; a notification about a wallet the person has left is hidden.
+	ListNotifications(ctx context.Context, arg ListNotificationsParams) ([]ListNotificationsRow, error)
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID int64) ([]ListPushSubscriptionsForUserRow, error)
 	ListPushUserIDs(ctx context.Context) ([]int64, error)
@@ -297,6 +302,8 @@ type Querier interface {
 	// which no tag name holds.
 	ListWalletTransactionsForRules(ctx context.Context, walletID int64) ([]ListWalletTransactionsForRulesRow, error)
 	ListWalletsForUser(ctx context.Context, userID int64) ([]ListWalletsForUserRow, error)
+	MarkAllNotificationsRead(ctx context.Context, userID int64) error
+	MarkNotificationRead(ctx context.Context, arg MarkNotificationReadParams) (int64, error)
 	// Per-month income (amount > 0) and expense (amount < 0) totals in a date range,
 	// excluding internal transfers (payment_mode 5), with each row's account
 	// currency for base conversion. Drives the dashboard income/expense chart.
@@ -321,6 +328,7 @@ type Querier interface {
 	PayeePaymentCounts(ctx context.Context, arg PayeePaymentCountsParams) ([]PayeePaymentCountsRow, error)
 	PruneBankSyncRuns(ctx context.Context, arg PruneBankSyncRunsParams) error
 	PruneMailMessages(ctx context.Context, arg PruneMailMessagesParams) error
+	PurgeNotificationsBefore(ctx context.Context, createdAt string) (int64, error)
 	// A tag merge moves the rules too; OR IGNORE skips a rule that already adds
 	// the target (its row goes away with the source tag).
 	ReassignAssignmentTag(ctx context.Context, arg ReassignAssignmentTagParams) error
@@ -366,6 +374,7 @@ type Querier interface {
 	SetMailboxIMAP(ctx context.Context, arg SetMailboxIMAPParams) error
 	SetMailboxPaused(ctx context.Context, arg SetMailboxPausedParams) error
 	SetMailboxSecret(ctx context.Context, arg SetMailboxSecretParams) error
+	SetNotificationPref(ctx context.Context, arg SetNotificationPrefParams) error
 	SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error
 	SetTransactionImportRef(ctx context.Context, arg SetTransactionImportRefParams) error
 	SetTransactionInfo(ctx context.Context, arg SetTransactionInfoParams) error

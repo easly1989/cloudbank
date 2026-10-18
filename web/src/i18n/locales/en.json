@@ -1690,10 +1690,44 @@
   },
   "notif": {
     "title": "Notifications",
-    "hint": "Get a push reminder on this device when bills are due soon or overdue.",
+    "hint": "Get the events ticked for push below on this device too.",
     "denied": "Notifications are blocked — allow them in your browser to turn this on.",
     "blocked": "Blocked in your browser settings.",
-    "unsupported": "This browser doesn't support push notifications."
+    "unsupported": "This browser doesn't support push notifications.",
+    "bellLabel_one": "Notifications, {{count}} unread",
+    "bellLabel_other": "Notifications, {{count}} unread",
+    "markAll": "Mark all as read",
+    "settingsLink": "Notification settings",
+    "empty": "Nothing new. When something needs you, it shows up here.",
+    "today": "Today",
+    "week": "This week",
+    "earlier": "Earlier",
+    "yesterday": "yesterday",
+    "unread": "Unread",
+    "pushTitle": "Push on this device",
+    "channels": "Channels",
+    "channelsHint": "Where notifications reach you besides the bell.",
+    "events": "Events",
+    "eventsHint": "What you are told, and where. The bell keeps everything for 90 days.",
+    "eventHeader": "Event",
+    "channel": {
+      "inapp": "In app",
+      "push": "Push"
+    },
+    "group": {
+      "problems": "Problems",
+      "bills": "Bills"
+    },
+    "kind": {
+      "mail_stopped": "A bank mailbox stops",
+      "mail_unrecognized": "Bank mails not recognised",
+      "bills": "Bills due"
+    },
+    "kindHint": {
+      "mail_stopped": "CloudBank can no longer sign in to it and it needs connecting again.",
+      "mail_unrecognized": "Mails arrive that no pattern can read.",
+      "bills": "Schedules due in the next 3 days, or already overdue."
+    }
   },
   "ai": {
     "title": "AI (bring your own key)",

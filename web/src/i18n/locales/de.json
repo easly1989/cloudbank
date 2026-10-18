@@ -1690,10 +1690,44 @@
   },
   "notif": {
     "title": "Benachrichtigungen",
-    "hint": "Erhalte auf diesem Gerät eine Push-Erinnerung, wenn Rechnungen bald fällig oder überfällig sind.",
+    "hint": "Erhalte die unten für Push angehakten Ereignisse auch auf diesem Gerät.",
     "denied": "Benachrichtigungen sind blockiert – erlaube sie in deinem Browser, um dies einzuschalten.",
     "blocked": "In den Browsereinstellungen blockiert.",
-    "unsupported": "Dieser Browser unterstützt keine Push-Benachrichtigungen."
+    "unsupported": "Dieser Browser unterstützt keine Push-Benachrichtigungen.",
+    "bellLabel_one": "Benachrichtigungen, {{count}} ungelesen",
+    "bellLabel_other": "Benachrichtigungen, {{count}} ungelesen",
+    "markAll": "Alle als gelesen markieren",
+    "settingsLink": "Benachrichtigungseinstellungen",
+    "empty": "Nichts Neues. Wenn etwas dich braucht, erscheint es hier.",
+    "today": "Heute",
+    "week": "Diese Woche",
+    "earlier": "Früher",
+    "yesterday": "gestern",
+    "unread": "Ungelesen",
+    "pushTitle": "Push auf diesem Gerät",
+    "channels": "Kanäle",
+    "channelsHint": "Wo dich Benachrichtigungen erreichen, zusätzlich zur Glocke.",
+    "events": "Ereignisse",
+    "eventsHint": "Worüber du informiert wirst, und wo. Die Glocke behält alles 90 Tage.",
+    "eventHeader": "Ereignis",
+    "channel": {
+      "inapp": "In der App",
+      "push": "Push"
+    },
+    "group": {
+      "problems": "Probleme",
+      "bills": "Fälligkeiten"
+    },
+    "kind": {
+      "mail_stopped": "Ein Bank-Postfach stoppt",
+      "mail_unrecognized": "Bank-E-Mails nicht erkannt",
+      "bills": "Anstehende Fälligkeiten"
+    },
+    "kindHint": {
+      "mail_stopped": "CloudBank kann sich nicht mehr anmelden, das Postfach muss neu verbunden werden.",
+      "mail_unrecognized": "Es kommen E-Mails, die keine Vorlage lesen kann.",
+      "bills": "Wiederkehrende Buchungen, die in den nächsten 3 Tagen fällig oder schon überfällig sind."
+    }
   },
   "ai": {
     "title": "KI (mit eigenem Schlüssel)",

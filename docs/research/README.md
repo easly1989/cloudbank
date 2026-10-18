@@ -10,6 +10,7 @@ question comes back, start here instead of from scratch.
 | [turso-libsql.md](turso-libsql.md) | Would turso or libSQL be a better engine than `modernc.org/sqlite`? | Not now: turso lacks explicit window frames and is pre-1.0; libSQL's Go driver needs cgo and has no Windows build. |
 | [i18n-terms.md](i18n-terms.md) | Which terms do personal-finance apps and banks use for CloudBank's concepts in es / fr / de / pt-BR? | Terms found for all 22 concepts; the five open ambiguities were settled in #596, and the result is the [translation glossary](../i18n/glossary.md). |
 | [imap-mail-ingest.md](imap-mail-ingest.md) | Which mail providers let a self-hosted server read a folder over IMAP with an app password, and which Go library to use? | Gmail, Libero, Virgilio, iCloud, Yahoo and Fastmail take app passwords; Outlook.com needs OAuth (device code); `emersion/go-imap` v2 behind a thin interface. |
+| [notifications.md](notifications.md) | Which library, or direct implementation, for per-user notification channels (SMTP, ntfy, Gotify, Telegram, webhooks, Pushover, Home Assistant)? | Direct senders behind a small interface plus `wneessen/go-mail` for SMTP; `nicholas-fedor/shoutrrr` (the live fork; the original is dormant) is the fallback, `nikoksr/notify` lacks ntfy, Gotify and Home Assistant. |
 
 ## Writing one
 

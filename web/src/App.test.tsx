@@ -129,6 +129,7 @@ describe("App routing", () => {
       "/api/v1/setup/status": { body: { needsSetup: false } },
       "/api/v1/auth/me": { body: admin },
       "/api/v1/wallets": { body: [wallet] },
+      "/api/v1/notifications": { body: { items: [], unread: 0 } },
       "/api/v1/version": { body: { version: "test" } },
       // The admin's new-version check (#582): a local build, never checked.
       "/api/v1/admin/updates": {

@@ -8,8 +8,8 @@ import { errorColor } from "../amountTone";
 import { currentPushSubscription, disablePush, enablePush, pushSupported } from "../push";
 import { notifyError } from "../notifyError";
 
-// NotificationsCard lets the user opt this browser in or out of Web Push
-// notifications (currently: bills reminders).
+// NotificationsCard lets the user opt this browser in or out of Web Push: the
+// events ticked for push in Settings › Notifications then reach it too.
 export function NotificationsCard() {
   const { t } = useTranslation();
   const [supported] = useState(() => pushSupported());
@@ -52,7 +52,7 @@ export function NotificationsCard() {
         <div>
           <Group gap="xs">
             <IconBell size={18} />
-            <Title order={5}>{t("notif.title")}</Title>
+            <Title order={5}>{t("notif.pushTitle")}</Title>
           </Group>
           <Text size="sm" c="dimmed" maw={560} mt={4}>
             {t("notif.hint")}
@@ -72,7 +72,7 @@ export function NotificationsCard() {
           checked={subscribed}
           disabled={!supported || busy || denied}
           onChange={(e) => toggle(e.currentTarget.checked)}
-          aria-label={t("notif.title")}
+          aria-label={t("notif.pushTitle")}
         />
       </Group>
     </Card>

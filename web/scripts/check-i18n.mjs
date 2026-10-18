@@ -241,6 +241,7 @@ const SAME_EVERYWHERE = new Set([
   "CAMT.053 (ISO 20022)",
   "OK",
   "AI",
+  "Push",
   "Token",
   "Email",
   "km",
@@ -252,6 +253,7 @@ const SAME_EVERYWHERE = new Set([
 ]);
 const SAME_IN = {
   it: [
+    "In app",
     "Tag",
     "Budget",
     "Password",
