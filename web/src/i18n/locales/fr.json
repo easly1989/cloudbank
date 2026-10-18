@@ -1690,10 +1690,44 @@
   },
   "notif": {
     "title": "Notifications",
-    "hint": "Recevez un rappel sur cet appareil quand des factures arrivent à échéance ou sont en retard.",
+    "hint": "Recevez aussi sur cet appareil les événements cochés pour le push ci-dessous.",
     "denied": "Les notifications sont bloquées — autorisez-les dans votre navigateur pour activer ceci.",
     "blocked": "Bloquées dans les paramètres du navigateur.",
-    "unsupported": "Ce navigateur ne prend pas en charge les notifications push."
+    "unsupported": "Ce navigateur ne prend pas en charge les notifications push.",
+    "bellLabel_one": "Notifications, {{count}} non lue",
+    "bellLabel_other": "Notifications, {{count}} non lues",
+    "markAll": "Tout marquer comme lu",
+    "settingsLink": "Paramètres des notifications",
+    "empty": "Rien de nouveau. Quand quelque chose vous attend, cela apparaît ici.",
+    "today": "Aujourd’hui",
+    "week": "Cette semaine",
+    "earlier": "Plus tôt",
+    "yesterday": "hier",
+    "unread": "Non lue",
+    "pushTitle": "Push sur cet appareil",
+    "channels": "Canaux",
+    "channelsHint": "Où les notifications vous parviennent, en plus de la cloche.",
+    "events": "Événements",
+    "eventsHint": "Ce qui vous est signalé, et où. La cloche garde tout pendant 90 jours.",
+    "eventHeader": "Événement",
+    "channel": {
+      "inapp": "Dans l’app",
+      "push": "Push"
+    },
+    "group": {
+      "problems": "Problèmes",
+      "bills": "Échéances"
+    },
+    "kind": {
+      "mail_stopped": "Une boîte mail de la banque s’arrête",
+      "mail_unrecognized": "E-mails de la banque non reconnus",
+      "bills": "Échéances à venir"
+    },
+    "kindHint": {
+      "mail_stopped": "CloudBank ne peut plus s’y connecter et il faut la reconnecter.",
+      "mail_unrecognized": "Des e-mails arrivent qu’aucun modèle ne sait lire.",
+      "bills": "Opérations récurrentes à échéance dans les 3 prochains jours, ou en retard."
+    }
   },
   "ai": {
     "title": "IA (avec votre propre clé)",

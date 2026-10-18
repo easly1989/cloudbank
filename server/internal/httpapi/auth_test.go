@@ -27,6 +27,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
 	"github.com/easly1989/cloudbank/server/internal/mailingest"
+	"github.com/easly1989/cloudbank/server/internal/notify"
 	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
@@ -100,7 +101,7 @@ func newTestAPI(t *testing.T) *testClient {
 	srv := httptest.NewServer(New(Options{
 		Auth: svc, Wallets: wsvc, Currencies: csvc, Accounts: asvc,
 		Categories: catsvc, Payees: psvc, Transactions: tsvc, Tags: tagsvc, Vehicles: vehsvc, Goals: goalsvc, Transfers: xsvc, Dashboard: dsvc, Templates: tplsvc, Schedules: ssvc, Assignments: asvc2, Budgets: bsvc, Reports: rsvc, Import: impsvc, CSV: csvsvc, RateProvider: stubRateProvider{},
-		Integrity: intsvc, Backup: bksvc, Attachments: attsvc, Mail: mailsvc, HotBackup: st, DataDir: t.TempDir(), Health: st,
+		Integrity: intsvc, Backup: bksvc, Attachments: attsvc, Mail: mailsvc, Notifications: notify.NewService(st.Read(), st.Write(), nil), HotBackup: st, DataDir: t.TempDir(), Health: st,
 		// A local build: the check follows no channel, so it never goes online.
 		Updates: updates.New(st.Write(), "dev", true),
 	}))

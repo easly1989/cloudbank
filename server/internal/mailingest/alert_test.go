@@ -20,7 +20,7 @@ type pushes struct {
 	sent []string // "user|title|body|url"
 }
 
-func (p *pushes) notify(_ context.Context, userID int64, ref, title, body, url string) error {
+func (p *pushes) notify(_ context.Context, userID int64, _, ref, title, body, url string) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.refs == nil {

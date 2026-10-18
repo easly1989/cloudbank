@@ -121,8 +121,8 @@ missed. A server that cannot announce new mail is checked every 5 minutes
 instead. **Check now** reads at once.
 
 If a mailbox stops working (a refused password, an expired Microsoft sign-in),
-the mailbox turns red, and the person who connected it gets a push notification,
-if notifications are on.
+the mailbox turns red, and the person who connected it is told in the bell, and
+by push where it is on (**Settings › Notifications**).
 
 Once a mailbox is connected, the page offers a short tour of its parts; the
 **?** beside the section title plays it again.

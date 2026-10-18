@@ -155,6 +155,27 @@ test("the bank's mails arrive, and none is recognised yet", async ({
   await expect(history(page).getByText("Pagamento con carta")).toHaveCount(2);
 });
 
+test("the bell says the mails were not recognised, and opens the mailbox", async ({
+  page,
+}) => {
+  // #685: the alert goes through the dispatcher into the bell, on a phone too.
+  await signIn(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const bell = page.getByRole("button", { name: "Notifications, 1 unread" });
+  await expect(bell).toBeVisible();
+  await bell.click();
+  const note = page.getByRole("button", { name: /Bank mails not recognised/ });
+  // Once a day per mailbox: how many depends on how the listener heard them.
+  await expect(note).toContainText(ADDRESS);
+  await note.click();
+  await expect(page).toHaveURL(/\/settings\/mail$/);
+  // Read now: the badge is gone, and the bell in the Settings header agrees.
+  await expect(
+    page.getByRole("button", { name: "Notifications", exact: true }),
+  ).toBeVisible();
+});
+
 test("the first pattern offers the editor's tour, once, and Escape leaves the draft", async ({
   page,
 }) => {

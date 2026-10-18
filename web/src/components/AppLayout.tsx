@@ -32,6 +32,7 @@ import {
 } from "./shellTheme";
 import { Logo } from "./Logo";
 import { NewNavPagesNotice } from "./NewNavPagesNotice";
+import { NotificationBell } from "./NotificationBell";
 import { PageErrorBoundary } from "./PageErrorBoundary";
 import { SidebarFoot } from "./SidebarFoot";
 import { SidebarHead } from "./SidebarHead";
@@ -116,6 +117,10 @@ export function AppLayout() {
           <Text fw={700} truncate>
             {currentWallet?.title ?? t("app.name")}
           </Text>
+          {/* The bell's place on a phone (#685): the page header has no room. */}
+          <Box ml="auto">
+            <NotificationBell size={36} variant="subtle" />
+          </Box>
         </Group>
       </AppShell.Header>
 

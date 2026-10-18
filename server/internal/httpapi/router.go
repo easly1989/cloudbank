@@ -30,6 +30,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
 	"github.com/easly1989/cloudbank/server/internal/mailingest"
+	"github.com/easly1989/cloudbank/server/internal/notify"
 	"github.com/easly1989/cloudbank/server/internal/oidc"
 	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/push"
@@ -91,6 +92,9 @@ type Options struct {
 	Bills *bills.Service
 	// Push, if non-nil, mounts the Web Push subscription endpoints.
 	Push *push.Service
+	// Notifications, if non-nil, mounts the bell and the notification
+	// settings (#685).
+	Notifications *notify.Service
 	// AI, if non-nil, mounts the opt-in AI settings + suggestion endpoints.
 	AI *ai.Service
 	// BankSync, if non-nil, mounts the automatic bank-sync endpoints (requires Wallets).
@@ -231,6 +235,9 @@ func New(opts Options) http.Handler {
 				}
 				if opts.Push != nil {
 					(&pushHandlers{svc: opts.Push}).routes(pr)
+				}
+				if opts.Notifications != nil {
+					(&notificationHandlers{svc: opts.Notifications}).routes(pr)
 				}
 				if opts.AI != nil {
 					(&aiHandlers{svc: opts.AI}).routes(pr)

@@ -16,8 +16,6 @@ import (
 
 	webpush "github.com/SherClockHolmes/webpush-go"
 
-	"github.com/easly1989/cloudbank/server/internal/bills"
-	"github.com/easly1989/cloudbank/server/internal/locale"
 	"github.com/easly1989/cloudbank/server/internal/netguard"
 	"github.com/easly1989/cloudbank/server/internal/secrets"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
@@ -26,9 +24,6 @@ import (
 const (
 	vapidPublicKey  = "vapid_public_key"
 	vapidPrivateKey = "vapid_private_key"
-	// reminderLeadDays is how far ahead a bill is announced (plus anything overdue).
-	reminderLeadDays = 3
-	dateLayout       = "2006-01-02"
 )
 
 // Payload is the JSON the service worker receives and renders as a notification.
@@ -47,7 +42,6 @@ type Service struct {
 	public  string
 	private string
 	subject string
-	bills   *bills.Service
 	client  webpush.HTTPClient // nil → library default; injectable for tests
 	// checkEndpoint vets a subscription's endpoint; tests without DNS swap it.
 	checkEndpoint func(ctx context.Context, endpoint string) error
@@ -79,9 +73,6 @@ func NewService(read, write *sql.DB, subject string, logger *slog.Logger) (*Serv
 		},
 	}, nil
 }
-
-// SetBills wires the bills service used by the reminder job.
-func (s *Service) SetBills(b *bills.Service) { s.bills = b }
 
 // PublicKey returns the VAPID public key the client subscribes with.
 func (s *Service) PublicKey() string { return s.public }
@@ -128,9 +119,9 @@ func (s *Service) Unsubscribe(ctx context.Context, userID int64, endpoint string
 	return s.q.DeletePushSubscription(ctx, db.DeletePushSubscriptionParams{UserID: userID, Endpoint: endpoint})
 }
 
-// sendToUser pushes a payload to every one of the user's subscriptions, pruning
+// SendToUser pushes a payload to every one of the user's subscriptions, pruning
 // any the push service reports as gone (404/410).
-func (s *Service) sendToUser(ctx context.Context, userID int64, p Payload) error {
+func (s *Service) SendToUser(ctx context.Context, userID int64, p Payload) error {
 	subs, err := s.rq.ListPushSubscriptionsForUser(ctx, userID)
 	if err != nil {
 		return err
@@ -160,99 +151,4 @@ func (s *Service) sendToUser(ctx context.Context, userID int64, p Payload) error
 		}
 	}
 	return nil
-}
-
-// SendOnce pushes p to the user unless something with the same ref was already
-// sent to them, so a caller that runs often still announces each thing once.
-func (s *Service) SendOnce(ctx context.Context, userID int64, ref string, p Payload) error {
-	n, err := s.q.InsertReminderIfNew(ctx, db.InsertReminderIfNewParams{UserID: userID, Ref: ref})
-	if err != nil || n == 0 {
-		return err
-	}
-	return s.sendToUser(ctx, userID, p)
-}
-
-// RunBillsReminders sends each subscribed user a one-time reminder for their
-// unpaid bills that are overdue or due within the lead window. It is safe to run
-// daily: a given bill occurrence is announced only once (deduped by ref).
-func (s *Service) RunBillsReminders(ctx context.Context, now time.Time) error {
-	if s.bills == nil {
-		return nil
-	}
-	today := now.UTC().Format(dateLayout)
-	horizon := now.UTC().AddDate(0, 0, reminderLeadDays).Format(dateLayout)
-
-	userIDs, err := s.rq.ListPushUserIDs(ctx)
-	if err != nil {
-		return err
-	}
-	for _, uid := range userIDs {
-		wallets, err := s.rq.ListWalletsForUser(ctx, uid)
-		if err != nil {
-			s.logger.Warn("push reminders: list wallets", "user", uid, "err", err)
-			continue
-		}
-		var pending []bills.Bill
-		for _, w := range wallets {
-			sum, err := s.bills.Bills(ctx, w.ID, today)
-			if err != nil {
-				s.logger.Warn("push reminders: bills", "wallet", w.ID, "err", err)
-				continue
-			}
-			for _, b := range sum.Bills {
-				// Remind only for unpaid bills overdue or due within the lead window.
-				if b.State == bills.StatePaid || b.DueDate > horizon {
-					continue
-				}
-				ref := fmt.Sprintf("bill:%d:%d:%s", w.ID, b.ScheduleID, b.DueDate)
-				n, err := s.q.InsertReminderIfNew(ctx, db.InsertReminderIfNewParams{UserID: uid, Ref: ref})
-				if err != nil {
-					continue
-				}
-				if n > 0 {
-					pending = append(pending, b)
-				}
-			}
-		}
-		if len(pending) == 0 {
-			continue
-		}
-		lang := locale.Default
-		if u, err := s.rq.GetUserByID(ctx, uid); err == nil {
-			lang = u.Locale
-		}
-		if err := s.sendToUser(ctx, uid, billsPayload(pending, lang)); err != nil {
-			s.logger.Warn("push reminders: send", "user", uid, "err", err)
-		}
-	}
-	return nil
-}
-
-// reminderText is the reminder notification's wording, one per language
-// (internal/locale's codes); a language without its own gets the English one,
-// and a test asks every listed language for an entry.
-type reminderText struct {
-	title string
-	many  string // %d: how many bills
-	one   string // %s: the bill's name
-}
-
-var reminderTexts = map[string]reminderText{
-	"en":    {title: "Bills due", many: "%d bills need your attention", one: "%s is due or overdue"},
-	"it":    {title: "Scadenze in arrivo", many: "%d scadenze richiedono attenzione", one: "%s è in scadenza o scaduta"},
-	"de":    {title: "Anstehende Fälligkeiten", many: "%d Fälligkeiten brauchen deine Aufmerksamkeit", one: "%s ist fällig oder überfällig"},
-	"fr":    {title: "Échéances à venir", many: "%d échéances demandent votre attention", one: "%s arrive à échéance ou est en retard"},
-	"es":    {title: "Próximos vencimientos", many: "%d vencimientos necesitan tu atención", one: "%s vence pronto o está vencido"},
-	"pt-BR": {title: "Próximos vencimentos", many: "%d vencimentos precisam da sua atenção", one: "%s vence em breve ou está vencido"},
-}
-
-// billsPayload builds the reminder notification, in the user's language. It
-// opens the Schedules page, where bills live since the Bills page was folded in.
-func billsPayload(pending []bills.Bill, lang string) Payload {
-	text := locale.Pick(reminderTexts, lang)
-	body := fmt.Sprintf(text.many, len(pending))
-	if len(pending) == 1 {
-		body = fmt.Sprintf(text.one, pending[0].Name)
-	}
-	return Payload{Title: text.title, Body: body, URL: "/schedules", Tag: "bills"}
 }
