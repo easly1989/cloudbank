@@ -8,6 +8,7 @@ export * from "./ledger";
 export * from "./dashboard";
 export * from "./bills";
 export * from "./push";
+export * from "./notifications";
 export * from "./ai";
 export * from "./banksync";
 export * from "./mail";

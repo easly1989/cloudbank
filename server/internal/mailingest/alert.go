@@ -9,11 +9,12 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
-// Notify sends a push notification to one user, once per ref: a second call
-// with the same ref sends nothing. It is the push service's SendOnce.
-type Notify func(ctx context.Context, userID int64, ref, title, body, url string) error
+// Notify tells one user about one event of the given kind, once per ref: a
+// second call with the same ref tells nothing. It is internal/notify's
+// dispatcher, and the kinds are its own ("mail_stopped", "mail_unrecognized").
+type Notify func(ctx context.Context, userID int64, kind, ref, title, body, url string) error
 
-// SetNotify wires the push notifications. Without it nothing is announced.
+// SetNotify wires the notifications. Without it nothing is announced.
 func (s *Service) SetNotify(n Notify) { s.notify = n }
 
 // alertsURL is where a notification about a mailbox leads.
@@ -84,7 +85,7 @@ func (s *Service) alertStopped(ctx context.Context, mb db.Mailbox) {
 	// The episode is already one per flag change; the ref only has to differ
 	// from the last one's.
 	ref := "mail-stopped:" + strconv.FormatInt(mb.ID, 10) + ":" + strconv.FormatInt(s.now().UnixNano(), 10)
-	_ = s.notify(ctx, uid, ref, text.stoppedTitle, fmt.Sprintf(text.stopped, mb.Address), alertsURL)
+	_ = s.notify(ctx, uid, "mail_stopped", ref, text.stoppedTitle, fmt.Sprintf(text.stopped, mb.Address), alertsURL)
 }
 
 // alertUnrecognized announces mails CloudBank could not read, at most once a
@@ -99,11 +100,11 @@ func (s *Service) alertUnrecognized(ctx context.Context, mb db.Mailbox, n int) {
 		body = fmt.Sprintf(text.unrecMany, n, mb.Address)
 	}
 	ref := "mail-unrecognized:" + strconv.FormatInt(mb.ID, 10) + ":" + s.now().Format("2006-01-02")
-	_ = s.notify(ctx, uid, ref, text.unrecTitle, body, alertsURL)
+	_ = s.notify(ctx, uid, "mail_unrecognized", ref, text.unrecTitle, body, alertsURL)
 }
 
 // alertFor finds who to tell and in which language: the person who connected
-// the mailbox. Nobody, when push is off or that person is gone.
+// the mailbox. Nobody, when notifications are off or that person is gone.
 func (s *Service) alertFor(ctx context.Context, mb db.Mailbox) (alertText, int64, bool) {
 	if s.notify == nil || !mb.CreatedBy.Valid {
 		return alertText{}, 0, false

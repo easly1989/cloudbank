@@ -1690,10 +1690,44 @@
   },
   "notif": {
     "title": "Notificaciones",
-    "hint": "Recibe un aviso en este dispositivo cuando haya recibos a punto de vencer o vencidos.",
+    "hint": "Recibe también en este dispositivo los eventos marcados para push abajo.",
     "denied": "Las notificaciones están bloqueadas: permítelas en el navegador para activar esto.",
     "blocked": "Bloqueadas en los ajustes del navegador.",
-    "unsupported": "Este navegador no admite notificaciones push."
+    "unsupported": "Este navegador no admite notificaciones push.",
+    "bellLabel_one": "Notificaciones, {{count}} sin leer",
+    "bellLabel_other": "Notificaciones, {{count}} sin leer",
+    "markAll": "Marcar todas como leídas",
+    "settingsLink": "Ajustes de notificaciones",
+    "empty": "Nada nuevo. Cuando algo te necesite, aparecerá aquí.",
+    "today": "Hoy",
+    "week": "Esta semana",
+    "earlier": "Antes",
+    "yesterday": "ayer",
+    "unread": "Sin leer",
+    "pushTitle": "Push en este dispositivo",
+    "channels": "Canales",
+    "channelsHint": "Dónde te llegan las notificaciones, además de la campana.",
+    "events": "Eventos",
+    "eventsHint": "Qué se te avisa y dónde. La campana lo guarda todo 90 días.",
+    "eventHeader": "Evento",
+    "channel": {
+      "inapp": "En la app",
+      "push": "Push"
+    },
+    "group": {
+      "problems": "Problemas",
+      "bills": "Vencimientos"
+    },
+    "kind": {
+      "mail_stopped": "Un buzón del banco se detiene",
+      "mail_unrecognized": "Correos del banco no reconocidos",
+      "bills": "Próximos vencimientos"
+    },
+    "kindHint": {
+      "mail_stopped": "CloudBank ya no puede acceder y hay que volver a conectarlo.",
+      "mail_unrecognized": "Llegan correos que ningún modelo sabe leer.",
+      "bills": "Movimientos programados que vencen en los próximos 3 días o ya vencidos."
+    }
   },
   "ai": {
     "title": "IA (con tu propia clave)",

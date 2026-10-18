@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { useAuth } from "../../auth/AuthProvider";
+import { NotificationBell } from "../../components/NotificationBell";
 import { PageErrorBoundary } from "../../components/PageErrorBoundary";
 import { DemoChrome } from "../../demo/DemoChrome";
 import { TourButton } from "../../onboarding/TourButton";
@@ -119,7 +120,12 @@ export function SettingsLayout() {
                     ? (currentWallet?.title ?? t(current.labelKey))
                     : t(current.labelKey)}
                 </Title>
-                {tour && <TourButton id={tour} size={40} />}
+                {/* Settings has its own header, so the bell is added here too
+                    (#685); it is the one page header without the privacy eye. */}
+                <Group gap="xs" wrap="nowrap">
+                  <NotificationBell size={40} />
+                  {tour && <TourButton id={tour} size={40} />}
+                </Group>
               </Group>
               <Text c="dimmed" fz={SECTION.hint.fz}>
                 {t(current.hintKey)}

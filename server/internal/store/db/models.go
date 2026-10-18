@@ -322,6 +322,25 @@ type MfaRecoveryCode struct {
 	CreatedAt string
 }
 
+type Notification struct {
+	ID        int64
+	UserID    int64
+	Kind      string
+	Title     string
+	Body      string
+	Url       string
+	WalletID  sql.NullInt64
+	CreatedAt string
+	ReadAt    sql.NullString
+}
+
+type NotificationPref struct {
+	UserID  int64
+	Kind    string
+	Channel string
+	Enabled int64
+}
+
 type Payee struct {
 	ID                 int64
 	WalletID           int64

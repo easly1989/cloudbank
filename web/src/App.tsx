@@ -74,6 +74,7 @@ const GeneralSection = settingsSection("GeneralSection");
 const AppearanceSection = settingsSection("AppearanceSection");
 const WalletSection = settingsSection("WalletSection");
 const SecuritySection = settingsSection("SecuritySection");
+const NotificationsSection = settingsSection("NotificationsSection");
 const BankSyncSection = settingsSection("BankSyncSection");
 const MailSection = settingsSection("MailSection");
 const AiSection = settingsSection("AiSection");
@@ -206,6 +207,7 @@ function AuthenticatedApp() {
           <Route path="appearance" element={<AppearanceSection />} />
           <Route path="wallet" element={<WalletSection />} />
           <Route path="security" element={<SecuritySection />} />
+          <Route path="notifications" element={<NotificationsSection />} />
           <Route path="bank-sync" element={<BankSyncSection />} />
           {!__DEMO__ && <Route path="mail" element={<MailSection />} />}
           {!__DEMO__ && <Route path="ai" element={<AiSection />} />}

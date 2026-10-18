@@ -1690,10 +1690,44 @@
   },
   "notif": {
     "title": "Notificações",
-    "hint": "Receba um lembrete push neste dispositivo quando houver contas vencendo em breve ou vencidas.",
+    "hint": "Receba também neste dispositivo os eventos marcados para push abaixo.",
     "denied": "As notificações estão bloqueadas — permita-as no navegador para ativar isto.",
     "blocked": "Bloqueadas nas configurações do navegador.",
-    "unsupported": "Este navegador não suporta notificações push."
+    "unsupported": "Este navegador não suporta notificações push.",
+    "bellLabel_one": "Notificações, {{count}} não lida",
+    "bellLabel_other": "Notificações, {{count}} não lidas",
+    "markAll": "Marcar todas como lidas",
+    "settingsLink": "Configurações de notificações",
+    "empty": "Nada de novo. Quando algo precisar de você, aparece aqui.",
+    "today": "Hoje",
+    "week": "Esta semana",
+    "earlier": "Antes",
+    "yesterday": "ontem",
+    "unread": "Não lida",
+    "pushTitle": "Push neste dispositivo",
+    "channels": "Canais",
+    "channelsHint": "Onde as notificações chegam até você, além do sino.",
+    "events": "Eventos",
+    "eventsHint": "O que você fica sabendo, e onde. O sino guarda tudo por 90 dias.",
+    "eventHeader": "Evento",
+    "channel": {
+      "inapp": "No app",
+      "push": "Push"
+    },
+    "group": {
+      "problems": "Problemas",
+      "bills": "Vencimentos"
+    },
+    "kind": {
+      "mail_stopped": "Uma caixa de e-mail do banco para",
+      "mail_unrecognized": "E-mails do banco não reconhecidos",
+      "bills": "Próximos vencimentos"
+    },
+    "kindHint": {
+      "mail_stopped": "O CloudBank não consegue mais entrar e a caixa precisa ser conectada de novo.",
+      "mail_unrecognized": "Chegam e-mails que nenhum modelo sabe ler.",
+      "bills": "Agendamentos que vencem nos próximos 3 dias, ou já vencidos."
+    }
   },
   "ai": {
     "title": "IA (traga a sua própria chave)",
