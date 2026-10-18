@@ -1712,7 +1712,9 @@
     "eventHeader": "Événement",
     "channel": {
       "inapp": "Dans l’app",
-      "push": "Push"
+      "push": "Push",
+      "email": "E-mail",
+      "webhook": "Webhook"
     },
     "group": {
       "problems": "Problèmes",
@@ -1727,7 +1729,34 @@
       "mail_stopped": "CloudBank ne peut plus s’y connecter et il faut la reconnecter.",
       "mail_unrecognized": "Des e-mails arrivent qu’aucun modèle ne sait lire.",
       "bills": "Opérations récurrentes à échéance dans les 3 prochains jours, ou en retard."
-    }
+    },
+    "email": "E-mail",
+    "emailHint": "Les notifications par e-mail, à l’adresse de votre choix.",
+    "emailUnavailable": "Indisponible : l’administrateur n’a pas configuré de serveur de messagerie (CB_SMTP_HOST).",
+    "emailAddress": "Adresse",
+    "remove": "Retirer",
+    "sendTest": "Envoyer un test",
+    "saved": "Enregistré",
+    "testSent": "Test envoyé",
+    "testFailed": "Le test a échoué : {{reason}}",
+    "lastError": "Dernier envoi échoué : {{reason}}",
+    "lastOk": "Dernier envoi réussi : {{when}}",
+    "reason": {
+      "unauthorized": "identifiants refusés",
+      "rejected": "message refusé",
+      "unreachable": "injoignable",
+      "local": "adresse du réseau local non autorisée"
+    },
+    "localNetwork": "Seul un administrateur peut envoyer vers une adresse du réseau local.",
+    "invalidAddress": "Cette adresse n’est pas valide.",
+    "webhook": "Webhook",
+    "webhookHint": "Un POST avec l’événement en JSON vers une adresse à vous : Home Assistant, n8n, un script.",
+    "webhookGuide": "Comment le connecter",
+    "webhookUrl": "URL",
+    "webhookSaved": "Enregistré : {{host}}",
+    "webhookSecret": "Secret de signature",
+    "secretSaved": "Enregistré",
+    "optional": "Facultatif"
   },
   "ai": {
     "title": "IA (avec votre propre clé)",

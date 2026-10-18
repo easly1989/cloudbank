@@ -242,6 +242,8 @@ const SAME_EVERYWHERE = new Set([
   "OK",
   "AI",
   "Push",
+  "Webhook",
+  "URL",
   "Token",
   "Email",
   "km",
@@ -254,6 +256,7 @@ const SAME_EVERYWHERE = new Set([
 const SAME_IN = {
   it: [
     "In app",
+    "Email",
     "Tag",
     "Budget",
     "Password",

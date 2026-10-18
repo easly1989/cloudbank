@@ -334,6 +334,26 @@ type Notification struct {
 	ReadAt    sql.NullString
 }
 
+type NotificationChannel struct {
+	UserID      int64
+	Channel     string
+	Target      string
+	Secret      string
+	LocalOk     int64
+	LastError   string
+	LastErrorAt sql.NullString
+	LastOkAt    sql.NullString
+}
+
+type NotificationDelivery struct {
+	ID       int64
+	UserID   int64
+	Channel  string
+	Payload  string
+	Attempts int64
+	NextAt   string
+}
+
 type NotificationPref struct {
 	UserID  int64
 	Kind    string
