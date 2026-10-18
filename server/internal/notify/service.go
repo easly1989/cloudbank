@@ -19,6 +19,7 @@ import (
 // Kind names an event. The catalog below lists every one.
 type Kind string
 
+// The events that exist today; each has an entry in Catalog.
 const (
 	KindBills            Kind = "bills"
 	KindMailStopped      Kind = "mail_stopped"
@@ -28,6 +29,7 @@ const (
 // Group is how the settings page and the bell sort events.
 type Group string
 
+// The groups of the catalog.
 const (
 	GroupProblems Group = "problems"
 	GroupBills    Group = "bills"
@@ -36,6 +38,7 @@ const (
 // Channel is where an event can reach a person.
 type Channel string
 
+// The channels: the bell, and push.
 const (
 	ChannelInApp Channel = "inapp"
 	ChannelPush  Channel = "push"
@@ -91,6 +94,7 @@ type Sender interface {
 // SenderFunc lets a plain function be a Sender.
 type SenderFunc func(ctx context.Context, userID int64, e Event) error
 
+// Send calls f.
 func (f SenderFunc) Send(ctx context.Context, userID int64, e Event) error { return f(ctx, userID, e) }
 
 // ErrUnknownEvent is returned for a kind or channel the catalog does not list.
