@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/bills"
@@ -38,14 +39,21 @@ const (
 // Channel is where an event can reach a person.
 type Channel string
 
-// The channels: the bell, and push.
+// The channels: the bell, push, and the ones a person sets up with an
+// address (#686).
 const (
-	ChannelInApp Channel = "inapp"
-	ChannelPush  Channel = "push"
+	ChannelInApp   Channel = "inapp"
+	ChannelPush    Channel = "push"
+	ChannelEmail   Channel = "email"
+	ChannelWebhook Channel = "webhook"
 )
 
 // Channels lists every channel, in the order the settings page shows them.
-var Channels = []Channel{ChannelInApp, ChannelPush}
+var Channels = []Channel{ChannelInApp, ChannelPush, ChannelEmail, ChannelWebhook}
+
+// addressed reports whether a channel needs the person's own address (a row
+// in notification_channels) before anything can be sent on it.
+func addressed(ch Channel) bool { return ch == ChannelEmail || ch == ChannelWebhook }
 
 // EventInfo is one entry of the catalog: the event's group and whether it is
 // on for someone who never changed it.
@@ -72,41 +80,65 @@ func info(k Kind) (EventInfo, bool) {
 	return EventInfo{}, false
 }
 
-// Event is one thing to tell one person, already in their language.
+// Event is one thing to tell one person, already in their language. It is
+// queued as JSON.
 type Event struct {
-	Kind Kind
+	Kind Kind `json:"kind"`
 	// Ref makes the event once only: a second event with the same ref for the
 	// same person is dropped. Empty means always deliver.
-	Ref   string
-	Title string
-	Body  string
+	Ref   string `json:"-"`
+	Title string `json:"title"`
+	Body  string `json:"body"`
 	// URL is the page the event opens, inside the app.
-	URL string
+	URL string `json:"url"`
 	// WalletID is the wallet the event is about, 0 for none.
-	WalletID int64
+	WalletID int64 `json:"walletId,omitempty"`
+	// Test marks the message "Send a test" sends.
+	Test bool `json:"test,omitempty"`
 }
 
-// Sender delivers an event on one channel other than the bell.
+// Recipient is who a sender delivers to: the person, and for an addressed
+// channel their address on it.
+type Recipient struct {
+	UserID int64
+	// Target is the email address or the webhook URL, opened.
+	Target string
+	// Secret is the webhook's signing secret, opened; empty for none.
+	Secret string
+	// LocalOK lets the delivery reach the local network: the channel was saved
+	// by an administrator.
+	LocalOK bool
+}
+
+// Sender delivers an event on one channel other than the bell. Its errors are
+// best a *DeliveryError; anything else counts as unreachable.
 type Sender interface {
-	Send(ctx context.Context, userID int64, e Event) error
+	Send(ctx context.Context, to Recipient, e Event) error
 }
 
 // SenderFunc lets a plain function be a Sender.
-type SenderFunc func(ctx context.Context, userID int64, e Event) error
+type SenderFunc func(ctx context.Context, to Recipient, e Event) error
 
 // Send calls f.
-func (f SenderFunc) Send(ctx context.Context, userID int64, e Event) error { return f(ctx, userID, e) }
+func (f SenderFunc) Send(ctx context.Context, to Recipient, e Event) error { return f(ctx, to, e) }
 
 // ErrUnknownEvent is returned for a kind or channel the catalog does not list.
 var ErrUnknownEvent = errors.New("notify: unknown event or channel")
 
-// Service is the dispatcher, the bell's store and the person's choices.
+// Service is the dispatcher, the bell's store, the person's choices and the
+// delivery queue.
 type Service struct {
 	q       *db.Queries
 	rq      *db.Queries
 	senders map[Channel]Sender
 	bills   *bills.Service
 	logger  *slog.Logger
+	// wake tells the delivery worker something was queued.
+	wake chan struct{}
+	now  func() time.Time
+	// tested is when each person last sent a test to each address.
+	testMu sync.Mutex
+	tested map[string]time.Time
 }
 
 // NewService returns a dispatcher with only the in-app channel.
@@ -114,7 +146,10 @@ func NewService(read, write *sql.DB, logger *slog.Logger) *Service {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Service{q: db.New(write), rq: db.New(read), senders: map[Channel]Sender{}, logger: logger}
+	return &Service{
+		q: db.New(write), rq: db.New(read), senders: map[Channel]Sender{}, logger: logger,
+		wake: make(chan struct{}, 1), now: time.Now, tested: map[string]time.Time{},
+	}
 }
 
 // SetSender wires a channel. Without one, that channel is never used.
@@ -124,7 +159,7 @@ func (s *Service) SetSender(ch Channel, snd Sender) { s.senders[ch] = snd }
 func (s *Service) SetBills(b *bills.Service) { s.bills = b }
 
 // Notify tells one person about one event, on every channel they have on for
-// it. A sender that fails is logged and does not stop the others.
+// it: at once in the bell, and through the delivery queue everywhere else.
 func (s *Service) Notify(ctx context.Context, userID int64, e Event) error {
 	ev, ok := info(e.Kind)
 	if !ok {
@@ -148,16 +183,37 @@ func (s *Service) Notify(ctx context.Context, userID int64, e Event) error {
 			return err
 		}
 	}
+	set, err := s.addressedChannels(ctx, userID)
+	if err != nil {
+		return err
+	}
+	queued := false
 	for _, ch := range Channels {
-		snd := s.senders[ch]
-		if snd == nil || !on[ch] {
+		if s.senders[ch] == nil || !on[ch] || (addressed(ch) && !set[ch]) {
 			continue
 		}
-		if err := snd.Send(ctx, userID, e); err != nil {
-			s.logger.Warn("notification not delivered", "channel", ch, "kind", e.Kind, "user", userID, "err", err)
+		if err := s.enqueue(ctx, userID, ch, e); err != nil {
+			return err
 		}
+		queued = true
+	}
+	if queued {
+		s.kick()
 	}
 	return nil
+}
+
+// addressedChannels is which addressed channels the person has set up.
+func (s *Service) addressedChannels(ctx context.Context, userID int64) (map[Channel]bool, error) {
+	rows, err := s.rq.ListNotificationChannels(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	set := map[Channel]bool{}
+	for _, r := range rows {
+		set[Channel(r.Channel)] = true
+	}
+	return set, nil
 }
 
 // enabled is which channels carry ev for this person: what they chose, else
@@ -286,8 +342,9 @@ func (s *Service) Purge(ctx context.Context, now time.Time) error {
 }
 
 // Run purges old notifications and sends the bills reminders at start, then
-// once a day, until ctx ends.
+// once a day, and delivers the queue, until ctx ends.
 func (s *Service) Run(ctx context.Context) {
+	go s.runDeliveries(ctx)
 	run := func() {
 		now := time.Now().UTC()
 		if err := s.Purge(ctx, now); err != nil {

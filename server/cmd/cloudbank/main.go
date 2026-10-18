@@ -287,12 +287,24 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	// After the demo had its say: the demo build has no push.
+	// After the demo had its say: the demo build has no push, and no channel
+	// that sends to an address a visitor types in.
 	if opts.Push != nil {
 		ps := opts.Push
-		notifySvc.SetSender(notify.ChannelPush, notify.SenderFunc(func(ctx context.Context, userID int64, e notify.Event) error {
-			return ps.SendToUser(ctx, userID, push.Payload{Title: e.Title, Body: e.Body, URL: e.URL, Tag: string(e.Kind)})
+		notifySvc.SetSender(notify.ChannelPush, notify.SenderFunc(func(ctx context.Context, to notify.Recipient, e notify.Event) error {
+			return ps.SendToUser(ctx, to.UserID, push.Payload{Title: e.Title, Body: e.Body, URL: e.URL, Tag: string(e.Kind)})
 		}))
+	}
+	if opts.Demo == nil {
+		// Email only where the administrator configured a server (#686).
+		smtp := notify.SMTPConfig{
+			Host: cfg.SMTP.Host, Port: cfg.SMTP.Port, Username: cfg.SMTP.Username,
+			Password: cfg.SMTP.Password, From: cfg.SMTP.From, TLS: cfg.SMTP.TLS,
+		}
+		if mail := notify.NewEmailSender(smtp); mail != nil {
+			notifySvc.SetSender(notify.ChannelEmail, mail)
+		}
+		notifySvc.SetSender(notify.ChannelWebhook, notify.NewWebhookSender())
 	}
 	handler := httpapi.New(opts)
 

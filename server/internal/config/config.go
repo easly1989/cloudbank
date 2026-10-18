@@ -64,6 +64,12 @@ type Config struct {
 	// tell admins (#582). CB_UPDATE_CHECK=false turns it off for the whole
 	// installation, whatever an admin chooses in Settings.
 	UpdateCheck bool
+	// SMTP is the mail server notifications are emailed through (#686),
+	// CB_SMTP_HOST, CB_SMTP_PORT (default 587), CB_SMTP_USERNAME,
+	// CB_SMTP_PASSWORD, CB_SMTP_FROM and CB_SMTP_TLS (starttls, the default;
+	// tls for implicit TLS on 465; none for a relay on a trusted network).
+	// Without a host and a from address there is no email channel.
+	SMTP SMTP
 
 	// OIDC/SSO login. When Issuer, ClientID, ClientSecret and RedirectURL are all
 	// set (see OIDCEnabled), a "Sign in with <OIDCName>" button is offered on the
@@ -94,6 +100,12 @@ type Config struct {
 	// Demo tunes the public demo build (the `demo` build tag). A normal build
 	// reads it and never uses it.
 	Demo Demo
+}
+
+// SMTP is the mail server notifications are emailed through.
+type SMTP struct {
+	Host, Username, Password, From, TLS string
+	Port                                int
 }
 
 // Demo holds the public demo's limits.
@@ -138,6 +150,14 @@ func Load() Config {
 		MicrosoftIMAP:      strings.TrimSpace(getenv("CB_MS_IMAP", "")),
 		LocalIMAP:          strings.TrimSpace(getenv("CB_MAIL_LOCAL_IMAP", "")),
 		UpdateCheck:        getBoolEnv("CB_UPDATE_CHECK", true),
+		SMTP: SMTP{
+			Host:     strings.TrimSpace(getenv("CB_SMTP_HOST", "")),
+			Port:     getIntEnv("CB_SMTP_PORT", 587),
+			Username: getenv("CB_SMTP_USERNAME", ""),
+			Password: getenv("CB_SMTP_PASSWORD", ""),
+			From:     strings.TrimSpace(getenv("CB_SMTP_FROM", "")),
+			TLS:      strings.ToLower(strings.TrimSpace(getenv("CB_SMTP_TLS", "starttls"))),
+		},
 
 		OIDCIssuer:        getenv("CB_OIDC_ISSUER", ""),
 		OIDCClientID:      getenv("CB_OIDC_CLIENT_ID", ""),

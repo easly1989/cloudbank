@@ -12,6 +12,11 @@
 // subject, body, authenticated}, where mailbox "imap" is the app-password one;
 // the sign-in page at /device approves a user code.
 //
+// For the notification channels (#686) it is also an SMTP server that keeps
+// what it is sent (E2E_MAIL_SMTP, no TLS, no login) and a webhook receiver at
+// POST /hook/<name>, which answers 401 for the name "unauthorized"; both show
+// what arrived at GET /notify/received.
+//
 //	E2E_MAIL_HTTP=127.0.0.1:9100 E2E_MAIL_IMAP=127.0.0.1:1143 \
 //	E2E_MAIL_PASSWORD_IMAP=127.0.0.1:1144 go run ./cmd/e2e-mail
 //
@@ -21,6 +26,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/rand"
 	"encoding/base64"
@@ -29,6 +35,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -75,6 +82,8 @@ type fake struct {
 	mu      sync.Mutex
 	codes   map[string]*signIn // device code → sign-in
 	aiLast  string             // the last text the pretend AI was sent
+	mails   []received         // what the SMTP server was sent
+	hooks   []received         // what the webhook receiver was sent
 	access  map[string]bool
 	refresh map[string]bool
 	n       int
@@ -145,8 +154,16 @@ func main() {
 	mux.HandleFunc("POST /deliver", f.deliver)
 	mux.HandleFunc("POST /v1/chat/completions", f.chat)
 	mux.HandleFunc("GET /ai/last", f.aiLastText)
+	mux.HandleFunc("POST /hook/{name}", f.hook)
+	mux.HandleFunc("GET /notify/received", f.received)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
-	log.Printf("pretend Microsoft on http://%s, IMAP on %s; app-password IMAP on %s", f.httpAddr, ln.Addr(), pln.Addr())
+	sln, err := net.Listen("tcp", getenv("E2E_MAIL_SMTP", "127.0.0.1:1025"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	go f.serveSMTP(sln)
+	log.Printf("pretend Microsoft on http://%s, IMAP on %s; app-password IMAP on %s; SMTP on %s",
+		f.httpAddr, ln.Addr(), pln.Addr(), sln.Addr())
 	hs := &http.Server{Addr: f.httpAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 	log.Fatal(hs.ListenAndServe())
 }
@@ -364,4 +381,113 @@ func (x xoauth2) Next(resp []byte) ([]byte, bool, error) {
 		return nil, true, errors.New("pretend Microsoft: the token is not one it issued")
 	}
 	return nil, true, nil
+}
+
+// received is one message the SMTP server or the webhook receiver took.
+type received struct {
+	To        string          `json:"to,omitempty"`
+	Subject   string          `json:"subject,omitempty"`
+	Body      string          `json:"body,omitempty"`
+	Hook      string          `json:"hook,omitempty"`
+	Payload   json.RawMessage `json:"payload,omitempty"`
+	Signature string          `json:"signature,omitempty"`
+}
+
+func (f *fake) hook(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<16))
+	if err != nil || !json.Valid(body) {
+		http.Error(w, "want JSON", http.StatusBadRequest)
+		return
+	}
+	name := r.PathValue("name")
+	if name == "unauthorized" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	f.mu.Lock()
+	f.hooks = append(f.hooks, received{Hook: name, Payload: body, Signature: r.Header.Get("X-CloudBank-Signature")})
+	f.mu.Unlock()
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (f *fake) received(w http.ResponseWriter, _ *http.Request) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	writeJSON(w, http.StatusOK, map[string]any{"mails": append([]received{}, f.mails...), "hooks": append([]received{}, f.hooks...)})
+}
+
+// serveSMTP is just enough of an SMTP server for one client on this machine:
+// no TLS, no login, one message per DATA.
+func (f *fake) serveSMTP(ln net.Listener) {
+	for {
+		c, err := ln.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+		go f.smtpSession(c)
+	}
+}
+
+func (f *fake) smtpSession(c net.Conn) {
+	defer func() { _ = c.Close() }()
+	_ = c.SetDeadline(time.Now().Add(time.Minute))
+	rd := bufio.NewReader(c)
+	say := func(line string) { _, _ = c.Write([]byte(line + "\r\n")) }
+	say("220 pretend.smtp ESMTP")
+	var to string
+	for {
+		line, err := rd.ReadString('\n')
+		if err != nil {
+			return
+		}
+		cmd := strings.ToUpper(strings.TrimSpace(line))
+		switch {
+		case strings.HasPrefix(cmd, "EHLO"):
+			say("250-pretend.smtp")
+			say("250 8BITMIME")
+		case strings.HasPrefix(cmd, "HELO"):
+			say("250 pretend.smtp")
+		case strings.HasPrefix(cmd, "MAIL FROM:"):
+			say("250 OK")
+		case strings.HasPrefix(cmd, "RCPT TO:"):
+			to = strings.Trim(strings.TrimSpace(line)[len("RCPT TO:"):], " <>")
+			say("250 OK")
+		case cmd == "DATA":
+			say("354 go ahead")
+			var data strings.Builder
+			for {
+				l, err := rd.ReadString('\n')
+				if err != nil {
+					return
+				}
+				if l == ".\r\n" {
+					break
+				}
+				data.WriteString(strings.TrimPrefix(l, "."))
+			}
+			f.keepMail(to, data.String())
+			say("250 OK")
+		case cmd == "QUIT":
+			say("221 bye")
+			return
+		case cmd == "RSET" || cmd == "NOOP":
+			say("250 OK")
+		default:
+			say("502 not here")
+		}
+	}
+}
+
+// keepMail stores a message's recipient, subject and text body.
+func (f *fake) keepMail(to, data string) {
+	head, body, _ := strings.Cut(data, "\r\n\r\n")
+	subject := ""
+	for _, h := range strings.Split(head, "\r\n") {
+		if v, ok := strings.CutPrefix(h, "Subject: "); ok {
+			subject = v
+		}
+	}
+	f.mu.Lock()
+	f.mails = append(f.mails, received{To: to, Subject: subject, Body: strings.TrimSpace(body)})
+	f.mu.Unlock()
 }

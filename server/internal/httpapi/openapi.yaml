@@ -437,6 +437,64 @@ paths:
         "204": { description: Saved. }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/notifications/channels:
+    get:
+      operationId: listNotificationChannels
+      summary: The channels the current user sets up with an address (email, webhook)
+      description: >-
+        A webhook's URL is never sent back, only its host: its path is often its
+        key. Email is available only where the administrator configured a mail
+        server (CB_SMTP_*).
+      responses:
+        "200": { description: The channels., content: { application/json: { schema: { type: object, properties: { channels: { type: array, items: { $ref: "#/components/schemas/NotificationChannelState" } } }, required: [channels] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/notifications/channels/{channel}:
+    parameters:
+      - { name: channel, in: path, required: true, schema: { type: string, enum: [email, webhook] } }
+    put:
+      operationId: saveNotificationChannel
+      summary: Set the current user's address on a channel
+      description: >-
+        Omit target to keep the stored one (a webhook's URL is never sent back);
+        omit secret to keep the stored signing secret, send "" to remove it. A
+        webhook on the local network may be saved only by an administrator:
+        anyone else gets 400 local_network.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target: { type: string, description: The email address, or the webhook URL. }
+                secret: { type: string, description: The webhook's signing secret (HMAC-SHA256 in X-CloudBank-Signature). }
+      responses:
+        "204": { description: Saved. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteNotificationChannel
+      summary: Remove the current user's address on a channel
+      responses:
+        "204": { description: Removed. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/notifications/channels/{channel}/test:
+    parameters:
+      - { name: channel, in: path, required: true, schema: { type: string, enum: [push, email, webhook] } }
+    post:
+      operationId: testNotificationChannel
+      summary: Send a test message on a channel now
+      description: >-
+        The outcome is also written on the channel: a failure shows as its last
+        error, a success clears it. A second test to the same address within
+        ten seconds gets 429 rate_limited.
+      responses:
+        "200": { description: Tried., content: { application/json: { schema: { type: object, properties: { ok: { type: boolean }, error: { type: string, description: The status, or unauthorized / rejected / unreachable / local. } }, required: [ok] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { description: A test went to this address moments ago., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
   /api/v1/ai/settings:
     get:
       operationId: getAISettings
@@ -3549,7 +3607,7 @@ components:
       enum: [mail_stopped, mail_unrecognized, bills]
     NotificationChannel:
       type: string
-      enum: [inapp, push]
+      enum: [inapp, push, email, webhook]
     Notification:
       type: object
       properties:
@@ -3562,6 +3620,18 @@ components:
         createdAt: { type: string, format: date-time }
         read: { type: boolean }
       required: [id, kind, title, body, url, walletId, createdAt, read]
+    NotificationChannelState:
+      type: object
+      properties:
+        channel: { type: string, enum: [email, webhook] }
+        available: { type: boolean, description: False when this installation cannot send on it. }
+        configured: { type: boolean }
+        target: { type: string, description: The email address, or only the webhook's host. }
+        hasSecret: { type: boolean }
+        lastError: { type: string, description: Empty after a success; else the status or the reason of the last failure. }
+        lastErrorAt: { type: string, format: date-time, nullable: true }
+        lastOkAt: { type: string, format: date-time, nullable: true }
+      required: [channel, available, configured, target, hasSecret, lastError, lastErrorAt, lastOkAt]
     NotificationList:
       type: object
       properties:
@@ -3578,7 +3648,9 @@ components:
           properties:
             inapp: { type: boolean }
             push: { type: boolean }
-          required: [inapp, push]
+            email: { type: boolean }
+            webhook: { type: boolean }
+          required: [inapp, push, email, webhook]
       required: [kind, group, channels]
     PushSubscription:
       type: object
