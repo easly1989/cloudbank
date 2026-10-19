@@ -257,7 +257,7 @@ only money coming in.
     to twelve ahead, on its day with its name and amount, and picks up changes on
     its own (most apps check every few hours). It never shows a balance.
   - To subscribe:
-    - **iPhone and Mac**: tap **Subscribe on this device**, or open Settings ›
+    - **iPhone and Mac**: tap **Subscribe**, or open Settings ›
       Apps › Calendar › Calendar Accounts › Add Account › Other › Add Subscribed
       Calendar and paste the address.
     - **Google Calendar**: on a computer, Other calendars › + › From URL, and
