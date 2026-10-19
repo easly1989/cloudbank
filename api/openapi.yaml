@@ -2486,6 +2486,7 @@ paths:
     post:
       operationId: createSchedule
       summary: Create a schedule on a template
+      description: An income or expense template needs a payee (400 payee_required); a transfer does not. The same applies to an update.
       requestBody:
         required: true
         content:
@@ -2575,6 +2576,25 @@ paths:
       summary: Skip the current occurrence and advance the schedule
       responses:
         "204": { description: Skipped. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/schedules/{scheduleId}/apply-payee:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: scheduleId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: applySchedulePayee
+      summary: Give the schedule's payee to the transactions it registered without one
+      responses:
+        "200":
+          description: How many transactions were changed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated: { type: integer }
+                required: [updated]
+        "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/assignments:
     parameters:
@@ -4556,7 +4576,10 @@ components:
         postAdvance: { type: integer }
         autoPost: { type: boolean }
         lastPosted: { type: string }
-      required: [id, templateId, templateName, templateAmount, templateIsTransfer, unit, everyN, nextDue, weekendMode, postAdvance, autoPost]
+        payeeId: { type: integer, format: int64, description: "The template's payee; absent when it has none." }
+        payeeName: { type: string }
+        withoutPayee: { type: integer, format: int64, description: "How many transactions the schedule registered have no payee." }
+      required: [id, templateId, templateName, templateAmount, templateIsTransfer, unit, everyN, nextDue, weekendMode, postAdvance, autoPost, withoutPayee]
     ScheduleOccurrence:
       type: object
       properties:

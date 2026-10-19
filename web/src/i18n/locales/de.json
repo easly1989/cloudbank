@@ -655,7 +655,8 @@
       "schedule": "Wiederkehrende Buchung",
       "nextHead": "Nächste",
       "thisMonth": "Diesen Monat",
-      "notRegistered": "nicht erfasst"
+      "notRegistered": "nicht erfasst",
+      "noPayee": "Ohne Zahlungspartner"
     },
     "repeat": {
       "day": "Jeden Tag",
@@ -672,11 +673,24 @@
       "namePlaceholder": "Miete, Strom, Gehalt…",
       "isExpense": "Geld raus: zu Geld rein wechseln",
       "isIncome": "Geld rein: zu Geld raus wechseln",
-      "autoPostHint": "Am Fälligkeitstag ohne Nachfrage erfassen."
+      "autoPostHint": "Am Fälligkeitstag ohne Nachfrage erfassen.",
+      "payeeHint": "An wen das Geld geht oder von wem es kommt",
+      "payeeRequired": "Wähle einen Zahlungspartner",
+      "applyPayee_one": "Auch der bereits erfassten Buchung ohne Zahlungspartner zuweisen",
+      "applyPayee_other": "Auch den {{count}} bereits erfassten Buchungen ohne Zahlungspartner zuweisen",
+      "applyPayeeHint": "Buchungen, die schon einen haben, behalten ihn."
     },
     "splitNote_one": "Diese Buchung ist aufgeteilt, daher lassen sich Betrag und Kategorie hier nicht ändern. Der Rest schon.",
     "splitNote_other": "Diese Buchung ist auf {{count}} Kategorien aufgeteilt, daher lassen sich Betrag und Kategorien hier nicht ändern. Der Rest schon.",
-    "splitCategories": "Aufgeteilt · {{names}}"
+    "splitCategories": "Aufgeteilt · {{names}}",
+    "missingPayee": {
+      "title_one": "{{count}} wiederkehrende Buchung ohne Zahlungspartner",
+      "title_other": "{{count}} wiederkehrende Buchungen ohne Zahlungspartner",
+      "body": "Ein Zahlungspartner ist jetzt Pflicht: Er zeigt, an wen das Geld geht oder von wem es kommt, und du kannst ihn auch den bereits erfassten Buchungen zuweisen.",
+      "start": "Nacheinander ergänzen",
+      "walk": "Ohne Zahlungspartner: {{n}} von {{total}}",
+      "saveNext": "Speichern und weiter zur nächsten"
+    }
   },
   "tags": {
     "title": "Tags",

@@ -655,7 +655,8 @@
       "schedule": "Programmata",
       "nextHead": "Prossima",
       "thisMonth": "Questo mese",
-      "notRegistered": "non registrata"
+      "notRegistered": "non registrata",
+      "noPayee": "Senza beneficiario"
     },
     "repeat": {
       "day": "Ogni giorno",
@@ -672,11 +673,24 @@
       "namePlaceholder": "Affitto, luce, stipendio…",
       "isExpense": "Uscita: passa a entrata",
       "isIncome": "Entrata: passa a uscita",
-      "autoPostHint": "La registra alla sua data senza chiedere."
+      "autoPostHint": "La registra alla sua data senza chiedere.",
+      "payeeHint": "A chi vanno o da chi arrivano i soldi",
+      "payeeRequired": "Scegli un beneficiario",
+      "applyPayee_one": "Applica anche alla transazione già registrata senza beneficiario",
+      "applyPayee_other": "Applica anche alle {{count}} transazioni già registrate senza beneficiario",
+      "applyPayeeHint": "Quelle che ne hanno già uno restano come sono."
     },
     "splitNote_one": "Questa transazione è suddivisa: qui non puoi cambiarne l'importo né la categoria. Il resto sì.",
     "splitNote_other": "Questa transazione è suddivisa in {{count}} categorie: qui non puoi cambiarne l'importo né le categorie. Il resto sì.",
-    "splitCategories": "Suddivisa · {{names}}"
+    "splitCategories": "Suddivisa · {{names}}",
+    "missingPayee": {
+      "title_one": "{{count}} programmata senza beneficiario",
+      "title_other": "{{count}} programmate senza beneficiario",
+      "body": "Ora il beneficiario è obbligatorio: dice a chi vanno o da chi arrivano i soldi, e lo puoi applicare anche alle transazioni già registrate.",
+      "start": "Completa una alla volta",
+      "walk": "Senza beneficiario: {{n}} di {{total}}",
+      "saveNext": "Salva e vai alla prossima"
+    }
   },
   "tags": {
     "title": "Tag",

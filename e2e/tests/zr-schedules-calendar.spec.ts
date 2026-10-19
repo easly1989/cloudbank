@@ -71,11 +71,14 @@ async function seed(page: Page, suffix: string) {
         amount: number,
         nextDue: string,
       ) => {
+        // A schedule needs a payee (#723).
+        const payee = await json(await post(`${base}/payees`, { name }));
         const tpl = await json(
           await post(`${base}/templates`, {
             name,
             accountId: acc.id,
             amount,
+            payeeId: payee.id,
           }),
         );
         return json(
