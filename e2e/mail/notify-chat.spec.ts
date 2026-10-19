@@ -84,15 +84,19 @@ test("Telegram: the shared bot links the chat that presses Start with the code",
   await tg.getByLabel("Topic ID").fill("7");
   await tg.getByRole("switch", { name: "Send silently" }).check();
   await tg.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("Saved")).toBeVisible();
-  const { channels } = JSON.parse(await channelState(page)) as {
-    channels: { channel: string }[];
-  };
-  expect(channels.find((c) => c.channel === "telegram")).toMatchObject({
-    target: "424242",
-    pending: false,
-    options: { topic: 7, silent: true },
-  });
+  // The connect step showed a "Saved" too: wait on the server instead.
+  await expect
+    .poll(async () => {
+      const { channels } = JSON.parse(await channelState(page)) as {
+        channels: { channel: string }[];
+      };
+      return channels.find((c) => c.channel === "telegram");
+    })
+    .toMatchObject({
+      target: "424242",
+      pending: false,
+      options: { topic: 7, silent: true },
+    });
 });
 
 test("Telegram: a bot of one's own sends with its token, which never comes back", async ({
