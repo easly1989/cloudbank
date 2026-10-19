@@ -703,6 +703,32 @@
       "yearly": "Todo ano, por volta de {{date}}",
       "seen_one": "{{count}} vez desde {{month}}, a última em {{date}}",
       "seen_other": "{{count}} vezes desde {{month}}, a última em {{date}}"
+    },
+    "feed": {
+      "title": "Adicionar ao calendário",
+      "sub": "Os vencimentos de {{wallet}} no calendário do celular",
+      "intro": "Um endereço privado que o calendário do celular lê sozinho: cada agendamento aparece no dia em que vence, com o nome e o valor. Nunca o saldo de uma conta.",
+      "create": "Criar o endereço",
+      "explain": "O calendário o lê sozinho e se atualiza quando você muda um agendamento: cada vencimento aparece no seu dia, com o nome e o valor. Nunca o saldo de uma conta.",
+      "address": "Endereço do calendário",
+      "copy": "Copiar o endereço",
+      "copied": "Copiado",
+      "private": "Quem tem este endereço vê seus vencimentos: não o compartilhe.",
+      "subscribe": "Assinar neste dispositivo",
+      "download": "Baixar .ics",
+      "google": "Google Agenda",
+      "googleHow": "No computador: Outras agendas › + › Do URL e cole o endereço. Aparece também no celular.",
+      "apple": "iPhone e Mac",
+      "appleHow": "Toque em “Assinar neste dispositivo” ou vá em Ajustes › Apps › Calendário › Contas de Calendário › Adicionar Conta › Outra › Adicionar Calendário Assinado e cole o endereço.",
+      "outlook": "Outlook",
+      "outlookHow": "Adicionar calendário › Assinar da web e cole o endereço.",
+      "regenerate": "Gerar outro endereço",
+      "regenerateTitle": "Gerar outro endereço?",
+      "regenerateBody": "O endereço atual para de funcionar: cada calendário assinado precisa ser adicionado de novo com o novo.",
+      "regenerateHint": "Gere outro se o endereço chegou a outra pessoa: o antigo para de funcionar.",
+      "off": "Desativar",
+      "offTitle": "Desativar o endereço?",
+      "offBody": "Os calendários assinados deixam de receber seus vencimentos."
     }
   },
   "tags": {

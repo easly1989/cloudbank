@@ -1,4 +1,4 @@
-import { api } from "./core";
+import { api, downloadFile } from "./core";
 import type { Split } from "./ledger";
 
 // --- Templates ---
@@ -197,6 +197,25 @@ export const ignoreScheduleProposal = (
   payeeId: number,
   cadence: ProposalCadence,
 ) => api.post<void>(`/api/v1/wallets/${walletId}/schedules/proposals/ignore`, { payeeId, cadence });
+
+/** A private calendar address for the schedules: `/ical/{id}/{token}.ics` (#694). */
+export interface CalendarFeed {
+  id: number;
+  token: string;
+}
+
+export const getCalendarFeed = (walletId: number) =>
+  api.get<{ feed: CalendarFeed | null }>(`/api/v1/wallets/${walletId}/schedules/calendar-feed`);
+
+/** Makes the address, or gives it a new token so the old one stops working. */
+export const newCalendarFeed = (walletId: number) =>
+  api.post<{ feed: CalendarFeed }>(`/api/v1/wallets/${walletId}/schedules/calendar-feed`);
+
+export const deleteCalendarFeed = (walletId: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/schedules/calendar-feed`);
+
+export const downloadScheduleCalendar = (walletId: number) =>
+  downloadFile(`/api/v1/wallets/${walletId}/schedules/calendar.ics`, "cloudbank.ics");
 
 /** Gives the schedule's payee to the transactions it registered without one. */
 export const applySchedulePayee = (walletId: number, id: number) =>

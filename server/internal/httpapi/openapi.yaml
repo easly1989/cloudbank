@@ -14,6 +14,18 @@ info:
 servers:
   - url: /
 paths:
+  /ical/{feedId}/{token}.ics:
+    parameters:
+      - { name: feedId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: token, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getCalendarFeedICS
+      summary: The schedules' calendar at its private address
+      description: For a calendar app to subscribe to. No session; the token is the credential. An unknown, regenerated or turned-off address, or one whose user left the wallet, answers 404 (#694).
+      security: []
+      responses:
+        "200": { description: The calendar., content: { text/calendar: { schema: { type: string } } } }
+        "404": { description: No such address. }
   /healthz:
     get:
       operationId: getHealth
@@ -2600,6 +2612,39 @@ paths:
         "204": { description: Ignored. }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/schedules/calendar-feed:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getCalendarFeed
+      summary: The reader's private calendar address for the wallet
+      description: "`feed` is null when the reader has none. The address is `/ical/{id}/{token}.ics` (#694)."
+      responses:
+        "200": { description: The address., content: { application/json: { schema: { $ref: "#/components/schemas/CalendarFeedResponse" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: newCalendarFeed
+      summary: Make the reader's calendar address, or give it a new token
+      description: A new token keeps the id; the old address then answers 404.
+      responses:
+        "200": { description: The address., content: { application/json: { schema: { $ref: "#/components/schemas/CalendarFeedResponse" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteCalendarFeed
+      summary: Turn the reader's calendar address off
+      responses:
+        "204": { description: Turned off. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/schedules/calendar.ics:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: downloadScheduleCalendar
+      summary: The schedules as an iCalendar file to download
+      description: Three months back to twelve ahead, one all-day event per occurrence with its name and amount; never a balance.
+      responses:
+        "200": { description: The calendar., content: { text/calendar: { schema: { type: string } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/schedules/{scheduleId}/skip:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -4613,6 +4658,19 @@ components:
         payeeName: { type: string }
         withoutPayee: { type: integer, format: int64, description: "How many transactions the schedule registered have no payee." }
       required: [id, templateId, templateName, templateAmount, templateIsTransfer, unit, everyN, nextDue, weekendMode, postAdvance, autoPost, withoutPayee]
+    CalendarFeed:
+      type: object
+      description: A private calendar address, `/ical/{id}/{token}.ics` (#694).
+      properties:
+        id: { type: integer, format: int64 }
+        token: { type: string }
+      required: [id, token]
+    CalendarFeedResponse:
+      type: object
+      properties:
+        feed:
+          oneOf: [{ $ref: "#/components/schemas/CalendarFeed" }, { type: "null" }]
+      required: [feed]
     ScheduleProposal:
       type: object
       description: A recurring payment found in the transactions that no schedule covers (#693).

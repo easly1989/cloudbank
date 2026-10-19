@@ -703,6 +703,32 @@
       "yearly": "Ogni anno, verso il {{date}}",
       "seen_one": "{{count}} volta da {{month}}, l'ultima il {{date}}",
       "seen_other": "{{count}} volte da {{month}}, l'ultima il {{date}}"
+    },
+    "feed": {
+      "title": "Aggiungi al calendario",
+      "sub": "Le scadenze di {{wallet}} nel calendario del telefono",
+      "intro": "Un indirizzo privato che il calendario del telefono legge da solo: ogni programmata compare il giorno in cui scade, con il nome e l'importo. Mai i saldi dei conti.",
+      "create": "Crea l'indirizzo",
+      "explain": "Il calendario lo legge da solo e si aggiorna quando cambi una programmata: ogni scadenza compare nel suo giorno, con il nome e l'importo. Mai i saldi dei conti.",
+      "address": "Indirizzo del calendario",
+      "copy": "Copia l'indirizzo",
+      "copied": "Copiato",
+      "private": "Chi ha questo indirizzo vede le tue scadenze: non condividerlo.",
+      "subscribe": "Iscriviti da questo dispositivo",
+      "download": "Scarica .ics",
+      "google": "Google Calendar",
+      "googleHow": "Dal computer: Altri calendari › + › Da URL, poi incolla l'indirizzo. Compare anche sul telefono.",
+      "apple": "iPhone e Mac",
+      "appleHow": "Tocca «Iscriviti da questo dispositivo», oppure vai in Impostazioni › App › Calendario › Account calendario › Aggiungi account › Altro › Aggiungi calendario sottoscritto e incolla l'indirizzo.",
+      "outlook": "Outlook",
+      "outlookHow": "Aggiungi calendario › Sottoscrivi dal Web, poi incolla l'indirizzo.",
+      "regenerate": "Rigenera l'indirizzo",
+      "regenerateTitle": "Rigenerare l'indirizzo?",
+      "regenerateBody": "L'indirizzo attuale smette di funzionare: ogni calendario iscritto va aggiunto di nuovo con quello nuovo.",
+      "regenerateHint": "Rigeneralo se l'indirizzo è finito a qualcun altro: il vecchio smette di funzionare.",
+      "off": "Disattiva",
+      "offTitle": "Disattivare l'indirizzo?",
+      "offBody": "I calendari iscritti smettono di ricevere le tue scadenze."
     }
   },
   "tags": {
