@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"math"
 	"sort"
 	"time"
 
@@ -61,11 +62,11 @@ type rule struct {
 	back    int // months to look back
 	unit    string
 	everyN  int
-	perYear int64
+	perYear float64 // occurrences in a year, as the web counts them
 }
 
 var rules = []rule{
-	{Weekly, 5, 9, 4, 7, 13, UnitWeek, 1, 52},
+	{Weekly, 5, 9, 4, 7, 13, UnitWeek, 1, 365.25 / 7},
 	{Monthly, 25, 34, 3, 30, 13, UnitMonth, 1, 12},
 	{Quarterly, 84, 98, 3, 91, 13, UnitMonth, 3, 4},
 	{Yearly, 355, 375, 2, 365, 25, UnitYear, 1, 1},
@@ -119,6 +120,9 @@ func Detect(paid []Paid, today time.Time) (Found, bool) {
 			continue
 		}
 		mid := median(amounts)
+		if mid == 0 {
+			continue
+		}
 		var near []Paid
 		for _, p := range window {
 			if abs(p.Amount-mid)*10 <= abs(mid) {
@@ -145,7 +149,7 @@ func Detect(paid []Paid, today time.Time) (Found, bool) {
 		return Found{
 			Cadence: r.cadence, Amount: amount, AccountID: run[len(run)-1].AccountID, Count: len(run),
 			First: run[0].Date, Last: run[len(run)-1].Date,
-			NextDue: FormatDate(AddInterval(last, r.unit, r.everyN)), Yearly: amount * r.perYear,
+			NextDue: FormatDate(AddInterval(last, r.unit, r.everyN)), Yearly: int64(math.Round(float64(amount) * r.perYear)),
 		}, true
 	}
 	return Found{}, false

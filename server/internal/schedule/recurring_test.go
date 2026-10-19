@@ -34,7 +34,8 @@ func TestDetect(t *testing.T) {
 		yearly  int64
 	}{
 		{name: "monthly", paid: series("2026-10-02", 6, 0, 1, -3500), want: Monthly, amount: -3500, count: 6, nextDue: "2026-11-02", yearly: -42000},
-		{name: "weekly", paid: series("2026-10-16", 5, 7, 0, -1200), want: Weekly, amount: -1200, count: 5, nextDue: "2026-10-23", yearly: -62400},
+		{name: "zero amounts", paid: series("2026-10-01", 4, 30, 0, 0)},
+		{name: "weekly", paid: series("2026-10-16", 5, 7, 0, -1200), want: Weekly, amount: -1200, count: 5, nextDue: "2026-10-23", yearly: -62614},
 		{name: "quarterly", paid: series("2026-09-10", 3, 0, 3, -9000), want: Quarterly, amount: -9000, count: 3, nextDue: "2026-12-10", yearly: -36000},
 		{name: "yearly", paid: series("2026-03-12", 2, 0, 12, -18000), want: Yearly, amount: -18000, count: 2, nextDue: "2027-03-12", yearly: -18000},
 		{name: "income", paid: series("2026-10-10", 4, 0, 1, 8000), want: Monthly, amount: 8000, count: 4, nextDue: "2026-11-10", yearly: 96000},
