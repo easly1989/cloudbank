@@ -24,6 +24,7 @@ import {
   getNotificationSettings,
   getWalletNotifications,
   listAccounts,
+  NOTIFICATION_SETTINGS_KEY,
   setNotificationSettings,
   setNotificationThreshold,
   setWalletNotificationsIncluded,
@@ -42,7 +43,6 @@ import { SettingsGroup } from "./SettingsLayout";
 // where the money events reach the reader. Everything here is the reader's
 // own; the other members of a wallet choose for themselves.
 
-const SETTINGS_KEY = ["notification-settings"] as const;
 const walletKey = (id: number) => ["wallet-notifications", id] as const;
 
 function useWalletSettings(wallets: Wallet[]) {
@@ -317,10 +317,13 @@ function Wallets() {
 function Amounts() {
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const { data } = useQuery({ queryKey: SETTINGS_KEY, queryFn: getNotificationSettings });
+  const { data } = useQuery({
+    queryKey: NOTIFICATION_SETTINGS_KEY,
+    queryFn: getNotificationSettings,
+  });
   const save = useMutation({
     mutationFn: setNotificationSettings,
-    onSuccess: (s) => qc.setQueryData(SETTINGS_KEY, s),
+    onSuccess: (s) => qc.setQueryData(NOTIFICATION_SETTINGS_KEY, s),
     onError: notifyError,
   });
   const on = data?.amountsOutside ?? true;

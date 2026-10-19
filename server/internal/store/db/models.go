@@ -367,6 +367,20 @@ type NotificationDelivery struct {
 	NextAt   string
 }
 
+type NotificationDigestKind struct {
+	UserID int64
+	Kind   string
+}
+
+type NotificationHeld struct {
+	ID      int64
+	UserID  int64
+	Channel string
+	Payload string
+	Digest  int64
+	HeldAt  string
+}
+
 type NotificationPref struct {
 	UserID  int64
 	Kind    string
@@ -377,6 +391,12 @@ type NotificationPref struct {
 type NotificationSetting struct {
 	UserID         int64
 	AmountsOutside int64
+	Timezone       string
+	DigestAt       string
+	QuietHours     int64
+	QuietFrom      string
+	QuietTo        string
+	ReviewDays     int64
 }
 
 type NotificationThreshold struct {
@@ -413,6 +433,12 @@ type PushSubscription struct {
 	P256dh    string
 	Auth      string
 	CreatedAt string
+}
+
+type ReviewWaiting struct {
+	TransactionID int64
+	WalletID      int64
+	Since         string
 }
 
 type Schedule struct {

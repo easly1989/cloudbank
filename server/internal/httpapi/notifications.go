@@ -23,6 +23,7 @@ func (h *notificationHandlers) routes(r chi.Router) {
 	r.Post("/notifications/read-all", h.markAllRead)
 	r.Get("/notifications/preferences", h.preferences)
 	r.Put("/notifications/preferences", h.setPreference)
+	r.Put("/notifications/digest", h.setDigest)
 	r.Get("/notifications/channels", h.channels)
 	r.Put("/notifications/channels/{channel}", h.saveChannel)
 	r.Delete("/notifications/channels/{channel}", h.deleteChannel)
@@ -48,25 +49,58 @@ func (h *notificationHandlers) settings(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusInternalServerError, "internal", "could not read the notification settings")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"amountsOutside": st.AmountsOutside})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"amountsOutside": st.AmountsOutside, "timezone": st.Timezone, "digestAt": st.DigestAt,
+		"quietHours": st.QuietHours, "quietFrom": st.QuietFrom, "quietTo": st.QuietTo, "reviewDays": st.ReviewDays,
+	})
 }
 
+// setSettings changes the settings the body names and keeps the others.
 func (h *notificationHandlers) setSettings(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		AmountsOutside *bool `json:"amountsOutside"`
+		AmountsOutside *bool   `json:"amountsOutside"`
+		Timezone       *string `json:"timezone"`
+		DigestAt       *string `json:"digestAt"`
+		QuietHours     *bool   `json:"quietHours"`
+		QuietFrom      *string `json:"quietFrom"`
+		QuietTo        *string `json:"quietTo"`
+		ReviewDays     *int    `json:"reviewDays"`
 	}
 	if !decodeJSON(w, r, &body) {
 		return
 	}
-	if body.AmountsOutside == nil {
-		writeError(w, http.StatusBadRequest, "invalid", "amountsOutside is required")
+	userID := userFromContext(r.Context()).ID
+	st, err := h.svc.GetSettings(r.Context(), userID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not read the notification settings")
 		return
 	}
-	if err := h.svc.SetAmountsOutside(r.Context(), userFromContext(r.Context()).ID, *body.AmountsOutside); err != nil {
+	set := func(dst *string, v *string) {
+		if v != nil {
+			*dst = *v
+		}
+	}
+	if body.AmountsOutside != nil {
+		st.AmountsOutside = *body.AmountsOutside
+	}
+	if body.QuietHours != nil {
+		st.QuietHours = *body.QuietHours
+	}
+	if body.ReviewDays != nil {
+		st.ReviewDays = *body.ReviewDays
+	}
+	set(&st.Timezone, body.Timezone)
+	set(&st.DigestAt, body.DigestAt)
+	set(&st.QuietFrom, body.QuietFrom)
+	set(&st.QuietTo, body.QuietTo)
+	switch err := h.svc.SetSettings(r.Context(), userID, st); {
+	case errors.Is(err, notify.ErrBadSettings):
+		writeError(w, http.StatusBadRequest, "invalid", err.Error())
+	case err != nil:
 		writeError(w, http.StatusInternalServerError, "internal", "could not save the notification settings")
-		return
+	default:
+		h.settings(w, r)
 	}
-	h.settings(w, r)
 }
 
 type thresholdJSON struct {
@@ -192,6 +226,7 @@ type notificationPrefJSON struct {
 	Kind     notify.Kind             `json:"kind"`
 	Group    notify.Group            `json:"group"`
 	Channels map[notify.Channel]bool `json:"channels"`
+	Digest   bool                    `json:"digest"`
 }
 
 func (h *notificationHandlers) preferences(w http.ResponseWriter, r *http.Request) {
@@ -203,7 +238,7 @@ func (h *notificationHandlers) preferences(w http.ResponseWriter, r *http.Reques
 	}
 	out := make([]notificationPrefJSON, 0, len(prefs))
 	for _, p := range prefs {
-		out = append(out, notificationPrefJSON{Kind: p.Kind, Group: p.Group, Channels: p.Channels})
+		out = append(out, notificationPrefJSON{Kind: p.Kind, Group: p.Group, Channels: p.Channels, Digest: p.Digest})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"events": out})
 }
@@ -228,6 +263,31 @@ func (h *notificationHandlers) setPreference(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "invalid", "unknown event or channel")
 	case errors.Is(err, notify.ErrAlwaysOn):
 		writeError(w, http.StatusBadRequest, "always_on", "security events always reach the bell")
+	case err != nil:
+		writeError(w, http.StatusInternalServerError, "internal", "could not save the notification preference")
+	default:
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+// setDigest collects one event in the daily digest, or sends it at once.
+func (h *notificationHandlers) setDigest(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Kind   notify.Kind `json:"kind"`
+		Digest *bool       `json:"digest"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if body.Digest == nil {
+		writeError(w, http.StatusBadRequest, "invalid", "digest is required")
+		return
+	}
+	switch err := h.svc.SetDigest(r.Context(), userFromContext(r.Context()).ID, body.Kind, *body.Digest); {
+	case errors.Is(err, notify.ErrUnknownEvent):
+		writeError(w, http.StatusBadRequest, "invalid", "unknown event")
+	case errors.Is(err, notify.ErrAlwaysImmediate):
+		writeError(w, http.StatusBadRequest, "always_immediate", "this event cannot go in the digest")
 	case err != nil:
 		writeError(w, http.StatusInternalServerError, "internal", "could not save the notification preference")
 	default:

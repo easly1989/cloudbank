@@ -35,6 +35,9 @@ const (
 	KindLowBalance       Kind = "low_balance"
 	KindBudget           Kind = "budget"
 	KindGoal             Kind = "goal"
+	KindReviewWaiting    Kind = "review_waiting"
+	KindSummaryWeekly    Kind = "summary_weekly"
+	KindSummaryMonthly   Kind = "summary_monthly"
 )
 
 // Group is how the settings page and the bell sort events.
@@ -46,6 +49,8 @@ const (
 	GroupProblems Group = "problems"
 	GroupBills    Group = "bills"
 	GroupMoney    Group = "money"
+	// GroupSummaries is a digest already: it comes at the digest time (#692).
+	GroupSummaries Group = "summaries"
 	// GroupAdmin is for administrators only: nobody else sees or gets it.
 	GroupAdmin Group = "admin"
 )
@@ -84,8 +89,8 @@ type EventInfo struct {
 }
 
 // Catalog lists every event, in the order the settings page shows them.
-// Security, problems, bills and admin are on by default; money events, when
-// they come, are not. A security event always reaches the bell (#690).
+// Security, problems, bills and admin are on by default; money events and the
+// summaries are not. A security event always reaches the bell (#690).
 var Catalog = []EventInfo{
 	{Kind: KindNewDevice, Group: GroupSecurity, Default: true},
 	{Kind: KindTwoFactorOff, Group: GroupSecurity, Default: true},
@@ -94,11 +99,14 @@ var Catalog = []EventInfo{
 	{Kind: KindConsentExpiring, Group: GroupProblems, Default: true},
 	{Kind: KindMailStopped, Group: GroupProblems, Default: true},
 	{Kind: KindMailUnrecognized, Group: GroupProblems, Default: true},
+	{Kind: KindReviewWaiting, Group: GroupProblems, Default: true},
 	{Kind: KindBills, Group: GroupBills, Default: true},
 	{Kind: KindLargeTransaction, Group: GroupMoney},
 	{Kind: KindLowBalance, Group: GroupMoney},
 	{Kind: KindBudget, Group: GroupMoney},
 	{Kind: KindGoal, Group: GroupMoney},
+	{Kind: KindSummaryWeekly, Group: GroupSummaries},
+	{Kind: KindSummaryMonthly, Group: GroupSummaries},
 	{Kind: KindNewVersion, Group: GroupAdmin, Default: true},
 }
 
@@ -216,7 +224,8 @@ func (s *Service) SetSender(ch Channel, snd Sender) { s.senders[ch] = snd }
 func (s *Service) SetBills(b *bills.Service) { s.bills = b }
 
 // Notify tells one person about one event, on every channel they have on for
-// it: at once in the bell, and through the delivery queue everywhere else.
+// it: at once in the bell, and through the delivery queue everywhere else, or
+// held for their digest or the end of their quiet hours (#692).
 func (s *Service) Notify(ctx context.Context, userID int64, e Event) error {
 	ev, ok := info(e.Kind)
 	if !ok {
@@ -252,15 +261,25 @@ func (s *Service) Notify(ctx context.Context, userID int64, e Event) error {
 		return err
 	}
 	if e.Private != "" {
-		if outside, err := s.amountsOutside(ctx, userID); err != nil {
+		if st, err := s.GetSettings(ctx, userID); err != nil {
 			return err
-		} else if !outside {
+		} else if !st.AmountsOutside {
 			e.Body = e.Private
 		}
 	}
+	held, digest, err := s.holdFor(ctx, userID, ev, e)
+	if err != nil {
+		return err
+	}
 	queued := false
 	for _, ch := range Channels {
-		if s.senders[ch] == nil || !on[ch] || (addressed(ch) && !set[ch]) {
+		if ch == ChannelInApp || s.senders[ch] == nil || !on[ch] || (addressed(ch) && !set[ch]) {
+			continue
+		}
+		if held {
+			if err := s.hold(ctx, userID, ch, e, digest); err != nil {
+				return err
+			}
 			continue
 		}
 		if err := s.enqueue(ctx, userID, ch, e); err != nil {
@@ -346,11 +365,13 @@ func channelsFor(ev EventInfo, prefs []db.ListNotificationPrefsRow) map[Channel]
 	return on
 }
 
-// Preference is one event with the channels that carry it, for one person.
+// Preference is one event with the channels that carry it, for one person,
+// and whether it waits for their digest.
 type Preference struct {
 	Kind     Kind
 	Group    Group
 	Channels map[Channel]bool
+	Digest   bool
 }
 
 // Preferences lists every event in the catalog with this person's choices;
@@ -360,12 +381,16 @@ func (s *Service) Preferences(ctx context.Context, userID int64, admin bool) ([]
 	if err != nil {
 		return nil, err
 	}
+	kinds, err := s.digestKinds(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
 	out := make([]Preference, 0, len(Catalog))
 	for _, ev := range Catalog {
 		if ev.Group == GroupAdmin && !admin {
 			continue
 		}
-		out = append(out, Preference{Kind: ev.Kind, Group: ev.Group, Channels: channelsFor(ev, prefs)})
+		out = append(out, Preference{Kind: ev.Kind, Group: ev.Group, Channels: channelsFor(ev, prefs), Digest: kinds[ev.Kind] && digestible(ev)})
 	}
 	return out, nil
 }

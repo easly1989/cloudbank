@@ -1712,7 +1712,8 @@
       "problems": "Problems",
       "bills": "Bills",
       "money": "Money",
-      "admin": "Administration"
+      "admin": "Administration",
+      "summaries": "Summaries"
     },
     "kind": {
       "new_device": "A sign-in from a new device",
@@ -1727,7 +1728,10 @@
       "low_balance": "Low balance",
       "budget": "Budget at 80% and 100%",
       "goal": "Goal reached or falling behind",
-      "new_version": "A new CloudBank version"
+      "new_version": "A new CloudBank version",
+      "review_waiting": "Transactions to review",
+      "summary_weekly": "Weekly summary",
+      "summary_monthly": "Monthly summary"
     },
     "kindHint": {
       "new_device": "A browser or system your account has not used before.",
@@ -1742,7 +1746,10 @@
       "low_balance": "An account's balance today drops below its threshold.",
       "budget": "A category reaches 80%, then 100%, of this month's budget.",
       "goal": "A goal reaches its target, or its pace of the last months is no longer enough.",
-      "new_version": "A newer release is out on the channel this server follows."
+      "new_version": "A newer release is out on the channel this server follows.",
+      "review_waiting": "Transactions waiting on the Review page for a few days.",
+      "summary_weekly": "On Monday: money in and out, what took most and the week's bills, per wallet.",
+      "summary_monthly": "On the 1st: money in and out and what took most last month, per wallet."
     },
     "securityAlways": "Always in the bell, so a sign-in you didn't make cannot go unnoticed.",
     "emailUnavailable": "Not available: the administrator has not set up a mail server (CB_SMTP_HOST).",
@@ -1891,6 +1898,37 @@
       "amountsOutside": "Show amounts outside the app",
       "amountsOn": "Push, email and chat say how much, as the bell does.",
       "amountsOff": "Push, email and chat say where, never how much."
+    },
+    "timing": {
+      "title": "Timing",
+      "subtitle": "When notifications reach you outside the app",
+      "rowDigest": "Digest at {{time}}",
+      "rowEvents_one": "{{count}} event in it",
+      "rowEvents_other": "{{count}} events in it",
+      "rowQuietOff": "quiet hours off",
+      "rowQuietOn": "quiet {{from}}–{{to}}",
+      "when": "Digest and quiet hours",
+      "whenHint": "The bell doesn't ring: it shows everything at once, always.",
+      "digest": "Daily digest",
+      "digestHint": "The events you choose to collect arrive together, once a day. In your time zone: {{zone}}.",
+      "digestAt": "Digest time",
+      "quiet": "Quiet hours",
+      "quietOn": "Push, email and chat wait until they end. Problems and security arrive anyway.",
+      "quietOff": "Off: notifications arrive at any hour.",
+      "from": "From",
+      "to": "to",
+      "fromLabel": "Start of quiet hours",
+      "toLabel": "End of quiet hours",
+      "modes": "At once or in the digest",
+      "modesHint": "For push, email and chat together. An empty digest isn't sent.",
+      "now": "At once",
+      "inDigest": "In the digest",
+      "always": "Always at once",
+      "atDigest": "At the digest time",
+      "reviewAfter": "Tell me after",
+      "reviewDays": "Days of waiting",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days"
     }
   },
   "ai": {

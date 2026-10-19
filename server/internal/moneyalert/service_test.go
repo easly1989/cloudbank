@@ -6,11 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/easly1989/cloudbank/server/internal/bills"
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/goal"
 	"github.com/easly1989/cloudbank/server/internal/locale"
 	"github.com/easly1989/cloudbank/server/internal/notify"
 	"github.com/easly1989/cloudbank/server/internal/provenance"
+	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/store"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/transaction"
@@ -76,7 +78,9 @@ func newFixture(t *testing.T) *fixture {
 	f.txns = transaction.NewService(st.Write())
 	f.goals = goal.NewServiceWithRead(st.Read(), st.Write())
 	f.budgets = budget.NewServiceWithRead(st.Read(), st.Write())
-	f.w = New(st.Read(), st.Write(), f.budgets, f.goals, f.n, nil)
+	f.w = New(st.Read(), st.Write(), Deps{
+		Budgets: f.budgets, Goals: f.goals, Reports: report.NewService(st.Read()), Bills: bills.NewService(st.Read()), Waiting: f.txns,
+	}, f.n, nil)
 	return f
 }
 
