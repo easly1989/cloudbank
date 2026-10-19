@@ -154,10 +154,17 @@ func (m *MatrixSender) Admit(ctx context.Context, room string) error {
 	if m.shared == nil {
 		return &DeliveryError{Reason: ReasonRejected}
 	}
-	only, _ := json.Marshal([]string{room})
-	filter := `{"room":{"rooms":` + string(only) + `,"timeline":{"limit":1},"state":{"types":[]},"ephemeral":{"types":[]},"account_data":{"types":[]}},"presence":{"types":[]},"account_data":{"types":[]}}`
+	// Only this room, and as little of it as the homeserver allows.
+	none := map[string][]string{"types": {}}
+	filter, _ := json.Marshal(map[string]any{
+		"room": map[string]any{
+			"rooms": []string{room}, "timeline": map[string]int{"limit": 1},
+			"state": none, "ephemeral": none, "account_data": none,
+		},
+		"presence": none, "account_data": none,
+	})
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		strings.TrimRight(m.shared.Homeserver, "/")+"/_matrix/client/v3/sync?timeout=0&filter="+url.QueryEscape(filter), nil)
+		strings.TrimRight(m.shared.Homeserver, "/")+"/_matrix/client/v3/sync?timeout=0&filter="+url.QueryEscape(string(filter)), nil)
 	if err != nil {
 		return &DeliveryError{Reason: ReasonRejected}
 	}
