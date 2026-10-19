@@ -109,3 +109,68 @@ ORDER BY u.id;
 -- Who an admin event is for: the administrators whose account is on.
 -- name: ListAdminRecipients :many
 SELECT id, locale FROM users WHERE is_admin = 1 AND disabled = 0 ORDER BY id;
+
+-- name: GetNotificationSettings :one
+SELECT amounts_outside FROM notification_settings WHERE user_id = ?;
+
+-- name: SetNotificationAmountsOutside :exec
+INSERT INTO notification_settings (user_id, amounts_outside) VALUES (?, ?)
+ON CONFLICT (user_id) DO UPDATE SET amounts_outside = excluded.amounts_outside;
+
+-- name: IsNotificationWalletOff :one
+SELECT COUNT(*) FROM notification_wallets_off WHERE user_id = ? AND wallet_id = ?;
+
+-- name: SetNotificationWalletOff :exec
+INSERT INTO notification_wallets_off (user_id, wallet_id) VALUES (?, ?)
+ON CONFLICT (user_id, wallet_id) DO NOTHING;
+
+-- name: SetNotificationWalletOn :exec
+DELETE FROM notification_wallets_off WHERE user_id = ? AND wallet_id = ?;
+
+-- name: ListNotificationThresholds :many
+-- One person's thresholds on the accounts of one wallet.
+SELECT t.account_id, t.large_over, t.low_under
+FROM notification_thresholds t JOIN accounts a ON a.id = t.account_id
+WHERE t.user_id = ? AND a.wallet_id = ?
+ORDER BY t.account_id;
+
+-- name: SetNotificationThreshold :exec
+INSERT INTO notification_thresholds (user_id, account_id, large_over, low_under) VALUES (?, ?, ?, ?)
+ON CONFLICT (user_id, account_id) DO UPDATE SET
+    large_over = excluded.large_over, low_under = excluded.low_under,
+    low_below = CASE WHEN excluded.low_under IS notification_thresholds.low_under THEN notification_thresholds.low_below ELSE 0 END;
+
+-- name: ListLargeThresholds :many
+-- Every threshold on large expenses of a person still a member of the
+-- account's wallet.
+SELECT t.user_id, t.account_id, t.large_over, a.wallet_id
+FROM notification_thresholds t
+JOIN accounts a ON a.id = t.account_id
+JOIN wallet_members m ON m.wallet_id = a.wallet_id AND m.user_id = t.user_id
+WHERE t.large_over IS NOT NULL;
+
+-- name: ListLowThresholds :many
+-- Every low-balance threshold of a person still a member of the account's
+-- wallet, with the account's balance parts.
+SELECT t.user_id, t.account_id, t.low_under, t.low_below, a.wallet_id, a.name, a.initial_balance,
+    CAST(COALESCE((SELECT SUM(x.amount) FROM transactions x
+        WHERE x.account_id = a.id AND x.date <= sqlc.arg(today)), 0) AS INTEGER) AS today_delta
+FROM notification_thresholds t
+JOIN accounts a ON a.id = t.account_id
+JOIN wallet_members m ON m.wallet_id = a.wallet_id AND m.user_id = t.user_id
+WHERE t.low_under IS NOT NULL;
+
+-- name: SetLowBelow :exec
+UPDATE notification_thresholds SET low_below = ? WHERE user_id = ? AND account_id = ?;
+
+-- name: ListTransactionsSince :many
+-- The expenses written after id, oldest first, with who and what wrote them.
+SELECT t.id, t.wallet_id, t.account_id, t.date, t.amount, t.memo, t.origin, t.created_by,
+    COALESCE(p.name, '') AS payee
+FROM transactions t LEFT JOIN payees p ON p.id = t.payee_id
+WHERE t.id > ? AND t.amount < 0
+ORDER BY t.id
+LIMIT 500;
+
+-- name: MaxTransactionID :one
+SELECT CAST(COALESCE(MAX(id), 0) AS INTEGER) FROM transactions;

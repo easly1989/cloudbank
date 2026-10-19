@@ -43,6 +43,7 @@ import { ChannelSetup, failureText, useChannel } from "../../components/Notifica
 import { NotificationsCard } from "../../components/NotificationsCard";
 import { notifyError } from "../../notifyError";
 import { currentPushSubscription, pushSupported } from "../../push";
+import { MoneyRow } from "./NotificationMoney";
 import { SettingsGroup } from "./SettingsLayout";
 import classes from "./NotificationsPages.module.css";
 
@@ -179,6 +180,7 @@ export function NotificationsSection() {
           </Fragment>
         ))}
       </Card>
+      <MoneyRow />
     </SettingsGroup>
   );
 }

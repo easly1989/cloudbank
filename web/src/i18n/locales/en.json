@@ -1711,6 +1711,7 @@
       "security": "Security",
       "problems": "Problems",
       "bills": "Bills",
+      "money": "Money",
       "admin": "Administration"
     },
     "kind": {
@@ -1722,6 +1723,10 @@
       "mail_stopped": "A bank mailbox stops",
       "mail_unrecognized": "Bank mails not recognised",
       "bills": "Bills due",
+      "large_transaction": "Large expense",
+      "low_balance": "Low balance",
+      "budget": "Budget at 80% and 100%",
+      "goal": "Goal reached or falling behind",
       "new_version": "A new CloudBank version"
     },
     "kindHint": {
@@ -1733,6 +1738,10 @@
       "mail_stopped": "CloudBank can no longer sign in to it and it needs connecting again.",
       "mail_unrecognized": "Mails arrive that no pattern can read.",
       "bills": "Schedules due in the next 3 days, or already overdue.",
+      "large_transaction": "An expense over the account's threshold, from the bank, a schedule or another member.",
+      "low_balance": "An account's balance today drops below its threshold.",
+      "budget": "A category reaches 80%, then 100%, of this month's budget.",
+      "goal": "A goal reaches its target, or its pace of the last months is no longer enough.",
       "new_version": "A newer release is out on the channel this server follows."
     },
     "securityAlways": "Always in the bell, so a sign-in you didn't make cannot go unnoticed.",
@@ -1851,7 +1860,38 @@
     "ntfyToken": "Access token",
     "ntfyTokenHelp": "Only for a server or topic that needs one (tk_…).",
     "gotifyToken": "Application token",
-    "gotifyTokenHelp": "In Gotify: Apps › Create application, then copy its token."
+    "gotifyTokenHelp": "In Gotify: Apps › Create application, then copy its token.",
+    "money": {
+      "title": "Thresholds and wallets",
+      "subtitle": "When and from where the money events reach you",
+      "summaryThresholds_one": "{{count}} account with thresholds",
+      "summaryThresholds_other": "{{count}} accounts with thresholds",
+      "summaryNone": "No thresholds",
+      "summaryAll": "all wallets",
+      "summaryOff_one": "{{count}} wallet left out",
+      "summaryOff_other": "{{count}} wallets left out",
+      "thresholds": "Thresholds per account",
+      "thresholdsHint": "For “Large expense” and “Low balance”. An empty field announces nothing for that account.",
+      "colAccount": "Account",
+      "colBalance": "Balance today",
+      "colLarge": "Expense over",
+      "colLow": "Balance below",
+      "none": "None",
+      "minHint": "min. {{amount}}",
+      "noAccounts": "No accounts in this wallet.",
+      "offNote": "The money events stay off until you turn them on in a channel's page, in the Money group.",
+      "notAmount": "Not an amount",
+      "aboveZero": "Above zero, or empty",
+      "wallets": "Wallets",
+      "walletsHint": "The events of a wallet left out reach you on no channel. Your choices are yours alone.",
+      "accountCount_one": "{{count}} account",
+      "accountCount_other": "{{count}} accounts",
+      "amounts": "Amounts",
+      "amountsHint": "The bell always shows amounts. Push, email and chat can do without them.",
+      "amountsOutside": "Show amounts outside the app",
+      "amountsOn": "Push, email and chat say how much, as the bell does.",
+      "amountsOff": "Push, email and chat say where, never how much."
+    }
   },
   "ai": {
     "title": "AI (bring your own key)",

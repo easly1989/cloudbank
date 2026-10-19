@@ -1711,6 +1711,7 @@
       "security": "Segurança",
       "problems": "Problemas",
       "bills": "Vencimentos",
+      "money": "Dinheiro",
       "admin": "Administração"
     },
     "kind": {
@@ -1722,6 +1723,10 @@
       "mail_stopped": "Uma caixa de e-mail do banco para",
       "mail_unrecognized": "E-mails do banco não reconhecidos",
       "bills": "Próximos vencimentos",
+      "large_transaction": "Gasto grande",
+      "low_balance": "Saldo baixo",
+      "budget": "Orçamento em 80% e 100%",
+      "goal": "Meta alcançada ou atrasada",
       "new_version": "Nova versão do CloudBank"
     },
     "kindHint": {
@@ -1733,6 +1738,10 @@
       "mail_stopped": "O CloudBank não consegue mais entrar e a caixa precisa ser conectada de novo.",
       "mail_unrecognized": "Chegam e-mails que nenhum modelo sabe ler.",
       "bills": "Agendamentos que vencem nos próximos 3 dias, ou já vencidos.",
+      "large_transaction": "Um gasto acima do limite da conta, vindo do banco, de um agendamento ou de outro membro.",
+      "low_balance": "O saldo de hoje de uma conta fica abaixo do limite.",
+      "budget": "Uma categoria chega a 80% e depois a 100% do orçamento do mês.",
+      "goal": "Uma meta chega ao alvo, ou o ritmo dos últimos meses já não basta.",
       "new_version": "Saiu uma versão mais recente no canal que este servidor segue."
     },
     "securityAlways": "Sempre no sino, para que um acesso que você não fez não passe despercebido.",
@@ -1851,7 +1860,38 @@
     "ntfyToken": "Token de acesso",
     "ntfyTokenHelp": "Só para um servidor ou tópico que peça um (tk_…).",
     "gotifyToken": "Token do aplicativo",
-    "gotifyTokenHelp": "No Gotify: Apps › Create application e copie o token dele."
+    "gotifyTokenHelp": "No Gotify: Apps › Create application e copie o token dele.",
+    "money": {
+      "title": "Limites e carteiras",
+      "subtitle": "Quando e de onde os eventos de dinheiro chegam até você",
+      "summaryThresholds_one": "{{count}} conta com limites",
+      "summaryThresholds_other": "{{count}} contas com limites",
+      "summaryNone": "Nenhum limite",
+      "summaryAll": "todas as carteiras",
+      "summaryOff_one": "{{count}} carteira excluída",
+      "summaryOff_other": "{{count}} carteiras excluídas",
+      "thresholds": "Limites por conta",
+      "thresholdsHint": "Para “Gasto grande” e “Saldo baixo”. Um campo vazio não avisa para essa conta.",
+      "colAccount": "Conta",
+      "colBalance": "Saldo hoje",
+      "colLarge": "Gasto acima de",
+      "colLow": "Saldo abaixo de",
+      "none": "Nenhum",
+      "minHint": "mín. {{amount}}",
+      "noAccounts": "Nenhuma conta nesta carteira.",
+      "offNote": "Os eventos de dinheiro ficam desligados até você ligá-los na página de um canal, no grupo Dinheiro.",
+      "notAmount": "Não é um valor",
+      "aboveZero": "Acima de zero, ou vazio",
+      "wallets": "Carteiras",
+      "walletsHint": "Os eventos de uma carteira excluída não chegam a você em nenhum canal. Suas escolhas valem só para você.",
+      "accountCount_one": "{{count}} conta",
+      "accountCount_other": "{{count}} contas",
+      "amounts": "Valores",
+      "amountsHint": "O sino sempre mostra os valores. Push, e-mail e chat podem dispensá-los.",
+      "amountsOutside": "Mostrar os valores fora do app",
+      "amountsOn": "Push, e-mail e chat dizem quanto, como o sino.",
+      "amountsOff": "Push, e-mail e chat dizem onde, nunca quanto."
+    }
   },
   "ai": {
     "title": "IA (traga a sua própria chave)",

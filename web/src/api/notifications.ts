@@ -11,6 +11,10 @@ export type NotificationKind =
   | "mail_stopped"
   | "mail_unrecognized"
   | "bills"
+  | "large_transaction"
+  | "low_balance"
+  | "budget"
+  | "goal"
   | "new_version";
 export type NotificationChannel = "inapp" | "push" | AddressedChannel;
 export type AddressedChannel =
@@ -38,11 +42,44 @@ export interface NotificationList {
 export interface NotificationPreference {
   kind: NotificationKind;
   /** Security always reaches the bell; admin is listed for administrators only. */
-  group: "security" | "problems" | "bills" | "admin";
+  group: "security" | "problems" | "bills" | "money" | "admin";
   channels: Record<NotificationChannel, boolean>;
 }
 
 export const listNotifications = () => api.get<NotificationList>("/api/v1/notifications");
+
+// --- The money events' settings (#691) ---
+
+export interface NotificationSettings {
+  /** Amounts reach the channels outside the app; the bell always has them. */
+  amountsOutside: boolean;
+}
+
+/** Minor units in the account's currency; null is no threshold. */
+export interface NotificationThreshold {
+  accountId: number;
+  largeOver: number | null;
+  lowUnder: number | null;
+}
+
+export interface WalletNotificationSettings {
+  included: boolean;
+  thresholds: NotificationThreshold[];
+}
+
+export const getNotificationSettings = () =>
+  api.get<NotificationSettings>("/api/v1/notifications/settings");
+export const setNotificationSettings = (s: NotificationSettings) =>
+  api.put<NotificationSettings>("/api/v1/notifications/settings", s);
+export const getWalletNotifications = (walletId: number) =>
+  api.get<WalletNotificationSettings>(`/api/v1/wallets/${walletId}/notifications`);
+export const setWalletNotificationsIncluded = (walletId: number, included: boolean) =>
+  api.put<WalletNotificationSettings>(`/api/v1/wallets/${walletId}/notifications`, { included });
+export const setNotificationThreshold = (walletId: number, t: NotificationThreshold) =>
+  api.put<NotificationThreshold>(
+    `/api/v1/wallets/${walletId}/notifications/thresholds/${t.accountId}`,
+    { largeOver: t.largeOver, lowUnder: t.lowUnder },
+  );
 export const markNotificationRead = (id: number) =>
   api.post<void>(`/api/v1/notifications/${id}/read`);
 export const markAllNotificationsRead = () => api.post<void>("/api/v1/notifications/read-all");

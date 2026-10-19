@@ -118,7 +118,7 @@ func TestNotifyFollowsPreferences(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, p := range prefs {
-		want := p.Kind != KindBills
+		want := p.Kind != KindBills && p.Group != GroupMoney
 		if p.Channels[ChannelInApp] != want || p.Channels[ChannelPush] != want {
 			t.Errorf("preference %s = %+v", p.Kind, p.Channels)
 		}

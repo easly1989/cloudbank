@@ -1711,6 +1711,7 @@
       "security": "Seguridad",
       "problems": "Problemas",
       "bills": "Vencimientos",
+      "money": "Dinero",
       "admin": "Administración"
     },
     "kind": {
@@ -1722,6 +1723,10 @@
       "mail_stopped": "Un buzón del banco se detiene",
       "mail_unrecognized": "Correos del banco no reconocidos",
       "bills": "Próximos vencimientos",
+      "large_transaction": "Gasto grande",
+      "low_balance": "Saldo bajo",
+      "budget": "Presupuesto al 80% y al 100%",
+      "goal": "Meta alcanzada o con retraso",
       "new_version": "Nueva versión de CloudBank"
     },
     "kindHint": {
@@ -1733,6 +1738,10 @@
       "mail_stopped": "CloudBank ya no puede acceder y hay que volver a conectarlo.",
       "mail_unrecognized": "Llegan correos que ningún modelo sabe leer.",
       "bills": "Movimientos programados que vencen en los próximos 3 días o ya vencidos.",
+      "large_transaction": "Un gasto por encima del umbral de la cuenta, llegado del banco, de un movimiento programado o de otro miembro.",
+      "low_balance": "El saldo de hoy de una cuenta baja de su umbral.",
+      "budget": "Una categoría llega al 80% y luego al 100% del presupuesto del mes.",
+      "goal": "Una meta llega a su objetivo, o el ritmo de los últimos meses ya no basta.",
       "new_version": "Hay una versión más reciente en el canal que sigue este servidor."
     },
     "securityAlways": "Siempre en la campana, para que un inicio de sesión que no has hecho no pase desapercibido.",
@@ -1851,7 +1860,38 @@
     "ntfyToken": "Token de acceso",
     "ntfyTokenHelp": "Solo para un servidor o un tema que lo pida (tk_…).",
     "gotifyToken": "Token de la aplicación",
-    "gotifyTokenHelp": "En Gotify: Apps › Create application y copia su token."
+    "gotifyTokenHelp": "En Gotify: Apps › Create application y copia su token.",
+    "money": {
+      "title": "Umbrales y carteras",
+      "subtitle": "Cuándo y desde dónde te llegan los eventos de dinero",
+      "summaryThresholds_one": "{{count}} cuenta con umbrales",
+      "summaryThresholds_other": "{{count}} cuentas con umbrales",
+      "summaryNone": "Sin umbrales",
+      "summaryAll": "todas las carteras",
+      "summaryOff_one": "{{count}} cartera excluida",
+      "summaryOff_other": "{{count}} carteras excluidas",
+      "thresholds": "Umbrales por cuenta",
+      "thresholdsHint": "Para «Gasto grande» y «Saldo bajo». Un campo vacío no avisa para esa cuenta.",
+      "colAccount": "Cuenta",
+      "colBalance": "Saldo hoy",
+      "colLarge": "Gasto de más de",
+      "colLow": "Saldo por debajo de",
+      "none": "Ninguno",
+      "minHint": "mín. {{amount}}",
+      "noAccounts": "No hay cuentas en esta cartera.",
+      "offNote": "Los eventos de dinero siguen apagados hasta que los enciendes en la página de un canal, en el grupo Dinero.",
+      "notAmount": "No es un importe",
+      "aboveZero": "Mayor que cero, o vacío",
+      "wallets": "Carteras",
+      "walletsHint": "Los eventos de una cartera excluida no te llegan por ningún canal. Tus elecciones son solo tuyas.",
+      "accountCount_one": "{{count}} cuenta",
+      "accountCount_other": "{{count}} cuentas",
+      "amounts": "Importes",
+      "amountsHint": "La campana siempre muestra los importes. Push, correo y chat pueden prescindir de ellos.",
+      "amountsOutside": "Mostrar los importes fuera de la app",
+      "amountsOn": "Push, correo y chat dicen cuánto, como la campana.",
+      "amountsOff": "Push, correo y chat dicen dónde, nunca cuánto."
+    }
   },
   "ai": {
     "title": "IA (con tu propia clave)",

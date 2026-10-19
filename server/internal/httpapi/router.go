@@ -257,7 +257,7 @@ func New(opts Options) http.Handler {
 						svc: opts.Wallets, currencies: opts.Currencies, accounts: opts.Accounts,
 						assetVals:  opts.AssetValuations,
 						categories: opts.Categories, payees: opts.Payees, transactions: opts.Transactions,
-						tags: opts.Tags, vehicles: opts.Vehicles, goals: opts.Goals,
+						tags: opts.Tags, vehicles: opts.Vehicles, goals: opts.Goals, notifications: opts.Notifications,
 						transfers: opts.Transfers, dashboard: opts.Dashboard, bills: opts.Bills, ai: opts.AI, bankSync: opts.BankSync, mail: opts.Mail, templates: opts.Templates,
 						schedules: opts.Schedules, assignments: opts.Assignments, budgets: opts.Budgets,
 						reports: opts.Reports, csv: opts.CSV, rateProvider: opts.RateProvider,

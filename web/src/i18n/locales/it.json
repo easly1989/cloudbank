@@ -1711,6 +1711,7 @@
       "security": "Sicurezza",
       "problems": "Problemi",
       "bills": "Scadenze",
+      "money": "Soldi",
       "admin": "Amministrazione"
     },
     "kind": {
@@ -1722,6 +1723,10 @@
       "mail_stopped": "Una casella della banca si ferma",
       "mail_unrecognized": "Mail della banca non riconosciute",
       "bills": "Scadenze in arrivo",
+      "large_transaction": "Uscita grande",
+      "low_balance": "Saldo basso",
+      "budget": "Budget all’80% e al 100%",
+      "goal": "Obiettivo raggiunto o in ritardo",
       "new_version": "Nuova versione di CloudBank"
     },
     "kindHint": {
@@ -1733,6 +1738,10 @@
       "mail_stopped": "CloudBank non riesce più ad accedere e la casella va ricollegata.",
       "mail_unrecognized": "Arrivano mail che nessun modello sa leggere.",
       "bills": "Programmate in scadenza nei prossimi 3 giorni, o già scadute.",
+      "large_transaction": "Un’uscita oltre la soglia del conto, arrivata dalla banca, da una programmata o da un altro membro.",
+      "low_balance": "Il saldo di oggi di un conto scende sotto la sua soglia.",
+      "budget": "Una categoria arriva all’80% e poi al 100% del budget del mese.",
+      "goal": "Un obiettivo arriva al traguardo, o il ritmo degli ultimi mesi non basta più.",
       "new_version": "È uscita una versione più recente sul canale che segue questo server."
     },
     "securityAlways": "Sempre nella campanella, così un accesso che non hai fatto non passa inosservato.",
@@ -1851,7 +1860,38 @@
     "ntfyToken": "Token di accesso",
     "ntfyTokenHelp": "Solo per un server o un topic che lo chiede (tk_…).",
     "gotifyToken": "Token dell'applicazione",
-    "gotifyTokenHelp": "In Gotify: Apps › Create application, poi copia il suo token."
+    "gotifyTokenHelp": "In Gotify: Apps › Create application, poi copia il suo token.",
+    "money": {
+      "title": "Soglie e portafogli",
+      "subtitle": "Quando e da dove ti arrivano gli eventi sui soldi",
+      "summaryThresholds_one": "{{count}} conto con le soglie",
+      "summaryThresholds_other": "{{count}} conti con le soglie",
+      "summaryNone": "Nessuna soglia",
+      "summaryAll": "tutti i portafogli",
+      "summaryOff_one": "{{count}} portafoglio escluso",
+      "summaryOff_other": "{{count}} portafogli esclusi",
+      "thresholds": "Soglie per conto",
+      "thresholdsHint": "Per «Uscita grande» e «Saldo basso». Un campo vuoto non avvisa per quel conto.",
+      "colAccount": "Conto",
+      "colBalance": "Saldo oggi",
+      "colLarge": "Uscita oltre",
+      "colLow": "Saldo sotto",
+      "none": "Nessuna",
+      "minHint": "min. {{amount}}",
+      "noAccounts": "Nessun conto in questo portafoglio.",
+      "offNote": "Gli eventi sui soldi sono spenti finché non li accendi nella pagina di un canale, nel gruppo Soldi.",
+      "notAmount": "Non è un importo",
+      "aboveZero": "Sopra zero, o vuoto",
+      "wallets": "Portafogli",
+      "walletsHint": "Gli eventi di un portafoglio escluso non ti arrivano su nessun canale. Le tue scelte valgono solo per te.",
+      "accountCount_one": "{{count}} conto",
+      "accountCount_other": "{{count}} conti",
+      "amounts": "Importi",
+      "amountsHint": "La campanella mostra sempre gli importi. Push, email e chat possono farne a meno.",
+      "amountsOutside": "Mostra gli importi fuori dall’app",
+      "amountsOn": "Push, email e chat dicono quanto, come la campanella.",
+      "amountsOff": "Push, email e chat dicono dove, mai quanto."
+    }
   },
   "ai": {
     "title": "AI (con la tua chiave)",

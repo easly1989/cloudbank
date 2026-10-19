@@ -94,6 +94,7 @@ export function SecuritySection() {
 
 // Where CloudBank reaches the reader, and with what (#685, #688).
 export { NotificationChannelSection, NotificationsSection } from "./NotificationsPages";
+export { NotificationMoneySection } from "./NotificationMoney";
 
 // The section's own header already names it, so these three carry no group of
 // the same name.
