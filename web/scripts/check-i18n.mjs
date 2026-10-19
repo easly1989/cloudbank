@@ -261,6 +261,7 @@ const SAME_EVERYWHERE = new Set([
 ]);
 const SAME_IN = {
   it: [
+    "min. {{amount}}",
     "In app",
     "Server",
     "Topic",
@@ -289,6 +290,7 @@ const SAME_IN = {
   ],
   // German borrows these as they are, and capitalizes them as nouns.
   de: [
+    "min. {{amount}}",
     "Homeserver",
     "Server",
     "Links",
@@ -320,6 +322,7 @@ const SAME_IN = {
   ],
   // French spells these the same as English.
   fr: [
+    "min. {{amount}}",
     "Guide",
     "Budget",
     "Budgets",

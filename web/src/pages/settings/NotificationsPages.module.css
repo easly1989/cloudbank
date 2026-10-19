@@ -31,3 +31,22 @@
   flex: none;
   color: var(--mantine-color-dimmed);
 }
+
+/* Thresholds and wallets (#691): account, today's balance, the two limits. */
+.thresholdGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px 170px 170px;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 16px;
+}
+
+.thresholdHead {
+  padding-top: 6px;
+  padding-bottom: 2px;
+}
+
+.amountInput {
+  font-family: var(--mantine-font-family-monospace);
+  text-align: right;
+}

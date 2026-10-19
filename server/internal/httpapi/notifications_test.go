@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -128,8 +129,9 @@ func TestNotificationPreferences(t *testing.T) {
 		t.Fatalf("events = %d, want %d", len(p.Events), len(notify.Catalog))
 	}
 	for _, e := range p.Events {
-		if !e.Channels["inapp"] || !e.Channels["push"] {
-			t.Errorf("%s is not on by default: %+v", e.Kind, e.Channels)
+		// The money events start off (#691); every other one on.
+		if on := e.Group != "money"; e.Channels["inapp"] != on || e.Channels["push"] != on {
+			t.Errorf("%s default: %+v", e.Kind, e.Channels)
 		}
 	}
 
@@ -255,5 +257,80 @@ func TestNotificationChannels(t *testing.T) {
 	}
 	if resp := admin.do(http.MethodPost, "/api/v1/notifications/channels/webhook/test", nil, true); resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("test after delete = %d", resp.StatusCode)
+	}
+}
+
+// The money settings (#691): thresholds only on the accounts of a wallet the
+// reader is a member of, each reader's own, and a wallet turned off.
+func TestNotificationThresholds(t *testing.T) {
+	admin := newTestAPI(t)
+	setupAdmin(admin)
+	home := decodeWallet(t, admin.do(http.MethodPost, "/api/v1/wallets", map[string]any{"title": "Home"}, true))
+	hs := strconv.FormatInt(home.ID, 10)
+	acc := decodeAccount(t, admin.do(http.MethodPost, "/api/v1/wallets/"+hs+"/accounts", map[string]any{"name": "Conto", "type": "bank"}, true))
+	admin.do(http.MethodPost, "/api/v1/admin/users",
+		map[string]any{"username": "bob", "password": "bobssecret", "isAdmin": false}, true).Body.Close()
+	bob := admin.fork()
+	bob.do(http.MethodPost, "/api/v1/auth/login", map[string]any{"username": "bob", "password": "bobssecret"}, true).Body.Close()
+	mine := decodeWallet(t, bob.do(http.MethodPost, "/api/v1/wallets", map[string]any{"title": "Bob's"}, true))
+	ms := strconv.FormatInt(mine.ID, 10)
+	path := "/notifications/thresholds/" + strconv.FormatInt(acc.ID, 10)
+	body := map[string]any{"largeOver": 30000, "lowUnder": 10000}
+
+	// Bob is no member of Home, and Home's account is not in his wallet.
+	for _, p := range []string{"/api/v1/wallets/" + hs + path, "/api/v1/wallets/" + ms + path} {
+		resp := bob.do(http.MethodPut, p, body, true)
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusNotFound {
+			t.Fatalf("bob PUT %s = %d, want 404", p, resp.StatusCode)
+		}
+	}
+	if resp := bob.do(http.MethodGet, "/api/v1/wallets/"+hs+"/notifications", nil, false); resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("bob GET Home's settings = %d", resp.StatusCode)
+	}
+
+	resp := admin.do(http.MethodPut, "/api/v1/wallets/"+hs+path, map[string]any{"largeOver": 0}, true)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("zero threshold = %d", resp.StatusCode)
+	}
+	admin.do(http.MethodPut, "/api/v1/wallets/"+hs+path, body, true).Body.Close()
+	admin.do(http.MethodPut, "/api/v1/wallets/"+hs+"/notifications", map[string]any{"included": false}, true).Body.Close()
+	resp = admin.do(http.MethodGet, "/api/v1/wallets/"+hs+"/notifications", nil, false)
+	defer resp.Body.Close()
+	var got struct {
+		Included   bool `json:"included"`
+		Thresholds []struct {
+			AccountID int64  `json:"accountId"`
+			LargeOver *int64 `json:"largeOver"`
+			LowUnder  *int64 `json:"lowUnder"`
+		} `json:"thresholds"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Included || len(got.Thresholds) != 1 || got.Thresholds[0].AccountID != acc.ID ||
+		*got.Thresholds[0].LargeOver != 30000 || *got.Thresholds[0].LowUnder != 10000 {
+		t.Fatalf("Home's settings = %+v", got)
+	}
+
+	resp = admin.do(http.MethodPut, "/api/v1/notifications/settings", map[string]any{"amountsOutside": false}, true)
+	b, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if !strings.Contains(string(b), `"amountsOutside":false`) {
+		t.Fatalf("settings = %s", b)
+	}
+
+	// A transaction entered through the API remembers who entered it, which is
+	// how a large expense is told to the others only.
+	admin.do(http.MethodPost, "/api/v1/wallets/"+hs+"/transactions",
+		map[string]any{"accountId": acc.ID, "date": "2026-10-19", "amount": -50000}, true).Body.Close()
+	var by sql.NullInt64
+	var origin string
+	if err := admin.st.Read().QueryRow("SELECT created_by, origin FROM transactions ORDER BY id DESC LIMIT 1").Scan(&by, &origin); err != nil {
+		t.Fatal(err)
+	}
+	if by.Int64 != admin.userID("admin") || origin != "" {
+		t.Fatalf("created_by %v, origin %q", by, origin)
 	}
 }

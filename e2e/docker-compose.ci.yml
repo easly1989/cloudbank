@@ -92,6 +92,8 @@ services:
       # The shared Telegram bot (#688), on the pretend Bot API; a test token.
       CB_TELEGRAM_TOKEN: "111111:e2e-telegram-shared-bot-token"
       CB_TELEGRAM_API: "http://127.0.0.1:9100/telegram"
+      # Money events (#691) looked for every two seconds, not five minutes.
+      CB_MONEY_INTERVAL: "2s"
     volumes:
       - cb-mail-data:/data
 

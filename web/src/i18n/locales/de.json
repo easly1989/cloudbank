@@ -1711,6 +1711,7 @@
       "security": "Sicherheit",
       "problems": "Probleme",
       "bills": "Fälligkeiten",
+      "money": "Geld",
       "admin": "Administration"
     },
     "kind": {
@@ -1722,6 +1723,10 @@
       "mail_stopped": "Ein Bank-Postfach stoppt",
       "mail_unrecognized": "Bank-E-Mails nicht erkannt",
       "bills": "Anstehende Fälligkeiten",
+      "large_transaction": "Große Ausgabe",
+      "low_balance": "Niedriger Kontostand",
+      "budget": "Budget zu 80 % und 100 %",
+      "goal": "Sparziel erreicht oder im Rückstand",
       "new_version": "Neue CloudBank-Version"
     },
     "kindHint": {
@@ -1733,6 +1738,10 @@
       "mail_stopped": "CloudBank kann sich nicht mehr anmelden, das Postfach muss neu verbunden werden.",
       "mail_unrecognized": "Es kommen E-Mails, die keine Vorlage lesen kann.",
       "bills": "Wiederkehrende Buchungen, die in den nächsten 3 Tagen fällig oder schon überfällig sind.",
+      "large_transaction": "Eine Ausgabe über der Schwelle des Kontos, von der Bank, einer wiederkehrenden Buchung oder einem anderen Mitglied.",
+      "low_balance": "Der heutige Stand eines Kontos fällt unter seine Schwelle.",
+      "budget": "Eine Kategorie erreicht 80 %, dann 100 % des Monatsbudgets.",
+      "goal": "Ein Sparziel ist erreicht, oder das Tempo der letzten Monate reicht nicht mehr.",
       "new_version": "Auf dem Kanal, dem dieser Server folgt, ist eine neuere Version erschienen."
     },
     "securityAlways": "Immer in der Glocke, damit eine Anmeldung, die nicht von dir kam, nicht unbemerkt bleibt.",
@@ -1851,7 +1860,38 @@
     "ntfyToken": "Zugriffstoken",
     "ntfyTokenHelp": "Nur für einen Server oder ein Thema, das eines verlangt (tk_…).",
     "gotifyToken": "App-Token",
-    "gotifyTokenHelp": "In Gotify: Apps › Create application, dann sein Token kopieren."
+    "gotifyTokenHelp": "In Gotify: Apps › Create application, dann sein Token kopieren.",
+    "money": {
+      "title": "Schwellen und Haushaltsbücher",
+      "subtitle": "Wann und woher dich die Geld-Ereignisse erreichen",
+      "summaryThresholds_one": "{{count}} Konto mit Schwellen",
+      "summaryThresholds_other": "{{count}} Konten mit Schwellen",
+      "summaryNone": "Keine Schwellen",
+      "summaryAll": "alle Haushaltsbücher",
+      "summaryOff_one": "{{count}} Haushaltsbuch ausgeschlossen",
+      "summaryOff_other": "{{count}} Haushaltsbücher ausgeschlossen",
+      "thresholds": "Schwellen pro Konto",
+      "thresholdsHint": "Für „Große Ausgabe“ und „Niedriger Kontostand“. Ein leeres Feld meldet für dieses Konto nichts.",
+      "colAccount": "Konto",
+      "colBalance": "Stand heute",
+      "colLarge": "Ausgabe über",
+      "colLow": "Stand unter",
+      "none": "Keine",
+      "minHint": "min. {{amount}}",
+      "noAccounts": "Keine Konten in diesem Haushaltsbuch.",
+      "offNote": "Die Geld-Ereignisse bleiben aus, bis du sie auf der Seite eines Kanals in der Gruppe Geld einschaltest.",
+      "notAmount": "Kein Betrag",
+      "aboveZero": "Über null, oder leer",
+      "wallets": "Haushaltsbücher",
+      "walletsHint": "Die Ereignisse eines ausgeschlossenen Haushaltsbuchs erreichen dich auf keinem Kanal. Deine Auswahl gilt nur für dich.",
+      "accountCount_one": "{{count}} Konto",
+      "accountCount_other": "{{count}} Konten",
+      "amounts": "Beträge",
+      "amountsHint": "Die Glocke zeigt immer die Beträge. Push, E-Mail und Chat kommen auch ohne aus.",
+      "amountsOutside": "Beträge außerhalb der App zeigen",
+      "amountsOn": "Push, E-Mail und Chat sagen, wie viel, wie die Glocke.",
+      "amountsOff": "Push, E-Mail und Chat sagen, wo, nie wie viel."
+    }
   },
   "ai": {
     "title": "KI (mit eigenem Schlüssel)",

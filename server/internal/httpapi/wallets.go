@@ -25,6 +25,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
 	"github.com/easly1989/cloudbank/server/internal/mailingest"
+	"github.com/easly1989/cloudbank/server/internal/notify"
 	"github.com/easly1989/cloudbank/server/internal/payee"
 	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
@@ -41,32 +42,33 @@ const walletCtxKey ctxKey = iota + 1
 // walletHandlers serves the wallet CRUD endpoints. They are mounted inside the
 // authenticated API group, so the current user is always in context.
 type walletHandlers struct {
-	svc          *wallet.Service
-	currencies   *currency.Service
-	accounts     *account.Service
-	assetVals    *assetvaluation.Service
-	categories   *category.Service
-	payees       *payee.Service
-	transactions *transaction.Service
-	tags         *tag.Service
-	vehicles     *vehicle.Service
-	goals        *goal.Service
-	transfers    *transfer.Service
-	dashboard    *dashboard.Service
-	bills        *bills.Service
-	ai           *ai.Service
-	bankSync     *banksync.Service
-	mail         *mailingest.Service
-	templates    *template.Service
-	schedules    *schedule.Service
-	assignments  *assignment.Service
-	budgets      *budget.Service
-	reports      *report.Service
-	csv          *importio.Service
-	rateProvider currency.RateProvider
-	integrity    *integrity.Service
-	backup       *backup.Service
-	attachments  *attachment.Service
+	svc           *wallet.Service
+	currencies    *currency.Service
+	accounts      *account.Service
+	assetVals     *assetvaluation.Service
+	categories    *category.Service
+	payees        *payee.Service
+	transactions  *transaction.Service
+	tags          *tag.Service
+	vehicles      *vehicle.Service
+	goals         *goal.Service
+	notifications *notify.Service
+	transfers     *transfer.Service
+	dashboard     *dashboard.Service
+	bills         *bills.Service
+	ai            *ai.Service
+	bankSync      *banksync.Service
+	mail          *mailingest.Service
+	templates     *template.Service
+	schedules     *schedule.Service
+	assignments   *assignment.Service
+	budgets       *budget.Service
+	reports       *report.Service
+	csv           *importio.Service
+	rateProvider  currency.RateProvider
+	integrity     *integrity.Service
+	backup        *backup.Service
+	attachments   *attachment.Service
 	// demo, when set, applies the demo's limits and swaps the real bank
 	// providers for the pretend bank.
 	demo *demoHandlers
@@ -132,6 +134,9 @@ func (h *walletHandlers) routes(r chi.Router) {
 		}
 		if h.goals != nil {
 			(&goalHandlers{svc: h.goals}).walletRoutes(r)
+		}
+		if h.notifications != nil {
+			(&notificationHandlers{svc: h.notifications}).walletRoutes(r)
 		}
 		if h.transfers != nil {
 			(&transferHandlers{svc: h.transfers}).walletRoutes(r)

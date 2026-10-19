@@ -29,6 +29,111 @@ func (h *notificationHandlers) routes(r chi.Router) {
 	r.Post("/notifications/channels/{channel}/test", h.testChannel)
 	r.Post("/notifications/channels/{channel}/code", h.resendCode)
 	r.Post("/notifications/channels/{channel}/confirm", h.confirmChannel)
+	r.Get("/notifications/settings", h.settings)
+	r.Put("/notifications/settings", h.setSettings)
+}
+
+// walletRoutes are the reader's choices about one wallet (#691), inside
+// walletContext: whether they hear from it, and their thresholds on its
+// accounts.
+func (h *notificationHandlers) walletRoutes(r chi.Router) {
+	r.Get("/notifications", h.walletSettings)
+	r.Put("/notifications", h.setWalletIncluded)
+	r.Put("/notifications/thresholds/{accountId}", h.setThreshold)
+}
+
+func (h *notificationHandlers) settings(w http.ResponseWriter, r *http.Request) {
+	st, err := h.svc.GetSettings(r.Context(), userFromContext(r.Context()).ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not read the notification settings")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"amountsOutside": st.AmountsOutside})
+}
+
+func (h *notificationHandlers) setSettings(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		AmountsOutside *bool `json:"amountsOutside"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if body.AmountsOutside == nil {
+		writeError(w, http.StatusBadRequest, "invalid", "amountsOutside is required")
+		return
+	}
+	if err := h.svc.SetAmountsOutside(r.Context(), userFromContext(r.Context()).ID, *body.AmountsOutside); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not save the notification settings")
+		return
+	}
+	h.settings(w, r)
+}
+
+type thresholdJSON struct {
+	AccountID int64  `json:"accountId"`
+	LargeOver *int64 `json:"largeOver"`
+	LowUnder  *int64 `json:"lowUnder"`
+}
+
+func (h *notificationHandlers) walletSettings(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	st, err := h.svc.Wallet(r.Context(), userFromContext(r.Context()).ID, wl.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not read the notification settings")
+		return
+	}
+	out := make([]thresholdJSON, 0, len(st.Thresholds))
+	for _, t := range st.Thresholds {
+		out = append(out, thresholdJSON{AccountID: t.AccountID, LargeOver: t.LargeOver, LowUnder: t.LowUnder})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"included": st.Included, "thresholds": out})
+}
+
+func (h *notificationHandlers) setWalletIncluded(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body struct {
+		Included *bool `json:"included"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if body.Included == nil {
+		writeError(w, http.StatusBadRequest, "invalid", "included is required")
+		return
+	}
+	if err := h.svc.SetWalletIncluded(r.Context(), userFromContext(r.Context()).ID, wl.ID, *body.Included); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not save the notification settings")
+		return
+	}
+	h.walletSettings(w, r)
+}
+
+func (h *notificationHandlers) setThreshold(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, err := strconv.ParseInt(chi.URLParam(r, "accountId"), 10, 64)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "not_found", "no such account")
+		return
+	}
+	var body struct {
+		LargeOver *int64 `json:"largeOver"`
+		LowUnder  *int64 `json:"lowUnder"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	err = h.svc.SetThreshold(r.Context(), userFromContext(r.Context()).ID, wl.ID,
+		notify.Threshold{AccountID: id, LargeOver: body.LargeOver, LowUnder: body.LowUnder})
+	switch {
+	case errors.Is(err, notify.ErrUnknownAccount):
+		writeError(w, http.StatusNotFound, "not_found", "no such account")
+	case errors.Is(err, notify.ErrBadThreshold):
+		writeError(w, http.StatusBadRequest, "invalid", "a large expense threshold must be above zero")
+	case err != nil:
+		writeError(w, http.StatusInternalServerError, "internal", "could not save the threshold")
+	default:
+		writeJSON(w, http.StatusOK, thresholdJSON{AccountID: id, LargeOver: body.LargeOver, LowUnder: body.LowUnder})
+	}
 }
 
 type notificationJSON struct {

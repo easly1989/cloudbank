@@ -31,6 +31,10 @@ const (
 	KindTwoFactorOff     Kind = "two_factor_off"
 	KindNewAPIToken      Kind = "new_api_token"
 	KindNewVersion       Kind = "new_version"
+	KindLargeTransaction Kind = "large_transaction"
+	KindLowBalance       Kind = "low_balance"
+	KindBudget           Kind = "budget"
+	KindGoal             Kind = "goal"
 )
 
 // Group is how the settings page and the bell sort events.
@@ -41,6 +45,7 @@ const (
 	GroupSecurity Group = "security"
 	GroupProblems Group = "problems"
 	GroupBills    Group = "bills"
+	GroupMoney    Group = "money"
 	// GroupAdmin is for administrators only: nobody else sees or gets it.
 	GroupAdmin Group = "admin"
 )
@@ -90,6 +95,10 @@ var Catalog = []EventInfo{
 	{Kind: KindMailStopped, Group: GroupProblems, Default: true},
 	{Kind: KindMailUnrecognized, Group: GroupProblems, Default: true},
 	{Kind: KindBills, Group: GroupBills, Default: true},
+	{Kind: KindLargeTransaction, Group: GroupMoney},
+	{Kind: KindLowBalance, Group: GroupMoney},
+	{Kind: KindBudget, Group: GroupMoney},
+	{Kind: KindGoal, Group: GroupMoney},
 	{Kind: KindNewVersion, Group: GroupAdmin, Default: true},
 }
 
@@ -111,6 +120,9 @@ type Event struct {
 	Ref   string `json:"-"`
 	Title string `json:"title"`
 	Body  string `json:"body"`
+	// Private is Body without the amounts, for the channels outside the app
+	// of someone who wants none there (#691); empty when Body has none.
+	Private string `json:"-"`
 	// URL is the page the event opens, inside the app.
 	URL string `json:"url"`
 	// WalletID is the wallet the event is about, 0 for none.
@@ -210,6 +222,13 @@ func (s *Service) Notify(ctx context.Context, userID int64, e Event) error {
 	if !ok {
 		return fmt.Errorf("%w: %q", ErrUnknownEvent, e.Kind)
 	}
+	// A wallet the person turned off tells them nothing (#691).
+	if e.WalletID != 0 {
+		off, err := s.rq.IsNotificationWalletOff(ctx, db.IsNotificationWalletOffParams{UserID: userID, WalletID: e.WalletID})
+		if err != nil || off > 0 {
+			return err
+		}
+	}
 	if e.Ref != "" {
 		n, err := s.q.InsertReminderIfNew(ctx, db.InsertReminderIfNewParams{UserID: userID, Ref: e.Ref})
 		if err != nil || n == 0 {
@@ -231,6 +250,13 @@ func (s *Service) Notify(ctx context.Context, userID int64, e Event) error {
 	set, err := s.addressedChannels(ctx, userID)
 	if err != nil {
 		return err
+	}
+	if e.Private != "" {
+		if outside, err := s.amountsOutside(ctx, userID); err != nil {
+			return err
+		} else if !outside {
+			e.Body = e.Private
+		}
 	}
 	queued := false
 	for _, ch := range Channels {

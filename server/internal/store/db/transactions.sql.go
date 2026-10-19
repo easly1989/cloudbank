@@ -31,7 +31,7 @@ func (q *Queries) DeleteTransaction(ctx context.Context, id int64) error {
 }
 
 const findDuplicateTransactions = `-- name: FindDuplicateTransactions :many
-SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id FROM transactions
+SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id, origin, created_by FROM transactions
 WHERE account_id = ? AND amount = ? AND date >= ? AND date <= ?
 ORDER BY date DESC
 `
@@ -75,6 +75,8 @@ func (q *Queries) FindDuplicateTransactions(ctx context.Context, arg FindDuplica
 			&i.TemplateID,
 			&i.ImportRef,
 			&i.VehicleID,
+			&i.Origin,
+			&i.CreatedBy,
 		); err != nil {
 			return nil, err
 		}
@@ -90,7 +92,7 @@ func (q *Queries) FindDuplicateTransactions(ctx context.Context, arg FindDuplica
 }
 
 const getTransaction = `-- name: GetTransaction :one
-SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id FROM transactions WHERE id = ? LIMIT 1
+SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id, origin, created_by FROM transactions WHERE id = ? LIMIT 1
 `
 
 func (q *Queries) GetTransaction(ctx context.Context, id int64) (Transaction, error) {
@@ -114,6 +116,8 @@ func (q *Queries) GetTransaction(ctx context.Context, id int64) (Transaction, er
 		&i.TemplateID,
 		&i.ImportRef,
 		&i.VehicleID,
+		&i.Origin,
+		&i.CreatedBy,
 	)
 	return i, err
 }
@@ -121,10 +125,10 @@ func (q *Queries) GetTransaction(ctx context.Context, id int64) (Transaction, er
 const insertTransaction = `-- name: InsertTransaction :one
 INSERT INTO transactions (
     wallet_id, account_id, date, amount, payment_mode, status, info,
-    payee_id, category_id, memo, is_split, import_ref, vehicle_id
+    payee_id, category_id, memo, is_split, import_ref, vehicle_id, origin, created_by
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id, origin, created_by
 `
 
 type InsertTransactionParams struct {
@@ -141,6 +145,8 @@ type InsertTransactionParams struct {
 	IsSplit     int64
 	ImportRef   string
 	VehicleID   sql.NullInt64
+	Origin      string
+	CreatedBy   sql.NullInt64
 }
 
 func (q *Queries) InsertTransaction(ctx context.Context, arg InsertTransactionParams) (Transaction, error) {
@@ -158,6 +164,8 @@ func (q *Queries) InsertTransaction(ctx context.Context, arg InsertTransactionPa
 		arg.IsSplit,
 		arg.ImportRef,
 		arg.VehicleID,
+		arg.Origin,
+		arg.CreatedBy,
 	)
 	var i Transaction
 	err := row.Scan(
@@ -178,6 +186,8 @@ func (q *Queries) InsertTransaction(ctx context.Context, arg InsertTransactionPa
 		&i.TemplateID,
 		&i.ImportRef,
 		&i.VehicleID,
+		&i.Origin,
+		&i.CreatedBy,
 	)
 	return i, err
 }
@@ -340,7 +350,7 @@ func (q *Queries) ListImportRefsForAccount(ctx context.Context, accountID int64)
 }
 
 const listTransactionsForAccount = `-- name: ListTransactionsForAccount :many
-SELECT t.id, t.wallet_id, t.account_id, t.date, t.amount, t.payment_mode, t.status, t.info, t.payee_id, t.category_id, t.memo, t.is_split, t.created_at, t.updated_at, t.template_id, t.import_ref, t.vehicle_id, p.name AS payee_name, c.name AS category_name
+SELECT t.id, t.wallet_id, t.account_id, t.date, t.amount, t.payment_mode, t.status, t.info, t.payee_id, t.category_id, t.memo, t.is_split, t.created_at, t.updated_at, t.template_id, t.import_ref, t.vehicle_id, t.origin, t.created_by, p.name AS payee_name, c.name AS category_name
 FROM transactions t
 LEFT JOIN payees p ON p.id = t.payee_id
 LEFT JOIN categories c ON c.id = t.category_id
@@ -373,6 +383,8 @@ type ListTransactionsForAccountRow struct {
 	TemplateID   sql.NullInt64
 	ImportRef    string
 	VehicleID    sql.NullInt64
+	Origin       string
+	CreatedBy    sql.NullInt64
 	PayeeName    sql.NullString
 	CategoryName sql.NullString
 }
@@ -404,6 +416,8 @@ func (q *Queries) ListTransactionsForAccount(ctx context.Context, arg ListTransa
 			&i.TemplateID,
 			&i.ImportRef,
 			&i.VehicleID,
+			&i.Origin,
+			&i.CreatedBy,
 			&i.PayeeName,
 			&i.CategoryName,
 		); err != nil {
