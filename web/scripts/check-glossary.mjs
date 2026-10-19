@@ -31,6 +31,8 @@ const EXCEPTIONS = {
     "setup.ssoReserved": ["account"],
     "demo.loginBody": ["account"],
     "demo.noticeYours": ["account"],
+    "notif.kindHint.new_device": ["account"],
+    "notif.kindHint.two_factor_off": ["account"],
     // The account of a mailbox, at Microsoft or at the mail provider.
     "mail.imapHint": ["account"],
     "mail.warning": ["account"],

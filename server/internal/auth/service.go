@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/easly1989/cloudbank/server/internal/notify"
 	"github.com/easly1989/cloudbank/server/internal/secrets"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
@@ -116,6 +117,8 @@ type Service struct {
 	// becoming its first administrator: the count and the insert are two
 	// statements, so they are made one under this lock.
 	firstUser sync.Mutex
+	// notify announces the security events; nil announces nothing.
+	notify Notifier
 }
 
 // NewService builds a Service backed by the given querier.
@@ -613,6 +616,13 @@ func (s *Service) CreateAPIToken(ctx context.Context, userID int64, name, scope,
 	if err != nil {
 		return APIToken{}, "", err
 	}
+	s.tell(ctx, userID, notify.KindNewAPIToken, func(t alertText) (string, string) {
+		access := t.read
+		if scope == ScopeWrite {
+			access = t.write
+		}
+		return t.tokenTitle, fmt.Sprintf(t.token, name, access)
+	})
 	return toAPIToken(row), token, nil
 }
 
@@ -757,7 +767,11 @@ func (s *Service) Disable2FA(ctx context.Context, userID int64, password string)
 	if err := s.q.ClearUserTOTP(ctx, userID); err != nil {
 		return err
 	}
-	return s.q.DeleteRecoveryCodes(ctx, userID)
+	if err := s.q.DeleteRecoveryCodes(ctx, userID); err != nil {
+		return err
+	}
+	s.tell(ctx, userID, notify.KindTwoFactorOff, func(t alertText) (string, string) { return t.twoFATitle, t.twoFA })
+	return nil
 }
 
 // RecoveryCodesRemaining reports how many unused recovery codes the user has.
@@ -852,5 +866,6 @@ func (s *Service) openSession(ctx context.Context, userID int64, userAgent strin
 	}); err != nil {
 		return "", err
 	}
+	s.rememberDevice(ctx, userID, userAgent)
 	return token, nil
 }

@@ -1708,19 +1708,34 @@
     "channels": "Canais",
     "channelsHint": "Onde as notificações chegam até você. Abra um canal para conectá-lo e escolher os eventos dele.",
     "group": {
+      "security": "Segurança",
       "problems": "Problemas",
-      "bills": "Vencimentos"
+      "bills": "Vencimentos",
+      "admin": "Administração"
     },
     "kind": {
+      "new_device": "Acesso de um novo dispositivo",
+      "two_factor_off": "Autenticação em dois fatores desativada",
+      "new_api_token": "Novo token de API",
+      "bank_sync_failed": "Falha na sincronização bancária",
+      "consent_expiring": "Consentimento do banco expirando",
       "mail_stopped": "Uma caixa de e-mail do banco para",
       "mail_unrecognized": "E-mails do banco não reconhecidos",
-      "bills": "Próximos vencimentos"
+      "bills": "Próximos vencimentos",
+      "new_version": "Nova versão do CloudBank"
     },
     "kindHint": {
+      "new_device": "Um navegador ou sistema que sua conta nunca usou.",
+      "two_factor_off": "A partir daí sua conta entra só com a senha.",
+      "new_api_token": "Alguém criou um token que lê ou altera seus dados.",
+      "bank_sync_failed": "Uma sincronização agendada de uma conexão bancária não foi concluída.",
+      "consent_expiring": "O consentimento de um banco expira em menos de uma semana e precisa ser renovado.",
       "mail_stopped": "O CloudBank não consegue mais entrar e a caixa precisa ser conectada de novo.",
       "mail_unrecognized": "Chegam e-mails que nenhum modelo sabe ler.",
-      "bills": "Agendamentos que vencem nos próximos 3 dias, ou já vencidos."
+      "bills": "Agendamentos que vencem nos próximos 3 dias, ou já vencidos.",
+      "new_version": "Saiu uma versão mais recente no canal que este servidor segue."
     },
+    "securityAlways": "Sempre no sino, para que um acesso que você não fez não passe despercebido.",
     "emailUnavailable": "Indisponível: o administrador não configurou um servidor de e-mail (CB_SMTP_HOST).",
     "emailAddress": "Endereço",
     "remove": "Remover",

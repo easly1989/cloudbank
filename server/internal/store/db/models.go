@@ -248,6 +248,12 @@ type InstanceSetting struct {
 	Value string
 }
 
+type KnownDevice struct {
+	UserID    int64
+	Device    string
+	FirstSeen string
+}
+
 type MailMessage struct {
 	ID            int64
 	MailboxID     int64

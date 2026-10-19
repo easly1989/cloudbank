@@ -1,7 +1,8 @@
 # Notifications
 
-CloudBank tells you when something needs you: a bank mailbox that stopped
-working, bank mails no pattern could read, bills coming due. Every notice lands
+CloudBank tells you when something needs you: a sign-in from a new device, a
+bank sync that failed, a bank mailbox that stopped working, bills coming due.
+Every notice lands
 in the bell in the page header, kept for 90 days. It can also reach you
 somewhere else: push on a device, email, a Matrix room, Telegram, Discord,
 Slack, ntfy, Gotify, or a webhook of your own, such as Home Assistant.
@@ -57,11 +58,22 @@ boxes start on; untick the ones you do not want on that channel. A channel that
 is not connected yet gets nothing, so its boxes wait until it is. Push is the
 exception: it is switched on per device, and its boxes can be set before.
 
-| Event | What it means |
-| --- | --- |
-| A bank mailbox stops | CloudBank can no longer sign in to a [bank mail](bank-mails.md) mailbox, and it needs connecting again. |
-| Bank mails not recognised | Mails arrive that no pattern can read. |
-| Bills coming due | Scheduled transactions due in the next three days, or already late. |
+| Event | What it means | It opens |
+| --- | --- | --- |
+| A sign-in from a new device | Someone signed in from a browser or system your account has not used before, such as Firefox on Windows, or a script. The first device of an account, and a browser update, are not announced. | Security |
+| Two-factor authentication turned off | Your account signs in with the password alone from then on. | Security |
+| A new API token | A token was created on your account, with its name and whether it can write. | Security |
+| Bank sync fails | A scheduled [bank sync](bank-sync.md) did not go through. Told once, until a sync works again; a **Sync now** that fails is on screen already. Every member of the wallet hears of it. | Bank sync |
+| Bank consent ending | A bank's PSD2 consent ends within a week and needs renewing. Told once per consent, to every member of the wallet. | Bank sync |
+| A bank mailbox stops | CloudBank can no longer sign in to a [bank mail](bank-mails.md) mailbox, and it needs connecting again. | Bank mails |
+| Bank mails not recognised | Mails arrive that no pattern can read. | Bank mails |
+| Bills coming due | Scheduled transactions due in the next three days, or already late. | Schedules |
+| A new CloudBank version | A newer release is out on the channel the server follows. Administrators only. | About |
+
+The three security events always reach the bell, even with every other channel
+turned off: a sign-in you did not make should not go unnoticed. Their other
+channels can be turned off like any event's. No notice carries a full card
+number or IBAN: a bank is named by the name you gave its connection.
 
 ## When a delivery fails
 

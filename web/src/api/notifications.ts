@@ -2,7 +2,16 @@ import { api } from "./core";
 
 // --- The notification centre (#685) ---
 
-export type NotificationKind = "mail_stopped" | "mail_unrecognized" | "bills";
+export type NotificationKind =
+  | "new_device"
+  | "two_factor_off"
+  | "new_api_token"
+  | "bank_sync_failed"
+  | "consent_expiring"
+  | "mail_stopped"
+  | "mail_unrecognized"
+  | "bills"
+  | "new_version";
 export type NotificationChannel = "inapp" | "push" | AddressedChannel;
 export type AddressedChannel =
   "email" | "matrix" | "telegram" | "discord" | "slack" | "ntfy" | "gotify" | "webhook";
@@ -28,7 +37,8 @@ export interface NotificationList {
 
 export interface NotificationPreference {
   kind: NotificationKind;
-  group: "problems" | "bills";
+  /** Security always reaches the bell; admin is listed for administrators only. */
+  group: "security" | "problems" | "bills" | "admin";
   channels: Record<NotificationChannel, boolean>;
 }
 

@@ -1708,19 +1708,34 @@
     "channels": "Canaux",
     "channelsHint": "Où les notifications vous parviennent. Ouvrez un canal pour le connecter et choisir ses événements.",
     "group": {
+      "security": "Sécurité",
       "problems": "Problèmes",
-      "bills": "Échéances"
+      "bills": "Échéances",
+      "admin": "Administration"
     },
     "kind": {
+      "new_device": "Connexion depuis un nouvel appareil",
+      "two_factor_off": "Authentification à deux facteurs désactivée",
+      "new_api_token": "Nouveau jeton d’API",
+      "bank_sync_failed": "Échec de la synchronisation bancaire",
+      "consent_expiring": "Consentement bancaire bientôt expiré",
       "mail_stopped": "Une boîte mail de la banque s’arrête",
       "mail_unrecognized": "E-mails de la banque non reconnus",
-      "bills": "Échéances à venir"
+      "bills": "Échéances à venir",
+      "new_version": "Nouvelle version de CloudBank"
     },
     "kindHint": {
+      "new_device": "Un navigateur ou un système que votre compte n’avait jamais utilisé.",
+      "two_factor_off": "Votre compte se connecte ensuite avec le seul mot de passe.",
+      "new_api_token": "Quelqu’un a créé un jeton qui lit ou modifie vos données.",
+      "bank_sync_failed": "Une synchronisation programmée d’une connexion bancaire n’a pas abouti.",
+      "consent_expiring": "Le consentement d’une banque expire dans moins d’une semaine et doit être renouvelé.",
       "mail_stopped": "CloudBank ne peut plus s’y connecter et il faut la reconnecter.",
       "mail_unrecognized": "Des e-mails arrivent qu’aucun modèle ne sait lire.",
-      "bills": "Opérations récurrentes à échéance dans les 3 prochains jours, ou en retard."
+      "bills": "Opérations récurrentes à échéance dans les 3 prochains jours, ou en retard.",
+      "new_version": "Une version plus récente est sortie sur le canal que suit ce serveur."
     },
+    "securityAlways": "Toujours dans la cloche, pour qu’une connexion que vous n’avez pas faite ne passe pas inaperçue.",
     "emailUnavailable": "Indisponible : l’administrateur n’a pas configuré de serveur de messagerie (CB_SMTP_HOST).",
     "emailAddress": "Adresse",
     "remove": "Retirer",

@@ -1708,19 +1708,34 @@
     "channels": "Kanäle",
     "channelsHint": "Wo dich Benachrichtigungen erreichen. Öffne einen Kanal, um ihn zu verbinden und seine Ereignisse zu wählen.",
     "group": {
+      "security": "Sicherheit",
       "problems": "Probleme",
-      "bills": "Fälligkeiten"
+      "bills": "Fälligkeiten",
+      "admin": "Administration"
     },
     "kind": {
+      "new_device": "Anmeldung von einem neuen Gerät",
+      "two_factor_off": "Zwei-Faktor-Authentifizierung ausgeschaltet",
+      "new_api_token": "Neues API-Token",
+      "bank_sync_failed": "Bankanbindung fehlgeschlagen",
+      "consent_expiring": "Bankfreigabe läuft ab",
       "mail_stopped": "Ein Bank-Postfach stoppt",
       "mail_unrecognized": "Bank-E-Mails nicht erkannt",
-      "bills": "Anstehende Fälligkeiten"
+      "bills": "Anstehende Fälligkeiten",
+      "new_version": "Neue CloudBank-Version"
     },
     "kindHint": {
+      "new_device": "Ein Browser oder System, das dein Konto noch nie benutzt hat.",
+      "two_factor_off": "Dein Konto meldet sich danach nur mit dem Passwort an.",
+      "new_api_token": "Jemand hat ein Token erstellt, das deine Daten liest oder ändert.",
+      "bank_sync_failed": "Ein geplanter Abgleich einer Bankverbindung ist nicht durchgelaufen.",
+      "consent_expiring": "Die Freigabe einer Bank läuft innerhalb einer Woche ab und muss erneuert werden.",
       "mail_stopped": "CloudBank kann sich nicht mehr anmelden, das Postfach muss neu verbunden werden.",
       "mail_unrecognized": "Es kommen E-Mails, die keine Vorlage lesen kann.",
-      "bills": "Wiederkehrende Buchungen, die in den nächsten 3 Tagen fällig oder schon überfällig sind."
+      "bills": "Wiederkehrende Buchungen, die in den nächsten 3 Tagen fällig oder schon überfällig sind.",
+      "new_version": "Auf dem Kanal, dem dieser Server folgt, ist eine neuere Version erschienen."
     },
+    "securityAlways": "Immer in der Glocke, damit eine Anmeldung, die nicht von dir kam, nicht unbemerkt bleibt.",
     "emailUnavailable": "Nicht verfügbar: Der Administrator hat keinen Mailserver eingerichtet (CB_SMTP_HOST).",
     "emailAddress": "Adresse",
     "remove": "Entfernen",

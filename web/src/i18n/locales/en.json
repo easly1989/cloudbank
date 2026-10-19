@@ -1708,19 +1708,34 @@
     "channels": "Channels",
     "channelsHint": "Where notifications reach you. Open a channel to connect it and choose its events.",
     "group": {
+      "security": "Security",
       "problems": "Problems",
-      "bills": "Bills"
+      "bills": "Bills",
+      "admin": "Administration"
     },
     "kind": {
+      "new_device": "A sign-in from a new device",
+      "two_factor_off": "Two-factor authentication turned off",
+      "new_api_token": "A new API token",
+      "bank_sync_failed": "Bank sync fails",
+      "consent_expiring": "Bank consent ending",
       "mail_stopped": "A bank mailbox stops",
       "mail_unrecognized": "Bank mails not recognised",
-      "bills": "Bills due"
+      "bills": "Bills due",
+      "new_version": "A new CloudBank version"
     },
     "kindHint": {
+      "new_device": "A browser or system your account has not used before.",
+      "two_factor_off": "Your account signs in with the password alone from then on.",
+      "new_api_token": "Someone created a token that reads or changes your data.",
+      "bank_sync_failed": "A scheduled sync of a bank connection did not go through.",
+      "consent_expiring": "A bank's consent ends within a week and needs renewing.",
       "mail_stopped": "CloudBank can no longer sign in to it and it needs connecting again.",
       "mail_unrecognized": "Mails arrive that no pattern can read.",
-      "bills": "Schedules due in the next 3 days, or already overdue."
+      "bills": "Schedules due in the next 3 days, or already overdue.",
+      "new_version": "A newer release is out on the channel this server follows."
     },
+    "securityAlways": "Always in the bell, so a sign-in you didn't make cannot go unnoticed.",
     "emailUnavailable": "Not available: the administrator has not set up a mail server (CB_SMTP_HOST).",
     "emailAddress": "Address",
     "remove": "Remove",

@@ -1708,19 +1708,34 @@
     "channels": "Canales",
     "channelsHint": "Dónde te llegan las notificaciones. Abre un canal para conectarlo y elegir sus eventos.",
     "group": {
+      "security": "Seguridad",
       "problems": "Problemas",
-      "bills": "Vencimientos"
+      "bills": "Vencimientos",
+      "admin": "Administración"
     },
     "kind": {
+      "new_device": "Inicio de sesión desde un dispositivo nuevo",
+      "two_factor_off": "Autenticación en dos pasos desactivada",
+      "new_api_token": "Nuevo token de API",
+      "bank_sync_failed": "Falla la sincronización bancaria",
+      "consent_expiring": "El consentimiento del banco caduca",
       "mail_stopped": "Un buzón del banco se detiene",
       "mail_unrecognized": "Correos del banco no reconocidos",
-      "bills": "Próximos vencimientos"
+      "bills": "Próximos vencimientos",
+      "new_version": "Nueva versión de CloudBank"
     },
     "kindHint": {
+      "new_device": "Un navegador o sistema que tu cuenta no había usado nunca.",
+      "two_factor_off": "Desde entonces tu cuenta entra solo con la contraseña.",
+      "new_api_token": "Alguien ha creado un token que lee o cambia tus datos.",
+      "bank_sync_failed": "Una sincronización programada de una conexión bancaria no se ha completado.",
+      "consent_expiring": "El consentimiento de un banco caduca en menos de una semana y hay que renovarlo.",
       "mail_stopped": "CloudBank ya no puede acceder y hay que volver a conectarlo.",
       "mail_unrecognized": "Llegan correos que ningún modelo sabe leer.",
-      "bills": "Movimientos programados que vencen en los próximos 3 días o ya vencidos."
+      "bills": "Movimientos programados que vencen en los próximos 3 días o ya vencidos.",
+      "new_version": "Hay una versión más reciente en el canal que sigue este servidor."
     },
+    "securityAlways": "Siempre en la campana, para que un inicio de sesión que no has hecho no pase desapercibido.",
     "emailUnavailable": "No disponible: el administrador no ha configurado un servidor de correo (CB_SMTP_HOST).",
     "emailAddress": "Dirección",
     "remove": "Quitar",

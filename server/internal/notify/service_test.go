@@ -113,7 +113,7 @@ func TestNotifyFollowsPreferences(t *testing.T) {
 		t.Fatalf("bell has %d after turning it off, want still 1", len(items))
 	}
 
-	prefs, err := f.svc.Preferences(ctx, u.ID)
+	prefs, err := f.svc.Preferences(ctx, u.ID, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,6 +121,119 @@ func TestNotifyFollowsPreferences(t *testing.T) {
 		want := p.Kind != KindBills
 		if p.Channels[ChannelInApp] != want || p.Channels[ChannelPush] != want {
 			t.Errorf("preference %s = %+v", p.Kind, p.Channels)
+		}
+	}
+}
+
+// A security event reaches the bell even with every channel turned off, and
+// the bell cannot be turned off for it (#690).
+func TestSecurityAlwaysReachesTheBell(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	u := f.user(t, "u")
+	for _, ch := range Channels {
+		err := f.svc.SetPreference(ctx, u.ID, KindNewDevice, ch, false)
+		if ch == ChannelInApp {
+			if !errors.Is(err, ErrAlwaysOn) {
+				t.Fatalf("turning the bell off = %v", err)
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Even a choice stored some other way does not silence it.
+	if err := f.q.SetNotificationPref(ctx, db.SetNotificationPrefParams{UserID: u.ID, Kind: string(KindNewDevice), Channel: string(ChannelInApp), Enabled: 0}); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.svc.Notify(ctx, u.ID, Event{Kind: KindNewDevice, Title: "New sign-in"}); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.deliverDue(ctx)
+	if items, _ := f.bell(t, u.ID); len(items) != 1 || items[0].Title != "New sign-in" {
+		t.Fatalf("bell = %+v", items)
+	}
+	if len(f.push.got) != 0 {
+		t.Fatalf("push got %+v, want nothing", f.push.got)
+	}
+	prefs, _ := f.svc.Preferences(ctx, u.ID, false)
+	for _, p := range prefs {
+		if p.Group == GroupSecurity && !p.Channels[ChannelInApp] {
+			t.Errorf("%s shows the bell off", p.Kind)
+		}
+	}
+	// Any other event can still leave the bell.
+	if err := f.svc.SetPreference(ctx, u.ID, KindBankSyncFailed, ChannelInApp, false); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// An admin event reaches the administrators whose account is on, each in
+// their language, and only they see it among their choices.
+func TestNotifyAdmins(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	admin := f.user(t, "admin")
+	member := f.user(t, "member")
+	gone := f.user(t, "gone")
+	_, _ = f.st.Write().ExecContext(ctx, "UPDATE users SET is_admin = 1, locale = 'it' WHERE id IN (?, ?)", admin.ID, gone.ID)
+	_ = f.q.SetUserDisabled(ctx, db.SetUserDisabledParams{Disabled: 1, ID: gone.ID})
+
+	err := f.svc.NotifyAdmins(ctx, func(lang string) Event {
+		return Event{Kind: KindNewVersion, Ref: "new-version:v9", Title: "v9 " + lang, URL: "/settings/about"}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if items, _ := f.bell(t, admin.ID); len(items) != 1 || items[0].Title != "v9 it" || items[0].URL != "/settings/about" {
+		t.Fatalf("admin's bell = %+v", items)
+	}
+	for _, u := range []db.User{member, gone} {
+		if items, _ := f.bell(t, u.ID); len(items) != 0 {
+			t.Errorf("%s's bell = %+v", u.Username, items)
+		}
+	}
+	has := func(admin bool) bool {
+		prefs, _ := f.svc.Preferences(ctx, member.ID, admin)
+		for _, p := range prefs {
+			if p.Kind == KindNewVersion {
+				return true
+			}
+		}
+		return false
+	}
+	if has(false) || !has(true) {
+		t.Fatalf("admin event among the choices: member %v, admin %v", has(false), has(true))
+	}
+}
+
+// A wallet event reaches its members whose account is on, each in their
+// language, marked with the wallet.
+func TestNotifyWallet(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	a, b, out, gone := f.user(t, "a"), f.user(t, "b"), f.user(t, "out"), f.user(t, "gone")
+	_, _ = f.st.Write().ExecContext(ctx, "UPDATE users SET locale = 'de' WHERE id = ?", b.ID)
+	_ = f.q.SetUserDisabled(ctx, db.SetUserDisabledParams{Disabled: 1, ID: gone.ID})
+	w, _ := f.q.CreateWallet(ctx, db.CreateWalletParams{Title: "W"})
+	for _, u := range []db.User{a, b, gone} {
+		_ = f.q.AddWalletMember(ctx, db.AddWalletMemberParams{WalletID: w.ID, UserID: u.ID, Role: "member"})
+	}
+	err := f.svc.NotifyWallet(ctx, w.ID, func(lang string) Event {
+		return Event{Kind: KindBankSyncFailed, Title: "failed " + lang, URL: "/settings/bank-sync"}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for u, want := range map[int64]string{a.ID: "failed ", b.ID: "failed de"} {
+		if items, _ := f.bell(t, u); len(items) != 1 || items[0].Title != want || items[0].WalletID != w.ID {
+			t.Errorf("bell of %d = %+v", u, items)
+		}
+	}
+	for _, u := range []db.User{out, gone} {
+		if items, _ := f.bell(t, u.ID); len(items) != 0 {
+			t.Errorf("%s's bell = %+v", u.Username, items)
 		}
 	}
 }
