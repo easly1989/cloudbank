@@ -18,7 +18,10 @@
 // what arrived at GET /notify/received. It is a Matrix homeserver too (#687),
 // with two accounts: the shared bot (token matrixBotToken), which must accept
 // its invitation before it can post, and a person's own (matrixUserToken);
-// any other token gets a 401.
+// any other token gets a 401. It also takes the chat services (#688): the
+// Telegram Bot API under /telegram (two bot tokens, telegramSharedToken and
+// telegramUserToken), and Discord and Slack incoming webhooks at
+// /discord/<name> and /slack/<name>, which refuse the name "unauthorized".
 //
 //	E2E_MAIL_HTTP=127.0.0.1:9100 E2E_MAIL_IMAP=127.0.0.1:1143 \
 //	E2E_MAIL_PASSWORD_IMAP=127.0.0.1:1144 go run ./cmd/e2e-mail
@@ -64,6 +67,9 @@ const (
 	// The pretend homeserver's access tokens: test values, nothing else.
 	matrixBotToken  = "e2e-matrix-bot"
 	matrixUserToken = "e2e-matrix-user"
+	// The pretend Bot API's tokens, shaped like Telegram's: test values.
+	telegramSharedToken = "111111:e2e-telegram-shared-bot-token"
+	telegramUserToken   = "222222:e2e-telegram-user-bot-token0"
 )
 
 func getenv(k, def string) string {
@@ -92,6 +98,7 @@ type fake struct {
 	hooks   []received         // what the webhook receiver was sent
 	matrix  []received         // what the homeserver was sent
 	joined  map[string]bool    // the Matrix tokens that joined a room
+	chats   []received         // what Telegram, Discord and Slack were sent
 	access  map[string]bool
 	refresh map[string]bool
 	n       int
@@ -168,6 +175,10 @@ func main() {
 	mux.HandleFunc("GET /_matrix/client/v3/account/whoami", f.matrixWhoami)
 	mux.HandleFunc("POST /_matrix/client/v3/join/{room}", f.matrixJoin)
 	mux.HandleFunc("PUT /_matrix/client/v3/rooms/{room}/send/m.room.message/{txn}", f.matrixSend)
+	mux.HandleFunc("GET /telegram/{bot}/getMe", f.telegramGetMe)
+	mux.HandleFunc("POST /telegram/{bot}/sendMessage", f.telegramSend)
+	mux.HandleFunc("POST /discord/{name}", f.chatHook)
+	mux.HandleFunc("POST /slack/{name}", f.chatHook)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
 	sln, err := net.Listen("tcp", getenv("E2E_MAIL_SMTP", "127.0.0.1:1025"))
 	if err != nil {
@@ -429,8 +440,90 @@ func (f *fake) received(w http.ResponseWriter, _ *http.Request) {
 	defer f.mu.Unlock()
 	writeJSON(w, http.StatusOK, map[string]any{
 		"mails": append([]received{}, f.mails...), "hooks": append([]received{}, f.hooks...),
-		"matrix": append([]received{}, f.matrix...),
+		"matrix": append([]received{}, f.matrix...), "chats": append([]received{}, f.chats...),
 	})
+}
+
+// telegramBot names the bot behind the path's "bot<token>", "" for none.
+func telegramBot(r *http.Request) string {
+	switch strings.TrimPrefix(r.PathValue("bot"), "bot") {
+	case telegramSharedToken:
+		return "shared"
+	case telegramUserToken:
+		return "own"
+	}
+	return ""
+}
+
+func telegramError(w http.ResponseWriter, status int, what string) {
+	writeJSON(w, status, map[string]any{"ok": false, "error_code": status, "description": what})
+}
+
+func (f *fake) telegramGetMe(w http.ResponseWriter, r *http.Request) {
+	if telegramBot(r) == "" {
+		telegramError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "result": map[string]any{"is_bot": true, "username": "cloudbank_demo_bot"}})
+}
+
+// telegramSend takes a message for any chat but "0", which no bot knows.
+func (f *fake) telegramSend(w http.ResponseWriter, r *http.Request) {
+	bot := telegramBot(r)
+	if bot == "" {
+		telegramError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	var msg struct {
+		ChatID string `json:"chat_id"`
+		Text   string `json:"text"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&msg); err != nil || msg.Text == "" {
+		telegramError(w, http.StatusBadRequest, "Bad Request: message text is empty")
+		return
+	}
+	if msg.ChatID == "0" {
+		telegramError(w, http.StatusBadRequest, "Bad Request: chat not found")
+		return
+	}
+	f.mu.Lock()
+	f.chats = append(f.chats, received{Hook: "telegram", To: msg.ChatID, Sender: bot, Body: msg.Text})
+	f.mu.Unlock()
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "result": map[string]any{"message_id": 1}})
+}
+
+// chatHook is a Discord or Slack incoming webhook: Discord answers 204 and
+// refuses with 401, Slack answers "ok" and refuses with 403.
+func (f *fake) chatHook(w http.ResponseWriter, r *http.Request) {
+	slack := strings.HasPrefix(r.URL.Path, "/slack/")
+	var msg struct {
+		Content string `json:"content"`
+		Text    string `json:"text"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&msg); err != nil {
+		http.Error(w, "want JSON", http.StatusBadRequest)
+		return
+	}
+	switch {
+	case r.PathValue("name") == "unauthorized" && slack:
+		http.Error(w, "invalid_token", http.StatusForbidden)
+		return
+	case r.PathValue("name") == "unauthorized":
+		http.Error(w, `{"message": "Invalid Webhook Token", "code": 50027}`, http.StatusUnauthorized)
+		return
+	}
+	service, body := "discord", msg.Content
+	if slack {
+		service, body = "slack", msg.Text
+	}
+	f.mu.Lock()
+	f.chats = append(f.chats, received{Hook: service + "/" + r.PathValue("name"), Body: body})
+	f.mu.Unlock()
+	if slack {
+		_, _ = w.Write([]byte("ok"))
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // matrixUser is the account behind the request's token, "" for none.

@@ -425,8 +425,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * The channels the current user sets up with an address (email, Matrix, webhook)
-         * @description A webhook's URL is never sent back, only its host: its path is often its key. Email is available only where the administrator configured a mail server (CB_SMTP_*). A Matrix access token is never sent back either; shared says the installation has a shared bot (CB_MATRIX_*).
+         * The channels the current user sets up with an address (email, Matrix, Telegram, Discord, Slack, webhook)
+         * @description A webhook's URL is never sent back, only its host: its path is often its key. Email is available only where the administrator configured a mail server (CB_SMTP_*). A Discord or Slack webhook URL is shown by its host only too, and a bot token (Matrix, Telegram) is never sent back; shared says the installation has a shared bot (CB_MATRIX_*, CB_TELEGRAM_TOKEN).
          */
         get: operations["listNotificationChannels"];
         put?: never;
@@ -442,14 +442,14 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                channel: "email" | "matrix" | "webhook";
+                channel: "email" | "matrix" | "telegram" | "discord" | "slack" | "webhook";
             };
             cookie?: never;
         };
         get?: never;
         /**
          * Set the current user's address on a channel
-         * @description Omit target to keep the stored one (a webhook's URL is never sent back); omit secret to keep the stored signing secret, send "" to remove it. A webhook or a Matrix homeserver on the local network may be saved only by an administrator: anyone else gets 400 local_network. Matrix takes a room ID as target and, without a shared bot, a homeserver and an access token; send server "" to post as the shared bot.
+         * @description Omit target to keep the stored one (a webhook's URL is never sent back); omit secret to keep the stored signing secret, send "" to remove it. A webhook or a Matrix homeserver on the local network may be saved only by an administrator: anyone else gets 400 local_network. Matrix takes a room ID as target and, without a shared bot, a homeserver and an access token; send server "" to post as the shared bot. Telegram takes a chat ID (or @channel) as target and, without a shared bot, the bot's token as secret. Discord and Slack take their incoming webhook URL as target.
          */
         put: operations["saveNotificationChannel"];
         post?: never;
@@ -465,7 +465,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                channel: "push" | "email" | "matrix" | "webhook";
+                channel: "push" | "email" | "matrix" | "telegram" | "discord" | "slack" | "webhook";
             };
             cookie?: never;
         };
@@ -3825,7 +3825,7 @@ export interface components {
         /** @enum {string} */
         NotificationKind: "mail_stopped" | "mail_unrecognized" | "bills";
         /** @enum {string} */
-        NotificationChannel: "inapp" | "push" | "email" | "matrix" | "webhook";
+        NotificationChannel: "inapp" | "push" | "email" | "matrix" | "telegram" | "discord" | "slack" | "webhook";
         Notification: {
             /** Format: int64 */
             id: number;
@@ -3845,25 +3845,36 @@ export interface components {
         };
         NotificationChannelState: {
             /** @enum {string} */
-            channel: "email" | "matrix" | "webhook";
+            channel: "email" | "matrix" | "telegram" | "discord" | "slack" | "webhook";
             /** @description False when this installation cannot send on it. */
             available: boolean;
             configured: boolean;
-            /** @description The email address, the Matrix room, or only the webhook's host. */
+            /** @description The email address, the Matrix room, the Telegram chat, or only a webhook's host (Discord and Slack included). */
             target: string;
             hasSecret: boolean;
             /** @description The person's own Matrix homeserver; empty for the shared bot. */
             server: string;
-            /** @description The installation has a shared Matrix bot. */
+            /** @description The installation has a shared Matrix or Telegram bot. */
             shared: boolean;
-            /** @description The shared bot's Matrix ID, to invite to the room; empty when unknown. */
+            /** @description The shared bot's Matrix ID or Telegram @username; empty when unknown. */
             bot: string;
+            options: components["schemas"]["NotificationChannelOptions"];
             /** @description Empty after a success; else the status or the reason of the last failure. */
             lastError: string;
             /** Format: date-time */
             lastErrorAt: string | null;
             /** Format: date-time */
             lastOkAt: string | null;
+        };
+        /** @description A channel's own settings; only Telegram has any. Omitted on save to keep them. */
+        NotificationChannelOptions: {
+            /**
+             * Format: int64
+             * @description The topic (message_thread_id) in a Telegram group with topics.
+             */
+            topic?: number;
+            /** @description Send the Telegram message without sound. */
+            silent?: boolean;
         };
         NotificationList: {
             items: components["schemas"]["Notification"][];
@@ -3878,6 +3889,9 @@ export interface components {
                 push: boolean;
                 email: boolean;
                 matrix: boolean;
+                telegram: boolean;
+                discord: boolean;
+                slack: boolean;
                 webhook: boolean;
             };
         };
@@ -6045,19 +6059,20 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                channel: "email" | "matrix" | "webhook";
+                channel: "email" | "matrix" | "telegram" | "discord" | "slack" | "webhook";
             };
             cookie?: never;
         };
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description The email address, the Matrix room ID (!id:server) or the webhook URL. */
+                    /** @description The email address, the Matrix room ID (!id:server), the Telegram chat, or the webhook URL (Discord's or Slack's included). */
                     target?: string;
-                    /** @description The webhook's signing secret (HMAC-SHA256 in X-CloudBank-Signature) */
+                    /** @description The webhook's signing secret (HMAC-SHA256 in X-CloudBank-Signature), or the Matrix or Telegram bot's token. */
                     secret?: string;
                     /** @description The Matrix homeserver URL; empty for the shared bot. */
                     server?: string;
+                    options?: components["schemas"]["NotificationChannelOptions"];
                 };
             };
         };
@@ -6079,7 +6094,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                channel: "email" | "matrix" | "webhook";
+                channel: "email" | "matrix" | "telegram" | "discord" | "slack" | "webhook";
             };
             cookie?: never;
         };
@@ -6101,7 +6116,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                channel: "push" | "email" | "matrix" | "webhook";
+                channel: "push" | "email" | "matrix" | "telegram" | "discord" | "slack" | "webhook";
             };
             cookie?: never;
         };

@@ -29,14 +29,15 @@ async function messages(page: Page) {
   return ((await res.json()) as { matrix: Message[] }).matrix;
 }
 
+// The channel's page has one card with a Save button: its connection.
 const card = (page: Page) =>
-  page.locator(".mantine-Card-root").filter({
-    has: page.getByRole("heading", { name: "Matrix", exact: true }),
-  });
+  page
+    .locator(".mantine-Card-root")
+    .filter({ has: page.getByRole("button", { name: "Save" }) });
 
 test("with the shared bot, the room is all it takes", async ({ page }) => {
   await signIn(page);
-  await page.goto("/settings/notifications");
+  await page.goto("/settings/notifications/matrix");
   const matrix = card(page);
   await expect(
     matrix.getByText("Invite @cloudbank:matrix.example to the room"),
@@ -47,9 +48,7 @@ test("with the shared bot, the room is all it takes", async ({ page }) => {
   // The bot was only invited: it joins the room, then posts.
   await matrix.getByRole("button", { name: "Send a test" }).click();
   await expect(page.getByText("Test sent")).toBeVisible();
-  await expect(
-    page.getByRole("columnheader", { name: "Matrix" }),
-  ).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "Bills due" })).toBeEnabled();
 
   const got = await messages(page);
   expect(got.at(-1)).toMatchObject({
@@ -72,8 +71,10 @@ test("a bot of one's own posts with its token, which never comes back", async ({
   ).text();
   expect(state).not.toContain(OWN_TOKEN);
 
-  await page.goto("/settings/notifications");
+  await page.goto("/settings/notifications/matrix");
   const matrix = card(page);
+  // A bot of one's own shows as such, with its homeserver.
+  await expect(matrix.getByRole("radio", { name: "Your bot" })).toBeChecked();
   await expect(matrix.getByLabel("Homeserver")).toHaveValue(FAKE);
   await matrix.getByRole("button", { name: "Send a test" }).click();
   await expect(page.getByText("Test sent")).toBeVisible();
@@ -84,7 +85,7 @@ test("a bot of one's own posts with its token, which never comes back", async ({
 
 test("a refused token shows its 401 on the page", async ({ page }) => {
   await signIn(page);
-  await page.goto("/settings/notifications");
+  await page.goto("/settings/notifications/matrix");
   const matrix = card(page);
   await matrix.getByLabel("Bot's access token").fill("not-a-token");
   await matrix.getByRole("button", { name: "Save" }).click();
