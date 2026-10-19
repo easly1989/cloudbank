@@ -127,7 +127,15 @@ func (s *Service) recipient(ctx context.Context, userID int64, ch Channel) (Reci
 		return to, false, err
 	}
 	to.Target, to.Secret, to.Server, to.LocalOK = secrets.Open(row.Target), secrets.Open(row.Secret), row.Server, row.LocalOk != 0
+	to.Options = parseOptions(row.Options)
 	return to, true, nil
+}
+
+// parseOptions reads a channel's stored options; anything unreadable is none.
+func parseOptions(raw string) ChannelOptions {
+	var o ChannelOptions
+	_ = json.Unmarshal([]byte(raw), &o)
+	return o
 }
 
 func (s *Service) recordOK(ctx context.Context, userID int64, ch Channel) {

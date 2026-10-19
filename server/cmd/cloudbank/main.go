@@ -310,6 +310,9 @@ func run() error {
 			bot = &notify.MatrixBot{Homeserver: cfg.MatrixHomeserver, Token: cfg.MatrixToken}
 		}
 		notifySvc.SetSender(notify.ChannelMatrix, notify.NewMatrixSender(bot))
+		notifySvc.SetSender(notify.ChannelTelegram, notify.NewTelegramSender(cfg.TelegramAPI, cfg.TelegramToken))
+		notifySvc.SetSender(notify.ChannelDiscord, notify.NewDiscordSender())
+		notifySvc.SetSender(notify.ChannelSlack, notify.NewSlackSender())
 	}
 	handler := httpapi.New(opts)
 

@@ -1706,17 +1706,7 @@
     "unread": "Da leggere",
     "pushTitle": "Push su questo dispositivo",
     "channels": "Canali",
-    "channelsHint": "Dove ti raggiungono le notifiche, oltre alla campanella.",
-    "events": "Eventi",
-    "eventsHint": "Cosa ti viene detto, e dove. La campanella tiene tutto per 90 giorni.",
-    "eventHeader": "Evento",
-    "channel": {
-      "inapp": "In app",
-      "push": "Push",
-      "email": "Email",
-      "webhook": "Webhook",
-      "matrix": "Matrix"
-    },
+    "channelsHint": "Dove ti raggiungono le notifiche. Apri un canale per collegarlo e scegliere i suoi eventi.",
     "group": {
       "problems": "Problemi",
       "bills": "Scadenze"
@@ -1731,8 +1721,6 @@
       "mail_unrecognized": "Arrivano mail che nessun modello sa leggere.",
       "bills": "Programmate in scadenza nei prossimi 3 giorni, o già scadute."
     },
-    "email": "Email",
-    "emailHint": "Le notifiche per email, all'indirizzo che scegli.",
     "emailUnavailable": "Non disponibile: l'amministratore non ha configurato un server di posta (CB_SMTP_HOST).",
     "emailAddress": "Indirizzo",
     "remove": "Rimuovi",
@@ -1750,21 +1738,71 @@
     },
     "localNetwork": "Solo un amministratore può inviare a un indirizzo della rete locale.",
     "invalidAddress": "Indirizzo non valido.",
-    "webhook": "Webhook",
-    "webhookHint": "Un POST con l'evento in JSON a un tuo indirizzo: Home Assistant, n8n, uno script.",
     "webhookGuide": "Come si collega",
     "webhookUrl": "URL",
     "webhookSaved": "Salvato: {{host}}",
     "webhookSecret": "Segreto per la firma",
     "secretSaved": "Salvato",
     "optional": "Facoltativo",
-    "matrix": "Matrix",
-    "matrixHint": "Un messaggio in una stanza Matrix, scritto da un tuo bot.",
     "matrixHintShared": "Un messaggio in una stanza Matrix. Invita {{bot}} nella stanza, poi incolla qui l'ID della stanza.",
     "matrixHintSharedNoBot": "Un messaggio in una stanza Matrix. Invita nella stanza il bot di questa installazione (l'amministratore ne conosce l'indirizzo), poi incolla qui l'ID della stanza.",
     "matrixServer": "Homeserver",
     "matrixRoom": "ID della stanza",
-    "matrixToken": "Token di accesso del bot"
+    "matrixToken": "Token di accesso del bot",
+    "telegramHintShared": "Un messaggio da {{bot}}. Scrivigli /start, poi incolla qui l'ID della tua chat.",
+    "telegramHintSharedNoBot": "Un messaggio dal bot di questa installazione (l'amministratore ne conosce il nome). Scrivigli /start, poi incolla qui l'ID della tua chat.",
+    "telegramChat": "ID della chat",
+    "telegramToken": "Token del bot",
+    "name": {
+      "inapp": "Campanella",
+      "push": "Push",
+      "email": "Email",
+      "matrix": "Matrix",
+      "telegram": "Telegram",
+      "discord": "Discord",
+      "slack": "Slack",
+      "webhook": "Webhook"
+    },
+    "status": {
+      "always": "Sempre attiva",
+      "unavailable": "Non disponibile in questa installazione",
+      "notLinked": "Non collegato",
+      "linked": "Collegato",
+      "linkedOk": "Collegato, ultimo invio {{when}}",
+      "push": {
+        "on": "Attive su questo dispositivo",
+        "off": "Spente su questo dispositivo",
+        "unsupported": "Non supportate da questo browser",
+        "denied": "Bloccate in questo browser"
+      }
+    },
+    "eventCount": "Eventi: {{on}} su {{total}}",
+    "connection": "Collegamento",
+    "whatArrives": "Cosa arriva qui",
+    "whatArrivesHint": "Gli eventi che ricevi su questo canale. La campanella li tiene tutti per 90 giorni.",
+    "connectFirst": "Collega prima il canale, poi scegli i suoi eventi.",
+    "about": {
+      "inapp": "Gli eventi che mostra la campanella. Li tiene per 90 giorni.",
+      "push": "Le notifiche su questo dispositivo, anche a CloudBank chiuso. Vanno attivate su ogni dispositivo che usi.",
+      "email": "Le notifiche per email, all'indirizzo che scegli.",
+      "matrix": "Un messaggio in una stanza Matrix, scritto dal bot di CloudBank o da un tuo bot.",
+      "telegram": "Un messaggio da un bot Telegram, nella chat con lui o in un gruppo.",
+      "discord": "Un messaggio in un canale Discord, tramite il webhook del canale.",
+      "slack": "Un messaggio in un canale Slack, tramite un webhook in ingresso.",
+      "webhook": "Un POST con l'evento in JSON a un tuo indirizzo: Home Assistant, n8n, uno script."
+    },
+    "mode": {
+      "shared": "Bot di CloudBank",
+      "own": "Il tuo bot"
+    },
+    "matrixRoomHelp": "In Element: impostazioni della stanza › Avanzate › ID interno della stanza.",
+    "telegramTokenHelp": "Da @BotFather: invia /newbot e copia il token che ti dà.",
+    "telegramChatHelp": "Per trovare il tuo, invia /my_id a @get_id_bot. L'ID di un gruppo comincia con un meno.",
+    "telegramTopic": "ID dell'argomento",
+    "telegramTopicHelp": "Facoltativo: in un gruppo con argomenti, quello in cui arrivano i messaggi.",
+    "telegramTopicInvalid": "Solo cifre.",
+    "telegramSilent": "Invia in silenzio",
+    "telegramSilentHelp": "I messaggi arrivano senza suono."
   },
   "ai": {
     "title": "AI (con la tua chiave)",

@@ -40,17 +40,20 @@ const (
 type Channel string
 
 // The channels: the bell, push, and the ones a person sets up with an
-// address (#686, #687).
+// address (#686–#688).
 const (
-	ChannelInApp   Channel = "inapp"
-	ChannelPush    Channel = "push"
-	ChannelEmail   Channel = "email"
-	ChannelMatrix  Channel = "matrix"
-	ChannelWebhook Channel = "webhook"
+	ChannelInApp    Channel = "inapp"
+	ChannelPush     Channel = "push"
+	ChannelEmail    Channel = "email"
+	ChannelMatrix   Channel = "matrix"
+	ChannelTelegram Channel = "telegram"
+	ChannelDiscord  Channel = "discord"
+	ChannelSlack    Channel = "slack"
+	ChannelWebhook  Channel = "webhook"
 )
 
 // Channels lists every channel, in the order the settings page shows them.
-var Channels = []Channel{ChannelInApp, ChannelPush, ChannelEmail, ChannelMatrix, ChannelWebhook}
+var Channels = []Channel{ChannelInApp, ChannelPush, ChannelEmail, ChannelMatrix, ChannelTelegram, ChannelDiscord, ChannelSlack, ChannelWebhook}
 
 // addressed reports whether a channel needs the person's own address (a row
 // in notification_channels) before anything can be sent on it.
@@ -102,16 +105,27 @@ type Event struct {
 // channel their address on it.
 type Recipient struct {
 	UserID int64
-	// Target is the email address, the Matrix room or the webhook URL, opened.
+	// Target is the email address, the Matrix room, the Telegram chat or the
+	// webhook URL (a Discord or Slack one included), opened.
 	Target string
-	// Secret is the webhook's signing secret or the Matrix access token,
-	// opened; empty for none.
+	// Secret is the webhook's signing secret, or the Matrix or Telegram bot's
+	// token, opened; empty for none.
 	Secret string
 	// Server is the person's Matrix homeserver; empty for the shared bot.
 	Server string
+	// Options are the channel's own settings (Telegram's topic and sound).
+	Options ChannelOptions
 	// LocalOK lets the delivery reach the local network: the channel was saved
 	// by an administrator.
 	LocalOK bool
+}
+
+// ChannelOptions are the settings only some channels have (#688).
+type ChannelOptions struct {
+	// Topic is the Telegram topic (message_thread_id) in a group with topics.
+	Topic int64 `json:"topic,omitempty"`
+	// Silent sends a Telegram message without sound.
+	Silent bool `json:"silent,omitempty"`
 }
 
 // Sender delivers an event on one channel other than the bell. Its errors are
