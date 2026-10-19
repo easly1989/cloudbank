@@ -27,6 +27,8 @@ func (h *notificationHandlers) routes(r chi.Router) {
 	r.Put("/notifications/channels/{channel}", h.saveChannel)
 	r.Delete("/notifications/channels/{channel}", h.deleteChannel)
 	r.Post("/notifications/channels/{channel}/test", h.testChannel)
+	r.Post("/notifications/channels/{channel}/code", h.resendCode)
+	r.Post("/notifications/channels/{channel}/confirm", h.confirmChannel)
 }
 
 type notificationJSON struct {
@@ -136,6 +138,9 @@ type channelJSON struct {
 	Shared      bool                  `json:"shared"`
 	Bot         string                `json:"bot"`
 	Options     notify.ChannelOptions `json:"options"`
+	Pending     bool                  `json:"pending"`
+	Link        string                `json:"link,omitempty"`
+	GroupLink   string                `json:"groupLink,omitempty"`
 	LastError   string                `json:"lastError"`
 	LastErrorAt *string               `json:"lastErrorAt"`
 	LastOKAt    *string               `json:"lastOkAt"`
@@ -159,7 +164,9 @@ func (h *notificationHandlers) channels(w http.ResponseWriter, r *http.Request) 
 	for _, c := range chans {
 		out = append(out, channelJSON{
 			Channel: c.Channel, Available: c.Available, Configured: c.Configured, Target: c.Target,
-			HasSecret: c.HasSecret, Server: c.Server, Shared: c.Shared, Bot: c.Bot, Options: c.Options, LastError: c.LastError, LastErrorAt: orNull(c.LastErrorAt), LastOKAt: orNull(c.LastOKAt),
+			HasSecret: c.HasSecret, Server: c.Server, Shared: c.Shared, Bot: c.Bot, Options: c.Options,
+			Pending: c.Pending, Link: c.Link, GroupLink: c.GroupLink,
+			LastError: c.LastError, LastErrorAt: orNull(c.LastErrorAt), LastOKAt: orNull(c.LastOKAt),
 		})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"channels": out})
@@ -177,7 +184,7 @@ func (h *notificationHandlers) saveChannel(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	err := h.svc.SaveChannel(r.Context(), u.ID, u.IsAdmin, notify.Channel(chi.URLParam(r, "channel")),
-		notify.ChannelInput{Target: body.Target, Secret: body.Secret, Server: body.Server, Options: body.Options})
+		notify.ChannelInput{Target: body.Target, Secret: body.Secret, Server: body.Server, Options: body.Options, Lang: u.Locale})
 	switch {
 	case errors.Is(err, notify.ErrChannelUnavailable):
 		writeError(w, http.StatusNotFound, "not_found", "channel not available")
@@ -186,7 +193,60 @@ func (h *notificationHandlers) saveChannel(w http.ResponseWriter, r *http.Reques
 	case errors.Is(err, notify.ErrBadTarget):
 		writeError(w, http.StatusBadRequest, "invalid", "invalid address")
 	case err != nil:
-		writeError(w, http.StatusInternalServerError, "internal", "could not save the channel")
+		writeCodeError(w, err, "could not save the channel")
+	default:
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+// writeCodeError answers a failure to send a confirmation code (#716).
+func writeCodeError(w http.ResponseWriter, err error, internal string) {
+	var de *notify.DeliveryError
+	switch {
+	case errors.As(err, &de):
+		writeError(w, http.StatusBadGateway, "delivery_failed", de.Error())
+	case errors.Is(err, notify.ErrNotInvited):
+		writeError(w, http.StatusConflict, "not_invited", "invite the bot to the room first")
+	case errors.Is(err, notify.ErrTooSoon):
+		writeError(w, http.StatusTooManyRequests, "rate_limited", "a code was sent moments ago, try again shortly")
+	case errors.Is(err, notify.ErrHourlyLimit):
+		writeError(w, http.StatusTooManyRequests, "hourly_limit", "too many messages this hour")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", internal)
+	}
+}
+
+func (h *notificationHandlers) resendCode(w http.ResponseWriter, r *http.Request) {
+	u := userFromContext(r.Context())
+	err := h.svc.ResendCode(r.Context(), u.ID, u.Locale, notify.Channel(chi.URLParam(r, "channel")))
+	switch {
+	case errors.Is(err, notify.ErrChannelUnavailable), errors.Is(err, notify.ErrNotSetUp):
+		writeError(w, http.StatusNotFound, "not_found", "no code is pending on that channel")
+	case err != nil:
+		writeCodeError(w, err, "could not send a new code")
+	default:
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func (h *notificationHandlers) confirmChannel(w http.ResponseWriter, r *http.Request) {
+	u := userFromContext(r.Context())
+	var body struct {
+		Code string `json:"code"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	err := h.svc.ConfirmChannel(r.Context(), u.ID, notify.Channel(chi.URLParam(r, "channel")), body.Code)
+	switch {
+	case errors.Is(err, notify.ErrChannelUnavailable), errors.Is(err, notify.ErrNotSetUp):
+		writeError(w, http.StatusNotFound, "not_found", "no code is pending on that channel")
+	case errors.Is(err, notify.ErrWrongCode):
+		writeError(w, http.StatusBadRequest, "wrong_code", "that is not the code")
+	case errors.Is(err, notify.ErrCodeExpired):
+		writeError(w, http.StatusGone, "code_expired", "the code expired, ask for a new one")
+	case err != nil:
+		writeError(w, http.StatusInternalServerError, "internal", "could not confirm the channel")
 	default:
 		w.WriteHeader(http.StatusNoContent)
 	}
@@ -218,6 +278,8 @@ func (h *notificationHandlers) testChannel(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "not_found", "channel not set up")
 	case errors.Is(err, notify.ErrTooSoon):
 		writeError(w, http.StatusTooManyRequests, "rate_limited", "a test was sent moments ago, try again shortly")
+	case errors.Is(err, notify.ErrHourlyLimit):
+		writeError(w, http.StatusTooManyRequests, "hourly_limit", "too many messages this hour")
 	default:
 		writeError(w, http.StatusInternalServerError, "internal", "could not send the test")
 	}

@@ -67,6 +67,11 @@ export interface NotificationChannelState {
   bot: string;
   /** Telegram's topic and sound; empty elsewhere. */
   options: NotificationChannelOptions;
+  /** The address waits for its confirmation code and gets nothing until then (#716). */
+  pending: boolean;
+  /** Telegram's shared bot while pending: the links that start it with the code. */
+  link?: string;
+  groupLink?: string;
   /** Empty after a success; else the status or the reason of the last failure. */
   lastError: string;
   lastErrorAt: string | null;
@@ -84,3 +89,8 @@ export const deleteNotificationChannel = (channel: AddressedChannel) =>
   api.del<void>(`/api/v1/notifications/channels/${channel}`);
 export const testNotificationChannel = (channel: "push" | AddressedChannel) =>
   api.post<{ ok: boolean; error?: string }>(`/api/v1/notifications/channels/${channel}/test`);
+/** A new code for a pending channel: mailed, posted in the room, or a new Telegram link. */
+export const resendNotificationCode = (channel: "email" | "matrix" | "telegram") =>
+  api.post<void>(`/api/v1/notifications/channels/${channel}/code`);
+export const confirmNotificationChannel = (channel: "email" | "matrix", code: string) =>
+  api.post<void>(`/api/v1/notifications/channels/${channel}/confirm`, { code });

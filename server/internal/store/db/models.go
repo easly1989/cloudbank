@@ -335,16 +335,21 @@ type Notification struct {
 }
 
 type NotificationChannel struct {
-	UserID      int64
-	Channel     string
-	Target      string
-	Secret      string
-	LocalOk     int64
-	LastError   string
-	LastErrorAt sql.NullString
-	LastOkAt    sql.NullString
-	Server      string
-	Options     string
+	UserID        int64
+	Channel       string
+	Target        string
+	Secret        string
+	LocalOk       int64
+	LastError     string
+	LastErrorAt   sql.NullString
+	LastOkAt      sql.NullString
+	Server        string
+	Options       string
+	Verified      int64
+	CodeHash      string
+	CodeLink      string
+	CodeExpiresAt sql.NullString
+	CodeAttempts  int64
 }
 
 type NotificationDelivery struct {

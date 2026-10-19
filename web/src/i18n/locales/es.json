@@ -1734,7 +1734,8 @@
       "unauthorized": "credenciales rechazadas",
       "rejected": "mensaje rechazado",
       "unreachable": "no se puede contactar",
-      "local": "no se permite una dirección de la red local"
+      "local": "no se permite una dirección de la red local",
+      "limited": "límite por hora alcanzado, el resto llega dentro de la hora"
     },
     "localNetwork": "Solo un administrador puede enviar a una dirección de la red local.",
     "invalidAddress": "La dirección no es válida.",
@@ -1744,13 +1745,9 @@
     "webhookSecret": "Secreto de firma",
     "secretSaved": "Guardado",
     "optional": "Opcional",
-    "matrixHintShared": "Un mensaje en una sala de Matrix. Invita a {{bot}} a la sala y pega aquí el ID de la sala.",
-    "matrixHintSharedNoBot": "Un mensaje en una sala de Matrix. Invita a la sala al bot de esta instalación (el administrador conoce su dirección) y pega aquí el ID de la sala.",
     "matrixServer": "Servidor (homeserver)",
     "matrixRoom": "ID de la sala",
     "matrixToken": "Token de acceso del bot",
-    "telegramHintShared": "Un mensaje de {{bot}}. Envíale /start y pega aquí el ID de tu chat.",
-    "telegramHintSharedNoBot": "Un mensaje del bot de esta instalación (el administrador conoce su nombre). Envíale /start y pega aquí el ID de tu chat.",
     "telegramChat": "ID del chat",
     "telegramToken": "Token del bot",
     "name": {
@@ -1774,7 +1771,8 @@
         "off": "Desactivadas en este dispositivo",
         "unsupported": "Este navegador no las admite",
         "denied": "Bloqueadas en este navegador"
-      }
+      },
+      "pending": "Pendiente de confirmar"
     },
     "eventCount": "Eventos: {{on}} de {{total}}",
     "connection": "Conexión",
@@ -1802,7 +1800,31 @@
     "telegramTopicHelp": "Opcional: en un grupo con temas, aquel al que llegan los mensajes.",
     "telegramTopicInvalid": "Solo cifras.",
     "telegramSilent": "Enviar en silencio",
-    "telegramSilentHelp": "Los mensajes llegan sin sonido."
+    "telegramSilentHelp": "Los mensajes llegan sin sonido.",
+    "emailCodeSent": "Te hemos enviado un código a {{address}}. Escríbelo aquí para activar el correo: hasta entonces no se envía nada.",
+    "code": "Código de confirmación",
+    "confirm": "Confirmar",
+    "codeValid": "El código vale 15 minutos.",
+    "resend": "Enviar otro",
+    "codeResent": "Nuevo código enviado",
+    "confirmed": "Confirmado",
+    "wrongCode": "Ese no es el código.",
+    "codeExpired": "El código ha caducado o se ha probado demasiadas veces. Pide otro.",
+    "codeFailed": "No se ha podido enviar el código: {{reason}}",
+    "notInvited": "El bot no tiene invitación a esa sala. Invítalo y vuelve a intentarlo.",
+    "matrixStepInvite": "Invita a {{bot}} a la sala.",
+    "matrixStepInviteNoBot": "Invita a la sala al bot de esta instalación (el administrador conoce su dirección).",
+    "matrixStepRoom": "Pega el ID de la sala (empieza por !).",
+    "matrixStepCode": "El bot ha entrado y ha escrito un código en la sala: escríbelo aquí.",
+    "link": "Conectar",
+    "linkedTo": "Conectado: {{target}}",
+    "telegramSharedIntro": "El bot de esta instalación es {{bot}}. Abre Telegram con el botón y pulsa Iniciar: CloudBank reconoce el chat por sí solo, sin ID que copiar.",
+    "telegramSharedIntroNoBot": "CloudBank no puede contactar con Telegram ahora mismo, así que no puede preparar el enlace a su bot. Inténtalo de nuevo en breve.",
+    "telegramLinkChat": "Conecta tu chat",
+    "telegramLinkGroup": "Añadir a un grupo",
+    "telegramWaiting": "Esperando a que pulses Iniciar en Telegram… El enlace vale 15 minutos.",
+    "telegramNoLink": "El enlace ha caducado o Telegram no responde.",
+    "telegramNewLink": "Nuevo enlace"
   },
   "ai": {
     "title": "IA (con tu propia clave)",
@@ -2997,6 +3019,7 @@
     "host_not_public": "Ese servidor no está en internet: CloudBank no se conecta a su propia red.",
     "unreachable": "El servidor de correo no responde: comprueba el nombre y el puerto.",
     "tls_failed": "No se pudo cifrar la conexión con el servidor de correo.",
-    "ai_not_configured": "Configura antes la IA, en Ajustes › IA."
+    "ai_not_configured": "Configura antes la IA, en Ajustes › IA.",
+    "hourly_limit": "Demasiados mensajes en esta hora. Inténtalo más tarde."
   }
 }

@@ -24,6 +24,9 @@ const (
 	// ReasonLocal: the address is on the local network and the channel was not
 	// saved by an administrator.
 	ReasonLocal Reason = "local"
+	// ReasonLimited: the person reached the hourly cap; the rest follows in
+	// the next hour.
+	ReasonLimited Reason = "limited"
 )
 
 // DeliveryError is a failed delivery. It never carries the target's address

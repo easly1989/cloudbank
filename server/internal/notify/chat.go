@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"html"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -106,6 +109,10 @@ type TelegramSender struct {
 	mu sync.Mutex
 	// botName is the shared bot's username, once Telegram said it.
 	botName string
+
+	updMu sync.Mutex
+	// offset is the next update the shared bot has not read (getUpdates).
+	offset int64
 }
 
 // NewTelegramSender returns a sender for the Bot API at api; shared is the
@@ -178,4 +185,52 @@ func (t *TelegramSender) Send(ctx context.Context, to Recipient, e Event) error 
 		msg["message_thread_id"] = to.Options.Topic
 	}
 	return postJSON(ctx, t.hc, t.api+"/bot"+token+"/sendMessage", msg)
+}
+
+// TelegramStart is a /start with a code, sent to the shared bot from a chat:
+// a private one, or a group the bot was added to with the link.
+type TelegramStart struct{ Chat, Code string }
+
+// Starts reads what was sent to the shared bot since the last call and
+// returns the /start commands that carry a code. Anything else is skipped.
+func (t *TelegramSender) Starts(ctx context.Context) []TelegramStart {
+	if t.shared == "" {
+		return nil
+	}
+	t.updMu.Lock()
+	defer t.updMu.Unlock()
+	u := fmt.Sprintf("%s/bot%s/getUpdates?offset=%d&timeout=0&allowed_updates=%s", t.api, t.shared, t.offset, url.QueryEscape(`["message"]`))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return nil
+	}
+	resp, err := t.hc.Do(req)
+	if err != nil {
+		return nil
+	}
+	defer func() { _ = resp.Body.Close() }()
+	var got struct {
+		Result []struct {
+			UpdateID int64 `json:"update_id"`
+			Message  struct {
+				Text string `json:"text"`
+				Chat struct {
+					ID int64 `json:"id"`
+				} `json:"chat"`
+			} `json:"message"`
+		} `json:"result"`
+	}
+	if resp.StatusCode != http.StatusOK || json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(&got) != nil {
+		return nil
+	}
+	var out []TelegramStart
+	for _, up := range got.Result {
+		t.offset = max(t.offset, up.UpdateID+1)
+		// "/start <code>" in a private chat, "/start@bot <code>" in a group.
+		f := strings.Fields(up.Message.Text)
+		if len(f) == 2 && (f[0] == "/start" || strings.HasPrefix(f[0], "/start@")) && up.Message.Chat.ID != 0 {
+			out = append(out, TelegramStart{Chat: strconv.FormatInt(up.Message.Chat.ID, 10), Code: f[1]})
+		}
+	}
+	return out
 }

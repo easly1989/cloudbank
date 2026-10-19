@@ -16,11 +16,14 @@
 // what it is sent (E2E_MAIL_SMTP, no TLS, no login) and a webhook receiver at
 // POST /hook/<name>, which answers 401 for the name "unauthorized"; both show
 // what arrived at GET /notify/received. It is a Matrix homeserver too (#687),
-// with two accounts: the shared bot (token matrixBotToken), which must accept
-// its invitation before it can post, and a person's own (matrixUserToken);
-// any other token gets a 401. It also takes the chat services (#688): the
-// Telegram Bot API under /telegram (two bot tokens, telegramSharedToken and
-// telegramUserToken), and Discord and Slack incoming webhooks at
+// with two accounts: the shared bot (token matrixBotToken), which may join
+// only a room it was invited to (POST /notify/matrix/invite, as a person would
+// in their Matrix app; GET /sync lists the invitations) and post only once in,
+// and a person's own (matrixUserToken); any other token gets a 401. It also
+// takes the chat services (#688): the Telegram Bot API under /telegram (two
+// bot tokens, telegramSharedToken and telegramUserToken; POST
+// /notify/telegram/start queues a message to the shared bot, as a person
+// pressing Start, for getUpdates), and Discord and Slack incoming webhooks at
 // /discord/<name> and /slack/<name>, which refuse the name "unauthorized".
 //
 //	E2E_MAIL_HTTP=127.0.0.1:9100 E2E_MAIL_IMAP=127.0.0.1:1143 \
@@ -97,8 +100,10 @@ type fake struct {
 	mails   []received         // what the SMTP server was sent
 	hooks   []received         // what the webhook receiver was sent
 	matrix  []received         // what the homeserver was sent
-	joined  map[string]bool    // the Matrix tokens that joined a room
+	invited map[string]bool    // the rooms the shared Matrix bot was invited to
+	joined  map[string]bool    // "user room" for each Matrix account in a room
 	chats   []received         // what Telegram, Discord and Slack were sent
+	updates []map[string]any   // what was sent to the shared Telegram bot
 	access  map[string]bool
 	refresh map[string]bool
 	n       int
@@ -113,7 +118,7 @@ func main() {
 	f := &fake{
 		httpAddr: getenv("E2E_MAIL_HTTP", "127.0.0.1:9100"),
 		codes:    map[string]*signIn{}, access: map[string]bool{}, refresh: map[string]bool{},
-		joined: map[string]bool{},
+		joined: map[string]bool{}, invited: map[string]bool{},
 	}
 	// Outlook takes no password over IMAP: this one is never told to anyone.
 	f.user = imapmemserver.NewUser(address, random())
@@ -174,9 +179,13 @@ func main() {
 	mux.HandleFunc("GET /notify/received", f.received)
 	mux.HandleFunc("GET /_matrix/client/v3/account/whoami", f.matrixWhoami)
 	mux.HandleFunc("POST /_matrix/client/v3/join/{room}", f.matrixJoin)
+	mux.HandleFunc("GET /_matrix/client/v3/sync", f.matrixSync)
+	mux.HandleFunc("POST /notify/matrix/invite", f.matrixInvite)
 	mux.HandleFunc("PUT /_matrix/client/v3/rooms/{room}/send/m.room.message/{txn}", f.matrixSend)
 	mux.HandleFunc("GET /telegram/{bot}/getMe", f.telegramGetMe)
 	mux.HandleFunc("POST /telegram/{bot}/sendMessage", f.telegramSend)
+	mux.HandleFunc("GET /telegram/{bot}/getUpdates", f.telegramUpdates)
+	mux.HandleFunc("POST /notify/telegram/start", f.telegramStart)
 	mux.HandleFunc("POST /discord/{name}", f.chatHook)
 	mux.HandleFunc("POST /slack/{name}", f.chatHook)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
@@ -492,6 +501,40 @@ func (f *fake) telegramSend(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "result": map[string]any{"message_id": 1}})
 }
 
+// telegramStart queues a message to the shared bot, as a person sending it
+// /start from a chat.
+func (f *fake) telegramStart(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Chat int64  `json:"chat"`
+		Text string `json:"text"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&in); err != nil {
+		http.Error(w, "want JSON", http.StatusBadRequest)
+		return
+	}
+	f.mu.Lock()
+	f.updates = append(f.updates, map[string]any{
+		"update_id": len(f.updates) + 1,
+		"message":   map[string]any{"text": in.Text, "chat": map[string]any{"id": in.Chat}},
+	})
+	f.mu.Unlock()
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// telegramUpdates hands the shared bot what was sent to it from offset on.
+func (f *fake) telegramUpdates(w http.ResponseWriter, r *http.Request) {
+	if telegramBot(r) != "shared" {
+		telegramError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	var offset int
+	_, _ = fmt.Sscan(r.URL.Query().Get("offset"), &offset)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	from := min(max(offset-1, 0), len(f.updates))
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "result": append([]map[string]any{}, f.updates[from:]...)})
+}
+
 // chatHook is a Discord or Slack incoming webhook: Discord answers 204 and
 // refuses with 401, Slack answers "ok" and refuses with 403.
 func (f *fake) chatHook(w http.ResponseWriter, r *http.Request) {
@@ -550,16 +593,64 @@ func (f *fake) matrixWhoami(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"user_id": user})
 }
 
-func (f *fake) matrixJoin(w http.ResponseWriter, r *http.Request) {
+// matrixInvite invites the shared bot to a room, as a person would in their
+// Matrix app.
+func (f *fake) matrixInvite(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Room string `json:"room"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&in); err != nil || in.Room == "" {
+		http.Error(w, "want a room", http.StatusBadRequest)
+		return
+	}
+	f.mu.Lock()
+	f.invited[in.Room] = true
+	f.mu.Unlock()
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// matrixSync lists the rooms an account is in and the ones it is invited to;
+// nothing else of a real sync.
+func (f *fake) matrixSync(w http.ResponseWriter, r *http.Request) {
 	user := matrixUser(r)
 	if user == "" {
 		matrixError(w, http.StatusUnauthorized, "M_UNKNOWN_TOKEN")
 		return
 	}
 	f.mu.Lock()
-	f.joined[user] = true
-	f.mu.Unlock()
-	writeJSON(w, http.StatusOK, map[string]string{"room_id": r.PathValue("room")})
+	defer f.mu.Unlock()
+	join, invite := map[string]any{}, map[string]any{}
+	for k := range f.joined {
+		if room, ok := strings.CutPrefix(k, user+" "); ok {
+			join[room] = map[string]any{}
+		}
+	}
+	if user == "@cloudbank:matrix.example" {
+		for room := range f.invited {
+			if !f.joined[user+" "+room] {
+				invite[room] = map[string]any{}
+			}
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"next_batch": "s1", "rooms": map[string]any{"join": join, "invite": invite}})
+}
+
+// matrixJoin lets an account into a room; the shared bot needs an invitation.
+func (f *fake) matrixJoin(w http.ResponseWriter, r *http.Request) {
+	user := matrixUser(r)
+	if user == "" {
+		matrixError(w, http.StatusUnauthorized, "M_UNKNOWN_TOKEN")
+		return
+	}
+	room := r.PathValue("room")
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if user == "@cloudbank:matrix.example" && !f.invited[room] {
+		matrixError(w, http.StatusForbidden, "M_FORBIDDEN")
+		return
+	}
+	f.joined[user+" "+room] = true
+	writeJSON(w, http.StatusOK, map[string]string{"room_id": room})
 }
 
 // matrixSend takes a message from an account in the room: the shared bot is
@@ -580,7 +671,7 @@ func (f *fake) matrixSend(w http.ResponseWriter, r *http.Request) {
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if user == "@cloudbank:matrix.example" && !f.joined[user] {
+	if user == "@cloudbank:matrix.example" && !f.joined[user+" "+r.PathValue("room")] {
 		matrixError(w, http.StatusForbidden, "M_FORBIDDEN")
 		return
 	}
