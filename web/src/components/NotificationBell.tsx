@@ -14,7 +14,14 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import { IconAlertTriangle, IconBell, IconCalendarDue, IconSettings } from "@tabler/icons-react";
+import {
+  IconAlertTriangle,
+  IconBell,
+  IconCalendarDue,
+  IconRefresh,
+  IconSettings,
+  IconShieldLock,
+} from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -37,10 +44,19 @@ import { bellSection, bellWhen, type BellSection } from "./notificationTime";
 
 const NOTIFICATIONS_KEY = ["notifications"] as const;
 
+const problem = <IconAlertTriangle size={16} color="var(--cb-attention)" />;
+const security = <IconShieldLock size={16} color="var(--mantine-color-dimmed)" />;
+
 const KIND_ICON: Record<NotificationKind, React.ReactNode> = {
-  mail_stopped: <IconAlertTriangle size={16} color="var(--cb-attention)" />,
-  mail_unrecognized: <IconAlertTriangle size={16} color="var(--cb-attention)" />,
+  new_device: security,
+  two_factor_off: security,
+  new_api_token: security,
+  bank_sync_failed: problem,
+  consent_expiring: problem,
+  mail_stopped: problem,
+  mail_unrecognized: problem,
   bills: <IconCalendarDue size={16} color="var(--mantine-color-dimmed)" />,
+  new_version: <IconRefresh size={16} color="var(--mantine-color-dimmed)" />,
 };
 
 const SECTIONS: BellSection[] = ["today", "week", "earlier"];

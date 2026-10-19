@@ -67,6 +67,8 @@ type Service struct {
 
 	mu   sync.Mutex
 	last *result
+	// notify announces a newer build to the admins; nil announces nothing.
+	notify Notifier
 }
 
 type result struct {
@@ -174,13 +176,18 @@ func (s *Service) Check(ctx context.Context) (Status, error) {
 	if err != nil {
 		return Status{}, err
 	}
-	if active {
-		r := s.fetch(ctx)
-		s.mu.Lock()
-		s.last = &r
-		s.mu.Unlock()
+	if !active {
+		return s.Status(ctx)
 	}
-	return s.Status(ctx)
+	r := s.fetch(ctx)
+	s.mu.Lock()
+	s.last = &r
+	s.mu.Unlock()
+	st, err := s.Status(ctx)
+	if err == nil {
+		s.announce(ctx, st)
+	}
+	return st, err
 }
 
 type published struct {

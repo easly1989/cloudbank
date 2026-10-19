@@ -422,6 +422,7 @@ paths:
     put:
       operationId: setNotificationPreference
       summary: Turn one event on or off on one channel
+      description: A security event cannot leave the bell (inapp); turning it off there is refused with always_on.
       requestBody:
         required: true
         content:
@@ -3662,7 +3663,7 @@ components:
       required: [category]
     NotificationKind:
       type: string
-      enum: [mail_stopped, mail_unrecognized, bills]
+      enum: [new_device, two_factor_off, new_api_token, bank_sync_failed, consent_expiring, mail_stopped, mail_unrecognized, bills, new_version]
     NotificationChannel:
       type: string
       enum: [inapp, push, email, matrix, telegram, discord, slack, ntfy, gotify, webhook]
@@ -3713,7 +3714,7 @@ components:
       type: object
       properties:
         kind: { $ref: "#/components/schemas/NotificationKind" }
-        group: { type: string, enum: [problems, bills] }
+        group: { type: string, enum: [security, problems, bills, admin], description: "Security always reaches the bell; admin is listed for administrators only." }
         channels:
           type: object
           properties:

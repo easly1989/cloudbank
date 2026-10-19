@@ -5,7 +5,8 @@
 // names and the beta marks; a test on each side checks both against the
 // translation files in web/src/i18n/locales/, so a language cannot be half
 // added. Adding one is: its translation file, a row there, a row here, the
-// push phrases (internal/push and the bank-mail alerts in internal/mailingest)
+// notification phrases (internal/notify, internal/push and the alerts in
+// internal/mailingest, internal/auth, internal/banksync and internal/updates)
 // and the demo's words (internal/demo).
 package locale
 

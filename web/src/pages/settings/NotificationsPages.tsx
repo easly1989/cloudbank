@@ -219,9 +219,14 @@ function ChannelEvents({ id, active }: { id: NotificationChannel; active: boolea
       {groups.map((g, i) => (
         <Fragment key={g}>
           {i > 0 && <Divider mt="xs" />}
-          <Text fz={13} fw={600} px="md" pt="sm" pb={4}>
+          <Text fz={13} fw={600} px="md" pt="sm" pb={g === "security" && id === "inapp" ? 0 : 4}>
             {t(`notif.group.${g}`)}
           </Text>
+          {g === "security" && id === "inapp" && (
+            <Text fz={12} c="dimmed" px="md" pb={4}>
+              {t("notif.securityAlways")}
+            </Text>
+          )}
           {events
             .filter((e) => e.group === g)
             .map((e) => (
@@ -229,7 +234,8 @@ function ChannelEvents({ id, active }: { id: NotificationChannel; active: boolea
                 key={e.kind}
                 px="md"
                 py="xs"
-                disabled={!active}
+                // A security event always reaches the bell (#690).
+                disabled={!active || (e.group === "security" && id === "inapp")}
                 checked={e.channels[id]}
                 onChange={(ev) => save.mutate({ kind: e.kind, on: ev.currentTarget.checked })}
                 label={t(`notif.kind.${e.kind}`)}

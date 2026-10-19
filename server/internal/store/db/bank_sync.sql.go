@@ -344,6 +344,50 @@ func (q *Queries) ListBankSyncRuns(ctx context.Context, arg ListBankSyncRunsPara
 	return items, nil
 }
 
+const listConsentConnections = `-- name: ListConsentConnections :many
+SELECT id, wallet_id, name, aspsp_name, valid_until FROM bank_connections
+WHERE provider = 'enablebanking' AND valid_until <> ''
+ORDER BY id
+`
+
+type ListConsentConnectionsRow struct {
+	ID         int64
+	WalletID   int64
+	Name       string
+	AspspName  string
+	ValidUntil string
+}
+
+// Every Enable Banking connection with the date its bank consent ends.
+func (q *Queries) ListConsentConnections(ctx context.Context) ([]ListConsentConnectionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listConsentConnections)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListConsentConnectionsRow{}
+	for rows.Next() {
+		var i ListConsentConnectionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WalletID,
+			&i.Name,
+			&i.AspspName,
+			&i.ValidUntil,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const pruneBankSyncRuns = `-- name: PruneBankSyncRuns :exec
 DELETE FROM bank_sync_runs
 WHERE bank_sync_runs.connection_id = ?

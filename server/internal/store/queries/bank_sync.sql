@@ -76,3 +76,9 @@ ON CONFLICT (wallet_id) DO UPDATE SET
 
 -- name: DeletePluggyConfig :exec
 DELETE FROM bank_pluggy_config WHERE wallet_id = ?;
+
+-- name: ListConsentConnections :many
+-- Every Enable Banking connection with the date its bank consent ends.
+SELECT id, wallet_id, name, aspsp_name, valid_until FROM bank_connections
+WHERE provider = 'enablebanking' AND valid_until <> ''
+ORDER BY id;
