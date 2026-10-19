@@ -1,7 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 // The email and webhook channels (#686), against the pretend SMTP server and
-// webhook receiver in ../server/cmd/e2e-mail. It runs after the other mail
+// webhook receiver in ../server/cmd/e2e-mail; an address is confirmed with the
+// code mailed to it (#716). It runs after the other mail
 // specs, on the server they set up; the administrator may send to this
 // machine, which is how the webhook reaches the receiver at all.
 test.describe.configure({ mode: "serial" });
@@ -32,11 +33,15 @@ async function received(page: Page) {
   return (await res.json()) as { mails: Received[]; hooks: Received[] };
 }
 
-// The channel's page has one card with a Save button: its connection.
-const card = (page: Page) =>
-  page
-    .locator(".mantine-Card-root")
-    .filter({ has: page.getByRole("button", { name: "Save" }) });
+// The channel's page opens with its connection card.
+const card = (page: Page) => page.locator(".mantine-Card-root").first();
+
+// Types a confirmation code into the six boxes and confirms it (#716).
+async function typeCode(page: Page, code: string) {
+  await page.locator(".mantine-PinInput-input").first().click();
+  await page.keyboard.type(code);
+  await page.getByRole("button", { name: "Confirm" }).click();
+}
 
 test("an email channel sends its test through the mail server", async ({
   page,
@@ -49,6 +54,17 @@ test("an email channel sends its test through the mail server", async ({
   const email = card(page);
   await email.getByLabel("Address").fill(ADDRESS);
   await email.getByRole("button", { name: "Save" }).click();
+  await expect(email.getByText(`We sent a code to ${ADDRESS}`)).toBeVisible();
+  await expect(email.getByRole("button", { name: "Send a test" })).toHaveCount(
+    0,
+  );
+  const mail = (await received(page)).mails.findLast((m) => m.to === ADDRESS);
+  const code = /\b\d{6}\b/.exec(mail?.subject ?? "")?.[0] ?? "";
+  expect(code).toMatch(/^\d{6}$/);
+  await typeCode(page, code === "000000" ? "111111" : "000000");
+  await expect(page.getByText("That is not the code.")).toBeVisible();
+  await typeCode(page, code);
+  await expect(page.getByText("Confirmed", { exact: true })).toBeVisible();
   await email.getByRole("button", { name: "Send a test" }).click();
   await expect(page.getByText("Test sent")).toBeVisible();
   await expect(email.getByText(/^Last delivered: /)).toBeVisible();

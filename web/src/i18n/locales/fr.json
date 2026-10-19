@@ -1734,7 +1734,8 @@
       "unauthorized": "identifiants refusés",
       "rejected": "message refusé",
       "unreachable": "injoignable",
-      "local": "adresse du réseau local non autorisée"
+      "local": "adresse du réseau local non autorisée",
+      "limited": "limite horaire atteinte, le reste suit dans l’heure"
     },
     "localNetwork": "Seul un administrateur peut envoyer vers une adresse du réseau local.",
     "invalidAddress": "Cette adresse n’est pas valide.",
@@ -1744,13 +1745,9 @@
     "webhookSecret": "Secret de signature",
     "secretSaved": "Enregistré",
     "optional": "Facultatif",
-    "matrixHintShared": "Un message dans un salon Matrix. Invitez {{bot}} dans le salon, puis collez ici l’ID du salon.",
-    "matrixHintSharedNoBot": "Un message dans un salon Matrix. Invitez dans le salon le bot de cette installation (l’administrateur connaît son adresse), puis collez ici l’ID du salon.",
     "matrixServer": "Serveur d’accueil",
     "matrixRoom": "ID du salon",
     "matrixToken": "Jeton d’accès du bot",
-    "telegramHintShared": "Un message de {{bot}}. Envoyez-lui /start, puis collez ici l’ID de votre conversation.",
-    "telegramHintSharedNoBot": "Un message du bot de cette installation (l’administrateur connaît son nom). Envoyez-lui /start, puis collez ici l’ID de votre conversation.",
     "telegramChat": "ID de la conversation",
     "telegramToken": "Jeton du bot",
     "name": {
@@ -1774,7 +1771,8 @@
         "off": "Désactivées sur cet appareil",
         "unsupported": "Non prises en charge par ce navigateur",
         "denied": "Bloquées dans ce navigateur"
-      }
+      },
+      "pending": "En attente de confirmation"
     },
     "eventCount": "Événements : {{on}} sur {{total}}",
     "connection": "Connexion",
@@ -1802,7 +1800,31 @@
     "telegramTopicHelp": "Facultatif : dans un groupe avec des sujets, celui où arrivent les messages.",
     "telegramTopicInvalid": "Chiffres uniquement.",
     "telegramSilent": "Envoyer en silence",
-    "telegramSilentHelp": "Les messages arrivent sans son."
+    "telegramSilentHelp": "Les messages arrivent sans son.",
+    "emailCodeSent": "Nous avons envoyé un code à {{address}}. Saisissez-le ici pour activer l’e-mail : d’ici là, rien n’est envoyé.",
+    "code": "Code de confirmation",
+    "confirm": "Confirmer",
+    "codeValid": "Le code est valable 15 minutes.",
+    "resend": "En envoyer un autre",
+    "codeResent": "Nouveau code envoyé",
+    "confirmed": "Confirmé",
+    "wrongCode": "Ce n’est pas le bon code.",
+    "codeExpired": "Le code a expiré ou a été essayé trop de fois. Demandez-en un autre.",
+    "codeFailed": "Le code n’a pas pu être envoyé : {{reason}}",
+    "notInvited": "Le bot n’a pas d’invitation dans ce salon. Invitez-le, puis réessayez.",
+    "matrixStepInvite": "Invitez {{bot}} dans le salon.",
+    "matrixStepInviteNoBot": "Invitez dans le salon le bot de cette installation (l’administrateur connaît son adresse).",
+    "matrixStepRoom": "Collez l’ID du salon (il commence par !).",
+    "matrixStepCode": "Le bot est entré et a écrit un code dans le salon : saisissez-le ici.",
+    "link": "Connecter",
+    "linkedTo": "Connecté : {{target}}",
+    "telegramSharedIntro": "Le bot de cette installation est {{bot}}. Ouvrez Telegram avec le bouton et appuyez sur Démarrer : CloudBank reconnaît la conversation tout seul, sans ID à copier.",
+    "telegramSharedIntroNoBot": "CloudBank ne parvient pas à joindre Telegram pour le moment et ne peut pas préparer le lien vers son bot. Réessayez dans un moment.",
+    "telegramLinkChat": "Connecter votre conversation",
+    "telegramLinkGroup": "Ajouter à un groupe",
+    "telegramWaiting": "En attente de votre appui sur Démarrer dans Telegram… Le lien est valable 15 minutes.",
+    "telegramNoLink": "Le lien a expiré, ou Telegram ne répond pas.",
+    "telegramNewLink": "Nouveau lien"
   },
   "ai": {
     "title": "IA (avec votre propre clé)",
@@ -2997,6 +3019,7 @@
     "host_not_public": "Ce serveur n’est pas sur internet : CloudBank ne se connecte pas à son propre réseau.",
     "unreachable": "Le serveur de messagerie ne répond pas : vérifiez son nom et son port.",
     "tls_failed": "La connexion au serveur de messagerie n’a pas pu être chiffrée.",
-    "ai_not_configured": "Configurez d’abord l’IA, dans Paramètres › IA."
+    "ai_not_configured": "Configurez d’abord l’IA, dans Paramètres › IA.",
+    "hourly_limit": "Trop de messages cette heure-ci. Réessayez plus tard."
   }
 }

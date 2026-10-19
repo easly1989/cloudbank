@@ -252,11 +252,12 @@ func TestWebhookSender(t *testing.T) {
 	}
 }
 
-// A pretend homeserver: it knows two tokens; the shared bot is only invited
-// to the room until it joins.
+// A pretend homeserver with one room: it knows two tokens; the shared bot
+// may join the room only once invited, and posts in it only once joined.
 type homeserver struct {
-	joined map[string]bool
-	msgs   []string
+	invited bool
+	joined  map[string]bool
+	msgs    []string
 }
 
 func (h *homeserver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -269,7 +270,21 @@ func (h *homeserver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case r.URL.Path == "/_matrix/client/v3/account/whoami":
 		_, _ = w.Write([]byte(`{"user_id":"@` + token + `:hs.example"}`))
 		return
+	case r.URL.Path == "/_matrix/client/v3/sync":
+		switch {
+		case h.joined[token]:
+			_, _ = w.Write([]byte(`{"rooms":{"join":{"!room:hs.example":{}}}}`))
+		case h.invited:
+			_, _ = w.Write([]byte(`{"rooms":{"invite":{"!room:hs.example":{}}}}`))
+		default:
+			_, _ = w.Write([]byte(`{"rooms":{}}`))
+		}
+		return
 	case r.Method == http.MethodPost && r.URL.Path == "/_matrix/client/v3/join/!room:hs.example":
+		if token == "bot" && !h.invited {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
 		h.joined[token] = true
 	case r.Method == http.MethodPut && strings.HasPrefix(r.URL.Path, "/_matrix/client/v3/rooms/!room:hs.example/send/m.room.message/"):
 		if token == "bot" && !h.joined[token] {
@@ -285,8 +300,9 @@ func (h *homeserver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte("{}"))
 }
 
-// The shared bot accepts its invitation when it is not in the room yet; a
-// person's own bot posts with its token; a wrong token is a 401.
+// The shared bot joins only a room it was invited to, and never on its own
+// when a message is refused; a person's own bot accepts its invitation when
+// it is not in the room yet; a wrong token is a 401.
 func TestMatrixSender(t *testing.T) {
 	hs := &homeserver{joined: map[string]bool{}}
 	srv := httptest.NewServer(hs)
@@ -298,6 +314,20 @@ func TestMatrixSender(t *testing.T) {
 	if bot := m.BotUser(ctx); bot != "@bot:hs.example" {
 		t.Fatalf("bot = %q", bot)
 	}
+	var de *DeliveryError
+	if err := m.Send(ctx, Recipient{Target: "!room:hs.example"}, e); !errors.As(err, &de) || de.Error() != "403" {
+		t.Fatalf("shared bot not in the room = %v", err)
+	}
+	if err := m.Admit(ctx, "!room:hs.example"); !errors.Is(err, ErrNotInvited) {
+		t.Fatalf("admit without an invitation = %v", err)
+	}
+	hs.invited = true
+	if err := m.Admit(ctx, "!room:hs.example"); err != nil || !hs.joined["bot"] {
+		t.Fatalf("admit with an invitation = %v", err)
+	}
+	if err := m.Admit(ctx, "!room:hs.example"); err != nil {
+		t.Fatalf("admit once in = %v", err)
+	}
 	if err := m.Send(ctx, Recipient{Target: "!room:hs.example"}, e); err != nil {
 		t.Fatal(err)
 	}
@@ -308,7 +338,6 @@ func TestMatrixSender(t *testing.T) {
 	if strings.Join(hs.msgs, "|") != strings.Join(want, "|") {
 		t.Fatalf("messages = %q", hs.msgs)
 	}
-	var de *DeliveryError
 	err := m.Send(ctx, Recipient{Target: "!room:hs.example", Server: srv.URL, Secret: "wrong", LocalOK: true}, e)
 	if !errors.As(err, &de) || de.Error() != "401" {
 		t.Fatalf("wrong token = %v", err)
@@ -359,14 +388,17 @@ func TestSaveMatrixChannel(t *testing.T) {
 		}
 	}
 
-	f.svc.SetSender(ChannelMatrix, NewMatrixSender(&MatrixBot{Homeserver: "https://hs.example", Token: "bot"}))
+	hs := &homeserver{invited: true, joined: map[string]bool{}}
+	srv := httptest.NewServer(hs)
+	defer srv.Close()
+	f.svc.SetSender(ChannelMatrix, NewMatrixSender(&MatrixBot{Homeserver: srv.URL, Token: "bot"}))
 	// Back to the shared bot: the person's token is dropped.
 	if err := save(false, ChannelInput{Target: room, Server: ptr("")}); err != nil {
 		t.Fatal(err)
 	}
 	chans, _ := f.svc.AddressedChannels(ctx, u.ID)
 	for _, c := range chans {
-		if c.Channel == ChannelMatrix && (!c.Shared || c.Server != "" || c.HasSecret || c.Target != "!room:hs.example") {
+		if c.Channel == ChannelMatrix && (!c.Shared || c.Server != "" || c.HasSecret || c.Target != "!room:hs.example" || !c.Pending) {
 			t.Fatalf("matrix info = %+v", c)
 		}
 	}

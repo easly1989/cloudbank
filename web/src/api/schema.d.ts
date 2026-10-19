@@ -449,7 +449,7 @@ export interface paths {
         get?: never;
         /**
          * Set the current user's address on a channel
-         * @description Omit target to keep the stored one (a webhook's URL is never sent back); omit secret to keep the stored signing secret, send "" to remove it. A webhook or a Matrix homeserver on the local network may be saved only by an administrator: anyone else gets 400 local_network. Matrix takes a room ID as target and, without a shared bot, a homeserver and an access token; send server "" to post as the shared bot. Telegram takes a chat ID (or @channel) as target and, without a shared bot, the bot's token as secret. Discord and Slack take their incoming webhook URL as target.
+         * @description Omit target to keep the stored one (a webhook's URL is never sent back); omit secret to keep the stored signing secret, send "" to remove it. A webhook or a Matrix homeserver on the local network may be saved only by an administrator: anyone else gets 400 local_network. Matrix takes a room ID as target and, without a shared bot, a homeserver and an access token; send server "" to post as the shared bot. Telegram takes the bot's token as secret and a chat ID (or @channel) as target; with secret "" it uses the shared bot, ignores the target and answers with a link that starts the bot (the chat is whichever one uses it). Discord and Slack take their incoming webhook URL as target. A new address reached through the installation's resources (email, the shared Matrix or Telegram bot) stays pending until confirmed: email and Matrix are sent a 6-digit code now, and when it cannot be sent nothing is saved (502 delivery_failed, 409 not_invited when the shared Matrix bot has no invitation to the room, 429 rate_limited or hourly_limit).
          */
         put: operations["saveNotificationChannel"];
         post?: never;
@@ -476,6 +476,50 @@ export interface paths {
          * @description The outcome is also written on the channel: a failure shows as its last error, a success clears it. A second test to the same address within ten seconds gets 429 rate_limited.
          */
         post: operations["testNotificationChannel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/channels/{channel}/code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel: "email" | "matrix" | "telegram";
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a pending channel a new confirmation code
+         * @description Replaces the code: mailed, posted in the Matrix room, or a new Telegram link. Not twice within ten seconds.
+         */
+        post: operations["resendNotificationCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/channels/{channel}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel: "email" | "matrix";
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm a pending channel with the code it was sent
+         * @description A code is good for 15 minutes and 5 tries; after that the answer is 410 code_expired and a new code is needed.
+         */
+        post: operations["confirmNotificationChannel"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3859,7 +3903,13 @@ export interface components {
             /** @description The shared bot's Matrix ID or Telegram @username; empty when unknown. */
             bot: string;
             options: components["schemas"]["NotificationChannelOptions"];
-            /** @description Empty after a success; else the status or the reason of the last failure. */
+            /** @description The address waits for its confirmation code and gets nothing until then. */
+            pending: boolean;
+            /** @description Telegram's shared bot while pending: the link that starts it with the code in a private chat; absent once expired. */
+            link?: string;
+            /** @description The same link */
+            groupLink?: string;
+            /** @description Empty after a success; else the status or the reason of the last failure (limited: the hourly cap held the rest back). */
             lastError: string;
             /** Format: date-time */
             lastErrorAt: string | null;
@@ -6087,6 +6137,33 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            /** @description The shared Matrix bot was not invited to the room. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description A code went out moments ago */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The code could not be sent; the message is the status or the reason. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     deleteNotificationChannel: {
@@ -6137,8 +6214,103 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
-            /** @description A test went to this address moments ago. */
+            /** @description A test went to this address moments ago (rate_limited) */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    resendNotificationCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel: "email" | "matrix" | "telegram";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sent. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description The shared Matrix bot was not invited to the room. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description A code went out moments ago */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The code could not be sent. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    confirmNotificationChannel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel: "email" | "matrix";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Confirmed; the channel sends from now on. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not the code (wrong_code). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description The code expired or was tried too often (code_expired). */
+            410: {
                 headers: {
                     [name: string]: unknown;
                 };

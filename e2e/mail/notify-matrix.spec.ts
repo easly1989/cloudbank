@@ -2,8 +2,10 @@ import { expect, test, type Page } from "@playwright/test";
 
 // The Matrix channel (#687), against the pretend homeserver in
 // ../server/cmd/e2e-mail. The installation has a shared bot
-// (CB_MATRIX_HOMESERVER, CB_MATRIX_TOKEN); a person may still post as a bot of
-// their own, saved through the API here since the page offers the shared one.
+// (CB_MATRIX_HOMESERVER, CB_MATRIX_TOKEN), which joins only a room it was
+// invited to and proves the room with a code (#716); a person may still post
+// as a bot of their own, saved through the API here since the page offers the
+// shared one.
 // It runs after the other mail specs, on the server they set up.
 test.describe.configure({ mode: "serial" });
 
@@ -29,32 +31,56 @@ async function messages(page: Page) {
   return ((await res.json()) as { matrix: Message[] }).matrix;
 }
 
-// The channel's page has one card with a Save button: its connection.
-const card = (page: Page) =>
-  page
-    .locator(".mantine-Card-root")
-    .filter({ has: page.getByRole("button", { name: "Save" }) });
+// The channel's page opens with its connection card.
+const card = (page: Page) => page.locator(".mantine-Card-root").first();
 
-test("with the shared bot, the room is all it takes", async ({ page }) => {
+// Types a confirmation code into the six boxes and confirms it (#716).
+async function typeCode(page: Page, code: string) {
+  await page.locator(".mantine-PinInput-input").first().click();
+  await page.keyboard.type(code);
+  await page.getByRole("button", { name: "Confirm" }).click();
+}
+
+test("the shared bot joins only a room it was invited to, and its code connects it", async ({
+  page,
+}) => {
   await signIn(page);
   await page.goto("/settings/notifications/matrix");
   const matrix = card(page);
   await expect(
-    matrix.getByText("Invite @cloudbank:matrix.example to the room"),
+    matrix.getByText("Invite @cloudbank:matrix.example to the room."),
   ).toBeVisible();
   await expect(matrix.getByLabel("Bot's access token")).toHaveCount(0);
   await matrix.getByLabel("Room ID").fill(ROOM);
-  await matrix.getByRole("button", { name: "Save" }).click();
-  // The bot was only invited: it joins the room, then posts.
-  await matrix.getByRole("button", { name: "Send a test" }).click();
-  await expect(page.getByText("Test sent")).toBeVisible();
-  await expect(page.getByRole("checkbox", { name: "Bills due" })).toBeEnabled();
+  await matrix.getByRole("button", { name: "Connect" }).click();
+  await expect(
+    page.getByText("The bot has no invitation to that room."),
+  ).toBeVisible();
+  const before = (await messages(page)).length;
 
+  // Invited, as one would in a Matrix app: the bot joins and writes a code.
+  await page.request.post(`${FAKE}/notify/matrix/invite`, {
+    data: { room: ROOM },
+  });
+  await matrix.getByRole("button", { name: "Connect" }).click();
+  await expect(
+    matrix.getByText("The bot joined and wrote a code in the room"),
+  ).toBeVisible();
   const got = await messages(page);
+  expect(got).toHaveLength(before + 1);
   expect(got.at(-1)).toMatchObject({
     room: ROOM,
     sender: "@cloudbank:matrix.example",
   });
+  await expect(
+    page.getByRole("checkbox", { name: "Bills due" }),
+  ).toBeDisabled();
+  await typeCode(page, /\b\d{6}\b/.exec(got.at(-1)?.body ?? "")?.[0] ?? "");
+  await expect(page.getByText("Confirmed", { exact: true })).toBeVisible();
+  await expect(matrix.getByText(`Connected: ${ROOM}`)).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "Bills due" })).toBeEnabled();
+  await matrix.getByRole("button", { name: "Send a test" }).click();
+  await expect(page.getByText("Test sent")).toBeVisible();
 });
 
 test("a bot of one's own posts with its token, which never comes back", async ({

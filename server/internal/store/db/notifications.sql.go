@@ -10,6 +10,25 @@ import (
 	"database/sql"
 )
 
+const countNotificationCodeAttempt = `-- name: CountNotificationCodeAttempt :execrows
+UPDATE notification_channels SET code_attempts = code_attempts + 1
+WHERE user_id = ? AND channel = ? AND verified = 0 AND code_attempts < ?
+`
+
+type CountNotificationCodeAttemptParams struct {
+	UserID       int64
+	Channel      string
+	CodeAttempts int64
+}
+
+func (q *Queries) CountNotificationCodeAttempt(ctx context.Context, arg CountNotificationCodeAttemptParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, countNotificationCodeAttempt, arg.UserID, arg.Channel, arg.CodeAttempts)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const countUnreadNotifications = `-- name: CountUnreadNotifications :one
 SELECT COUNT(*) FROM notifications n
 WHERE n.user_id = ?1 AND n.read_at IS NULL
@@ -47,8 +66,30 @@ func (q *Queries) DeleteNotificationDelivery(ctx context.Context, id int64) erro
 	return err
 }
 
+const findNotificationCode = `-- name: FindNotificationCode :one
+SELECT user_id, code_expires_at FROM notification_channels
+WHERE channel = ? AND code_hash = ? AND verified = 0
+`
+
+type FindNotificationCodeParams struct {
+	Channel  string
+	CodeHash string
+}
+
+type FindNotificationCodeRow struct {
+	UserID        int64
+	CodeExpiresAt sql.NullString
+}
+
+func (q *Queries) FindNotificationCode(ctx context.Context, arg FindNotificationCodeParams) (FindNotificationCodeRow, error) {
+	row := q.db.QueryRowContext(ctx, findNotificationCode, arg.Channel, arg.CodeHash)
+	var i FindNotificationCodeRow
+	err := row.Scan(&i.UserID, &i.CodeExpiresAt)
+	return i, err
+}
+
 const getNotificationChannel = `-- name: GetNotificationChannel :one
-SELECT user_id, channel, target, secret, local_ok, last_error, last_error_at, last_ok_at, server, options FROM notification_channels WHERE user_id = ? AND channel = ?
+SELECT user_id, channel, target, secret, local_ok, last_error, last_error_at, last_ok_at, server, options, verified, code_hash, code_link, code_expires_at, code_attempts FROM notification_channels WHERE user_id = ? AND channel = ?
 `
 
 type GetNotificationChannelParams struct {
@@ -70,6 +111,11 @@ func (q *Queries) GetNotificationChannel(ctx context.Context, arg GetNotificatio
 		&i.LastOkAt,
 		&i.Server,
 		&i.Options,
+		&i.Verified,
+		&i.CodeHash,
+		&i.CodeLink,
+		&i.CodeExpiresAt,
+		&i.CodeAttempts,
 	)
 	return i, err
 }
@@ -161,7 +207,7 @@ func (q *Queries) ListDueNotificationDeliveries(ctx context.Context, arg ListDue
 }
 
 const listNotificationChannels = `-- name: ListNotificationChannels :many
-SELECT user_id, channel, target, secret, local_ok, last_error, last_error_at, last_ok_at, server, options FROM notification_channels WHERE user_id = ?
+SELECT user_id, channel, target, secret, local_ok, last_error, last_error_at, last_ok_at, server, options, verified, code_hash, code_link, code_expires_at, code_attempts FROM notification_channels WHERE user_id = ?
 `
 
 func (q *Queries) ListNotificationChannels(ctx context.Context, userID int64) ([]NotificationChannel, error) {
@@ -184,6 +230,11 @@ func (q *Queries) ListNotificationChannels(ctx context.Context, userID int64) ([
 			&i.LastOkAt,
 			&i.Server,
 			&i.Options,
+			&i.Verified,
+			&i.CodeHash,
+			&i.CodeLink,
+			&i.CodeExpiresAt,
+			&i.CodeAttempts,
 		); err != nil {
 			return nil, err
 		}
@@ -345,6 +396,31 @@ func (q *Queries) RescheduleNotificationDelivery(ctx context.Context, arg Resche
 	return err
 }
 
+const setNotificationChannelCode = `-- name: SetNotificationChannelCode :exec
+UPDATE notification_channels
+SET code_hash = ?, code_link = ?, code_expires_at = ?, code_attempts = 0
+WHERE user_id = ? AND channel = ? AND verified = 0
+`
+
+type SetNotificationChannelCodeParams struct {
+	CodeHash      string
+	CodeLink      string
+	CodeExpiresAt sql.NullString
+	UserID        int64
+	Channel       string
+}
+
+func (q *Queries) SetNotificationChannelCode(ctx context.Context, arg SetNotificationChannelCodeParams) error {
+	_, err := q.db.ExecContext(ctx, setNotificationChannelCode,
+		arg.CodeHash,
+		arg.CodeLink,
+		arg.CodeExpiresAt,
+		arg.UserID,
+		arg.Channel,
+	)
+	return err
+}
+
 const setNotificationChannelError = `-- name: SetNotificationChannelError :exec
 UPDATE notification_channels
 SET last_error = ?, last_error_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
@@ -401,22 +477,31 @@ func (q *Queries) SetNotificationPref(ctx context.Context, arg SetNotificationPr
 }
 
 const upsertNotificationChannel = `-- name: UpsertNotificationChannel :exec
-INSERT INTO notification_channels (user_id, channel, target, secret, server, options, local_ok)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO notification_channels (
+    user_id, channel, target, secret, server, options, local_ok,
+    verified, code_hash, code_link, code_expires_at, code_attempts)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (user_id, channel) DO UPDATE SET
     target = excluded.target, secret = excluded.secret, server = excluded.server,
     options = excluded.options, local_ok = excluded.local_ok,
+    verified = excluded.verified, code_hash = excluded.code_hash, code_link = excluded.code_link,
+    code_expires_at = excluded.code_expires_at, code_attempts = excluded.code_attempts,
     last_error = '', last_error_at = NULL
 `
 
 type UpsertNotificationChannelParams struct {
-	UserID  int64
-	Channel string
-	Target  string
-	Secret  string
-	Server  string
-	Options string
-	LocalOk int64
+	UserID        int64
+	Channel       string
+	Target        string
+	Secret        string
+	Server        string
+	Options       string
+	LocalOk       int64
+	Verified      int64
+	CodeHash      string
+	CodeLink      string
+	CodeExpiresAt sql.NullString
+	CodeAttempts  int64
 }
 
 func (q *Queries) UpsertNotificationChannel(ctx context.Context, arg UpsertNotificationChannelParams) error {
@@ -428,6 +513,31 @@ func (q *Queries) UpsertNotificationChannel(ctx context.Context, arg UpsertNotif
 		arg.Server,
 		arg.Options,
 		arg.LocalOk,
+		arg.Verified,
+		arg.CodeHash,
+		arg.CodeLink,
+		arg.CodeExpiresAt,
+		arg.CodeAttempts,
 	)
+	return err
+}
+
+const verifyNotificationChannel = `-- name: VerifyNotificationChannel :exec
+UPDATE notification_channels
+SET verified = 1, code_hash = '', code_link = '', code_expires_at = NULL, code_attempts = 0,
+    target = COALESCE(?1, target)
+WHERE user_id = ?2 AND channel = ?3 AND verified = 0
+`
+
+type VerifyNotificationChannelParams struct {
+	Target  sql.NullString
+	UserID  int64
+	Channel string
+}
+
+// The code was right: the channel sends from now on. A Telegram chat linked
+// through the shared bot gets its target here.
+func (q *Queries) VerifyNotificationChannel(ctx context.Context, arg VerifyNotificationChannelParams) error {
+	_, err := q.db.ExecContext(ctx, verifyNotificationChannel, arg.Target, arg.UserID, arg.Channel)
 	return err
 }
