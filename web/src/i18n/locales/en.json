@@ -703,6 +703,32 @@
       "yearly": "Every year, around {{date}}",
       "seen_one": "{{count}} time since {{month}}, the last on {{date}}",
       "seen_other": "{{count}} times since {{month}}, the last on {{date}}"
+    },
+    "feed": {
+      "title": "Add to calendar",
+      "sub": "The due dates of {{wallet}} in your phone's calendar",
+      "intro": "A private address your phone's calendar reads by itself: each schedule shows on the day it is due, with its name and amount. Never an account balance.",
+      "create": "Create the address",
+      "explain": "Your calendar reads it by itself and updates when you change a schedule: each due date shows on its day, with its name and amount. Never an account balance.",
+      "address": "Calendar address",
+      "copy": "Copy the address",
+      "copied": "Copied",
+      "private": "Anyone with this address sees your due dates: do not share it.",
+      "subscribe": "Subscribe on this device",
+      "download": "Download .ics",
+      "google": "Google Calendar",
+      "googleHow": "On a computer: Other calendars › + › From URL, then paste the address. It shows on your phone too.",
+      "apple": "iPhone and Mac",
+      "appleHow": "Tap “Subscribe on this device”, or go to Settings › Apps › Calendar › Calendar Accounts › Add Account › Other › Add Subscribed Calendar and paste the address.",
+      "outlook": "Outlook",
+      "outlookHow": "Add calendar › Subscribe from web, then paste the address.",
+      "regenerate": "Regenerate the address",
+      "regenerateTitle": "Regenerate the address?",
+      "regenerateBody": "The current address stops working: every calendar subscribed to it has to be added again with the new one.",
+      "regenerateHint": "Regenerate it if the address reached someone else: the old one stops working.",
+      "off": "Turn off",
+      "offTitle": "Turn the address off?",
+      "offBody": "The calendars subscribed to it stop receiving your due dates."
     }
   },
   "tags": {

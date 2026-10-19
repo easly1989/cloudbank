@@ -703,6 +703,32 @@
       "yearly": "Cada año, hacia el {{date}}",
       "seen_one": "{{count}} vez desde {{month}}, la última el {{date}}",
       "seen_other": "{{count}} veces desde {{month}}, la última el {{date}}"
+    },
+    "feed": {
+      "title": "Añadir al calendario",
+      "sub": "Los vencimientos de {{wallet}} en el calendario del teléfono",
+      "intro": "Una dirección privada que el calendario del teléfono lee por sí solo: cada movimiento programado aparece el día en que vence, con su nombre y su importe. Nunca el saldo de una cuenta.",
+      "create": "Crear la dirección",
+      "explain": "El calendario la lee por sí solo y se actualiza cuando cambias un movimiento programado: cada vencimiento aparece en su día, con su nombre y su importe. Nunca el saldo de una cuenta.",
+      "address": "Dirección del calendario",
+      "copy": "Copiar la dirección",
+      "copied": "Copiada",
+      "private": "Quien tenga esta dirección ve tus vencimientos: no la compartas.",
+      "subscribe": "Suscribirse en este dispositivo",
+      "download": "Descargar .ics",
+      "google": "Google Calendar",
+      "googleHow": "Desde el ordenador: Otros calendarios › + › Desde URL y pega la dirección. También aparece en el teléfono.",
+      "apple": "iPhone y Mac",
+      "appleHow": "Toca «Suscribirse en este dispositivo», o ve a Ajustes › Apps › Calendario › Cuentas de calendario › Añadir cuenta › Otra › Añadir calendario suscrito y pega la dirección.",
+      "outlook": "Outlook",
+      "outlookHow": "Agregar calendario › Suscribirse desde la web y pega la dirección.",
+      "regenerate": "Regenerar la dirección",
+      "regenerateTitle": "¿Regenerar la dirección?",
+      "regenerateBody": "La dirección actual deja de funcionar: cada calendario suscrito tiene que añadirse de nuevo con la nueva.",
+      "regenerateHint": "Regénerala si la dirección ha llegado a otra persona: la antigua deja de funcionar.",
+      "off": "Desactivar",
+      "offTitle": "¿Desactivar la dirección?",
+      "offBody": "Los calendarios suscritos dejan de recibir tus vencimientos."
     }
   },
   "tags": {

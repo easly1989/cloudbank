@@ -182,6 +182,14 @@ type Budget struct {
 	Amount     int64
 }
 
+type CalendarFeed struct {
+	ID        int64
+	UserID    int64
+	WalletID  int64
+	Token     string
+	CreatedAt string
+}
+
 type Category struct {
 	ID       int64
 	WalletID int64

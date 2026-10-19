@@ -67,11 +67,21 @@ func (s *Service) Calendar(ctx context.Context, walletID int64, from, to string,
 		return Calendar{}, ErrInvalidRange
 	}
 	day := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
-	cal := Calendar{From: from, To: to, Today: FormatDate(day), Occurrences: []Occurrence{}}
-
-	schedules, err := s.rq.ListSchedulesForCalendar(ctx, walletID)
+	occ, err := s.occurrences(ctx, walletID, f, t, day)
 	if err != nil {
 		return Calendar{}, err
+	}
+	return Calendar{From: from, To: to, Today: FormatDate(day), Occurrences: occ}, nil
+}
+
+// occurrences is Calendar without the bound on the span: the calendar feed
+// (#694) asks for fifteen months at once.
+func (s *Service) occurrences(ctx context.Context, walletID int64, f, t, day time.Time) ([]Occurrence, error) {
+	from, to := FormatDate(f), FormatDate(t)
+	cal := Calendar{Occurrences: []Occurrence{}}
+	schedules, err := s.rq.ListSchedulesForCalendar(ctx, walletID)
+	if err != nil {
+		return nil, err
 	}
 	byTemplate := map[int64]db.ListSchedulesForCalendarRow{}
 	for _, sc := range schedules {
@@ -84,7 +94,7 @@ func (s *Service) Calendar(ctx context.Context, walletID int64, from, to string,
 		WalletID: walletID, FromDate: from, ToDate: to,
 	})
 	if err != nil {
-		return Calendar{}, err
+		return nil, err
 	}
 	for _, p := range posted {
 		id, status := p.ID, int(p.Status)
@@ -110,7 +120,7 @@ func (s *Service) Calendar(ctx context.Context, walletID int64, from, to string,
 		}
 		return a.Name < b.Name
 	})
-	return cal, nil
+	return cal.Occurrences, nil
 }
 
 // project walks a schedule's cadence from its next due date and returns the

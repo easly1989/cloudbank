@@ -74,6 +74,7 @@ type Querier interface {
 	DeleteBankConnection(ctx context.Context, arg DeleteBankConnectionParams) (int64, error)
 	DeleteBankLink(ctx context.Context, arg DeleteBankLinkParams) error
 	DeleteBankSyncRuns(ctx context.Context, connectionID int64) error
+	DeleteCalendarFeed(ctx context.Context, arg DeleteCalendarFeedParams) error
 	DeleteCategory(ctx context.Context, id int64) error
 	DeleteCategoryBudget(ctx context.Context, arg DeleteCategoryBudgetParams) error
 	DeleteContribution(ctx context.Context, id int64) error
@@ -134,6 +135,7 @@ type Querier interface {
 	GetAttachment(ctx context.Context, id int64) (Attachment, error)
 	GetBankConnection(ctx context.Context, id int64) (BankConnection, error)
 	GetBaseCurrency(ctx context.Context, walletID int64) (Currency, error)
+	GetCalendarFeed(ctx context.Context, arg GetCalendarFeedParams) (GetCalendarFeedRow, error)
 	GetCategory(ctx context.Context, id int64) (Category, error)
 	GetContribution(ctx context.Context, id int64) (GoalContribution, error)
 	GetCurrency(ctx context.Context, id int64) (Currency, error)
@@ -394,6 +396,9 @@ type Querier interface {
 	RenameTag(ctx context.Context, arg RenameTagParams) error
 	ReparentChildren(ctx context.Context, arg ReparentChildrenParams) error
 	RescheduleNotificationDelivery(ctx context.Context, arg RescheduleNotificationDeliveryParams) error
+	// A feed whose user is still an active member of its wallet, with the wallet's
+	// title for the calendar's name.
+	ResolveCalendarFeed(ctx context.Context, id int64) (ResolveCalendarFeedRow, error)
 	// Rates are what one unit is worth in the base; a new base divides them all by
 	// its own old rate, so they read against it (#558).
 	ScaleWalletRates(ctx context.Context, arg ScaleWalletRatesParams) error
@@ -483,6 +488,8 @@ type Querier interface {
 	UpdateWalletBaseCurrency(ctx context.Context, arg UpdateWalletBaseCurrencyParams) error
 	UpsertAISettings(ctx context.Context, arg UpsertAISettingsParams) error
 	UpsertBankLink(ctx context.Context, arg UpsertBankLinkParams) error
+	// A new token keeps the row's id, so a regenerated address differs only in it.
+	UpsertCalendarFeed(ctx context.Context, arg UpsertCalendarFeedParams) (int64, error)
 	UpsertEBankingConfig(ctx context.Context, arg UpsertEBankingConfigParams) error
 	UpsertExchangeRate(ctx context.Context, arg UpsertExchangeRateParams) error
 	UpsertNotificationChannel(ctx context.Context, arg UpsertNotificationChannelParams) error

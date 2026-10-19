@@ -703,6 +703,32 @@
       "yearly": "Jedes Jahr, um den {{date}}",
       "seen_one": "{{count}}-mal seit {{month}}, zuletzt am {{date}}",
       "seen_other": "{{count}}-mal seit {{month}}, zuletzt am {{date}}"
+    },
+    "feed": {
+      "title": "Zum Kalender hinzufügen",
+      "sub": "Die Fälligkeiten von {{wallet}} im Kalender deines Handys",
+      "intro": "Eine private Adresse, die der Kalender deines Handys von selbst liest: Jede wiederkehrende Buchung erscheint an ihrem Fälligkeitstag, mit Name und Betrag. Nie ein Kontostand.",
+      "create": "Adresse erstellen",
+      "explain": "Dein Kalender liest sie von selbst und aktualisiert sich, wenn du eine wiederkehrende Buchung änderst: Jede Fälligkeit erscheint an ihrem Tag, mit Name und Betrag. Nie ein Kontostand.",
+      "address": "Kalenderadresse",
+      "copy": "Adresse kopieren",
+      "copied": "Kopiert",
+      "private": "Wer diese Adresse hat, sieht deine Fälligkeiten: Teile sie nicht.",
+      "subscribe": "Auf diesem Gerät abonnieren",
+      "download": ".ics herunterladen",
+      "google": "Google Kalender",
+      "googleHow": "Am Computer: Weitere Kalender › + › Per URL, dann die Adresse einfügen. Er erscheint auch auf dem Handy.",
+      "apple": "iPhone und Mac",
+      "appleHow": "Tippe auf „Auf diesem Gerät abonnieren“ oder gehe zu Einstellungen › Apps › Kalender › Kalenderaccounts › Account hinzufügen › Andere › Kalenderabo hinzufügen und füge die Adresse ein.",
+      "outlook": "Outlook",
+      "outlookHow": "Kalender hinzufügen › Aus dem Internet abonnieren, dann die Adresse einfügen.",
+      "regenerate": "Adresse neu erzeugen",
+      "regenerateTitle": "Adresse neu erzeugen?",
+      "regenerateBody": "Die aktuelle Adresse funktioniert nicht mehr: Jeder abonnierte Kalender muss mit der neuen erneut hinzugefügt werden.",
+      "regenerateHint": "Erzeuge sie neu, wenn die Adresse bei jemand anderem gelandet ist: Die alte funktioniert dann nicht mehr.",
+      "off": "Ausschalten",
+      "offTitle": "Adresse ausschalten?",
+      "offBody": "Die abonnierten Kalender erhalten deine Fälligkeiten nicht mehr."
     }
   },
   "tags": {

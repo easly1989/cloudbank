@@ -1,6 +1,11 @@
-import { ActionIcon, Button, SegmentedControl, Stack } from "@mantine/core";
+import { ActionIcon, Button, SegmentedControl, Stack, Tooltip } from "@mantine/core";
 import { useElementSize, useMediaQuery } from "@mantine/hooks";
-import { IconCalendarRepeat, IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
+import {
+  IconCalendarPlus,
+  IconCalendarRepeat,
+  IconChevronLeft,
+  IconChevronRight,
+} from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -57,6 +62,7 @@ import { ScheduleList } from "./schedules/ScheduleList";
 import { ScheduleSheet } from "./schedules/ScheduleSheet";
 import { MissingPayeeBanner } from "./schedules/MissingPayeeBanner";
 import { FoundPayments } from "./schedules/FoundPayments";
+import { CalendarFeedSheet } from "./schedules/CalendarFeedSheet";
 import classes from "./schedules/schedules.module.css";
 import { useWeekStart } from "../i18n/week";
 import { notifyError } from "../notifyError";
@@ -212,6 +218,8 @@ export function SchedulesPage() {
   // The schedules without a payee, as they were when the reader set out to
   // complete them one by one; null otherwise.
   const [walk, setWalk] = useState<number[] | null>(null);
+  // The add-to-calendar sheet (#694).
+  const [feedOpen, setFeedOpen] = useState(false);
   // The proposal a new schedule is filled in from.
   const [seed, setSeed] = useState<ScheduleProposal | null>(null);
   const openSchedule = (s: Schedule | null, walking = false) => {
@@ -295,6 +303,29 @@ export function SchedulesPage() {
         { value: "list", label: t("schedules.view.list") },
       ]}
     />
+  );
+  // The schedules in a phone's calendar (#694): offered in the calendar view
+  // only, at the end of its bar; the icon alone on a phone.
+  const feedButton = phone ? (
+    <Tooltip label={t("schedules.feed.title")}>
+      <ActionIcon
+        variant="default"
+        size={36}
+        onClick={() => setFeedOpen(true)}
+        aria-label={t("schedules.feed.title")}
+      >
+        <IconCalendarPlus size={18} />
+      </ActionIcon>
+    </Tooltip>
+  ) : (
+    <Button
+      variant="default"
+      leftSection={<IconCalendarPlus size={16} />}
+      onClick={() => setFeedOpen(true)}
+      ml="auto"
+    >
+      {t("schedules.feed.title")}
+    </Button>
   );
   const flows = (
     <SegmentedControl
@@ -484,6 +515,7 @@ export function SchedulesPage() {
               <div className={classes.bar}>
                 {views}
                 {flows}
+                {feedButton}
               </div>
               <div className={classes.bar} style={{ flexWrap: "nowrap" }}>
                 {stepper}
@@ -504,6 +536,7 @@ export function SchedulesPage() {
                 </Button>
                 <span className={classes.gap} />
                 {flows}
+                {feedButton}
               </div>
               <div className={classes.main}>
                 <MonthCalendar
@@ -584,6 +617,12 @@ export function SchedulesPage() {
         }}
         onSaved={invalidate}
         onDelete={(s) => void askDelete(s)}
+      />
+      <CalendarFeedSheet
+        opened={feedOpen}
+        onClose={() => setFeedOpen(false)}
+        walletId={walletId}
+        walletTitle={currentWallet?.title ?? ""}
       />
     </Stack>
   );
