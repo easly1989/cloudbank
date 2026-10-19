@@ -4,7 +4,8 @@ import { api } from "./core";
 
 export type NotificationKind = "mail_stopped" | "mail_unrecognized" | "bills";
 export type NotificationChannel = "inapp" | "push" | AddressedChannel;
-export type AddressedChannel = "email" | "matrix" | "telegram" | "discord" | "slack" | "webhook";
+export type AddressedChannel =
+  "email" | "matrix" | "telegram" | "discord" | "slack" | "ntfy" | "gotify" | "webhook";
 
 export interface AppNotification {
   id: number;
@@ -60,7 +61,7 @@ export interface NotificationChannelState {
   /** The email address, the Matrix room, the Telegram chat, or only a webhook's host. */
   target: string;
   hasSecret: boolean;
-  /** The reader's own Matrix homeserver; empty for the shared bot. */
+  /** The reader's own Matrix homeserver (empty for the shared bot), or ntfy or Gotify server. */
   server: string;
   /** The installation has a shared Matrix or Telegram bot, and this is its ID when known. */
   shared: boolean;

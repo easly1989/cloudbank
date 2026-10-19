@@ -132,11 +132,14 @@ func shownTarget(ch Channel, target string) string {
 // stored value (the webhook URL and the secrets are never sent back, so the
 // page cannot resend them); an empty secret or server removes it.
 type ChannelInput struct {
-	// Target is the email address, the Matrix room ID or the webhook URL.
+	// Target is the email address, the Matrix room ID, the Telegram chat, the
+	// ntfy topic or the webhook URL; Gotify has none.
 	Target *string
-	// Secret is the webhook's signing secret or the Matrix access token.
+	// Secret is the webhook's signing secret, a bot's token, or the ntfy or
+	// Gotify token.
 	Secret *string
-	// Server is the Matrix homeserver; empty to post as the shared bot.
+	// Server is the Matrix homeserver (empty to post as the shared bot), or
+	// the ntfy (empty for ntfy.sh) or Gotify server.
 	Server *string
 	// Options replace the channel's own settings; nil keeps them. Only
 	// Telegram has any.
@@ -165,7 +168,7 @@ func (s *Service) SaveChannel(ctx context.Context, userID int64, admin bool, ch 
 	t := oldT
 	if in.Target != nil {
 		t = strings.TrimSpace(*in.Target)
-	} else if !exists {
+	} else if !exists && ch != ChannelGotify {
 		return ErrBadTarget
 	}
 	sec := secrets.Open(old.Secret)
@@ -219,6 +222,24 @@ func (s *Service) SaveChannel(ctx context.Context, userID int64, admin bool, ch 
 		}
 		if opts.Topic < 0 {
 			return ErrBadTarget
+		}
+	case ChannelNtfy:
+		if srv == "" {
+			srv = DefaultNtfyServer
+		}
+		if !ntfyTopic.MatchString(t) || (sec != "" && !appToken.MatchString(sec)) {
+			return ErrBadTarget
+		}
+		if err := checkServerURL(ctx, srv, admin); err != nil {
+			return err
+		}
+	case ChannelGotify:
+		t = ""
+		if !appToken.MatchString(sec) {
+			return ErrBadTarget
+		}
+		if err := checkServerURL(ctx, srv, admin); err != nil {
+			return err
 		}
 	default:
 		// The webhook, and Discord's or Slack's incoming webhook.

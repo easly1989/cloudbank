@@ -442,14 +442,14 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                channel: "email" | "matrix" | "telegram" | "discord" | "slack" | "webhook";
+                channel: "email" | "matrix" | "telegram" | "discord" | "slack" | "ntfy" | "gotify" | "webhook";
             };
             cookie?: never;
         };
         get?: never;
         /**
          * Set the current user's address on a channel
-         * @description Omit target to keep the stored one (a webhook's URL is never sent back); omit secret to keep the stored signing secret, send "" to remove it. A webhook or a Matrix homeserver on the local network may be saved only by an administrator: anyone else gets 400 local_network. Matrix takes a room ID as target and, without a shared bot, a homeserver and an access token; send server "" to post as the shared bot. Telegram takes the bot's token as secret and a chat ID (or @channel) as target; with secret "" it uses the shared bot, ignores the target and answers with a link that starts the bot (the chat is whichever one uses it). Discord and Slack take their incoming webhook URL as target. A new address reached through the installation's resources (email, the shared Matrix or Telegram bot) stays pending until confirmed: email and Matrix are sent a 6-digit code now, and when it cannot be sent nothing is saved (502 delivery_failed, 409 not_invited when the shared Matrix bot has no invitation to the room, 429 rate_limited or hourly_limit).
+         * @description Omit target to keep the stored one (a webhook's URL is never sent back); omit secret to keep the stored signing secret, send "" to remove it. A webhook or a Matrix homeserver on the local network may be saved only by an administrator: anyone else gets 400 local_network. Matrix takes a room ID as target and, without a shared bot, a homeserver and an access token; send server "" to post as the shared bot. Telegram takes the bot's token as secret and a chat ID (or @channel) as target; with secret "" it uses the shared bot, ignores the target and answers with a link that starts the bot (the chat is whichever one uses it). Discord and Slack take their incoming webhook URL as target. ntfy takes the topic as target, its server (empty for https://ntfy.sh) and an optional access token as secret; Gotify takes its server and the application token as secret, and no target. An ntfy or Gotify server on the local network needs an administrator, like the webhook. A new address reached through the installation's resources (email, the shared Matrix or Telegram bot) stays pending until confirmed: email and Matrix are sent a 6-digit code now, and when it cannot be sent nothing is saved (502 delivery_failed, 409 not_invited when the shared Matrix bot has no invitation to the room, 429 rate_limited or hourly_limit).
          */
         put: operations["saveNotificationChannel"];
         post?: never;
@@ -465,7 +465,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                channel: "push" | "email" | "matrix" | "telegram" | "discord" | "slack" | "webhook";
+                channel: "push" | "email" | "matrix" | "telegram" | "discord" | "slack" | "ntfy" | "gotify" | "webhook";
             };
             cookie?: never;
         };
@@ -3869,7 +3869,7 @@ export interface components {
         /** @enum {string} */
         NotificationKind: "mail_stopped" | "mail_unrecognized" | "bills";
         /** @enum {string} */
-        NotificationChannel: "inapp" | "push" | "email" | "matrix" | "telegram" | "discord" | "slack" | "webhook";
+        NotificationChannel: "inapp" | "push" | "email" | "matrix" | "telegram" | "discord" | "slack" | "ntfy" | "gotify" | "webhook";
         Notification: {
             /** Format: int64 */
             id: number;
@@ -3889,7 +3889,7 @@ export interface components {
         };
         NotificationChannelState: {
             /** @enum {string} */
-            channel: "email" | "matrix" | "telegram" | "discord" | "slack" | "webhook";
+            channel: "email" | "matrix" | "telegram" | "discord" | "slack" | "ntfy" | "gotify" | "webhook";
             /** @description False when this installation cannot send on it. */
             available: boolean;
             configured: boolean;
@@ -3942,6 +3942,8 @@ export interface components {
                 telegram: boolean;
                 discord: boolean;
                 slack: boolean;
+                ntfy: boolean;
+                gotify: boolean;
                 webhook: boolean;
             };
         };
@@ -6109,18 +6111,18 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                channel: "email" | "matrix" | "telegram" | "discord" | "slack" | "webhook";
+                channel: "email" | "matrix" | "telegram" | "discord" | "slack" | "ntfy" | "gotify" | "webhook";
             };
             cookie?: never;
         };
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description The email address, the Matrix room ID (!id:server), the Telegram chat, or the webhook URL (Discord's or Slack's included). */
+                    /** @description The email address, the Matrix room ID (!id:server), the Telegram chat, the ntfy topic, or the webhook URL (Discord's or Slack's included). */
                     target?: string;
-                    /** @description The webhook's signing secret (HMAC-SHA256 in X-CloudBank-Signature), or the Matrix or Telegram bot's token. */
+                    /** @description The webhook's signing secret (HMAC-SHA256 in X-CloudBank-Signature), the Matrix or Telegram bot's token, or the ntfy or Gotify token. */
                     secret?: string;
-                    /** @description The Matrix homeserver URL; empty for the shared bot. */
+                    /** @description The Matrix homeserver URL (empty for the shared bot), or the ntfy (empty for https://ntfy.sh) or Gotify server. */
                     server?: string;
                     options?: components["schemas"]["NotificationChannelOptions"];
                 };
@@ -6171,7 +6173,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                channel: "email" | "matrix" | "telegram" | "discord" | "slack" | "webhook";
+                channel: "email" | "matrix" | "telegram" | "discord" | "slack" | "ntfy" | "gotify" | "webhook";
             };
             cookie?: never;
         };
@@ -6193,7 +6195,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                channel: "push" | "email" | "matrix" | "telegram" | "discord" | "slack" | "webhook";
+                channel: "push" | "email" | "matrix" | "telegram" | "discord" | "slack" | "ntfy" | "gotify" | "webhook";
             };
             cookie?: never;
         };
