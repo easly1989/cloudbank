@@ -305,6 +305,11 @@ func run() error {
 			notifySvc.SetSender(notify.ChannelEmail, mail)
 		}
 		notifySvc.SetSender(notify.ChannelWebhook, notify.NewWebhookSender())
+		var bot *notify.MatrixBot
+		if cfg.MatrixHomeserver != "" && cfg.MatrixToken != "" {
+			bot = &notify.MatrixBot{Homeserver: cfg.MatrixHomeserver, Token: cfg.MatrixToken}
+		}
+		notifySvc.SetSender(notify.ChannelMatrix, notify.NewMatrixSender(bot))
 	}
 	handler := httpapi.New(opts)
 

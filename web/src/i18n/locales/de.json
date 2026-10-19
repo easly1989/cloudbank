@@ -1714,7 +1714,8 @@
       "inapp": "In der App",
       "push": "Push",
       "email": "E-Mail",
-      "webhook": "Webhook"
+      "webhook": "Webhook",
+      "matrix": "Matrix"
     },
     "group": {
       "problems": "Probleme",
@@ -1756,7 +1757,14 @@
     "webhookSaved": "Gespeichert: {{host}}",
     "webhookSecret": "Signaturgeheimnis",
     "secretSaved": "Gespeichert",
-    "optional": "Optional"
+    "optional": "Optional",
+    "matrix": "Matrix",
+    "matrixHint": "Eine Nachricht in einem Matrix-Raum, geschrieben von einem eigenen Bot-Konto.",
+    "matrixHintShared": "Eine Nachricht in einem Matrix-Raum. Lade {{bot}} in den Raum ein und füge dann hier die Raum-ID ein.",
+    "matrixHintSharedNoBot": "Eine Nachricht in einem Matrix-Raum. Lade den Bot dieser Installation in den Raum ein (der Administrator kennt seine Adresse) und füge dann hier die Raum-ID ein.",
+    "matrixServer": "Homeserver",
+    "matrixRoom": "Raum-ID",
+    "matrixToken": "Zugriffstoken des Bots"
   },
   "ai": {
     "title": "KI (mit eigenem Schlüssel)",

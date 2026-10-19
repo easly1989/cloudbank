@@ -48,7 +48,7 @@ func (q *Queries) DeleteNotificationDelivery(ctx context.Context, id int64) erro
 }
 
 const getNotificationChannel = `-- name: GetNotificationChannel :one
-SELECT user_id, channel, target, secret, local_ok, last_error, last_error_at, last_ok_at FROM notification_channels WHERE user_id = ? AND channel = ?
+SELECT user_id, channel, target, secret, local_ok, last_error, last_error_at, last_ok_at, server FROM notification_channels WHERE user_id = ? AND channel = ?
 `
 
 type GetNotificationChannelParams struct {
@@ -68,6 +68,7 @@ func (q *Queries) GetNotificationChannel(ctx context.Context, arg GetNotificatio
 		&i.LastError,
 		&i.LastErrorAt,
 		&i.LastOkAt,
+		&i.Server,
 	)
 	return i, err
 }
@@ -159,7 +160,7 @@ func (q *Queries) ListDueNotificationDeliveries(ctx context.Context, arg ListDue
 }
 
 const listNotificationChannels = `-- name: ListNotificationChannels :many
-SELECT user_id, channel, target, secret, local_ok, last_error, last_error_at, last_ok_at FROM notification_channels WHERE user_id = ?
+SELECT user_id, channel, target, secret, local_ok, last_error, last_error_at, last_ok_at, server FROM notification_channels WHERE user_id = ?
 `
 
 func (q *Queries) ListNotificationChannels(ctx context.Context, userID int64) ([]NotificationChannel, error) {
@@ -180,6 +181,7 @@ func (q *Queries) ListNotificationChannels(ctx context.Context, userID int64) ([
 			&i.LastError,
 			&i.LastErrorAt,
 			&i.LastOkAt,
+			&i.Server,
 		); err != nil {
 			return nil, err
 		}
@@ -397,10 +399,11 @@ func (q *Queries) SetNotificationPref(ctx context.Context, arg SetNotificationPr
 }
 
 const upsertNotificationChannel = `-- name: UpsertNotificationChannel :exec
-INSERT INTO notification_channels (user_id, channel, target, secret, local_ok)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO notification_channels (user_id, channel, target, secret, server, local_ok)
+VALUES (?, ?, ?, ?, ?, ?)
 ON CONFLICT (user_id, channel) DO UPDATE SET
-    target = excluded.target, secret = excluded.secret, local_ok = excluded.local_ok,
+    target = excluded.target, secret = excluded.secret, server = excluded.server,
+    local_ok = excluded.local_ok,
     last_error = '', last_error_at = NULL
 `
 
@@ -409,6 +412,7 @@ type UpsertNotificationChannelParams struct {
 	Channel string
 	Target  string
 	Secret  string
+	Server  string
 	LocalOk int64
 }
 
@@ -418,6 +422,7 @@ func (q *Queries) UpsertNotificationChannel(ctx context.Context, arg UpsertNotif
 		arg.Channel,
 		arg.Target,
 		arg.Secret,
+		arg.Server,
 		arg.LocalOk,
 	)
 	return err

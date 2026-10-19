@@ -15,7 +15,10 @@
 // For the notification channels (#686) it is also an SMTP server that keeps
 // what it is sent (E2E_MAIL_SMTP, no TLS, no login) and a webhook receiver at
 // POST /hook/<name>, which answers 401 for the name "unauthorized"; both show
-// what arrived at GET /notify/received.
+// what arrived at GET /notify/received. It is a Matrix homeserver too (#687),
+// with two accounts: the shared bot (token matrixBotToken), which must accept
+// its invitation before it can post, and a person's own (matrixUserToken);
+// any other token gets a 401.
 //
 //	E2E_MAIL_HTTP=127.0.0.1:9100 E2E_MAIL_IMAP=127.0.0.1:1143 \
 //	E2E_MAIL_PASSWORD_IMAP=127.0.0.1:1144 go run ./cmd/e2e-mail
@@ -58,6 +61,9 @@ const (
 	address       = "notifiche.demo@example.com"
 	guestAddress  = "avvisi.demo@example.net"
 	guestPassword = "e2e-app-password"
+	// The pretend homeserver's access tokens: test values, nothing else.
+	matrixBotToken  = "e2e-matrix-bot"
+	matrixUserToken = "e2e-matrix-user"
 )
 
 func getenv(k, def string) string {
@@ -84,6 +90,8 @@ type fake struct {
 	aiLast  string             // the last text the pretend AI was sent
 	mails   []received         // what the SMTP server was sent
 	hooks   []received         // what the webhook receiver was sent
+	matrix  []received         // what the homeserver was sent
+	joined  map[string]bool    // the Matrix tokens that joined a room
 	access  map[string]bool
 	refresh map[string]bool
 	n       int
@@ -98,6 +106,7 @@ func main() {
 	f := &fake{
 		httpAddr: getenv("E2E_MAIL_HTTP", "127.0.0.1:9100"),
 		codes:    map[string]*signIn{}, access: map[string]bool{}, refresh: map[string]bool{},
+		joined: map[string]bool{},
 	}
 	// Outlook takes no password over IMAP: this one is never told to anyone.
 	f.user = imapmemserver.NewUser(address, random())
@@ -156,6 +165,9 @@ func main() {
 	mux.HandleFunc("GET /ai/last", f.aiLastText)
 	mux.HandleFunc("POST /hook/{name}", f.hook)
 	mux.HandleFunc("GET /notify/received", f.received)
+	mux.HandleFunc("GET /_matrix/client/v3/account/whoami", f.matrixWhoami)
+	mux.HandleFunc("POST /_matrix/client/v3/join/{room}", f.matrixJoin)
+	mux.HandleFunc("PUT /_matrix/client/v3/rooms/{room}/send/m.room.message/{txn}", f.matrixSend)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
 	sln, err := net.Listen("tcp", getenv("E2E_MAIL_SMTP", "127.0.0.1:1025"))
 	if err != nil {
@@ -391,6 +403,8 @@ type received struct {
 	Hook      string          `json:"hook,omitempty"`
 	Payload   json.RawMessage `json:"payload,omitempty"`
 	Signature string          `json:"signature,omitempty"`
+	Room      string          `json:"room,omitempty"`
+	Sender    string          `json:"sender,omitempty"`
 }
 
 func (f *fake) hook(w http.ResponseWriter, r *http.Request) {
@@ -413,7 +427,72 @@ func (f *fake) hook(w http.ResponseWriter, r *http.Request) {
 func (f *fake) received(w http.ResponseWriter, _ *http.Request) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	writeJSON(w, http.StatusOK, map[string]any{"mails": append([]received{}, f.mails...), "hooks": append([]received{}, f.hooks...)})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"mails": append([]received{}, f.mails...), "hooks": append([]received{}, f.hooks...),
+		"matrix": append([]received{}, f.matrix...),
+	})
+}
+
+// matrixUser is the account behind the request's token, "" for none.
+func matrixUser(r *http.Request) string {
+	switch strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ") {
+	case matrixBotToken:
+		return "@cloudbank:matrix.example"
+	case matrixUserToken:
+		return "@demo-bot:matrix.example"
+	}
+	return ""
+}
+
+func matrixError(w http.ResponseWriter, status int, code string) {
+	writeJSON(w, status, map[string]string{"errcode": code, "error": "pretend homeserver: " + code})
+}
+
+func (f *fake) matrixWhoami(w http.ResponseWriter, r *http.Request) {
+	user := matrixUser(r)
+	if user == "" {
+		matrixError(w, http.StatusUnauthorized, "M_UNKNOWN_TOKEN")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"user_id": user})
+}
+
+func (f *fake) matrixJoin(w http.ResponseWriter, r *http.Request) {
+	user := matrixUser(r)
+	if user == "" {
+		matrixError(w, http.StatusUnauthorized, "M_UNKNOWN_TOKEN")
+		return
+	}
+	f.mu.Lock()
+	f.joined[user] = true
+	f.mu.Unlock()
+	writeJSON(w, http.StatusOK, map[string]string{"room_id": r.PathValue("room")})
+}
+
+// matrixSend takes a message from an account in the room: the shared bot is
+// only invited until it joins.
+func (f *fake) matrixSend(w http.ResponseWriter, r *http.Request) {
+	user := matrixUser(r)
+	if user == "" {
+		matrixError(w, http.StatusUnauthorized, "M_UNKNOWN_TOKEN")
+		return
+	}
+	var msg struct {
+		Msgtype string `json:"msgtype"`
+		Body    string `json:"body"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&msg); err != nil || msg.Msgtype == "" {
+		matrixError(w, http.StatusBadRequest, "M_BAD_JSON")
+		return
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if user == "@cloudbank:matrix.example" && !f.joined[user] {
+		matrixError(w, http.StatusForbidden, "M_FORBIDDEN")
+		return
+	}
+	f.matrix = append(f.matrix, received{Room: r.PathValue("room"), Sender: user, Body: msg.Body})
+	writeJSON(w, http.StatusOK, map[string]string{"event_id": "$" + random()})
 }
 
 // serveSMTP is just enough of an SMTP server for one client on this machine:

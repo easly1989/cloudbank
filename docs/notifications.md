@@ -3,17 +3,19 @@
 CloudBank tells you when something needs you: a bank mailbox that stopped
 working, bank mails no pattern could read, bills coming due. Every notice lands
 in the bell in the page header, kept for 90 days. It can also reach you
-somewhere else: push on a device, email, or a webhook of your own, such as
-Home Assistant.
+somewhere else: push on a device, email, a Matrix room, or a webhook of your
+own, such as Home Assistant.
 
 It lives in **Settings › Notifications**. The [demo](demo.md) has only the bell.
 
 - [Channels](#channels)
 - [Which events go where](#which-events-go-where)
 - [When a delivery fails](#when-a-delivery-fails)
+- [Matrix](#matrix)
 - [The webhook](#the-webhook)
 - [Home Assistant](#home-assistant)
 - [For the administrator: the mail server](#for-the-administrator-the-mail-server)
+- [For the administrator: a shared Matrix bot](#for-the-administrator-a-shared-matrix-bot)
 
 ## Channels
 
@@ -22,11 +24,13 @@ It lives in **Settings › Notifications**. The [demo](demo.md) has only the bel
 - **Email.** To the address you choose, which starts as your account's own. It
   shows up only once the administrator has
   [set up a mail server](#for-the-administrator-the-mail-server).
+- **Matrix.** A message in a room of yours, from the installation's bot or from
+  a bot of your own. See [Matrix](#matrix).
 - **Webhook.** A POST with the event as JSON to a URL of yours: Home Assistant,
   n8n, a script. See [the webhook](#the-webhook).
 
 Every channel has **Send a test**, which sends a notice at once and says how it
-went. Email and the webhook join the events table once they are saved.
+went. Email, Matrix and the webhook join the events table once they are saved.
 
 ## Which events go where
 
@@ -52,6 +56,43 @@ The channel's card keeps the outcome: **Last delivered** with the time, or
 **Last delivery failed** with the reason or the status code, until the next
 delivery goes through. The bell has every notice whatever happened to the
 other channels.
+
+## Matrix
+
+CloudBank posts each notice as a message in one Matrix room, which any Matrix
+app shows: Element, FluffyChat, Cinny. A room with only you and the bot works
+best. Messages are sent unencrypted: in an encrypted room your app marks them
+as such.
+
+**The room ID.** CloudBank needs the room's ID, which starts with `!`, not its
+address (`#name:server`). In Element: the room's **Settings › Advanced ›
+Internal room ID**.
+
+**With the installation's bot.** When the administrator has
+[set one up](#for-the-administrator-a-shared-matrix-bot), the card names the
+bot, such as `@cloudbank:example.org`. Invite it to the room, then paste the
+room ID and save. The bot accepts the invitation the first time it posts, so
+**Send a test** right away tells you it works.
+
+**With a bot of your own.** Without a shared bot the card asks for three
+things:
+
+1. **Homeserver**: the address of the bot account's server, such as
+   `https://matrix.org`. A homeserver on your local network can only be saved
+   by an administrator.
+2. **Room ID**, as above. Invite the bot account to the room; CloudBank
+   accepts the invitation for it.
+3. **The bot's access token.** Make a separate account for the bot rather than
+   using your own: the token can do everything the account can. Sign in to it
+   once in Element, copy the token from **Settings › Help & About ›
+   Advanced › Access token**, then close that tab *without signing out*:
+   signing out ends the token.
+
+The token is stored encrypted when the server has `CB_SECRET_KEY`, and never
+comes back to the page: to change it, type the new one over **Saved**.
+
+A refused token shows as **Last delivery failed: 401**; a 403 means the bot
+could not join the room, usually because it was not invited.
 
 ## The webhook
 
@@ -140,3 +181,16 @@ Email needs an SMTP server, set with these variables (see
 
 A mail provider's app password works, such as Gmail's with two-step
 verification on, and so does a transactional service such as Brevo or Mailgun.
+
+## For the administrator: a shared Matrix bot
+
+With a shared bot, people give only the room. Make an account for it on a
+homeserver, get its access token as described [above](#matrix), and set:
+
+| Variable | Meaning |
+| --- | --- |
+| `CB_MATRIX_HOMESERVER` | The bot's homeserver, such as `https://matrix.example.org`. It may be on the local network. |
+| `CB_MATRIX_TOKEN` | The bot's access token. |
+
+Both are needed. The card shows the bot's Matrix ID, read from the homeserver,
+so people know whom to invite. The bot posts only in rooms it was invited to.
