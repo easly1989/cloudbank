@@ -145,6 +145,7 @@ type Querier interface {
 	GetMailPattern(ctx context.Context, arg GetMailPatternParams) (MailPattern, error)
 	GetMailbox(ctx context.Context, arg GetMailboxParams) (Mailbox, error)
 	GetNotificationChannel(ctx context.Context, arg GetNotificationChannelParams) (NotificationChannel, error)
+	GetNotificationSettings(ctx context.Context, userID int64) (int64, error)
 	GetPayee(ctx context.Context, id int64) (Payee, error)
 	GetPluggyConfig(ctx context.Context, walletID int64) (BankPluggyConfig, error)
 	GetSchedule(ctx context.Context, id int64) (Schedule, error)
@@ -200,6 +201,7 @@ type Querier interface {
 	InsertTransfer(ctx context.Context, arg InsertTransferParams) (Transfer, error)
 	InsertValuation(ctx context.Context, arg InsertValuationParams) (AssetValuation, error)
 	InsertVehicle(ctx context.Context, arg InsertVehicleParams) (Vehicle, error)
+	IsNotificationWalletOff(ctx context.Context, arg IsNotificationWalletOffParams) (int64, error)
 	// The most recent valuation (by date, then id) for each asset account in a wallet;
 	// used to fold recorded values into net-worth totals.
 	LatestValuationsForWallet(ctx context.Context, walletID int64) ([]LatestValuationsForWalletRow, error)
@@ -256,8 +258,14 @@ type Querier interface {
 	// category, so the review can prompt the user to complete them. Split
 	// transactions carry their categories on the splits, so they are excluded.
 	ListImportedUncategorized(ctx context.Context, walletID int64) ([]Transaction, error)
+	// Every threshold on large expenses of a person still a member of the
+	// account's wallet.
+	ListLargeThresholds(ctx context.Context) ([]ListLargeThresholdsRow, error)
 	// Each currency's latest recorded rate: where it came from, and its date.
 	ListLatestRatesForWallet(ctx context.Context, walletID int64) ([]ListLatestRatesForWalletRow, error)
+	// Every low-balance threshold of a person still a member of the account's
+	// wallet, with the account's balance parts.
+	ListLowThresholds(ctx context.Context, today string) ([]ListLowThresholdsRow, error)
 	ListMailMessages(ctx context.Context, arg ListMailMessagesParams) ([]ListMailMessagesRow, error)
 	// The latest mails of one sender, for trying a pattern before saving it.
 	ListMailMessagesFrom(ctx context.Context, arg ListMailMessagesFromParams) ([]MailMessage, error)
@@ -271,6 +279,8 @@ type Querier interface {
 	ListMailboxesToWatch(ctx context.Context) ([]Mailbox, error)
 	ListNotificationChannels(ctx context.Context, userID int64) ([]NotificationChannel, error)
 	ListNotificationPrefs(ctx context.Context, userID int64) ([]ListNotificationPrefsRow, error)
+	// One person's thresholds on the accounts of one wallet.
+	ListNotificationThresholds(ctx context.Context, arg ListNotificationThresholdsParams) ([]ListNotificationThresholdsRow, error)
 	// Newest first; a notification about a wallet the person has left is hidden.
 	ListNotifications(ctx context.Context, arg ListNotificationsParams) ([]ListNotificationsRow, error)
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
@@ -296,6 +306,8 @@ type Querier interface {
 	ListTransactionTags(ctx context.Context, transactionID int64) ([]string, error)
 	ListTransactionsByIDs(ctx context.Context, arg ListTransactionsByIDsParams) ([]Transaction, error)
 	ListTransactionsForAccount(ctx context.Context, arg ListTransactionsForAccountParams) ([]ListTransactionsForAccountRow, error)
+	// The expenses written after id, oldest first, with who and what wrote them.
+	ListTransactionsSince(ctx context.Context, id int64) ([]ListTransactionsSinceRow, error)
 	ListTransfersForWallet(ctx context.Context, walletID int64) ([]Transfer, error)
 	// Transactions read from a bank mail (#660) that the bank has still not
 	// booked, dated on or before a day: a bank-sync merge would have replaced
@@ -319,6 +331,7 @@ type Querier interface {
 	ListWalletsForUser(ctx context.Context, userID int64) ([]ListWalletsForUserRow, error)
 	MarkAllNotificationsRead(ctx context.Context, userID int64) error
 	MarkNotificationRead(ctx context.Context, arg MarkNotificationReadParams) (int64, error)
+	MaxTransactionID(ctx context.Context) (int64, error)
 	// Per-month income (amount > 0) and expense (amount < 0) totals in a date range,
 	// excluding internal transfers (payment_mode 5), with each row's account
 	// currency for base conversion. Drives the dashboard income/expense chart.
@@ -379,6 +392,7 @@ type Querier interface {
 	SetCurrencyBase(ctx context.Context, id int64) error
 	SetGoalClosed(ctx context.Context, arg SetGoalClosedParams) error
 	SetInstanceSetting(ctx context.Context, arg SetInstanceSettingParams) error
+	SetLowBelow(ctx context.Context, arg SetLowBelowParams) error
 	SetMailMessageOutcome(ctx context.Context, arg SetMailMessageOutcomeParams) error
 	SetMailPatternPosition(ctx context.Context, arg SetMailPatternPositionParams) error
 	SetMailboxAI(ctx context.Context, arg SetMailboxAIParams) error
@@ -391,10 +405,14 @@ type Querier interface {
 	SetMailboxIMAP(ctx context.Context, arg SetMailboxIMAPParams) error
 	SetMailboxPaused(ctx context.Context, arg SetMailboxPausedParams) error
 	SetMailboxSecret(ctx context.Context, arg SetMailboxSecretParams) error
+	SetNotificationAmountsOutside(ctx context.Context, arg SetNotificationAmountsOutsideParams) error
 	SetNotificationChannelCode(ctx context.Context, arg SetNotificationChannelCodeParams) error
 	SetNotificationChannelError(ctx context.Context, arg SetNotificationChannelErrorParams) error
 	SetNotificationChannelOK(ctx context.Context, arg SetNotificationChannelOKParams) error
 	SetNotificationPref(ctx context.Context, arg SetNotificationPrefParams) error
+	SetNotificationThreshold(ctx context.Context, arg SetNotificationThresholdParams) error
+	SetNotificationWalletOff(ctx context.Context, arg SetNotificationWalletOffParams) error
+	SetNotificationWalletOn(ctx context.Context, arg SetNotificationWalletOnParams) error
 	SetTransactionCategory(ctx context.Context, arg SetTransactionCategoryParams) error
 	SetTransactionImportRef(ctx context.Context, arg SetTransactionImportRefParams) error
 	SetTransactionInfo(ctx context.Context, arg SetTransactionInfoParams) error

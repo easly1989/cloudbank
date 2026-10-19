@@ -35,6 +35,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
 	"github.com/easly1989/cloudbank/server/internal/mailingest"
+	"github.com/easly1989/cloudbank/server/internal/moneyalert"
 	"github.com/easly1989/cloudbank/server/internal/notify"
 	"github.com/easly1989/cloudbank/server/internal/oidc"
 	"github.com/easly1989/cloudbank/server/internal/payee"
@@ -242,6 +243,8 @@ func run() error {
 	bankSyncSvc.SetNotify(notifySvc)
 	updatesSvc := updates.New(st.Write(), version, cfg.UpdateCheck)
 	updatesSvc.SetNotify(notifySvc)
+	// Large expenses, low balances, budgets and goals (#691).
+	moneySvc := moneyalert.New(st.Read(), st.Write(), budgetSvc, goalSvc, notifySvc, logger)
 
 	opts := httpapi.Options{
 		Logger:            logger,
@@ -354,6 +357,9 @@ func run() error {
 	// Send bills reminders and clear the bell's old entries at startup, then
 	// once a day.
 	go notifySvc.Run(ctx)
+	if cfg.MoneyInterval > 0 {
+		go moneySvc.Run(ctx, cfg.MoneyInterval)
+	}
 
 	// The demo's accounts: idle ones deleted every few minutes, all of them
 	// every night.

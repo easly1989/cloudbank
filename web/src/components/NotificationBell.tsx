@@ -18,9 +18,13 @@ import {
   IconAlertTriangle,
   IconBell,
   IconCalendarDue,
+  IconPigMoney,
+  IconReceipt2,
   IconRefresh,
+  IconReportMoney,
   IconSettings,
   IconShieldLock,
+  IconTrendingDown,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -56,6 +60,10 @@ const KIND_ICON: Record<NotificationKind, React.ReactNode> = {
   mail_stopped: problem,
   mail_unrecognized: problem,
   bills: <IconCalendarDue size={16} color="var(--mantine-color-dimmed)" />,
+  large_transaction: <IconReceipt2 size={16} color="var(--mantine-color-dimmed)" />,
+  low_balance: <IconTrendingDown size={16} color="var(--mantine-color-dimmed)" />,
+  budget: <IconReportMoney size={16} color="var(--mantine-color-dimmed)" />,
+  goal: <IconPigMoney size={16} color="var(--mantine-color-dimmed)" />,
   new_version: <IconRefresh size={16} color="var(--mantine-color-dimmed)" />,
 };
 

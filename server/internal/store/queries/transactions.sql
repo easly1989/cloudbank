@@ -1,9 +1,9 @@
 -- name: InsertTransaction :one
 INSERT INTO transactions (
     wallet_id, account_id, date, amount, payment_mode, status, info,
-    payee_id, category_id, memo, is_split, import_ref, vehicle_id
+    payee_id, category_id, memo, is_split, import_ref, vehicle_id, origin, created_by
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: ListImportRefsForAccount :many

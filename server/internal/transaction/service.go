@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/dbconv"
+	"github.com/easly1989/cloudbank/server/internal/provenance"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/walletref"
 )
@@ -237,6 +238,7 @@ func (s *Service) CreateInTx(ctx context.Context, qtx *db.Queries, walletID int6
 		PaymentMode: int64(in.PaymentMode), Status: int64(in.Status), Info: in.Info,
 		PayeeID: nullID(in.PayeeID), CategoryID: nullID(categoryID), Memo: in.Memo, IsSplit: dbconv.B2i(isSplit),
 		ImportRef: in.ImportRef, VehicleID: nullID(in.VehicleID),
+		Origin: provenance.Origin(ctx), CreatedBy: provenance.User(ctx),
 	})
 	if err != nil {
 		return 0, err

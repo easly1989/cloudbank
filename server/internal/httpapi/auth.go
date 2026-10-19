@@ -12,6 +12,7 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/locale"
+	"github.com/easly1989/cloudbank/server/internal/provenance"
 )
 
 const sessionCookie = "cb_session"
@@ -430,6 +431,7 @@ func (h *authHandlers) requireAuth(next http.Handler) http.Handler {
 			}
 			ctx := context.WithValue(r.Context(), userCtxKey, u)
 			ctx = context.WithValue(ctx, viaTokenCtxKey, true)
+			ctx = provenance.WithUser(ctx, u.ID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
@@ -444,7 +446,8 @@ func (h *authHandlers) requireAuth(next http.Handler) http.Handler {
 			writeError(w, http.StatusUnauthorized, "unauthorized", "authentication required")
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userCtxKey, u)))
+		ctx := provenance.WithUser(context.WithValue(r.Context(), userCtxKey, u), u.ID)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/importio"
+	"github.com/easly1989/cloudbank/server/internal/provenance"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/transaction"
 )
@@ -170,7 +171,7 @@ func (s *Service) insertTx(ctx context.Context, walletID int64, m db.MailMessage
 	case r.Match == "imported":
 		out.name = OutcomeDuplicate
 	default:
-		_, err := s.importer.Commit(ctx, walletID, tx.AccountID, []importio.CommitRow{{
+		_, err := s.importer.Commit(provenance.WithOrigin(ctx, provenance.Mail), walletID, tx.AccountID, []importio.CommitRow{{
 			Date: r.Date, Amount: r.Amount, PaymentMode: r.PaymentMode, Info: r.Info, Payee: r.Payee,
 			Memo: r.Memo, Category: r.Category, Tags: r.Tags, Status: r.Status, ImportRef: ref,
 		}})

@@ -53,6 +53,10 @@ const EXCEPTIONS = {
     // The plural, Haushaltsbücher, changes the stem's vowel.
     "tour.wallet.title": ["wallet"],
     "backup.hotHint": ["wallet"],
+    "notif.money.title": ["wallet"],
+    "notif.money.wallets": ["wallet"],
+    "notif.money.summaryAll": ["wallet"],
+    "notif.money.summaryOff_other": ["wallet"],
     // "Register" as the verb: erfassen an occurrence, registrieren an app.
     "schedules.state.auto": ["register"],
     "schedules.meta.auto": ["register"],

@@ -12,6 +12,7 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/dbconv"
+	"github.com/easly1989/cloudbank/server/internal/provenance"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
@@ -712,6 +713,7 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 			PayeeID: dbconv.PtrToNull(remapPayee(t.PayeeID)), CategoryID: dbconv.PtrToNull(remapCat(t.CategoryID)),
 			Memo: t.Memo, IsSplit: dbconv.B2i(t.IsSplit), ImportRef: t.ImportRef,
 			VehicleID: dbconv.PtrToNull(remapVehicle(t.VehicleID)),
+			Origin:    provenance.Import, CreatedBy: provenance.User(ctx),
 		})
 		if err != nil {
 			return 0, err

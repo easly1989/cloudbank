@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/dbconv"
+	"github.com/easly1989/cloudbank/server/internal/provenance"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/transaction"
 	"github.com/easly1989/cloudbank/server/internal/transfer"
@@ -309,6 +310,7 @@ func (s *Service) Skip(ctx context.Context, id int64) error {
 // RunDue auto-posts every due occurrence of every auto-post schedule (catching
 // up after downtime). It returns the number of occurrences posted.
 func (s *Service) RunDue(ctx context.Context, now time.Time) (int, error) {
+	ctx = provenance.WithOrigin(ctx, provenance.Schedule)
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	schedules, err := s.q.ListAllSchedules(ctx)
 	if err != nil {

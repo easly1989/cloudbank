@@ -14,6 +14,7 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/money"
+	"github.com/easly1989/cloudbank/server/internal/provenance"
 	"github.com/easly1989/cloudbank/server/internal/secrets"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
@@ -755,7 +756,7 @@ func (s *Service) commitRows(ctx context.Context, walletID, accountID int64, row
 	if len(commit) == 0 {
 		return 0, 0, nil
 	}
-	out, err := s.imp.Commit(ctx, walletID, accountID, commit)
+	out, err := s.imp.Commit(provenance.WithOrigin(ctx, provenance.Bank), walletID, accountID, commit)
 	if err != nil {
 		return 0, 0, err
 	}

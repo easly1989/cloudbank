@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/easly1989/cloudbank/server/internal/dbconv"
+	"github.com/easly1989/cloudbank/server/internal/provenance"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 	"github.com/easly1989/cloudbank/server/internal/wallet"
 )
@@ -262,6 +263,7 @@ func (s *Service) ImportXHB(ctx context.Context, userID int64, x *XHB) (Result, 
 			WalletID: w.ID, AccountID: aid, Date: julianToDate(o.Date), Amount: amount,
 			PaymentMode: clamp(o.Paymode, 0, 11), Status: clamp(o.St, 0, 4), Info: o.Info,
 			PayeeID: payee, CategoryID: category, Memo: o.Wording, IsSplit: dbconv.B2i(isSplit),
+			Origin: provenance.Import, CreatedBy: provenance.User(ctx),
 		})
 		if err != nil {
 			return res, err

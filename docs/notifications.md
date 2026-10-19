@@ -1,7 +1,8 @@
 # Notifications
 
 CloudBank tells you when something needs you: a sign-in from a new device, a
-bank sync that failed, a bank mailbox that stopped working, bills coming due.
+bank sync that failed, a bank mailbox that stopped working, bills coming due,
+a large expense or a low balance.
 Every notice lands
 in the bell in the page header, kept for 90 days. It can also reach you
 somewhere else: push on a device, email, a Matrix room, Telegram, Discord,
@@ -13,6 +14,7 @@ it and pick its events. The [demo](demo.md) has only the bell.
 
 - [Channels](#channels)
 - [Which events go where](#which-events-go-where)
+- [Money](#money)
 - [When a delivery fails](#when-a-delivery-fails)
 - [Confirming an address](#confirming-an-address)
 - [Matrix](#matrix)
@@ -54,7 +56,7 @@ went.
 ## Which events go where
 
 Each channel's page ends with **What arrives here**: a box for each event. The
-boxes start on; untick the ones you do not want on that channel. A channel that
+boxes start on, except the [money events](#money), which start off; untick the ones you do not want on that channel. A channel that
 is not connected yet gets nothing, so its boxes wait until it is. Push is the
 exception: it is switched on per device, and its boxes can be set before.
 
@@ -68,12 +70,53 @@ exception: it is switched on per device, and its boxes can be set before.
 | A bank mailbox stops | CloudBank can no longer sign in to a [bank mail](bank-mails.md) mailbox, and it needs connecting again. | Bank mails |
 | Bank mails not recognised | Mails arrive that no pattern can read. | Bank mails |
 | Bills coming due | Scheduled transactions due in the next three days, or already late. | Schedules |
+| Large expense | An expense over the account's threshold. See [Money](#money). | The account's register |
+| Low balance | An account's balance today went below its threshold. | The account's register |
+| Budget at 80% and 100% | A category has used 80% of this month's budget, then all of it. | Budget |
+| Goal reached or falling behind | A goal reached its target, or is behind the pace it needs. | Goals |
 | A new CloudBank version | A newer release is out on the channel the server follows. Administrators only. | About |
 
 The three security events always reach the bell, even with every other channel
 turned off: a sign-in you did not make should not go unnoticed. Their other
 channels can be turned off like any event's. No notice carries a full card
 number or IBAN: a bank is named by the name you gave its connection.
+
+## Money
+
+The four money events start off on every channel: tick them in a channel's
+page, in the **Money** group. Where and when they speak is set on **Settings ›
+Notifications › Thresholds and wallets**, the row under the channels.
+
+- **Large expense** and **Low balance** need a threshold per account, in the
+  account's currency: **Expense over** and **Balance below**. An empty field
+  announces nothing for that account. The account's minimum balance, if it has
+  one, is shown as a suggestion in the empty field; it is not used until you
+  type it.
+- **Large expense** tells you about what you did not type yourself: what bank
+  sync, a bank mail or an automatic schedule wrote, and what another member of
+  the wallet entered. Your own entries and file imports are not announced.
+  Expenses only, never money in.
+- **Low balance** looks at today's balance, so a future-dated transaction does
+  not count yet. It is told once when the balance goes below the threshold,
+  and again only after it has gone back above.
+- **Budget at 80% and 100%** is per category, for the current month: once at
+  80% and once at 100%.
+- **Goal reached** is told once. **Falling behind** compares what went in
+  lately with what the goal needs each month, as the Goals page does; it is
+  checked on the first of the month, at most once a month.
+
+CloudBank looks at the money every five minutes, so a notice can arrive a few
+minutes after the transaction. The administrator can change this with
+`CB_MONEY_INTERVAL`, or turn these events off with `0`.
+
+**Wallets.** Every event about a wallet (bills, bank sync, bank consent and the
+money events) reaches you only from the wallets ticked here; all of them are
+ticked to start. A wallet left out tells you nothing on any channel. Thresholds
+and wallets are your own: another member of the wallet chooses for themselves.
+
+**Amounts.** The bell always shows amounts. **Show amounts outside the app**
+starts on; turned off, push, email and the chat channels say where something
+happened, never how much: "Checking is below its threshold."
 
 ## When a delivery fails
 
