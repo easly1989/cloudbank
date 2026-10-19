@@ -34,6 +34,7 @@ var (
 	ErrTemplate       = errors.New("schedule: template not found in this wallet")
 	ErrTemplateNoAcct = errors.New("schedule: template must target an account")
 	ErrSplitAmount    = errors.New("schedule: a split schedule's amount is changed in the schedule")
+	ErrPayeeRequired  = errors.New("schedule: an income or expense schedule needs a payee")
 )
 
 // Override changes what one posting registers, for a bill that differs from
@@ -60,6 +61,11 @@ type Schedule struct {
 	PostAdvance        int    `json:"postAdvance"`
 	AutoPost           bool   `json:"autoPost"`
 	LastPosted         string `json:"lastPosted,omitempty"`
+	// Who the schedule pays or is paid by, and how many of the transactions it
+	// registered have no payee (#723).
+	PayeeID      *int64 `json:"payeeId,omitempty"`
+	PayeeName    string `json:"payeeName,omitempty"`
+	WithoutPayee int64  `json:"withoutPayee"`
 }
 
 // Input carries the editable fields of a schedule.
@@ -146,6 +152,9 @@ func (s *Service) validate(ctx context.Context, walletID int64, in *Input) (db.T
 	if !tpl.AccountID.Valid {
 		return db.Template{}, ErrTemplateNoAcct
 	}
+	if tpl.IsTransfer == 0 && !tpl.PayeeID.Valid {
+		return db.Template{}, ErrPayeeRequired
+	}
 	return tpl, nil
 }
 
@@ -171,6 +180,7 @@ func toSchedule(r db.ListSchedulesForWalletRow) Schedule {
 		TemplateAmount: r.TemplateAmount, TemplateIsTransfer: r.TemplateIsTransfer != 0,
 		Unit: r.Unit, EveryN: int(r.EveryN), NextDue: r.NextDue, WeekendMode: int(r.WeekendMode),
 		Remaining: nptr(r.Remaining), PostAdvance: int(r.PostAdvance), AutoPost: r.AutoPost != 0,
+		PayeeID: nptr(r.TemplatePayeeID), PayeeName: r.PayeeName.String, WithoutPayee: r.WithoutPayee,
 	}
 	if r.LastPosted.Valid {
 		sc.LastPosted = r.LastPosted.String
@@ -180,29 +190,14 @@ func toSchedule(r db.ListSchedulesForWalletRow) Schedule {
 
 // Get returns one schedule (with template summary).
 func (s *Service) Get(ctx context.Context, id int64) (Schedule, error) {
-	// Reuse the list query shape by fetching the wallet's rows is wasteful;
-	// instead load the raw schedule and its template name.
-	sc, err := s.rq.GetSchedule(ctx, id)
+	r, err := s.rq.GetScheduleWithTemplate(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Schedule{}, ErrNotFound
 	}
 	if err != nil {
 		return Schedule{}, err
 	}
-	tpl, err := s.rq.GetTemplate(ctx, sc.TemplateID)
-	if err != nil {
-		return Schedule{}, err
-	}
-	out := Schedule{
-		ID: sc.ID, TemplateID: sc.TemplateID, TemplateName: tpl.Name, TemplateAmount: tpl.Amount,
-		TemplateIsTransfer: tpl.IsTransfer != 0, Unit: sc.Unit, EveryN: int(sc.EveryN),
-		NextDue: sc.NextDue, WeekendMode: int(sc.WeekendMode), Remaining: nptr(sc.Remaining),
-		PostAdvance: int(sc.PostAdvance), AutoPost: sc.AutoPost != 0,
-	}
-	if sc.LastPosted.Valid {
-		out.LastPosted = sc.LastPosted.String
-	}
-	return out, nil
+	return toSchedule(db.ListSchedulesForWalletRow(r)), nil
 }
 
 // WalletOf returns the wallet a schedule belongs to (for ownership checks).
@@ -259,6 +254,29 @@ func (s *Service) Update(ctx context.Context, walletID, id int64, in Input) (Sch
 		return Schedule{}, err
 	}
 	return s.Get(ctx, id)
+}
+
+// ApplyPayee gives the schedule's payee to the transactions it registered
+// that have none, and returns how many it changed (#723). Transactions that
+// already name a payee keep theirs.
+func (s *Service) ApplyPayee(ctx context.Context, walletID, id int64) (int, error) {
+	if w, err := s.WalletOf(ctx, id); err != nil || w != walletID {
+		return 0, ErrNotFound
+	}
+	sc, err := s.Get(ctx, id)
+	if err != nil {
+		return 0, err
+	}
+	if sc.TemplateIsTransfer || sc.PayeeID == nil {
+		return 0, ErrPayeeRequired
+	}
+	ids, err := s.q.ListTemplateTransactionsWithoutPayee(ctx, db.ListTemplateTransactionsWithoutPayeeParams{
+		TemplateID: sql.NullInt64{Int64: sc.TemplateID, Valid: true}, WalletID: walletID,
+	})
+	if err != nil || len(ids) == 0 {
+		return 0, err
+	}
+	return s.txns.BulkUpdate(ctx, walletID, ids, transaction.BulkFieldPayee, sc.PayeeID)
 }
 
 // Delete removes a schedule.

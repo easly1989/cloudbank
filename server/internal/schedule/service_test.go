@@ -19,6 +19,8 @@ type fixture struct {
 	wid  int64
 	accA int64
 	accB int64
+	// A payee, which every income and expense schedule needs (#723).
+	payee int64
 }
 
 func newFixture(t *testing.T) fixture {
@@ -37,22 +39,24 @@ func newFixture(t *testing.T) fixture {
 	})
 	a, _ := q.InsertAccount(ctx, db.InsertAccountParams{WalletID: w.ID, Name: "A", Type: "checking", CurrencyID: cur.ID, Position: 1})
 	b, _ := q.InsertAccount(ctx, db.InsertAccountParams{WalletID: w.ID, Name: "B", Type: "savings", CurrencyID: cur.ID, Position: 2})
+	p, _ := q.InsertPayee(ctx, db.InsertPayeeParams{WalletID: w.ID, Name: "Landlord"})
 	txns := transaction.NewService(st.Write())
 	transfers := transfer.NewService(st.Write())
 	return fixture{
-		s:    NewService(st.Write(), txns, transfers, nil),
-		tpl:  template.NewService(st.Write()),
-		q:    q,
-		wid:  w.ID,
-		accA: a.ID,
-		accB: b.ID,
+		s:     NewService(st.Write(), txns, transfers, nil),
+		tpl:   template.NewService(st.Write()),
+		q:     q,
+		wid:   w.ID,
+		accA:  a.ID,
+		accB:  b.ID,
+		payee: p.ID,
 	}
 }
 
 func (f fixture) expenseTemplate(t *testing.T, amount int64) int64 {
 	t.Helper()
 	tpl, err := f.tpl.Create(context.Background(), f.wid, template.Input{
-		Name: "Rent", AccountID: &f.accA, Amount: amount, PaymentMode: 4,
+		Name: "Rent", AccountID: &f.accA, Amount: amount, PaymentMode: 4, PayeeID: &f.payee,
 	})
 	if err != nil {
 		t.Fatalf("template: %v", err)

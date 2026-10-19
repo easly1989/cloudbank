@@ -151,6 +151,9 @@ type Querier interface {
 	GetPayee(ctx context.Context, id int64) (Payee, error)
 	GetPluggyConfig(ctx context.Context, walletID int64) (BankPluggyConfig, error)
 	GetSchedule(ctx context.Context, id int64) (Schedule, error)
+	// One schedule in the list's shape: its template's name, amount and payee,
+	// and how many of the transactions it registered have no payee (#723).
+	GetScheduleWithTemplate(ctx context.Context, id int64) (GetScheduleWithTemplateRow, error)
 	GetSession(ctx context.Context, id string) (Session, error)
 	GetTag(ctx context.Context, id int64) (Tag, error)
 	GetTagByName(ctx context.Context, arg GetTagByNameParams) (Tag, error)
@@ -311,6 +314,7 @@ type Querier interface {
 	ListTagsForWallet(ctx context.Context, walletID int64) ([]Tag, error)
 	ListTagsWithCounts(ctx context.Context, walletID int64) ([]ListTagsWithCountsRow, error)
 	ListTemplateSplits(ctx context.Context, templateID int64) ([]TemplateSplit, error)
+	ListTemplateTransactionsWithoutPayee(ctx context.Context, arg ListTemplateTransactionsWithoutPayeeParams) ([]int64, error)
 	ListTemplatesForWallet(ctx context.Context, walletID int64) ([]Template, error)
 	ListTransactionTags(ctx context.Context, transactionID int64) ([]string, error)
 	ListTransactionsByIDs(ctx context.Context, arg ListTransactionsByIDsParams) ([]Transaction, error)

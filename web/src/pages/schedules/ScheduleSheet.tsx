@@ -1,6 +1,7 @@
 import {
   ActionIcon,
   Button,
+  Checkbox,
   Collapse,
   Group,
   NumberInput,
@@ -11,11 +12,14 @@ import {
   UnstyledButton,
 } from "@mantine/core";
 import { IconChevronDown, IconTrash } from "@tabler/icons-react";
+import { useMediaQuery } from "@mantine/hooks";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
+  applySchedulePayee,
+  createPayee,
   createSchedule,
   createTemplate,
   listAccounts,
@@ -24,6 +28,7 @@ import {
   listTemplates,
   updateSchedule,
   updateTemplate,
+  type Payee,
   type Schedule,
   type ScheduleInput,
   type ScheduleUnit,
@@ -33,12 +38,15 @@ import {
 } from "../../api/client";
 import { amountColor } from "../../amountTone";
 import { todayCivil } from "../../civilDate";
+import { CreatableSelect } from "../../components/CreatableSelect";
 import { SideSheet } from "../../components/SideSheet";
+import { useCreateFromSheet } from "../../components/useCreateFromSheet";
 import { ENTRY_SHEET } from "../../components/entrySheetTheme";
 import { minorToInput } from "../../money";
 import { PAYMENT_MODES } from "../../transactionEnums";
 import { useAmountParser } from "../../useAmountParser";
 import { notifyError } from "../../notifyError";
+import { sameName } from "../../sameName";
 
 const UNITS: ScheduleUnit[] = ["day", "week", "month", "year"];
 const WEEKEND_MODES = [0, 1, 2, 3];
@@ -49,6 +57,10 @@ const WEEKEND_MODES = [0, 1, 2, 3];
  * account, how often and from when, and whether it registers itself — and the
  * rest waits under More details. It took over from the Bills page's quick
  * "Add bill" form, which asked for the same first five things.
+ *
+ * The payee is among the things in view, and required for anything but a
+ * transfer (#723): a schedule saved before that shows its payee missing at
+ * once, and offers to give the new one to the transactions it registered.
  */
 export function ScheduleSheet({
   opened,
@@ -57,6 +69,8 @@ export function ScheduleSheet({
   editing,
   onSaved,
   onDelete,
+  walk = null,
+  onSavedNext,
 }: {
   opened: boolean;
   onClose: () => void;
@@ -64,8 +78,14 @@ export function ScheduleSheet({
   editing: Schedule | null;
   onSaved: () => void;
   onDelete: (s: Schedule) => void;
+  /** Where this one is among the schedules being completed one by one. */
+  walk?: { index: number; total: number } | null;
+  /** Opens the next schedule of the walk after a save; false when there is none. */
+  onSavedNext?: () => boolean;
 }) {
   const { t } = useTranslation();
+  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
+  const createFromSheet = useCreateFromSheet(walletId, phone ? "top-center" : "bottom-left");
   const qc = useQueryClient();
   const parseAmount = useAmountParser();
   const templatesQuery = useQuery({
@@ -120,6 +140,9 @@ export function ScheduleSheet({
   const [postAdvance, setPostAdvance] = useState<number | string>(0);
   const [autoPost, setAutoPost] = useState(true);
   const [more, setMore] = useState(false);
+  // Whether to give a new payee to the transactions registered without one.
+  const [backfill, setBackfill] = useState(true);
+  const [triedSave, setTriedSave] = useState(false);
 
   const account = accounts.find((a) => String(a.id) === accountId);
   const fd = account?.currencyFracDigits ?? 2;
@@ -175,6 +198,8 @@ export function ScheduleSheet({
       setPostAdvance(e?.postAdvance ?? 0);
       setAutoPost(e?.autoPost ?? true);
       setMore(false);
+      setBackfill(true);
+      setTriedSave(false);
       if (!e) {
         setName("");
         setAccountId(accounts[0] ? String(accounts[0].id) : null);
@@ -216,6 +241,13 @@ export function ScheduleSheet({
     const p = payees.find((x) => String(x.id) === v);
     if (p?.defaultCategoryId != null) setCategoryId(String(p.defaultCategoryId));
   };
+
+  const addPayee = (name: string) =>
+    createFromSheet<Payee>(
+      "payees",
+      () => createPayee(walletId, { name }),
+      (list) => list.find((p) => sameName(p.name, name)),
+    );
 
   const buildTemplate = (): TemplateInput => {
     const minor = (parseAmount(amount, fd, dc) ?? 0) * (direction === "expense" ? -1 : 1);
@@ -264,11 +296,15 @@ export function ScheduleSheet({
         postAdvance: Number(postAdvance) || 0,
         autoPost,
       };
-      return editing ? updateSchedule(walletId, editing.id, body) : createSchedule(walletId, body);
+      const saved = editing
+        ? await updateSchedule(walletId, editing.id, body)
+        : await createSchedule(walletId, body);
+      if (asksBackfill && backfill) await applySchedulePayee(walletId, saved.id);
+      return saved;
     },
     onSuccess: () => {
       onSaved();
-      onClose();
+      if (!onSavedNext?.()) onClose();
     },
     onError: (err: unknown) => notifyError(err),
   });
@@ -288,6 +324,15 @@ export function ScheduleSheet({
     .filter(Boolean)
     .join(", ");
   const canSave = !!accountId && (parseAmount(amount, fd, dc) ?? 0) > 0 && !!nextDue;
+  const needsPayee = !isTransfer && !payeeId;
+  // A payee set or changed on a schedule that registered transactions without one.
+  const asksBackfill =
+    !!editing &&
+    !isTransfer &&
+    !!payeeId &&
+    editing.withoutPayee > 0 &&
+    String(editingTemplate?.payeeId ?? "") !== payeeId;
+  const lastOfWalk = walk != null && walk.index === walk.total - 1;
   const sign = direction === "expense" ? -1 : 1;
 
   return (
@@ -314,12 +359,21 @@ export function ScheduleSheet({
           <Button variant="default" onClick={onClose}>
             {t("schedules.cancel")}
           </Button>
-          <Button onClick={() => save.mutate()} loading={save.isPending} disabled={!canSave}>
-            {t("schedules.save")}
+          <Button
+            onClick={() => (needsPayee ? setTriedSave(true) : save.mutate())}
+            loading={save.isPending}
+            disabled={!canSave}
+          >
+            {walk && !lastOfWalk ? t("schedules.missingPayee.saveNext") : t("schedules.save")}
           </Button>
         </>
       }
     >
+      {walk && (
+        <Text size="sm" fw={500} c="var(--cb-attention)" data-testid="payee-walk">
+          {t("schedules.missingPayee.walk", { n: walk.index + 1, total: walk.total })}
+        </Text>
+      )}
       {isTransfer && (
         <Text size="xs" c="dimmed">
           {t("schedules.transferNote")}
@@ -367,6 +421,36 @@ export function ScheduleSheet({
         rightSectionWidth={48}
         styles={{ input: { color: amountColor(sign) } }}
       />
+      {isTransfer ? (
+        <Select label={t("transactions.payee")} data={[]} value={null} disabled />
+      ) : (
+        <CreatableSelect
+          label={t("transactions.payee")}
+          description={t("schedules.form.payeeHint")}
+          withAsterisk
+          data={payees.map((p) => ({ value: String(p.id), label: p.name }))}
+          names={payees.map((p) => p.name)}
+          createLabel={(n) => t("transactions.addPayee", { name: n })}
+          onCreate={addPayee}
+          value={payeeId}
+          onChange={onPayee}
+          error={
+            needsPayee && (triedSave || editingTemplate != null)
+              ? t("schedules.form.payeeRequired")
+              : undefined
+          }
+          clearable
+        />
+      )}
+      {asksBackfill && (
+        <Checkbox
+          checked={backfill}
+          onChange={(e) => setBackfill(e.currentTarget.checked)}
+          label={t("schedules.form.applyPayee", { count: editing.withoutPayee })}
+          description={t("schedules.form.applyPayeeHint")}
+          data-testid="payee-backfill"
+        />
+      )}
       <Select
         label={t("transactions.account")}
         data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
@@ -429,15 +513,6 @@ export function ScheduleSheet({
               clearable
             />
           )}
-          <Select
-            label={t("transactions.payee")}
-            data={payees.map((p) => ({ value: String(p.id), label: p.name }))}
-            value={payeeId}
-            onChange={onPayee}
-            disabled={isTransfer}
-            searchable
-            clearable
-          />
           <Select
             label={t("transactions.category")}
             data={categoryOptions}

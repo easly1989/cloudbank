@@ -40,6 +40,7 @@ import {
   commitments,
   inFlow,
   isMonth,
+  missingPayee,
   monthFigures,
   monthGrid,
   monthOf,
@@ -51,6 +52,7 @@ import {
 } from "./schedules/scheduleCalendar";
 import { ScheduleList } from "./schedules/ScheduleList";
 import { ScheduleSheet } from "./schedules/ScheduleSheet";
+import { MissingPayeeBanner } from "./schedules/MissingPayeeBanner";
 import classes from "./schedules/schedules.module.css";
 import { useWeekStart } from "../i18n/week";
 import { notifyError } from "../notifyError";
@@ -147,6 +149,7 @@ export function SchedulesPage() {
     [nowOccurrences, today, needs],
   );
   const perPeriod = useMemo(() => commitments(schedules), [schedules]);
+  const withoutPayee = useMemo(() => schedules.filter(missingPayee), [schedules]);
   // Each schedule's occurrence in the current month, for the list's last column.
   const thisMonth = useMemo(() => {
     const m = new Map<number, ScheduleOccurrence>();
@@ -189,7 +192,11 @@ export function SchedulesPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Schedule | null>(null);
   const [opened, setOpened] = useState<ScheduleOccurrence | null>(null);
-  const openSchedule = (s: Schedule | null) => {
+  // The schedules without a payee, as they were when the reader set out to
+  // complete them one by one; null otherwise.
+  const [walk, setWalk] = useState<number[] | null>(null);
+  const openSchedule = (s: Schedule | null, walking = false) => {
+    if (!walking) setWalk(null);
     setOpened(null);
     setEditing(s);
     setSheetOpen(true);
@@ -416,6 +423,17 @@ export function SchedulesPage() {
         actions={schedules.length > 0 ? addButton : undefined}
       />
 
+      {withoutPayee.length > 0 && (
+        <MissingPayeeBanner
+          count={withoutPayee.length}
+          phone={phone}
+          onStart={() => {
+            setWalk(withoutPayee.map((s) => s.id));
+            openSchedule(withoutPayee[0], true);
+          }}
+        />
+      )}
+
       {schedules.length === 0 && schedulesQuery.isSuccess && (
         <EmptyState
           icon={IconCalendarRepeat}
@@ -509,10 +527,22 @@ export function SchedulesPage() {
         opened={sheetOpen}
         onClose={() => {
           setSheetOpen(false);
+          setWalk(null);
           if (deepLink !== null) setParam("schedule", null);
         }}
         walletId={walletId}
         editing={editing}
+        walk={
+          walk && editing && walk.includes(editing.id)
+            ? { index: walk.indexOf(editing.id), total: walk.length }
+            : null
+        }
+        onSavedNext={() => {
+          const next = walk && editing && walk[walk.indexOf(editing.id) + 1];
+          const s = next ? schedules.find((x) => x.id === next) : undefined;
+          if (s) setEditing(s);
+          return !!s;
+        }}
         onSaved={invalidate}
         onDelete={(s) => void askDelete(s)}
       />

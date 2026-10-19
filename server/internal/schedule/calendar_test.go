@@ -25,9 +25,9 @@ func TestCalendarRegisteredAndProjected(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	energyTpl, _ := f.tpl.Create(ctx, f.wid, template.Input{Name: "Energy", AccountID: &f.accA, Amount: -7800})
+	energyTpl, _ := f.tpl.Create(ctx, f.wid, template.Input{Name: "Energy", AccountID: &f.accA, Amount: -7800, PayeeID: &f.payee})
 	energy, _ := f.s.Create(ctx, f.wid, Input{TemplateID: energyTpl.ID, Unit: UnitMonth, EveryN: 1, NextDue: "2026-09-26"})
-	salaryTpl, _ := f.tpl.Create(ctx, f.wid, template.Input{Name: "Salary", AccountID: &f.accA, Amount: 245000})
+	salaryTpl, _ := f.tpl.Create(ctx, f.wid, template.Input{Name: "Salary", AccountID: &f.accA, Amount: 245000, PayeeID: &f.payee})
 	_, _ = f.s.Create(ctx, f.wid, Input{TemplateID: salaryTpl.ID, Unit: UnitMonth, EveryN: 1, NextDue: "2026-09-30", AutoPost: true})
 
 	cal, err := f.s.Calendar(ctx, f.wid, "2026-09-01", "2026-09-30", at(t, "2026-09-29"))
@@ -117,7 +117,7 @@ func TestPostNowWithOverride(t *testing.T) {
 		t.Errorf("next due = %s, want 2026-10-26", got.NextDue)
 	}
 
-	split, _ := f.tpl.Create(ctx, f.wid, template.Input{Name: "Split", AccountID: &f.accA, Amount: -1000,
+	split, _ := f.tpl.Create(ctx, f.wid, template.Input{Name: "Split", AccountID: &f.accA, Amount: -1000, PayeeID: &f.payee,
 		Splits: []template.Split{{Amount: -600}, {Amount: -400}}})
 	ssc, _ := f.s.Create(ctx, f.wid, Input{TemplateID: split.ID, Unit: UnitMonth, EveryN: 1, NextDue: "2026-09-01"})
 	other := int64(-1200)
