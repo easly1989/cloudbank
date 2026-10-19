@@ -11,20 +11,49 @@ SELECT * FROM schedules WHERE id = ? LIMIT 1;
 
 -- name: ListSchedulesForWallet :many
 SELECT sch.*, tpl.name AS template_name, tpl.amount AS template_amount,
-       tpl.is_transfer AS template_is_transfer
+       tpl.is_transfer AS template_is_transfer,
+       tpl.payee_id AS template_payee_id, pay.name AS payee_name,
+       (SELECT COUNT(*) FROM transactions t
+        WHERE t.template_id = tpl.id AND t.wallet_id = sch.wallet_id
+          AND t.payee_id IS NULL AND tpl.is_transfer = 0) AS without_payee
 FROM schedules sch
 JOIN templates tpl ON tpl.id = sch.template_id
+LEFT JOIN payees pay ON pay.id = tpl.payee_id
 WHERE sch.wallet_id = ?
 ORDER BY sch.next_due, sch.id;
+
+-- name: GetScheduleWithTemplate :one
+-- One schedule in the list's shape: its template's name, amount and payee,
+-- and how many of the transactions it registered have no payee (#723).
+SELECT sch.*, tpl.name AS template_name, tpl.amount AS template_amount,
+       tpl.is_transfer AS template_is_transfer,
+       tpl.payee_id AS template_payee_id, pay.name AS payee_name,
+       (SELECT COUNT(*) FROM transactions t
+        WHERE t.template_id = tpl.id AND t.wallet_id = sch.wallet_id
+          AND t.payee_id IS NULL AND tpl.is_transfer = 0) AS without_payee
+FROM schedules sch
+JOIN templates tpl ON tpl.id = sch.template_id
+LEFT JOIN payees pay ON pay.id = tpl.payee_id
+WHERE sch.id = ?;
+
+-- name: ListTemplateTransactionsWithoutPayee :many
+SELECT id FROM transactions
+WHERE template_id = ? AND wallet_id = ? AND payee_id IS NULL
+ORDER BY id;
 
 -- name: ListAllSchedules :many
 SELECT * FROM schedules ORDER BY id;
 
 -- name: ListUpcomingSchedules :many
 SELECT sch.*, tpl.name AS template_name, tpl.amount AS template_amount,
-       tpl.is_transfer AS template_is_transfer
+       tpl.is_transfer AS template_is_transfer,
+       tpl.payee_id AS template_payee_id, pay.name AS payee_name,
+       (SELECT COUNT(*) FROM transactions t
+        WHERE t.template_id = tpl.id AND t.wallet_id = sch.wallet_id
+          AND t.payee_id IS NULL AND tpl.is_transfer = 0) AS without_payee
 FROM schedules sch
 JOIN templates tpl ON tpl.id = sch.template_id
+LEFT JOIN payees pay ON pay.id = tpl.payee_id
 WHERE sch.wallet_id = ? AND sch.next_due <= ?
 ORDER BY sch.next_due, sch.id;
 

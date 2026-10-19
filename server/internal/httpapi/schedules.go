@@ -30,6 +30,7 @@ func (h *scheduleHandlers) walletRoutes(r chi.Router) {
 		r.Delete("/", h.delete)
 		r.Post("/post", h.postNow)
 		r.Post("/skip", h.skip)
+		r.Post("/apply-payee", h.applyPayee)
 	})
 }
 
@@ -196,6 +197,21 @@ func (h *scheduleHandlers) skip(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// applyPayee gives the schedule's payee to the transactions it registered
+// without one (#723).
+func (h *scheduleHandlers) applyPayee(w http.ResponseWriter, r *http.Request) {
+	sc, ok := h.scheduleFromPath(w, r)
+	if !ok {
+		return
+	}
+	wl, _ := walletFromContext(r.Context())
+	n, err := h.svc.ApplyPayee(r.Context(), wl.ID, sc.ID)
+	if !writeScheduleError(w, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]int{"updated": n})
+}
+
 func (h *scheduleHandlers) scheduleFromPath(w http.ResponseWriter, r *http.Request) (schedule.Schedule, bool) {
 	wl, _ := walletFromContext(r.Context())
 	id, err := strconv.ParseInt(chi.URLParam(r, "scheduleId"), 10, 64)
@@ -228,5 +244,6 @@ func writeScheduleError(w http.ResponseWriter, err error) bool {
 		errCase{schedule.ErrInvalidDate, http.StatusBadRequest, "invalid_date", "invalid next-due date (want YYYY-MM-DD)"},
 		errCase{schedule.ErrTemplate, http.StatusBadRequest, "invalid_template", "template not found in this wallet"},
 		errCase{schedule.ErrTemplateNoAcct, http.StatusBadRequest, "template_no_account", "template must target an account"},
+		errCase{schedule.ErrPayeeRequired, http.StatusBadRequest, "payee_required", "an income or expense schedule needs a payee"},
 	)
 }

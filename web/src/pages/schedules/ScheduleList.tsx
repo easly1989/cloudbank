@@ -6,7 +6,7 @@ import type { Schedule, ScheduleOccurrence } from "../../api/client";
 import { amountColor, attentionColor } from "../../amountTone";
 import { useOccurrenceLabel, useShortDate } from "./labels";
 import { OccurrenceIcon } from "./OccurrenceIcon";
-import { cadence, isPaid } from "./scheduleCalendar";
+import { cadence, isPaid, missingPayee } from "./scheduleCalendar";
 import classes from "./schedules.module.css";
 
 export interface ScheduleActions {
@@ -53,6 +53,13 @@ export function ScheduleList({
       ? t("schedules.list.aheadTo", { date: short(s.lastPosted) })
       : null;
   const late = (s: Schedule) => s.nextDue < today;
+  // Who it pays, or the mark of a schedule still without a payee (#723).
+  const payee = (s: Schedule) =>
+    missingPayee(s) ? (
+      <span style={{ color: attentionColor }}>{t("schedules.list.noPayee")}</span>
+    ) : (
+      s.payeeName
+    );
   const menu = (s: Schedule) => (
     <Menu position="bottom-end" withinPortal>
       <Menu.Target>
@@ -117,6 +124,7 @@ export function ScheduleList({
               )}
               <UnstyledButton onClick={() => actions.onEdit(s)} style={{ minWidth: 0 }}>
                 <div className={classes.itemName}>{s.templateName}</div>
+                {!s.templateIsTransfer && <div className={classes.itemMeta}>{payee(s)}</div>}
                 <div className={classes.itemMeta}>{repeats(s)}</div>
                 <div
                   className={classes.itemMeta}
@@ -170,7 +178,15 @@ export function ScheduleList({
               style={{ minWidth: 0 }}
             >
               <div style={{ fontWeight: 500 }}>{s.templateName}</div>
-              <div className={classes.rowSub}>{acc.name}</div>
+              <div className={classes.rowSub}>
+                {!s.templateIsTransfer && (
+                  <>
+                    {payee(s)}
+                    {" · "}
+                  </>
+                )}
+                {acc.name}
+              </div>
             </UnstyledButton>
             <div className={classes.rowAmount} style={{ color: amountColor(s.templateAmount) }}>
               {format(s.templateAmount, acc.id)}

@@ -138,6 +138,7 @@ describe("commitments", () => {
       weekendMode: 0,
       postAdvance: 0,
       autoPost: false,
+      withoutPayee: 0,
       ...extra,
     });
     const c = commitments([

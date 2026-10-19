@@ -7,11 +7,18 @@ import (
 	"testing"
 )
 
+func makePayee(t *testing.T, c *testClient, wid int64, name string) int64 {
+	t.Helper()
+	p := decodeTemplate(t, c.do(http.MethodPost, "/api/v1/wallets/"+strconv.FormatInt(wid, 10)+"/payees", map[string]any{"name": name}, true))
+	return int64(p["id"].(float64))
+}
+
+// makeTemplate makes an expense template with a payee, which a schedule needs (#723).
 func makeTemplate(t *testing.T, c *testClient, wid, acc int64) int64 {
 	t.Helper()
 	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
 	tpl := decodeTemplate(t, c.do(http.MethodPost, base+"/templates", map[string]any{
-		"name": "Rent", "accountId": acc, "amount": -120000, "paymentMode": 4,
+		"name": "Rent", "accountId": acc, "amount": -120000, "paymentMode": 4, "payeeId": makePayee(t, c, wid, "Landlord"),
 	}, true))
 	return int64(tpl["id"].(float64))
 }
@@ -144,5 +151,59 @@ func TestScheduleCalendar(t *testing.T) {
 	}
 	if code, _ := calendar("from=2026-09-01&to=2026-09-30&today=x"); code != http.StatusBadRequest {
 		t.Errorf("bad today = %d, want 400", code)
+	}
+}
+
+// A schedule without a payee is refused; one that has a payee gives it to the
+// transactions it registered without one; another user's is out of reach (#723).
+func TestSchedulePayee(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	bare := decodeTemplate(t, c.do(http.MethodPost, base+"/templates", map[string]any{
+		"name": "Gym", "accountId": acc, "amount": -4500,
+	}, true))
+	r := c.do(http.MethodPost, base+"/schedules", map[string]any{
+		"templateId": bare["id"], "unit": "month", "everyN": 1, "nextDue": "2026-09-01",
+	}, true)
+	var e struct {
+		Error struct{ Code string } `json:"error"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&e)
+	r.Body.Close()
+	if r.StatusCode != http.StatusBadRequest || e.Error.Code != "payee_required" {
+		t.Fatalf("create without payee = %d %q, want 400 payee_required", r.StatusCode, e.Error.Code)
+	}
+
+	tpl := makeTemplate(t, c, wid, acc)
+	sc := decodeTxn(t, c.do(http.MethodPost, base+"/schedules", map[string]any{
+		"templateId": tpl, "unit": "month", "everyN": 1, "nextDue": "2026-09-01",
+	}, true))
+	id := strconv.FormatInt(int64(sc["id"].(float64)), 10)
+	if sc["payeeName"] != "Landlord" || sc["withoutPayee"] != float64(0) {
+		t.Fatalf("created = %+v", sc)
+	}
+	for _, d := range []string{"2026-07-01", "2026-08-01"} {
+		c.do(http.MethodPost, base+"/transactions", map[string]any{
+			"accountId": acc, "date": d, "amount": -120000, "templateId": tpl,
+		}, true).Body.Close()
+	}
+	if got := decodeTxn(t, c.do(http.MethodGet, base+"/schedules/"+id, nil, false)); got["withoutPayee"] != float64(2) {
+		t.Fatalf("withoutPayee = %v, want 2", got["withoutPayee"])
+	}
+
+	c.do(http.MethodPost, "/api/v1/admin/users", map[string]any{"username": "bob", "password": "bobssecret"}, true).Body.Close()
+	bob := c.fork()
+	bob.do(http.MethodPost, "/api/v1/auth/login", map[string]any{"username": "bob", "password": "bobssecret"}, true).Body.Close()
+	if r := bob.do(http.MethodPost, base+"/schedules/"+id+"/apply-payee", nil, true); r.StatusCode != http.StatusNotFound {
+		t.Fatalf("bob apply = %d, want 404", r.StatusCode)
+	}
+
+	applied := decodeTxn(t, c.do(http.MethodPost, base+"/schedules/"+id+"/apply-payee", nil, true))
+	if applied["updated"] != float64(2) {
+		t.Fatalf("apply = %+v, want updated 2", applied)
+	}
+	if got := decodeTxn(t, c.do(http.MethodGet, base+"/schedules/"+id, nil, false)); got["withoutPayee"] != float64(0) {
+		t.Fatalf("withoutPayee after = %v, want 0", got["withoutPayee"])
 	}
 }

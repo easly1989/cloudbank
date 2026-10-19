@@ -13,6 +13,9 @@ const parse = (s: string) => new Date(`${s}T00:00:00Z`);
 /** Reconciled, in the transactions' status codes. */
 export const STATUS_RECONCILED = 2;
 
+/** An income or expense schedule saved before a payee was required (#723). */
+export const missingPayee = (s: Schedule) => !s.templateIsTransfer && s.payeeId == null;
+
 /** "2026-09" for any date in September 2026. */
 export const monthOf = (date: string) => date.slice(0, 7);
 

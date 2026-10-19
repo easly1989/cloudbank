@@ -655,7 +655,8 @@
       "schedule": "Agendamento",
       "nextHead": "Próximo",
       "thisMonth": "Este mês",
-      "notRegistered": "não registrado"
+      "notRegistered": "não registrado",
+      "noPayee": "Sem beneficiário"
     },
     "repeat": {
       "day": "Todo dia",
@@ -672,11 +673,24 @@
       "namePlaceholder": "Aluguel, luz, salário…",
       "isExpense": "Saída de dinheiro: mudar para entrada",
       "isIncome": "Entrada de dinheiro: mudar para saída",
-      "autoPostHint": "Registrar na data, sem perguntar."
+      "autoPostHint": "Registrar na data, sem perguntar.",
+      "payeeHint": "Para quem vai ou de quem vem o dinheiro",
+      "payeeRequired": "Escolha um beneficiário",
+      "applyPayee_one": "Aplicar também ao lançamento já registrado sem beneficiário",
+      "applyPayee_other": "Aplicar também aos {{count}} lançamentos já registrados sem beneficiário",
+      "applyPayeeHint": "Os que já têm um continuam com o deles."
     },
     "splitNote_one": "Este lançamento é dividido, então o valor e a categoria não podem ser alterados aqui. O resto pode.",
     "splitNote_other": "Este lançamento é dividido entre {{count}} categorias, então o valor e as categorias não podem ser alterados aqui. O resto pode.",
-    "splitCategories": "Dividido · {{names}}"
+    "splitCategories": "Dividido · {{names}}",
+    "missingPayee": {
+      "title_one": "{{count}} agendamento sem beneficiário",
+      "title_other": "{{count}} agendamentos sem beneficiário",
+      "body": "Agora o beneficiário é obrigatório: ele diz para quem vai ou de quem vem o dinheiro, e você também pode aplicá-lo aos lançamentos já registrados.",
+      "start": "Completar um por um",
+      "walk": "Sem beneficiário: {{n}} de {{total}}",
+      "saveNext": "Salvar e ir para o próximo"
+    }
   },
   "tags": {
     "title": "Tags",

@@ -30,6 +30,7 @@ const schedule = (id: number, templateId: number, nextDue: string): Schedule => 
   weekendMode: 0,
   postAdvance: 0,
   autoPost: true,
+  withoutPayee: 0,
 });
 
 describe("buildGroups", () => {

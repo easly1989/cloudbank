@@ -259,12 +259,20 @@ only money coming in.
 - **All schedules.** One row per schedule: the amount, how it repeats, when it
   is next due (and how far ahead it is registered), its mode, and where this
   month's occurrence stands. The figures give what the schedules add up to per
-  month and per year. Click a row to edit it; its **⋯** menu posts now, skips,
-  edits or deletes it.
+  month and per year. Under each name, who it pays (or **No payee**) and the
+  account. Click a row to edit it; its **⋯** menu posts now, skips, edits or
+  deletes it.
 - **Adding and editing.** **New schedule** opens a sheet beside the page: the
-  name, the amount, the account, how often and from when, and whether it posts
-  itself. **More details** holds the payee, category, memo, payment mode, the
+  name, the amount, the payee, the account, how often and from when, and whether
+  it posts itself. **More details** holds the category, memo, payment mode, the
   weekend handling, **Post days early** and a limit on the number of occurrences.
+- **The payee is required** for every schedule except a transfer.
+  - Schedules saved without one, such as imported ones, are counted in a banner
+    at the top of the page. **Complete them one by one** opens each in turn.
+  - Each one still registers itself in the meantime.
+  - When you set or change the payee of a schedule that already registered
+    transactions without one, the sheet offers to give it to those transactions
+    too. Transactions that already have a payee keep it.
 - **Weekend handling.** When a date falls on a weekend, keep it, move it to the
   Friday before or the Monday after, or skip it.
 - **Mode.**

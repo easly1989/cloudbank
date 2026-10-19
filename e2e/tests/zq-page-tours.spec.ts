@@ -318,6 +318,15 @@ test("every step of every tour points at something on its page", async ({
         await fetch(`${base}/schedules`, { credentials: "same-origin" })
       ).json();
       if (existing.length > 0) return;
+      // A schedule needs a payee (#723).
+      const payee = await (
+        await fetch(`${base}/payees`, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: H,
+          body: JSON.stringify({ name: `Tour landlord ${Date.now()}` }),
+        })
+      ).json();
       const tpl = await (
         await fetch(`${base}/templates`, {
           method: "POST",
@@ -327,6 +336,7 @@ test("every step of every tour points at something on its page", async ({
             name: "Tour rent",
             accountId,
             amount: -50000,
+            payeeId: payee.id,
           }),
         })
       ).json();
