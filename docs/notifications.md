@@ -4,7 +4,7 @@ CloudBank tells you when something needs you: a bank mailbox that stopped
 working, bank mails no pattern could read, bills coming due. Every notice lands
 in the bell in the page header, kept for 90 days. It can also reach you
 somewhere else: push on a device, email, a Matrix room, Telegram, Discord,
-Slack, or a webhook of your own, such as Home Assistant.
+Slack, ntfy, Gotify, or a webhook of your own, such as Home Assistant.
 
 It lives in **Settings › Notifications**: a list of the channels, each with how
 it stands and how many events it gets, and a page for each channel to connect
@@ -18,6 +18,8 @@ it and pick its events. The [demo](demo.md) has only the bell.
 - [Telegram](#telegram)
 - [Discord](#discord)
 - [Slack](#slack)
+- [ntfy](#ntfy)
+- [Gotify](#gotify)
 - [The webhook](#the-webhook)
 - [Home Assistant](#home-assistant)
 - [For the administrator: the mail server](#for-the-administrator-the-mail-server)
@@ -38,6 +40,9 @@ it and pick its events. The [demo](demo.md) has only the bell.
   [Telegram](#telegram).
 - **Discord** and **Slack.** A message in a channel, through its incoming
   webhook. See [Discord](#discord) and [Slack](#slack).
+- **ntfy** and **Gotify.** A push to your phone through ntfy, public or
+  self-hosted, or through a Gotify server of yours. See [ntfy](#ntfy) and
+  [Gotify](#gotify).
 - **Webhook.** A POST with the event as JSON to a URL of yours: Home Assistant,
   n8n, a script. See [the webhook](#the-webhook).
 
@@ -89,8 +94,8 @@ A code is good for 15 minutes and 5 tries. After that, or when it did not
 arrive, **Send another**. A new address needs a new code; saving the same one
 again does not.
 
-A bot of your own, Discord, Slack and the webhook send through something of
-yours, so they need no code.
+A bot of your own, Discord, Slack, ntfy, Gotify and the webhook send through
+something of yours, so they need no code.
 
 ## Matrix
 
@@ -196,6 +201,35 @@ Slack takes messages through an app with incoming webhooks:
 
 As with Discord, the URL is the key: CloudBank keeps it encrypted and shows only
 its host. A revoked webhook shows as **Last delivery failed: 403** or **404**.
+
+## ntfy
+
+[ntfy](https://ntfy.sh) delivers to its phone app whatever is published to a
+topic you subscribe to.
+
+1. **Server**: leave it empty for the public `ntfy.sh`, or give your own, such
+   as `https://ntfy.example.org`. A server on your local network can only be
+   saved by an administrator.
+2. **Topic**: the name you subscribe to in the ntfy app. On `ntfy.sh` anyone
+   who knows a topic can read it, so pick a long name that is hard to guess.
+3. **Access token**, optional: for a server or a topic that needs one, an
+   ntfy access token (`tk_…`). It is stored encrypted when the server has
+   `CB_SECRET_KEY` and never comes back to the page.
+
+A refused token shows as **Last delivery failed: 401** or **403**.
+
+## Gotify
+
+[Gotify](https://gotify.net) is a server of your own that pushes to its phone
+app.
+
+1. In Gotify, **Apps › Create application**, and copy its token.
+2. In CloudBank, the **Server**, such as `https://gotify.example.org`, and the
+   **Application token**. A server on your local network can only be saved by
+   an administrator.
+
+The token is stored encrypted when the server has `CB_SECRET_KEY` and never
+comes back to the page. A refused one shows as **Last delivery failed: 401**.
 
 ## The webhook
 
@@ -323,5 +357,5 @@ unless the administrator sets it; `0` turns the cap off) on each channel that
 goes through the installation: email, and the shared Matrix and Telegram bots.
 Tests and codes count too. Past the cap the rest wait for the next hour, and
 the channel reads **Last delivery failed: hourly limit reached**, until the
-next one goes through. A bot of your own, Discord, Slack and the webhook are not
-capped.
+next one goes through. A bot of your own, Discord, Slack, ntfy, Gotify and the
+webhook are not capped.

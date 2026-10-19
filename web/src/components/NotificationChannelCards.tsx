@@ -656,6 +656,137 @@ function TelegramSetup() {
   );
 }
 
+/** ntfy: a topic on ntfy.sh or the reader's own server, with an optional token. */
+function NtfySetup() {
+  const { t } = useTranslation();
+  const state = useChannel("ntfy");
+  const actions = useChannelActions("ntfy");
+  const [server, setServer] = useState<string | null>(null);
+  const [topic, setTopic] = useState<string | null>(null);
+  const [token, setToken] = useState("");
+  if (!state || !state.available) return null;
+  // ntfy.sh is what an empty server means; show it empty too.
+  const savedServer = state.server === NTFY_SH ? "" : state.server;
+  const serverValue = server ?? savedServer;
+  const topicValue = topic ?? state.target;
+  const changed =
+    !state.configured ||
+    serverValue.trim().replace(/\/+$/, "") !== savedServer ||
+    topicValue.trim() !== state.target ||
+    token.trim() !== "";
+  const submit = () => {
+    const body: SaveBody = { target: topicValue.trim(), server: serverValue.trim() };
+    if (token.trim()) body.secret = token.trim();
+    actions.save.mutate(body, {
+      onSuccess: () => {
+        setServer(null);
+        setTopic(null);
+        setToken("");
+      },
+    });
+  };
+  return (
+    <SetupCard>
+      <Stack gap="sm">
+        <TextInput
+          {...FIELD}
+          label={t("notif.selfServer")}
+          description={t("notif.ntfyServerHelp")}
+          placeholder={NTFY_SH}
+          value={serverValue}
+          onChange={(e) => setServer(e.currentTarget.value)}
+          autoComplete="off"
+        />
+        <TextInput
+          {...FIELD}
+          label={t("notif.ntfyTopic")}
+          description={t("notif.ntfyTopicHelp")}
+          value={topicValue}
+          onChange={(e) => setTopic(e.currentTarget.value)}
+          autoComplete="off"
+        />
+        <PasswordInput
+          {...FIELD}
+          label={t("notif.ntfyToken")}
+          description={t("notif.ntfyTokenHelp")}
+          placeholder={state.hasSecret ? t("notif.secretSaved") : t("notif.optional")}
+          value={token}
+          onChange={(e) => setToken(e.currentTarget.value)}
+          autoComplete="new-password"
+        />
+        <Group>
+          <Button
+            disabled={!changed || !topicValue.trim()}
+            loading={actions.save.isPending}
+            onClick={submit}
+          >
+            {t("common.save")}
+          </Button>
+        </Group>
+      </Stack>
+      <Footer state={state} actions={actions} />
+    </SetupCard>
+  );
+}
+
+const NTFY_SH = "https://ntfy.sh";
+
+/** Gotify: the reader's server and an application's token. */
+function GotifySetup() {
+  const { t } = useTranslation();
+  const state = useChannel("gotify");
+  const actions = useChannelActions("gotify");
+  const [server, setServer] = useState<string | null>(null);
+  const [token, setToken] = useState("");
+  if (!state || !state.available) return null;
+  const serverValue = server ?? state.server;
+  const changed = serverValue.trim().replace(/\/+$/, "") !== state.server || token.trim() !== "";
+  const complete = serverValue.trim() !== "" && (token.trim() !== "" || state.hasSecret);
+  const submit = () => {
+    const body: SaveBody = { server: serverValue.trim() };
+    if (token.trim()) body.secret = token.trim();
+    actions.save.mutate(body, {
+      onSuccess: () => {
+        setServer(null);
+        setToken("");
+      },
+    });
+  };
+  return (
+    <SetupCard>
+      <Stack gap="sm">
+        <TextInput
+          {...FIELD}
+          label={t("notif.selfServer")}
+          placeholder="https://gotify.example.org"
+          value={serverValue}
+          onChange={(e) => setServer(e.currentTarget.value)}
+          autoComplete="off"
+        />
+        <PasswordInput
+          {...FIELD}
+          label={t("notif.gotifyToken")}
+          description={t("notif.gotifyTokenHelp")}
+          placeholder={state.hasSecret ? t("notif.secretSaved") : undefined}
+          value={token}
+          onChange={(e) => setToken(e.currentTarget.value)}
+          autoComplete="new-password"
+        />
+        <Group>
+          <Button
+            disabled={!changed || !complete}
+            loading={actions.save.isPending}
+            onClick={submit}
+          >
+            {t("common.save")}
+          </Button>
+        </Group>
+      </Stack>
+      <Footer state={state} actions={actions} />
+    </SetupCard>
+  );
+}
+
 /** A chat service's incoming webhook (Discord, Slack): one URL, its key. */
 function IncomingWebhookSetup({
   channel,
@@ -770,6 +901,10 @@ export function ChannelSetup({ channel }: { channel: AddressedChannel }) {
       return (
         <IncomingWebhookSetup channel="slack" placeholder="https://hooks.slack.com/services/…" />
       );
+    case "ntfy":
+      return <NtfySetup />;
+    case "gotify":
+      return <GotifySetup />;
     case "webhook":
       return <WebhookSetup />;
   }
