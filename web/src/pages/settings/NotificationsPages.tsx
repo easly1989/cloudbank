@@ -12,6 +12,7 @@ import {
 } from "@mantine/core";
 import {
   IconBell,
+  IconBellRinging,
   IconBrandDiscord,
   IconBrandMatrix,
   IconBrandSlack,
@@ -20,6 +21,7 @@ import {
   IconChevronRight,
   IconDeviceMobile,
   IconMail,
+  IconServer,
   IconWebhook,
   type Icon,
 } from "@tabler/icons-react";
@@ -56,6 +58,8 @@ const CHANNELS: { id: NotificationChannel; icon: Icon }[] = [
   { id: "telegram", icon: IconBrandTelegram },
   { id: "discord", icon: IconBrandDiscord },
   { id: "slack", icon: IconBrandSlack },
+  { id: "ntfy", icon: IconBellRinging },
+  { id: "gotify", icon: IconServer },
   { id: "webhook", icon: IconWebhook },
 ];
 const shown = (id: NotificationChannel) => !__DEMO__ || id === "inapp";
@@ -69,6 +73,8 @@ const GUIDE: Partial<Record<NotificationChannel, string>> = {
   telegram: "telegram",
   discord: "discord",
   slack: "slack",
+  ntfy: "ntfy",
+  gotify: "gotify",
   webhook: "the-webhook",
 };
 
