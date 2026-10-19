@@ -24,6 +24,8 @@ func (h *scheduleHandlers) walletRoutes(r chi.Router) {
 	r.Post("/schedules", h.create)
 	r.Get("/schedules/upcoming", h.upcoming)
 	r.Get("/schedules/calendar", h.calendar)
+	r.Get("/schedules/proposals", h.proposals)
+	r.Post("/schedules/proposals/ignore", h.ignoreProposal)
 	r.Route("/schedules/{scheduleId}", func(r chi.Router) {
 		r.Get("/", h.get)
 		r.Patch("/", h.update)
@@ -83,14 +85,9 @@ func (h *scheduleHandlers) upcoming(w http.ResponseWriter, r *http.Request) {
 func (h *scheduleHandlers) calendar(w http.ResponseWriter, r *http.Request) {
 	wl, _ := walletFromContext(r.Context())
 	q := r.URL.Query()
-	today := time.Now().UTC()
-	if s := q.Get("today"); s != "" {
-		d, err := schedule.ParseDate(s)
-		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid_date", "invalid today (want YYYY-MM-DD)")
-			return
-		}
-		today = d
+	today, ok := readerToday(w, r)
+	if !ok {
+		return
 	}
 	out, err := h.svc.Calendar(r.Context(), wl.ID, q.Get("from"), q.Get("to"), today)
 	if errors.Is(err, schedule.ErrInvalidRange) {
@@ -102,6 +99,55 @@ func (h *scheduleHandlers) calendar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// readerToday is the reader's civil date from ?today=, or the server's.
+func readerToday(w http.ResponseWriter, r *http.Request) (time.Time, bool) {
+	s := r.URL.Query().Get("today")
+	if s == "" {
+		return time.Now().UTC(), true
+	}
+	d, err := schedule.ParseDate(s)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_date", "invalid today (want YYYY-MM-DD)")
+		return time.Time{}, false
+	}
+	return d, true
+}
+
+// proposals lists the recurring payments found in the wallet's transactions
+// that no schedule covers (#693).
+func (h *scheduleHandlers) proposals(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	today, ok := readerToday(w, r)
+	if !ok {
+		return
+	}
+	out, err := h.svc.Proposals(r.Context(), wl.ID, today)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not find recurring payments")
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// ignoreProposal stops proposing a payee at a cadence.
+func (h *scheduleHandlers) ignoreProposal(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var in struct {
+		PayeeID int64  `json:"payeeId"`
+		Cadence string `json:"cadence"`
+	}
+	if !decodeJSON(w, r, &in) {
+		return
+	}
+	if !mapError(w, h.svc.Ignore(r.Context(), wl.ID, in.PayeeID, in.Cadence), "could not ignore the payment",
+		errCase{schedule.ErrInvalidCadence, http.StatusBadRequest, "invalid_cadence", "cadence must be weekly, monthly, quarterly or yearly"},
+		errCase{schedule.ErrPayee, http.StatusBadRequest, "invalid_payee", "payee not found in this wallet"},
+	) {
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *scheduleHandlers) create(w http.ResponseWriter, r *http.Request) {

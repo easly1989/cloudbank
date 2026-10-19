@@ -10,6 +10,7 @@ import {
   monthFigures,
   monthGrid,
   needsYou,
+  perYear,
   shiftMonth,
 } from "./scheduleCalendar";
 
@@ -151,5 +152,36 @@ describe("commitments", () => {
     expect(c.year.in).toBe(2940000);
     expect(c.year.out).toBe(-900000 - 52179);
     expect(c.month.out).toBe(-75000 - 4348);
+  });
+});
+
+describe("perYear", () => {
+  const s = (templateAmount: number, extra = {}) => ({
+    id: 1,
+    templateId: 1,
+    templateName: "x",
+    templateAmount,
+    templateIsTransfer: false,
+    unit: "month" as const,
+    everyN: 1,
+    nextDue: "2026-09-01",
+    weekendMode: 0,
+    postAdvance: 0,
+    autoPost: false,
+    withoutPayee: 0,
+    ...extra,
+  });
+  it("is the amount times the occurrences in twelve months, in minor units", () => {
+    expect(perYear(s(-3500))).toBe(-42000);
+    expect(perYear(s(-9000, { everyN: 3 }))).toBe(-36000);
+    expect(perYear(s(-18000, { unit: "year" }))).toBe(-18000);
+    expect(perYear(s(-1099, { remaining: 2 }))).toBe(-2198);
+    expect(perYear(s(-20000, { templateIsTransfer: true }))).toBe(0);
+  });
+
+  it("counts a limited schedule only for the occurrences left in the year", () => {
+    const c = commitments([s(-1000, { remaining: 3 }), s(-1000, { unit: "week", remaining: 100 })]);
+    expect(c.year.out).toBe(-3000 - 52179);
+    expect(c.month.out).toBe(-1000 - 4348);
   });
 });

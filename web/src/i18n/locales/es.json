@@ -609,12 +609,12 @@
       "in": "Por cobrar",
       "allReceived": "todo cobrado",
       "toCome": "{{amount}} aún por llegar",
-      "net": "Neto al mes",
-      "inMonth": "Entradas al mes",
-      "outMonth": "Salidas al mes",
       "perYear": "{{amount}} al año",
-      "from_one": "de {{count}} movimiento programado",
-      "from_other": "de {{count}} movimientos programados"
+      "outYear": "Salidas al año",
+      "inYear": "Entradas al año",
+      "perMonth": "{{amount}} al mes",
+      "perMonthFrom_one": "{{amount}} al mes, de {{count}} movimiento programado",
+      "perMonthFrom_other": "{{amount}} al mes, de {{count}} movimientos programados"
     },
     "state": {
       "overdue": "Vencido",
@@ -656,7 +656,8 @@
       "nextHead": "Próximo",
       "thisMonth": "Este mes",
       "notRegistered": "no registrado",
-      "noPayee": "Sin beneficiario"
+      "noPayee": "Sin beneficiario",
+      "perYear": "{{amount}}/año"
     },
     "repeat": {
       "day": "Todos los días",
@@ -690,6 +691,18 @@
       "start": "Completar uno a uno",
       "walk": "Sin beneficiario: {{n}} de {{total}}",
       "saveNext": "Guardar y pasar al siguiente"
+    },
+    "found": {
+      "title": "Encontrados en tus movimientos",
+      "sub": "Se repiten, pero no tienen un movimiento programado.",
+      "create": "Crear movimiento programado",
+      "ignore": "Ignorar",
+      "weekly": "Cada semana, el {{weekday}}",
+      "monthly": "Cada mes, hacia el día {{day}}",
+      "quarterly": "Cada tres meses, hacia el día {{day}}",
+      "yearly": "Cada año, hacia el {{date}}",
+      "seen_one": "{{count}} vez desde {{month}}, la última el {{date}}",
+      "seen_other": "{{count}} veces desde {{month}}, la última el {{date}}"
     }
   },
   "tags": {

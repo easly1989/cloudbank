@@ -2610,6 +2610,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/schedules/proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * Recurring payments found in the transactions that no schedule covers
+         * @description Same payee, an amount within 10% of the usual one, at a weekly, monthly, quarterly or yearly cadence, still going. Payees a schedule pays and ignored ones are left out. The costliest come first.
+         */
+        get: operations["listScheduleProposals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/schedules/proposals/ignore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop proposing a payee at a cadence */
+        post: operations["ignoreScheduleProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/schedules/{scheduleId}/skip": {
         parameters: {
             query?: never;
@@ -5023,6 +5064,40 @@ export interface components {
              * @description How many transactions the schedule registered have no payee.
              */
             withoutPayee: number;
+        };
+        /** @description A recurring payment found in the transactions that no schedule covers (#693). */
+        ScheduleProposal: {
+            /** Format: int64 */
+            payeeId: number;
+            payeeName: string;
+            /**
+             * Format: int64
+             * @description The account of the latest payment.
+             */
+            accountId: number;
+            /**
+             * Format: int64
+             * @description The usual amount, in the account's minor units.
+             */
+            amount: number;
+            /** @enum {string} */
+            cadence: "weekly" | "monthly" | "quarterly" | "yearly";
+            /** @enum {string} */
+            unit: "week" | "month" | "year";
+            everyN: number;
+            /** @description Payments in a row that show it. */
+            count: number;
+            /** Format: date */
+            first: string;
+            /** Format: date */
+            last: string;
+            /** Format: date */
+            nextDue: string;
+            /**
+             * Format: int64
+             * @description What it adds up to in a year, in minor units.
+             */
+            yearly: number;
         };
         ScheduleOccurrence: {
             /**
@@ -10485,6 +10560,64 @@ export interface operations {
         };
         responses: {
             /** @description Posted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listScheduleProposals: {
+        parameters: {
+            query?: {
+                /** @description The reader's civil date; defaults to the server's. */
+                today?: string;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Proposals. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleProposal"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ignoreScheduleProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    payeeId: number;
+                    /** @enum {string} */
+                    cadence: "weekly" | "monthly" | "quarterly" | "yearly";
+                };
+            };
+        };
+        responses: {
+            /** @description Ignored. */
             204: {
                 headers: {
                     [name: string]: unknown;

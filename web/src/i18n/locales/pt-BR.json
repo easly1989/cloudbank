@@ -609,12 +609,12 @@
       "in": "A receber",
       "allReceived": "tudo recebido",
       "toCome": "{{amount}} ainda por vir",
-      "net": "Líquido por mês",
-      "inMonth": "Entradas por mês",
-      "outMonth": "Saídas por mês",
       "perYear": "{{amount}} por ano",
-      "from_one": "de {{count}} agendamento",
-      "from_other": "de {{count}} agendamentos"
+      "outYear": "Saídas por ano",
+      "inYear": "Entradas por ano",
+      "perMonth": "{{amount}} por mês",
+      "perMonthFrom_one": "{{amount}} por mês, de {{count}} agendamento",
+      "perMonthFrom_other": "{{amount}} por mês, de {{count}} agendamentos"
     },
     "state": {
       "overdue": "Vencido",
@@ -656,7 +656,8 @@
       "nextHead": "Próximo",
       "thisMonth": "Este mês",
       "notRegistered": "não registrado",
-      "noPayee": "Sem beneficiário"
+      "noPayee": "Sem beneficiário",
+      "perYear": "{{amount}}/ano"
     },
     "repeat": {
       "day": "Todo dia",
@@ -690,6 +691,18 @@
       "start": "Completar um por um",
       "walk": "Sem beneficiário: {{n}} de {{total}}",
       "saveNext": "Salvar e ir para o próximo"
+    },
+    "found": {
+      "title": "Encontrados nos seus lançamentos",
+      "sub": "Eles se repetem, mas não têm um agendamento.",
+      "create": "Criar agendamento",
+      "ignore": "Ignorar",
+      "weekly": "Toda semana, na {{weekday}}",
+      "monthly": "Todo mês, por volta do dia {{day}}",
+      "quarterly": "A cada três meses, por volta do dia {{day}}",
+      "yearly": "Todo ano, por volta de {{date}}",
+      "seen_one": "{{count}} vez desde {{month}}, a última em {{date}}",
+      "seen_other": "{{count}} vezes desde {{month}}, a última em {{date}}"
     }
   },
   "tags": {

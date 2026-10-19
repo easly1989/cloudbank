@@ -207,3 +207,52 @@ func TestSchedulePayee(t *testing.T) {
 		t.Fatalf("withoutPayee after = %v, want 0", got["withoutPayee"])
 	}
 }
+
+// The recurring payments found are listed for a member only; ignoring one
+// keeps it out (#693).
+func TestScheduleProposals(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	bus := makePayee(t, c, wid, "Bus company")
+	for _, d := range []string{"2026-07-02", "2026-08-02", "2026-09-02", "2026-10-02"} {
+		c.do(http.MethodPost, base+"/transactions", map[string]any{
+			"accountId": acc, "date": d, "amount": -3500, "payeeId": bus,
+		}, true).Body.Close()
+	}
+	list := func() []map[string]any {
+		t.Helper()
+		r := c.do(http.MethodGet, base+"/schedules/proposals?today=2026-10-19", nil, false)
+		defer r.Body.Close()
+		var out []map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&out)
+		if r.StatusCode != http.StatusOK {
+			t.Fatalf("proposals = %d", r.StatusCode)
+		}
+		return out
+	}
+	got := list()
+	if len(got) != 1 || got[0]["payeeName"] != "Bus company" || got[0]["cadence"] != "monthly" || got[0]["yearly"] != float64(-42000) {
+		t.Fatalf("proposals = %+v", got)
+	}
+
+	c.do(http.MethodPost, "/api/v1/admin/users", map[string]any{"username": "bob", "password": "bobssecret"}, true).Body.Close()
+	bob := c.fork()
+	bob.do(http.MethodPost, "/api/v1/auth/login", map[string]any{"username": "bob", "password": "bobssecret"}, true).Body.Close()
+	if r := bob.do(http.MethodGet, base+"/schedules/proposals", nil, false); r.StatusCode != http.StatusNotFound {
+		t.Fatalf("bob proposals = %d, want 404", r.StatusCode)
+	}
+	if r := bob.do(http.MethodPost, base+"/schedules/proposals/ignore", map[string]any{"payeeId": bus, "cadence": "monthly"}, true); r.StatusCode != http.StatusNotFound {
+		t.Fatalf("bob ignore = %d, want 404", r.StatusCode)
+	}
+
+	if r := c.do(http.MethodPost, base+"/schedules/proposals/ignore", map[string]any{"payeeId": bus, "cadence": "daily"}, true); r.StatusCode != http.StatusBadRequest {
+		t.Fatalf("bad cadence = %d, want 400", r.StatusCode)
+	}
+	if r := c.do(http.MethodPost, base+"/schedules/proposals/ignore", map[string]any{"payeeId": bus, "cadence": "monthly"}, true); r.StatusCode != http.StatusNoContent {
+		t.Fatalf("ignore = %d, want 204", r.StatusCode)
+	}
+	if got := list(); len(got) != 0 {
+		t.Fatalf("after ignoring = %+v", got)
+	}
+}

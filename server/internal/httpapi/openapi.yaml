@@ -2567,6 +2567,39 @@ paths:
         "204": { description: Posted. }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/schedules/proposals:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listScheduleProposals
+      summary: Recurring payments found in the transactions that no schedule covers
+      description: Same payee, an amount within 10% of the usual one, at a weekly, monthly, quarterly or yearly cadence, still going. Payees a schedule pays and ignored ones are left out. The costliest come first.
+      parameters:
+        - { name: today, in: query, required: false, schema: { type: string, format: date }, description: "The reader's civil date; defaults to the server's." }
+      responses:
+        "200": { description: Proposals., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ScheduleProposal" } } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/schedules/proposals/ignore:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: ignoreScheduleProposal
+      summary: Stop proposing a payee at a cadence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payeeId: { type: integer, format: int64 }
+                cadence: { type: string, enum: [weekly, monthly, quarterly, yearly] }
+              required: [payeeId, cadence]
+      responses:
+        "204": { description: Ignored. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/schedules/{scheduleId}/skip:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -4580,6 +4613,23 @@ components:
         payeeName: { type: string }
         withoutPayee: { type: integer, format: int64, description: "How many transactions the schedule registered have no payee." }
       required: [id, templateId, templateName, templateAmount, templateIsTransfer, unit, everyN, nextDue, weekendMode, postAdvance, autoPost, withoutPayee]
+    ScheduleProposal:
+      type: object
+      description: A recurring payment found in the transactions that no schedule covers (#693).
+      properties:
+        payeeId: { type: integer, format: int64 }
+        payeeName: { type: string }
+        accountId: { type: integer, format: int64, description: "The account of the latest payment." }
+        amount: { type: integer, format: int64, description: "The usual amount, in the account's minor units." }
+        cadence: { type: string, enum: [weekly, monthly, quarterly, yearly] }
+        unit: { type: string, enum: [week, month, year] }
+        everyN: { type: integer }
+        count: { type: integer, description: "Payments in a row that show it." }
+        first: { type: string, format: date }
+        last: { type: string, format: date }
+        nextDue: { type: string, format: date }
+        yearly: { type: integer, format: int64, description: "What it adds up to in a year, in minor units." }
+      required: [payeeId, payeeName, accountId, amount, cadence, unit, everyN, count, first, last, nextDue, yearly]
     ScheduleOccurrence:
       type: object
       properties:

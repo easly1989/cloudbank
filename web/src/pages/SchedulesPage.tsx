@@ -9,12 +9,15 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   deleteSchedule,
   getScheduleCalendar,
+  ignoreScheduleProposal,
+  listScheduleProposals,
   listSchedules,
   listTemplates,
   postScheduleNow,
   skipSchedule,
   type Schedule,
   type ScheduleOccurrence,
+  type ScheduleProposal,
 } from "../api/client";
 import { attentionColor, expenseColor, incomeColor } from "../amountTone";
 import { useConfirm } from "../components/confirmContext";
@@ -53,6 +56,7 @@ import {
 import { ScheduleList } from "./schedules/ScheduleList";
 import { ScheduleSheet } from "./schedules/ScheduleSheet";
 import { MissingPayeeBanner } from "./schedules/MissingPayeeBanner";
+import { FoundPayments } from "./schedules/FoundPayments";
 import classes from "./schedules/schedules.module.css";
 import { useWeekStart } from "../i18n/week";
 import { notifyError } from "../notifyError";
@@ -136,6 +140,13 @@ export function SchedulesPage() {
     queryFn: () => getScheduleCalendar(walletId, nowFrom, addDays(nowFrom, MAX_SPAN_DAYS), today),
     enabled: walletId > 0 && schedules.length > 0,
   });
+  // The recurring payments found in the transactions with no schedule (#693).
+  const proposalsQuery = useQuery({
+    queryKey: ["schedule-proposals", walletId, today],
+    queryFn: () => listScheduleProposals(walletId, today),
+    enabled: walletId > 0,
+  });
+  const proposals = proposalsQuery.data ?? [];
   const monthOccurrences = useMemo(() => monthQuery.data?.occurrences ?? [], [monthQuery.data]);
   const nowOccurrences = useMemo(() => nowQuery.data?.occurrences ?? [], [nowQuery.data]);
   const shown = useMemo(
@@ -165,6 +176,7 @@ export function SchedulesPage() {
       "schedules",
       "templates",
       "schedule-calendar",
+      "schedule-proposals",
       "register",
       "bills",
       "dashboard",
@@ -183,6 +195,11 @@ export function SchedulesPage() {
     onSuccess: invalidate,
     onError,
   });
+  const ignore = useMutation({
+    mutationFn: (p: ScheduleProposal) => ignoreScheduleProposal(walletId, p.payeeId, p.cadence),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["schedule-proposals", walletId] }),
+    onError,
+  });
   const remove = useMutation({
     mutationFn: (id: number) => deleteSchedule(walletId, id),
     onSuccess: invalidate,
@@ -195,8 +212,11 @@ export function SchedulesPage() {
   // The schedules without a payee, as they were when the reader set out to
   // complete them one by one; null otherwise.
   const [walk, setWalk] = useState<number[] | null>(null);
+  // The proposal a new schedule is filled in from.
+  const [seed, setSeed] = useState<ScheduleProposal | null>(null);
   const openSchedule = (s: Schedule | null, walking = false) => {
     if (!walking) setWalk(null);
+    setSeed(null);
     setOpened(null);
     setEditing(s);
     setSheetOpen(true);
@@ -377,29 +397,41 @@ export function SchedulesPage() {
       )}
     </Figures>
   );
+  // What the schedules add up to in the next twelve months (#693).
   const listFigures = (
     <Figures>
       <Figure
         big
-        label={t("schedules.fig.net")}
-        value={fmt(perPeriod.month.in + perPeriod.month.out)}
-        sub={t("schedules.fig.from", { count: schedules.length })}
-      />
-      <Figure
-        label={t("schedules.fig.inMonth")}
-        value={fmt(perPeriod.month.in)}
-        color={incomeColor}
-        sub={t("schedules.fig.perYear", { amount: fmt(perPeriod.year.in) })}
+        label={t("schedules.fig.outYear")}
+        value={fmt(perPeriod.year.out)}
+        color={expenseColor}
+        sub={t("schedules.fig.perMonthFrom", {
+          amount: fmt(perPeriod.month.out),
+          count: schedules.length,
+        })}
         subSensitive
       />
       <Figure
-        label={t("schedules.fig.outMonth")}
-        value={fmt(perPeriod.month.out)}
-        color={expenseColor}
-        sub={t("schedules.fig.perYear", { amount: fmt(perPeriod.year.out) })}
+        label={t("schedules.fig.inYear")}
+        value={fmt(perPeriod.year.in)}
+        color={incomeColor}
+        sub={t("schedules.fig.perMonth", { amount: fmt(perPeriod.month.in) })}
         subSensitive
       />
     </Figures>
+  );
+  const found = (columns: 1 | 2) => (
+    <FoundPayments
+      proposals={proposals}
+      format={money.format}
+      columns={columns}
+      onCreate={(p) => {
+        openSchedule(null);
+        setSeed(p);
+      }}
+      onIgnore={(p) => ignore.mutate(p)}
+      busy={ignore.isPending}
+    />
   );
 
   const monthList = shown
@@ -442,6 +474,7 @@ export function SchedulesPage() {
           action={addButton}
         />
       )}
+      {schedules.length === 0 && found(phone ? 1 : 2)}
 
       {schedules.length > 0 && view === "calendar" && (
         <>
@@ -456,6 +489,7 @@ export function SchedulesPage() {
                 {stepper}
               </div>
               {needsPanel}
+              {found(1)}
               <MiniMonth month={month} days={days} occurrences={shown} today={today} />
               {monthList.length > 0 && <div className={classes.card}>{monthList}</div>}
             </>
@@ -480,7 +514,10 @@ export function SchedulesPage() {
                   format={money.format}
                   onOpen={openOccurrence}
                 />
-                {needsPanel}
+                <div className={classes.side}>
+                  {needsPanel}
+                  {found(1)}
+                </div>
               </div>
               <Legend />
             </>
@@ -492,6 +529,7 @@ export function SchedulesPage() {
         <>
           {listFigures}
           <div className={classes.bar}>{views}</div>
+          {found(phone ? 1 : 2)}
           <ScheduleList
             schedules={schedules}
             thisMonth={thisMonth}
@@ -532,6 +570,7 @@ export function SchedulesPage() {
         }}
         walletId={walletId}
         editing={editing}
+        seed={seed}
         walk={
           walk && editing && walk.includes(editing.id)
             ? { index: walk.indexOf(editing.id), total: walk.length }
