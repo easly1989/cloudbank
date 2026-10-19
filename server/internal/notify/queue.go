@@ -93,6 +93,14 @@ func (s *Service) deliver(ctx context.Context, d db.NotificationDelivery) {
 		_ = s.q.DeleteNotificationDelivery(ctx, d.ID)
 		return
 	}
+	if ok, next := s.allow(ch, to); !ok {
+		// Over the hourly cap: it waits, without spending a try.
+		s.recordError(ctx, d.UserID, ch, &DeliveryError{Reason: ReasonLimited})
+		_ = s.q.RescheduleNotificationDelivery(ctx, db.RescheduleNotificationDeliveryParams{
+			Attempts: d.Attempts, NextAt: stamp(next), ID: d.ID,
+		})
+		return
+	}
 	err = snd.Send(ctx, to, e)
 	if err == nil {
 		_ = s.q.DeleteNotificationDelivery(ctx, d.ID)
@@ -113,7 +121,7 @@ func (s *Service) deliver(ctx context.Context, d db.NotificationDelivery) {
 }
 
 // recipient is the person and, for an addressed channel, their address on
-// it; ok is false when that channel is not set up.
+// it; ok is false when that channel is not set up, or not proved yet.
 func (s *Service) recipient(ctx context.Context, userID int64, ch Channel) (Recipient, bool, error) {
 	to := Recipient{UserID: userID}
 	if !addressed(ch) {
@@ -126,9 +134,15 @@ func (s *Service) recipient(ctx context.Context, userID int64, ch Channel) (Reci
 	if err != nil {
 		return to, false, err
 	}
-	to.Target, to.Secret, to.Server, to.LocalOK = secrets.Open(row.Target), secrets.Open(row.Secret), row.Server, row.LocalOk != 0
-	to.Options = parseOptions(row.Options)
-	return to, true, nil
+	return rowRecipient(userID, row), row.Verified != 0, nil
+}
+
+// rowRecipient opens a stored channel.
+func rowRecipient(userID int64, row db.NotificationChannel) Recipient {
+	return Recipient{
+		UserID: userID, Target: secrets.Open(row.Target), Secret: secrets.Open(row.Secret),
+		Server: row.Server, Options: parseOptions(row.Options), LocalOK: row.LocalOk != 0,
+	}
 }
 
 // parseOptions reads a channel's stored options; anything unreadable is none.

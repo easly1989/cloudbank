@@ -157,6 +157,12 @@ type Service struct {
 	// tested is when each person last sent a test to each address.
 	testMu sync.Mutex
 	tested map[string]time.Time
+	// limit is the hourly cap on what goes through the installation's
+	// resources, per person and channel, and sent the recent deliveries it
+	// counts (#716).
+	limit  int
+	sentMu sync.Mutex
+	sent   map[string][]time.Time
 }
 
 // NewService returns a dispatcher with only the in-app channel.
@@ -167,6 +173,7 @@ func NewService(read, write *sql.DB, logger *slog.Logger) *Service {
 	return &Service{
 		q: db.New(write), rq: db.New(read), senders: map[Channel]Sender{}, logger: logger,
 		wake: make(chan struct{}, 1), now: time.Now, tested: map[string]time.Time{},
+		limit: defaultHourlyLimit, sent: map[string][]time.Time{},
 	}
 }
 
@@ -221,7 +228,8 @@ func (s *Service) Notify(ctx context.Context, userID int64, e Event) error {
 	return nil
 }
 
-// addressedChannels is which addressed channels the person has set up.
+// addressedChannels is which addressed channels the person has set up and,
+// where it was needed, proved.
 func (s *Service) addressedChannels(ctx context.Context, userID int64) (map[Channel]bool, error) {
 	rows, err := s.rq.ListNotificationChannels(ctx, userID)
 	if err != nil {
@@ -229,7 +237,7 @@ func (s *Service) addressedChannels(ctx context.Context, userID int64) (map[Chan
 	}
 	set := map[Channel]bool{}
 	for _, r := range rows {
-		set[Channel(r.Channel)] = true
+		set[Channel(r.Channel)] = r.Verified != 0
 	}
 	return set, nil
 }

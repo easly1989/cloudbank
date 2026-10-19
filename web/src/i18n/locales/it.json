@@ -1734,7 +1734,8 @@
       "unauthorized": "credenziali rifiutate",
       "rejected": "messaggio rifiutato",
       "unreachable": "non raggiungibile",
-      "local": "indirizzo della rete locale non consentito"
+      "local": "indirizzo della rete locale non consentito",
+      "limited": "limite orario raggiunto, il resto arriva entro l'ora"
     },
     "localNetwork": "Solo un amministratore può inviare a un indirizzo della rete locale.",
     "invalidAddress": "Indirizzo non valido.",
@@ -1744,13 +1745,9 @@
     "webhookSecret": "Segreto per la firma",
     "secretSaved": "Salvato",
     "optional": "Facoltativo",
-    "matrixHintShared": "Un messaggio in una stanza Matrix. Invita {{bot}} nella stanza, poi incolla qui l'ID della stanza.",
-    "matrixHintSharedNoBot": "Un messaggio in una stanza Matrix. Invita nella stanza il bot di questa installazione (l'amministratore ne conosce l'indirizzo), poi incolla qui l'ID della stanza.",
     "matrixServer": "Homeserver",
     "matrixRoom": "ID della stanza",
     "matrixToken": "Token di accesso del bot",
-    "telegramHintShared": "Un messaggio da {{bot}}. Scrivigli /start, poi incolla qui l'ID della tua chat.",
-    "telegramHintSharedNoBot": "Un messaggio dal bot di questa installazione (l'amministratore ne conosce il nome). Scrivigli /start, poi incolla qui l'ID della tua chat.",
     "telegramChat": "ID della chat",
     "telegramToken": "Token del bot",
     "name": {
@@ -1774,7 +1771,8 @@
         "off": "Spente su questo dispositivo",
         "unsupported": "Non supportate da questo browser",
         "denied": "Bloccate in questo browser"
-      }
+      },
+      "pending": "Da confermare"
     },
     "eventCount": "Eventi: {{on}} su {{total}}",
     "connection": "Collegamento",
@@ -1802,7 +1800,31 @@
     "telegramTopicHelp": "Facoltativo: in un gruppo con argomenti, quello in cui arrivano i messaggi.",
     "telegramTopicInvalid": "Solo cifre.",
     "telegramSilent": "Invia in silenzio",
-    "telegramSilentHelp": "I messaggi arrivano senza suono."
+    "telegramSilentHelp": "I messaggi arrivano senza suono.",
+    "emailCodeSent": "Ti abbiamo mandato un codice a {{address}}. Inseriscilo qui per attivare l'email: finché non è confermata non parte nulla.",
+    "code": "Codice di conferma",
+    "confirm": "Conferma",
+    "codeValid": "Il codice vale 15 minuti.",
+    "resend": "Mandane un altro",
+    "codeResent": "Nuovo codice inviato",
+    "confirmed": "Confermato",
+    "wrongCode": "Il codice non è quello giusto.",
+    "codeExpired": "Il codice è scaduto o è stato provato troppe volte. Chiedine un altro.",
+    "codeFailed": "Il codice non è partito: {{reason}}",
+    "notInvited": "Il bot non ha un invito in quella stanza. Invitalo, poi riprova.",
+    "matrixStepInvite": "Invita {{bot}} nella stanza.",
+    "matrixStepInviteNoBot": "Invita nella stanza il bot di questa installazione (l'amministratore conosce il suo indirizzo).",
+    "matrixStepRoom": "Incolla l'ID della stanza (inizia con !).",
+    "matrixStepCode": "Il bot è entrato e ha scritto un codice nella stanza: inseriscilo qui.",
+    "link": "Collega",
+    "linkedTo": "Collegato: {{target}}",
+    "telegramSharedIntro": "Il bot di questa installazione è {{bot}}. Apri Telegram dal pulsante e premi Avvia: CloudBank riconosce la chat da solo, senza ID da copiare.",
+    "telegramSharedIntroNoBot": "CloudBank non riesce a raggiungere Telegram in questo momento, quindi non può preparare il link al suo bot. Riprova tra poco.",
+    "telegramLinkChat": "Collega la tua chat",
+    "telegramLinkGroup": "Aggiungi a un gruppo",
+    "telegramWaiting": "In attesa che tu prema Avvia in Telegram… Il link vale 15 minuti.",
+    "telegramNoLink": "Il link è scaduto, o Telegram non risponde.",
+    "telegramNewLink": "Nuovo link"
   },
   "ai": {
     "title": "AI (con la tua chiave)",
@@ -2997,6 +3019,7 @@
     "host_not_public": "Quel server non è su internet: CloudBank non si collega alla propria rete.",
     "unreachable": "Il server di posta non risponde: controlla nome e porta.",
     "tls_failed": "Non è stato possibile cifrare la connessione al server di posta.",
-    "ai_not_configured": "Prima configura l'AI, in Impostazioni › AI."
+    "ai_not_configured": "Prima configura l'AI, in Impostazioni › AI.",
+    "hourly_limit": "Troppi messaggi in quest'ora. Riprova più tardi."
   }
 }

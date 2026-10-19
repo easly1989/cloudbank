@@ -2,8 +2,9 @@ import { expect, test, type Page } from "@playwright/test";
 
 // Telegram, Discord and Slack (#688), against the pretend services in
 // ../server/cmd/e2e-mail. The installation has a shared Telegram bot
-// (CB_TELEGRAM_TOKEN); a bot of one's own is saved through the API here, since
-// the page offers the shared one. It runs after the other mail specs, on the
+// (CB_TELEGRAM_TOKEN), which learns the chat from the link it is started with
+// (#716); a bot of one's own is saved through the API here, since the page
+// offers the shared one. It runs after the other mail specs, on the
 // server they set up.
 test.describe.configure({ mode: "serial" });
 
@@ -28,28 +29,49 @@ async function chats(page: Page) {
   return ((await res.json()) as { chats: Chat[] }).chats;
 }
 
-// The channel's page has one card with a Save button: its connection.
-const card = (page: Page) =>
-  page
-    .locator(".mantine-Card-root")
-    .filter({ has: page.getByRole("button", { name: "Save" }) });
+// The channel's page opens with its connection card.
+const card = (page: Page) => page.locator(".mantine-Card-root").first();
 
 async function channelState(page: Page) {
   return (await page.request.get("/api/v1/notifications/channels")).text();
 }
 
-test("Telegram: the shared bot needs only the chat; an unknown chat shows on the page", async ({
+test("Telegram: the shared bot links the chat that presses Start with the code", async ({
   page,
 }) => {
   await signIn(page);
   await page.goto("/settings/notifications/telegram");
   const tg = card(page);
   await expect(
-    tg.getByText("A message from @cloudbank_demo_bot. Send it /start"),
+    tg.getByText("This installation's bot is @cloudbank_demo_bot."),
   ).toBeVisible();
-  await expect(tg.getByLabel("Bot token")).toHaveCount(0);
-  await tg.getByLabel("Chat ID").fill("424242");
-  await tg.getByRole("button", { name: "Save" }).click();
+  await expect(tg.getByLabel("Chat ID")).toHaveCount(0);
+  await tg.getByRole("button", { name: "Connect your chat" }).click();
+  const href =
+    (await tg
+      .getByRole("link", { name: "Connect your chat" })
+      .getAttribute("href")) ?? "";
+  expect(href).toMatch(
+    /^https:\/\/t\.me\/cloudbank_demo_bot\?start=[0-9a-f]{32}$/,
+  );
+  await expect(
+    tg.getByRole("link", { name: "Add to a group" }),
+  ).toHaveAttribute("href", href.replace("?start=", "?startgroup="));
+  await expect(
+    page.getByRole("checkbox", { name: "Bills due" }),
+  ).toBeDisabled();
+
+  // A /start without the code links nothing; the one with it links its chat,
+  // and the page, which keeps asking, shows it.
+  const start = (chat: number, text: string) =>
+    page.request.post(`${FAKE}/notify/telegram/start`, {
+      data: { chat, text },
+    });
+  await start(666, "/start");
+  await start(424242, `/start ${href.split("=")[1]}`);
+  await expect(tg.getByText("Connected: 424242")).toBeVisible({
+    timeout: 10_000,
+  });
   await tg.getByRole("button", { name: "Send a test" }).click();
   await expect(page.getByText("Test sent")).toBeVisible();
   expect((await chats(page)).at(-1)).toMatchObject({
@@ -58,26 +80,23 @@ test("Telegram: the shared bot needs only the chat; an unknown chat shows on the
     sender: "shared",
   });
 
-  await tg.getByLabel("Chat ID").fill("0");
-  await tg.getByRole("button", { name: "Save" }).click();
-  await tg.getByRole("button", { name: "Send a test" }).click();
-  await expect(page.getByText("The test failed: 400")).toBeVisible();
-  await page.reload();
-  await expect(card(page).getByText("Last delivery failed: 400")).toBeVisible();
-
   // A topic and a silent send are kept with the chat.
-  await card(page).getByLabel("Chat ID").fill("-100424242");
-  await card(page).getByLabel("Topic ID").fill("7");
-  await card(page).getByRole("switch", { name: "Send silently" }).check();
-  await card(page).getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("Saved")).toBeVisible();
-  const { channels } = JSON.parse(await channelState(page)) as {
-    channels: { channel: string; target: string; options: object }[];
-  };
-  expect(channels.find((c) => c.channel === "telegram")).toMatchObject({
-    target: "-100424242",
-    options: { topic: 7, silent: true },
-  });
+  await tg.getByLabel("Topic ID").fill("7");
+  await tg.getByRole("switch", { name: "Send silently" }).check();
+  await tg.getByRole("button", { name: "Save" }).click();
+  // The connect step showed a "Saved" too: wait on the server instead.
+  await expect
+    .poll(async () => {
+      const { channels } = JSON.parse(await channelState(page)) as {
+        channels: { channel: string }[];
+      };
+      return channels.find((c) => c.channel === "telegram");
+    })
+    .toMatchObject({
+      target: "424242",
+      pending: false,
+      options: { topic: 7, silent: true },
+    });
 });
 
 test("Telegram: a bot of one's own sends with its token, which never comes back", async ({

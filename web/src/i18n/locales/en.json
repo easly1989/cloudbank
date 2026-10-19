@@ -1734,7 +1734,8 @@
       "unauthorized": "credentials refused",
       "rejected": "message refused",
       "unreachable": "not reachable",
-      "local": "a local network address is not allowed"
+      "local": "a local network address is not allowed",
+      "limited": "hourly limit reached, the rest follows within the hour"
     },
     "localNetwork": "Only an administrator can send to an address on the local network.",
     "invalidAddress": "That address is not valid.",
@@ -1744,13 +1745,9 @@
     "webhookSecret": "Signing secret",
     "secretSaved": "Saved",
     "optional": "Optional",
-    "matrixHintShared": "A message in a Matrix room. Invite {{bot}} to the room, then paste the room ID here.",
-    "matrixHintSharedNoBot": "A message in a Matrix room. Invite this installation's bot to the room (the administrator knows its address), then paste the room ID here.",
     "matrixServer": "Homeserver",
     "matrixRoom": "Room ID",
     "matrixToken": "Bot's access token",
-    "telegramHintShared": "A message from {{bot}}. Send it /start, then paste your chat ID here.",
-    "telegramHintSharedNoBot": "A message from this installation's bot (the administrator knows its name). Send it /start, then paste your chat ID here.",
     "telegramChat": "Chat ID",
     "telegramToken": "Bot token",
     "name": {
@@ -1774,7 +1771,8 @@
         "off": "Off on this device",
         "unsupported": "Not supported by this browser",
         "denied": "Blocked in this browser"
-      }
+      },
+      "pending": "Waiting for its code"
     },
     "eventCount": "Events: {{on}} of {{total}}",
     "connection": "Connection",
@@ -1802,7 +1800,31 @@
     "telegramTopicHelp": "Optional: in a group with topics, the one the messages go to.",
     "telegramTopicInvalid": "Digits only.",
     "telegramSilent": "Send silently",
-    "telegramSilentHelp": "Messages arrive without a sound."
+    "telegramSilentHelp": "Messages arrive without a sound.",
+    "emailCodeSent": "We sent a code to {{address}}. Type it here to turn email on: until then nothing is sent.",
+    "code": "Confirmation code",
+    "confirm": "Confirm",
+    "codeValid": "The code is good for 15 minutes.",
+    "resend": "Send another",
+    "codeResent": "New code sent",
+    "confirmed": "Confirmed",
+    "wrongCode": "That is not the code.",
+    "codeExpired": "The code expired or was tried too often. Ask for another.",
+    "codeFailed": "The code could not be sent: {{reason}}",
+    "notInvited": "The bot has no invitation to that room. Invite it first, then try again.",
+    "matrixStepInvite": "Invite {{bot}} to the room.",
+    "matrixStepInviteNoBot": "Invite this installation's bot to the room (the administrator knows its address).",
+    "matrixStepRoom": "Paste the room ID (it starts with !).",
+    "matrixStepCode": "The bot joined and wrote a code in the room: type it here.",
+    "link": "Connect",
+    "linkedTo": "Connected: {{target}}",
+    "telegramSharedIntro": "This installation's bot is {{bot}}. Open Telegram with the button and press Start: CloudBank recognises the chat by itself, with no ID to copy.",
+    "telegramSharedIntroNoBot": "CloudBank cannot reach Telegram right now, so the link to its bot cannot be made. Try again shortly.",
+    "telegramLinkChat": "Connect your chat",
+    "telegramLinkGroup": "Add to a group",
+    "telegramWaiting": "Waiting for you to press Start in Telegram… The link is good for 15 minutes.",
+    "telegramNoLink": "The link expired, or Telegram is not answering.",
+    "telegramNewLink": "New link"
   },
   "ai": {
     "title": "AI (bring your own key)",
@@ -2997,6 +3019,7 @@
     "host_not_public": "That server is not on the internet: CloudBank does not connect to its own network.",
     "unreachable": "The mail server does not answer: check its name and port.",
     "tls_failed": "The connection to the mail server could not be encrypted.",
-    "ai_not_configured": "Set up the AI first, in Settings › AI."
+    "ai_not_configured": "Set up the AI first, in Settings › AI.",
+    "hourly_limit": "Too many messages this hour. Try again later."
   }
 }

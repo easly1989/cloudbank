@@ -79,6 +79,11 @@ type Config struct {
 	// CB_TELEGRAM_TOKEN: with it, a person gives only their chat. TelegramAPI
 	// (CB_TELEGRAM_API, testing only) points the Bot API elsewhere.
 	TelegramToken, TelegramAPI string
+	// NotifyHourlyLimit caps how many notifications each person gets in an
+	// hour on each channel that goes through the installation's own resources
+	// (its mail server, its shared bots), CB_NOTIFY_HOURLY_LIMIT, default 30;
+	// the rest wait for the next hour (#716). 0 turns the cap off.
+	NotifyHourlyLimit int
 
 	// OIDC/SSO login. When Issuer, ClientID, ClientSecret and RedirectURL are all
 	// set (see OIDCEnabled), a "Sign in with <OIDCName>" button is offered on the
@@ -167,10 +172,11 @@ func Load() Config {
 			From:     strings.TrimSpace(getenv("CB_SMTP_FROM", "")),
 			TLS:      strings.ToLower(strings.TrimSpace(getenv("CB_SMTP_TLS", "starttls"))),
 		},
-		MatrixHomeserver: strings.TrimRight(strings.TrimSpace(getenv("CB_MATRIX_HOMESERVER", "")), "/"),
-		MatrixToken:      strings.TrimSpace(getenv("CB_MATRIX_TOKEN", "")),
-		TelegramToken:    strings.TrimSpace(getenv("CB_TELEGRAM_TOKEN", "")),
-		TelegramAPI:      strings.TrimSpace(getenv("CB_TELEGRAM_API", "https://api.telegram.org")),
+		MatrixHomeserver:  strings.TrimRight(strings.TrimSpace(getenv("CB_MATRIX_HOMESERVER", "")), "/"),
+		MatrixToken:       strings.TrimSpace(getenv("CB_MATRIX_TOKEN", "")),
+		TelegramToken:     strings.TrimSpace(getenv("CB_TELEGRAM_TOKEN", "")),
+		TelegramAPI:       strings.TrimSpace(getenv("CB_TELEGRAM_API", "https://api.telegram.org")),
+		NotifyHourlyLimit: getIntEnv("CB_NOTIFY_HOURLY_LIMIT", 30),
 
 		OIDCIssuer:        getenv("CB_OIDC_ISSUER", ""),
 		OIDCClientID:      getenv("CB_OIDC_CLIENT_ID", ""),

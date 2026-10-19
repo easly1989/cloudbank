@@ -43,12 +43,37 @@ SELECT * FROM notification_channels WHERE user_id = ?;
 SELECT * FROM notification_channels WHERE user_id = ? AND channel = ?;
 
 -- name: UpsertNotificationChannel :exec
-INSERT INTO notification_channels (user_id, channel, target, secret, server, options, local_ok)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO notification_channels (
+    user_id, channel, target, secret, server, options, local_ok,
+    verified, code_hash, code_link, code_expires_at, code_attempts)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (user_id, channel) DO UPDATE SET
     target = excluded.target, secret = excluded.secret, server = excluded.server,
     options = excluded.options, local_ok = excluded.local_ok,
+    verified = excluded.verified, code_hash = excluded.code_hash, code_link = excluded.code_link,
+    code_expires_at = excluded.code_expires_at, code_attempts = excluded.code_attempts,
     last_error = '', last_error_at = NULL;
+
+-- name: SetNotificationChannelCode :exec
+UPDATE notification_channels
+SET code_hash = ?, code_link = ?, code_expires_at = ?, code_attempts = 0
+WHERE user_id = ? AND channel = ? AND verified = 0;
+
+-- name: CountNotificationCodeAttempt :execrows
+UPDATE notification_channels SET code_attempts = code_attempts + 1
+WHERE user_id = ? AND channel = ? AND verified = 0 AND code_attempts < ?;
+
+-- The code was right: the channel sends from now on. A Telegram chat linked
+-- through the shared bot gets its target here.
+-- name: VerifyNotificationChannel :exec
+UPDATE notification_channels
+SET verified = 1, code_hash = '', code_link = '', code_expires_at = NULL, code_attempts = 0,
+    target = COALESCE(sqlc.narg(target), target)
+WHERE user_id = sqlc.arg(user_id) AND channel = sqlc.arg(channel) AND verified = 0;
+
+-- name: FindNotificationCode :one
+SELECT user_id, code_expires_at FROM notification_channels
+WHERE channel = ? AND code_hash = ? AND verified = 0;
 
 -- name: DeleteNotificationChannel :exec
 DELETE FROM notification_channels WHERE user_id = ? AND channel = ?;

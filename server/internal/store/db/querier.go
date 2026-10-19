@@ -44,6 +44,7 @@ type Querier interface {
 	CountAccountsInWallet(ctx context.Context, arg CountAccountsInWalletParams) (int64, error)
 	CountCategoriesInWallet(ctx context.Context, arg CountCategoriesInWalletParams) (int64, error)
 	CountCurrencyAccounts(ctx context.Context, currencyID int64) (int64, error)
+	CountNotificationCodeAttempt(ctx context.Context, arg CountNotificationCodeAttemptParams) (int64, error)
 	CountOIDCIdentitiesForUser(ctx context.Context, userID int64) (int64, error)
 	CountPayeesInWallet(ctx context.Context, arg CountPayeesInWalletParams) (int64, error)
 	CountPayeesWithCategory(ctx context.Context, defaultCategoryID sql.NullInt64) (int64, error)
@@ -118,6 +119,7 @@ type Querier interface {
 	DemoLinkFills(ctx context.Context, arg DemoLinkFillsParams) (int64, error)
 	FindDuplicateTransactions(ctx context.Context, arg FindDuplicateTransactionsParams) ([]Transaction, error)
 	FindMailboxByAddress(ctx context.Context, arg FindMailboxByAddressParams) (Mailbox, error)
+	FindNotificationCode(ctx context.Context, arg FindNotificationCodeParams) (FindNotificationCodeRow, error)
 	FindTransactionByImportRef(ctx context.Context, arg FindTransactionByImportRefParams) (int64, error)
 	GetAISettings(ctx context.Context, userID int64) (GetAISettingsRow, error)
 	GetAPIToken(ctx context.Context, id string) (ApiToken, error)
@@ -381,6 +383,7 @@ type Querier interface {
 	SetMailboxIMAP(ctx context.Context, arg SetMailboxIMAPParams) error
 	SetMailboxPaused(ctx context.Context, arg SetMailboxPausedParams) error
 	SetMailboxSecret(ctx context.Context, arg SetMailboxSecretParams) error
+	SetNotificationChannelCode(ctx context.Context, arg SetNotificationChannelCodeParams) error
 	SetNotificationChannelError(ctx context.Context, arg SetNotificationChannelErrorParams) error
 	SetNotificationChannelOK(ctx context.Context, arg SetNotificationChannelOKParams) error
 	SetNotificationPref(ctx context.Context, arg SetNotificationPrefParams) error
@@ -439,6 +442,9 @@ type Querier interface {
 	UpsertNotificationChannel(ctx context.Context, arg UpsertNotificationChannelParams) error
 	UpsertPluggyConfig(ctx context.Context, arg UpsertPluggyConfigParams) error
 	UpsertPushSubscription(ctx context.Context, arg UpsertPushSubscriptionParams) error
+	// The code was right: the channel sends from now on. A Telegram chat linked
+	// through the shared bot gets its target here.
+	VerifyNotificationChannel(ctx context.Context, arg VerifyNotificationChannelParams) error
 }
 
 var _ Querier = (*Queries)(nil)

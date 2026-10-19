@@ -313,6 +313,7 @@ func run() error {
 		notifySvc.SetSender(notify.ChannelTelegram, notify.NewTelegramSender(cfg.TelegramAPI, cfg.TelegramToken))
 		notifySvc.SetSender(notify.ChannelDiscord, notify.NewDiscordSender())
 		notifySvc.SetSender(notify.ChannelSlack, notify.NewSlackSender())
+		notifySvc.SetHourlyLimit(cfg.NotifyHourlyLimit)
 	}
 	handler := httpapi.New(opts)
 

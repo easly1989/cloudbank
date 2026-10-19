@@ -462,9 +462,16 @@ paths:
         webhook or a Matrix homeserver on the local network may be saved only by
         an administrator: anyone else gets 400 local_network. Matrix takes a room
         ID as target and, without a shared bot, a homeserver and an access token;
-        send server "" to post as the shared bot. Telegram takes a chat ID (or
-        @channel) as target and, without a shared bot, the bot's token as secret.
-        Discord and Slack take their incoming webhook URL as target.
+        send server "" to post as the shared bot. Telegram takes the bot's token
+        as secret and a chat ID (or @channel) as target; with secret "" it uses
+        the shared bot, ignores the target and answers with a link that starts
+        the bot (the chat is whichever one uses it). Discord and Slack take
+        their incoming webhook URL as target. A new address reached through the
+        installation's resources (email, the shared Matrix or Telegram bot)
+        stays pending until confirmed: email and Matrix are sent a 6-digit code
+        now, and when it cannot be sent nothing is saved (502 delivery_failed,
+        409 not_invited when the shared Matrix bot has no invitation to the
+        room, 429 rate_limited or hourly_limit).
       requestBody:
         required: true
         content:
@@ -481,6 +488,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: The shared Matrix bot was not invited to the room., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "429": { description: A code went out moments ago, or the hourly cap is reached., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "502": { description: The code could not be sent; the message is the status or the reason., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
     delete:
       operationId: deleteNotificationChannel
       summary: Remove the current user's address on a channel
@@ -502,7 +512,43 @@ paths:
         "200": { description: Tried., content: { application/json: { schema: { type: object, properties: { ok: { type: boolean }, error: { type: string, description: The status, or unauthorized / rejected / unreachable / local. } }, required: [ok] } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
-        "429": { description: A test went to this address moments ago., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "429": { description: A test went to this address moments ago (rate_limited), or the hourly cap is reached (hourly_limit)., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/notifications/channels/{channel}/code:
+    parameters:
+      - { name: channel, in: path, required: true, schema: { type: string, enum: [email, matrix, telegram] } }
+    post:
+      operationId: resendNotificationCode
+      summary: Send a pending channel a new confirmation code
+      description: >-
+        Replaces the code: mailed, posted in the Matrix room, or a new Telegram
+        link. Not twice within ten seconds.
+      responses:
+        "204": { description: Sent. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: The shared Matrix bot was not invited to the room., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "429": { description: A code went out moments ago, or the hourly cap is reached., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "502": { description: The code could not be sent., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/notifications/channels/{channel}/confirm:
+    parameters:
+      - { name: channel, in: path, required: true, schema: { type: string, enum: [email, matrix] } }
+    post:
+      operationId: confirmNotificationChannel
+      summary: Confirm a pending channel with the code it was sent
+      description: >-
+        A code is good for 15 minutes and 5 tries; after that the answer is 410
+        code_expired and a new code is needed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { code: { type: string } }, required: [code] }
+      responses:
+        "204": { description: Confirmed; the channel sends from now on. }
+        "400": { description: Not the code (wrong_code)., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "410": { description: The code expired or was tried too often (code_expired)., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
   /api/v1/ai/settings:
     get:
       operationId: getAISettings
@@ -3640,10 +3686,13 @@ components:
         shared: { type: boolean, description: The installation has a shared Matrix or Telegram bot. }
         bot: { type: string, description: "The shared bot's Matrix ID or Telegram @username; empty when unknown." }
         options: { $ref: "#/components/schemas/NotificationChannelOptions" }
-        lastError: { type: string, description: Empty after a success; else the status or the reason of the last failure. }
+        pending: { type: boolean, description: The address waits for its confirmation code and gets nothing until then. }
+        link: { type: string, description: "Telegram's shared bot while pending: the link that starts it with the code in a private chat; absent once expired." }
+        groupLink: { type: string, description: The same link, to add the bot to a group. }
+        lastError: { type: string, description: "Empty after a success; else the status or the reason of the last failure (limited: the hourly cap held the rest back)." }
         lastErrorAt: { type: string, format: date-time, nullable: true }
         lastOkAt: { type: string, format: date-time, nullable: true }
-      required: [channel, available, configured, target, hasSecret, server, shared, bot, options, lastError, lastErrorAt, lastOkAt]
+      required: [channel, available, configured, target, hasSecret, server, shared, bot, options, pending, lastError, lastErrorAt, lastOkAt]
     NotificationChannelOptions:
       type: object
       description: A channel's own settings; only Telegram has any. Omitted on save to keep them.
