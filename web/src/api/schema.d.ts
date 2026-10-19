@@ -408,7 +408,10 @@ export interface paths {
         };
         /** Every event with the channels that carry it, for the current user */
         get: operations["getNotificationPreferences"];
-        /** Turn one event on or off on one channel */
+        /**
+         * Turn one event on or off on one channel
+         * @description A security event cannot leave the bell (inapp); turning it off there is refused with always_on.
+         */
         put: operations["setNotificationPreference"];
         post?: never;
         delete?: never;
@@ -3867,7 +3870,7 @@ export interface components {
             } | null;
         };
         /** @enum {string} */
-        NotificationKind: "mail_stopped" | "mail_unrecognized" | "bills";
+        NotificationKind: "new_device" | "two_factor_off" | "new_api_token" | "bank_sync_failed" | "consent_expiring" | "mail_stopped" | "mail_unrecognized" | "bills" | "new_version";
         /** @enum {string} */
         NotificationChannel: "inapp" | "push" | "email" | "matrix" | "telegram" | "discord" | "slack" | "ntfy" | "gotify" | "webhook";
         Notification: {
@@ -3932,8 +3935,11 @@ export interface components {
         };
         NotificationPreference: {
             kind: components["schemas"]["NotificationKind"];
-            /** @enum {string} */
-            group: "problems" | "bills";
+            /**
+             * @description Security always reaches the bell; admin is listed for administrators only.
+             * @enum {string}
+             */
+            group: "security" | "problems" | "bills" | "admin";
             channels: {
                 inapp: boolean;
                 push: boolean;

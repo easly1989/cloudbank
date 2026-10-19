@@ -167,6 +167,39 @@ func (q *Queries) InsertNotificationDelivery(ctx context.Context, arg InsertNoti
 	return err
 }
 
+const listAdminRecipients = `-- name: ListAdminRecipients :many
+SELECT id, locale FROM users WHERE is_admin = 1 AND disabled = 0 ORDER BY id
+`
+
+type ListAdminRecipientsRow struct {
+	ID     int64
+	Locale string
+}
+
+// Who an admin event is for: the administrators whose account is on.
+func (q *Queries) ListAdminRecipients(ctx context.Context) ([]ListAdminRecipientsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAdminRecipients)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAdminRecipientsRow{}
+	for rows.Next() {
+		var i ListAdminRecipientsRow
+		if err := rows.Scan(&i.ID, &i.Locale); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDueNotificationDeliveries = `-- name: ListDueNotificationDeliveries :many
 SELECT id, user_id, channel, payload, attempts, next_at FROM notification_deliveries WHERE next_at <= ? ORDER BY next_at, id LIMIT ?
 `
@@ -328,6 +361,41 @@ func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsPa
 			&i.CreatedAt,
 			&i.ReadAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listWalletRecipients = `-- name: ListWalletRecipients :many
+SELECT u.id, u.locale FROM wallet_members m JOIN users u ON u.id = m.user_id
+WHERE m.wallet_id = ? AND u.disabled = 0
+ORDER BY u.id
+`
+
+type ListWalletRecipientsRow struct {
+	ID     int64
+	Locale string
+}
+
+// Who a wallet event is for: the wallet's members whose account is on.
+func (q *Queries) ListWalletRecipients(ctx context.Context, walletID int64) ([]ListWalletRecipientsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listWalletRecipients, walletID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListWalletRecipientsRow{}
+	for rows.Next() {
+		var i ListWalletRecipientsRow
+		if err := rows.Scan(&i.ID, &i.Locale); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

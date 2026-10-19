@@ -237,6 +237,11 @@ func run() error {
 	mailSvc.SetNotify(func(ctx context.Context, userID int64, kind, ref, title, body, url string) error {
 		return notifySvc.Notify(ctx, userID, notify.Event{Kind: notify.Kind(kind), Ref: ref, Title: title, Body: body, URL: url})
 	})
+	// Security, bank and update events (#690).
+	authSvc.SetNotify(notifySvc)
+	bankSyncSvc.SetNotify(notifySvc)
+	updatesSvc := updates.New(st.Write(), version, cfg.UpdateCheck)
+	updatesSvc.SetNotify(notifySvc)
 
 	opts := httpapi.Options{
 		Logger:            logger,
@@ -274,7 +279,7 @@ func run() error {
 		HotBackup:         st,
 		DataDir:           cfg.DataDir,
 		Version:           version,
-		Updates:           updates.New(st.Write(), version, cfg.UpdateCheck),
+		Updates:           updatesSvc,
 		SecureCookies:     cfg.SecureCookies,
 		OIDC:              oidcSvc,
 		OIDCAutoProvision: cfg.OIDCAutoProvision,
@@ -459,6 +464,9 @@ func runBankSync(ctx context.Context, svc *banksync.Service, interval time.Durat
 		check = interval
 	}
 	run := func() {
+		if err := svc.WarnExpiringConsents(ctx, time.Now()); err != nil && ctx.Err() == nil {
+			logger.Error("bank consent warnings failed", "error", err)
+		}
 		res, err := svc.SyncDue(ctx)
 		if err != nil {
 			if ctx.Err() == nil {
