@@ -134,6 +134,31 @@ func (s *Service) Review(ctx context.Context, walletID int64) (ReviewResult, err
 	return out, nil
 }
 
+// Waiting lists the transactions the review asks about as of today (#692):
+// the imported ones missing a category and the mail rows the bank has not
+// booked. Suspected duplicates are left out: they ask about a pair.
+func (s *Service) Waiting(ctx context.Context, walletID int64, today time.Time) ([]int64, error) {
+	uncat, err := s.rq.ListImportedUncategorized(ctx, walletID)
+	if err != nil {
+		return nil, err
+	}
+	rows, pairs, err := s.unconfirmed(ctx, walletID, today)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]int64, 0, len(uncat)+len(rows)+2*len(pairs))
+	for _, r := range uncat {
+		ids = append(ids, r.ID)
+	}
+	for _, r := range rows {
+		ids = append(ids, r.ID)
+	}
+	for _, p := range pairs {
+		ids = append(ids, p.Payment.ID, p.Reversal.ID)
+	}
+	return ids, nil
+}
+
 // duplicatePairs returns the current suspected-duplicate pairs (same account +
 // amount within the finder window), excluding any the user has dismissed.
 func (s *Service) duplicatePairs(ctx context.Context, walletID int64) ([]DuplicatePair, error) {

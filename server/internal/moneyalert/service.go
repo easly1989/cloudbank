@@ -1,8 +1,10 @@
 // Package moneyalert watches the money and tells the dispatcher (#691): a
 // large expense or a low balance against each person's thresholds, a budget
-// at 80% and 100%, a goal reached or falling behind. It looks every few
-// minutes instead of hooking every place a transaction is written, so a
-// bank sync, a mail, a schedule or another member are all caught alike.
+// at 80% and 100%, a goal reached or falling behind; and (#692) the
+// transactions waiting on the Review page, and the weekly and monthly
+// summaries. It looks every few minutes instead of hooking every place a
+// transaction is written, so a bank sync, a mail, a schedule or another
+// member are all caught alike.
 package moneyalert
 
 import (
@@ -14,12 +16,14 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/easly1989/cloudbank/server/internal/bills"
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/goal"
 	"github.com/easly1989/cloudbank/server/internal/locale"
 	"github.com/easly1989/cloudbank/server/internal/money"
 	"github.com/easly1989/cloudbank/server/internal/notify"
 	"github.com/easly1989/cloudbank/server/internal/provenance"
+	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -27,6 +31,8 @@ import (
 type Notifier interface {
 	Notify(ctx context.Context, userID int64, e notify.Event) error
 	NotifyWallet(ctx context.Context, walletID int64, build func(locale string) notify.Event) error
+	GetSettings(ctx context.Context, userID int64) (notify.Settings, error)
+	Wants(ctx context.Context, userID int64, k notify.Kind) (bool, error)
 }
 
 // lastKey stores the last transaction the large-expense check has seen.
@@ -37,16 +43,31 @@ type Service struct {
 	q, rq   *db.Queries
 	budgets *budget.Service
 	goals   *goal.Service
+	reports *report.Service
+	bills   *bills.Service
+	waiting Waiting
 	notify  Notifier
 	logger  *slog.Logger
 }
 
+// Deps are the services the watch reads.
+type Deps struct {
+	Budgets *budget.Service
+	Goals   *goal.Service
+	Reports *report.Service
+	Bills   *bills.Service
+	Waiting Waiting
+}
+
 // New returns the watch.
-func New(read, write *sql.DB, budgets *budget.Service, goals *goal.Service, n Notifier, logger *slog.Logger) *Service {
+func New(read, write *sql.DB, d Deps, n Notifier, logger *slog.Logger) *Service {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Service{q: db.New(write), rq: db.New(read), budgets: budgets, goals: goals, notify: n, logger: logger}
+	return &Service{
+		q: db.New(write), rq: db.New(read), budgets: d.Budgets, goals: d.Goals, reports: d.Reports,
+		bills: d.Bills, waiting: d.Waiting, notify: n, logger: logger,
+	}
 }
 
 // Run looks at once, then every interval, until ctx ends.
@@ -68,7 +89,8 @@ func (s *Service) Run(ctx context.Context, every time.Duration) {
 // Sweep runs every check once, as of now.
 func (s *Service) Sweep(ctx context.Context, now time.Time) error {
 	today := now.Format("2006-01-02")
-	return errors.Join(s.large(ctx), s.low(ctx, today), s.budget(ctx, now), s.goal(ctx, now))
+	return errors.Join(s.large(ctx), s.low(ctx, today), s.budget(ctx, now), s.goal(ctx, now),
+		s.review(ctx, now), s.summaries(ctx, now))
 }
 
 // account is what the texts need of an account.

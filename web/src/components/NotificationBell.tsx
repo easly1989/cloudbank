@@ -18,6 +18,8 @@ import {
   IconAlertTriangle,
   IconBell,
   IconCalendarDue,
+  IconCalendarStats,
+  IconListCheck,
   IconPigMoney,
   IconReceipt2,
   IconRefresh,
@@ -27,14 +29,17 @@ import {
   IconTrendingDown,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
 import {
+  getNotificationSettings,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  NOTIFICATION_SETTINGS_KEY,
+  setNotificationSettings,
   type AppNotification,
   type NotificationKind,
 } from "../api/client";
@@ -59,11 +64,14 @@ const KIND_ICON: Record<NotificationKind, React.ReactNode> = {
   consent_expiring: problem,
   mail_stopped: problem,
   mail_unrecognized: problem,
+  review_waiting: <IconListCheck size={16} color="var(--mantine-color-dimmed)" />,
   bills: <IconCalendarDue size={16} color="var(--mantine-color-dimmed)" />,
   large_transaction: <IconReceipt2 size={16} color="var(--mantine-color-dimmed)" />,
   low_balance: <IconTrendingDown size={16} color="var(--mantine-color-dimmed)" />,
   budget: <IconReportMoney size={16} color="var(--mantine-color-dimmed)" />,
   goal: <IconPigMoney size={16} color="var(--mantine-color-dimmed)" />,
+  summary_weekly: <IconCalendarStats size={16} color="var(--mantine-color-dimmed)" />,
+  summary_monthly: <IconCalendarStats size={16} color="var(--mantine-color-dimmed)" />,
   new_version: <IconRefresh size={16} color="var(--mantine-color-dimmed)" />,
 };
 
@@ -164,6 +172,28 @@ function Panel({ phone, onDone }: { phone: boolean; onDone: () => void }) {
   );
 }
 
+// The reader's time zone, from this browser, for the digest and the quiet
+// hours (#692): sent once per load, when it changed. The bell is on every
+// page of a signed-in reader, so it carries this.
+let zoneSent = false;
+
+function useSendTimeZone() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (zoneSent) return;
+    zoneSent = true;
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    void getNotificationSettings()
+      .then((s) =>
+        zone && s.timezone !== zone ? setNotificationSettings({ timezone: zone }) : null,
+      )
+      .then((s) => s && qc.setQueryData(NOTIFICATION_SETTINGS_KEY, s))
+      .catch(() => {
+        zoneSent = false;
+      });
+  }, [qc]);
+}
+
 /** The bell. `size` and `variant` match the buttons it sits beside. */
 export function NotificationBell({
   size = 40,
@@ -175,6 +205,7 @@ export function NotificationBell({
   const { t } = useTranslation();
   const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
   const [opened, setOpened] = useState(false);
+  useSendTimeZone();
   // A light poll: the bell is on every page, and a reminder written by the
   // daily job should show without a reload.
   const { data } = useQuery({

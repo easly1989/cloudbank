@@ -244,7 +244,9 @@ func run() error {
 	updatesSvc := updates.New(st.Write(), version, cfg.UpdateCheck)
 	updatesSvc.SetNotify(notifySvc)
 	// Large expenses, low balances, budgets and goals (#691).
-	moneySvc := moneyalert.New(st.Read(), st.Write(), budgetSvc, goalSvc, notifySvc, logger)
+	moneySvc := moneyalert.New(st.Read(), st.Write(), moneyalert.Deps{
+		Budgets: budgetSvc, Goals: goalSvc, Reports: reportSvc, Bills: billsSvc, Waiting: transactionSvc,
+	}, notifySvc, logger)
 
 	opts := httpapi.Options{
 		Logger:            logger,

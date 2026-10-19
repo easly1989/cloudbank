@@ -111,11 +111,50 @@ ORDER BY u.id;
 SELECT id, locale FROM users WHERE is_admin = 1 AND disabled = 0 ORDER BY id;
 
 -- name: GetNotificationSettings :one
-SELECT amounts_outside FROM notification_settings WHERE user_id = ?;
+SELECT * FROM notification_settings WHERE user_id = ?;
 
--- name: SetNotificationAmountsOutside :exec
-INSERT INTO notification_settings (user_id, amounts_outside) VALUES (?, ?)
-ON CONFLICT (user_id) DO UPDATE SET amounts_outside = excluded.amounts_outside;
+-- name: UpsertNotificationSettings :exec
+INSERT INTO notification_settings (user_id, amounts_outside, timezone, digest_at, quiet_hours, quiet_from, quiet_to, review_days)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (user_id) DO UPDATE SET
+    amounts_outside = excluded.amounts_outside, timezone = excluded.timezone,
+    digest_at = excluded.digest_at, quiet_hours = excluded.quiet_hours,
+    quiet_from = excluded.quiet_from, quiet_to = excluded.quiet_to, review_days = excluded.review_days;
+
+-- name: ListDigestKinds :many
+SELECT kind FROM notification_digest_kinds WHERE user_id = ? ORDER BY kind;
+
+-- name: SetDigestKind :exec
+INSERT INTO notification_digest_kinds (user_id, kind) VALUES (?, ?)
+ON CONFLICT (user_id, kind) DO NOTHING;
+
+-- name: UnsetDigestKind :exec
+DELETE FROM notification_digest_kinds WHERE user_id = ? AND kind = ?;
+
+-- name: InsertHeldNotification :exec
+INSERT INTO notification_held (user_id, channel, payload, digest, held_at) VALUES (?, ?, ?, ?, ?);
+
+-- name: ListHeldUsers :many
+SELECT DISTINCT user_id FROM notification_held ORDER BY user_id;
+
+-- name: ListHeldNotifications :many
+SELECT * FROM notification_held WHERE user_id = ? ORDER BY id;
+
+-- name: DeleteHeldNotification :exec
+DELETE FROM notification_held WHERE id = ?;
+
+-- name: HasReminder :one
+SELECT COUNT(*) FROM push_reminders WHERE user_id = ? AND ref = ?;
+
+-- name: ListReviewWaiting :many
+SELECT transaction_id, since FROM review_waiting WHERE wallet_id = ? ORDER BY transaction_id;
+
+-- name: InsertReviewWaiting :exec
+INSERT INTO review_waiting (transaction_id, wallet_id, since) VALUES (?, ?, ?)
+ON CONFLICT (transaction_id) DO NOTHING;
+
+-- name: DeleteReviewWaiting :exec
+DELETE FROM review_waiting WHERE transaction_id = ?;
 
 -- name: IsNotificationWalletOff :one
 SELECT COUNT(*) FROM notification_wallets_off WHERE user_id = ? AND wallet_id = ?;

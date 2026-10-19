@@ -48,6 +48,7 @@ func (s *Service) runDeliveries(ctx context.Context) {
 	ticker := time.NewTicker(pollEvery)
 	defer ticker.Stop()
 	for {
+		s.releaseHeld(ctx)
 		s.deliverDue(ctx)
 		select {
 		case <-ctx.Done():

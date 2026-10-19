@@ -438,6 +438,25 @@ paths:
         "204": { description: Saved. }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/notifications/digest:
+    put:
+      operationId: setNotificationDigest
+      summary: Collect one event in the daily digest, or send it at once
+      description: "Outside the app only; the bell is always at once. Security events and the summaries are refused with always_immediate."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                kind: { $ref: "#/components/schemas/NotificationKind" }
+                digest: { type: boolean }
+              required: [kind, digest]
+      responses:
+        "204": { description: Saved. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
   /api/v1/notifications/settings:
     get:
       operationId: getNotificationSettings
@@ -448,9 +467,10 @@ paths:
     put:
       operationId: setNotificationSettings
       summary: Change the current user's notification settings
+      description: Only the fields sent change; the others keep their value.
       requestBody:
         required: true
-        content: { application/json: { schema: { $ref: "#/components/schemas/NotificationSettings" } } }
+        content: { application/json: { schema: { $ref: "#/components/schemas/NotificationSettingsInput" } } }
       responses:
         "200": { description: The settings., content: { application/json: { schema: { $ref: "#/components/schemas/NotificationSettings" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -3715,7 +3735,7 @@ components:
       required: [category]
     NotificationKind:
       type: string
-      enum: [new_device, two_factor_off, new_api_token, bank_sync_failed, consent_expiring, mail_stopped, mail_unrecognized, bills, large_transaction, low_balance, budget, goal, new_version]
+      enum: [new_device, two_factor_off, new_api_token, bank_sync_failed, consent_expiring, mail_stopped, mail_unrecognized, review_waiting, bills, large_transaction, low_balance, budget, goal, summary_weekly, summary_monthly, new_version]
     NotificationChannel:
       type: string
       enum: [inapp, push, email, matrix, telegram, discord, slack, ntfy, gotify, webhook]
@@ -3756,11 +3776,21 @@ components:
       properties:
         topic: { type: integer, format: int64, description: The topic (message_thread_id) in a Telegram group with topics. }
         silent: { type: boolean, description: Send the Telegram message without sound. }
-    NotificationSettings:
+    NotificationSettingsInput:
       type: object
       properties:
         amountsOutside: { type: boolean, description: "Amounts reach the channels outside the app; off, those get the text without them. The bell always has them." }
-      required: [amountsOutside]
+        timezone: { type: string, description: "The person's IANA time zone, sent by their browser; empty is UTC." }
+        digestAt: { type: string, description: "Local time of the daily digest, HH:MM." }
+        quietHours: { type: boolean, description: "Outside the app, what is not a problem or security waits from quietFrom to quietTo." }
+        quietFrom: { type: string, description: "Local HH:MM, included." }
+        quietTo: { type: string, description: "Local HH:MM, excluded; before quietFrom, the span crosses midnight." }
+        reviewDays: { type: integer, enum: [1, 3, 7, 14], description: How long a transaction may wait on the Review page before it is announced. }
+    NotificationSettings:
+      allOf:
+        - $ref: "#/components/schemas/NotificationSettingsInput"
+        - type: object
+          required: [amountsOutside, timezone, digestAt, quietHours, quietFrom, quietTo, reviewDays]
     NotificationThresholdInput:
       type: object
       properties:
@@ -3789,7 +3819,8 @@ components:
       type: object
       properties:
         kind: { $ref: "#/components/schemas/NotificationKind" }
-        group: { type: string, enum: [security, problems, bills, money, admin], description: "Security always reaches the bell; money starts off; admin is listed for administrators only." }
+        group: { type: string, enum: [security, problems, bills, money, summaries, admin], description: "Security always reaches the bell; money and summaries start off; admin is listed for administrators only." }
+        digest: { type: boolean, description: "Collected in the daily digest outside the app; always false for security and the summaries." }
         channels:
           type: object
           properties:
@@ -3804,7 +3835,7 @@ components:
             gotify: { type: boolean }
             webhook: { type: boolean }
           required: [inapp, push, email, matrix, telegram, discord, slack, ntfy, gotify, webhook]
-      required: [kind, group, channels]
+      required: [kind, group, channels, digest]
     PushSubscription:
       type: object
       description: The browser's PushSubscription (endpoint + keys).

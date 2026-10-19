@@ -77,6 +77,7 @@ const SecuritySection = settingsSection("SecuritySection");
 const NotificationsSection = settingsSection("NotificationsSection");
 const NotificationChannelSection = settingsSection("NotificationChannelSection");
 const NotificationMoneySection = settingsSection("NotificationMoneySection");
+const NotificationTimingSection = settingsSection("NotificationTimingSection");
 const BankSyncSection = settingsSection("BankSyncSection");
 const MailSection = settingsSection("MailSection");
 const AiSection = settingsSection("AiSection");
@@ -211,6 +212,7 @@ function AuthenticatedApp() {
           <Route path="security" element={<SecuritySection />} />
           <Route path="notifications" element={<NotificationsSection />} />
           <Route path="notifications/money" element={<NotificationMoneySection />} />
+          <Route path="notifications/timing" element={<NotificationTimingSection />} />
           <Route path="notifications/:channel" element={<NotificationChannelSection />} />
           <Route path="bank-sync" element={<BankSyncSection />} />
           {!__DEMO__ && <Route path="mail" element={<MailSection />} />}

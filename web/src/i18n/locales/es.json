@@ -1712,7 +1712,8 @@
       "problems": "Problemas",
       "bills": "Vencimientos",
       "money": "Dinero",
-      "admin": "Administración"
+      "admin": "Administración",
+      "summaries": "Resúmenes"
     },
     "kind": {
       "new_device": "Inicio de sesión desde un dispositivo nuevo",
@@ -1727,7 +1728,10 @@
       "low_balance": "Saldo bajo",
       "budget": "Presupuesto al 80% y al 100%",
       "goal": "Meta alcanzada o con retraso",
-      "new_version": "Nueva versión de CloudBank"
+      "new_version": "Nueva versión de CloudBank",
+      "review_waiting": "Movimientos por revisar",
+      "summary_weekly": "Resumen semanal",
+      "summary_monthly": "Resumen mensual"
     },
     "kindHint": {
       "new_device": "Un navegador o sistema que tu cuenta no había usado nunca.",
@@ -1742,7 +1746,10 @@
       "low_balance": "El saldo de hoy de una cuenta baja de su umbral.",
       "budget": "Una categoría llega al 80% y luego al 100% del presupuesto del mes.",
       "goal": "Una meta llega a su objetivo, o el ritmo de los últimos meses ya no basta.",
-      "new_version": "Hay una versión más reciente en el canal que sigue este servidor."
+      "new_version": "Hay una versión más reciente en el canal que sigue este servidor.",
+      "review_waiting": "Movimientos que esperan en la página Revisar desde hace unos días.",
+      "summary_weekly": "El lunes: ingresos, gastos, en qué se fue más y los vencimientos de la semana, por cartera.",
+      "summary_monthly": "El día 1: ingresos, gastos y en qué se fue más el mes anterior, por cartera."
     },
     "securityAlways": "Siempre en la campana, para que un inicio de sesión que no has hecho no pase desapercibido.",
     "emailUnavailable": "No disponible: el administrador no ha configurado un servidor de correo (CB_SMTP_HOST).",
@@ -1891,6 +1898,37 @@
       "amountsOutside": "Mostrar los importes fuera de la app",
       "amountsOn": "Push, correo y chat dicen cuánto, como la campana.",
       "amountsOff": "Push, correo y chat dicen dónde, nunca cuánto."
+    },
+    "timing": {
+      "title": "Horarios",
+      "subtitle": "Cuándo te llegan las notificaciones fuera de la app",
+      "rowDigest": "Resumen a las {{time}}",
+      "rowEvents_one": "{{count}} evento en el resumen",
+      "rowEvents_other": "{{count}} eventos en el resumen",
+      "rowQuietOff": "horas de silencio desactivadas",
+      "rowQuietOn": "silencio {{from}}–{{to}}",
+      "when": "Resumen y silencio",
+      "whenHint": "La campana no suena: lo muestra todo enseguida, siempre.",
+      "digest": "Resumen diario",
+      "digestHint": "Los eventos que eliges reunir llegan juntos, una vez al día. En tu zona horaria: {{zone}}.",
+      "digestAt": "Hora del resumen",
+      "quiet": "Horas de silencio",
+      "quietOn": "Push, email y chat esperan a que terminen. Los problemas y la seguridad llegan igualmente.",
+      "quietOff": "Desactivadas: las notificaciones llegan a cualquier hora.",
+      "from": "De",
+      "to": "a",
+      "fromLabel": "Inicio de las horas de silencio",
+      "toLabel": "Fin de las horas de silencio",
+      "modes": "Enseguida o en el resumen",
+      "modesHint": "Vale para push, email y chat a la vez. Un resumen vacío no se envía.",
+      "now": "Enseguida",
+      "inDigest": "En el resumen",
+      "always": "Siempre enseguida",
+      "atDigest": "A la hora del resumen",
+      "reviewAfter": "Avisar después de",
+      "reviewDays": "Días de espera",
+      "days_one": "{{count}} día",
+      "days_other": "{{count}} días"
     }
   },
   "ai": {

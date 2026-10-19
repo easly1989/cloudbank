@@ -34,6 +34,7 @@ import { GUIDE_BASE_URL } from "../../aboutLinks";
 import { attentionColor, errorColor } from "../../amountTone";
 import {
   getNotificationPreferences,
+  NOTIFICATION_PREFERENCES_KEY,
   setNotificationPreference,
   type AddressedChannel,
   type NotificationChannel,
@@ -44,6 +45,7 @@ import { NotificationsCard } from "../../components/NotificationsCard";
 import { notifyError } from "../../notifyError";
 import { currentPushSubscription, pushSupported } from "../../push";
 import { MoneyRow } from "./NotificationMoney";
+import { ReviewDays, TimingRow } from "./NotificationTiming";
 import { SettingsGroup } from "./SettingsLayout";
 import classes from "./NotificationsPages.module.css";
 
@@ -123,7 +125,7 @@ function useStatus(id: NotificationChannel): Status {
   return { text: t("notif.status.linked"), active: true };
 }
 
-const PREFS_KEY = ["notification-preferences"] as const;
+const PREFS_KEY = NOTIFICATION_PREFERENCES_KEY;
 
 function usePreferences() {
   const { data } = useQuery({ queryKey: PREFS_KEY, queryFn: getNotificationPreferences });
@@ -181,6 +183,8 @@ export function NotificationsSection() {
         ))}
       </Card>
       <MoneyRow />
+      {/* Timing is about the channels outside the app, which the demo has none of. */}
+      {!__DEMO__ && <TimingRow />}
     </SettingsGroup>
   );
 }
@@ -232,17 +236,17 @@ function ChannelEvents({ id, active }: { id: NotificationChannel; active: boolea
           {events
             .filter((e) => e.group === g)
             .map((e) => (
-              <Checkbox
-                key={e.kind}
-                px="md"
-                py="xs"
-                // A security event always reaches the bell (#690).
-                disabled={!active || (e.group === "security" && id === "inapp")}
-                checked={e.channels[id]}
-                onChange={(ev) => save.mutate({ kind: e.kind, on: ev.currentTarget.checked })}
-                label={t(`notif.kind.${e.kind}`)}
-                description={t(`notif.kindHint.${e.kind}`)}
-              />
+              <Box key={e.kind} px="md" py="xs">
+                <Checkbox
+                  // A security event always reaches the bell (#690).
+                  disabled={!active || (e.group === "security" && id === "inapp")}
+                  checked={e.channels[id]}
+                  onChange={(ev) => save.mutate({ kind: e.kind, on: ev.currentTarget.checked })}
+                  label={t(`notif.kind.${e.kind}`)}
+                  description={t(`notif.kindHint.${e.kind}`)}
+                />
+                {e.kind === "review_waiting" && <ReviewDays />}
+              </Box>
             ))}
         </Fragment>
       ))}

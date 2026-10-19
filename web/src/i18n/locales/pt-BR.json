@@ -1712,7 +1712,8 @@
       "problems": "Problemas",
       "bills": "Vencimentos",
       "money": "Dinheiro",
-      "admin": "Administração"
+      "admin": "Administração",
+      "summaries": "Resumos"
     },
     "kind": {
       "new_device": "Acesso de um novo dispositivo",
@@ -1727,7 +1728,10 @@
       "low_balance": "Saldo baixo",
       "budget": "Orçamento em 80% e 100%",
       "goal": "Meta alcançada ou atrasada",
-      "new_version": "Nova versão do CloudBank"
+      "new_version": "Nova versão do CloudBank",
+      "review_waiting": "Lançamentos para revisar",
+      "summary_weekly": "Resumo semanal",
+      "summary_monthly": "Resumo mensal"
     },
     "kindHint": {
       "new_device": "Um navegador ou sistema que sua conta nunca usou.",
@@ -1742,7 +1746,10 @@
       "low_balance": "O saldo de hoje de uma conta fica abaixo do limite.",
       "budget": "Uma categoria chega a 80% e depois a 100% do orçamento do mês.",
       "goal": "Uma meta chega ao alvo, ou o ritmo dos últimos meses já não basta.",
-      "new_version": "Saiu uma versão mais recente no canal que este servidor segue."
+      "new_version": "Saiu uma versão mais recente no canal que este servidor segue.",
+      "review_waiting": "Lançamentos esperando na página Revisão há alguns dias.",
+      "summary_weekly": "Na segunda: entradas, saídas, o que mais pesou e os vencimentos da semana, por carteira.",
+      "summary_monthly": "No dia 1: entradas, saídas e o que mais pesou no mês anterior, por carteira."
     },
     "securityAlways": "Sempre no sino, para que um acesso que você não fez não passe despercebido.",
     "emailUnavailable": "Indisponível: o administrador não configurou um servidor de e-mail (CB_SMTP_HOST).",
@@ -1891,6 +1898,37 @@
       "amountsOutside": "Mostrar os valores fora do app",
       "amountsOn": "Push, e-mail e chat dizem quanto, como o sino.",
       "amountsOff": "Push, e-mail e chat dizem onde, nunca quanto."
+    },
+    "timing": {
+      "title": "Horários",
+      "subtitle": "Quando as notificações chegam a você fora do app",
+      "rowDigest": "Resumo às {{time}}",
+      "rowEvents_one": "{{count}} evento no resumo",
+      "rowEvents_other": "{{count}} eventos no resumo",
+      "rowQuietOff": "horário de silêncio desligado",
+      "rowQuietOn": "silêncio {{from}}–{{to}}",
+      "when": "Resumo e silêncio",
+      "whenHint": "O sino não toca: mostra tudo na hora, sempre.",
+      "digest": "Resumo diário",
+      "digestHint": "Os eventos que você escolhe juntar chegam juntos, uma vez por dia. No seu fuso: {{zone}}.",
+      "digestAt": "Hora do resumo",
+      "quiet": "Horário de silêncio",
+      "quietOn": "Push, e-mail e chat esperam o fim. Problemas e segurança chegam mesmo assim.",
+      "quietOff": "Desligado: as notificações chegam a qualquer hora.",
+      "from": "Das",
+      "to": "às",
+      "fromLabel": "Início do horário de silêncio",
+      "toLabel": "Fim do horário de silêncio",
+      "modes": "Na hora ou no resumo",
+      "modesHint": "Vale para push, e-mail e chat juntos. Um resumo vazio não é enviado.",
+      "now": "Na hora",
+      "inDigest": "No resumo",
+      "always": "Sempre na hora",
+      "atDigest": "Na hora do resumo",
+      "reviewAfter": "Avisar depois de",
+      "reviewDays": "Dias de espera",
+      "days_one": "{{count}} dia",
+      "days_other": "{{count}} dias"
     }
   },
   "ai": {

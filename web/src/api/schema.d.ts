@@ -420,6 +420,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications/digest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Collect one event in the daily digest, or send it at once
+         * @description Outside the app only; the bell is always at once. Security events and the summaries are refused with always_immediate.
+         */
+        put: operations["setNotificationDigest"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notifications/settings": {
         parameters: {
             query?: never;
@@ -429,7 +449,10 @@ export interface paths {
         };
         /** The current user's notification settings that are not per event */
         get: operations["getNotificationSettings"];
-        /** Change the current user's notification settings */
+        /**
+         * Change the current user's notification settings
+         * @description Only the fields sent change; the others keep their value.
+         */
         put: operations["setNotificationSettings"];
         post?: never;
         delete?: never;
@@ -3934,7 +3957,7 @@ export interface components {
             } | null;
         };
         /** @enum {string} */
-        NotificationKind: "new_device" | "two_factor_off" | "new_api_token" | "bank_sync_failed" | "consent_expiring" | "mail_stopped" | "mail_unrecognized" | "bills" | "large_transaction" | "low_balance" | "budget" | "goal" | "new_version";
+        NotificationKind: "new_device" | "two_factor_off" | "new_api_token" | "bank_sync_failed" | "consent_expiring" | "mail_stopped" | "mail_unrecognized" | "review_waiting" | "bills" | "large_transaction" | "low_balance" | "budget" | "goal" | "summary_weekly" | "summary_monthly" | "new_version";
         /** @enum {string} */
         NotificationChannel: "inapp" | "push" | "email" | "matrix" | "telegram" | "discord" | "slack" | "ntfy" | "gotify" | "webhook";
         Notification: {
@@ -3993,10 +4016,26 @@ export interface components {
             /** @description Send the Telegram message without sound. */
             silent?: boolean;
         };
-        NotificationSettings: {
+        NotificationSettingsInput: {
             /** @description Amounts reach the channels outside the app; off, those get the text without them. The bell always has them. */
-            amountsOutside: boolean;
+            amountsOutside?: boolean;
+            /** @description The person's IANA time zone, sent by their browser; empty is UTC. */
+            timezone?: string;
+            /** @description Local time of the daily digest, HH:MM. */
+            digestAt?: string;
+            /** @description Outside the app, what is not a problem or security waits from quietFrom to quietTo. */
+            quietHours?: boolean;
+            /** @description Local HH:MM, included. */
+            quietFrom?: string;
+            /** @description Local HH:MM, excluded; before quietFrom, the span crosses midnight. */
+            quietTo?: string;
+            /**
+             * @description How long a transaction may wait on the Review page before it is announced.
+             * @enum {integer}
+             */
+            reviewDays?: 1 | 3 | 7 | 14;
         };
+        NotificationSettings: components["schemas"]["NotificationSettingsInput"] & Record<string, never>;
         NotificationThresholdInput: {
             /**
              * Format: int64
@@ -4025,10 +4064,12 @@ export interface components {
         NotificationPreference: {
             kind: components["schemas"]["NotificationKind"];
             /**
-             * @description Security always reaches the bell; money starts off; admin is listed for administrators only.
+             * @description Security always reaches the bell; money and summaries start off; admin is listed for administrators only.
              * @enum {string}
              */
-            group: "security" | "problems" | "bills" | "money" | "admin";
+            group: "security" | "problems" | "bills" | "money" | "summaries" | "admin";
+            /** @description Collected in the daily digest outside the app; always false for security and the summaries. */
+            digest: boolean;
             channels: {
                 inapp: boolean;
                 push: boolean;
@@ -6178,6 +6219,33 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    setNotificationDigest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    kind: components["schemas"]["NotificationKind"];
+                    digest: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Saved. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     getNotificationSettings: {
         parameters: {
             query?: never;
@@ -6208,7 +6276,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["NotificationSettings"];
+                "application/json": components["schemas"]["NotificationSettingsInput"];
             };
         };
         responses: {
