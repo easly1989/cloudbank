@@ -3,19 +3,25 @@
 CloudBank tells you when something needs you: a bank mailbox that stopped
 working, bank mails no pattern could read, bills coming due. Every notice lands
 in the bell in the page header, kept for 90 days. It can also reach you
-somewhere else: push on a device, email, a Matrix room, or a webhook of your
-own, such as Home Assistant.
+somewhere else: push on a device, email, a Matrix room, Telegram, Discord,
+Slack, or a webhook of your own, such as Home Assistant.
 
-It lives in **Settings › Notifications**. The [demo](demo.md) has only the bell.
+It lives in **Settings › Notifications**: a list of the channels, each with how
+it stands and how many events it gets, and a page for each channel to connect
+it and pick its events. The [demo](demo.md) has only the bell.
 
 - [Channels](#channels)
 - [Which events go where](#which-events-go-where)
 - [When a delivery fails](#when-a-delivery-fails)
 - [Matrix](#matrix)
+- [Telegram](#telegram)
+- [Discord](#discord)
+- [Slack](#slack)
 - [The webhook](#the-webhook)
 - [Home Assistant](#home-assistant)
 - [For the administrator: the mail server](#for-the-administrator-the-mail-server)
 - [For the administrator: a shared Matrix bot](#for-the-administrator-a-shared-matrix-bot)
+- [For the administrator: a shared Telegram bot](#for-the-administrator-a-shared-telegram-bot)
 
 ## Channels
 
@@ -26,17 +32,22 @@ It lives in **Settings › Notifications**. The [demo](demo.md) has only the bel
   [set up a mail server](#for-the-administrator-the-mail-server).
 - **Matrix.** A message in a room of yours, from the installation's bot or from
   a bot of your own. See [Matrix](#matrix).
+- **Telegram.** A message from the installation's bot or a bot of your own. See
+  [Telegram](#telegram).
+- **Discord** and **Slack.** A message in a channel, through its incoming
+  webhook. See [Discord](#discord) and [Slack](#slack).
 - **Webhook.** A POST with the event as JSON to a URL of yours: Home Assistant,
   n8n, a script. See [the webhook](#the-webhook).
 
-Every channel has **Send a test**, which sends a notice at once and says how it
-went. Email, Matrix and the webhook join the events table once they are saved.
+Once saved, every channel has **Send a test**, which sends a notice at once and
+says how it went.
 
 ## Which events go where
 
-The table under the channels has a row for each event and a box for each
-channel. The boxes start on; untick the ones you do not want. A channel that
-is not set up gets nothing, whatever its box says.
+Each channel's page ends with **What arrives here**: a box for each event. The
+boxes start on; untick the ones you do not want on that channel. A channel that
+is not connected yet gets nothing, so its boxes wait until it is. Push is the
+exception: it is switched on per device, and its boxes can be set before.
 
 | Event | What it means |
 | --- | --- |
@@ -52,7 +63,7 @@ and 30 minutes, then 2 and 6 hours. The tries survive a restart. A refusal is
 not tried again: credentials refused (401 or 403, or the mail server's 535),
 or the message refused.
 
-The channel's card keeps the outcome: **Last delivered** with the time, or
+The channel's page, and its line in the list, keep the outcome: **Last delivered** with the time, or
 **Last delivery failed** with the reason or the status code, until the next
 delivery goes through. The bell has every notice whatever happened to the
 other channels.
@@ -69,13 +80,14 @@ address (`#name:server`). In Element: the room's **Settings › Advanced ›
 Internal room ID**.
 
 **With the installation's bot.** When the administrator has
-[set one up](#for-the-administrator-a-shared-matrix-bot), the card names the
-bot, such as `@cloudbank:example.org`. Invite it to the room, then paste the
+[set one up](#for-the-administrator-a-shared-matrix-bot), the page offers
+**CloudBank's bot** or **Your bot**. With CloudBank's, it names the bot, such
+as `@cloudbank:example.org`. Invite it to the room, then paste the
 room ID and save. The bot accepts the invitation the first time it posts, so
 **Send a test** right away tells you it works.
 
-**With a bot of your own.** Without a shared bot the card asks for three
-things:
+**With a bot of your own.** Without a shared bot, or with **Your bot** picked,
+the page asks for three things:
 
 1. **Homeserver**: the address of the bot account's server, such as
    `https://matrix.org`. A homeserver on your local network can only be saved
@@ -93,6 +105,66 @@ comes back to the page: to change it, type the new one over **Saved**.
 
 A refused token shows as **Last delivery failed: 401**; a 403 means the bot
 could not join the room, usually because it was not invited.
+
+## Telegram
+
+CloudBank sends each notice as a message from a Telegram bot, to your private
+chat with it or to a group it is in.
+
+**The chat ID.** A number: your own user ID for a private chat, or the group's
+ID, which for a group starts with `-` (`-100…` for most). A public channel can
+be given as `@name` instead, with the bot added to it as an administrator. To
+learn your own ID, send `/my_id` to a bot such as `@get_id_bot` (a third-party
+bot, not part of CloudBank); with a bot of your own you can also open
+`https://api.telegram.org/bot<token>/getUpdates` after writing to it and read
+`chat.id`.
+
+**With the installation's bot.** When the administrator has
+[set one up](#for-the-administrator-a-shared-telegram-bot), the page offers
+**CloudBank's bot** or **Your bot**. With CloudBank's, it names the bot, such
+as `@cloudbank_bot`. Send it `/start` (a bot cannot write to anyone who
+has not written to it first), then paste your chat ID and save.
+
+**With a bot of your own.** Without a shared bot, or with **Your bot** picked,
+the page asks for the bot's token as well. Create the bot with Telegram's `@BotFather` (`/newbot`), which
+replies with the token (`123456:ABC…`). Send your bot `/start`, then save the
+chat ID and the token. The token is stored encrypted when the server has
+`CB_SECRET_KEY` and never comes back to the page. Going back to CloudBank's bot
+forgets it.
+
+Two settings are optional, with either bot:
+
+- **Topic ID.** In a group with topics, the topic the messages go to. It is the
+  middle number of a message link copied in that topic
+  (`https://t.me/c/<group>/<topic>/<message>`). Empty, they go to the group's
+  General topic.
+- **Send silently.** The messages arrive without a sound.
+
+A refused token shows as **Last delivery failed: 401**; a 400 usually means a
+wrong chat ID, and a 403 a bot you have not written to or have blocked.
+
+## Discord
+
+In Discord: **Server Settings › Integrations › Webhooks › New Webhook**, pick
+the channel, then **Copy Webhook URL**. Paste it on the Discord page and save.
+
+The URL is the key to post in that channel: CloudBank keeps it encrypted and
+shows only its host. To change it, paste the new one. Deleting the webhook in
+Discord shows as **Last delivery failed: 404**, a wrong one as **401**.
+
+## Slack
+
+Slack takes messages through an app with incoming webhooks:
+
+1. At <https://api.slack.com/apps>, **Create New App › From scratch**, and pick
+   the workspace.
+2. **Incoming Webhooks** › switch them on › **Add New Webhook to Workspace**,
+   and pick the channel.
+3. Copy the webhook URL (`https://hooks.slack.com/services/…`) into the Slack
+   page and save.
+
+As with Discord, the URL is the key: CloudBank keeps it encrypted and shows only
+its host. A revoked webhook shows as **Last delivery failed: 403** or **404**.
 
 ## The webhook
 
@@ -192,5 +264,18 @@ homeserver, get its access token as described [above](#matrix), and set:
 | `CB_MATRIX_HOMESERVER` | The bot's homeserver, such as `https://matrix.example.org`. It may be on the local network. |
 | `CB_MATRIX_TOKEN` | The bot's access token. |
 
-Both are needed. The card shows the bot's Matrix ID, read from the homeserver,
+Both are needed. The Matrix page shows the bot's Matrix ID, read from the homeserver,
 so people know whom to invite. The bot posts only in rooms it was invited to.
+
+## For the administrator: a shared Telegram bot
+
+With a shared bot, people give only their chat ID. Create the bot with
+`@BotFather` (`/newbot`) and set its token:
+
+| Variable | Meaning |
+| --- | --- |
+| `CB_TELEGRAM_TOKEN` | The bot's token, `123456:ABC…`. |
+| `CB_TELEGRAM_API` | Testing only: another Bot API root instead of `https://api.telegram.org`. Leave unset. |
+
+The Telegram page shows the bot's `@username`, read from Telegram, so people know whom
+to write to. The bot can write only to people who wrote to it first.

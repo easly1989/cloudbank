@@ -1706,17 +1706,7 @@
     "unread": "Ungelesen",
     "pushTitle": "Push auf diesem Gerät",
     "channels": "Kanäle",
-    "channelsHint": "Wo dich Benachrichtigungen erreichen, zusätzlich zur Glocke.",
-    "events": "Ereignisse",
-    "eventsHint": "Worüber du informiert wirst, und wo. Die Glocke behält alles 90 Tage.",
-    "eventHeader": "Ereignis",
-    "channel": {
-      "inapp": "In der App",
-      "push": "Push",
-      "email": "E-Mail",
-      "webhook": "Webhook",
-      "matrix": "Matrix"
-    },
+    "channelsHint": "Wo dich Benachrichtigungen erreichen. Öffne einen Kanal, um ihn zu verbinden und seine Ereignisse zu wählen.",
     "group": {
       "problems": "Probleme",
       "bills": "Fälligkeiten"
@@ -1731,8 +1721,6 @@
       "mail_unrecognized": "Es kommen E-Mails, die keine Vorlage lesen kann.",
       "bills": "Wiederkehrende Buchungen, die in den nächsten 3 Tagen fällig oder schon überfällig sind."
     },
-    "email": "E-Mail",
-    "emailHint": "Benachrichtigungen per E-Mail, an die Adresse deiner Wahl.",
     "emailUnavailable": "Nicht verfügbar: Der Administrator hat keinen Mailserver eingerichtet (CB_SMTP_HOST).",
     "emailAddress": "Adresse",
     "remove": "Entfernen",
@@ -1750,21 +1738,71 @@
     },
     "localNetwork": "Nur ein Administrator kann an eine Adresse im lokalen Netz senden.",
     "invalidAddress": "Diese Adresse ist ungültig.",
-    "webhook": "Webhook",
-    "webhookHint": "Ein POST mit dem Ereignis als JSON an eine Adresse von dir: Home Assistant, n8n, ein Skript.",
     "webhookGuide": "So verbindest du ihn",
     "webhookUrl": "URL",
     "webhookSaved": "Gespeichert: {{host}}",
     "webhookSecret": "Signaturgeheimnis",
     "secretSaved": "Gespeichert",
     "optional": "Optional",
-    "matrix": "Matrix",
-    "matrixHint": "Eine Nachricht in einem Matrix-Raum, geschrieben von einem eigenen Bot-Konto.",
     "matrixHintShared": "Eine Nachricht in einem Matrix-Raum. Lade {{bot}} in den Raum ein und füge dann hier die Raum-ID ein.",
     "matrixHintSharedNoBot": "Eine Nachricht in einem Matrix-Raum. Lade den Bot dieser Installation in den Raum ein (der Administrator kennt seine Adresse) und füge dann hier die Raum-ID ein.",
     "matrixServer": "Homeserver",
     "matrixRoom": "Raum-ID",
-    "matrixToken": "Zugriffstoken des Bots"
+    "matrixToken": "Zugriffstoken des Bots",
+    "telegramHintShared": "Eine Nachricht von {{bot}}. Schick ihm /start und füge dann hier deine Chat-ID ein.",
+    "telegramHintSharedNoBot": "Eine Nachricht vom Bot dieser Installation (der Administrator kennt seinen Namen). Schick ihm /start und füge dann hier deine Chat-ID ein.",
+    "telegramChat": "Chat-ID",
+    "telegramToken": "Bot-Token",
+    "name": {
+      "inapp": "Glocke",
+      "push": "Push",
+      "email": "E-Mail",
+      "matrix": "Matrix",
+      "telegram": "Telegram",
+      "discord": "Discord",
+      "slack": "Slack",
+      "webhook": "Webhook"
+    },
+    "status": {
+      "always": "Immer aktiv",
+      "unavailable": "Auf dieser Installation nicht verfügbar",
+      "notLinked": "Nicht verbunden",
+      "linked": "Verbunden",
+      "linkedOk": "Verbunden, zuletzt zugestellt {{when}}",
+      "push": {
+        "on": "Auf diesem Gerät an",
+        "off": "Auf diesem Gerät aus",
+        "unsupported": "Von diesem Browser nicht unterstützt",
+        "denied": "In diesem Browser blockiert"
+      }
+    },
+    "eventCount": "Ereignisse: {{on}} von {{total}}",
+    "connection": "Verbindung",
+    "whatArrives": "Was hier ankommt",
+    "whatArrivesHint": "Die Ereignisse, die dieser Kanal bekommt. Die Glocke behält alle 90 Tage lang.",
+    "connectFirst": "Verbinde zuerst den Kanal, dann wähle seine Ereignisse.",
+    "about": {
+      "inapp": "Die Ereignisse, die die Glocke zeigt. Sie behält sie 90 Tage lang.",
+      "push": "Benachrichtigungen auf diesem Gerät, auch wenn CloudBank geschlossen ist. Auf jedem Gerät einzeln einschalten.",
+      "email": "Benachrichtigungen per E-Mail, an die Adresse deiner Wahl.",
+      "matrix": "Eine Nachricht in einem Matrix-Raum, geschrieben vom CloudBank-Bot oder von einem eigenen Bot.",
+      "telegram": "Eine Nachricht von einem Telegram-Bot, im Chat mit ihm oder in einer Gruppe.",
+      "discord": "Eine Nachricht in einem Discord-Kanal, über den Webhook des Kanals.",
+      "slack": "Eine Nachricht in einem Slack-Kanal, über einen eingehenden Webhook.",
+      "webhook": "Ein POST mit dem Ereignis als JSON an eine Adresse von dir: Home Assistant, n8n, ein Skript."
+    },
+    "mode": {
+      "shared": "CloudBank-Bot",
+      "own": "Dein Bot"
+    },
+    "matrixRoomHelp": "In Element: Raumeinstellungen › Erweitert › Interne Raum-ID.",
+    "telegramTokenHelp": "Von @BotFather: Sende /newbot und kopiere das Token, das er dir gibt.",
+    "telegramChatHelp": "Deine findest du, indem du /my_id an @get_id_bot sendest. Die ID einer Gruppe beginnt mit einem Minus.",
+    "telegramTopic": "Themen-ID",
+    "telegramTopicHelp": "Optional: in einer Gruppe mit Themen das Thema, in dem die Nachrichten ankommen.",
+    "telegramTopicInvalid": "Nur Ziffern.",
+    "telegramSilent": "Lautlos senden",
+    "telegramSilentHelp": "Nachrichten kommen ohne Ton an."
   },
   "ai": {
     "title": "KI (mit eigenem Schlüssel)",

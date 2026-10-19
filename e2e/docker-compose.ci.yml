@@ -89,6 +89,9 @@ services:
       # is a test value of that server.
       CB_MATRIX_HOMESERVER: "http://127.0.0.1:9100"
       CB_MATRIX_TOKEN: "e2e-matrix-bot"
+      # The shared Telegram bot (#688), on the pretend Bot API; a test token.
+      CB_TELEGRAM_TOKEN: "111111:e2e-telegram-shared-bot-token"
+      CB_TELEGRAM_API: "http://127.0.0.1:9100/telegram"
     volumes:
       - cb-mail-data:/data
 

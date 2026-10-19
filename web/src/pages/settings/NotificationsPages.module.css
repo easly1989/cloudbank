@@ -1,0 +1,33 @@
+/* The overview's channel rows: the whole row opens the channel's page. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 16px;
+}
+
+.row:hover {
+  background: var(--mantine-color-default-hover);
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: -2px;
+}
+
+.icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: 8px;
+}
+
+.chevron {
+  flex: none;
+  color: var(--mantine-color-dimmed);
+}

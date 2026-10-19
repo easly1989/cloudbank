@@ -344,6 +344,7 @@ type NotificationChannel struct {
 	LastErrorAt sql.NullString
 	LastOkAt    sql.NullString
 	Server      string
+	Options     string
 }
 
 type NotificationDelivery struct {
