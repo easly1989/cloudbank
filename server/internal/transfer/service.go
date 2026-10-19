@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/easly1989/cloudbank/server/internal/provenance"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -85,6 +86,7 @@ func (s *Service) insertLeg(ctx context.Context, qtx *db.Queries, walletID, acco
 	return qtx.InsertTransaction(ctx, db.InsertTransactionParams{
 		WalletID: walletID, AccountID: accountID, Date: in.Date, Amount: amount,
 		PaymentMode: paymodeInternalTransfer, Status: int64(in.Status), Memo: in.Memo,
+		Origin: provenance.Origin(ctx), CreatedBy: provenance.User(ctx),
 	})
 }
 

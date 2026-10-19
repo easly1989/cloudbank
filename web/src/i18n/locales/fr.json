@@ -1711,6 +1711,7 @@
       "security": "Sécurité",
       "problems": "Problèmes",
       "bills": "Échéances",
+      "money": "Argent",
       "admin": "Administration"
     },
     "kind": {
@@ -1722,6 +1723,10 @@
       "mail_stopped": "Une boîte mail de la banque s’arrête",
       "mail_unrecognized": "E-mails de la banque non reconnus",
       "bills": "Échéances à venir",
+      "large_transaction": "Grosse dépense",
+      "low_balance": "Solde bas",
+      "budget": "Budget à 80 % et à 100 %",
+      "goal": "Objectif atteint ou en retard",
       "new_version": "Nouvelle version de CloudBank"
     },
     "kindHint": {
@@ -1733,6 +1738,10 @@
       "mail_stopped": "CloudBank ne peut plus s’y connecter et il faut la reconnecter.",
       "mail_unrecognized": "Des e-mails arrivent qu’aucun modèle ne sait lire.",
       "bills": "Opérations récurrentes à échéance dans les 3 prochains jours, ou en retard.",
+      "large_transaction": "Une dépense au-dessus du seuil du compte, venue de la banque, d’une opération récurrente ou d’un autre membre.",
+      "low_balance": "Le solde du jour d’un compte passe sous son seuil.",
+      "budget": "Une catégorie atteint 80 %, puis 100 %, du budget du mois.",
+      "goal": "Un objectif atteint son but, ou son rythme des derniers mois ne suffit plus.",
       "new_version": "Une version plus récente est sortie sur le canal que suit ce serveur."
     },
     "securityAlways": "Toujours dans la cloche, pour qu’une connexion que vous n’avez pas faite ne passe pas inaperçue.",
@@ -1851,7 +1860,38 @@
     "ntfyToken": "Jeton d’accès",
     "ntfyTokenHelp": "Seulement pour un serveur ou un sujet qui en demande un (tk_…).",
     "gotifyToken": "Jeton de l’application",
-    "gotifyTokenHelp": "Dans Gotify : Apps › Create application, puis copiez son jeton."
+    "gotifyTokenHelp": "Dans Gotify : Apps › Create application, puis copiez son jeton.",
+    "money": {
+      "title": "Seuils et classeurs",
+      "subtitle": "Quand et d’où les événements d’argent vous arrivent",
+      "summaryThresholds_one": "{{count}} compte avec des seuils",
+      "summaryThresholds_other": "{{count}} comptes avec des seuils",
+      "summaryNone": "Aucun seuil",
+      "summaryAll": "tous les classeurs",
+      "summaryOff_one": "{{count}} classeur exclu",
+      "summaryOff_other": "{{count}} classeurs exclus",
+      "thresholds": "Seuils par compte",
+      "thresholdsHint": "Pour « Grosse dépense » et « Solde bas ». Un champ vide n’avertit pas pour ce compte.",
+      "colAccount": "Compte",
+      "colBalance": "Solde du jour",
+      "colLarge": "Dépense au-delà de",
+      "colLow": "Solde sous",
+      "none": "Aucun",
+      "minHint": "min. {{amount}}",
+      "noAccounts": "Aucun compte dans ce classeur.",
+      "offNote": "Les événements d’argent restent éteints tant que vous ne les allumez pas dans la page d’un canal, dans le groupe Argent.",
+      "notAmount": "Ce n’est pas un montant",
+      "aboveZero": "Au-dessus de zéro, ou vide",
+      "wallets": "Classeurs",
+      "walletsHint": "Les événements d’un classeur exclu ne vous arrivent sur aucun canal. Vos choix ne valent que pour vous.",
+      "accountCount_one": "{{count}} compte",
+      "accountCount_other": "{{count}} comptes",
+      "amounts": "Montants",
+      "amountsHint": "La cloche montre toujours les montants. Push, e-mail et chat peuvent s’en passer.",
+      "amountsOutside": "Montrer les montants hors de l’app",
+      "amountsOn": "Push, e-mail et chat disent combien, comme la cloche.",
+      "amountsOff": "Push, e-mail et chat disent où, jamais combien."
+    }
   },
   "ai": {
     "title": "IA (avec votre propre clé)",

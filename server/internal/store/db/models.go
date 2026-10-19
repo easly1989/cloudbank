@@ -374,6 +374,24 @@ type NotificationPref struct {
 	Enabled int64
 }
 
+type NotificationSetting struct {
+	UserID         int64
+	AmountsOutside int64
+}
+
+type NotificationThreshold struct {
+	UserID    int64
+	AccountID int64
+	LargeOver sql.NullInt64
+	LowUnder  sql.NullInt64
+	LowBelow  int64
+}
+
+type NotificationWalletsOff struct {
+	UserID   int64
+	WalletID int64
+}
+
 type Payee struct {
 	ID                 int64
 	WalletID           int64
@@ -482,6 +500,8 @@ type Transaction struct {
 	TemplateID  sql.NullInt64
 	ImportRef   string
 	VehicleID   sql.NullInt64
+	Origin      string
+	CreatedBy   sql.NullInt64
 }
 
 type TransactionTag struct {

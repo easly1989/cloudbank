@@ -420,6 +420,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The current user's notification settings that are not per event */
+        get: operations["getNotificationSettings"];
+        /** Change the current user's notification settings */
+        put: operations["setNotificationSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notifications/channels": {
         parameters: {
             query?: never;
@@ -2968,6 +2986,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** The current user's notification choices about this wallet */
+        get: operations["getWalletNotificationSettings"];
+        /**
+         * Hear from this wallet, or not
+         * @description A wallet turned off tells the current user nothing on any channel; its other members choose for themselves.
+         */
+        put: operations["setWalletNotificationsIncluded"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/notifications/thresholds/{accountId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                accountId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * The current user's thresholds on one account of this wallet
+         * @description Minor units in the account's currency; null is no threshold. largeOver must be above zero.
+         */
+        put: operations["setNotificationThreshold"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/goals": {
         parameters: {
             query?: never;
@@ -3870,7 +3934,7 @@ export interface components {
             } | null;
         };
         /** @enum {string} */
-        NotificationKind: "new_device" | "two_factor_off" | "new_api_token" | "bank_sync_failed" | "consent_expiring" | "mail_stopped" | "mail_unrecognized" | "bills" | "new_version";
+        NotificationKind: "new_device" | "two_factor_off" | "new_api_token" | "bank_sync_failed" | "consent_expiring" | "mail_stopped" | "mail_unrecognized" | "bills" | "large_transaction" | "low_balance" | "budget" | "goal" | "new_version";
         /** @enum {string} */
         NotificationChannel: "inapp" | "push" | "email" | "matrix" | "telegram" | "discord" | "slack" | "ntfy" | "gotify" | "webhook";
         Notification: {
@@ -3929,6 +3993,31 @@ export interface components {
             /** @description Send the Telegram message without sound. */
             silent?: boolean;
         };
+        NotificationSettings: {
+            /** @description Amounts reach the channels outside the app; off, those get the text without them. The bell always has them. */
+            amountsOutside: boolean;
+        };
+        NotificationThresholdInput: {
+            /**
+             * Format: int64
+             * @description Announce an expense of at least this much.
+             */
+            largeOver?: number | null;
+            /**
+             * Format: int64
+             * @description Announce today's balance dropping below this.
+             */
+            lowUnder?: number | null;
+        };
+        NotificationThreshold: components["schemas"]["NotificationThresholdInput"] & {
+            /** Format: int64 */
+            accountId: number;
+        };
+        WalletNotificationSettings: {
+            /** @description The current user hears from this wallet. */
+            included: boolean;
+            thresholds: components["schemas"]["NotificationThreshold"][];
+        };
         NotificationList: {
             items: components["schemas"]["Notification"][];
             unread: number;
@@ -3936,10 +4025,10 @@ export interface components {
         NotificationPreference: {
             kind: components["schemas"]["NotificationKind"];
             /**
-             * @description Security always reaches the bell; admin is listed for administrators only.
+             * @description Security always reaches the bell; money starts off; admin is listed for administrators only.
              * @enum {string}
              */
-            group: "security" | "problems" | "bills" | "admin";
+            group: "security" | "problems" | "bills" | "money" | "admin";
             channels: {
                 inapp: boolean;
                 push: boolean;
@@ -6084,6 +6173,53 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getNotificationSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    setNotificationSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationSettings"];
+            };
+        };
+        responses: {
+            /** @description The settings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSettings"];
+                };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
@@ -11008,6 +11144,88 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+        };
+    };
+    getWalletNotificationSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The choices. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletNotificationSettings"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setWalletNotificationsIncluded: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    included: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description The choices. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletNotificationSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setNotificationThreshold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                accountId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationThresholdInput"];
+            };
+        };
+        responses: {
+            /** @description Saved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationThreshold"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
         };
     };
     listGoals: {

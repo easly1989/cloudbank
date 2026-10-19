@@ -84,6 +84,9 @@ type Config struct {
 	// (its mail server, its shared bots), CB_NOTIFY_HOURLY_LIMIT, default 30;
 	// the rest wait for the next hour (#716). 0 turns the cap off.
 	NotifyHourlyLimit int
+	// MoneyInterval is how often the money events look at the money (#691),
+	// CB_MONEY_INTERVAL, default 5m; 0 turns them off.
+	MoneyInterval time.Duration
 
 	// OIDC/SSO login. When Issuer, ClientID, ClientSecret and RedirectURL are all
 	// set (see OIDCEnabled), a "Sign in with <OIDCName>" button is offered on the
@@ -177,6 +180,7 @@ func Load() Config {
 		TelegramToken:     strings.TrimSpace(getenv("CB_TELEGRAM_TOKEN", "")),
 		TelegramAPI:       strings.TrimSpace(getenv("CB_TELEGRAM_API", "https://api.telegram.org")),
 		NotifyHourlyLimit: getIntEnv("CB_NOTIFY_HOURLY_LIMIT", 30),
+		MoneyInterval:     getDurationEnv("CB_MONEY_INTERVAL", 5*time.Minute),
 
 		OIDCIssuer:        getenv("CB_OIDC_ISSUER", ""),
 		OIDCClientID:      getenv("CB_OIDC_CLIENT_ID", ""),

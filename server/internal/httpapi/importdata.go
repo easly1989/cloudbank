@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/importio"
+	"github.com/easly1989/cloudbank/server/internal/provenance"
 )
 
 // importDataHandlers serves the wallet-scoped CSV/QIF/OFX import and CSV/QIF
@@ -178,7 +179,7 @@ func (h *importDataHandlers) commit(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &body) {
 		return
 	}
-	res, err := h.svc.Commit(r.Context(), wl.ID, body.AccountID, body.Rows)
+	res, err := h.svc.Commit(provenance.WithOrigin(r.Context(), provenance.Import), wl.ID, body.AccountID, body.Rows)
 	if err != nil {
 		notFoundOr(w, err, "internal", "could not import the rows", http.StatusInternalServerError)
 		return

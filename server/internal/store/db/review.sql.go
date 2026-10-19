@@ -29,7 +29,7 @@ func (q *Queries) InsertDuplicateDismissal(ctx context.Context, arg InsertDuplic
 }
 
 const listBankRowsNear = `-- name: ListBankRowsNear :many
-SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id FROM transactions
+SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id, origin, created_by FROM transactions
 WHERE account_id = ?1 AND import_ref <> '' AND import_ref NOT LIKE 'mail:%'
   AND date >= ?2 AND date <= ?3
 ORDER BY date, id
@@ -70,6 +70,8 @@ func (q *Queries) ListBankRowsNear(ctx context.Context, arg ListBankRowsNearPara
 			&i.TemplateID,
 			&i.ImportRef,
 			&i.VehicleID,
+			&i.Origin,
+			&i.CreatedBy,
 		); err != nil {
 			return nil, err
 		}
@@ -163,7 +165,7 @@ func (q *Queries) ListDuplicateDismissals(ctx context.Context, walletID int64) (
 }
 
 const listImportedUncategorized = `-- name: ListImportedUncategorized :many
-SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id
+SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id, origin, created_by
 FROM transactions
 WHERE wallet_id = ? AND import_ref <> '' AND category_id IS NULL AND is_split = 0
 ORDER BY date DESC, id DESC
@@ -199,6 +201,8 @@ func (q *Queries) ListImportedUncategorized(ctx context.Context, walletID int64)
 			&i.TemplateID,
 			&i.ImportRef,
 			&i.VehicleID,
+			&i.Origin,
+			&i.CreatedBy,
 		); err != nil {
 			return nil, err
 		}
@@ -214,7 +218,7 @@ func (q *Queries) ListImportedUncategorized(ctx context.Context, walletID int64)
 }
 
 const listTransactionsByIDs = `-- name: ListTransactionsByIDs :many
-SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id FROM transactions
+SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id, origin, created_by FROM transactions
 WHERE wallet_id = ?1 AND id IN (/*SLICE:ids*/?)
 `
 
@@ -261,6 +265,8 @@ func (q *Queries) ListTransactionsByIDs(ctx context.Context, arg ListTransaction
 			&i.TemplateID,
 			&i.ImportRef,
 			&i.VehicleID,
+			&i.Origin,
+			&i.CreatedBy,
 		); err != nil {
 			return nil, err
 		}
@@ -276,7 +282,7 @@ func (q *Queries) ListTransactionsByIDs(ctx context.Context, arg ListTransaction
 }
 
 const listUnconfirmedMailRows = `-- name: ListUnconfirmedMailRows :many
-SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id FROM transactions
+SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id, origin, created_by FROM transactions
 WHERE wallet_id = ? AND import_ref LIKE 'mail:%' AND date <= ?
 ORDER BY date DESC, id DESC
 `
@@ -316,6 +322,8 @@ func (q *Queries) ListUnconfirmedMailRows(ctx context.Context, arg ListUnconfirm
 			&i.TemplateID,
 			&i.ImportRef,
 			&i.VehicleID,
+			&i.Origin,
+			&i.CreatedBy,
 		); err != nil {
 			return nil, err
 		}

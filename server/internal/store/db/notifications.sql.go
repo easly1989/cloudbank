@@ -120,6 +120,17 @@ func (q *Queries) GetNotificationChannel(ctx context.Context, arg GetNotificatio
 	return i, err
 }
 
+const getNotificationSettings = `-- name: GetNotificationSettings :one
+SELECT amounts_outside FROM notification_settings WHERE user_id = ?
+`
+
+func (q *Queries) GetNotificationSettings(ctx context.Context, userID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getNotificationSettings, userID)
+	var amounts_outside int64
+	err := row.Scan(&amounts_outside)
+	return amounts_outside, err
+}
+
 const insertNotification = `-- name: InsertNotification :exec
 INSERT INTO notifications (user_id, kind, title, body, url, wallet_id)
 VALUES (?, ?, ?, ?, ?, ?)
@@ -165,6 +176,22 @@ func (q *Queries) InsertNotificationDelivery(ctx context.Context, arg InsertNoti
 		arg.NextAt,
 	)
 	return err
+}
+
+const isNotificationWalletOff = `-- name: IsNotificationWalletOff :one
+SELECT COUNT(*) FROM notification_wallets_off WHERE user_id = ? AND wallet_id = ?
+`
+
+type IsNotificationWalletOffParams struct {
+	UserID   int64
+	WalletID int64
+}
+
+func (q *Queries) IsNotificationWalletOff(ctx context.Context, arg IsNotificationWalletOffParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, isNotificationWalletOff, arg.UserID, arg.WalletID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const listAdminRecipients = `-- name: ListAdminRecipients :many
@@ -225,6 +252,106 @@ func (q *Queries) ListDueNotificationDeliveries(ctx context.Context, arg ListDue
 			&i.Payload,
 			&i.Attempts,
 			&i.NextAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLargeThresholds = `-- name: ListLargeThresholds :many
+SELECT t.user_id, t.account_id, t.large_over, a.wallet_id
+FROM notification_thresholds t
+JOIN accounts a ON a.id = t.account_id
+JOIN wallet_members m ON m.wallet_id = a.wallet_id AND m.user_id = t.user_id
+WHERE t.large_over IS NOT NULL
+`
+
+type ListLargeThresholdsRow struct {
+	UserID    int64
+	AccountID int64
+	LargeOver sql.NullInt64
+	WalletID  int64
+}
+
+// Every threshold on large expenses of a person still a member of the
+// account's wallet.
+func (q *Queries) ListLargeThresholds(ctx context.Context) ([]ListLargeThresholdsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listLargeThresholds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLargeThresholdsRow{}
+	for rows.Next() {
+		var i ListLargeThresholdsRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.AccountID,
+			&i.LargeOver,
+			&i.WalletID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLowThresholds = `-- name: ListLowThresholds :many
+SELECT t.user_id, t.account_id, t.low_under, t.low_below, a.wallet_id, a.name, a.initial_balance,
+    CAST(COALESCE((SELECT SUM(x.amount) FROM transactions x
+        WHERE x.account_id = a.id AND x.date <= ?1), 0) AS INTEGER) AS today_delta
+FROM notification_thresholds t
+JOIN accounts a ON a.id = t.account_id
+JOIN wallet_members m ON m.wallet_id = a.wallet_id AND m.user_id = t.user_id
+WHERE t.low_under IS NOT NULL
+`
+
+type ListLowThresholdsRow struct {
+	UserID         int64
+	AccountID      int64
+	LowUnder       sql.NullInt64
+	LowBelow       int64
+	WalletID       int64
+	Name           string
+	InitialBalance int64
+	TodayDelta     int64
+}
+
+// Every low-balance threshold of a person still a member of the account's
+// wallet, with the account's balance parts.
+func (q *Queries) ListLowThresholds(ctx context.Context, today string) ([]ListLowThresholdsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listLowThresholds, today)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLowThresholdsRow{}
+	for rows.Next() {
+		var i ListLowThresholdsRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.AccountID,
+			&i.LowUnder,
+			&i.LowBelow,
+			&i.WalletID,
+			&i.Name,
+			&i.InitialBalance,
+			&i.TodayDelta,
 		); err != nil {
 			return nil, err
 		}
@@ -315,6 +442,48 @@ func (q *Queries) ListNotificationPrefs(ctx context.Context, userID int64) ([]Li
 	return items, nil
 }
 
+const listNotificationThresholds = `-- name: ListNotificationThresholds :many
+SELECT t.account_id, t.large_over, t.low_under
+FROM notification_thresholds t JOIN accounts a ON a.id = t.account_id
+WHERE t.user_id = ? AND a.wallet_id = ?
+ORDER BY t.account_id
+`
+
+type ListNotificationThresholdsParams struct {
+	UserID   int64
+	WalletID int64
+}
+
+type ListNotificationThresholdsRow struct {
+	AccountID int64
+	LargeOver sql.NullInt64
+	LowUnder  sql.NullInt64
+}
+
+// One person's thresholds on the accounts of one wallet.
+func (q *Queries) ListNotificationThresholds(ctx context.Context, arg ListNotificationThresholdsParams) ([]ListNotificationThresholdsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listNotificationThresholds, arg.UserID, arg.WalletID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListNotificationThresholdsRow{}
+	for rows.Next() {
+		var i ListNotificationThresholdsRow
+		if err := rows.Scan(&i.AccountID, &i.LargeOver, &i.LowUnder); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listNotifications = `-- name: ListNotifications :many
 SELECT n.id, n.kind, n.title, n.body, n.url, n.wallet_id, n.created_at, n.read_at
 FROM notifications n
@@ -360,6 +529,61 @@ func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsPa
 			&i.WalletID,
 			&i.CreatedAt,
 			&i.ReadAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTransactionsSince = `-- name: ListTransactionsSince :many
+SELECT t.id, t.wallet_id, t.account_id, t.date, t.amount, t.memo, t.origin, t.created_by,
+    COALESCE(p.name, '') AS payee
+FROM transactions t LEFT JOIN payees p ON p.id = t.payee_id
+WHERE t.id > ? AND t.amount < 0
+ORDER BY t.id
+LIMIT 500
+`
+
+type ListTransactionsSinceRow struct {
+	ID        int64
+	WalletID  int64
+	AccountID int64
+	Date      string
+	Amount    int64
+	Memo      string
+	Origin    string
+	CreatedBy sql.NullInt64
+	Payee     string
+}
+
+// The expenses written after id, oldest first, with who and what wrote them.
+func (q *Queries) ListTransactionsSince(ctx context.Context, id int64) ([]ListTransactionsSinceRow, error) {
+	rows, err := q.db.QueryContext(ctx, listTransactionsSince, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTransactionsSinceRow{}
+	for rows.Next() {
+		var i ListTransactionsSinceRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WalletID,
+			&i.AccountID,
+			&i.Date,
+			&i.Amount,
+			&i.Memo,
+			&i.Origin,
+			&i.CreatedBy,
+			&i.Payee,
 		); err != nil {
 			return nil, err
 		}
@@ -437,6 +661,17 @@ func (q *Queries) MarkNotificationRead(ctx context.Context, arg MarkNotification
 	return result.RowsAffected()
 }
 
+const maxTransactionID = `-- name: MaxTransactionID :one
+SELECT CAST(COALESCE(MAX(id), 0) AS INTEGER) FROM transactions
+`
+
+func (q *Queries) MaxTransactionID(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, maxTransactionID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const purgeNotificationsBefore = `-- name: PurgeNotificationsBefore :execrows
 DELETE FROM notifications WHERE created_at < ?
 `
@@ -461,6 +696,36 @@ type RescheduleNotificationDeliveryParams struct {
 
 func (q *Queries) RescheduleNotificationDelivery(ctx context.Context, arg RescheduleNotificationDeliveryParams) error {
 	_, err := q.db.ExecContext(ctx, rescheduleNotificationDelivery, arg.Attempts, arg.NextAt, arg.ID)
+	return err
+}
+
+const setLowBelow = `-- name: SetLowBelow :exec
+UPDATE notification_thresholds SET low_below = ? WHERE user_id = ? AND account_id = ?
+`
+
+type SetLowBelowParams struct {
+	LowBelow  int64
+	UserID    int64
+	AccountID int64
+}
+
+func (q *Queries) SetLowBelow(ctx context.Context, arg SetLowBelowParams) error {
+	_, err := q.db.ExecContext(ctx, setLowBelow, arg.LowBelow, arg.UserID, arg.AccountID)
+	return err
+}
+
+const setNotificationAmountsOutside = `-- name: SetNotificationAmountsOutside :exec
+INSERT INTO notification_settings (user_id, amounts_outside) VALUES (?, ?)
+ON CONFLICT (user_id) DO UPDATE SET amounts_outside = excluded.amounts_outside
+`
+
+type SetNotificationAmountsOutsideParams struct {
+	UserID         int64
+	AmountsOutside int64
+}
+
+func (q *Queries) SetNotificationAmountsOutside(ctx context.Context, arg SetNotificationAmountsOutsideParams) error {
+	_, err := q.db.ExecContext(ctx, setNotificationAmountsOutside, arg.UserID, arg.AmountsOutside)
 	return err
 }
 
@@ -541,6 +806,59 @@ func (q *Queries) SetNotificationPref(ctx context.Context, arg SetNotificationPr
 		arg.Channel,
 		arg.Enabled,
 	)
+	return err
+}
+
+const setNotificationThreshold = `-- name: SetNotificationThreshold :exec
+INSERT INTO notification_thresholds (user_id, account_id, large_over, low_under) VALUES (?, ?, ?, ?)
+ON CONFLICT (user_id, account_id) DO UPDATE SET
+    large_over = excluded.large_over, low_under = excluded.low_under,
+    low_below = CASE WHEN excluded.low_under IS notification_thresholds.low_under THEN notification_thresholds.low_below ELSE 0 END
+`
+
+type SetNotificationThresholdParams struct {
+	UserID    int64
+	AccountID int64
+	LargeOver sql.NullInt64
+	LowUnder  sql.NullInt64
+}
+
+func (q *Queries) SetNotificationThreshold(ctx context.Context, arg SetNotificationThresholdParams) error {
+	_, err := q.db.ExecContext(ctx, setNotificationThreshold,
+		arg.UserID,
+		arg.AccountID,
+		arg.LargeOver,
+		arg.LowUnder,
+	)
+	return err
+}
+
+const setNotificationWalletOff = `-- name: SetNotificationWalletOff :exec
+INSERT INTO notification_wallets_off (user_id, wallet_id) VALUES (?, ?)
+ON CONFLICT (user_id, wallet_id) DO NOTHING
+`
+
+type SetNotificationWalletOffParams struct {
+	UserID   int64
+	WalletID int64
+}
+
+func (q *Queries) SetNotificationWalletOff(ctx context.Context, arg SetNotificationWalletOffParams) error {
+	_, err := q.db.ExecContext(ctx, setNotificationWalletOff, arg.UserID, arg.WalletID)
+	return err
+}
+
+const setNotificationWalletOn = `-- name: SetNotificationWalletOn :exec
+DELETE FROM notification_wallets_off WHERE user_id = ? AND wallet_id = ?
+`
+
+type SetNotificationWalletOnParams struct {
+	UserID   int64
+	WalletID int64
+}
+
+func (q *Queries) SetNotificationWalletOn(ctx context.Context, arg SetNotificationWalletOnParams) error {
+	_, err := q.db.ExecContext(ctx, setNotificationWalletOn, arg.UserID, arg.WalletID)
 	return err
 }
 

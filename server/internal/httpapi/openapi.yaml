@@ -438,6 +438,23 @@ paths:
         "204": { description: Saved. }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/notifications/settings:
+    get:
+      operationId: getNotificationSettings
+      summary: The current user's notification settings that are not per event
+      responses:
+        "200": { description: The settings., content: { application/json: { schema: { $ref: "#/components/schemas/NotificationSettings" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      operationId: setNotificationSettings
+      summary: Change the current user's notification settings
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/NotificationSettings" } } }
+      responses:
+        "200": { description: The settings., content: { application/json: { schema: { $ref: "#/components/schemas/NotificationSettings" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
   /api/v1/notifications/channels:
     get:
       operationId: listNotificationChannels
@@ -2906,6 +2923,41 @@ paths:
       responses:
         "200": { description: The report., content: { application/json: { schema: { $ref: "#/components/schemas/VehicleReport" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/wallets/{walletId}/notifications:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getWalletNotificationSettings
+      summary: The current user's notification choices about this wallet
+      responses:
+        "200": { description: The choices., content: { application/json: { schema: { $ref: "#/components/schemas/WalletNotificationSettings" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      operationId: setWalletNotificationsIncluded
+      summary: Hear from this wallet, or not
+      description: A wallet turned off tells the current user nothing on any channel; its other members choose for themselves.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, properties: { included: { type: boolean } }, required: [included] } } }
+      responses:
+        "200": { description: The choices., content: { application/json: { schema: { $ref: "#/components/schemas/WalletNotificationSettings" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/notifications/thresholds/{accountId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: accountId, in: path, required: true, schema: { type: integer, format: int64 } }
+    put:
+      operationId: setNotificationThreshold
+      summary: The current user's thresholds on one account of this wallet
+      description: Minor units in the account's currency; null is no threshold. largeOver must be above zero.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/NotificationThresholdInput" } } }
+      responses:
+        "200": { description: Saved., content: { application/json: { schema: { $ref: "#/components/schemas/NotificationThreshold" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/goals:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -3663,7 +3715,7 @@ components:
       required: [category]
     NotificationKind:
       type: string
-      enum: [new_device, two_factor_off, new_api_token, bank_sync_failed, consent_expiring, mail_stopped, mail_unrecognized, bills, new_version]
+      enum: [new_device, two_factor_off, new_api_token, bank_sync_failed, consent_expiring, mail_stopped, mail_unrecognized, bills, large_transaction, low_balance, budget, goal, new_version]
     NotificationChannel:
       type: string
       enum: [inapp, push, email, matrix, telegram, discord, slack, ntfy, gotify, webhook]
@@ -3704,6 +3756,29 @@ components:
       properties:
         topic: { type: integer, format: int64, description: The topic (message_thread_id) in a Telegram group with topics. }
         silent: { type: boolean, description: Send the Telegram message without sound. }
+    NotificationSettings:
+      type: object
+      properties:
+        amountsOutside: { type: boolean, description: "Amounts reach the channels outside the app; off, those get the text without them. The bell always has them." }
+      required: [amountsOutside]
+    NotificationThresholdInput:
+      type: object
+      properties:
+        largeOver: { type: integer, format: int64, nullable: true, description: Announce an expense of at least this much. }
+        lowUnder: { type: integer, format: int64, nullable: true, description: "Announce today's balance dropping below this." }
+    NotificationThreshold:
+      allOf:
+        - $ref: "#/components/schemas/NotificationThresholdInput"
+        - type: object
+          properties:
+            accountId: { type: integer, format: int64 }
+          required: [accountId]
+    WalletNotificationSettings:
+      type: object
+      properties:
+        included: { type: boolean, description: The current user hears from this wallet. }
+        thresholds: { type: array, items: { $ref: "#/components/schemas/NotificationThreshold" } }
+      required: [included, thresholds]
     NotificationList:
       type: object
       properties:
@@ -3714,7 +3789,7 @@ components:
       type: object
       properties:
         kind: { $ref: "#/components/schemas/NotificationKind" }
-        group: { type: string, enum: [security, problems, bills, admin], description: "Security always reaches the bell; admin is listed for administrators only." }
+        group: { type: string, enum: [security, problems, bills, money, admin], description: "Security always reaches the bell; money starts off; admin is listed for administrators only." }
         channels:
           type: object
           properties:
