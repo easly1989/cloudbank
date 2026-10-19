@@ -217,15 +217,27 @@ export function commitments(schedules: Schedule[]): Commitments {
   const c: Commitments = { month: { in: 0, out: 0 }, year: { in: 0, out: 0 } };
   for (const s of schedules) {
     if (s.remaining === 0 || s.templateIsTransfer) continue;
-    const every = Math.max(1, s.everyN) * (UNIT_DAYS[s.unit] ?? MONTH_DAYS);
-    for (const [p, days] of [
-      ["month", MONTH_DAYS],
-      ["year", 365.25],
-    ] as const) {
-      const amt = Math.round((s.templateAmount * days) / every);
-      if (amt >= 0) c[p].in += amt;
-      else c[p].out += amt;
-    }
+    const month = Math.round((s.templateAmount * MONTH_DAYS) / every(s));
+    if (month >= 0) c.month.in += month;
+    else c.month.out += month;
+    const year = perYear(s);
+    if (year >= 0) c.year.in += year;
+    else c.year.out += year;
   }
   return c;
+}
+
+const every = (s: Schedule) => Math.max(1, s.everyN) * (UNIT_DAYS[s.unit] ?? MONTH_DAYS);
+
+/**
+ * What one schedule adds up to in the next twelve months (#693), in minor
+ * units: its amount times the occurrences a year holds, or only the ones left
+ * when it has a limit. Transfers and ended schedules count nothing.
+ */
+export function perYear(s: Schedule): number {
+  if (s.remaining === 0 || s.templateIsTransfer) return 0;
+  const times = 365.25 / every(s);
+  return Math.round(
+    s.templateAmount * (s.remaining != null ? Math.min(times, s.remaining) : times),
+  );
 }

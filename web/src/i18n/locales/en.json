@@ -609,12 +609,12 @@
       "in": "Coming in",
       "allReceived": "all received",
       "toCome": "{{amount}} still to come",
-      "net": "Net per month",
-      "inMonth": "In per month",
-      "outMonth": "Out per month",
       "perYear": "{{amount}} a year",
-      "from_one": "from {{count}} schedule",
-      "from_other": "from {{count}} schedules"
+      "outYear": "Out per year",
+      "inYear": "In per year",
+      "perMonth": "{{amount}} a month",
+      "perMonthFrom_one": "{{amount}} a month, from {{count}} schedule",
+      "perMonthFrom_other": "{{amount}} a month, from {{count}} schedules"
     },
     "state": {
       "overdue": "Overdue",
@@ -656,7 +656,8 @@
       "nextHead": "Next",
       "thisMonth": "This month",
       "notRegistered": "not registered",
-      "noPayee": "No payee"
+      "noPayee": "No payee",
+      "perYear": "{{amount}}/year"
     },
     "repeat": {
       "day": "Every day",
@@ -690,6 +691,18 @@
       "start": "Complete them one by one",
       "walk": "Without a payee: {{n}} of {{total}}",
       "saveNext": "Save and go to the next"
+    },
+    "found": {
+      "title": "Found in your transactions",
+      "sub": "They repeat, but have no schedule.",
+      "create": "Create schedule",
+      "ignore": "Ignore",
+      "weekly": "Every week, on {{weekday}}",
+      "monthly": "Every month, around day {{day}}",
+      "quarterly": "Every three months, around day {{day}}",
+      "yearly": "Every year, around {{date}}",
+      "seen_one": "{{count}} time since {{month}}, the last on {{date}}",
+      "seen_other": "{{count}} times since {{month}}, the last on {{date}}"
     }
   },
   "tags": {

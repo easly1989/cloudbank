@@ -609,12 +609,12 @@
       "in": "À recevoir",
       "allReceived": "tout est reçu",
       "toCome": "{{amount}} encore à venir",
-      "net": "Net par mois",
-      "inMonth": "Entrées par mois",
-      "outMonth": "Sorties par mois",
       "perYear": "{{amount}} par an",
-      "from_one": "sur {{count}} opération récurrente",
-      "from_other": "sur {{count}} opérations récurrentes"
+      "outYear": "Sorties par an",
+      "inYear": "Entrées par an",
+      "perMonth": "{{amount}} par mois",
+      "perMonthFrom_one": "{{amount}} par mois, sur {{count}} opération récurrente",
+      "perMonthFrom_other": "{{amount}} par mois, sur {{count}} opérations récurrentes"
     },
     "state": {
       "overdue": "En retard",
@@ -656,7 +656,8 @@
       "nextHead": "Prochaine",
       "thisMonth": "Ce mois-ci",
       "notRegistered": "non saisie",
-      "noPayee": "Sans tiers"
+      "noPayee": "Sans tiers",
+      "perYear": "{{amount}}/an"
     },
     "repeat": {
       "day": "Tous les jours",
@@ -690,6 +691,18 @@
       "start": "Compléter une par une",
       "walk": "Sans tiers : {{n}} sur {{total}}",
       "saveNext": "Enregistrer et passer à la suivante"
+    },
+    "found": {
+      "title": "Trouvées dans vos opérations",
+      "sub": "Elles se répètent, mais n’ont pas d’opération récurrente.",
+      "create": "Créer l’opération récurrente",
+      "ignore": "Ignorer",
+      "weekly": "Chaque semaine, le {{weekday}}",
+      "monthly": "Chaque mois, vers le {{day}}",
+      "quarterly": "Tous les trois mois, vers le {{day}}",
+      "yearly": "Chaque année, vers le {{date}}",
+      "seen_one": "{{count}} fois depuis {{month}}, la dernière le {{date}}",
+      "seen_other": "{{count}} fois depuis {{month}}, la dernière le {{date}}"
     }
   },
   "tags": {

@@ -258,10 +258,22 @@ only money coming in.
     reconciled.
 - **All schedules.** One row per schedule: the amount, how it repeats, when it
   is next due (and how far ahead it is registered), its mode, and where this
-  month's occurrence stands. The figures give what the schedules add up to per
-  month and per year. Under each name, who it pays (or **No payee**) and the
+  month's occurrence stands, with what it adds up to in a year under the amount.
+  The figures give what the schedules take out and bring in over the next twelve
+  months, and per month under them; a schedule with a limit counts only the
+  occurrences it has left. Under each name, who it pays (or **No payee**) and the
   account. Click a row to edit it; its **⋯** menu posts now, skips, edits or
   deletes it.
+- **Found in your transactions.** Payments that come round with no schedule for
+  them: the same payee, a similar amount (within 10%), every week, month, three
+  months or year, still going. Each shows how often, how many times since when,
+  the usual amount and what it adds up to in a year, the costliest first; it sits
+  above **All schedules** and under **Needs you** beside the calendar.
+  - **Create schedule** opens the sheet filled in from it: the payee, the
+    amount, the account, how often and the next date.
+  - **Ignore** stops offering that payee at that cadence in this wallet.
+  - A payee that a schedule already pays is not offered, and neither are
+    transfers or void transactions.
 - **Adding and editing.** **New schedule** opens a sheet beside the page: the
   name, the amount, the payee, the account, how often and from when, and whether
   it posts itself. **More details** holds the category, memo, payment mode, the
