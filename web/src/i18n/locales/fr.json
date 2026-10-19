@@ -1712,7 +1712,8 @@
       "problems": "Problèmes",
       "bills": "Échéances",
       "money": "Argent",
-      "admin": "Administration"
+      "admin": "Administration",
+      "summaries": "Récapitulatifs"
     },
     "kind": {
       "new_device": "Connexion depuis un nouvel appareil",
@@ -1727,7 +1728,10 @@
       "low_balance": "Solde bas",
       "budget": "Budget à 80 % et à 100 %",
       "goal": "Objectif atteint ou en retard",
-      "new_version": "Nouvelle version de CloudBank"
+      "new_version": "Nouvelle version de CloudBank",
+      "review_waiting": "Opérations à vérifier",
+      "summary_weekly": "Récapitulatif hebdomadaire",
+      "summary_monthly": "Récapitulatif mensuel"
     },
     "kindHint": {
       "new_device": "Un navigateur ou un système que votre compte n’avait jamais utilisé.",
@@ -1742,7 +1746,10 @@
       "low_balance": "Le solde du jour d’un compte passe sous son seuil.",
       "budget": "Une catégorie atteint 80 %, puis 100 %, du budget du mois.",
       "goal": "Un objectif atteint son but, ou son rythme des derniers mois ne suffit plus.",
-      "new_version": "Une version plus récente est sortie sur le canal que suit ce serveur."
+      "new_version": "Une version plus récente est sortie sur le canal que suit ce serveur.",
+      "review_waiting": "Des opérations attendent dans « À vérifier » depuis quelques jours.",
+      "summary_weekly": "Le lundi : entrées, sorties, les plus gros postes et les échéances de la semaine, par classeur.",
+      "summary_monthly": "Le 1er : entrées, sorties et les plus gros postes du mois précédent, par classeur."
     },
     "securityAlways": "Toujours dans la cloche, pour qu’une connexion que vous n’avez pas faite ne passe pas inaperçue.",
     "emailUnavailable": "Indisponible : l’administrateur n’a pas configuré de serveur de messagerie (CB_SMTP_HOST).",
@@ -1891,6 +1898,37 @@
       "amountsOutside": "Montrer les montants hors de l’app",
       "amountsOn": "Push, e-mail et chat disent combien, comme la cloche.",
       "amountsOff": "Push, e-mail et chat disent où, jamais combien."
+    },
+    "timing": {
+      "title": "Horaires",
+      "subtitle": "Quand les notifications vous parviennent hors de l’application",
+      "rowDigest": "Récapitulatif à {{time}}",
+      "rowEvents_one": "{{count}} évènement dans le récapitulatif",
+      "rowEvents_other": "{{count}} évènements dans le récapitulatif",
+      "rowQuietOff": "heures de silence désactivées",
+      "rowQuietOn": "silence {{from}}–{{to}}",
+      "when": "Récapitulatif et silence",
+      "whenHint": "La cloche ne sonne pas : elle montre tout aussitôt, toujours.",
+      "digest": "Récapitulatif quotidien",
+      "digestHint": "Les évènements que vous choisissez de regrouper arrivent ensemble, une fois par jour. Dans votre fuseau : {{zone}}.",
+      "digestAt": "Heure du récapitulatif",
+      "quiet": "Heures de silence",
+      "quietOn": "Push, e-mail et messageries attendent la fin. Les problèmes et la sécurité arrivent quand même.",
+      "quietOff": "Désactivées : les notifications arrivent à toute heure.",
+      "from": "De",
+      "to": "à",
+      "fromLabel": "Début des heures de silence",
+      "toLabel": "Fin des heures de silence",
+      "modes": "Aussitôt ou dans le récapitulatif",
+      "modesHint": "Vaut pour push, e-mail et messageries ensemble. Un récapitulatif vide n’est pas envoyé.",
+      "now": "Aussitôt",
+      "inDigest": "Dans le récapitulatif",
+      "always": "Toujours aussitôt",
+      "atDigest": "À l’heure du récapitulatif",
+      "reviewAfter": "Prévenir après",
+      "reviewDays": "Jours d’attente",
+      "days_one": "{{count}} jour",
+      "days_other": "{{count}} jours"
     }
   },
   "ai": {

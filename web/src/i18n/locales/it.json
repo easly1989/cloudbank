@@ -1712,7 +1712,8 @@
       "problems": "Problemi",
       "bills": "Scadenze",
       "money": "Soldi",
-      "admin": "Amministrazione"
+      "admin": "Amministrazione",
+      "summaries": "Riepiloghi"
     },
     "kind": {
       "new_device": "Accesso da un nuovo dispositivo",
@@ -1727,7 +1728,10 @@
       "low_balance": "Saldo basso",
       "budget": "Budget all’80% e al 100%",
       "goal": "Obiettivo raggiunto o in ritardo",
-      "new_version": "Nuova versione di CloudBank"
+      "new_version": "Nuova versione di CloudBank",
+      "review_waiting": "Transazioni da rivedere",
+      "summary_weekly": "Riepilogo settimanale",
+      "summary_monthly": "Riepilogo mensile"
     },
     "kindHint": {
       "new_device": "Un browser o un sistema che il tuo account non ha mai usato.",
@@ -1742,7 +1746,10 @@
       "low_balance": "Il saldo di oggi di un conto scende sotto la sua soglia.",
       "budget": "Una categoria arriva all’80% e poi al 100% del budget del mese.",
       "goal": "Un obiettivo arriva al traguardo, o il ritmo degli ultimi mesi non basta più.",
-      "new_version": "È uscita una versione più recente sul canale che segue questo server."
+      "new_version": "È uscita una versione più recente sul canale che segue questo server.",
+      "review_waiting": "Transazioni in attesa nella pagina Revisione da qualche giorno.",
+      "summary_weekly": "Il lunedì: entrate, uscite, dove è andato di più e le scadenze della settimana, per portafoglio.",
+      "summary_monthly": "Il giorno 1: entrate, uscite e dove è andato di più nel mese prima, per portafoglio."
     },
     "securityAlways": "Sempre nella campanella, così un accesso che non hai fatto non passa inosservato.",
     "emailUnavailable": "Non disponibile: l'amministratore non ha configurato un server di posta (CB_SMTP_HOST).",
@@ -1891,6 +1898,37 @@
       "amountsOutside": "Mostra gli importi fuori dall’app",
       "amountsOn": "Push, email e chat dicono quanto, come la campanella.",
       "amountsOff": "Push, email e chat dicono dove, mai quanto."
+    },
+    "timing": {
+      "title": "Orari",
+      "subtitle": "Quando ti arrivano le notifiche fuori dall’app",
+      "rowDigest": "Riepilogo alle {{time}}",
+      "rowEvents_one": "{{count}} evento nel riepilogo",
+      "rowEvents_other": "{{count}} eventi nel riepilogo",
+      "rowQuietOff": "ore di silenzio spente",
+      "rowQuietOn": "silenzio {{from}}–{{to}}",
+      "when": "Riepilogo e silenzio",
+      "whenHint": "La campanella non suona: mostra tutto subito, sempre.",
+      "digest": "Riepilogo giornaliero",
+      "digestHint": "Gli eventi che scegli di raccogliere arrivano insieme, una volta al giorno. Nel tuo fuso: {{zone}}.",
+      "digestAt": "Ora del riepilogo",
+      "quiet": "Ore di silenzio",
+      "quietOn": "Push, email e chat aspettano la fine. Problemi e sicurezza arrivano lo stesso.",
+      "quietOff": "Spente: le notifiche arrivano a qualsiasi ora.",
+      "from": "Dalle",
+      "to": "alle",
+      "fromLabel": "Inizio delle ore di silenzio",
+      "toLabel": "Fine delle ore di silenzio",
+      "modes": "Subito o nel riepilogo",
+      "modesHint": "Vale per push, email e chat insieme. Un riepilogo vuoto non viene inviato.",
+      "now": "Subito",
+      "inDigest": "Nel riepilogo",
+      "always": "Sempre subito",
+      "atDigest": "All’ora del riepilogo",
+      "reviewAfter": "Avvisa dopo",
+      "reviewDays": "Giorni di attesa",
+      "days_one": "{{count}} giorno",
+      "days_other": "{{count}} giorni"
     }
   },
   "ai": {

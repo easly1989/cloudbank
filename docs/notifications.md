@@ -15,6 +15,7 @@ it and pick its events. The [demo](demo.md) has only the bell.
 - [Channels](#channels)
 - [Which events go where](#which-events-go-where)
 - [Money](#money)
+- [When notifications arrive](#when-notifications-arrive)
 - [When a delivery fails](#when-a-delivery-fails)
 - [Confirming an address](#confirming-an-address)
 - [Matrix](#matrix)
@@ -56,7 +57,7 @@ went.
 ## Which events go where
 
 Each channel's page ends with **What arrives here**: a box for each event. The
-boxes start on, except the [money events](#money), which start off; untick the ones you do not want on that channel. A channel that
+boxes start on, except the [money events](#money) and the summaries, which start off; untick the ones you do not want on that channel. A channel that
 is not connected yet gets nothing, so its boxes wait until it is. Push is the
 exception: it is switched on per device, and its boxes can be set before.
 
@@ -69,11 +70,14 @@ exception: it is switched on per device, and its boxes can be set before.
 | Bank consent ending | A bank's PSD2 consent ends within a week and needs renewing. Told once per consent, to every member of the wallet. | Bank sync |
 | A bank mailbox stops | CloudBank can no longer sign in to a [bank mail](bank-mails.md) mailbox, and it needs connecting again. | Bank mails |
 | Bank mails not recognised | Mails arrive that no pattern can read. | Bank mails |
+| Transactions to review | Transactions have waited on the Review page longer than you chose: 1, 3 (the default), 7 or 14 days, set under the event on any channel's page. Told once, and again only when more pass the wait. | Review |
 | Bills coming due | Scheduled transactions due in the next three days, or already late. | Schedules |
 | Large expense | An expense over the account's threshold. See [Money](#money). | The account's register |
 | Low balance | An account's balance today went below its threshold. | The account's register |
 | Budget at 80% and 100% | A category has used 80% of this month's budget, then all of it. | Budget |
 | Goal reached or falling behind | A goal reached its target, or is behind the pace it needs. | Goals |
+| Weekly summary | On Monday, for each wallet you hear from: money in and out last week, the week before, the three categories that took most, and the bills of the next 7 days. A week with nothing to tell sends nothing. | Reports |
+| Monthly summary | On the 1st, the same for last month, without the bills. | Reports |
 | A new CloudBank version | A newer release is out on the channel the server follows. Administrators only. | About |
 
 The three security events always reach the bell, even with every other channel
@@ -107,7 +111,8 @@ Notifications › Thresholds and wallets**, the row under the channels.
 
 CloudBank looks at the money every five minutes, so a notice can arrive a few
 minutes after the transaction. The administrator can change this with
-`CB_MONEY_INTERVAL`, or turn these events off with `0`.
+`CB_MONEY_INTERVAL`, or turn these events off with `0`, along with
+the review reminder and the summaries.
 
 **Wallets.** Every event about a wallet (bills, bank sync, bank consent and the
 money events) reaches you only from the wallets ticked here; all of them are
@@ -117,6 +122,25 @@ and wallets are your own: another member of the wallet chooses for themselves.
 **Amounts.** The bell always shows amounts. **Show amounts outside the app**
 starts on; turned off, push, email and the chat channels say where something
 happened, never how much: "Checking is below its threshold."
+
+## When notifications arrive
+
+The bell shows everything at once, always. Push, email and the chat channels
+follow **Settings › Notifications › Timing**, the row under the channels:
+
+- **Daily digest.** Each event can come **at once** or **in the digest**: the
+  choice holds for push, email and chat together. At the digest time (08:00 to
+  start) the events collected since the last one arrive as one message on each
+  channel; a single event arrives as itself, and a day with none sends nothing.
+  Security events always come at once. The weekly and monthly summaries come at
+  the digest time.
+- **Quiet hours.** Off to start; turned on, 22:00 to 07:00 unless you change
+  it. Meanwhile push, email and chat hold what is not urgent and send it when
+  the quiet hours end: one held event as itself, several as one message.
+  Problems and security arrive anyway.
+
+Times are in your time zone, which CloudBank takes from your browser each time
+you open it; the page shows which one it uses.
 
 ## When a delivery fails
 

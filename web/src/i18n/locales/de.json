@@ -1712,7 +1712,8 @@
       "problems": "Probleme",
       "bills": "Fälligkeiten",
       "money": "Geld",
-      "admin": "Administration"
+      "admin": "Administration",
+      "summaries": "Übersichten"
     },
     "kind": {
       "new_device": "Anmeldung von einem neuen Gerät",
@@ -1727,7 +1728,10 @@
       "low_balance": "Niedriger Kontostand",
       "budget": "Budget zu 80 % und 100 %",
       "goal": "Sparziel erreicht oder im Rückstand",
-      "new_version": "Neue CloudBank-Version"
+      "new_version": "Neue CloudBank-Version",
+      "review_waiting": "Buchungen zu prüfen",
+      "summary_weekly": "Wochenübersicht",
+      "summary_monthly": "Monatsübersicht"
     },
     "kindHint": {
       "new_device": "Ein Browser oder System, das dein Konto noch nie benutzt hat.",
@@ -1742,7 +1746,10 @@
       "low_balance": "Der heutige Stand eines Kontos fällt unter seine Schwelle.",
       "budget": "Eine Kategorie erreicht 80 %, dann 100 % des Monatsbudgets.",
       "goal": "Ein Sparziel ist erreicht, oder das Tempo der letzten Monate reicht nicht mehr.",
-      "new_version": "Auf dem Kanal, dem dieser Server folgt, ist eine neuere Version erschienen."
+      "new_version": "Auf dem Kanal, dem dieser Server folgt, ist eine neuere Version erschienen.",
+      "review_waiting": "Buchungen warten seit einigen Tagen unter „Prüfen“.",
+      "summary_weekly": "Montags: Einnahmen, Ausgaben, die größten Posten und die Fälligkeiten der Woche, je Haushaltsbuch.",
+      "summary_monthly": "Am 1.: Einnahmen, Ausgaben und die größten Posten des Vormonats, je Haushaltsbuch."
     },
     "securityAlways": "Immer in der Glocke, damit eine Anmeldung, die nicht von dir kam, nicht unbemerkt bleibt.",
     "emailUnavailable": "Nicht verfügbar: Der Administrator hat keinen Mailserver eingerichtet (CB_SMTP_HOST).",
@@ -1891,6 +1898,37 @@
       "amountsOutside": "Beträge außerhalb der App zeigen",
       "amountsOn": "Push, E-Mail und Chat sagen, wie viel, wie die Glocke.",
       "amountsOff": "Push, E-Mail und Chat sagen, wo, nie wie viel."
+    },
+    "timing": {
+      "title": "Zeiten",
+      "subtitle": "Wann Benachrichtigungen dich außerhalb der App erreichen",
+      "rowDigest": "Zusammenfassung um {{time}}",
+      "rowEvents_one": "{{count}} Ereignis darin",
+      "rowEvents_other": "{{count}} Ereignisse darin",
+      "rowQuietOff": "Ruhezeiten aus",
+      "rowQuietOn": "Ruhe {{from}}–{{to}}",
+      "when": "Zusammenfassung und Ruhezeiten",
+      "whenHint": "Die Glocke klingelt nicht: Sie zeigt immer alles sofort.",
+      "digest": "Tägliche Zusammenfassung",
+      "digestHint": "Die Ereignisse, die du sammeln lässt, kommen einmal am Tag zusammen. In deiner Zeitzone: {{zone}}.",
+      "digestAt": "Uhrzeit der Zusammenfassung",
+      "quiet": "Ruhezeiten",
+      "quietOn": "Push, E-Mail und Chat warten bis zum Ende. Probleme und Sicherheit kommen trotzdem.",
+      "quietOff": "Aus: Benachrichtigungen kommen zu jeder Uhrzeit.",
+      "from": "Von",
+      "to": "bis",
+      "fromLabel": "Beginn der Ruhezeiten",
+      "toLabel": "Ende der Ruhezeiten",
+      "modes": "Sofort oder in der Zusammenfassung",
+      "modesHint": "Gilt für Push, E-Mail und Chat zusammen. Eine leere Zusammenfassung wird nicht verschickt.",
+      "now": "Sofort",
+      "inDigest": "In der Zusammenfassung",
+      "always": "Immer sofort",
+      "atDigest": "Zur Uhrzeit der Zusammenfassung",
+      "reviewAfter": "Melden nach",
+      "reviewDays": "Tage Wartezeit",
+      "days_one": "{{count}} Tag",
+      "days_other": "{{count}} Tagen"
     }
   },
   "ai": {
