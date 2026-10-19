@@ -609,12 +609,12 @@
       "in": "Eingehend",
       "allReceived": "alles erhalten",
       "toCome": "{{amount}} kommen noch",
-      "net": "Netto pro Monat",
-      "inMonth": "Ein pro Monat",
-      "outMonth": "Aus pro Monat",
       "perYear": "{{amount}} im Jahr",
-      "from_one": "aus {{count}} wiederkehrenden Buchung",
-      "from_other": "aus {{count}} wiederkehrenden Buchungen"
+      "outYear": "Aus pro Jahr",
+      "inYear": "Ein pro Jahr",
+      "perMonth": "{{amount}} im Monat",
+      "perMonthFrom_one": "{{amount}} im Monat, aus {{count}} wiederkehrenden Buchung",
+      "perMonthFrom_other": "{{amount}} im Monat, aus {{count}} wiederkehrenden Buchungen"
     },
     "state": {
       "overdue": "Überfällig",
@@ -656,7 +656,8 @@
       "nextHead": "Nächste",
       "thisMonth": "Diesen Monat",
       "notRegistered": "nicht erfasst",
-      "noPayee": "Ohne Zahlungspartner"
+      "noPayee": "Ohne Zahlungspartner",
+      "perYear": "{{amount}}/Jahr"
     },
     "repeat": {
       "day": "Jeden Tag",
@@ -690,6 +691,18 @@
       "start": "Nacheinander ergänzen",
       "walk": "Ohne Zahlungspartner: {{n}} von {{total}}",
       "saveNext": "Speichern und weiter zur nächsten"
+    },
+    "found": {
+      "title": "In deinen Buchungen gefunden",
+      "sub": "Sie wiederholen sich, haben aber keine wiederkehrende Buchung.",
+      "create": "Wiederkehrende Buchung anlegen",
+      "ignore": "Ignorieren",
+      "weekly": "Jede Woche, am {{weekday}}",
+      "monthly": "Jeden Monat, um den {{day}}.",
+      "quarterly": "Alle drei Monate, um den {{day}}.",
+      "yearly": "Jedes Jahr, um den {{date}}",
+      "seen_one": "{{count}}-mal seit {{month}}, zuletzt am {{date}}",
+      "seen_other": "{{count}}-mal seit {{month}}, zuletzt am {{date}}"
     }
   },
   "tags": {

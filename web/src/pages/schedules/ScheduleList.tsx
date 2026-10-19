@@ -6,7 +6,7 @@ import type { Schedule, ScheduleOccurrence } from "../../api/client";
 import { amountColor, attentionColor } from "../../amountTone";
 import { useOccurrenceLabel, useShortDate } from "./labels";
 import { OccurrenceIcon } from "./OccurrenceIcon";
-import { cadence, isPaid, missingPayee } from "./scheduleCalendar";
+import { cadence, isPaid, missingPayee, perYear } from "./scheduleCalendar";
 import classes from "./schedules.module.css";
 
 export interface ScheduleActions {
@@ -60,6 +60,10 @@ export function ScheduleList({
     ) : (
       s.payeeName
     );
+  // What it adds up to in the next twelve months (#693); a transfer or an ended
+  // schedule, nothing.
+  const yearly = (s: Schedule, id?: number) =>
+    perYear(s) ? t("schedules.list.perYear", { amount: format(perYear(s), id) }) : null;
   const menu = (s: Schedule) => (
     <Menu position="bottom-end" withinPortal>
       <Menu.Target>
@@ -143,6 +147,11 @@ export function ScheduleList({
                 >
                   {format(s.templateAmount, acc.id)}
                 </div>
+                {yearly(s, acc.id) && (
+                  <div className={classes.itemMeta} style={{ marginTop: -4 }} data-cb-sensitive>
+                    {yearly(s, acc.id)}
+                  </div>
+                )}
                 {menu(s)}
               </div>
             </div>
@@ -190,6 +199,7 @@ export function ScheduleList({
             </UnstyledButton>
             <div className={classes.rowAmount} style={{ color: amountColor(s.templateAmount) }}>
               {format(s.templateAmount, acc.id)}
+              {yearly(s, acc.id) && <div className={classes.rowYear}>{yearly(s, acc.id)}</div>}
             </div>
             <div>{repeats(s)}</div>
             <div>

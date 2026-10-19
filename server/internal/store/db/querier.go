@@ -198,6 +198,7 @@ type Querier interface {
 	InsertNotificationDelivery(ctx context.Context, arg InsertNotificationDeliveryParams) error
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
 	InsertRecoveryCode(ctx context.Context, arg InsertRecoveryCodeParams) error
+	InsertRecurringIgnored(ctx context.Context, arg InsertRecurringIgnoredParams) error
 	InsertReminderIfNew(ctx context.Context, arg InsertReminderIfNewParams) (int64, error)
 	InsertReviewWaiting(ctx context.Context, arg InsertReviewWaitingParams) error
 	InsertSchedule(ctx context.Context, arg InsertScheduleParams) (Schedule, error)
@@ -297,6 +298,11 @@ type Querier interface {
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID int64) ([]ListPushSubscriptionsForUserRow, error)
 	ListPushUserIDs(ctx context.Context) ([]int64, error)
+	// What a recurring payment can be found in (#693): the wallet's transactions
+	// with a payee in a date range, with their account's currency, leaving out
+	// transfers, reminders and void ones, and the payees a schedule already pays.
+	ListRecurringCandidates(ctx context.Context, arg ListRecurringCandidatesParams) ([]ListRecurringCandidatesRow, error)
+	ListRecurringIgnored(ctx context.Context, walletID int64) ([]ListRecurringIgnoredRow, error)
 	ListReviewWaiting(ctx context.Context, walletID int64) ([]ListReviewWaitingRow, error)
 	// Every schedule in the wallet with the template fields the Bills view needs:
 	// amount (signed), the target account and its currency (for base conversion),

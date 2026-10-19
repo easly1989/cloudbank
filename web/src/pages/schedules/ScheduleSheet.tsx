@@ -31,6 +31,7 @@ import {
   type Payee,
   type Schedule,
   type ScheduleInput,
+  type ScheduleProposal,
   type ScheduleUnit,
   type Split,
   type Template,
@@ -71,6 +72,7 @@ export function ScheduleSheet({
   onDelete,
   walk = null,
   onSavedNext,
+  seed = null,
 }: {
   opened: boolean;
   onClose: () => void;
@@ -82,6 +84,8 @@ export function ScheduleSheet({
   walk?: { index: number; total: number } | null;
   /** Opens the next schedule of the walk after a save; false when there is none. */
   onSavedNext?: () => boolean;
+  /** A recurring payment found in the transactions, to fill a new schedule from (#693). */
+  seed?: ScheduleProposal | null;
 }) {
   const { t } = useTranslation();
   const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
@@ -171,7 +175,7 @@ export function ScheduleSheet({
     setSplits(tpl.isSplit ? (tpl.splits ?? []) : []);
   };
 
-  // Three things seed this sheet, and they do not all arrive at once: the
+  // Four things seed this sheet, and they do not all arrive at once: the
   // schedule itself is there the moment it opens, while the accounts list and
   // the schedule's own template come from queries that may resolve afterwards.
   // Each gets its own key, and each adopts during render rather than in an
@@ -234,6 +238,32 @@ export function ScheduleSheet({
   if (templateKey !== filledFrom) {
     setFilledFrom(templateKey);
     if (editingTemplate) fillFromTemplate(editingTemplate);
+  }
+
+  // 4. A proposal filling a new schedule: once it is open, and once the
+  //    accounts are in, whose currency the amount is written in.
+  const seedKey =
+    opened && !editing && seed && accounts.length > 0 ? `${seed.payeeId}:${seed.cadence}` : null;
+  const [seededFrom, setSeededFrom] = useState<string | null>(null);
+  if (seedKey !== seededFrom) {
+    setSeededFrom(seedKey);
+    if (seed && seedKey) {
+      const acc = accounts.find((a) => a.id === seed.accountId);
+      setName(seed.payeeName);
+      setAccountId(String(seed.accountId));
+      setDirection(seed.amount < 0 ? "expense" : "income");
+      setAmount(
+        minorToInput(
+          Math.abs(seed.amount),
+          acc?.currencyFracDigits ?? 2,
+          acc?.currencyDecimalChar ?? ".",
+        ),
+      );
+      setPayeeId(String(seed.payeeId));
+      setUnit(seed.unit);
+      setEveryN(seed.everyN);
+      setNextDue(seed.nextDue);
+    }
   }
 
   const onPayee = (v: string | null) => {

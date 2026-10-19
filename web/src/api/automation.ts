@@ -168,6 +168,36 @@ export const getScheduleCalendar = (walletId: number, from: string, to: string, 
 export const skipSchedule = (walletId: number, id: number) =>
   api.post<void>(`/api/v1/wallets/${walletId}/schedules/${id}/skip`);
 
+export type ProposalCadence = "weekly" | "monthly" | "quarterly" | "yearly";
+
+/** A recurring payment found in the transactions that no schedule covers (#693). */
+export interface ScheduleProposal {
+  payeeId: number;
+  payeeName: string;
+  /** The account of the latest payment. */
+  accountId: number;
+  /** The usual amount, in the account's minor units. */
+  amount: number;
+  cadence: ProposalCadence;
+  unit: ScheduleUnit;
+  everyN: number;
+  count: number;
+  first: string;
+  last: string;
+  nextDue: string;
+  /** What it adds up to in a year, in minor units. */
+  yearly: number;
+}
+
+export const listScheduleProposals = (walletId: number, today: string) =>
+  api.get<ScheduleProposal[]>(`/api/v1/wallets/${walletId}/schedules/proposals?today=${today}`);
+
+export const ignoreScheduleProposal = (
+  walletId: number,
+  payeeId: number,
+  cadence: ProposalCadence,
+) => api.post<void>(`/api/v1/wallets/${walletId}/schedules/proposals/ignore`, { payeeId, cadence });
+
 /** Gives the schedule's payee to the transactions it registered without one. */
 export const applySchedulePayee = (walletId: number, id: number) =>
   api.post<{ updated: number }>(`/api/v1/wallets/${walletId}/schedules/${id}/apply-payee`);
