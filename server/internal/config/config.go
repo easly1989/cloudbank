@@ -75,6 +75,10 @@ type Config struct {
 	// gives only the room to be notified there. Without them, each person uses
 	// a bot of their own.
 	MatrixHomeserver, MatrixToken string
+	// TelegramToken is an optional shared Telegram bot (#688),
+	// CB_TELEGRAM_TOKEN: with it, a person gives only their chat. TelegramAPI
+	// (CB_TELEGRAM_API, testing only) points the Bot API elsewhere.
+	TelegramToken, TelegramAPI string
 
 	// OIDC/SSO login. When Issuer, ClientID, ClientSecret and RedirectURL are all
 	// set (see OIDCEnabled), a "Sign in with <OIDCName>" button is offered on the
@@ -165,6 +169,8 @@ func Load() Config {
 		},
 		MatrixHomeserver: strings.TrimRight(strings.TrimSpace(getenv("CB_MATRIX_HOMESERVER", "")), "/"),
 		MatrixToken:      strings.TrimSpace(getenv("CB_MATRIX_TOKEN", "")),
+		TelegramToken:    strings.TrimSpace(getenv("CB_TELEGRAM_TOKEN", "")),
+		TelegramAPI:      strings.TrimSpace(getenv("CB_TELEGRAM_API", "https://api.telegram.org")),
 
 		OIDCIssuer:        getenv("CB_OIDC_ISSUER", ""),
 		OIDCClientID:      getenv("CB_OIDC_CLIENT_ID", ""),

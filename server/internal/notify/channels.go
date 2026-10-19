@@ -3,6 +3,7 @@ package notify
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/mail"
@@ -20,8 +21,8 @@ var (
 	// ErrChannelUnavailable means this installation cannot send on that channel
 	// (email with no SMTP server configured), or it is not one a person sets up.
 	ErrChannelUnavailable = errors.New("notify: channel not available")
-	// ErrBadTarget means the target is not an email address, a Matrix room ID
-	// or an http(s) URL, or a part the channel needs is missing.
+	// ErrBadTarget means the target is not an email address, a Matrix room ID,
+	// a Telegram chat or an http(s) URL, or a part the channel needs is missing.
 	ErrBadTarget = errors.New("notify: invalid address")
 	// ErrLocalTarget means a webhook on the local network, saved by someone who is
 	// not an administrator.
@@ -42,15 +43,18 @@ type ChannelInfo struct {
 	// Available is false when the installation cannot send on it.
 	Available  bool
 	Configured bool
-	// Target is the email address, the Matrix room, or only the webhook's
-	// host: the rest of its URL is often its key and never leaves the server.
+	// Target is the email address, the Matrix room, the Telegram chat, or only
+	// a webhook's host (Discord and Slack included): the rest of its URL is
+	// often its key and never leaves the server.
 	Target    string
 	HasSecret bool
 	// Server is the person's Matrix homeserver, empty when the shared bot
 	// posts.
 	Server string
-	// Shared is true when the installation has a shared Matrix bot, and Bot
-	// is that bot's Matrix ID when its homeserver told it.
+	// Options are the channel's own settings.
+	Options ChannelOptions
+	// Shared is true when the installation has a shared Matrix or Telegram
+	// bot, and Bot is that bot's Matrix ID or @username once known.
 	Shared      bool
 	Bot         string
 	LastError   string
@@ -75,14 +79,18 @@ func (s *Service) AddressedChannels(ctx context.Context, userID int64) ([]Channe
 			continue
 		}
 		info := ChannelInfo{Channel: ch, Available: s.senders[ch] != nil}
-		if m, ok := s.senders[ch].(*MatrixSender); ok {
-			info.Shared, info.Bot = m.Shared(), m.BotUser(ctx)
+		switch snd := s.senders[ch].(type) {
+		case *MatrixSender:
+			info.Shared, info.Bot = snd.Shared(), snd.BotUser(ctx)
+		case *TelegramSender:
+			info.Shared, info.Bot = snd.Shared(), snd.BotName(ctx)
 		}
 		if r, ok := byCh[ch]; ok {
 			info.Configured = true
 			info.Target = shownTarget(ch, secrets.Open(r.Target))
 			info.HasSecret = r.Secret != ""
 			info.Server = r.Server
+			info.Options = parseOptions(r.Options)
 			info.LastError, info.LastErrorAt, info.LastOKAt = r.LastError, r.LastErrorAt.String, r.LastOkAt.String
 		}
 		out = append(out, info)
@@ -91,7 +99,7 @@ func (s *Service) AddressedChannels(ctx context.Context, userID int64) ([]Channe
 }
 
 func shownTarget(ch Channel, target string) string {
-	if ch != ChannelWebhook {
+	if ch != ChannelWebhook && ch != ChannelDiscord && ch != ChannelSlack {
 		return target
 	}
 	if u, err := url.Parse(target); err == nil {
@@ -110,6 +118,9 @@ type ChannelInput struct {
 	Secret *string
 	// Server is the Matrix homeserver; empty to post as the shared bot.
 	Server *string
+	// Options replace the channel's own settings; nil keeps them. Only
+	// Telegram has any.
+	Options *ChannelOptions
 }
 
 // SaveChannel sets a person's address on a channel. A webhook or homeserver
@@ -133,6 +144,10 @@ func (s *Service) SaveChannel(ctx context.Context, userID int64, admin bool, ch 
 	sec := secrets.Open(old.Secret)
 	if in.Secret != nil {
 		sec = strings.TrimSpace(*in.Secret)
+	}
+	opts := parseOptions(old.Options)
+	if in.Options != nil {
+		opts = *in.Options
 	}
 	srv := old.Server
 	if in.Server != nil {
@@ -161,11 +176,38 @@ func (s *Service) SaveChannel(ctx context.Context, userID int64, admin bool, ch 
 		} else if err := checkServerURL(ctx, srv, admin); err != nil {
 			return err
 		}
+	case ChannelTelegram:
+		srv = ""
+		if !telegramChat.MatchString(t) {
+			return ErrBadTarget
+		}
+		if sec == "" {
+			if !s.senders[ch].(*TelegramSender).Shared() {
+				return ErrBadTarget
+			}
+		} else if !telegramToken.MatchString(sec) {
+			return ErrBadTarget
+		}
+		if opts.Topic < 0 {
+			return ErrBadTarget
+		}
 	default:
+		// The webhook, and Discord's or Slack's incoming webhook.
 		if err := checkServerURL(ctx, t, admin); err != nil {
 			return err
 		}
 		srv = ""
+		if ch != ChannelWebhook {
+			sec = ""
+		}
+	}
+	if ch != ChannelTelegram {
+		opts = ChannelOptions{}
+	}
+	optsJSON := ""
+	if opts != (ChannelOptions{}) {
+		b, _ := json.Marshal(opts)
+		optsJSON = string(b)
 	}
 	sealed := ""
 	if sec != "" {
@@ -176,7 +218,7 @@ func (s *Service) SaveChannel(ctx context.Context, userID int64, admin bool, ch 
 		localOK = 1
 	}
 	return s.q.UpsertNotificationChannel(ctx, db.UpsertNotificationChannelParams{
-		UserID: userID, Channel: string(ch), Target: secrets.Seal(t), Secret: sealed, Server: srv, LocalOk: localOK,
+		UserID: userID, Channel: string(ch), Target: secrets.Seal(t), Secret: sealed, Server: srv, Options: optsJSON, LocalOk: localOK,
 	})
 }
 
@@ -245,7 +287,7 @@ func (s *Service) TestChannel(ctx context.Context, userID int64, lang string, ch
 	s.tested[key] = s.now()
 	s.testMu.Unlock()
 	text := locale.Pick(testTexts, lang)
-	if err := snd.Send(ctx, to, Event{Kind: "test", Title: text.title, Body: text.body, URL: "/settings/notifications", Test: true}); err != nil {
+	if err := snd.Send(ctx, to, Event{Kind: "test", Title: text.title, Body: text.body, URL: "/settings/notifications/" + string(ch), Test: true}); err != nil {
 		de := asDeliveryError(err)
 		s.recordError(ctx, userID, ch, de)
 		return de

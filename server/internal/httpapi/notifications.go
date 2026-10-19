@@ -127,17 +127,18 @@ func (h *notificationHandlers) setPreference(w http.ResponseWriter, r *http.Requ
 }
 
 type channelJSON struct {
-	Channel     notify.Channel `json:"channel"`
-	Available   bool           `json:"available"`
-	Configured  bool           `json:"configured"`
-	Target      string         `json:"target"`
-	HasSecret   bool           `json:"hasSecret"`
-	Server      string         `json:"server"`
-	Shared      bool           `json:"shared"`
-	Bot         string         `json:"bot"`
-	LastError   string         `json:"lastError"`
-	LastErrorAt *string        `json:"lastErrorAt"`
-	LastOKAt    *string        `json:"lastOkAt"`
+	Channel     notify.Channel        `json:"channel"`
+	Available   bool                  `json:"available"`
+	Configured  bool                  `json:"configured"`
+	Target      string                `json:"target"`
+	HasSecret   bool                  `json:"hasSecret"`
+	Server      string                `json:"server"`
+	Shared      bool                  `json:"shared"`
+	Bot         string                `json:"bot"`
+	Options     notify.ChannelOptions `json:"options"`
+	LastError   string                `json:"lastError"`
+	LastErrorAt *string               `json:"lastErrorAt"`
+	LastOKAt    *string               `json:"lastOkAt"`
 }
 
 func orNull(s string) *string {
@@ -158,7 +159,7 @@ func (h *notificationHandlers) channels(w http.ResponseWriter, r *http.Request) 
 	for _, c := range chans {
 		out = append(out, channelJSON{
 			Channel: c.Channel, Available: c.Available, Configured: c.Configured, Target: c.Target,
-			HasSecret: c.HasSecret, Server: c.Server, Shared: c.Shared, Bot: c.Bot, LastError: c.LastError, LastErrorAt: orNull(c.LastErrorAt), LastOKAt: orNull(c.LastOKAt),
+			HasSecret: c.HasSecret, Server: c.Server, Shared: c.Shared, Bot: c.Bot, Options: c.Options, LastError: c.LastError, LastErrorAt: orNull(c.LastErrorAt), LastOKAt: orNull(c.LastOKAt),
 		})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"channels": out})
@@ -167,15 +168,16 @@ func (h *notificationHandlers) channels(w http.ResponseWriter, r *http.Request) 
 func (h *notificationHandlers) saveChannel(w http.ResponseWriter, r *http.Request) {
 	u := userFromContext(r.Context())
 	var body struct {
-		Target *string `json:"target"`
-		Secret *string `json:"secret"`
-		Server *string `json:"server"`
+		Target  *string                `json:"target"`
+		Secret  *string                `json:"secret"`
+		Server  *string                `json:"server"`
+		Options *notify.ChannelOptions `json:"options"`
 	}
 	if !decodeJSON(w, r, &body) {
 		return
 	}
 	err := h.svc.SaveChannel(r.Context(), u.ID, u.IsAdmin, notify.Channel(chi.URLParam(r, "channel")),
-		notify.ChannelInput{Target: body.Target, Secret: body.Secret, Server: body.Server})
+		notify.ChannelInput{Target: body.Target, Secret: body.Secret, Server: body.Server, Options: body.Options})
 	switch {
 	case errors.Is(err, notify.ErrChannelUnavailable):
 		writeError(w, http.StatusNotFound, "not_found", "channel not available")

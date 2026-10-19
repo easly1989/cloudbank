@@ -32,24 +32,28 @@ async function received(page: Page) {
   return (await res.json()) as { mails: Received[]; hooks: Received[] };
 }
 
-const card = (page: Page, title: string) =>
+// The channel's page has one card with a Save button: its connection.
+const card = (page: Page) =>
   page
     .locator(".mantine-Card-root")
-    .filter({ has: page.getByRole("heading", { name: title, exact: true }) });
+    .filter({ has: page.getByRole("button", { name: "Save" }) });
 
 test("an email channel sends its test through the mail server", async ({
   page,
 }) => {
   await signIn(page);
   await page.goto("/settings/notifications");
-  const email = card(page, "Email");
+  // The overview lists the channel and opens its page.
+  await page.getByRole("link", { name: /^Email/ }).click();
+  await expect(page).toHaveURL(/\/settings\/notifications\/email$/);
+  const email = card(page);
   await email.getByLabel("Address").fill(ADDRESS);
   await email.getByRole("button", { name: "Save" }).click();
   await email.getByRole("button", { name: "Send a test" }).click();
   await expect(page.getByText("Test sent")).toBeVisible();
   await expect(email.getByText(/^Last delivered: /)).toBeVisible();
-  // The channel joins the events table.
-  await expect(page.getByRole("columnheader", { name: "Email" })).toBeVisible();
+  // Connected, the channel's events can be chosen.
+  await expect(page.getByRole("checkbox", { name: "Bills due" })).toBeEnabled();
 
   const { mails } = await received(page);
   expect(mails.some((m) => m.to === ADDRESS)).toBe(true);
@@ -59,8 +63,11 @@ test("a webhook test is signed, and a refusal stays on the page", async ({
   page,
 }) => {
   await signIn(page);
-  await page.goto("/settings/notifications");
-  const hook = card(page, "Webhook");
+  await page.goto("/settings/notifications/webhook");
+  await expect(
+    page.getByRole("checkbox", { name: "Bills due" }),
+  ).toBeDisabled();
+  const hook = card(page);
   await hook.getByLabel("URL").fill(`${FAKE}/hook/home`);
   await hook.getByLabel("Signing secret").fill("e2e-signing-secret");
   await hook.getByRole("button", { name: "Save" }).click();
@@ -84,7 +91,5 @@ test("a webhook test is signed, and a refusal stays on the page", async ({
   await hook.getByRole("button", { name: "Send a test" }).click();
   await expect(page.getByText("The test failed: 401")).toBeVisible();
   await page.reload();
-  await expect(
-    card(page, "Webhook").getByText("Last delivery failed: 401"),
-  ).toBeVisible();
+  await expect(card(page).getByText("Last delivery failed: 401")).toBeVisible();
 });

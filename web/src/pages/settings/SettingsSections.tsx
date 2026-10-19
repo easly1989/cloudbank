@@ -16,13 +16,6 @@ import { AiSettingsCard } from "../../components/AiSettingsCard";
 import { EntryFieldsCard } from "../../components/EntryFieldsCard";
 import { Logo } from "../../components/Logo";
 import { NavLayoutEditor } from "../../components/NavLayoutEditor";
-import {
-  EmailChannelCard,
-  MatrixChannelCard,
-  WebhookChannelCard,
-} from "../../components/NotificationChannelCards";
-import { NotificationPrefsCard } from "../../components/NotificationPrefsCard";
-import { NotificationsCard } from "../../components/NotificationsCard";
 import { PasswordCard } from "../../components/PasswordCard";
 import { TwoFactorCard } from "../../components/TwoFactorCard";
 import { UpdateStatusCard } from "../../components/updates/UpdateStatusCard";
@@ -99,26 +92,8 @@ export function SecuritySection() {
   );
 }
 
-// Where CloudBank reaches the reader, and with what (#685). Push moved here
-// from Security; the demo build has none.
-export function NotificationsSection() {
-  const { t } = useTranslation();
-  return (
-    <Stack gap="xl">
-      {!__DEMO__ && (
-        <SettingsGroup title={t("notif.channels")} hint={t("notif.channelsHint")}>
-          <NotificationsCard />
-          <EmailChannelCard />
-          <MatrixChannelCard />
-          <WebhookChannelCard />
-        </SettingsGroup>
-      )}
-      <SettingsGroup title={t("notif.events")} hint={t("notif.eventsHint")}>
-        <NotificationPrefsCard />
-      </SettingsGroup>
-    </Stack>
-  );
-}
+// Where CloudBank reaches the reader, and with what (#685, #688).
+export { NotificationChannelSection, NotificationsSection } from "./NotificationsPages";
 
 // The section's own header already names it, so these three carry no group of
 // the same name.

@@ -1706,17 +1706,7 @@
     "unread": "Unread",
     "pushTitle": "Push on this device",
     "channels": "Channels",
-    "channelsHint": "Where notifications reach you besides the bell.",
-    "events": "Events",
-    "eventsHint": "What you are told, and where. The bell keeps everything for 90 days.",
-    "eventHeader": "Event",
-    "channel": {
-      "inapp": "In app",
-      "push": "Push",
-      "email": "Email",
-      "webhook": "Webhook",
-      "matrix": "Matrix"
-    },
+    "channelsHint": "Where notifications reach you. Open a channel to connect it and choose its events.",
     "group": {
       "problems": "Problems",
       "bills": "Bills"
@@ -1731,8 +1721,6 @@
       "mail_unrecognized": "Mails arrive that no pattern can read.",
       "bills": "Schedules due in the next 3 days, or already overdue."
     },
-    "email": "Email",
-    "emailHint": "Notifications by email, to the address you choose.",
     "emailUnavailable": "Not available: the administrator has not set up a mail server (CB_SMTP_HOST).",
     "emailAddress": "Address",
     "remove": "Remove",
@@ -1750,21 +1738,71 @@
     },
     "localNetwork": "Only an administrator can send to an address on the local network.",
     "invalidAddress": "That address is not valid.",
-    "webhook": "Webhook",
-    "webhookHint": "A POST with the event as JSON to an address of yours: Home Assistant, n8n, a script.",
     "webhookGuide": "How to connect it",
     "webhookUrl": "URL",
     "webhookSaved": "Saved: {{host}}",
     "webhookSecret": "Signing secret",
     "secretSaved": "Saved",
     "optional": "Optional",
-    "matrix": "Matrix",
-    "matrixHint": "A message in a Matrix room, posted by a bot of yours.",
     "matrixHintShared": "A message in a Matrix room. Invite {{bot}} to the room, then paste the room ID here.",
     "matrixHintSharedNoBot": "A message in a Matrix room. Invite this installation's bot to the room (the administrator knows its address), then paste the room ID here.",
     "matrixServer": "Homeserver",
     "matrixRoom": "Room ID",
-    "matrixToken": "Bot's access token"
+    "matrixToken": "Bot's access token",
+    "telegramHintShared": "A message from {{bot}}. Send it /start, then paste your chat ID here.",
+    "telegramHintSharedNoBot": "A message from this installation's bot (the administrator knows its name). Send it /start, then paste your chat ID here.",
+    "telegramChat": "Chat ID",
+    "telegramToken": "Bot token",
+    "name": {
+      "inapp": "Bell",
+      "push": "Push",
+      "email": "Email",
+      "matrix": "Matrix",
+      "telegram": "Telegram",
+      "discord": "Discord",
+      "slack": "Slack",
+      "webhook": "Webhook"
+    },
+    "status": {
+      "always": "Always on",
+      "unavailable": "Not available on this installation",
+      "notLinked": "Not connected",
+      "linked": "Connected",
+      "linkedOk": "Connected, last delivered {{when}}",
+      "push": {
+        "on": "On for this device",
+        "off": "Off on this device",
+        "unsupported": "Not supported by this browser",
+        "denied": "Blocked in this browser"
+      }
+    },
+    "eventCount": "Events: {{on}} of {{total}}",
+    "connection": "Connection",
+    "whatArrives": "What arrives here",
+    "whatArrivesHint": "The events this channel gets. The bell keeps everything for 90 days.",
+    "connectFirst": "Connect the channel first, then choose its events.",
+    "about": {
+      "inapp": "The events the bell shows. It keeps them for 90 days.",
+      "push": "Notifications on this device, even with CloudBank closed. Turn them on on each device you use.",
+      "email": "Notifications by email, to the address you choose.",
+      "matrix": "A message in a Matrix room, posted by CloudBank's bot or by one of yours.",
+      "telegram": "A message from a Telegram bot, in your chat with it or in a group.",
+      "discord": "A message in a Discord channel, through the channel's webhook.",
+      "slack": "A message in a Slack channel, through an incoming webhook.",
+      "webhook": "A POST with the event as JSON to an address of yours: Home Assistant, n8n, a script."
+    },
+    "mode": {
+      "shared": "CloudBank's bot",
+      "own": "Your bot"
+    },
+    "matrixRoomHelp": "In Element: the room's settings › Advanced › Internal room ID.",
+    "telegramTokenHelp": "From @BotFather: send /newbot and copy the token it gives you.",
+    "telegramChatHelp": "To find yours, send /my_id to @get_id_bot. A group's ID starts with a minus sign.",
+    "telegramTopic": "Topic ID",
+    "telegramTopicHelp": "Optional: in a group with topics, the one the messages go to.",
+    "telegramTopicInvalid": "Digits only.",
+    "telegramSilent": "Send silently",
+    "telegramSilentHelp": "Messages arrive without a sound."
   },
   "ai": {
     "title": "AI (bring your own key)",

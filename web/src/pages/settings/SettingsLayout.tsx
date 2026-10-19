@@ -46,7 +46,10 @@ export function SettingsLayout() {
   const sections = SETTINGS_SECTIONS.filter(
     (s) => (!s.adminOnly || user?.isAdmin) && !(__DEMO__ && s.notInDemo),
   );
-  const current = sections.find((s) => pathname === `/settings/${s.id}`);
+  // A section's own sub-pages (a notification channel) keep its header.
+  const current = sections.find(
+    (s) => pathname === `/settings/${s.id}` || pathname.startsWith(`/settings/${s.id}/`),
+  );
   const tour = current ? SECTION_TOURS[current.id] : undefined;
   usePageTour(tour);
 

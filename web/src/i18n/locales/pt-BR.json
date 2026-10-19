@@ -1706,17 +1706,7 @@
     "unread": "Não lida",
     "pushTitle": "Push neste dispositivo",
     "channels": "Canais",
-    "channelsHint": "Onde as notificações chegam até você, além do sino.",
-    "events": "Eventos",
-    "eventsHint": "O que você fica sabendo, e onde. O sino guarda tudo por 90 dias.",
-    "eventHeader": "Evento",
-    "channel": {
-      "inapp": "No app",
-      "push": "Push",
-      "email": "E-mail",
-      "webhook": "Webhook",
-      "matrix": "Matrix"
-    },
+    "channelsHint": "Onde as notificações chegam até você. Abra um canal para conectá-lo e escolher os eventos dele.",
     "group": {
       "problems": "Problemas",
       "bills": "Vencimentos"
@@ -1731,8 +1721,6 @@
       "mail_unrecognized": "Chegam e-mails que nenhum modelo sabe ler.",
       "bills": "Agendamentos que vencem nos próximos 3 dias, ou já vencidos."
     },
-    "email": "E-mail",
-    "emailHint": "As notificações por e-mail, no endereço que você escolher.",
     "emailUnavailable": "Indisponível: o administrador não configurou um servidor de e-mail (CB_SMTP_HOST).",
     "emailAddress": "Endereço",
     "remove": "Remover",
@@ -1750,21 +1738,71 @@
     },
     "localNetwork": "Só um administrador pode enviar para um endereço da rede local.",
     "invalidAddress": "Esse endereço não é válido.",
-    "webhook": "Webhook",
-    "webhookHint": "Um POST com o evento em JSON para um endereço seu: Home Assistant, n8n, um script.",
     "webhookGuide": "Como conectar",
     "webhookUrl": "URL",
     "webhookSaved": "Salvo: {{host}}",
     "webhookSecret": "Segredo de assinatura",
     "secretSaved": "Salvo",
     "optional": "Opcional",
-    "matrix": "Matrix",
-    "matrixHint": "Uma mensagem numa sala do Matrix, publicada por uma conta bot sua.",
     "matrixHintShared": "Uma mensagem numa sala do Matrix. Convide {{bot}} para a sala e cole aqui o ID da sala.",
     "matrixHintSharedNoBot": "Uma mensagem numa sala do Matrix. Convide para a sala o bot desta instalação (o administrador sabe o endereço dele) e cole aqui o ID da sala.",
     "matrixServer": "Servidor (homeserver)",
     "matrixRoom": "ID da sala",
-    "matrixToken": "Token de acesso do bot"
+    "matrixToken": "Token de acesso do bot",
+    "telegramHintShared": "Uma mensagem de {{bot}}. Envie /start para ele e cole aqui o ID da sua conversa.",
+    "telegramHintSharedNoBot": "Uma mensagem do bot desta instalação (o administrador sabe o nome dele). Envie /start para ele e cole aqui o ID da sua conversa.",
+    "telegramChat": "ID da conversa",
+    "telegramToken": "Token do bot",
+    "name": {
+      "inapp": "Sino",
+      "push": "Push",
+      "email": "E-mail",
+      "matrix": "Matrix",
+      "telegram": "Telegram",
+      "discord": "Discord",
+      "slack": "Slack",
+      "webhook": "Webhook"
+    },
+    "status": {
+      "always": "Sempre ativo",
+      "unavailable": "Indisponível nesta instalação",
+      "notLinked": "Não conectado",
+      "linked": "Conectado",
+      "linkedOk": "Conectado, último envio {{when}}",
+      "push": {
+        "on": "Ativadas neste dispositivo",
+        "off": "Desativadas neste dispositivo",
+        "unsupported": "Não suportadas por este navegador",
+        "denied": "Bloqueadas neste navegador"
+      }
+    },
+    "eventCount": "Eventos: {{on}} de {{total}}",
+    "connection": "Conexão",
+    "whatArrives": "O que chega aqui",
+    "whatArrivesHint": "Os eventos que este canal recebe. O sino guarda todos por 90 dias.",
+    "connectFirst": "Conecte primeiro o canal e depois escolha os eventos dele.",
+    "about": {
+      "inapp": "Os eventos que o sino mostra. Ele os guarda por 90 dias.",
+      "push": "As notificações neste dispositivo, mesmo com o CloudBank fechado. Ative em cada dispositivo que você usa.",
+      "email": "As notificações por e-mail, no endereço que você escolher.",
+      "matrix": "Uma mensagem numa sala do Matrix, publicada pelo bot do CloudBank ou por um bot seu.",
+      "telegram": "Uma mensagem de um bot do Telegram, na conversa com ele ou num grupo.",
+      "discord": "Uma mensagem num canal do Discord, pelo webhook do canal.",
+      "slack": "Uma mensagem num canal do Slack, por um webhook de entrada.",
+      "webhook": "Um POST com o evento em JSON para um endereço seu: Home Assistant, n8n, um script."
+    },
+    "mode": {
+      "shared": "Bot do CloudBank",
+      "own": "Seu bot"
+    },
+    "matrixRoomHelp": "No Element: configurações da sala › Avançado › ID interno da sala.",
+    "telegramTokenHelp": "Do @BotFather: envie /newbot e copie o token que ele der.",
+    "telegramChatHelp": "Para saber o seu, envie /my_id ao @get_id_bot. O ID de um grupo começa com um sinal de menos.",
+    "telegramTopic": "ID do tópico",
+    "telegramTopicHelp": "Opcional: num grupo com tópicos, aquele em que as mensagens chegam.",
+    "telegramTopicInvalid": "Só dígitos.",
+    "telegramSilent": "Enviar em silêncio",
+    "telegramSilentHelp": "As mensagens chegam sem som."
   },
   "ai": {
     "title": "IA (traga a sua própria chave)",
