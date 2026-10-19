@@ -435,6 +435,12 @@ type PushSubscription struct {
 	CreatedAt string
 }
 
+type RecurringIgnored struct {
+	WalletID int64
+	PayeeID  int64
+	Cadence  string
+}
+
 type ReviewWaiting struct {
 	TransactionID int64
 	WalletID      int64
