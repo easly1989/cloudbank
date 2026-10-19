@@ -85,8 +85,9 @@ func (m *MatrixSender) BotUser(ctx context.Context) string {
 	return m.botUser
 }
 
-// Send posts e in the room to.Target. A bot that was only invited is not in
-// the room yet: on a 403 it accepts the invitation and tries once more.
+// Send posts e in the room to.Target. A person's own bot that was only
+// invited is not in the room yet: on a 403 it accepts the invitation and tries
+// once more. The shared bot joined when the room was proved (Admit).
 func (m *MatrixSender) Send(ctx context.Context, to Recipient, e Event) error {
 	bot, hc := MatrixBot{Homeserver: to.Server, Token: to.Secret}, m.public
 	if to.LocalOK {
@@ -113,7 +114,7 @@ func (m *MatrixSender) Send(ctx context.Context, to Recipient, e Event) error {
 	_, _ = rand.Read(txn)
 	send := "/_matrix/client/v3/rooms/" + room + "/send/m.room.message/" + hex.EncodeToString(txn)
 	code, err := bot.call(ctx, hc, http.MethodPut, send, msg)
-	if err == nil && code == http.StatusForbidden {
+	if err == nil && code == http.StatusForbidden && to.Server != "" {
 		if jc, jerr := bot.call(ctx, hc, http.MethodPost, "/_matrix/client/v3/join/"+room, []byte("{}")); jerr == nil && jc == http.StatusOK {
 			code, err = bot.call(ctx, hc, http.MethodPut, send, msg)
 		}
@@ -144,4 +145,52 @@ func (b MatrixBot) call(ctx context.Context, hc *http.Client, method, path strin
 	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
 	_ = resp.Body.Close()
 	return resp.StatusCode, nil
+}
+
+// Admit lets the shared bot into a room, but only one it is already in or has
+// a pending invitation to: never a room just because anyone may join it
+// (#716). The homeserver is the administrator's, so it may be local.
+func (m *MatrixSender) Admit(ctx context.Context, room string) error {
+	if m.shared == nil {
+		return &DeliveryError{Reason: ReasonRejected}
+	}
+	only, _ := json.Marshal([]string{room})
+	filter := `{"room":{"rooms":` + string(only) + `,"timeline":{"limit":1},"state":{"types":[]},"ephemeral":{"types":[]},"account_data":{"types":[]}},"presence":{"types":[]},"account_data":{"types":[]}}`
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
+		strings.TrimRight(m.shared.Homeserver, "/")+"/_matrix/client/v3/sync?timeout=0&filter="+url.QueryEscape(filter), nil)
+	if err != nil {
+		return &DeliveryError{Reason: ReasonRejected}
+	}
+	req.Header.Set("Authorization", "Bearer "+m.shared.Token)
+	resp, err := m.local.Do(req)
+	if err != nil {
+		return asDeliveryError(err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return httpStatusError(resp.StatusCode)
+	}
+	var sync struct {
+		Rooms struct {
+			Join   map[string]json.RawMessage `json:"join"`
+			Invite map[string]json.RawMessage `json:"invite"`
+		} `json:"rooms"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(&sync); err != nil {
+		return &DeliveryError{Reason: ReasonUnreachable}
+	}
+	if _, in := sync.Rooms.Join[room]; in {
+		return nil
+	}
+	if _, invited := sync.Rooms.Invite[room]; !invited {
+		return ErrNotInvited
+	}
+	code, err := m.shared.call(ctx, m.local, http.MethodPost, "/_matrix/client/v3/join/"+url.PathEscape(room), []byte("{}"))
+	if err != nil {
+		return asDeliveryError(err)
+	}
+	if code != http.StatusOK {
+		return httpStatusError(code)
+	}
+	return nil
 }

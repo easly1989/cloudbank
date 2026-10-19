@@ -29,7 +29,7 @@ import { useTranslation } from "react-i18next";
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import { GUIDE_BASE_URL } from "../../aboutLinks";
-import { errorColor } from "../../amountTone";
+import { attentionColor, errorColor } from "../../amountTone";
 import {
   getNotificationPreferences,
   setNotificationPreference,
@@ -90,7 +90,9 @@ function usePushState(): PushState {
   return state;
 }
 
-type Status = { text: string; error?: boolean; active: boolean };
+type Status = { text: string; error?: boolean; attention?: boolean; active: boolean };
+
+const statusColor = (s: Status) => (s.error ? errorColor : s.attention ? attentionColor : "dimmed");
 
 /** One line on how a channel stands, and whether it gets anything now. */
 function useStatus(id: NotificationChannel): Status {
@@ -102,6 +104,7 @@ function useStatus(id: NotificationChannel): Status {
   if (!state) return { text: "", active: false };
   if (!state.available) return { text: t("notif.status.unavailable"), active: false };
   if (!state.configured) return { text: t("notif.status.notLinked"), active: false };
+  if (state.pending) return { text: t("notif.status.pending"), attention: true, active: false };
   if (state.lastError) return { text: failureText(t, state.lastError), error: true, active: true };
   if (state.lastOkAt) {
     const when = new Date(state.lastOkAt).toLocaleString(i18n.language, {
@@ -141,7 +144,7 @@ function ChannelRow({
         <Text fz={14} fw={500}>
           {t(`notif.name.${id}`)}
         </Text>
-        <Text fz={13} c={status.error ? errorColor : "dimmed"} truncate>
+        <Text fz={13} c={statusColor(status)} truncate>
           {status.text}
         </Text>
       </Box>
@@ -259,7 +262,7 @@ export function NotificationChannelSection() {
             {t(`notif.name.${id}`)}
           </Title>
         </Group>
-        <Text fz={13} c={status.error ? errorColor : "dimmed"} mt={2}>
+        <Text fz={13} c={statusColor(status)} mt={2}>
           {status.text}
         </Text>
       </div>

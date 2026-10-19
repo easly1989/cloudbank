@@ -55,8 +55,14 @@ type ChannelInfo struct {
 	Options ChannelOptions
 	// Shared is true when the installation has a shared Matrix or Telegram
 	// bot, and Bot is that bot's Matrix ID or @username once known.
-	Shared      bool
-	Bot         string
+	Shared bool
+	Bot    string
+	// Pending is true while the address waits for its code (#716); Link and
+	// GroupLink are then, for Telegram's shared bot, the links that start it
+	// with the code, empty once it expired.
+	Pending     bool
+	Link        string
+	GroupLink   string
 	LastError   string
 	LastErrorAt string
 	LastOKAt    string
@@ -68,6 +74,16 @@ func (s *Service) AddressedChannels(ctx context.Context, userID int64) ([]Channe
 	rows, err := s.rq.ListNotificationChannels(ctx, userID)
 	if err != nil {
 		return nil, err
+	}
+	for _, r := range rows {
+		// The page waits on a Telegram link: see whether it was used.
+		if Channel(r.Channel) == ChannelTelegram && r.Verified == 0 {
+			s.linkTelegram(ctx)
+			if rows, err = s.rq.ListNotificationChannels(ctx, userID); err != nil {
+				return nil, err
+			}
+			break
+		}
 	}
 	byCh := map[Channel]db.NotificationChannel{}
 	for _, r := range rows {
@@ -92,6 +108,10 @@ func (s *Service) AddressedChannels(ctx context.Context, userID int64) ([]Channe
 			info.Server = r.Server
 			info.Options = parseOptions(r.Options)
 			info.LastError, info.LastErrorAt, info.LastOKAt = r.LastError, r.LastErrorAt.String, r.LastOkAt.String
+			info.Pending = r.Verified == 0
+			if info.Pending && ch == ChannelTelegram {
+				info.Link, info.GroupLink = s.telegramLinks(r, info.Bot)
+			}
 		}
 		out = append(out, info)
 	}
@@ -121,11 +141,16 @@ type ChannelInput struct {
 	// Options replace the channel's own settings; nil keeps them. Only
 	// Telegram has any.
 	Options *ChannelOptions
+	// Lang is the language of the code a new address is sent.
+	Lang string
 }
 
 // SaveChannel sets a person's address on a channel. A webhook or homeserver
 // on the local network needs admin; the address is checked again with the
-// current role on every save.
+// current role on every save. A new address reached through the
+// installation's resources waits for its code: email and Matrix are sent one
+// now, and a failure to send it saves nothing; Telegram's shared bot gets a
+// link, and the chat is whichever one uses it.
 func (s *Service) SaveChannel(ctx context.Context, userID int64, admin bool, ch Channel, in ChannelInput) error {
 	if !addressed(ch) || s.senders[ch] == nil {
 		return ErrChannelUnavailable
@@ -135,7 +160,9 @@ func (s *Service) SaveChannel(ctx context.Context, userID int64, admin bool, ch 
 		return err
 	}
 	exists := err == nil
-	t := secrets.Open(old.Target)
+	oldT := secrets.Open(old.Target)
+	oldVia := exists && viaInstallation(ch, rowRecipient(userID, old))
+	t := oldT
 	if in.Target != nil {
 		t = strings.TrimSpace(*in.Target)
 	} else if !exists {
@@ -178,14 +205,16 @@ func (s *Service) SaveChannel(ctx context.Context, userID int64, admin bool, ch 
 		}
 	case ChannelTelegram:
 		srv = ""
-		if !telegramChat.MatchString(t) {
-			return ErrBadTarget
-		}
 		if sec == "" {
 			if !s.senders[ch].(*TelegramSender).Shared() {
 				return ErrBadTarget
 			}
-		} else if !telegramToken.MatchString(sec) {
+			// The shared bot learns the chat from the link, never from the page.
+			t = ""
+			if oldVia {
+				t = oldT
+			}
+		} else if !telegramToken.MatchString(sec) || !telegramChat.MatchString(t) {
 			return ErrBadTarget
 		}
 		if opts.Topic < 0 {
@@ -217,9 +246,24 @@ func (s *Service) SaveChannel(ctx context.Context, userID int64, admin bool, ch 
 	if admin {
 		localOK = 1
 	}
-	return s.q.UpsertNotificationChannel(ctx, db.UpsertNotificationChannelParams{
+	p := db.UpsertNotificationChannelParams{
 		UserID: userID, Channel: string(ch), Target: secrets.Seal(t), Secret: sealed, Server: srv, Options: optsJSON, LocalOk: localOK,
-	})
+		Verified: 1,
+	}
+	to := Recipient{UserID: userID, Target: t, Secret: sec, Server: srv, Options: opts, LocalOK: admin}
+	switch via := viaInstallation(ch, to); {
+	case exists && t == oldT && via == oldVia:
+		// Nothing to prove changed: the channel keeps its state, a pending
+		// code included.
+		p.Verified, p.CodeHash, p.CodeLink, p.CodeExpiresAt, p.CodeAttempts = old.Verified, old.CodeHash, old.CodeLink, old.CodeExpiresAt, old.CodeAttempts
+	case via:
+		c, err := s.issueCode(ctx, in.Lang, ch, to)
+		if err != nil {
+			return err
+		}
+		p.Verified, p.CodeHash, p.CodeLink, p.CodeExpiresAt = 0, c.hash, c.link, c.expires
+	}
+	return s.q.UpsertNotificationChannel(ctx, p)
 }
 
 // checkServerURL checks a URL CloudBank will call: http(s), no credentials in
@@ -286,6 +330,9 @@ func (s *Service) TestChannel(ctx context.Context, userID int64, lang string, ch
 	}
 	s.tested[key] = s.now()
 	s.testMu.Unlock()
+	if ok, _ := s.allow(ch, to); !ok {
+		return ErrHourlyLimit
+	}
 	text := locale.Pick(testTexts, lang)
 	if err := snd.Send(ctx, to, Event{Kind: "test", Title: text.title, Body: text.body, URL: "/settings/notifications/" + string(ch), Test: true}); err != nil {
 		de := asDeliveryError(err)

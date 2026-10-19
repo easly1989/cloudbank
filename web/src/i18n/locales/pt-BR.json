@@ -1734,7 +1734,8 @@
       "unauthorized": "credenciais recusadas",
       "rejected": "mensagem recusada",
       "unreachable": "inacessível",
-      "local": "endereço da rede local não permitido"
+      "local": "endereço da rede local não permitido",
+      "limited": "limite por hora atingido, o resto chega dentro da hora"
     },
     "localNetwork": "Só um administrador pode enviar para um endereço da rede local.",
     "invalidAddress": "Esse endereço não é válido.",
@@ -1744,13 +1745,9 @@
     "webhookSecret": "Segredo de assinatura",
     "secretSaved": "Salvo",
     "optional": "Opcional",
-    "matrixHintShared": "Uma mensagem numa sala do Matrix. Convide {{bot}} para a sala e cole aqui o ID da sala.",
-    "matrixHintSharedNoBot": "Uma mensagem numa sala do Matrix. Convide para a sala o bot desta instalação (o administrador sabe o endereço dele) e cole aqui o ID da sala.",
     "matrixServer": "Servidor (homeserver)",
     "matrixRoom": "ID da sala",
     "matrixToken": "Token de acesso do bot",
-    "telegramHintShared": "Uma mensagem de {{bot}}. Envie /start para ele e cole aqui o ID da sua conversa.",
-    "telegramHintSharedNoBot": "Uma mensagem do bot desta instalação (o administrador sabe o nome dele). Envie /start para ele e cole aqui o ID da sua conversa.",
     "telegramChat": "ID da conversa",
     "telegramToken": "Token do bot",
     "name": {
@@ -1774,7 +1771,8 @@
         "off": "Desativadas neste dispositivo",
         "unsupported": "Não suportadas por este navegador",
         "denied": "Bloqueadas neste navegador"
-      }
+      },
+      "pending": "Aguardando confirmação"
     },
     "eventCount": "Eventos: {{on}} de {{total}}",
     "connection": "Conexão",
@@ -1802,7 +1800,31 @@
     "telegramTopicHelp": "Opcional: num grupo com tópicos, aquele em que as mensagens chegam.",
     "telegramTopicInvalid": "Só dígitos.",
     "telegramSilent": "Enviar em silêncio",
-    "telegramSilentHelp": "As mensagens chegam sem som."
+    "telegramSilentHelp": "As mensagens chegam sem som.",
+    "emailCodeSent": "Enviamos um código para {{address}}. Digite-o aqui para ativar o e-mail: até lá nada é enviado.",
+    "code": "Código de confirmação",
+    "confirm": "Confirmar",
+    "codeValid": "O código vale 15 minutos.",
+    "resend": "Enviar outro",
+    "codeResent": "Novo código enviado",
+    "confirmed": "Confirmado",
+    "wrongCode": "Esse não é o código.",
+    "codeExpired": "O código expirou ou foi tentado vezes demais. Peça outro.",
+    "codeFailed": "Não foi possível enviar o código: {{reason}}",
+    "notInvited": "O bot não tem convite para essa sala. Convide-o e tente de novo.",
+    "matrixStepInvite": "Convide {{bot}} para a sala.",
+    "matrixStepInviteNoBot": "Convide para a sala o bot desta instalação (o administrador sabe o endereço dele).",
+    "matrixStepRoom": "Cole o ID da sala (começa com !).",
+    "matrixStepCode": "O bot entrou e escreveu um código na sala: digite-o aqui.",
+    "link": "Conectar",
+    "linkedTo": "Conectado: {{target}}",
+    "telegramSharedIntro": "O bot desta instalação é {{bot}}. Abra o Telegram pelo botão e toque em Começar: o CloudBank reconhece a conversa sozinho, sem ID para copiar.",
+    "telegramSharedIntroNoBot": "O CloudBank não consegue falar com o Telegram agora e não pode preparar o link para o bot dele. Tente de novo em instantes.",
+    "telegramLinkChat": "Conectar sua conversa",
+    "telegramLinkGroup": "Adicionar a um grupo",
+    "telegramWaiting": "Aguardando você tocar em Começar no Telegram… O link vale 15 minutos.",
+    "telegramNoLink": "O link expirou, ou o Telegram não está respondendo.",
+    "telegramNewLink": "Novo link"
   },
   "ai": {
     "title": "IA (traga a sua própria chave)",
@@ -2997,6 +3019,7 @@
     "host_not_public": "Esse servidor não está na internet: o CloudBank não se conecta à própria rede.",
     "unreachable": "O servidor de e-mail não responde: confira o nome e a porta.",
     "tls_failed": "Não foi possível criptografar a conexão com o servidor de e-mail.",
-    "ai_not_configured": "Configure antes a IA, em Configurações › IA."
+    "ai_not_configured": "Configure antes a IA, em Configurações › IA.",
+    "hourly_limit": "Mensagens demais nesta hora. Tente mais tarde."
   }
 }

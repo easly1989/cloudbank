@@ -1734,7 +1734,8 @@
       "unauthorized": "Zugangsdaten abgelehnt",
       "rejected": "Nachricht abgelehnt",
       "unreachable": "nicht erreichbar",
-      "local": "Adresse im lokalen Netz nicht erlaubt"
+      "local": "Adresse im lokalen Netz nicht erlaubt",
+      "limited": "Stundenlimit erreicht, der Rest folgt innerhalb der Stunde"
     },
     "localNetwork": "Nur ein Administrator kann an eine Adresse im lokalen Netz senden.",
     "invalidAddress": "Diese Adresse ist ungültig.",
@@ -1744,13 +1745,9 @@
     "webhookSecret": "Signaturgeheimnis",
     "secretSaved": "Gespeichert",
     "optional": "Optional",
-    "matrixHintShared": "Eine Nachricht in einem Matrix-Raum. Lade {{bot}} in den Raum ein und füge dann hier die Raum-ID ein.",
-    "matrixHintSharedNoBot": "Eine Nachricht in einem Matrix-Raum. Lade den Bot dieser Installation in den Raum ein (der Administrator kennt seine Adresse) und füge dann hier die Raum-ID ein.",
     "matrixServer": "Homeserver",
     "matrixRoom": "Raum-ID",
     "matrixToken": "Zugriffstoken des Bots",
-    "telegramHintShared": "Eine Nachricht von {{bot}}. Schick ihm /start und füge dann hier deine Chat-ID ein.",
-    "telegramHintSharedNoBot": "Eine Nachricht vom Bot dieser Installation (der Administrator kennt seinen Namen). Schick ihm /start und füge dann hier deine Chat-ID ein.",
     "telegramChat": "Chat-ID",
     "telegramToken": "Bot-Token",
     "name": {
@@ -1774,7 +1771,8 @@
         "off": "Auf diesem Gerät aus",
         "unsupported": "Von diesem Browser nicht unterstützt",
         "denied": "In diesem Browser blockiert"
-      }
+      },
+      "pending": "Wartet auf Bestätigung"
     },
     "eventCount": "Ereignisse: {{on}} von {{total}}",
     "connection": "Verbindung",
@@ -1802,7 +1800,31 @@
     "telegramTopicHelp": "Optional: in einer Gruppe mit Themen das Thema, in dem die Nachrichten ankommen.",
     "telegramTopicInvalid": "Nur Ziffern.",
     "telegramSilent": "Lautlos senden",
-    "telegramSilentHelp": "Nachrichten kommen ohne Ton an."
+    "telegramSilentHelp": "Nachrichten kommen ohne Ton an.",
+    "emailCodeSent": "Wir haben einen Code an {{address}} gesendet. Gib ihn hier ein, um E-Mail einzuschalten: Bis dahin wird nichts gesendet.",
+    "code": "Bestätigungscode",
+    "confirm": "Bestätigen",
+    "codeValid": "Der Code gilt 15 Minuten.",
+    "resend": "Einen neuen senden",
+    "codeResent": "Neuer Code gesendet",
+    "confirmed": "Bestätigt",
+    "wrongCode": "Das ist nicht der Code.",
+    "codeExpired": "Der Code ist abgelaufen oder wurde zu oft versucht. Fordere einen neuen an.",
+    "codeFailed": "Der Code konnte nicht gesendet werden: {{reason}}",
+    "notInvited": "Der Bot hat keine Einladung in diesen Raum. Lade ihn ein und versuche es erneut.",
+    "matrixStepInvite": "Lade {{bot}} in den Raum ein.",
+    "matrixStepInviteNoBot": "Lade den Bot dieser Installation in den Raum ein (der Administrator kennt seine Adresse).",
+    "matrixStepRoom": "Füge die Raum-ID ein (sie beginnt mit !).",
+    "matrixStepCode": "Der Bot ist beigetreten und hat einen Code in den Raum geschrieben: Gib ihn hier ein.",
+    "link": "Verbinden",
+    "linkedTo": "Verbunden: {{target}}",
+    "telegramSharedIntro": "Der Bot dieser Installation ist {{bot}}. Öffne Telegram über die Schaltfläche und tippe auf Starten: CloudBank erkennt den Chat selbst, ohne ID zum Kopieren.",
+    "telegramSharedIntroNoBot": "CloudBank erreicht Telegram gerade nicht und kann den Link zu seinem Bot nicht erstellen. Versuche es gleich noch einmal.",
+    "telegramLinkChat": "Deinen Chat verbinden",
+    "telegramLinkGroup": "Zu einer Gruppe hinzufügen",
+    "telegramWaiting": "Warte darauf, dass du in Telegram auf Starten tippst… Der Link gilt 15 Minuten.",
+    "telegramNoLink": "Der Link ist abgelaufen, oder Telegram antwortet nicht.",
+    "telegramNewLink": "Neuer Link"
   },
   "ai": {
     "title": "KI (mit eigenem Schlüssel)",
@@ -2997,6 +3019,7 @@
     "host_not_public": "Dieser Server ist nicht im Internet: CloudBank verbindet sich nicht mit seinem eigenen Netz.",
     "unreachable": "Der Mailserver antwortet nicht: Prüfe Name und Port.",
     "tls_failed": "Die Verbindung zum Mailserver konnte nicht verschlüsselt werden.",
-    "ai_not_configured": "Richte zuerst die KI ein, unter Einstellungen › KI."
+    "ai_not_configured": "Richte zuerst die KI ein, unter Einstellungen › KI.",
+    "hourly_limit": "Zu viele Nachrichten in dieser Stunde. Versuche es später."
   }
 }

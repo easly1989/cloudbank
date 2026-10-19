@@ -1,0 +1,23 @@
+/* A code waiting to be typed: the one thing on the card that needs the reader. */
+.confirm {
+  padding: 12px 14px;
+  border: 1px solid var(--cb-attention);
+  border-radius: 8px;
+}
+
+/* The number of a step in the shared Matrix bot's setup. */
+.step {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.step[data-done] {
+  color: var(--mantine-color-dimmed);
+}

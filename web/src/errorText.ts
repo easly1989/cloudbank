@@ -45,6 +45,7 @@ const TRANSLATED = new Set([
   "ai_error",
   "ai_disabled",
   "rate_limited",
+  "hourly_limit",
   "too_large",
   "invalid_file",
   "restore_failed",
