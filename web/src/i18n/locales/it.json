@@ -1714,7 +1714,8 @@
       "inapp": "In app",
       "push": "Push",
       "email": "Email",
-      "webhook": "Webhook"
+      "webhook": "Webhook",
+      "matrix": "Matrix"
     },
     "group": {
       "problems": "Problemi",
@@ -1756,7 +1757,14 @@
     "webhookSaved": "Salvato: {{host}}",
     "webhookSecret": "Segreto per la firma",
     "secretSaved": "Salvato",
-    "optional": "Facoltativo"
+    "optional": "Facoltativo",
+    "matrix": "Matrix",
+    "matrixHint": "Un messaggio in una stanza Matrix, scritto da un tuo bot.",
+    "matrixHintShared": "Un messaggio in una stanza Matrix. Invita {{bot}} nella stanza, poi incolla qui l'ID della stanza.",
+    "matrixHintSharedNoBot": "Un messaggio in una stanza Matrix. Invita nella stanza il bot di questa installazione (l'amministratore ne conosce l'indirizzo), poi incolla qui l'ID della stanza.",
+    "matrixServer": "Homeserver",
+    "matrixRoom": "ID della stanza",
+    "matrixToken": "Token di accesso del bot"
   },
   "ai": {
     "title": "AI (con la tua chiave)",

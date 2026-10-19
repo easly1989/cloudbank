@@ -43,10 +43,11 @@ SELECT * FROM notification_channels WHERE user_id = ?;
 SELECT * FROM notification_channels WHERE user_id = ? AND channel = ?;
 
 -- name: UpsertNotificationChannel :exec
-INSERT INTO notification_channels (user_id, channel, target, secret, local_ok)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO notification_channels (user_id, channel, target, secret, server, local_ok)
+VALUES (?, ?, ?, ?, ?, ?)
 ON CONFLICT (user_id, channel) DO UPDATE SET
-    target = excluded.target, secret = excluded.secret, local_ok = excluded.local_ok,
+    target = excluded.target, secret = excluded.secret, server = excluded.server,
+    local_ok = excluded.local_ok,
     last_error = '', last_error_at = NULL;
 
 -- name: DeleteNotificationChannel :exec

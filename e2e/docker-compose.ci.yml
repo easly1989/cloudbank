@@ -85,6 +85,10 @@ services:
       CB_SMTP_PORT: "1025"
       CB_SMTP_TLS: "none"
       CB_SMTP_FROM: "cloudbank@example.com"
+      # The shared Matrix bot (#687) lives on the pretend homeserver; its token
+      # is a test value of that server.
+      CB_MATRIX_HOMESERVER: "http://127.0.0.1:9100"
+      CB_MATRIX_TOKEN: "e2e-matrix-bot"
     volumes:
       - cb-mail-data:/data
 

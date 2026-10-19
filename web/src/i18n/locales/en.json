@@ -1714,7 +1714,8 @@
       "inapp": "In app",
       "push": "Push",
       "email": "Email",
-      "webhook": "Webhook"
+      "webhook": "Webhook",
+      "matrix": "Matrix"
     },
     "group": {
       "problems": "Problems",
@@ -1756,7 +1757,14 @@
     "webhookSaved": "Saved: {{host}}",
     "webhookSecret": "Signing secret",
     "secretSaved": "Saved",
-    "optional": "Optional"
+    "optional": "Optional",
+    "matrix": "Matrix",
+    "matrixHint": "A message in a Matrix room, posted by a bot of yours.",
+    "matrixHintShared": "A message in a Matrix room. Invite {{bot}} to the room, then paste the room ID here.",
+    "matrixHintSharedNoBot": "A message in a Matrix room. Invite this installation's bot to the room (the administrator knows its address), then paste the room ID here.",
+    "matrixServer": "Homeserver",
+    "matrixRoom": "Room ID",
+    "matrixToken": "Bot's access token"
   },
   "ai": {
     "title": "AI (bring your own key)",

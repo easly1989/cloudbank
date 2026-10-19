@@ -1714,7 +1714,8 @@
       "inapp": "Dans l’app",
       "push": "Push",
       "email": "E-mail",
-      "webhook": "Webhook"
+      "webhook": "Webhook",
+      "matrix": "Matrix"
     },
     "group": {
       "problems": "Problèmes",
@@ -1756,7 +1757,14 @@
     "webhookSaved": "Enregistré : {{host}}",
     "webhookSecret": "Secret de signature",
     "secretSaved": "Enregistré",
-    "optional": "Facultatif"
+    "optional": "Facultatif",
+    "matrix": "Matrix",
+    "matrixHint": "Un message dans un salon Matrix, publié par un compte bot à vous.",
+    "matrixHintShared": "Un message dans un salon Matrix. Invitez {{bot}} dans le salon, puis collez ici l’ID du salon.",
+    "matrixHintSharedNoBot": "Un message dans un salon Matrix. Invitez dans le salon le bot de cette installation (l’administrateur connaît son adresse), puis collez ici l’ID du salon.",
+    "matrixServer": "Serveur d’accueil",
+    "matrixRoom": "ID du salon",
+    "matrixToken": "Jeton d’accès du bot"
   },
   "ai": {
     "title": "IA (avec votre propre clé)",
