@@ -452,7 +452,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
   /api/v1/notifications/channels/{channel}:
     parameters:
-      - { name: channel, in: path, required: true, schema: { type: string, enum: [email, matrix, telegram, discord, slack, webhook] } }
+      - { name: channel, in: path, required: true, schema: { type: string, enum: [email, matrix, telegram, discord, slack, ntfy, gotify, webhook] } }
     put:
       operationId: saveNotificationChannel
       summary: Set the current user's address on a channel
@@ -466,7 +466,11 @@ paths:
         as secret and a chat ID (or @channel) as target; with secret "" it uses
         the shared bot, ignores the target and answers with a link that starts
         the bot (the chat is whichever one uses it). Discord and Slack take
-        their incoming webhook URL as target. A new address reached through the
+        their incoming webhook URL as target. ntfy takes the topic as target,
+        its server (empty for https://ntfy.sh) and an optional access token as
+        secret; Gotify takes its server and the application token as secret,
+        and no target. An ntfy or Gotify server on the local network needs an
+        administrator, like the webhook. A new address reached through the
         installation's resources (email, the shared Matrix or Telegram bot)
         stays pending until confirmed: email and Matrix are sent a 6-digit code
         now, and when it cannot be sent nothing is saved (502 delivery_failed,
@@ -479,9 +483,9 @@ paths:
             schema:
               type: object
               properties:
-                target: { type: string, description: "The email address, the Matrix room ID (!id:server), the Telegram chat, or the webhook URL (Discord's or Slack's included)." }
-                secret: { type: string, description: "The webhook's signing secret (HMAC-SHA256 in X-CloudBank-Signature), or the Matrix or Telegram bot's token." }
-                server: { type: string, description: The Matrix homeserver URL; empty for the shared bot. }
+                target: { type: string, description: "The email address, the Matrix room ID (!id:server), the Telegram chat, the ntfy topic, or the webhook URL (Discord's or Slack's included)." }
+                secret: { type: string, description: "The webhook's signing secret (HMAC-SHA256 in X-CloudBank-Signature), the Matrix or Telegram bot's token, or the ntfy or Gotify token." }
+                server: { type: string, description: "The Matrix homeserver URL (empty for the shared bot), or the ntfy (empty for https://ntfy.sh) or Gotify server." }
                 options: { $ref: "#/components/schemas/NotificationChannelOptions" }
       responses:
         "204": { description: Saved. }
@@ -500,7 +504,7 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/notifications/channels/{channel}/test:
     parameters:
-      - { name: channel, in: path, required: true, schema: { type: string, enum: [push, email, matrix, telegram, discord, slack, webhook] } }
+      - { name: channel, in: path, required: true, schema: { type: string, enum: [push, email, matrix, telegram, discord, slack, ntfy, gotify, webhook] } }
     post:
       operationId: testNotificationChannel
       summary: Send a test message on a channel now
@@ -3661,7 +3665,7 @@ components:
       enum: [mail_stopped, mail_unrecognized, bills]
     NotificationChannel:
       type: string
-      enum: [inapp, push, email, matrix, telegram, discord, slack, webhook]
+      enum: [inapp, push, email, matrix, telegram, discord, slack, ntfy, gotify, webhook]
     Notification:
       type: object
       properties:
@@ -3677,7 +3681,7 @@ components:
     NotificationChannelState:
       type: object
       properties:
-        channel: { type: string, enum: [email, matrix, telegram, discord, slack, webhook] }
+        channel: { type: string, enum: [email, matrix, telegram, discord, slack, ntfy, gotify, webhook] }
         available: { type: boolean, description: False when this installation cannot send on it. }
         configured: { type: boolean }
         target: { type: string, description: "The email address, the Matrix room, the Telegram chat, or only a webhook's host (Discord and Slack included)." }
@@ -3720,8 +3724,10 @@ components:
             telegram: { type: boolean }
             discord: { type: boolean }
             slack: { type: boolean }
+            ntfy: { type: boolean }
+            gotify: { type: boolean }
             webhook: { type: boolean }
-          required: [inapp, push, email, matrix, telegram, discord, slack, webhook]
+          required: [inapp, push, email, matrix, telegram, discord, slack, ntfy, gotify, webhook]
       required: [kind, group, channels]
     PushSubscription:
       type: object

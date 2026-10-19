@@ -25,6 +25,8 @@
 // /notify/telegram/start queues a message to the shared bot, as a person
 // pressing Start, for getUpdates), and Discord and Slack incoming webhooks at
 // /discord/<name> and /slack/<name>, which refuse the name "unauthorized".
+// It is an ntfy server at /ntfy (no token, or ntfyToken) and a Gotify server
+// at /gotify (gotifyToken) too (#689); any other token gets a 401.
 //
 //	E2E_MAIL_HTTP=127.0.0.1:9100 E2E_MAIL_IMAP=127.0.0.1:1143 \
 //	E2E_MAIL_PASSWORD_IMAP=127.0.0.1:1144 go run ./cmd/e2e-mail
@@ -73,6 +75,9 @@ const (
 	// The pretend Bot API's tokens, shaped like Telegram's: test values.
 	telegramSharedToken = "111111:e2e-telegram-shared-bot-token"
 	telegramUserToken   = "222222:e2e-telegram-user-bot-token0"
+	// The pretend ntfy and Gotify servers' tokens: test values.
+	ntfyToken   = "tk_e2e-ntfy-token"
+	gotifyToken = "e2e-gotify-app"
 )
 
 func getenv(k, def string) string {
@@ -188,6 +193,8 @@ func main() {
 	mux.HandleFunc("POST /notify/telegram/start", f.telegramStart)
 	mux.HandleFunc("POST /discord/{name}", f.chatHook)
 	mux.HandleFunc("POST /slack/{name}", f.chatHook)
+	mux.HandleFunc("POST /ntfy/", f.ntfy)
+	mux.HandleFunc("POST /gotify/message", f.gotify)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
 	sln, err := net.Listen("tcp", getenv("E2E_MAIL_SMTP", "127.0.0.1:1025"))
 	if err != nil {
@@ -533,6 +540,47 @@ func (f *fake) telegramUpdates(w http.ResponseWriter, r *http.Request) {
 	defer f.mu.Unlock()
 	from := min(max(offset-1, 0), len(f.updates))
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "result": append([]map[string]any{}, f.updates[from:]...)})
+}
+
+// ntfy publishes to a topic: without a token, or with ntfyToken.
+func (f *fake) ntfy(w http.ResponseWriter, r *http.Request) {
+	if a := r.Header.Get("Authorization"); a != "" && a != "Bearer "+ntfyToken {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{"code": 40101, "error": "unauthorized"})
+		return
+	}
+	var msg struct {
+		Topic   string `json:"topic"`
+		Title   string `json:"title"`
+		Message string `json:"message"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&msg); err != nil || msg.Topic == "" {
+		http.Error(w, "want a topic", http.StatusBadRequest)
+		return
+	}
+	f.mu.Lock()
+	f.chats = append(f.chats, received{Hook: "ntfy/" + msg.Topic, Body: msg.Title + "\n" + msg.Message})
+	f.mu.Unlock()
+	writeJSON(w, http.StatusOK, map[string]any{"id": random(), "topic": msg.Topic})
+}
+
+// gotify takes a message with the application token gotifyToken.
+func (f *fake) gotify(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("X-Gotify-Key") != gotifyToken {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "Unauthorized", "errorCode": 401})
+		return
+	}
+	var msg struct {
+		Title   string `json:"title"`
+		Message string `json:"message"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&msg); err != nil || msg.Message == "" {
+		http.Error(w, "want a message", http.StatusBadRequest)
+		return
+	}
+	f.mu.Lock()
+	f.chats = append(f.chats, received{Hook: "gotify", Body: msg.Title + "\n" + msg.Message})
+	f.mu.Unlock()
+	writeJSON(w, http.StatusOK, map[string]any{"id": 1})
 }
 
 // chatHook is a Discord or Slack incoming webhook: Discord answers 204 and

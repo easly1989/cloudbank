@@ -1758,7 +1758,9 @@
       "telegram": "Telegram",
       "discord": "Discord",
       "slack": "Slack",
-      "webhook": "Webhook"
+      "webhook": "Webhook",
+      "ntfy": "ntfy",
+      "gotify": "Gotify"
     },
     "status": {
       "always": "Sempre attiva",
@@ -1787,7 +1789,9 @@
       "telegram": "Un messaggio da un bot Telegram, nella chat con lui o in un gruppo.",
       "discord": "Un messaggio in un canale Discord, tramite il webhook del canale.",
       "slack": "Un messaggio in un canale Slack, tramite un webhook in ingresso.",
-      "webhook": "Un POST con l'evento in JSON a un tuo indirizzo: Home Assistant, n8n, uno script."
+      "webhook": "Un POST con l'evento in JSON a un tuo indirizzo: Home Assistant, n8n, uno script.",
+      "ntfy": "Una notifica sul telefono tramite ntfy: il pubblico ntfy.sh o un tuo server.",
+      "gotify": "Una notifica sul telefono tramite un tuo server Gotify."
     },
     "mode": {
       "shared": "Bot di CloudBank",
@@ -1824,7 +1828,15 @@
     "telegramLinkGroup": "Aggiungi a un gruppo",
     "telegramWaiting": "In attesa che tu prema Avvia in Telegram… Il link vale 15 minuti.",
     "telegramNoLink": "Il link è scaduto, o Telegram non risponde.",
-    "telegramNewLink": "Nuovo link"
+    "telegramNewLink": "Nuovo link",
+    "selfServer": "Server",
+    "ntfyServerHelp": "Lascialo vuoto per il pubblico ntfy.sh.",
+    "ntfyTopic": "Topic",
+    "ntfyTopicHelp": "Iscriviti nell'app di ntfy. Su ntfy.sh chi conosce un topic può leggerlo: scegline uno lungo e difficile da indovinare.",
+    "ntfyToken": "Token di accesso",
+    "ntfyTokenHelp": "Solo per un server o un topic che lo chiede (tk_…).",
+    "gotifyToken": "Token dell'applicazione",
+    "gotifyTokenHelp": "In Gotify: Apps › Create application, poi copia il suo token."
   },
   "ai": {
     "title": "AI (con la tua chiave)",

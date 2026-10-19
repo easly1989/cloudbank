@@ -247,6 +247,8 @@ const SAME_EVERYWHERE = new Set([
   "Telegram",
   "Discord",
   "Slack",
+  "ntfy",
+  "Gotify",
   "URL",
   "Token",
   "Email",
@@ -260,6 +262,8 @@ const SAME_EVERYWHERE = new Set([
 const SAME_IN = {
   it: [
     "In app",
+    "Server",
+    "Topic",
     "Email",
     "Homeserver",
     "Tag",
@@ -286,6 +290,7 @@ const SAME_IN = {
   // German borrows these as they are, and capitalizes them as nouns.
   de: [
     "Homeserver",
+    "Server",
     "Links",
     "Tag",
     "Tags",

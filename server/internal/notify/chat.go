@@ -18,9 +18,10 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/netguard"
 )
 
-// postJSON posts v to url and returns nil for a 2xx. Only the status is read:
-// the answer may repeat the URL, which is the key for Discord and Slack.
-func postJSON(ctx context.Context, hc *http.Client, url string, v any) error {
+// postJSON posts v to url, with the headers in h, and returns nil for a 2xx.
+// Only the status is read: the answer may repeat the URL, which is the key for
+// Discord and Slack.
+func postJSON(ctx context.Context, hc *http.Client, url string, v any, h http.Header) error {
 	body, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -28,6 +29,9 @@ func postJSON(ctx context.Context, hc *http.Client, url string, v any) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return &DeliveryError{Reason: ReasonRejected}
+	}
+	for k, vs := range h {
+		req.Header[k] = vs
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "CloudBank")
@@ -82,7 +86,7 @@ func (c *ChatWebhookSender) Send(ctx context.Context, to Recipient, e Event) err
 	if to.LocalOK {
 		hc = c.local
 	}
-	return postJSON(ctx, hc, to.Target, c.body(e))
+	return postJSON(ctx, hc, to.Target, c.body(e), nil)
 }
 
 // discordEscape keeps a payee's asterisks or underscores from turning into
@@ -184,7 +188,7 @@ func (t *TelegramSender) Send(ctx context.Context, to Recipient, e Event) error 
 	if to.Options.Topic > 0 {
 		msg["message_thread_id"] = to.Options.Topic
 	}
-	return postJSON(ctx, t.hc, t.api+"/bot"+token+"/sendMessage", msg)
+	return postJSON(ctx, t.hc, t.api+"/bot"+token+"/sendMessage", msg, nil)
 }
 
 // TelegramStart is a /start with a code, sent to the shared bot from a chat:
