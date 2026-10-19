@@ -10,11 +10,14 @@ export type NotificationKind =
   | "consent_expiring"
   | "mail_stopped"
   | "mail_unrecognized"
+  | "review_waiting"
   | "bills"
   | "large_transaction"
   | "low_balance"
   | "budget"
   | "goal"
+  | "summary_weekly"
+  | "summary_monthly"
   | "new_version";
 export type NotificationChannel = "inapp" | "push" | AddressedChannel;
 export type AddressedChannel =
@@ -42,8 +45,10 @@ export interface NotificationList {
 export interface NotificationPreference {
   kind: NotificationKind;
   /** Security always reaches the bell; admin is listed for administrators only. */
-  group: "security" | "problems" | "bills" | "money" | "admin";
+  group: "security" | "problems" | "bills" | "money" | "summaries" | "admin";
   channels: Record<NotificationChannel, boolean>;
+  /** Collected in the daily digest outside the app (#692). */
+  digest: boolean;
 }
 
 export const listNotifications = () => api.get<NotificationList>("/api/v1/notifications");
@@ -53,6 +58,14 @@ export const listNotifications = () => api.get<NotificationList>("/api/v1/notifi
 export interface NotificationSettings {
   /** Amounts reach the channels outside the app; the bell always has them. */
   amountsOutside: boolean;
+  /** When things reach the reader outside the app (#692): their browser's zone, local "HH:MM"s. */
+  timezone: string;
+  digestAt: string;
+  quietHours: boolean;
+  quietFrom: string;
+  quietTo: string;
+  /** Days a transaction may wait on the Review page before it is announced. */
+  reviewDays: 1 | 3 | 7 | 14;
 }
 
 /** Minor units in the account's currency; null is no threshold. */
@@ -69,7 +82,8 @@ export interface WalletNotificationSettings {
 
 export const getNotificationSettings = () =>
   api.get<NotificationSettings>("/api/v1/notifications/settings");
-export const setNotificationSettings = (s: NotificationSettings) =>
+/** Only the fields sent change. */
+export const setNotificationSettings = (s: Partial<NotificationSettings>) =>
   api.put<NotificationSettings>("/api/v1/notifications/settings", s);
 export const getWalletNotifications = (walletId: number) =>
   api.get<WalletNotificationSettings>(`/api/v1/wallets/${walletId}/notifications`);
@@ -90,6 +104,12 @@ export const setNotificationPreference = (
   channel: NotificationChannel,
   enabled: boolean,
 ) => api.put<void>("/api/v1/notifications/preferences", { kind, channel, enabled });
+export const setNotificationDigest = (kind: NotificationKind, digest: boolean) =>
+  api.put<void>("/api/v1/notifications/digest", { kind, digest });
+
+/** The query keys of the settings and of the events' choices, shared by the settings pages. */
+export const NOTIFICATION_SETTINGS_KEY = ["notification-settings"] as const;
+export const NOTIFICATION_PREFERENCES_KEY = ["notification-preferences"] as const;
 
 /** The query key of the channels below, shared by the overview and the channel pages. */
 export const NOTIFICATION_CHANNELS_KEY = ["notification-channels"] as const;

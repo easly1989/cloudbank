@@ -82,6 +82,7 @@ type Querier interface {
 	DeleteEBankingConfig(ctx context.Context, walletID int64) (int64, error)
 	DeleteExpiredSessions(ctx context.Context, expiresAt string) error
 	DeleteGoal(ctx context.Context, id int64) error
+	DeleteHeldNotification(ctx context.Context, id int64) error
 	DeleteMailPattern(ctx context.Context, arg DeleteMailPatternParams) (int64, error)
 	DeleteMailbox(ctx context.Context, arg DeleteMailboxParams) (int64, error)
 	DeleteNotificationChannel(ctx context.Context, arg DeleteNotificationChannelParams) error
@@ -92,6 +93,7 @@ type Querier interface {
 	DeletePushSubscription(ctx context.Context, arg DeletePushSubscriptionParams) error
 	DeletePushSubscriptionByEndpoint(ctx context.Context, endpoint string) error
 	DeleteRecoveryCodes(ctx context.Context, userID int64) error
+	DeleteReviewWaiting(ctx context.Context, transactionID int64) error
 	DeleteSchedule(ctx context.Context, id int64) error
 	DeleteSession(ctx context.Context, id string) error
 	DeleteSplits(ctx context.Context, transactionID int64) error
@@ -145,7 +147,7 @@ type Querier interface {
 	GetMailPattern(ctx context.Context, arg GetMailPatternParams) (MailPattern, error)
 	GetMailbox(ctx context.Context, arg GetMailboxParams) (Mailbox, error)
 	GetNotificationChannel(ctx context.Context, arg GetNotificationChannelParams) (NotificationChannel, error)
-	GetNotificationSettings(ctx context.Context, userID int64) (int64, error)
+	GetNotificationSettings(ctx context.Context, userID int64) (NotificationSetting, error)
 	GetPayee(ctx context.Context, id int64) (Payee, error)
 	GetPluggyConfig(ctx context.Context, walletID int64) (BankPluggyConfig, error)
 	GetSchedule(ctx context.Context, id int64) (Schedule, error)
@@ -165,6 +167,7 @@ type Querier interface {
 	GetWallet(ctx context.Context, id int64) (Wallet, error)
 	GetWalletMembership(ctx context.Context, arg GetWalletMembershipParams) (string, error)
 	GoalSaved(ctx context.Context, goalID int64) (int64, error)
+	HasReminder(ctx context.Context, arg HasReminderParams) (int64, error)
 	InsertAPIToken(ctx context.Context, arg InsertAPITokenParams) (ApiToken, error)
 	InsertAccessRecoveryCode(ctx context.Context, arg InsertAccessRecoveryCodeParams) error
 	InsertAccount(ctx context.Context, arg InsertAccountParams) (Account, error)
@@ -180,6 +183,7 @@ type Querier interface {
 	InsertEBankingAuth(ctx context.Context, arg InsertEBankingAuthParams) error
 	InsertEBankingConnection(ctx context.Context, arg InsertEBankingConnectionParams) (BankConnection, error)
 	InsertGoal(ctx context.Context, arg InsertGoalParams) (Goal, error)
+	InsertHeldNotification(ctx context.Context, arg InsertHeldNotificationParams) error
 	// Starts with its cursor at the inbox's end, read during the login that
 	// proved the settings work.
 	InsertIMAPMailbox(ctx context.Context, arg InsertIMAPMailboxParams) (Mailbox, error)
@@ -192,6 +196,7 @@ type Querier interface {
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
 	InsertRecoveryCode(ctx context.Context, arg InsertRecoveryCodeParams) error
 	InsertReminderIfNew(ctx context.Context, arg InsertReminderIfNewParams) (int64, error)
+	InsertReviewWaiting(ctx context.Context, arg InsertReviewWaitingParams) error
 	InsertSchedule(ctx context.Context, arg InsertScheduleParams) (Schedule, error)
 	InsertSplit(ctx context.Context, arg InsertSplitParams) error
 	InsertTag(ctx context.Context, arg InsertTagParams) (Tag, error)
@@ -244,6 +249,7 @@ type Querier interface {
 	ListConsentConnections(ctx context.Context) ([]ListConsentConnectionsRow, error)
 	ListContributionsForGoal(ctx context.Context, goalID int64) ([]GoalContribution, error)
 	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)
+	ListDigestKinds(ctx context.Context, userID int64) ([]string, error)
 	ListDueNotificationDeliveries(ctx context.Context, arg ListDueNotificationDeliveriesParams) ([]NotificationDelivery, error)
 	// Every transaction of the wallet, reduced to what the duplicate finder compares
 	// and ordered for it: by account, amount, then date. The account/date index
@@ -252,6 +258,8 @@ type Querier interface {
 	ListDuplicateDismissals(ctx context.Context, walletID int64) ([]ListDuplicateDismissalsRow, error)
 	ListExchangeRates(ctx context.Context, currencyID int64) ([]ExchangeRate, error)
 	ListGoalsForWallet(ctx context.Context, walletID int64) ([]ListGoalsForWalletRow, error)
+	ListHeldNotifications(ctx context.Context, userID int64) ([]NotificationHeld, error)
+	ListHeldUsers(ctx context.Context) ([]int64, error)
 	ListImportRefMetaForAccount(ctx context.Context, accountID int64) ([]ListImportRefMetaForAccountRow, error)
 	ListImportRefsForAccount(ctx context.Context, accountID int64) ([]string, error)
 	// Bank-imported transactions (they carry an import ref) that still have no
@@ -286,6 +294,7 @@ type Querier interface {
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID int64) ([]ListPushSubscriptionsForUserRow, error)
 	ListPushUserIDs(ctx context.Context) ([]int64, error)
+	ListReviewWaiting(ctx context.Context, walletID int64) ([]ListReviewWaitingRow, error)
 	// Every schedule in the wallet with the template fields the Bills view needs:
 	// amount (signed), the target account and its currency (for base conversion),
 	// and the recurrence state used to enumerate occurrences and classify them.
@@ -390,6 +399,7 @@ type Querier interface {
 	SetBankConnectionSchedule(ctx context.Context, arg SetBankConnectionScheduleParams) (int64, error)
 	SetChildrenIncome(ctx context.Context, arg SetChildrenIncomeParams) error
 	SetCurrencyBase(ctx context.Context, id int64) error
+	SetDigestKind(ctx context.Context, arg SetDigestKindParams) error
 	SetGoalClosed(ctx context.Context, arg SetGoalClosedParams) error
 	SetInstanceSetting(ctx context.Context, arg SetInstanceSettingParams) error
 	SetLowBelow(ctx context.Context, arg SetLowBelowParams) error
@@ -405,7 +415,6 @@ type Querier interface {
 	SetMailboxIMAP(ctx context.Context, arg SetMailboxIMAPParams) error
 	SetMailboxPaused(ctx context.Context, arg SetMailboxPausedParams) error
 	SetMailboxSecret(ctx context.Context, arg SetMailboxSecretParams) error
-	SetNotificationAmountsOutside(ctx context.Context, arg SetNotificationAmountsOutsideParams) error
 	SetNotificationChannelCode(ctx context.Context, arg SetNotificationChannelCodeParams) error
 	SetNotificationChannelError(ctx context.Context, arg SetNotificationChannelErrorParams) error
 	SetNotificationChannelOK(ctx context.Context, arg SetNotificationChannelOKParams) error
@@ -437,6 +446,7 @@ type Querier interface {
 	TouchBankConnection(ctx context.Context, id int64) error
 	TouchMailboxLastMail(ctx context.Context, arg TouchMailboxLastMailParams) error
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
+	UnsetDigestKind(ctx context.Context, arg UnsetDigestKindParams) error
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
 	UpdateAccountPosition(ctx context.Context, arg UpdateAccountPositionParams) error
 	UpdateAssignment(ctx context.Context, arg UpdateAssignmentParams) error
@@ -466,6 +476,7 @@ type Querier interface {
 	UpsertEBankingConfig(ctx context.Context, arg UpsertEBankingConfigParams) error
 	UpsertExchangeRate(ctx context.Context, arg UpsertExchangeRateParams) error
 	UpsertNotificationChannel(ctx context.Context, arg UpsertNotificationChannelParams) error
+	UpsertNotificationSettings(ctx context.Context, arg UpsertNotificationSettingsParams) error
 	UpsertPluggyConfig(ctx context.Context, arg UpsertPluggyConfigParams) error
 	UpsertPushSubscription(ctx context.Context, arg UpsertPushSubscriptionParams) error
 	// The code was right: the channel sends from now on. A Telegram chat linked

@@ -50,3 +50,8 @@
   font-family: var(--mantine-font-family-monospace);
   text-align: right;
 }
+
+/* The digest and quiet-hours times (#692): money's monospace, as on the register. */
+.timeInput {
+  font-family: var(--mantine-font-family-monospace);
+}

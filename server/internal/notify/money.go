@@ -8,38 +8,8 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
-// The person's choices that are not per event (#691): whether amounts leave
-// the app, which wallets they hear from, and their thresholds per account.
-
-// amountsOutside reports whether the person lets amounts reach the channels
-// outside the app; on unless they turned it off.
-func (s *Service) amountsOutside(ctx context.Context, userID int64) (bool, error) {
-	v, err := s.rq.GetNotificationSettings(ctx, userID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return true, nil
-	}
-	return v != 0, err
-}
-
-// Settings are the person's settings that are not per event.
-type Settings struct {
-	AmountsOutside bool
-}
-
-// GetSettings returns the person's settings.
-func (s *Service) GetSettings(ctx context.Context, userID int64) (Settings, error) {
-	on, err := s.amountsOutside(ctx, userID)
-	return Settings{AmountsOutside: on}, err
-}
-
-// SetAmountsOutside lets amounts reach the channels outside the app, or not.
-func (s *Service) SetAmountsOutside(ctx context.Context, userID int64, on bool) error {
-	v := int64(0)
-	if on {
-		v = 1
-	}
-	return s.q.SetNotificationAmountsOutside(ctx, db.SetNotificationAmountsOutsideParams{UserID: userID, AmountsOutside: v})
-}
+// The person's choices about wallets and accounts (#691): which wallets they
+// hear from, and their thresholds per account.
 
 // Threshold is one person's limits on one account; nil is none.
 type Threshold struct {

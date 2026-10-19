@@ -129,8 +129,9 @@ func TestNotificationPreferences(t *testing.T) {
 		t.Fatalf("events = %d, want %d", len(p.Events), len(notify.Catalog))
 	}
 	for _, e := range p.Events {
-		// The money events start off (#691); every other one on.
-		if on := e.Group != "money"; e.Channels["inapp"] != on || e.Channels["push"] != on {
+		// The money events and the summaries start off (#691, #692); every
+		// other one on.
+		if on := e.Group != "money" && e.Group != "summaries"; e.Channels["inapp"] != on || e.Channels["push"] != on {
 			t.Errorf("%s default: %+v", e.Kind, e.Channels)
 		}
 	}
@@ -332,5 +333,55 @@ func TestNotificationThresholds(t *testing.T) {
 	}
 	if by.Int64 != admin.userID("admin") || origin != "" {
 		t.Fatalf("created_by %v, origin %q", by, origin)
+	}
+}
+
+// The timing settings change only what the body names and refuse what is not
+// valid; an event goes in the digest unless it is security or a summary
+// (#692).
+func TestNotificationTiming(t *testing.T) {
+	admin := newTestAPI(t)
+	setupAdmin(admin)
+	put := func(path string, body map[string]any) (int, string) {
+		t.Helper()
+		resp := admin.do(http.MethodPut, path, body, true)
+		defer resp.Body.Close()
+		b, _ := io.ReadAll(resp.Body)
+		return resp.StatusCode, string(b)
+	}
+	admin.do(http.MethodPut, "/api/v1/notifications/settings", map[string]any{"amountsOutside": false}, true).Body.Close()
+	code, b := put("/api/v1/notifications/settings", map[string]any{"timezone": "Europe/Rome", "quietHours": true, "quietFrom": "23:30"})
+	for _, want := range []string{`"amountsOutside":false`, `"timezone":"Europe/Rome"`, `"quietHours":true`, `"quietFrom":"23:30"`, `"quietTo":"07:00"`, `"digestAt":"08:00"`, `"reviewDays":3`} {
+		if code != http.StatusOK || !strings.Contains(b, want) {
+			t.Fatalf("settings = %d %s, want %s", code, b, want)
+		}
+	}
+	for _, bad := range []map[string]any{{"timezone": "Nowhere/Land"}, {"digestAt": "25:00"}, {"reviewDays": 5}} {
+		if code, _ := put("/api/v1/notifications/settings", bad); code != http.StatusBadRequest {
+			t.Errorf("%v = %d", bad, code)
+		}
+	}
+
+	for _, c := range []struct {
+		kind string
+		code int
+	}{{"new_device", http.StatusBadRequest}, {"summary_weekly", http.StatusBadRequest}, {"nope", http.StatusBadRequest}, {"bills", http.StatusNoContent}} {
+		if code, b := put("/api/v1/notifications/digest", map[string]any{"kind": c.kind, "digest": true}); code != c.code {
+			t.Errorf("digest %s = %d %s", c.kind, code, b)
+		}
+	}
+	resp := admin.do(http.MethodGet, "/api/v1/notifications/preferences", nil, false)
+	defer resp.Body.Close()
+	var p struct {
+		Events []struct {
+			Kind   string `json:"kind"`
+			Digest bool   `json:"digest"`
+		} `json:"events"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&p)
+	for _, e := range p.Events {
+		if e.Digest != (e.Kind == "bills") {
+			t.Errorf("%s digest = %v", e.Kind, e.Digest)
+		}
 	}
 }

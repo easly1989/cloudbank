@@ -43,6 +43,15 @@ func (q *Queries) CountUnreadNotifications(ctx context.Context, userID int64) (i
 	return count, err
 }
 
+const deleteHeldNotification = `-- name: DeleteHeldNotification :exec
+DELETE FROM notification_held WHERE id = ?
+`
+
+func (q *Queries) DeleteHeldNotification(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteHeldNotification, id)
+	return err
+}
+
 const deleteNotificationChannel = `-- name: DeleteNotificationChannel :exec
 DELETE FROM notification_channels WHERE user_id = ? AND channel = ?
 `
@@ -63,6 +72,15 @@ DELETE FROM notification_deliveries WHERE id = ?
 
 func (q *Queries) DeleteNotificationDelivery(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, deleteNotificationDelivery, id)
+	return err
+}
+
+const deleteReviewWaiting = `-- name: DeleteReviewWaiting :exec
+DELETE FROM review_waiting WHERE transaction_id = ?
+`
+
+func (q *Queries) DeleteReviewWaiting(ctx context.Context, transactionID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteReviewWaiting, transactionID)
 	return err
 }
 
@@ -121,14 +139,62 @@ func (q *Queries) GetNotificationChannel(ctx context.Context, arg GetNotificatio
 }
 
 const getNotificationSettings = `-- name: GetNotificationSettings :one
-SELECT amounts_outside FROM notification_settings WHERE user_id = ?
+SELECT user_id, amounts_outside, timezone, digest_at, quiet_hours, quiet_from, quiet_to, review_days FROM notification_settings WHERE user_id = ?
 `
 
-func (q *Queries) GetNotificationSettings(ctx context.Context, userID int64) (int64, error) {
+func (q *Queries) GetNotificationSettings(ctx context.Context, userID int64) (NotificationSetting, error) {
 	row := q.db.QueryRowContext(ctx, getNotificationSettings, userID)
-	var amounts_outside int64
-	err := row.Scan(&amounts_outside)
-	return amounts_outside, err
+	var i NotificationSetting
+	err := row.Scan(
+		&i.UserID,
+		&i.AmountsOutside,
+		&i.Timezone,
+		&i.DigestAt,
+		&i.QuietHours,
+		&i.QuietFrom,
+		&i.QuietTo,
+		&i.ReviewDays,
+	)
+	return i, err
+}
+
+const hasReminder = `-- name: HasReminder :one
+SELECT COUNT(*) FROM push_reminders WHERE user_id = ? AND ref = ?
+`
+
+type HasReminderParams struct {
+	UserID int64
+	Ref    string
+}
+
+func (q *Queries) HasReminder(ctx context.Context, arg HasReminderParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, hasReminder, arg.UserID, arg.Ref)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const insertHeldNotification = `-- name: InsertHeldNotification :exec
+INSERT INTO notification_held (user_id, channel, payload, digest, held_at) VALUES (?, ?, ?, ?, ?)
+`
+
+type InsertHeldNotificationParams struct {
+	UserID  int64
+	Channel string
+	Payload string
+	Digest  int64
+	HeldAt  string
+}
+
+func (q *Queries) InsertHeldNotification(ctx context.Context, arg InsertHeldNotificationParams) error {
+	_, err := q.db.ExecContext(ctx, insertHeldNotification,
+		arg.UserID,
+		arg.Channel,
+		arg.Payload,
+		arg.Digest,
+		arg.HeldAt,
+	)
+	return err
 }
 
 const insertNotification = `-- name: InsertNotification :exec
@@ -175,6 +241,22 @@ func (q *Queries) InsertNotificationDelivery(ctx context.Context, arg InsertNoti
 		arg.Payload,
 		arg.NextAt,
 	)
+	return err
+}
+
+const insertReviewWaiting = `-- name: InsertReviewWaiting :exec
+INSERT INTO review_waiting (transaction_id, wallet_id, since) VALUES (?, ?, ?)
+ON CONFLICT (transaction_id) DO NOTHING
+`
+
+type InsertReviewWaitingParams struct {
+	TransactionID int64
+	WalletID      int64
+	Since         string
+}
+
+func (q *Queries) InsertReviewWaiting(ctx context.Context, arg InsertReviewWaitingParams) error {
+	_, err := q.db.ExecContext(ctx, insertReviewWaiting, arg.TransactionID, arg.WalletID, arg.Since)
 	return err
 }
 
@@ -227,6 +309,33 @@ func (q *Queries) ListAdminRecipients(ctx context.Context) ([]ListAdminRecipient
 	return items, nil
 }
 
+const listDigestKinds = `-- name: ListDigestKinds :many
+SELECT kind FROM notification_digest_kinds WHERE user_id = ? ORDER BY kind
+`
+
+func (q *Queries) ListDigestKinds(ctx context.Context, userID int64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listDigestKinds, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var kind string
+		if err := rows.Scan(&kind); err != nil {
+			return nil, err
+		}
+		items = append(items, kind)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDueNotificationDeliveries = `-- name: ListDueNotificationDeliveries :many
 SELECT id, user_id, channel, payload, attempts, next_at FROM notification_deliveries WHERE next_at <= ? ORDER BY next_at, id LIMIT ?
 `
@@ -256,6 +365,67 @@ func (q *Queries) ListDueNotificationDeliveries(ctx context.Context, arg ListDue
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listHeldNotifications = `-- name: ListHeldNotifications :many
+SELECT id, user_id, channel, payload, digest, held_at FROM notification_held WHERE user_id = ? ORDER BY id
+`
+
+func (q *Queries) ListHeldNotifications(ctx context.Context, userID int64) ([]NotificationHeld, error) {
+	rows, err := q.db.QueryContext(ctx, listHeldNotifications, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []NotificationHeld{}
+	for rows.Next() {
+		var i NotificationHeld
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Channel,
+			&i.Payload,
+			&i.Digest,
+			&i.HeldAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listHeldUsers = `-- name: ListHeldUsers :many
+SELECT DISTINCT user_id FROM notification_held ORDER BY user_id
+`
+
+func (q *Queries) ListHeldUsers(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listHeldUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var user_id int64
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -543,6 +713,38 @@ func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsPa
 	return items, nil
 }
 
+const listReviewWaiting = `-- name: ListReviewWaiting :many
+SELECT transaction_id, since FROM review_waiting WHERE wallet_id = ? ORDER BY transaction_id
+`
+
+type ListReviewWaitingRow struct {
+	TransactionID int64
+	Since         string
+}
+
+func (q *Queries) ListReviewWaiting(ctx context.Context, walletID int64) ([]ListReviewWaitingRow, error) {
+	rows, err := q.db.QueryContext(ctx, listReviewWaiting, walletID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListReviewWaitingRow{}
+	for rows.Next() {
+		var i ListReviewWaitingRow
+		if err := rows.Scan(&i.TransactionID, &i.Since); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTransactionsSince = `-- name: ListTransactionsSince :many
 SELECT t.id, t.wallet_id, t.account_id, t.date, t.amount, t.memo, t.origin, t.created_by,
     COALESCE(p.name, '') AS payee
@@ -699,6 +901,21 @@ func (q *Queries) RescheduleNotificationDelivery(ctx context.Context, arg Resche
 	return err
 }
 
+const setDigestKind = `-- name: SetDigestKind :exec
+INSERT INTO notification_digest_kinds (user_id, kind) VALUES (?, ?)
+ON CONFLICT (user_id, kind) DO NOTHING
+`
+
+type SetDigestKindParams struct {
+	UserID int64
+	Kind   string
+}
+
+func (q *Queries) SetDigestKind(ctx context.Context, arg SetDigestKindParams) error {
+	_, err := q.db.ExecContext(ctx, setDigestKind, arg.UserID, arg.Kind)
+	return err
+}
+
 const setLowBelow = `-- name: SetLowBelow :exec
 UPDATE notification_thresholds SET low_below = ? WHERE user_id = ? AND account_id = ?
 `
@@ -711,21 +928,6 @@ type SetLowBelowParams struct {
 
 func (q *Queries) SetLowBelow(ctx context.Context, arg SetLowBelowParams) error {
 	_, err := q.db.ExecContext(ctx, setLowBelow, arg.LowBelow, arg.UserID, arg.AccountID)
-	return err
-}
-
-const setNotificationAmountsOutside = `-- name: SetNotificationAmountsOutside :exec
-INSERT INTO notification_settings (user_id, amounts_outside) VALUES (?, ?)
-ON CONFLICT (user_id) DO UPDATE SET amounts_outside = excluded.amounts_outside
-`
-
-type SetNotificationAmountsOutsideParams struct {
-	UserID         int64
-	AmountsOutside int64
-}
-
-func (q *Queries) SetNotificationAmountsOutside(ctx context.Context, arg SetNotificationAmountsOutsideParams) error {
-	_, err := q.db.ExecContext(ctx, setNotificationAmountsOutside, arg.UserID, arg.AmountsOutside)
 	return err
 }
 
@@ -862,6 +1064,20 @@ func (q *Queries) SetNotificationWalletOn(ctx context.Context, arg SetNotificati
 	return err
 }
 
+const unsetDigestKind = `-- name: UnsetDigestKind :exec
+DELETE FROM notification_digest_kinds WHERE user_id = ? AND kind = ?
+`
+
+type UnsetDigestKindParams struct {
+	UserID int64
+	Kind   string
+}
+
+func (q *Queries) UnsetDigestKind(ctx context.Context, arg UnsetDigestKindParams) error {
+	_, err := q.db.ExecContext(ctx, unsetDigestKind, arg.UserID, arg.Kind)
+	return err
+}
+
 const upsertNotificationChannel = `-- name: UpsertNotificationChannel :exec
 INSERT INTO notification_channels (
     user_id, channel, target, secret, server, options, local_ok,
@@ -904,6 +1120,40 @@ func (q *Queries) UpsertNotificationChannel(ctx context.Context, arg UpsertNotif
 		arg.CodeLink,
 		arg.CodeExpiresAt,
 		arg.CodeAttempts,
+	)
+	return err
+}
+
+const upsertNotificationSettings = `-- name: UpsertNotificationSettings :exec
+INSERT INTO notification_settings (user_id, amounts_outside, timezone, digest_at, quiet_hours, quiet_from, quiet_to, review_days)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (user_id) DO UPDATE SET
+    amounts_outside = excluded.amounts_outside, timezone = excluded.timezone,
+    digest_at = excluded.digest_at, quiet_hours = excluded.quiet_hours,
+    quiet_from = excluded.quiet_from, quiet_to = excluded.quiet_to, review_days = excluded.review_days
+`
+
+type UpsertNotificationSettingsParams struct {
+	UserID         int64
+	AmountsOutside int64
+	Timezone       string
+	DigestAt       string
+	QuietHours     int64
+	QuietFrom      string
+	QuietTo        string
+	ReviewDays     int64
+}
+
+func (q *Queries) UpsertNotificationSettings(ctx context.Context, arg UpsertNotificationSettingsParams) error {
+	_, err := q.db.ExecContext(ctx, upsertNotificationSettings,
+		arg.UserID,
+		arg.AmountsOutside,
+		arg.Timezone,
+		arg.DigestAt,
+		arg.QuietHours,
+		arg.QuietFrom,
+		arg.QuietTo,
+		arg.ReviewDays,
 	)
 	return err
 }
