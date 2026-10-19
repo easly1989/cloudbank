@@ -25,6 +25,12 @@ const (
 	KindBills            Kind = "bills"
 	KindMailStopped      Kind = "mail_stopped"
 	KindMailUnrecognized Kind = "mail_unrecognized"
+	KindBankSyncFailed   Kind = "bank_sync_failed"
+	KindConsentExpiring  Kind = "consent_expiring"
+	KindNewDevice        Kind = "new_device"
+	KindTwoFactorOff     Kind = "two_factor_off"
+	KindNewAPIToken      Kind = "new_api_token"
+	KindNewVersion       Kind = "new_version"
 )
 
 // Group is how the settings page and the bell sort events.
@@ -32,8 +38,11 @@ type Group string
 
 // The groups of the catalog.
 const (
+	GroupSecurity Group = "security"
 	GroupProblems Group = "problems"
 	GroupBills    Group = "bills"
+	// GroupAdmin is for administrators only: nobody else sees or gets it.
+	GroupAdmin Group = "admin"
 )
 
 // Channel is where an event can reach a person.
@@ -70,11 +79,18 @@ type EventInfo struct {
 }
 
 // Catalog lists every event, in the order the settings page shows them.
-// Problems and bills are on by default; money events, when they come, are not.
+// Security, problems, bills and admin are on by default; money events, when
+// they come, are not. A security event always reaches the bell (#690).
 var Catalog = []EventInfo{
+	{Kind: KindNewDevice, Group: GroupSecurity, Default: true},
+	{Kind: KindTwoFactorOff, Group: GroupSecurity, Default: true},
+	{Kind: KindNewAPIToken, Group: GroupSecurity, Default: true},
+	{Kind: KindBankSyncFailed, Group: GroupProblems, Default: true},
+	{Kind: KindConsentExpiring, Group: GroupProblems, Default: true},
 	{Kind: KindMailStopped, Group: GroupProblems, Default: true},
 	{Kind: KindMailUnrecognized, Group: GroupProblems, Default: true},
 	{Kind: KindBills, Group: GroupBills, Default: true},
+	{Kind: KindNewVersion, Group: GroupAdmin, Default: true},
 }
 
 func info(k Kind) (EventInfo, bool) {
@@ -232,6 +248,36 @@ func (s *Service) Notify(ctx context.Context, userID int64, e Event) error {
 	return nil
 }
 
+// NotifyWallet tells every member of a wallet, each in their own language
+// (build gets internal/locale's code). The event is about that wallet.
+func (s *Service) NotifyWallet(ctx context.Context, walletID int64, build func(locale string) Event) error {
+	rows, err := s.rq.ListWalletRecipients(ctx, walletID)
+	if err != nil {
+		return err
+	}
+	var errs []error
+	for _, r := range rows {
+		e := build(r.Locale)
+		e.WalletID = walletID
+		errs = append(errs, s.Notify(ctx, r.ID, e))
+	}
+	return errors.Join(errs...)
+}
+
+// NotifyAdmins tells every administrator, each in their own language. Only an
+// admin event may go this way.
+func (s *Service) NotifyAdmins(ctx context.Context, build func(locale string) Event) error {
+	rows, err := s.rq.ListAdminRecipients(ctx)
+	if err != nil {
+		return err
+	}
+	var errs []error
+	for _, r := range rows {
+		errs = append(errs, s.Notify(ctx, r.ID, build(r.Locale)))
+	}
+	return errors.Join(errs...)
+}
+
 // addressedChannels is which addressed channels the person has set up and,
 // where it was needed, proved.
 func (s *Service) addressedChannels(ctx context.Context, userID int64) (map[Channel]bool, error) {
@@ -249,20 +295,29 @@ func (s *Service) addressedChannels(ctx context.Context, userID int64) (map[Chan
 // enabled is which channels carry ev for this person: what they chose, else
 // the event's default.
 func (s *Service) enabled(ctx context.Context, userID int64, ev EventInfo) (map[Channel]bool, error) {
-	on := map[Channel]bool{}
-	for _, ch := range Channels {
-		on[ch] = ev.Default
-	}
 	prefs, err := s.rq.ListNotificationPrefs(ctx, userID)
 	if err != nil {
 		return nil, err
+	}
+	return channelsFor(ev, prefs), nil
+}
+
+// channelsFor applies the person's choices to the event's default. A
+// security event stays in the bell whatever they chose.
+func channelsFor(ev EventInfo, prefs []db.ListNotificationPrefsRow) map[Channel]bool {
+	on := map[Channel]bool{}
+	for _, ch := range Channels {
+		on[ch] = ev.Default
 	}
 	for _, p := range prefs {
 		if Kind(p.Kind) == ev.Kind {
 			on[Channel(p.Channel)] = p.Enabled != 0
 		}
 	}
-	return on, nil
+	if ev.Group == GroupSecurity {
+		on[ChannelInApp] = true
+	}
+	return on
 }
 
 // Preference is one event with the channels that carry it, for one person.
@@ -272,32 +327,34 @@ type Preference struct {
 	Channels map[Channel]bool
 }
 
-// Preferences lists every event in the catalog with this person's choices.
-func (s *Service) Preferences(ctx context.Context, userID int64) ([]Preference, error) {
+// Preferences lists every event in the catalog with this person's choices;
+// the admin events only for an administrator.
+func (s *Service) Preferences(ctx context.Context, userID int64, admin bool) ([]Preference, error) {
 	prefs, err := s.rq.ListNotificationPrefs(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 	out := make([]Preference, 0, len(Catalog))
 	for _, ev := range Catalog {
-		p := Preference{Kind: ev.Kind, Group: ev.Group, Channels: map[Channel]bool{}}
-		for _, ch := range Channels {
-			p.Channels[ch] = ev.Default
+		if ev.Group == GroupAdmin && !admin {
+			continue
 		}
-		for _, r := range prefs {
-			if Kind(r.Kind) == ev.Kind {
-				p.Channels[Channel(r.Channel)] = r.Enabled != 0
-			}
-		}
-		out = append(out, p)
+		out = append(out, Preference{Kind: ev.Kind, Group: ev.Group, Channels: channelsFor(ev, prefs)})
 	}
 	return out, nil
 }
 
+// ErrAlwaysOn is returned for turning a security event off in the bell.
+var ErrAlwaysOn = errors.New("notify: security events always reach the bell")
+
 // SetPreference turns one event on or off on one channel for this person.
 func (s *Service) SetPreference(ctx context.Context, userID int64, k Kind, ch Channel, on bool) error {
-	if _, ok := info(k); !ok || !knownChannel(ch) {
+	ev, ok := info(k)
+	if !ok || !knownChannel(ch) {
 		return ErrUnknownEvent
+	}
+	if ev.Group == GroupSecurity && ch == ChannelInApp && !on {
+		return ErrAlwaysOn
 	}
 	v := int64(0)
 	if on {

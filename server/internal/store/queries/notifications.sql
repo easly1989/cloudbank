@@ -99,3 +99,13 @@ UPDATE notification_deliveries SET attempts = ?, next_at = ? WHERE id = ?;
 
 -- name: DeleteNotificationDelivery :exec
 DELETE FROM notification_deliveries WHERE id = ?;
+
+-- Who a wallet event is for: the wallet's members whose account is on.
+-- name: ListWalletRecipients :many
+SELECT u.id, u.locale FROM wallet_members m JOIN users u ON u.id = m.user_id
+WHERE m.wallet_id = ? AND u.disabled = 0
+ORDER BY u.id;
+
+-- Who an admin event is for: the administrators whose account is on.
+-- name: ListAdminRecipients :many
+SELECT id, locale FROM users WHERE is_admin = 1 AND disabled = 0 ORDER BY id;

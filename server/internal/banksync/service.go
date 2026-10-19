@@ -146,6 +146,8 @@ type Service struct {
 	syncStagger time.Duration
 	// demoOnly refuses every provider but the pretend bank (see OnlyDemoBank).
 	demoOnly bool
+	// notify announces failures and consents about to end; nil announces nothing.
+	notify Notifier
 }
 
 // NewService builds a Service. imp is the import pipeline used to commit rows.
@@ -333,9 +335,14 @@ func (s *Service) Sync(ctx context.Context, walletID, connID int64) (SyncResult,
 // appends a run to the connection's history. triggeredBy is "manual" (a user
 // "Sync now") or "auto" (the background job).
 func (s *Service) syncAndRecord(ctx context.Context, walletID, connID int64, triggeredBy string) (SyncResult, error) {
+	before, _ := s.rq.GetBankConnection(ctx, connID)
 	res, details, err := s.syncOnce(ctx, walletID, connID)
 	s.recordSyncOutcome(ctx, connID, res, err)
 	s.recordSyncRun(ctx, connID, triggeredBy, res, details, err)
+	// Whoever pressed "Sync now" sees the failure already.
+	if triggeredBy == "auto" {
+		s.alertFailed(ctx, before, res, err)
+	}
 	return res, err
 }
 

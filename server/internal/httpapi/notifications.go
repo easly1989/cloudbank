@@ -91,7 +91,7 @@ type notificationPrefJSON struct {
 
 func (h *notificationHandlers) preferences(w http.ResponseWriter, r *http.Request) {
 	u := userFromContext(r.Context())
-	prefs, err := h.svc.Preferences(r.Context(), u.ID)
+	prefs, err := h.svc.Preferences(r.Context(), u.ID, u.IsAdmin)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not read notification preferences")
 		return
@@ -121,6 +121,8 @@ func (h *notificationHandlers) setPreference(w http.ResponseWriter, r *http.Requ
 	switch {
 	case errors.Is(err, notify.ErrUnknownEvent):
 		writeError(w, http.StatusBadRequest, "invalid", "unknown event or channel")
+	case errors.Is(err, notify.ErrAlwaysOn):
+		writeError(w, http.StatusBadRequest, "always_on", "security events always reach the bell")
 	case err != nil:
 		writeError(w, http.StatusInternalServerError, "internal", "could not save the notification preference")
 	default:

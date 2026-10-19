@@ -21,3 +21,10 @@ DELETE FROM sessions WHERE expires_at < ?;
 
 -- name: DeleteOtherUserSessions :exec
 DELETE FROM sessions WHERE user_id = ? AND id <> ?;
+
+-- name: RememberDevice :execrows
+INSERT INTO known_devices (user_id, device) VALUES (?, ?)
+ON CONFLICT (user_id, device) DO NOTHING;
+
+-- name: CountKnownDevices :one
+SELECT COUNT(*) FROM known_devices WHERE user_id = ?;

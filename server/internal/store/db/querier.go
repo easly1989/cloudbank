@@ -44,6 +44,7 @@ type Querier interface {
 	CountAccountsInWallet(ctx context.Context, arg CountAccountsInWalletParams) (int64, error)
 	CountCategoriesInWallet(ctx context.Context, arg CountCategoriesInWalletParams) (int64, error)
 	CountCurrencyAccounts(ctx context.Context, currencyID int64) (int64, error)
+	CountKnownDevices(ctx context.Context, userID int64) (int64, error)
 	CountNotificationCodeAttempt(ctx context.Context, arg CountNotificationCodeAttemptParams) (int64, error)
 	CountOIDCIdentitiesForUser(ctx context.Context, userID int64) (int64, error)
 	CountPayeesInWallet(ctx context.Context, arg CountPayeesInWalletParams) (int64, error)
@@ -216,6 +217,8 @@ type Querier interface {
 	// transaction, then by name, as ListTransactionTags orders one transaction's.
 	ListAccountTransactionTags(ctx context.Context, accountID int64) ([]ListAccountTransactionTagsRow, error)
 	ListAccountsForWallet(ctx context.Context, walletID int64) ([]ListAccountsForWalletRow, error)
+	// Who an admin event is for: the administrators whose account is on.
+	ListAdminRecipients(ctx context.Context) ([]ListAdminRecipientsRow, error)
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
 	ListAllWalletIDs(ctx context.Context) ([]int64, error)
 	// The tags every rule of the wallet adds, by rule then name.
@@ -235,6 +238,8 @@ type Querier interface {
 	ListBankSyncRuns(ctx context.Context, arg ListBankSyncRunsParams) ([]BankSyncRun, error)
 	ListBudgetsForWallet(ctx context.Context, walletID int64) ([]Budget, error)
 	ListCategoriesForWallet(ctx context.Context, walletID int64) ([]Category, error)
+	// Every Enable Banking connection with the date its bank consent ends.
+	ListConsentConnections(ctx context.Context) ([]ListConsentConnectionsRow, error)
 	ListContributionsForGoal(ctx context.Context, goalID int64) ([]GoalContribution, error)
 	ListCurrenciesForWallet(ctx context.Context, walletID int64) ([]Currency, error)
 	ListDueNotificationDeliveries(ctx context.Context, arg ListDueNotificationDeliveriesParams) ([]NotificationDelivery, error)
@@ -304,6 +309,8 @@ type Querier interface {
 	// processing.
 	ListVehicleTransactions(ctx context.Context, arg ListVehicleTransactionsParams) ([]ListVehicleTransactionsRow, error)
 	ListVehiclesForWallet(ctx context.Context, walletID int64) ([]Vehicle, error)
+	// Who a wallet event is for: the wallet's members whose account is on.
+	ListWalletRecipients(ctx context.Context, walletID int64) ([]ListWalletRecipientsRow, error)
 	ListWalletSettings(ctx context.Context) ([]ListWalletSettingsRow, error)
 	// Every transaction with what a rule can read (memo, payee, tags, account) and
 	// what it can fill in. The tags come joined by the unit separator (char 31),
@@ -351,6 +358,7 @@ type Querier interface {
 	RecordBankSyncOutcome(ctx context.Context, arg RecordBankSyncOutcomeParams) error
 	RecordMailboxCheck(ctx context.Context, arg RecordMailboxCheckParams) error
 	RefreshEBankingConnectionSession(ctx context.Context, arg RefreshEBankingConnectionSessionParams) (BankConnection, error)
+	RememberDevice(ctx context.Context, arg RememberDeviceParams) (int64, error)
 	RenameTag(ctx context.Context, arg RenameTagParams) error
 	ReparentChildren(ctx context.Context, arg ReparentChildrenParams) error
 	RescheduleNotificationDelivery(ctx context.Context, arg RescheduleNotificationDeliveryParams) error

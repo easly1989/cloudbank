@@ -9,6 +9,17 @@ import (
 	"context"
 )
 
+const countKnownDevices = `-- name: CountKnownDevices :one
+SELECT COUNT(*) FROM known_devices WHERE user_id = ?
+`
+
+func (q *Queries) CountKnownDevices(ctx context.Context, userID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countKnownDevices, userID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createSession = `-- name: CreateSession :exec
 INSERT INTO sessions (id, user_id, expires_at, user_agent)
 VALUES (?, ?, ?, ?)
@@ -88,6 +99,24 @@ func (q *Queries) GetSession(ctx context.Context, id string) (Session, error) {
 		&i.UserAgent,
 	)
 	return i, err
+}
+
+const rememberDevice = `-- name: RememberDevice :execrows
+INSERT INTO known_devices (user_id, device) VALUES (?, ?)
+ON CONFLICT (user_id, device) DO NOTHING
+`
+
+type RememberDeviceParams struct {
+	UserID int64
+	Device string
+}
+
+func (q *Queries) RememberDevice(ctx context.Context, arg RememberDeviceParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, rememberDevice, arg.UserID, arg.Device)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const touchSession = `-- name: TouchSession :exec
