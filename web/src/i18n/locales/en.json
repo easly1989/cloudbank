@@ -655,7 +655,8 @@
       "schedule": "Schedule",
       "nextHead": "Next",
       "thisMonth": "This month",
-      "notRegistered": "not registered"
+      "notRegistered": "not registered",
+      "noPayee": "No payee"
     },
     "repeat": {
       "day": "Every day",
@@ -672,11 +673,24 @@
       "namePlaceholder": "Rent, electricity, salary…",
       "isExpense": "Money out: switch to money in",
       "isIncome": "Money in: switch to money out",
-      "autoPostHint": "Register it on its date without asking."
+      "autoPostHint": "Register it on its date without asking.",
+      "payeeHint": "Who the money goes to or comes from",
+      "payeeRequired": "Choose a payee",
+      "applyPayee_one": "Also apply it to the registered transaction without a payee",
+      "applyPayee_other": "Also apply it to the {{count}} registered transactions without a payee",
+      "applyPayeeHint": "Those that already have one keep it."
     },
     "splitNote_one": "This transaction is split, so its amount and category can’t be changed here. The rest can.",
     "splitNote_other": "This transaction is split between {{count}} categories, so its amount and categories can’t be changed here. The rest can.",
-    "splitCategories": "Split · {{names}}"
+    "splitCategories": "Split · {{names}}",
+    "missingPayee": {
+      "title_one": "{{count}} schedule without a payee",
+      "title_other": "{{count}} schedules without a payee",
+      "body": "A payee is now required: it says who the money goes to or comes from, and you can give it to the transactions already registered too.",
+      "start": "Complete them one by one",
+      "walk": "Without a payee: {{n}} of {{total}}",
+      "saveNext": "Save and go to the next"
+    }
   },
   "tags": {
     "title": "Tags",

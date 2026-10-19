@@ -64,6 +64,68 @@ func (q *Queries) GetSchedule(ctx context.Context, id int64) (Schedule, error) {
 	return i, err
 }
 
+const getScheduleWithTemplate = `-- name: GetScheduleWithTemplate :one
+SELECT sch.id, sch.wallet_id, sch.template_id, sch.unit, sch.every_n, sch.next_due, sch.weekend_mode, sch.remaining, sch.post_advance, sch.auto_post, sch.last_posted, sch.created_at, tpl.name AS template_name, tpl.amount AS template_amount,
+       tpl.is_transfer AS template_is_transfer,
+       tpl.payee_id AS template_payee_id, pay.name AS payee_name,
+       (SELECT COUNT(*) FROM transactions t
+        WHERE t.template_id = tpl.id AND t.wallet_id = sch.wallet_id
+          AND t.payee_id IS NULL AND tpl.is_transfer = 0) AS without_payee
+FROM schedules sch
+JOIN templates tpl ON tpl.id = sch.template_id
+LEFT JOIN payees pay ON pay.id = tpl.payee_id
+WHERE sch.id = ?
+`
+
+type GetScheduleWithTemplateRow struct {
+	ID                 int64
+	WalletID           int64
+	TemplateID         int64
+	Unit               string
+	EveryN             int64
+	NextDue            string
+	WeekendMode        int64
+	Remaining          sql.NullInt64
+	PostAdvance        int64
+	AutoPost           int64
+	LastPosted         sql.NullString
+	CreatedAt          string
+	TemplateName       string
+	TemplateAmount     int64
+	TemplateIsTransfer int64
+	TemplatePayeeID    sql.NullInt64
+	PayeeName          sql.NullString
+	WithoutPayee       int64
+}
+
+// One schedule in the list's shape: its template's name, amount and payee,
+// and how many of the transactions it registered have no payee (#723).
+func (q *Queries) GetScheduleWithTemplate(ctx context.Context, id int64) (GetScheduleWithTemplateRow, error) {
+	row := q.db.QueryRowContext(ctx, getScheduleWithTemplate, id)
+	var i GetScheduleWithTemplateRow
+	err := row.Scan(
+		&i.ID,
+		&i.WalletID,
+		&i.TemplateID,
+		&i.Unit,
+		&i.EveryN,
+		&i.NextDue,
+		&i.WeekendMode,
+		&i.Remaining,
+		&i.PostAdvance,
+		&i.AutoPost,
+		&i.LastPosted,
+		&i.CreatedAt,
+		&i.TemplateName,
+		&i.TemplateAmount,
+		&i.TemplateIsTransfer,
+		&i.TemplatePayeeID,
+		&i.PayeeName,
+		&i.WithoutPayee,
+	)
+	return i, err
+}
+
 const insertSchedule = `-- name: InsertSchedule :one
 INSERT INTO schedules (
     wallet_id, template_id, unit, every_n, next_due, weekend_mode,
@@ -287,9 +349,14 @@ func (q *Queries) ListSchedulesForCalendar(ctx context.Context, walletID int64) 
 
 const listSchedulesForWallet = `-- name: ListSchedulesForWallet :many
 SELECT sch.id, sch.wallet_id, sch.template_id, sch.unit, sch.every_n, sch.next_due, sch.weekend_mode, sch.remaining, sch.post_advance, sch.auto_post, sch.last_posted, sch.created_at, tpl.name AS template_name, tpl.amount AS template_amount,
-       tpl.is_transfer AS template_is_transfer
+       tpl.is_transfer AS template_is_transfer,
+       tpl.payee_id AS template_payee_id, pay.name AS payee_name,
+       (SELECT COUNT(*) FROM transactions t
+        WHERE t.template_id = tpl.id AND t.wallet_id = sch.wallet_id
+          AND t.payee_id IS NULL AND tpl.is_transfer = 0) AS without_payee
 FROM schedules sch
 JOIN templates tpl ON tpl.id = sch.template_id
+LEFT JOIN payees pay ON pay.id = tpl.payee_id
 WHERE sch.wallet_id = ?
 ORDER BY sch.next_due, sch.id
 `
@@ -310,6 +377,9 @@ type ListSchedulesForWalletRow struct {
 	TemplateName       string
 	TemplateAmount     int64
 	TemplateIsTransfer int64
+	TemplatePayeeID    sql.NullInt64
+	PayeeName          sql.NullString
+	WithoutPayee       int64
 }
 
 func (q *Queries) ListSchedulesForWallet(ctx context.Context, walletID int64) ([]ListSchedulesForWalletRow, error) {
@@ -337,6 +407,9 @@ func (q *Queries) ListSchedulesForWallet(ctx context.Context, walletID int64) ([
 			&i.TemplateName,
 			&i.TemplateAmount,
 			&i.TemplateIsTransfer,
+			&i.TemplatePayeeID,
+			&i.PayeeName,
+			&i.WithoutPayee,
 		); err != nil {
 			return nil, err
 		}
@@ -351,11 +424,50 @@ func (q *Queries) ListSchedulesForWallet(ctx context.Context, walletID int64) ([
 	return items, nil
 }
 
+const listTemplateTransactionsWithoutPayee = `-- name: ListTemplateTransactionsWithoutPayee :many
+SELECT id FROM transactions
+WHERE template_id = ? AND wallet_id = ? AND payee_id IS NULL
+ORDER BY id
+`
+
+type ListTemplateTransactionsWithoutPayeeParams struct {
+	TemplateID sql.NullInt64
+	WalletID   int64
+}
+
+func (q *Queries) ListTemplateTransactionsWithoutPayee(ctx context.Context, arg ListTemplateTransactionsWithoutPayeeParams) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listTemplateTransactionsWithoutPayee, arg.TemplateID, arg.WalletID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUpcomingSchedules = `-- name: ListUpcomingSchedules :many
 SELECT sch.id, sch.wallet_id, sch.template_id, sch.unit, sch.every_n, sch.next_due, sch.weekend_mode, sch.remaining, sch.post_advance, sch.auto_post, sch.last_posted, sch.created_at, tpl.name AS template_name, tpl.amount AS template_amount,
-       tpl.is_transfer AS template_is_transfer
+       tpl.is_transfer AS template_is_transfer,
+       tpl.payee_id AS template_payee_id, pay.name AS payee_name,
+       (SELECT COUNT(*) FROM transactions t
+        WHERE t.template_id = tpl.id AND t.wallet_id = sch.wallet_id
+          AND t.payee_id IS NULL AND tpl.is_transfer = 0) AS without_payee
 FROM schedules sch
 JOIN templates tpl ON tpl.id = sch.template_id
+LEFT JOIN payees pay ON pay.id = tpl.payee_id
 WHERE sch.wallet_id = ? AND sch.next_due <= ?
 ORDER BY sch.next_due, sch.id
 `
@@ -381,6 +493,9 @@ type ListUpcomingSchedulesRow struct {
 	TemplateName       string
 	TemplateAmount     int64
 	TemplateIsTransfer int64
+	TemplatePayeeID    sql.NullInt64
+	PayeeName          sql.NullString
+	WithoutPayee       int64
 }
 
 func (q *Queries) ListUpcomingSchedules(ctx context.Context, arg ListUpcomingSchedulesParams) ([]ListUpcomingSchedulesRow, error) {
@@ -408,6 +523,9 @@ func (q *Queries) ListUpcomingSchedules(ctx context.Context, arg ListUpcomingSch
 			&i.TemplateName,
 			&i.TemplateAmount,
 			&i.TemplateIsTransfer,
+			&i.TemplatePayeeID,
+			&i.PayeeName,
+			&i.WithoutPayee,
 		); err != nil {
 			return nil, err
 		}

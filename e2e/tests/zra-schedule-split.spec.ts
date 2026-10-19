@@ -59,11 +59,13 @@ test("saving a split schedule keeps its lines", async ({ page }) => {
         name: "Groceries",
       });
       const home = await call("POST", `${base}/categories`, { name: "Home" });
+      const shop = await call("POST", `${base}/payees`, { name: "Market" });
       const tpl = await call("POST", `${base}/templates`, {
         name: "Stock-up",
         accountId: acc.id,
         amount: -12000,
         memo: "Stock-up",
+        payeeId: shop.id,
         splits: [
           { categoryId: groceries.id, amount: -9000 },
           { categoryId: home.id, amount: -3000 },

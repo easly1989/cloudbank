@@ -655,7 +655,8 @@
       "schedule": "Movimiento programado",
       "nextHead": "Próximo",
       "thisMonth": "Este mes",
-      "notRegistered": "no registrado"
+      "notRegistered": "no registrado",
+      "noPayee": "Sin beneficiario"
     },
     "repeat": {
       "day": "Todos los días",
@@ -672,11 +673,24 @@
       "namePlaceholder": "Alquiler, luz, nómina…",
       "isExpense": "Sale dinero: cambiar a entrada",
       "isIncome": "Entra dinero: cambiar a salida",
-      "autoPostHint": "Registrarlo en su fecha sin preguntar."
+      "autoPostHint": "Registrarlo en su fecha sin preguntar.",
+      "payeeHint": "A quién va o de quién viene el dinero",
+      "payeeRequired": "Elige un beneficiario",
+      "applyPayee_one": "Aplicarlo también al movimiento ya registrado sin beneficiario",
+      "applyPayee_other": "Aplicarlo también a los {{count}} movimientos ya registrados sin beneficiario",
+      "applyPayeeHint": "Los que ya tienen uno lo conservan."
     },
     "splitNote_one": "Este movimiento está dividido, así que aquí no se pueden cambiar su importe ni su categoría. Lo demás, sí.",
     "splitNote_other": "Este movimiento está dividido entre {{count}} categorías, así que aquí no se pueden cambiar su importe ni sus categorías. Lo demás, sí.",
-    "splitCategories": "Dividido · {{names}}"
+    "splitCategories": "Dividido · {{names}}",
+    "missingPayee": {
+      "title_one": "{{count}} movimiento programado sin beneficiario",
+      "title_other": "{{count}} movimientos programados sin beneficiario",
+      "body": "Ahora el beneficiario es obligatorio: indica a quién va o de quién viene el dinero, y también puedes aplicarlo a los movimientos ya registrados.",
+      "start": "Completar uno a uno",
+      "walk": "Sin beneficiario: {{n}} de {{total}}",
+      "saveNext": "Guardar y pasar al siguiente"
+    }
   },
   "tags": {
     "title": "Etiquetas",

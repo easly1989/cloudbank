@@ -50,11 +50,13 @@ test("a schedule opened again after a save shows the saved values", async ({ pag
         type: "checking",
         initialBalance: 0,
       });
+      const gym = await call("POST", `${base}/payees`, { name: "Gym Co" });
       const tpl = await call("POST", `${base}/templates`, {
         name: "Gym",
         accountId: acc.id,
         amount: -3000,
         memo: "Gym membership",
+        payeeId: gym.id,
       });
       const next = new Date(Date.now() + 5 * 86400_000).toISOString().slice(0, 10);
       const s = await call("POST", `${base}/schedules`, {

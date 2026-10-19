@@ -655,7 +655,8 @@
       "schedule": "Opération récurrente",
       "nextHead": "Prochaine",
       "thisMonth": "Ce mois-ci",
-      "notRegistered": "non saisie"
+      "notRegistered": "non saisie",
+      "noPayee": "Sans tiers"
     },
     "repeat": {
       "day": "Tous les jours",
@@ -672,11 +673,24 @@
       "namePlaceholder": "Loyer, électricité, salaire…",
       "isExpense": "Sortie d’argent : passer en entrée",
       "isIncome": "Entrée d’argent : passer en sortie",
-      "autoPostHint": "La saisir à sa date sans demander."
+      "autoPostHint": "La saisir à sa date sans demander.",
+      "payeeHint": "À qui va ou de qui vient l’argent",
+      "payeeRequired": "Choisissez un tiers",
+      "applyPayee_one": "L’appliquer aussi à l’opération déjà saisie sans tiers",
+      "applyPayee_other": "L’appliquer aussi aux {{count}} opérations déjà saisies sans tiers",
+      "applyPayeeHint": "Celles qui en ont déjà un le gardent."
     },
     "splitNote_one": "Cette opération est ventilée : son montant et sa catégorie ne se modifient pas ici. Le reste, si.",
     "splitNote_other": "Cette opération est ventilée sur {{count}} catégories : son montant et ses catégories ne se modifient pas ici. Le reste, si.",
-    "splitCategories": "Ventilée · {{names}}"
+    "splitCategories": "Ventilée · {{names}}",
+    "missingPayee": {
+      "title_one": "{{count}} opération récurrente sans tiers",
+      "title_other": "{{count}} opérations récurrentes sans tiers",
+      "body": "Le tiers est désormais obligatoire : il indique à qui va ou de qui vient l’argent, et vous pouvez aussi l’appliquer aux opérations déjà saisies.",
+      "start": "Compléter une par une",
+      "walk": "Sans tiers : {{n}} sur {{total}}",
+      "saveNext": "Enregistrer et passer à la suivante"
+    }
   },
   "tags": {
     "title": "Étiquettes",

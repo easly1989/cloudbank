@@ -90,7 +90,7 @@ func TestTemplateUsageAndScheduledDelete(t *testing.T) {
 	wid, acc := makeAccount(t, c)
 	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
 	tpl := decodeTemplate(t, c.do(http.MethodPost, base+"/templates", map[string]any{
-		"name": "Coffee", "accountId": acc, "amount": -150,
+		"name": "Coffee", "accountId": acc, "amount": -150, "payeeId": makePayee(t, c, wid, "Bar"),
 	}, true))
 	id := int64(tpl["id"].(float64))
 

@@ -87,6 +87,11 @@ export interface Schedule {
   postAdvance: number;
   autoPost: boolean;
   lastPosted?: string;
+  /** The template's payee (#723); absent when it has none. */
+  payeeId?: number;
+  payeeName?: string;
+  /** How many of the transactions it registered have no payee. */
+  withoutPayee: number;
 }
 
 export interface ScheduleInput {
@@ -162,6 +167,10 @@ export const getScheduleCalendar = (walletId: number, from: string, to: string, 
 
 export const skipSchedule = (walletId: number, id: number) =>
   api.post<void>(`/api/v1/wallets/${walletId}/schedules/${id}/skip`);
+
+/** Gives the schedule's payee to the transactions it registered without one. */
+export const applySchedulePayee = (walletId: number, id: number) =>
+  api.post<{ updated: number }>(`/api/v1/wallets/${walletId}/schedules/${id}/apply-payee`);
 
 // --- Transfers ---
 

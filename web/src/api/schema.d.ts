@@ -2513,7 +2513,10 @@ export interface paths {
         /** List the wallet's scheduled transactions */
         get: operations["listSchedules"];
         put?: never;
-        /** Create a schedule on a template */
+        /**
+         * Create a schedule on a template
+         * @description An income or expense template needs a payee (400 payee_required); a transfer does not. The same applies to an update.
+         */
         post: operations["createSchedule"];
         delete?: never;
         options?: never;
@@ -2621,6 +2624,26 @@ export interface paths {
         put?: never;
         /** Skip the current occurrence and advance the schedule */
         post: operations["skipSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/schedules/{scheduleId}/apply-payee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                scheduleId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Give the schedule's payee to the transactions it registered without one */
+        post: operations["applySchedulePayee"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4989,6 +5012,17 @@ export interface components {
             postAdvance: number;
             autoPost: boolean;
             lastPosted?: string;
+            /**
+             * Format: int64
+             * @description The template's payee; absent when it has none.
+             */
+            payeeId?: number;
+            payeeName?: string;
+            /**
+             * Format: int64
+             * @description How many transactions the schedule registered have no payee.
+             */
+            withoutPayee: number;
         };
         ScheduleOccurrence: {
             /**
@@ -10480,6 +10514,33 @@ export interface operations {
                 };
                 content?: never;
             };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    applySchedulePayee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                scheduleId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description How many transactions were changed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        updated: number;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
         };
     };
