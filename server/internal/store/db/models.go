@@ -38,13 +38,47 @@ type Account struct {
 	DefaultPaymentMode int64
 }
 
-type AiSetting struct {
+type AiReport struct {
+	ID        int64
 	UserID    int64
-	Enabled   int64
-	BaseUrl   string
+	WalletID  int64
+	Kind      string
+	Period    string
+	Body      string
+	Basis     string
 	Model     string
-	ApiKey    string
-	UpdatedAt string
+	Feedback  int64
+	CreatedAt string
+}
+
+type AiSend struct {
+	ID        int64
+	UserID    int64
+	WalletID  sql.NullInt64
+	Feature   string
+	Model     string
+	Sent      string
+	CreatedAt string
+}
+
+type AiSetting struct {
+	UserID       int64
+	Enabled      int64
+	BaseUrl      string
+	Model        string
+	ApiKey       string
+	UpdatedAt    string
+	SuggestOn    int64
+	EntryOn      int64
+	MailOn       int64
+	ReportsOn    int64
+	MonthlyLimit int64
+	Motion       int64
+}
+
+type AiWalletsOff struct {
+	UserID   int64
+	WalletID int64
 }
 
 type ApiToken struct {

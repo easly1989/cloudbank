@@ -40,15 +40,9 @@ type rawEntry struct {
 var dateRe = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 
 // ParseEntry turns a free-text description into transaction fields using the
-// configured model. `today` (YYYY-MM-DD) grounds relative dates.
-func (s *Service) ParseEntry(ctx context.Context, userID int64, admin bool, walletID int64, text, today string) (*ParsedEntry, error) {
-	cfg, err := s.load(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	if cfg.Enabled == 0 || cfg.ApiKey == "" || cfg.BaseUrl == "" || cfg.Model == "" {
-		return nil, ErrNotConfigured
-	}
+// configured model. `today` (YYYY-MM-DD) grounds relative dates. confirm is the
+// user's yes to a call past this month's limit.
+func (s *Service) ParseEntry(ctx context.Context, userID, walletID int64, confirm bool, text, today string) (*ParsedEntry, error) {
 	text = strings.TrimSpace(text)
 	if text == "" {
 		return nil, nil
@@ -89,11 +83,14 @@ func (s *Service) ParseEntry(ctx context.Context, userID int64, admin bool, wall
 		"Example — input \"lunch with Anna 15\", today 2026-09-08, Categories include \"Dining\", Tags " +
 		"include \"friends\" → {\"amount\":15,\"direction\":\"expense\",\"date\":\"2026-09-08\"," +
 		"\"payee\":\"\",\"category\":\"Dining\",\"tags\":[\"friends\"],\"memo\":\"Lunch with Anna\"}"
-	reply, err := newClient(cfg.BaseUrl, cfg.ApiKey, cfg.Model, s.hc, admin).chat(ctx, system, entryPrompt(text, today, catNames, payeeNames, tagNames))
+	reply, err := s.Ask(ctx, Call{
+		UserID: userID, WalletID: walletID, Feature: FeatureEntry, Confirm: confirm,
+		System: system, User: entryPrompt(text, today, catNames, payeeNames, tagNames),
+	})
 	if err != nil {
 		return nil, err
 	}
-	raw, err := parseJSONObject(reply)
+	raw, err := parseJSONObject(reply.Text)
 	if err != nil {
 		return nil, err
 	}

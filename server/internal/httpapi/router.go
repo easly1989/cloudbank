@@ -29,6 +29,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/goal"
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/importio"
+	"github.com/easly1989/cloudbank/server/internal/insight"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
 	"github.com/easly1989/cloudbank/server/internal/mailingest"
 	"github.com/easly1989/cloudbank/server/internal/notify"
@@ -98,6 +99,8 @@ type Options struct {
 	Notifications *notify.Service
 	// AI, if non-nil, mounts the opt-in AI settings + suggestion endpoints.
 	AI *ai.Service
+	// Insights, if non-nil with AI, mounts the AI reports under each wallet.
+	Insights *insight.Service
 	// BankSync, if non-nil, mounts the automatic bank-sync endpoints (requires Wallets).
 	BankSync *banksync.Service
 	// Mail, if non-nil, mounts the bank-mail reading endpoints (requires
@@ -259,7 +262,7 @@ func New(opts Options) http.Handler {
 						assetVals:  opts.AssetValuations,
 						categories: opts.Categories, payees: opts.Payees, transactions: opts.Transactions,
 						tags: opts.Tags, vehicles: opts.Vehicles, goals: opts.Goals, notifications: opts.Notifications,
-						transfers: opts.Transfers, dashboard: opts.Dashboard, bills: opts.Bills, ai: opts.AI, bankSync: opts.BankSync, mail: opts.Mail, templates: opts.Templates,
+						transfers: opts.Transfers, dashboard: opts.Dashboard, bills: opts.Bills, ai: opts.AI, insights: opts.Insights, bankSync: opts.BankSync, mail: opts.Mail, templates: opts.Templates,
 						schedules: opts.Schedules, assignments: opts.Assignments, budgets: opts.Budgets,
 						reports: opts.Reports, csv: opts.CSV, rateProvider: opts.RateProvider,
 						integrity: opts.Integrity, backup: opts.Backup, attachments: opts.Attachments,

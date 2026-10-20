@@ -15,6 +15,7 @@ func configure(t *testing.T, svc *Service, uid int64) {
 	key := "k"
 	if _, err := svc.UpdateSettings(context.Background(), uid, true, SettingsInput{
 		Enabled: true, BaseURL: "https://api.example/v1", Model: "m", APIKey: &key,
+		Features: &Features{Suggest: true, Entry: true, Mail: true, Reports: true},
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +42,7 @@ func TestReadBankMail(t *testing.T) {
 	if svc.Configured(ctx, uid) {
 		t.Fatal("configured before any setting")
 	}
-	if _, err := svc.ReadBankMail(ctx, uid, "Pagamento", "x", "2026-10-15"); !errors.Is(err, ErrNotConfigured) {
+	if _, err := svc.ReadBankMail(ctx, uid, 0, "Pagamento", "x", "2026-10-15"); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("err = %v, want ErrNotConfigured", err)
 	}
 	configure(t, svc, uid)
@@ -52,7 +53,7 @@ func TestReadBankMail(t *testing.T) {
 	m := &mockDoer{reply: "```json\n{\"payment\":true,\"amount\":\"6,43\",\"direction\":\"out\"," +
 		"\"date\":\"2026-10-15\",\"text\":\"Supermercato Demo\"}\n```"}
 	svc.hc = m
-	got, err := svc.ReadBankMail(ctx, uid, "Pagamento con carta", "Pagamento di 6,43 EUR presso Supermercato Demo", "2026-10-15")
+	got, err := svc.ReadBankMail(ctx, uid, 0, "Pagamento con carta", "Pagamento di 6,43 EUR presso Supermercato Demo", "2026-10-15")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +67,7 @@ func TestReadBankMail(t *testing.T) {
 
 	// A bad date is left out; the mail's own date takes its place downstream.
 	svc.hc = &mockDoer{reply: `{"payment":true,"amount":250,"direction":"in","date":"ieri","text":"Mario Demo"}`}
-	got, err = svc.ReadBankMail(ctx, uid, "Bonifico", "Hai ricevuto 250,00 EUR", "2026-10-15")
+	got, err = svc.ReadBankMail(ctx, uid, 0, "Bonifico", "Hai ricevuto 250,00 EUR", "2026-10-15")
 	if err != nil || got == nil || got.Amount != "250" || got.Direction != "in" || got.Date != "" {
 		t.Fatalf("reading = %+v, %v", got, err)
 	}
@@ -81,7 +82,7 @@ func TestReadBankMail(t *testing.T) {
 		`I cannot help with that.`,
 	} {
 		svc.hc = &mockDoer{reply: reply}
-		got, err := svc.ReadBankMail(ctx, uid, "s", "b", "2026-10-15")
+		got, err := svc.ReadBankMail(ctx, uid, 0, "s", "b", "2026-10-15")
 		if err != nil || got != nil {
 			t.Errorf("%s: reading = %+v, %v; want nothing", reply, got, err)
 		}
@@ -89,7 +90,7 @@ func TestReadBankMail(t *testing.T) {
 
 	// The provider failing is an error, not "not a payment".
 	svc.hc = &mockDoer{status: 500}
-	if _, err := svc.ReadBankMail(ctx, uid, "s", "b", "2026-10-15"); err == nil {
+	if _, err := svc.ReadBankMail(ctx, uid, 0, "s", "b", "2026-10-15"); err == nil {
 		t.Fatal("a failing provider must be an error")
 	}
 }
@@ -105,7 +106,7 @@ func TestReadBankMailHidesCardsAndIBANs(t *testing.T) {
 		"Carta 4532-0151-1283-0366, altra carta 4532015112830366, mascherata 1234_*_*_5678 o **** **** **** 5678, XXXX XXXX XXXX 9012, xxxx-7788, ____4455.\n" +
 		"Addebito sul conto IT60 X054 2811 1010 0000 0123 456 (IBAN IT60X0542811101000000123456).\n" +
 		"Bonifico da DE89 3704 0044 0532 0130 00, rif. 12345678901."
-	if _, err := svc.ReadBankMail(context.Background(), uid, "Carta 5500 0000 0000 0004", body, "2026-10-15"); err != nil {
+	if _, err := svc.ReadBankMail(context.Background(), uid, 0, "Carta 5500 0000 0000 0004", body, "2026-10-15"); err != nil {
 		t.Fatal(err)
 	}
 	sent := sentText(t, m)
@@ -132,7 +133,7 @@ func TestReadBankMailCutsALongMailOnACharacter(t *testing.T) {
 	svc.hc = m
 	// A stray byte early on, and a cut that splits the euro sign.
 	body := "Pagamento\xff " + strings.Repeat("a", mailMax-12) + "€ fine"
-	if _, err := svc.ReadBankMail(context.Background(), uid, "Avviso", body, "2026-10-15"); err != nil {
+	if _, err := svc.ReadBankMail(context.Background(), uid, 0, "Avviso", body, "2026-10-15"); err != nil {
 		t.Fatal(err)
 	}
 	sent := sentText(t, m)

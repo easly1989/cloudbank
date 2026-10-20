@@ -7,17 +7,117 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
+const aIWalletOff = `-- name: AIWalletOff :one
+SELECT COUNT(*) FROM ai_wallets_off WHERE user_id = ? AND wallet_id = ?
+`
+
+type AIWalletOffParams struct {
+	UserID   int64
+	WalletID int64
+}
+
+func (q *Queries) AIWalletOff(ctx context.Context, arg AIWalletOffParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, aIWalletOff, arg.UserID, arg.WalletID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const addAIWalletOff = `-- name: AddAIWalletOff :exec
+INSERT OR IGNORE INTO ai_wallets_off (user_id, wallet_id) VALUES (?, ?)
+`
+
+type AddAIWalletOffParams struct {
+	UserID   int64
+	WalletID int64
+}
+
+func (q *Queries) AddAIWalletOff(ctx context.Context, arg AddAIWalletOffParams) error {
+	_, err := q.db.ExecContext(ctx, addAIWalletOff, arg.UserID, arg.WalletID)
+	return err
+}
+
+const clearAIWalletsOff = `-- name: ClearAIWalletsOff :exec
+DELETE FROM ai_wallets_off WHERE user_id = ?
+`
+
+func (q *Queries) ClearAIWalletsOff(ctx context.Context, userID int64) error {
+	_, err := q.db.ExecContext(ctx, clearAIWalletsOff, userID)
+	return err
+}
+
+const countAISendsSince = `-- name: CountAISendsSince :one
+SELECT COUNT(*) FROM ai_sends WHERE user_id = ? AND created_at >= ?
+`
+
+type CountAISendsSinceParams struct {
+	UserID    int64
+	CreatedAt string
+}
+
+func (q *Queries) CountAISendsSince(ctx context.Context, arg CountAISendsSinceParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countAISendsSince, arg.UserID, arg.CreatedAt)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getAISend = `-- name: GetAISend :one
+SELECT s.id, s.wallet_id, COALESCE(w.title, '') AS wallet_name, s.feature, s.model, s.sent, s.created_at
+FROM ai_sends s
+LEFT JOIN wallets w ON w.id = s.wallet_id
+WHERE s.user_id = ? AND s.id = ?
+`
+
+type GetAISendParams struct {
+	UserID int64
+	ID     int64
+}
+
+type GetAISendRow struct {
+	ID         int64
+	WalletID   sql.NullInt64
+	WalletName string
+	Feature    string
+	Model      string
+	Sent       string
+	CreatedAt  string
+}
+
+func (q *Queries) GetAISend(ctx context.Context, arg GetAISendParams) (GetAISendRow, error) {
+	row := q.db.QueryRowContext(ctx, getAISend, arg.UserID, arg.ID)
+	var i GetAISendRow
+	err := row.Scan(
+		&i.ID,
+		&i.WalletID,
+		&i.WalletName,
+		&i.Feature,
+		&i.Model,
+		&i.Sent,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getAISettings = `-- name: GetAISettings :one
-SELECT enabled, base_url, model, api_key FROM ai_settings WHERE user_id = ?
+SELECT enabled, base_url, model, api_key, suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion
+FROM ai_settings WHERE user_id = ?
 `
 
 type GetAISettingsRow struct {
-	Enabled int64
-	BaseUrl string
-	Model   string
-	ApiKey  string
+	Enabled      int64
+	BaseUrl      string
+	Model        string
+	ApiKey       string
+	SuggestOn    int64
+	EntryOn      int64
+	MailOn       int64
+	ReportsOn    int64
+	MonthlyLimit int64
+	Motion       int64
 }
 
 func (q *Queries) GetAISettings(ctx context.Context, userID int64) (GetAISettingsRow, error) {
@@ -28,24 +128,354 @@ func (q *Queries) GetAISettings(ctx context.Context, userID int64) (GetAISetting
 		&i.BaseUrl,
 		&i.Model,
 		&i.ApiKey,
+		&i.SuggestOn,
+		&i.EntryOn,
+		&i.MailOn,
+		&i.ReportsOn,
+		&i.MonthlyLimit,
+		&i.Motion,
 	)
 	return i, err
 }
 
+const insertAIReport = `-- name: InsertAIReport :one
+INSERT INTO ai_reports (user_id, wallet_id, kind, period, body, basis, model)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+RETURNING id, kind, period, body, basis, model, feedback, created_at
+`
+
+type InsertAIReportParams struct {
+	UserID   int64
+	WalletID int64
+	Kind     string
+	Period   string
+	Body     string
+	Basis    string
+	Model    string
+}
+
+type InsertAIReportRow struct {
+	ID        int64
+	Kind      string
+	Period    string
+	Body      string
+	Basis     string
+	Model     string
+	Feedback  int64
+	CreatedAt string
+}
+
+func (q *Queries) InsertAIReport(ctx context.Context, arg InsertAIReportParams) (InsertAIReportRow, error) {
+	row := q.db.QueryRowContext(ctx, insertAIReport,
+		arg.UserID,
+		arg.WalletID,
+		arg.Kind,
+		arg.Period,
+		arg.Body,
+		arg.Basis,
+		arg.Model,
+	)
+	var i InsertAIReportRow
+	err := row.Scan(
+		&i.ID,
+		&i.Kind,
+		&i.Period,
+		&i.Body,
+		&i.Basis,
+		&i.Model,
+		&i.Feedback,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const insertAISend = `-- name: InsertAISend :one
+INSERT INTO ai_sends (user_id, wallet_id, feature, model, sent) VALUES (?, ?, ?, ?, ?)
+RETURNING id
+`
+
+type InsertAISendParams struct {
+	UserID   int64
+	WalletID sql.NullInt64
+	Feature  string
+	Model    string
+	Sent     string
+}
+
+func (q *Queries) InsertAISend(ctx context.Context, arg InsertAISendParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, insertAISend,
+		arg.UserID,
+		arg.WalletID,
+		arg.Feature,
+		arg.Model,
+		arg.Sent,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const largestExpenses = `-- name: LargestExpenses :many
+SELECT t.date, t.amount, a.currency_id AS currency_id, COALESCE(p.name, '') AS payee
+FROM transactions t
+JOIN accounts a ON a.id = t.account_id
+LEFT JOIN payees p ON p.id = t.payee_id
+WHERE t.wallet_id = ?1
+  AND t.amount < 0
+  AND t.payment_mode <> 5
+  AND (t.category_id IS NULL OR t.category_id NOT IN (SELECT cc.id FROM categories cc LEFT JOIN categories pp ON pp.id = cc.parent_id WHERE cc.wallet_id = ?1 AND (cc.no_report = 1 OR pp.no_report = 1)))
+  AND t.date >= ?2
+  AND t.date <= ?3
+ORDER BY t.amount ASC
+LIMIT 20
+`
+
+type LargestExpensesParams struct {
+	WalletID int64
+	FromDate string
+	ToDate   string
+}
+
+type LargestExpensesRow struct {
+	Date       string
+	Amount     int64
+	CurrencyID int64
+	Payee      string
+}
+
+// The month's largest expenses for a report (#696): date, amount in the
+// account's currency, payee. Transfers and categories kept out of the reports
+// are left out, as on the overview's chart; the caller converts and keeps the
+// top three.
+func (q *Queries) LargestExpenses(ctx context.Context, arg LargestExpensesParams) ([]LargestExpensesRow, error) {
+	rows, err := q.db.QueryContext(ctx, largestExpenses, arg.WalletID, arg.FromDate, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LargestExpensesRow{}
+	for rows.Next() {
+		var i LargestExpensesRow
+		if err := rows.Scan(
+			&i.Date,
+			&i.Amount,
+			&i.CurrencyID,
+			&i.Payee,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAIReports = `-- name: ListAIReports :many
+SELECT id, kind, period, body, basis, model, feedback, created_at
+FROM ai_reports
+WHERE user_id = ? AND wallet_id = ?
+ORDER BY created_at DESC, id DESC
+LIMIT 60
+`
+
+type ListAIReportsParams struct {
+	UserID   int64
+	WalletID int64
+}
+
+type ListAIReportsRow struct {
+	ID        int64
+	Kind      string
+	Period    string
+	Body      string
+	Basis     string
+	Model     string
+	Feedback  int64
+	CreatedAt string
+}
+
+func (q *Queries) ListAIReports(ctx context.Context, arg ListAIReportsParams) ([]ListAIReportsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAIReports, arg.UserID, arg.WalletID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAIReportsRow{}
+	for rows.Next() {
+		var i ListAIReportsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.Period,
+			&i.Body,
+			&i.Basis,
+			&i.Model,
+			&i.Feedback,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAISends = `-- name: ListAISends :many
+SELECT s.id, s.wallet_id, COALESCE(w.title, '') AS wallet_name, s.feature, s.model, s.created_at
+FROM ai_sends s
+LEFT JOIN wallets w ON w.id = s.wallet_id
+WHERE s.user_id = ?
+ORDER BY s.created_at DESC, s.id DESC
+LIMIT ?
+`
+
+type ListAISendsParams struct {
+	UserID int64
+	Limit  int64
+}
+
+type ListAISendsRow struct {
+	ID         int64
+	WalletID   sql.NullInt64
+	WalletName string
+	Feature    string
+	Model      string
+	CreatedAt  string
+}
+
+func (q *Queries) ListAISends(ctx context.Context, arg ListAISendsParams) ([]ListAISendsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAISends, arg.UserID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAISendsRow{}
+	for rows.Next() {
+		var i ListAISendsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WalletID,
+			&i.WalletName,
+			&i.Feature,
+			&i.Model,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAIWalletsOff = `-- name: ListAIWalletsOff :many
+SELECT wallet_id FROM ai_wallets_off WHERE user_id = ? ORDER BY wallet_id
+`
+
+func (q *Queries) ListAIWalletsOff(ctx context.Context, userID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listAIWalletsOff, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var wallet_id int64
+		if err := rows.Scan(&wallet_id); err != nil {
+			return nil, err
+		}
+		items = append(items, wallet_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const purgeAISends = `-- name: PurgeAISends :exec
+DELETE FROM ai_sends WHERE user_id = ? AND created_at < ?
+`
+
+type PurgeAISendsParams struct {
+	UserID    int64
+	CreatedAt string
+}
+
+func (q *Queries) PurgeAISends(ctx context.Context, arg PurgeAISendsParams) error {
+	_, err := q.db.ExecContext(ctx, purgeAISends, arg.UserID, arg.CreatedAt)
+	return err
+}
+
+const setAIReportFeedback = `-- name: SetAIReportFeedback :execrows
+UPDATE ai_reports SET feedback = ? WHERE id = ? AND user_id = ? AND wallet_id = ?
+`
+
+type SetAIReportFeedbackParams struct {
+	Feedback int64
+	ID       int64
+	UserID   int64
+	WalletID int64
+}
+
+func (q *Queries) SetAIReportFeedback(ctx context.Context, arg SetAIReportFeedbackParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, setAIReportFeedback,
+		arg.Feedback,
+		arg.ID,
+		arg.UserID,
+		arg.WalletID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const upsertAISettings = `-- name: UpsertAISettings :exec
-INSERT INTO ai_settings (user_id, enabled, base_url, model, api_key, updated_at)
-VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+INSERT INTO ai_settings (
+    user_id, enabled, base_url, model, api_key,
+    suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion, updated_at
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 ON CONFLICT (user_id) DO UPDATE SET
     enabled = excluded.enabled, base_url = excluded.base_url,
-    model = excluded.model, api_key = excluded.api_key, updated_at = excluded.updated_at
+    model = excluded.model, api_key = excluded.api_key,
+    suggest_on = excluded.suggest_on, entry_on = excluded.entry_on,
+    mail_on = excluded.mail_on, reports_on = excluded.reports_on,
+    monthly_limit = excluded.monthly_limit, motion = excluded.motion,
+    updated_at = excluded.updated_at
 `
 
 type UpsertAISettingsParams struct {
-	UserID  int64
-	Enabled int64
-	BaseUrl string
-	Model   string
-	ApiKey  string
+	UserID       int64
+	Enabled      int64
+	BaseUrl      string
+	Model        string
+	ApiKey       string
+	SuggestOn    int64
+	EntryOn      int64
+	MailOn       int64
+	ReportsOn    int64
+	MonthlyLimit int64
+	Motion       int64
 }
 
 func (q *Queries) UpsertAISettings(ctx context.Context, arg UpsertAISettingsParams) error {
@@ -55,6 +485,12 @@ func (q *Queries) UpsertAISettings(ctx context.Context, arg UpsertAISettingsPara
 		arg.BaseUrl,
 		arg.Model,
 		arg.ApiKey,
+		arg.SuggestOn,
+		arg.EntryOn,
+		arg.MailOn,
+		arg.ReportsOn,
+		arg.MonthlyLimit,
+		arg.Motion,
 	)
 	return err
 }

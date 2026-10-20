@@ -363,6 +363,16 @@ func (f *fake) chat(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
 	f.aiLast = text
 	f.mu.Unlock()
+	// A monthly report (#696) is plain paragraphs, not JSON.
+	if strings.Contains(text, "Write the report in") {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"choices": []map[string]any{{"message": map[string]string{
+				"role":    "assistant",
+				"content": "A quiet month: you kept 1250.00 EUR aside.\n\nGroceries were the largest category.",
+			}}},
+		})
+		return
+	}
 	answer := map[string]any{"payment": false}
 	if m := rePaid.FindStringSubmatch(text); m != nil {
 		answer = map[string]any{"payment": true, "amount": m[1], "direction": "out", "date": "", "text": m[2]}

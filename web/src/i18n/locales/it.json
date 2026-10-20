@@ -47,7 +47,8 @@
       "show_other": "Mostrale",
       "keep_one": "Lasciala nascosta",
       "keep_other": "Lasciale nascoste"
-    }
+    },
+    "aiInsights": "Approfondimenti AI"
   },
   "transactions": {
     "createCategory": "Crea «{{name}}»",
@@ -1985,11 +1986,9 @@
     }
   },
   "ai": {
-    "title": "AI (con la tua chiave)",
-    "hint": "Opzionale. Collega un provider AI per ottenere suggerimenti di categoria. Funziona con servizi compatibili OpenAI, incluso un runtime locale (Ollama, LM Studio) tramite il suo URL, che può impostare solo un amministratore. La tua chiave resta sul server e viene usata solo per le tue richieste.",
+    "hint": "Un servizio compatibile OpenAI, oppure un modello sulla tua rete (Ollama, LM Studio) che può impostare solo un amministratore. La chiave resta sul server.",
     "enable": "Abilita funzioni AI",
     "baseUrl": "URL base",
-    "baseUrlHint": "Endpoint compatibile OpenAI, es. https://api.openai.com/v1 o http://localhost:11434/v1",
     "model": "Modello",
     "apiKey": "Chiave API",
     "apiKeyPlaceholder": "sk-…",
@@ -2002,7 +2001,64 @@
     "quickEntry": "Inserimento rapido",
     "quickEntryPlaceholder": "es. 12,40 caffè al Bar Centrale ieri",
     "quickEntryRun": "Compila dalla descrizione",
-    "noParse": "Non ho capito la descrizione."
+    "noParse": "Non ho capito la descrizione.",
+    "provider": "Il tuo provider",
+    "enableHint": "Spento, CloudBank non invia niente a nessun modello.",
+    "features": "Cosa fa l'AI",
+    "featuresHint": "Ognuna si accende da sola, e dice cosa invia al modello.",
+    "feature": {
+      "reports": {
+        "name": "Resoconti mensili",
+        "sends": "Invia i totali del mese per categoria, confrontati col mese prima e coi tuoi budget, le tre spese più grandi (beneficiario, importo e data) e le scadenze del mese dopo. Mai le note."
+      },
+      "suggest": {
+        "name": "Suggerimento della categoria",
+        "sends": "Invia il beneficiario e l'importo della transazione, con l'elenco delle tue categorie."
+      },
+      "entry": {
+        "name": "Inserimento rapido",
+        "sends": "Invia la frase che scrivi, con l'elenco di categorie, beneficiari e tag."
+      },
+      "mail": {
+        "name": "Mail della banca",
+        "sends": "Invia il testo delle mail della banca, con carte e IBAN nascosti."
+      }
+    },
+    "wallets": "Su quali portafogli",
+    "walletsHint": "L'AI lavora solo su quelli spuntati. Quello che scrive lo vedi solo tu, anche nei portafogli condivisi.",
+    "walletOf": "Portafoglio di {{owner}}",
+    "look": "Aspetto",
+    "lookHint": "Come si presenta quello che scrive l'AI.",
+    "motion": "Colori in movimento",
+    "motionHint": "Il bordo del riquadro AI cambia colore lentamente. Resta fermo se il sistema chiede meno movimento.",
+    "box": {
+      "example": "Suggerimento AI",
+      "exampleBasis": "Esempio",
+      "exampleText": "Ogni cosa scritta dall'AI sta in un riquadro come questo.",
+      "why": "Perché?",
+      "hideWhy": "Nascondi i numeri",
+      "useful": "Utile",
+      "notUseful": "Non utile"
+    },
+    "thisMonth": "Questo mese",
+    "used_one": "{{count}} richiesta su {{limit}}",
+    "used_other": "{{count}} richieste su {{limit}}",
+    "resets": "si azzera il {{date}}",
+    "limit": {
+      "label": "Richieste al mese",
+      "note": "Al limite la lettura delle mail della banca si ferma; quello che chiedi tu chiede prima conferma.",
+      "title": "Limite del mese raggiunto",
+      "body_one": "Hai usato la {{count}} richiesta di questo mese. Questa andrebbe oltre: vuoi inviarla lo stesso? Il limite si cambia in Impostazioni › AI e si azzera il {{date}}.",
+      "body_other": "Hai usato le {{count}} richieste di questo mese. Questa andrebbe oltre: vuoi inviarla lo stesso? Il limite si cambia in Impostazioni › AI e si azzera il {{date}}.",
+      "go": "Invia lo stesso",
+      "stop": "Annulla"
+    },
+    "sent": "Cosa è stato inviato",
+    "sentHint": "Gli ultimi 90 giorni, parola per parola.",
+    "sentNone": "Ancora niente.",
+    "sentWhere": "{{when}} · {{wallet}}",
+    "sentOn": "Inviato il {{when}}",
+    "show": "Mostra"
   },
   "setup": {
     "title": "Benvenuto in CloudBank",
@@ -2599,7 +2655,7 @@
     "apiTokensHint": "Un token permette a uno script o a un'altra app di agire come te. Revocarlo lo blocca all'istante.",
     "notificationsHint": "Dove CloudBank ti raggiunge quando qualcosa ti richiede.",
     "ai": "AI",
-    "aiHint": "Serve a proporre le categorie. La chiave è conservata cifrata e non lascia mai questo server.",
+    "aiHint": "Il tuo provider AI: cosa fa, su quali portafogli e cosa gli è stato inviato.",
     "bankSyncHint": "Le connessioni alle tue banche, con il loro stato e la loro storia.",
     "importHint": "Gli estratti conto, e le regole che li archiviano.",
     "backupHint": "Una copia da cui ripristinare, e un controllo che il database sia integro.",
@@ -3151,7 +3207,7 @@
     "provider_error": "Il fornitore della banca non ha risposto come previsto. Riprova più tardi.",
     "not_configured": "Questo fornitore non è ancora configurato per il portafoglio.",
     "ai_error": "Il fornitore di IA ha risposto con un errore.",
-    "ai_disabled": "L'IA è spenta. Accendila prima nelle Impostazioni.",
+    "ai_disabled": "L'AI è spenta per questa funzione. Accendila in Impostazioni › AI.",
     "rate_limited": "Troppi tentativi. Aspetta un po' e riprova.",
     "too_large": "Il file è troppo grande.",
     "invalid_file": "Non è stato possibile leggere il file. Controlla che sia del tipo giusto.",
@@ -3178,6 +3234,32 @@
     "unreachable": "Il server di posta non risponde: controlla nome e porta.",
     "tls_failed": "Non è stato possibile cifrare la connessione al server di posta.",
     "ai_not_configured": "Prima configura l'AI, in Impostazioni › AI.",
-    "hourly_limit": "Troppi messaggi in quest'ora. Riprova più tardi."
+    "hourly_limit": "Troppi messaggi in quest'ora. Riprova più tardi.",
+    "no_data": "Quel mese non ha transazioni di cui scrivere."
+  },
+  "insights": {
+    "title": "Approfondimenti AI",
+    "hint": "Resoconti scritti dalla tua AI sui numeri del portafoglio. Li vedi solo tu.",
+    "month": "Mese",
+    "generate": "Genera ora",
+    "off": "L'AI non scrive resoconti",
+    "offHint": "Imposta un provider e accendi i resoconti mensili: l'AI scriverà qui dei mesi del portafoglio.",
+    "walletOff": "Questo portafoglio è fuori dalla portata dell'AI",
+    "walletOffHint": "Spuntalo tra i portafogli dell'AI perché scriva dei suoi mesi.",
+    "toSettings": "Apri Impostazioni › AI",
+    "none": "Ancora nessun resoconto. Scegli un mese e generane uno.",
+    "label": "Resoconto AI",
+    "basis": "{{month}} · generato il {{date}}",
+    "reportTitle": "{{month}} in breve",
+    "earlier": "Resoconti precedenti",
+    "read": "Leggi",
+    "readMonth": "Leggi {{month}}",
+    "why": {
+      "income": "Entrate",
+      "expense": "Uscite",
+      "net": "Saldo",
+      "avg": "Media 6 mesi",
+      "note": "I numeri li ha calcolati CloudBank; il modello ha scritto solo il testo. Modello: {{model}}."
+    }
   }
 }
