@@ -7,8 +7,8 @@
   },
   "stable": {
     "image": "ghcr.io/easly1989/cloudbank:main",
-    "sha": "5a7daa0e99cb70e3675313e722864857b8c0c825",
-    "published": "2026-10-17T21:15:43Z",
-    "version": "v3.9.0"
+    "sha": "dc49802f3d17d8c3eb837bf2417f180cd5696648",
+    "published": "2026-10-20T06:56:48Z",
+    "version": "v3.10.0"
   }
 }
