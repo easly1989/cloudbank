@@ -36,6 +36,8 @@ type Features struct {
 	Entry   bool `json:"entry"`
 	Mail    bool `json:"mail"`
 	Reports bool `json:"reports"`
+	// Budgets: budget proposals from what is really spent (#698).
+	Budgets bool `json:"budgets"`
 }
 
 // Schedule is which reports come by themselves besides the monthly one,
@@ -154,6 +156,7 @@ func (s *Service) Settings(ctx context.Context, userID int64) (Settings, error) 
 		Enabled: row.Enabled != 0, BaseURL: row.BaseUrl, Model: row.Model, HasKey: row.ApiKey != "",
 		Features: Features{
 			Suggest: row.SuggestOn != 0, Entry: row.EntryOn != 0, Mail: row.MailOn != 0, Reports: row.ReportsOn != 0,
+			Budgets: row.BudgetsOn != 0,
 		},
 		Schedule:   Schedule{Weekly: row.WeeklyOn != 0, Yearly: row.YearlyOn != 0},
 		WalletsOff: off, MonthlyLimit: row.MonthlyLimit, Used: used, Motion: row.Motion != 0, Local: local,
@@ -185,7 +188,7 @@ func (s *Service) UpdateSettings(ctx context.Context, userID int64, admin bool, 
 	p := db.UpsertAISettingsParams{
 		UserID: userID, Enabled: flag(in.Enabled), BaseUrl: strings.TrimSpace(in.BaseURL),
 		Model: strings.TrimSpace(in.Model), ApiKey: secrets.Seal(key),
-		SuggestOn: row.SuggestOn, EntryOn: row.EntryOn, MailOn: row.MailOn, ReportsOn: row.ReportsOn,
+		SuggestOn: row.SuggestOn, EntryOn: row.EntryOn, MailOn: row.MailOn, ReportsOn: row.ReportsOn, BudgetsOn: row.BudgetsOn,
 		MonthlyLimit: row.MonthlyLimit, Motion: row.Motion, WeeklyOn: row.WeeklyOn, YearlyOn: row.YearlyOn,
 	}
 	if sc := in.Schedule; sc != nil {
@@ -193,6 +196,7 @@ func (s *Service) UpdateSettings(ctx context.Context, userID int64, admin bool, 
 	}
 	if f := in.Features; f != nil {
 		p.SuggestOn, p.EntryOn, p.MailOn, p.ReportsOn = flag(f.Suggest), flag(f.Entry), flag(f.Mail), flag(f.Reports)
+		p.BudgetsOn = flag(f.Budgets)
 	}
 	if in.MonthlyLimit != nil {
 		if *in.MonthlyLimit < 1 || *in.MonthlyLimit > 100000 {

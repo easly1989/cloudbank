@@ -348,9 +348,25 @@ actually gone.
   - The line's **⋯** also opens its transactions in the reports, or removes it
     from the budget.
 - **Categories and accounts** set to stay out of the budget are not counted.
+- **Budgets the AI proposes.** With **Budget proposals** switched on in
+  **Settings → AI**, the AI box above the lines proposes up to five budgets
+  from the six complete months before this one: a category spent on in at
+  least five of them with no budget, or a budget gone over, or not reached, in
+  at least four. CloudBank works out each amount, the median of the months
+  rounded to 5; the model only says why in two or three sentences.
+  - **Apply** on a row opens the sheet filled in with that amount, the same
+    every month and every year. Nothing is saved until you save it there,
+    which takes the row off the proposal.
+  - **Later** hides the proposal for a week. **Ignore** puts it away: it comes
+    back only when an amount moves by more than a fifth, or a new category
+    turns up. **Why?** shows each month and the median.
+  - A new proposal is made on the 1st of the month, at 07:00 in your time
+    zone, and at once when the switch is turned on. It is yours alone, on the
+    wallets the AI may work on.
 
 The dashboard's **Budget** widget shows this month at a glance, and the overview
-says when a category has gone past its plan.
+says when a category has gone past its plan. A budget proposal shows there too,
+short, with **See in Budget**.
 
 ## Goals
 
@@ -434,6 +450,8 @@ reports** switched on, for a wallet the AI may work on.
   only writes the text. The thumbs say whether it helped.
 - **Earlier reports** are listed under it, named by their month, week or year;
   **Read** opens one.
+- **Open proposals**: a [budget proposal](#budget) waiting for you, with its
+  rows; **Apply** opens the budget sheet on Budget.
 - **Yours alone.** In a shared wallet the others see none of your reports.
 
 At this month's request limit, **Generate now** asks before going past it. A
