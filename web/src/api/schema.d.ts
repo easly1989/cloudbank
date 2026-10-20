@@ -604,7 +604,7 @@ export interface paths {
         get: operations["getAISettings"];
         /**
          * Update AI configuration (omit apiKey to keep the stored key)
-         * @description baseUrl must be an http(s) URL. Only an administrator may name a provider on the local network (loopback, private or link-local addresses): anyone else gets 400 ai_local_url.
+         * @description baseUrl must be an http(s) URL. Only an administrator may name a provider on the local network (loopback, private or link-local addresses): anyone else gets 400 ai_local_url. features, walletsOff, monthlyLimit and motion, when omitted, keep what is stored; walletsOff names the user's wallets the AI must not work on (any other id is ignored).
          */
         put: operations["updateAISettings"];
         post?: never;
@@ -646,6 +646,88 @@ export interface paths {
         put?: never;
         /** Parse a natural-language description into transaction fields */
         post: operations["parseEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/sends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the current user's AI sent to the model, newest first (kept 90 days) */
+        get: operations["listAISends"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/sends/{sendId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sendId: number;
+            };
+            cookie?: never;
+        };
+        /** One call, with the text sent to the model word for word */
+        get: operations["getAISend"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/insights/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * The current user's AI reports on this wallet, newest first
+         * @description Reports are private to the user who asked for them, even on a shared wallet.
+         */
+        get: operations["listAIReports"];
+        put?: never;
+        /**
+         * Write the monthly report for a complete month from the last twelve
+         * @description The server computes the numbers; the model writes the text in the user's language. 400 ai_disabled when the AI, its reports or this wallet are off; 400 bad_period for a month that is not complete or older than a year; 400 no_data for a month with nothing in it.
+         */
+        post: operations["generateAIReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/insights/reports/{reportId}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                reportId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Thumbs up (1), down (-1) or neither (0) on one of the user's reports */
+        put: operations["setAIReportFeedback"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3662,14 +3744,43 @@ export interface components {
             /** @description why the last check had no answer */
             error?: string;
         };
+        /** @description The AI's jobs, each switched on by itself under the master switch. */
+        AIFeatures: {
+            /** @description category suggestions: sends the payee and the amount */
+            suggest: boolean;
+            /** @description quick entry: sends the sentence typed */
+            entry: boolean;
+            /** @description bank mails: sends the mail with cards and IBANs hidden */
+            mail: boolean;
+            /** @description reports: sends the month's totals and largest expenses */
+            reports: boolean;
+        };
         /** @description A user's AI configuration. The API key is never returned; only hasKey. */
         AISettings: {
+            /** @description the master switch */
             enabled: boolean;
             /** @description OpenAI-compatible base URL (cloud or local runtime) */
             baseUrl: string;
             model: string;
             /** @description whether an API key is stored */
             hasKey: boolean;
+            features: components["schemas"]["AIFeatures"];
+            /** @description the wallets the AI must not work on */
+            walletsOff: number[];
+            /**
+             * Format: int64
+             * @description calls to the model a calendar month
+             */
+            monthlyLimit: number;
+            /**
+             * Format: int64
+             * @description calls this calendar month (UTC)
+             */
+            used: number;
+            /** @description the colours flowing round the AI box */
+            motion: boolean;
+            /** @description the provider is on the server's own network: nothing leaves it */
+            local: boolean;
         };
         AISettingsInput: {
             enabled: boolean;
@@ -3677,12 +3788,104 @@ export interface components {
             model: string;
             /** @description omit to keep the stored key; empty string clears it */
             apiKey?: string;
+            features?: components["schemas"]["AIFeatures"];
+            walletsOff?: number[];
+            /** Format: int64 */
+            monthlyLimit?: number;
+            motion?: boolean;
         };
+        /** @description One call to the model. */
+        AISend: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            walletId: number | null;
+            walletName: string;
+            /** @enum {string} */
+            feature: "suggest" | "entry" | "mail" | "reports";
+            model: string;
+            /** @description RFC3339 UTC */
+            createdAt: string;
+            /** @description the text sent, word for word; only when one call is asked for */
+            sent?: string;
+        };
+        /** @description A month's money in and out (positive amounts) and what was kept, in minor units. */
+        AIReportFigures: {
+            /** Format: int64 */
+            income: number;
+            /** Format: int64 */
+            expense: number;
+            /** Format: int64 */
+            net: number;
+        };
+        AIReportCurrency: {
+            code: string;
+            symbol: string;
+            symbolPrefix: boolean;
+            decimalChar: string;
+            groupChar: string;
+            fracDigits: number;
+        };
+        /** @description The numbers the server computed for a report, in the wallet's base currency. */
+        AIReportBasis: {
+            /** @description YYYY-MM */
+            month: string;
+            currency: components["schemas"]["AIReportCurrency"];
+            figures: components["schemas"]["AIReportFigures"];
+            prev: components["schemas"]["AIReportFigures"];
+            avg: components["schemas"]["AIReportFigures"];
+            categories: {
+                name: string;
+                /** Format: int64 */
+                amount: number;
+                /** Format: int64 */
+                prev: number;
+                /** Format: int64 */
+                avg: number;
+            }[];
+            largest: {
+                date: string;
+                payee: string;
+                /** Format: int64 */
+                amount: number;
+            }[];
+            overBudget: {
+                name: string;
+                /** Format: int64 */
+                budget: number;
+                /** Format: int64 */
+                actual: number;
+            }[];
+            bills: {
+                name: string;
+                date: string;
+                /** Format: int64 */
+                amount: number;
+            }[];
+        };
+        AIReport: {
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            kind: "monthly";
+            /** @description YYYY-MM */
+            period: string;
+            /** @description the model's text: paragraphs separated by a blank line */
+            body: string;
+            basis: components["schemas"]["AIReportBasis"];
+            model: string;
+            /** @enum {integer} */
+            feedback: -1 | 0 | 1;
+            /** @description RFC3339 UTC */
+            createdAt: string;
+        };
+        /** @description Only the payee and the amount are sent to the model, never the memo. */
         SuggestCategoryRequest: {
             payee?: string;
-            memo?: string;
             /** @description human-formatted amount, for context */
             amount?: string;
+            /** @description the user's yes to a call past this month's limit */
+            confirm?: boolean;
         };
         MailOverview: {
             /** @description false when the server has no CB_SECRET_KEY */
@@ -6826,6 +7029,15 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            /** @description This month's limit is reached (ai_limit); ask the user, then send confirm. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description The AI provider request failed. */
             502: {
                 headers: {
@@ -6848,6 +7060,8 @@ export interface operations {
             content: {
                 "application/json": {
                     text: string;
+                    /** @description the user's yes to a call past this month's limit */
+                    confirm?: boolean;
                 };
             };
         };
@@ -6864,6 +7078,15 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            /** @description This month's limit is reached (ai_limit); ask the user, then send confirm. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description The AI provider request failed. */
             502: {
                 headers: {
@@ -6871,6 +7094,162 @@ export interface operations {
                 };
                 content?: never;
             };
+        };
+    };
+    listAISends: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The latest calls, without the text. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        sends: components["schemas"]["AISend"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getAISend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sendId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The call. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AISend"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listAIReports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The reports. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reports: components["schemas"]["AIReport"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    generateAIReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description YYYY-MM */
+                    period: string;
+                    /** @description the user's yes to a call past this month's limit */
+                    confirm?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description The report. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIReport"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description This month's limit is reached (ai_limit); ask the user, then send confirm. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The AI provider request failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    setAIReportFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                reportId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {integer} */
+                    feedback: -1 | 0 | 1;
+                };
+            };
+        };
+        responses: {
+            /** @description Recorded. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     getMailOverview: {

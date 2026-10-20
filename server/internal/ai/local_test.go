@@ -16,6 +16,9 @@ import (
 func TestLocalProvidersAreForAdministrators(t *testing.T) {
 	svc, q, uid, wid := newFixture(t)
 	ctx := context.Background()
+	if _, err := svc.db.ExecContext(ctx, "UPDATE users SET is_admin = 1 WHERE id = ?", uid); err != nil {
+		t.Fatal(err)
+	}
 	_, _ = q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: wid, Name: "Food"})
 	key := "k"
 
@@ -39,19 +42,25 @@ func TestLocalProvidersAreForAdministrators(t *testing.T) {
 		_, _ = w.Write([]byte("internal secret page"))
 	}))
 	defer srv.Close()
-	if _, err := svc.UpdateSettings(ctx, uid, true, SettingsInput{Enabled: true, BaseURL: srv.URL, Model: "m", APIKey: &key}); err != nil {
+	if _, err := svc.UpdateSettings(ctx, uid, true, SettingsInput{Enabled: true, BaseURL: srv.URL, Model: "m", APIKey: &key, Features: &Features{Suggest: true}}); err != nil {
 		t.Fatalf("admin save of a local URL: %v", err)
 	}
-	if got, err := svc.SuggestCategory(ctx, uid, true, wid, SuggestInput{Payee: "Market"}); err != nil || got == nil {
+	if got, err := svc.SuggestCategory(ctx, uid, wid, false, SuggestInput{Payee: "Market"}); err != nil || got == nil {
 		t.Fatalf("admin call = %+v, %v; want a suggestion", got, err)
 	}
 	// The same settings, used by someone who is no longer an administrator.
-	if _, err := svc.SuggestCategory(ctx, uid, false, wid, SuggestInput{Payee: "Market"}); !errors.Is(err, ErrLocalURL) {
+	if _, err := svc.db.ExecContext(ctx, "UPDATE users SET is_admin = 0 WHERE id = ?", uid); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.SuggestCategory(ctx, uid, wid, false, SuggestInput{Payee: "Market"}); !errors.Is(err, ErrLocalURL) {
 		t.Errorf("non-admin call to a local URL: err = %v, want ErrLocalURL", err)
+	}
+	if _, err := svc.db.ExecContext(ctx, "UPDATE users SET is_admin = 1 WHERE id = ?", uid); err != nil {
+		t.Fatal(err)
 	}
 
 	status = http.StatusTeapot
-	_, err := svc.SuggestCategory(ctx, uid, true, wid, SuggestInput{Payee: "Market"})
+	_, err := svc.SuggestCategory(ctx, uid, wid, false, SuggestInput{Payee: "Market"})
 	if err == nil || strings.Contains(err.Error(), "secret") || !strings.Contains(err.Error(), "418") {
 		t.Errorf("failing provider: err = %v, want the status and not the body", err)
 	}

@@ -135,6 +135,21 @@ describe("App routing", () => {
         body: { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
       },
       "/api/v1/version": { body: { version: "test" } },
+      // The sidebar shows AI insights only while the AI writes reports (#696).
+      "/api/v1/ai/settings": {
+        body: {
+          enabled: false,
+          baseUrl: "",
+          model: "",
+          hasKey: false,
+          features: { suggest: false, entry: false, mail: false, reports: false },
+          walletsOff: [],
+          monthlyLimit: 200,
+          used: 0,
+          motion: true,
+          local: false,
+        },
+      },
       // The admin's new-version check (#582): a local build, never checked.
       "/api/v1/admin/updates": {
         body: { enabled: true, allowed: true, channel: "", current: "test", available: false },

@@ -47,7 +47,8 @@
       "show_other": "Show them",
       "keep_one": "Keep hidden",
       "keep_other": "Keep hidden"
-    }
+    },
+    "aiInsights": "AI insights"
   },
   "transactions": {
     "createCategory": "Create “{{name}}”",
@@ -1985,11 +1986,9 @@
     }
   },
   "ai": {
-    "title": "AI (bring your own key)",
-    "hint": "Optional. Connect an AI provider to get category suggestions. Works with OpenAI-compatible services, including a local runtime (Ollama, LM Studio) via its URL, which only an administrator can set. Your key stays on the server and is used only for your requests.",
+    "hint": "An OpenAI-compatible service, or a model on your own network (Ollama, LM Studio) that only an administrator can set. Your key stays on the server.",
     "enable": "Enable AI features",
     "baseUrl": "Base URL",
-    "baseUrlHint": "OpenAI-compatible endpoint, e.g. https://api.openai.com/v1 or http://localhost:11434/v1",
     "model": "Model",
     "apiKey": "API key",
     "apiKeyPlaceholder": "sk-…",
@@ -2002,7 +2001,64 @@
     "quickEntry": "Quick entry",
     "quickEntryPlaceholder": "e.g. 12.40 coffee at Bar Centrale yesterday",
     "quickEntryRun": "Fill from description",
-    "noParse": "Could not read that description."
+    "noParse": "Could not read that description.",
+    "provider": "Your provider",
+    "enableHint": "Off, CloudBank sends nothing to any model.",
+    "features": "What the AI does",
+    "featuresHint": "Each one is switched on by itself, and says what it sends to the model.",
+    "feature": {
+      "reports": {
+        "name": "Monthly reports",
+        "sends": "Sends the month's totals by category, against the month before and your budgets, the three largest expenses (payee, amount and date) and next month's bills. Never the memos."
+      },
+      "suggest": {
+        "name": "Category suggestion",
+        "sends": "Sends the transaction's payee and amount, with the list of your categories."
+      },
+      "entry": {
+        "name": "Quick entry",
+        "sends": "Sends the sentence you write, with the list of your categories, payees and tags."
+      },
+      "mail": {
+        "name": "Bank mails",
+        "sends": "Sends the text of the bank's mails, with card numbers and IBANs hidden."
+      }
+    },
+    "wallets": "On which wallets",
+    "walletsHint": "The AI works only on the ticked ones. What it writes is yours alone, in shared wallets too.",
+    "walletOf": "{{owner}}'s wallet",
+    "look": "Look",
+    "lookHint": "How what the AI writes appears.",
+    "motion": "Moving colours",
+    "motionHint": "The AI box's border slowly changes colour. It stays still when your system asks for less motion.",
+    "box": {
+      "example": "AI suggestion",
+      "exampleBasis": "Example",
+      "exampleText": "Everything the AI writes sits in a box like this one.",
+      "why": "Why?",
+      "hideWhy": "Hide the numbers",
+      "useful": "Useful",
+      "notUseful": "Not useful"
+    },
+    "thisMonth": "This month",
+    "used_one": "{{count}} request of {{limit}}",
+    "used_other": "{{count}} requests of {{limit}}",
+    "resets": "starts again on {{date}}",
+    "limit": {
+      "label": "Requests a month",
+      "note": "At the limit, reading the bank's mails stops; what you ask for yourself asks first.",
+      "title": "This month's limit is reached",
+      "body_one": "You have used this month's {{count}} request. This one would go past it: send it anyway? The limit is changed in Settings › AI and starts again on {{date}}.",
+      "body_other": "You have used this month's {{count}} requests. This one would go past them: send it anyway? The limit is changed in Settings › AI and starts again on {{date}}.",
+      "go": "Send anyway",
+      "stop": "Cancel"
+    },
+    "sent": "What was sent",
+    "sentHint": "The last 90 days, word for word.",
+    "sentNone": "Nothing yet.",
+    "sentWhere": "{{when}} · {{wallet}}",
+    "sentOn": "Sent on {{when}}",
+    "show": "Show"
   },
   "setup": {
     "title": "Welcome to CloudBank",
@@ -2599,7 +2655,7 @@
     "apiTokensHint": "Tokens let a script or another app act as you. Revoke one and it stops working immediately.",
     "notificationsHint": "Where CloudBank reaches you when something needs you.",
     "ai": "AI",
-    "aiHint": "Used to suggest categories. Your key is stored encrypted and never leaves this server.",
+    "aiHint": "Your own AI provider: what it does, on which wallets, and what it was sent.",
     "bankSyncHint": "Connections to your banks, with their own state and history.",
     "importHint": "Statements, and the rules that file them.",
     "backupHint": "A copy you can restore from, and a check that the database is sound.",
@@ -3151,7 +3207,7 @@
     "provider_error": "The bank's provider did not answer as expected. Try again later.",
     "not_configured": "This provider is not set up for the wallet yet.",
     "ai_error": "The AI provider answered with an error.",
-    "ai_disabled": "AI is turned off. Turn it on in Settings first.",
+    "ai_disabled": "The AI is off for this. Turn it on in Settings › AI.",
     "rate_limited": "Too many attempts. Wait a little and try again.",
     "too_large": "The file is too large.",
     "invalid_file": "The file could not be read. Check that it is the right kind of file.",
@@ -3178,6 +3234,32 @@
     "unreachable": "The mail server does not answer: check its name and port.",
     "tls_failed": "The connection to the mail server could not be encrypted.",
     "ai_not_configured": "Set up the AI first, in Settings › AI.",
-    "hourly_limit": "Too many messages this hour. Try again later."
+    "hourly_limit": "Too many messages this hour. Try again later.",
+    "no_data": "That month has no transactions to write about."
+  },
+  "insights": {
+    "title": "AI insights",
+    "hint": "Reports your AI writes on the wallet's numbers. Only you see them.",
+    "month": "Month",
+    "generate": "Generate now",
+    "off": "The AI does not write reports",
+    "offHint": "Set up a provider and switch on monthly reports, and the AI will write about the wallet's months here.",
+    "walletOff": "This wallet is out of the AI's reach",
+    "walletOffHint": "Tick it among the AI's wallets to have its months written about.",
+    "toSettings": "Open Settings › AI",
+    "none": "No report yet. Pick a month and generate one.",
+    "label": "AI report",
+    "basis": "{{month}} · generated on {{date}}",
+    "reportTitle": "{{month}} in short",
+    "earlier": "Earlier reports",
+    "read": "Read",
+    "readMonth": "Read {{month}}",
+    "why": {
+      "income": "Income",
+      "expense": "Expenses",
+      "net": "Net",
+      "avg": "6-month average",
+      "note": "CloudBank worked out the numbers; the model only wrote the text. Model: {{model}}."
+    }
   }
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/dashboard"
 	"github.com/easly1989/cloudbank/server/internal/goal"
 	"github.com/easly1989/cloudbank/server/internal/importio"
+	"github.com/easly1989/cloudbank/server/internal/insight"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
 	"github.com/easly1989/cloudbank/server/internal/mailingest"
 	"github.com/easly1989/cloudbank/server/internal/notify"
@@ -57,6 +58,7 @@ type walletHandlers struct {
 	dashboard     *dashboard.Service
 	bills         *bills.Service
 	ai            *ai.Service
+	insights      *insight.Service
 	bankSync      *banksync.Service
 	mail          *mailingest.Service
 	templates     *template.Service
@@ -148,7 +150,7 @@ func (h *walletHandlers) routes(r chi.Router) {
 			(&billsHandlers{svc: h.bills}).walletRoutes(r)
 		}
 		if h.ai != nil {
-			(&aiHandlers{svc: h.ai}).walletRoutes(r)
+			(&aiHandlers{svc: h.ai, insights: h.insights}).walletRoutes(r)
 		}
 		if h.bankSync != nil {
 			(&bankSyncHandlers{svc: h.bankSync, demo: h.demo != nil}).walletRoutes(r)

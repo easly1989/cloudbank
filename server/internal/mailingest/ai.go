@@ -34,7 +34,7 @@ var ErrAINotConfigured = errors.New("mailingest: the AI is not set up")
 // mail reports. It is the AI service.
 type AIReader interface {
 	Configured(ctx context.Context, userID int64) bool
-	ReadBankMail(ctx context.Context, userID int64, subject, body, received string) (*ai.MailReading, error)
+	ReadBankMail(ctx context.Context, userID, walletID int64, subject, body, received string) (*ai.MailReading, error)
 }
 
 // SetAI wires the AI. Without it a mailbox reads with its patterns only.
@@ -192,9 +192,11 @@ func (s *Service) readMail(ctx context.Context, mb db.Mailbox, m db.MailMessage,
 // cannot be asked leaves it failed, with the reason.
 func (s *Service) byAI(ctx context.Context, mb db.Mailbox, m db.MailMessage) outcome {
 	in := inputOf(m)
-	reading, err := s.reader.ReadBankMail(ctx, mb.CreatedBy.Int64, m.Subject, m.Body, in.Date.Format("2006-01-02"))
+	reading, err := s.reader.ReadBankMail(ctx, mb.CreatedBy.Int64, mb.WalletID, m.Subject, m.Body, in.Date.Format("2006-01-02"))
 	switch {
-	case errors.Is(err, ai.ErrNotConfigured):
+	// The AI switched off, or this month's requests used up: reading mails is
+	// automatic, so it stops and the mail stays unrecognised (#696).
+	case errors.Is(err, ai.ErrNotConfigured), errors.Is(err, ai.ErrLimit):
 		return outcome{name: OutcomeUnrecognized}
 	case err != nil:
 		return outcome{name: OutcomeFailed, detail: "AI: " + strings.TrimPrefix(err.Error(), "ai: "), byAI: true}

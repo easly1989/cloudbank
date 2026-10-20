@@ -47,7 +47,8 @@
       "show_other": "Anzeigen",
       "keep_one": "Ausgeblendet lassen",
       "keep_other": "Ausgeblendet lassen"
-    }
+    },
+    "aiInsights": "KI-Auswertungen"
   },
   "transactions": {
     "createCategory": "„{{name}}“ anlegen",
@@ -1985,11 +1986,9 @@
     }
   },
   "ai": {
-    "title": "KI (mit eigenem Schlüssel)",
-    "hint": "Optional. Verbinde einen KI-Anbieter, um Kategorievorschläge zu erhalten. Funktioniert mit OpenAI-kompatiblen Diensten, auch mit einer lokalen Laufzeit (Ollama, LM Studio) über ihre URL, die nur ein Administrator festlegen kann. Dein Schlüssel bleibt auf dem Server und wird nur für deine Anfragen verwendet.",
+    "hint": "Ein OpenAI-kompatibler Dienst oder ein Modell in deinem eigenen Netz (Ollama, LM Studio), das nur ein Administrator einrichten kann. Dein Schlüssel bleibt auf dem Server.",
     "enable": "KI-Funktionen aktivieren",
     "baseUrl": "Basis-URL",
-    "baseUrlHint": "OpenAI-kompatibler Endpunkt, z. B. https://api.openai.com/v1 oder http://localhost:11434/v1",
     "model": "Modell",
     "apiKey": "API-Schlüssel",
     "apiKeyPlaceholder": "sk-…",
@@ -2002,7 +2001,64 @@
     "quickEntry": "Schnelleingabe",
     "quickEntryPlaceholder": "z. B. 12,40 Kaffee im Café Central gestern",
     "quickEntryRun": "Aus Beschreibung ausfüllen",
-    "noParse": "Diese Beschreibung konnte nicht gelesen werden."
+    "noParse": "Diese Beschreibung konnte nicht gelesen werden.",
+    "provider": "Dein Anbieter",
+    "enableHint": "Ausgeschaltet schickt CloudBank nichts an irgendein Modell.",
+    "features": "Was die KI tut",
+    "featuresHint": "Jede Funktion wird einzeln eingeschaltet und sagt, was sie an das Modell schickt.",
+    "feature": {
+      "reports": {
+        "name": "Monatsberichte",
+        "sends": "Schickt die Summen des Monats nach Kategorie, im Vergleich zum Vormonat und zu deinen Budgets, die drei größten Ausgaben (Zahlungspartner, Betrag und Datum) und die Fälligkeiten des nächsten Monats. Nie die Notizen."
+      },
+      "suggest": {
+        "name": "Kategorievorschlag",
+        "sends": "Schickt Zahlungspartner und Betrag der Buchung, mit der Liste deiner Kategorien."
+      },
+      "entry": {
+        "name": "Schnelleingabe",
+        "sends": "Schickt den Satz, den du schreibst, mit der Liste deiner Kategorien, Zahlungspartner und Tags."
+      },
+      "mail": {
+        "name": "Bank-Mails",
+        "sends": "Schickt den Text der Bank-Mails, mit verborgenen Kartennummern und IBANs."
+      }
+    },
+    "wallets": "Für welche Haushaltsbücher",
+    "walletsHint": "Die KI arbeitet nur mit den angehakten. Was sie schreibt, siehst nur du, auch in geteilten Haushaltsbüchern.",
+    "walletOf": "Haushaltsbuch von {{owner}}",
+    "look": "Aussehen",
+    "lookHint": "Wie das erscheint, was die KI schreibt.",
+    "motion": "Fließende Farben",
+    "motionHint": "Der Rand des KI-Kastens wechselt langsam die Farbe. Er bleibt still, wenn dein System weniger Bewegung wünscht.",
+    "box": {
+      "example": "KI-Vorschlag",
+      "exampleBasis": "Beispiel",
+      "exampleText": "Alles, was die KI schreibt, steht in einem Kasten wie diesem.",
+      "why": "Warum?",
+      "hideWhy": "Zahlen ausblenden",
+      "useful": "Hilfreich",
+      "notUseful": "Nicht hilfreich"
+    },
+    "thisMonth": "Dieser Monat",
+    "used_one": "{{count}} Anfrage von {{limit}}",
+    "used_other": "{{count}} Anfragen von {{limit}}",
+    "resets": "beginnt neu am {{date}}",
+    "limit": {
+      "label": "Anfragen pro Monat",
+      "note": "Am Limit hört das Lesen der Bank-Mails auf; was du selbst anforderst, fragt vorher nach.",
+      "title": "Monatslimit erreicht",
+      "body_one": "Du hast die {{count}} Anfrage dieses Monats verbraucht. Diese ginge darüber hinaus: trotzdem senden? Das Limit änderst du unter Einstellungen › KI; es beginnt neu am {{date}}.",
+      "body_other": "Du hast die {{count}} Anfragen dieses Monats verbraucht. Diese ginge darüber hinaus: trotzdem senden? Das Limit änderst du unter Einstellungen › KI; es beginnt neu am {{date}}.",
+      "go": "Trotzdem senden",
+      "stop": "Abbrechen"
+    },
+    "sent": "Was geschickt wurde",
+    "sentHint": "Die letzten 90 Tage, Wort für Wort.",
+    "sentNone": "Noch nichts.",
+    "sentWhere": "{{when}} · {{wallet}}",
+    "sentOn": "Geschickt am {{when}}",
+    "show": "Anzeigen"
   },
   "setup": {
     "title": "Willkommen bei CloudBank",
@@ -2599,7 +2655,7 @@
     "apiTokensHint": "Mit Tokens kann ein Skript oder eine andere App in deinem Namen handeln. Widerrufst du einen, funktioniert er sofort nicht mehr.",
     "notificationsHint": "Wo CloudBank dich erreicht, wenn etwas dich braucht.",
     "ai": "KI",
-    "aiHint": "Wird für Kategorievorschläge genutzt. Dein Schlüssel wird verschlüsselt gespeichert und verlässt diesen Server nie.",
+    "aiHint": "Dein eigener KI-Anbieter: was er tut, für welche Haushaltsbücher, und was ihm geschickt wurde.",
     "bankSyncHint": "Verbindungen zu deinen Banken, mit eigenem Status und Verlauf.",
     "importHint": "Kontoauszüge und die Regeln, die sie einordnen.",
     "backupHint": "Eine Kopie zum Wiederherstellen und eine Prüfung, ob die Datenbank in Ordnung ist.",
@@ -3151,7 +3207,7 @@
     "provider_error": "Der Bankanbieter hat nicht wie erwartet geantwortet. Versuch es später noch einmal.",
     "not_configured": "Dieser Anbieter ist für das Haushaltsbuch noch nicht eingerichtet.",
     "ai_error": "Der KI-Anbieter hat mit einem Fehler geantwortet.",
-    "ai_disabled": "KI ist ausgeschaltet. Schalte sie zuerst in den Einstellungen ein.",
+    "ai_disabled": "Die KI ist dafür ausgeschaltet. Schalte sie unter Einstellungen › KI ein.",
     "rate_limited": "Zu viele Versuche. Warte kurz und versuch es noch einmal.",
     "too_large": "Die Datei ist zu groß.",
     "invalid_file": "Die Datei konnte nicht gelesen werden. Prüfe, ob es die richtige Art von Datei ist.",
@@ -3178,6 +3234,32 @@
     "unreachable": "Der Mailserver antwortet nicht: Prüfe Name und Port.",
     "tls_failed": "Die Verbindung zum Mailserver konnte nicht verschlüsselt werden.",
     "ai_not_configured": "Richte zuerst die KI ein, unter Einstellungen › KI.",
-    "hourly_limit": "Zu viele Nachrichten in dieser Stunde. Versuche es später."
+    "hourly_limit": "Zu viele Nachrichten in dieser Stunde. Versuche es später.",
+    "no_data": "Dieser Monat hat keine Buchungen, über die sich schreiben ließe."
+  },
+  "insights": {
+    "title": "KI-Auswertungen",
+    "hint": "Berichte, die deine KI über die Zahlen des Haushaltsbuchs schreibt. Nur du siehst sie.",
+    "month": "Monat",
+    "generate": "Jetzt erstellen",
+    "off": "Die KI schreibt keine Berichte",
+    "offHint": "Richte einen Anbieter ein und schalte die Monatsberichte ein, dann schreibt die KI hier über die Monate des Haushaltsbuchs.",
+    "walletOff": "Dieses Haushaltsbuch ist außer Reichweite der KI",
+    "walletOffHint": "Hake es bei den Haushaltsbüchern der KI an, damit sie über seine Monate schreibt.",
+    "toSettings": "Einstellungen › KI öffnen",
+    "none": "Noch kein Bericht. Wähle einen Monat und erstelle einen.",
+    "label": "KI-Bericht",
+    "basis": "{{month}} · erstellt am {{date}}",
+    "reportTitle": "{{month}} in Kürze",
+    "earlier": "Frühere Berichte",
+    "read": "Lesen",
+    "readMonth": "{{month}} lesen",
+    "why": {
+      "income": "Einnahmen",
+      "expense": "Ausgaben",
+      "net": "Saldo",
+      "avg": "Schnitt 6 Monate",
+      "note": "CloudBank hat die Zahlen berechnet; das Modell hat nur den Text geschrieben. Modell: {{model}}."
+    }
   }
 }
