@@ -67,7 +67,7 @@ CloudBank ist eine **unabhängige Clean-Room-Neuimplementierung**. Es kopiert od
 ## Funktionen
 
 - **Konten und Buchungen:** alle Kontoarten von HomeBank, jedes in seiner Währung, mit dem Kontostand von heute und dem künftigen. Buchungen werden als bestätigt und abgeglichen markiert, mit Teilbeträgen, Tags und Umbuchungen; die Buchungsliste hat Filter, wählbare Spalten, Aktionen für mehrere Zeilen, die Suche und den Abgleich mit dem Kontoauszug.
-- **Wiederkehrende Buchungen und Kalender:** Was regelmäßig wiederkommt, erfasst sich selbst, auf Wunsch bis zu drei Monate im Voraus. Ein Kalender zeigt die Fälligkeiten des Monats mit ihrem Status, was noch zu zahlen ist und was auf dich wartet; Vorlagen und Zuordnungsregeln füllen den Rest aus.
+- **Wiederkehrende Buchungen und Kalender:** Was regelmäßig wiederkommt, erfasst sich selbst, auf Wunsch bis zu drei Monate im Voraus. Ein Kalender zeigt die Fälligkeiten des Monats mit ihrem Status, was noch zu zahlen ist und was auf dich wartet; Vorlagen und Zuordnungsregeln füllen den Rest aus. CloudBank findet auch Zahlungen, die sich ohne wiederkehrende Buchung wiederholen, zeigt, was jede im Jahr kostet, und trägt die Fälligkeiten in den Kalender deines Handys ein.
 - **Budget und Berichte:** wohin das Geld ging, was herein- und hinausging, was die Konten haben und haben werden, was ein Auto kostet; nach Monat, Quartal oder Jahr, mit gespeicherten Ansichten und Downloads als CSV und PNG.
 - **Sparziele und Fahrzeuge:** wie viel du zurückgelegt hast, wie viel du jeden Monat zurücklegen musst, um rechtzeitig ans Ziel zu kommen, und wie viel frei bleibt; für jedes Fahrzeug Kraftstoff, Kilometer, Kosten pro Kilometer und Verbrauch.
 - **Import und Export:** HomeBank-`.xhb`, QIF, OFX/QFX, CSV und CAMT.053 (ISO 20022) herein, mit einem Assistenten; `.xhb`, QIF und CSV hinaus; Sicherung und Wiederherstellung des Haushaltsbuchs.
@@ -77,6 +77,7 @@ CloudBank ist eine **unabhängige Clean-Room-Neuimplementierung**. Es kopiert od
 - **Eine Übersicht nach Maß:** oben, was auf dich wartet, darunter Widgets, die du platzierst und in der Größe änderst, wie du willst, helles und dunkles Design in deiner Lieblingsfarbe, Seitenleiste und Navigation zum Umsortieren.
 - **Sicherheit:** Zwei-Faktor-Authentifizierung, Anmeldung per SSO (OIDC), widerrufbare API-Tokens und verschlüsselte Geheimnisse in der Datenbank.
 - **Installierbare App:** CloudBank lässt sich auf Handy oder Computer wie eine App installieren, mit Push-Benachrichtigungen zu Fälligkeiten, und meldet, wenn eine neue Version da ist.
+- **Benachrichtigungen, wo du sie siehst:** eine Glocke auf jeder Seite und nach Wahl Push, E-Mail, Matrix, Telegram, Discord, Slack, ntfy, Gotify oder ein Webhook für Home Assistant. Du wählst, welche Ereignisse wohin gehen (Fälligkeiten, Sicherheit, Probleme, Geld, Zusammenfassungen) und wann, mit einer täglichen Zusammenfassung und Ruhezeiten ([die Anleitung](docs/notifications.md)).
 - **Optionale KI, mit deinem eigenen Schlüssel:** Kategorievorschläge und Buchungen in eigenen Worten („Kaffee 3,50 gestern“).
 
 ## Schnellstart
