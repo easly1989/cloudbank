@@ -101,7 +101,13 @@
     "signExpense": "Ausgabe – zu Einnahme wechseln",
     "signIncome": "Einnahme – zu Ausgabe wechseln",
     "savedTo": "In {{account}} gespeichert",
-    "removeSplit": "Diesen Teilbetrag entfernen"
+    "removeSplit": "Diesen Teilbetrag entfernen",
+    "shared": {
+      "title": "Geteilter Text",
+      "close": "Geteilten Text schließen",
+      "all": "Alles anzeigen",
+      "less": "Weniger anzeigen"
+    }
   },
   "transfers": {
     "add": "Umbuchung",
@@ -2090,7 +2096,8 @@
       "lead": "Am 1. jedes Monats, über den Vormonat. Außerdem:",
       "weekly": "Jeden Montag, die Vorwoche",
       "yearly": "Im Januar, das Vorjahr"
-    }
+    },
+    "fromShared": "Aus dem geteilten Text: Felder prüfen und speichern"
   },
   "setup": {
     "title": "Willkommen bei CloudBank",

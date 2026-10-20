@@ -17,6 +17,7 @@ on, on that device, until you turn it off.
 - [Dashboard](#dashboard)
 - [Accounts](#accounts)
 - [Transactions (the register)](#transactions-the-register)
+  - [Adding from your phone](#adding-from-your-phone)
 - [Templates](#templates)
 - [Tags](#tags)
 - [Rules](#rules)
@@ -120,6 +121,34 @@ switches between them.
   when it last synced and a **Sync** button. A **to review** button appears when
   the bank sent something that needs you. See [Automatic bank sync](bank-sync.md)
   and [Review](#review).
+
+### Adding from your phone
+
+With CloudBank installed on the phone (**Add to Home screen**, over HTTPS; see
+[Reverse proxy and HTTPS](reverse-proxy.md)), a transaction is two taps away.
+
+- **Shortcuts (Android).** A long press on CloudBank's icon offers **New
+  expense** and **New income**. Either opens the entry sheet in the wallet you
+  last used, on your default account (**Settings → General**), with the sign
+  already set.
+- **Sharing a notification (Android).** Share the text of your bank's
+  notification, or any text, with CloudBank from the share sheet. The entry
+  sheet opens:
+  - with the AI's **Quick entry** on (**Settings → AI**), the text is read at
+    once and the fields fill in;
+  - without it, the text shows at the top of the sheet, to copy from while you
+    fill it in.
+
+  Nothing is saved until you press **Save**. Only text can be shared: a
+  screenshot cannot be read. Many notifications offer **Copy** or **Share** on
+  a long press; otherwise copy the text from the bank's app.
+- **iPhone and iPad.** iOS offers neither shortcuts nor sharing to installed web
+  apps. The **Shortcuts** app gets close: a shortcut with **Open URLs** on
+  `https://cloudbank.example.com/transactions?new=1&kind=expense` (or
+  `kind=income`), added to the Home Screen, opens the entry sheet the same way.
+  To bring text, use `?text=` followed by the text, which **URL Encode** in the
+  same shortcut prepares; for example, a shortcut that runs on **Share** with
+  **Receive Text** input.
 
 ## Templates
 

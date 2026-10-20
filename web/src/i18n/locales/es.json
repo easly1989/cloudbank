@@ -101,7 +101,13 @@
     "signExpense": "Gasto: cambiar a ingreso",
     "signIncome": "Ingreso: cambiar a gasto",
     "savedTo": "Guardado en {{account}}",
-    "removeSplit": "Quitar esta línea de división"
+    "removeSplit": "Quitar esta línea de división",
+    "shared": {
+      "title": "Texto compartido",
+      "close": "Cerrar el texto compartido",
+      "all": "Mostrar todo",
+      "less": "Mostrar menos"
+    }
   },
   "transfers": {
     "add": "Transferencia",
@@ -2090,7 +2096,8 @@
       "lead": "El día 1 de cada mes, sobre el mes anterior. Y además:",
       "weekly": "Cada lunes, la semana anterior",
       "yearly": "En enero, el año anterior"
-    }
+    },
+    "fromShared": "Del texto compartido: revisa los campos y guarda"
   },
   "setup": {
     "title": "Bienvenido a CloudBank",
