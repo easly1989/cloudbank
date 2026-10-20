@@ -248,7 +248,7 @@ type Querier interface {
 	// the link: same account, payee and category. The demo's seeded year comes
 	// from a HomeBank file, which does not record which schedule posted what.
 	LinkTemplateTransactions(ctx context.Context, templateID sql.NullInt64) (int64, error)
-	// The people whose AI writes reports (#697) or proposals (#698, #699), with
+	// The people whose AI writes reports (#697) or proposals (#698, #699, #705), with
 	// which ones come by themselves.
 	ListAIReportUsers(ctx context.Context) ([]ListAIReportUsersRow, error)
 	ListAIReports(ctx context.Context, arg ListAIReportsParams) ([]ListAIReportsRow, error)
@@ -337,6 +337,10 @@ type Querier interface {
 	// The expenses flagged and not handled, flagged since a moment, newest first.
 	// A double whose pair was merged or marked not a duplicate on Review is gone.
 	ListOpenAIUnusual(ctx context.Context, arg ListOpenAIUnusualParams) ([]ListOpenAIUnusualRow, error)
+	// The transactions with a payee since a day, split ones left out, with what a
+	// rule can read: the ground of the AI's rule proposals (#705). The columns
+	// are ListWalletTransactionsForRules's.
+	ListPayeeTransactionsSince(ctx context.Context, arg ListPayeeTransactionsSinceParams) ([]ListPayeeTransactionsSinceRow, error)
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID int64) ([]ListPushSubscriptionsForUserRow, error)
 	ListPushUserIDs(ctx context.Context) ([]int64, error)

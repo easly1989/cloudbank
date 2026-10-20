@@ -46,6 +46,8 @@ type Features struct {
 	Goals bool `json:"goals"`
 	// Unusual: expenses out of scale, new payees, double charges (#700).
 	Unusual bool `json:"unusual"`
+	// Rules: payees always filed under one category, a rule each (#705).
+	Rules bool `json:"rules"`
 }
 
 // Schedule is which reports come by themselves besides the monthly one,
@@ -166,7 +168,7 @@ func (s *Service) Settings(ctx context.Context, userID int64) (Settings, error) 
 			Suggest: row.SuggestOn != 0, Entry: row.EntryOn != 0, Mail: row.MailOn != 0, Reports: row.ReportsOn != 0,
 			Budgets: row.BudgetsOn != 0, Subscriptions: row.SubscriptionsOn != 0, Savings: row.SavingsOn != 0,
 			Goals:   row.GoalsOn != 0,
-			Unusual: row.UnusualOn != 0,
+			Unusual: row.UnusualOn != 0, Rules: row.RulesOn != 0,
 		},
 		Schedule:   Schedule{Weekly: row.WeeklyOn != 0, Yearly: row.YearlyOn != 0},
 		WalletsOff: off, MonthlyLimit: row.MonthlyLimit, Used: used, Motion: row.Motion != 0, Local: local,
@@ -199,7 +201,7 @@ func (s *Service) UpdateSettings(ctx context.Context, userID int64, admin bool, 
 		UserID: userID, Enabled: flag(in.Enabled), BaseUrl: strings.TrimSpace(in.BaseURL),
 		Model: strings.TrimSpace(in.Model), ApiKey: secrets.Seal(key),
 		SuggestOn: row.SuggestOn, EntryOn: row.EntryOn, MailOn: row.MailOn, ReportsOn: row.ReportsOn, BudgetsOn: row.BudgetsOn,
-		SubscriptionsOn: row.SubscriptionsOn, SavingsOn: row.SavingsOn, GoalsOn: row.GoalsOn, UnusualOn: row.UnusualOn,
+		SubscriptionsOn: row.SubscriptionsOn, SavingsOn: row.SavingsOn, GoalsOn: row.GoalsOn, UnusualOn: row.UnusualOn, RulesOn: row.RulesOn,
 		MonthlyLimit: row.MonthlyLimit, Motion: row.Motion, WeeklyOn: row.WeeklyOn, YearlyOn: row.YearlyOn,
 	}
 	if sc := in.Schedule; sc != nil {
@@ -208,7 +210,7 @@ func (s *Service) UpdateSettings(ctx context.Context, userID int64, admin bool, 
 	if f := in.Features; f != nil {
 		p.SuggestOn, p.EntryOn, p.MailOn, p.ReportsOn = flag(f.Suggest), flag(f.Entry), flag(f.Mail), flag(f.Reports)
 		p.BudgetsOn, p.SubscriptionsOn, p.SavingsOn = flag(f.Budgets), flag(f.Subscriptions), flag(f.Savings)
-		p.GoalsOn, p.UnusualOn = flag(f.Goals), flag(f.Unusual)
+		p.GoalsOn, p.UnusualOn, p.RulesOn = flag(f.Goals), flag(f.Unusual), flag(f.Rules)
 	}
 	if in.MonthlyLimit != nil {
 		if *in.MonthlyLimit < 1 || *in.MonthlyLimit > 100000 {

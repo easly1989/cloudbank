@@ -222,6 +222,17 @@ it is, with how many of your transactions it matches today.
   fill in transactions you already have, use ▶ on a rule (**Apply to its
   transactions**), or **Apply to existing** for every rule at once. Both only
   fill in empty fields and add tags; nothing you have set is overwritten.
+- **Rules the AI proposes.** With **Rule proposals** switched on in
+  Settings → AI, a box above the rules names up to eight payees you keep
+  filing under the same category by hand: at least three of their transactions
+  of the last 12 months have a category, four in five of them the same one, and
+  no rule decides them yet. Those with the most transactions still without a
+  category come first. **Create rule** opens a new rule filled in, the payee
+  **is exactly** the name, that category, on entry and on import, with the
+  preview of what it would match; nothing is saved until you save. Once saved,
+  if some of its transactions have no category, CloudBank offers to fill them
+  in. An ignored proposal comes back only when a payee has half as many
+  transactions more, another category, or a new payee qualifies.
 
 ## Categories, payees and currencies
 
@@ -515,10 +526,11 @@ reports** switched on, for a wallet the AI may work on.
 - **Earlier reports** are listed under it, named by their month, week or year;
   **Read** opens one.
 - **Open proposals**: a [budget proposal](#budget), a
-  [subscription proposal](#schedules), a savings proposal or a
-  [goal proposal](#goals) waiting for you, with its rows; **Apply** and **Set
-  budget** open the budget sheet on Budget, **Update** or **Open** the schedule
-  on Schedules, **Put in** and the dates the goal on Goals.
+  [subscription proposal](#schedules), a savings proposal, a
+  [goal proposal](#goals) or a [rule proposal](#rules) waiting for you, with
+  its rows; **Apply** and **Set budget** open the budget sheet on Budget,
+  **Update** or **Open** the schedule on Schedules, **Put in** and the dates the
+  goal on Goals, **Create rule** a new rule on Rules.
 - **Savings the AI proposes.** With **Savings proposals** switched on in
   Settings → AI, up to three categories you spent more on lately: the last
   three complete months at least a fifth, and 10 a month, over the nine
@@ -626,7 +638,7 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | **Notifications** | Which events reach you, in the bell, by push on this device, by email, in Matrix, Telegram, Discord or Slack, through ntfy or Gotify, or through a webhook ([the guide](notifications.md)); the bell itself sits in every page header |
 | **Bank sync** | Bank connections ([Automatic bank sync](bank-sync.md)) |
 | **Bank mails** | The bank's notification mails, read from one folder of a mailbox ([the guide](bank-mails.md)) |
-| **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, budget, subscription, savings and goal proposals, unusual transactions, category suggestions, quick entry, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word. See [the AI guide](ai.md) |
+| **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, budget, subscription, savings, goal and rule proposals, unusual transactions, category suggestions, quick entry, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word. See [the AI guide](ai.md) |
 | **Import & export** | Imports ([Importing transactions](import.md)), exports, backups and a database check |
 | **People** | Administrators only: the people who can sign in |
 | **About** | The version, the licence and the source code; for administrators, whether a newer CloudBank is out and the switch for the daily check ([Upgrading](backup.md#upgrading)) |

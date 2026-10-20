@@ -253,6 +253,7 @@ func run() error {
 	insightSvc := insight.NewService(st.Read(), st.Write(), aiSvc, reportSvc, budgetSvc, scheduleSvc)
 	insightSvc.SetNotify(notifySvc)
 	insightSvc.SetGoals(goalSvc)
+	insightSvc.SetRules(assignmentSvc)
 
 	opts := httpapi.Options{
 		Logger:            logger,

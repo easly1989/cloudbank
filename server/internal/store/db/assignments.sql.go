@@ -214,6 +214,73 @@ func (q *Queries) ListAssignmentsForWallet(ctx context.Context, walletID int64) 
 	return items, nil
 }
 
+const listPayeeTransactionsSince = `-- name: ListPayeeTransactionsSince :many
+SELECT t.id, t.account_id, t.date, t.memo, t.info, t.payee_id, t.category_id, t.payment_mode,
+       COALESCE(p.name, '') AS payee_name,
+       CAST(COALESCE((SELECT group_concat(g.name, char(31))
+                      FROM transaction_tags tt JOIN tags g ON g.id = tt.tag_id
+                      WHERE tt.transaction_id = t.id), '') AS TEXT) AS tag_names
+FROM transactions t
+LEFT JOIN payees p ON p.id = t.payee_id
+WHERE t.wallet_id = ? AND t.date >= ? AND t.payee_id IS NOT NULL AND t.is_split = 0
+ORDER BY t.id
+`
+
+type ListPayeeTransactionsSinceParams struct {
+	WalletID int64
+	Date     string
+}
+
+type ListPayeeTransactionsSinceRow struct {
+	ID          int64
+	AccountID   int64
+	Date        string
+	Memo        string
+	Info        string
+	PayeeID     sql.NullInt64
+	CategoryID  sql.NullInt64
+	PaymentMode int64
+	PayeeName   string
+	TagNames    string
+}
+
+// The transactions with a payee since a day, split ones left out, with what a
+// rule can read: the ground of the AI's rule proposals (#705). The columns
+// are ListWalletTransactionsForRules's.
+func (q *Queries) ListPayeeTransactionsSince(ctx context.Context, arg ListPayeeTransactionsSinceParams) ([]ListPayeeTransactionsSinceRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPayeeTransactionsSince, arg.WalletID, arg.Date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPayeeTransactionsSinceRow{}
+	for rows.Next() {
+		var i ListPayeeTransactionsSinceRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccountID,
+			&i.Date,
+			&i.Memo,
+			&i.Info,
+			&i.PayeeID,
+			&i.CategoryID,
+			&i.PaymentMode,
+			&i.PayeeName,
+			&i.TagNames,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listWalletTransactionsForRules = `-- name: ListWalletTransactionsForRules :many
 SELECT t.id, t.account_id, t.date, t.memo, t.info, t.payee_id, t.category_id, t.payment_mode,
        COALESCE(p.name, '') AS payee_name,

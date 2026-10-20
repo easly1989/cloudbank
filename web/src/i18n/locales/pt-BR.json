@@ -2055,6 +2055,10 @@
       "unusual": {
         "name": "Lançamentos incomuns",
         "sends": "Envia, para cada gasto sinalizado, o beneficiário, a data e o valor, com o valor habitual do beneficiário. Nunca a nota."
+      },
+      "rules": {
+        "name": "Propostas de regras",
+        "sends": "Envia, para cada beneficiário proposto, o nome, a categoria e quantos lançamentos dele a têm. Nunca valores, notas ou datas."
       }
     },
     "wallets": "Em quais carteiras",
@@ -3394,6 +3398,24 @@
         "pace": "Por mês ultimamente",
         "eta": "Chega em",
         "note": "O CloudBank calculou os números: o ritmo de cada meta nos últimos 3 meses completos, a parcela mensal que a data pede e quanto sobrou por mês na carteira nesses meses ({{kept}}). O modelo só escreveu o texto. Modelo: {{model}}."
+      }
+    },
+    "rule": {
+      "title_one": "{{count}} regra para adicionar",
+      "title_other": "{{count}} regras para adicionar",
+      "basis": "Dos últimos 12 meses · feita em {{date}}",
+      "reason": "{{category}} em {{hits}} de {{total}} lançamentos",
+      "without_one": "{{count}} sem categoria",
+      "without_other": "{{count}} sem categoria",
+      "create": "Criar regra",
+      "createLabel": "Criar uma regra: o beneficiário é {{name}}, categoria {{category}}",
+      "why": {
+        "payee": "Beneficiário",
+        "category": "Categoria",
+        "hits": "Com ela",
+        "total": "Lançamentos",
+        "without": "Sem categoria",
+        "note": "O CloudBank contou, beneficiário por beneficiário, os lançamentos dos últimos 12 meses que nenhuma regra preenche ainda. O modelo só escreveu o texto. Modelo: {{model}}."
       }
     }
   },

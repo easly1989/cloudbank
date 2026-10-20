@@ -770,7 +770,7 @@ export interface paths {
         put?: never;
         /**
          * Later, ignore, or a row saved from its form
-         * @description later hides the proposal for a week; ignore puts it away until the numbers change; applied marks the row of categoryId (a budget or savings proposal), scheduleId (a subscription proposal) or goalId (a goal proposal) saved, and the whole proposal once every row is. A proposal never writes anything itself.
+         * @description later hides the proposal for a week; ignore puts it away until the numbers change; applied marks the row of categoryId (a budget or savings proposal), scheduleId (a subscription proposal), goalId (a goal proposal) or payeeId (a rule proposal) saved, and the whole proposal once every row is. A proposal never writes anything itself.
          */
         post: operations["actOnAIProposal"];
         delete?: never;
@@ -3912,6 +3912,8 @@ export interface components {
             goals: boolean;
             /** @description unusual transactions: sends each flagged expense's payee, date and amount, with the payee's usual amount */
             unusual: boolean;
+            /** @description rule proposals: sends each proposed payee's name, its category and how many of its transactions have it; never an amount, a memo or a date */
+            rules: boolean;
         };
         /** @description The reports that come by themselves besides the monthly one, which comes whenever reports are on. */
         AISchedule: {
@@ -3969,7 +3971,7 @@ export interface components {
             walletId: number | null;
             walletName: string;
             /** @enum {string} */
-            feature: "suggest" | "entry" | "mail" | "reports" | "budgets" | "subscriptions" | "savings" | "goals" | "unusual";
+            feature: "suggest" | "entry" | "mail" | "reports" | "budgets" | "subscriptions" | "savings" | "goals" | "unusual" | "rules";
             model: string;
             /** @description RFC3339 UTC */
             createdAt: string;
@@ -4056,10 +4058,10 @@ export interface components {
             /** @description the category's path, Parent:Child; a schedule's name */
             name: string;
             /**
-             * @description budget: no budget though spent on most months; the budget gone over, or not reached, most months. subscription: the last two payments at least 5% over the amount saved; the same payee as an earlier schedule; the same amount just as often as one; registered by hand and not paid for two periods. savings: the last three months at least a fifth, and 10 a month, over the nine before. goal: a dated goal's pace short of its monthly share; that share more than the wallet kept a month; a goal with no date that its pace reaches.
+             * @description budget: no budget though spent on most months; the budget gone over, or not reached, most months. subscription: the last two payments at least 5% over the amount saved; the same payee as an earlier schedule; the same amount just as often as one; registered by hand and not paid for two periods. savings: the last three months at least a fifth, and 10 a month, over the nine before. goal: a dated goal's pace short of its monthly share; that share more than the wallet kept a month; a goal with no date that its pace reaches. rule: a payee whose transactions of the last twelve months that no rule decides have a category at least three times, four in five of them the same.
              * @enum {string}
              */
-            reason: "none" | "over" | "under" | "raised" | "double" | "alike" | "unused" | "grown" | "late" | "move" | "eta";
+            reason: "none" | "over" | "under" | "raised" | "double" | "alike" | "unused" | "grown" | "late" | "move" | "eta" | "rule";
             /**
              * Format: int64
              * @description today's budget; 0 is none
@@ -4129,6 +4131,17 @@ export interface components {
             date?: string;
             /** @description goal: the end of the month its pace gets there, YYYY-MM-DD */
             newDate?: string;
+            /**
+             * Format: int64
+             * @description rule: the payee; name is the payee's name, categoryId the category proposed and hits how many have it
+             */
+            payeeId?: number;
+            /** @description rule: the category's path, Parent:Child */
+            category?: string;
+            /** @description rule: the payee's transactions of the last twelve months that no rule decides */
+            total?: number;
+            /** @description rule: how many of them have no category */
+            without?: number;
         };
         AIProposalBasis: {
             /** @description YYYY-MM, the complete months before the proposal's, oldest first: six for budgets, twelve for savings, none for subscriptions */
@@ -4145,7 +4158,7 @@ export interface components {
             /** Format: int64 */
             id: number;
             /** @enum {string} */
-            kind: "budget" | "subscriptions" | "savings" | "goals";
+            kind: "budget" | "subscriptions" | "savings" | "goals" | "rules";
             /** @description YYYY-MM, the month it was made in */
             period: string;
             /** @description the model's two or three sentences */
@@ -7679,6 +7692,11 @@ export interface operations {
                      * @description with applied: the goal row's goal
                      */
                     goalId?: number;
+                    /**
+                     * Format: int64
+                     * @description with applied: the rule row's payee
+                     */
+                    payeeId?: number;
                 };
             };
         };

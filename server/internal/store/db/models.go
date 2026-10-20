@@ -106,6 +106,7 @@ type AiSetting struct {
 	SavingsOn       int64
 	GoalsOn         int64
 	UnusualOn       int64
+	RulesOn         int64
 }
 
 type AiUnusual struct {

@@ -2055,6 +2055,10 @@
       "unusual": {
         "name": "Movimientos inusuales",
         "sends": "Envía, por cada gasto que señala, el beneficiario, la fecha y el importe, con el importe habitual del beneficiario. Nunca la nota."
+      },
+      "rules": {
+        "name": "Propuestas de reglas",
+        "sends": "Envía, por cada beneficiario que propone, su nombre, su categoría y cuántos de sus movimientos la tienen. Nunca importes, notas ni fechas."
       }
     },
     "wallets": "En qué carteras",
@@ -3394,6 +3398,24 @@
         "pace": "Al mes últimamente",
         "eta": "Llegas",
         "note": "CloudBank calculó las cifras: el ritmo de cada meta en los últimos 3 meses completos, la cuota al mes que pide su fecha y lo que le sobró al mes a la cartera en esos meses ({{kept}}). El modelo solo escribió el texto. Modelo: {{model}}."
+      }
+    },
+    "rule": {
+      "title_one": "{{count}} regla que añadir",
+      "title_other": "{{count}} reglas que añadir",
+      "basis": "De los últimos 12 meses · generada el {{date}}",
+      "reason": "{{category}} en {{hits}} de {{total}} movimientos",
+      "without_one": "{{count}} sin categoría",
+      "without_other": "{{count}} sin categoría",
+      "create": "Crear regla",
+      "createLabel": "Crear una regla: el beneficiario es {{name}}, categoría {{category}}",
+      "why": {
+        "payee": "Beneficiario",
+        "category": "Categoría",
+        "hits": "Con ella",
+        "total": "Movimientos",
+        "without": "Sin categoría",
+        "note": "CloudBank contó, beneficiario por beneficiario, los movimientos de los últimos 12 meses que ninguna regla rellena todavía. El modelo solo escribió el texto. Modelo: {{model}}."
       }
     }
   },

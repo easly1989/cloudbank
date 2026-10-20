@@ -120,6 +120,7 @@ func (h *aiHandlers) putSettings(w http.ResponseWriter, r *http.Request) {
 			turnedOn(before.Features.Subscriptions, st.Features.Subscriptions) ||
 			turnedOn(before.Features.Savings, st.Features.Savings) ||
 			turnedOn(before.Features.Goals, st.Features.Goals) ||
+			turnedOn(before.Features.Rules, st.Features.Rules) ||
 			turnedOn(before.Features.Unusual, st.Features.Unusual)) {
 			ctx := context.WithoutCancel(r.Context())
 			go func() {
@@ -295,11 +296,12 @@ func (h *aiHandlers) proposalAction(w http.ResponseWriter, r *http.Request) {
 		CategoryID int64  `json:"categoryId"`
 		ScheduleID int64  `json:"scheduleId"`
 		GoalID     int64  `json:"goalId"`
+		PayeeID    int64  `json:"payeeId"`
 	}
 	if !decodeJSON(w, r, &body) {
 		return
 	}
-	row := max(body.CategoryID, body.ScheduleID, body.GoalID) // only one is sent
+	row := max(body.CategoryID, body.ScheduleID, body.GoalID, body.PayeeID) // only one is sent
 	switch err := h.insights.Act(r.Context(), u.ID, wl.ID, id, body.Action, row); {
 	case errors.Is(err, insight.ErrNotFound):
 		writeError(w, http.StatusNotFound, "not_found", "proposal not found")

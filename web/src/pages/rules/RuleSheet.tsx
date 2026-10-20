@@ -26,6 +26,7 @@ import {
   type AssignmentInput,
   type MatchField,
   type MatchType,
+  type RuleTest,
 } from "../../api/client";
 import { SideSheet } from "../../components/SideSheet";
 import { ENTRY_SHEET } from "../../components/entrySheetTheme";
@@ -55,6 +56,7 @@ export function RuleSheet({
   day,
   onSaved,
   actions,
+  draft,
 }: {
   opened: boolean;
   onClose: () => void;
@@ -65,8 +67,11 @@ export function RuleSheet({
   count: number;
   lookups: Lookups;
   day: (date: string) => string;
-  onSaved: () => void;
+  /** With the rule saved and what the preview found it would fill in. */
+  onSaved: (saved: Assignment, preview?: RuleTest) => void;
   actions: Pick<RuleActions, "onApply" | "onDelete">;
+  /** A new rule's starting values: an AI proposal's row (#705). */
+  draft?: Partial<AssignmentInput>;
 }) {
   const { t } = useTranslation();
   const { accounts, categories, payees } = lookups;
@@ -91,7 +96,7 @@ export function RuleSheet({
   if (openKey !== openedFor) {
     setOpenedFor(openKey);
     if (openKey !== null) {
-      const r = editing;
+      const r = editing ?? draft;
       const id = (v?: number | null) => (v != null ? String(v) : null);
       setMatchField(r?.matchField ?? "memo");
       setMatchType(r?.matchType ?? "contains");
@@ -132,7 +137,8 @@ export function RuleSheet({
 
   // The preview follows the fields as they are typed, a moment behind. The
   // text is what is debounced: a fresh object every render would restart it.
-  const [probe] = useDebouncedValue(JSON.stringify({ ...body, id: editing?.id }), 300);
+  const typed = JSON.stringify({ ...body, id: editing?.id });
+  const [probe] = useDebouncedValue(typed, 300);
   const preview = useQuery({
     queryKey: ["assignment-test", walletId, probe],
     queryFn: () => testAssignment(walletId, JSON.parse(probe) as AssignmentInput & { id?: number }),
@@ -144,8 +150,10 @@ export function RuleSheet({
   const save = useMutation({
     mutationFn: () =>
       editing ? updateAssignment(walletId, editing.id, body) : createAssignment(walletId, body),
-    onSuccess: () => {
-      onSaved();
+    onSuccess: (saved) => {
+      // Only a preview of the fields as saved, not one still a step behind.
+      const fresh = probe === typed && !preview.isPlaceholderData && !preview.isError;
+      onSaved(saved, fresh ? preview.data : undefined);
       onClose();
     },
     onError: (err: unknown) => notifyError(err),

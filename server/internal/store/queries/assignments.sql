@@ -42,6 +42,20 @@ LEFT JOIN payees p ON p.id = t.payee_id
 WHERE t.wallet_id = ?
 ORDER BY t.id;
 
+-- name: ListPayeeTransactionsSince :many
+-- The transactions with a payee since a day, split ones left out, with what a
+-- rule can read: the ground of the AI's rule proposals (#705). The columns
+-- are ListWalletTransactionsForRules's.
+SELECT t.id, t.account_id, t.date, t.memo, t.info, t.payee_id, t.category_id, t.payment_mode,
+       COALESCE(p.name, '') AS payee_name,
+       CAST(COALESCE((SELECT group_concat(g.name, char(31))
+                      FROM transaction_tags tt JOIN tags g ON g.id = tt.tag_id
+                      WHERE tt.transaction_id = t.id), '') AS TEXT) AS tag_names
+FROM transactions t
+LEFT JOIN payees p ON p.id = t.payee_id
+WHERE t.wallet_id = ? AND t.date >= ? AND t.payee_id IS NOT NULL AND t.is_split = 0
+ORDER BY t.id;
+
 -- name: ListAssignmentTagsForWallet :many
 -- The tags every rule of the wallet adds, by rule then name.
 SELECT at.assignment_id, g.id AS tag_id, g.name
