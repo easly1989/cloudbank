@@ -372,6 +372,15 @@ func (f *fake) chat(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	// So is a subscription proposal (#699).
+	if strings.Contains(text, "Subscription proposals") {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"choices": []map[string]any{{"message": map[string]string{
+				"role": "assistant", "content": "Your streaming now costs more than the schedule says.",
+			}}},
+		})
+		return
+	}
 	// A monthly report (#696) is plain paragraphs, not JSON.
 	if strings.Contains(text, "Write the report in") {
 		writeJSON(w, http.StatusOK, map[string]any{

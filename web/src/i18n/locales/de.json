@@ -1788,7 +1788,7 @@
       "summary_weekly": "Wochenübersicht",
       "summary_monthly": "Monatsübersicht",
       "ai_report": "KI-Bericht fertig",
-      "ai_proposal": "Budgetvorschlag fertig"
+      "ai_proposal": "KI-Vorschlag fertig"
     },
     "kindHint": {
       "new_device": "Ein Browser oder System, das dein Konto noch nie benutzt hat.",
@@ -1808,7 +1808,7 @@
       "summary_weekly": "Montags: Einnahmen, Ausgaben, die größten Posten und die Fälligkeiten der Woche, je Haushaltsbuch.",
       "summary_monthly": "Am 1.: Einnahmen, Ausgaben und die größten Posten des Vormonats, je Haushaltsbuch.",
       "ai_report": "Wenn ein geplanter Bericht geschrieben oder am Monatslimit übersprungen wird. Zwei Zeilen, nie die Beträge.",
-      "ai_proposal": "Wenn die KI Budgets nach deinen tatsächlichen Ausgaben vorschlägt, einmal im Monat. Zwei Zeilen, nie die Beträge."
+      "ai_proposal": "Wenn die KI Budgets vorschlägt oder Abos zum Ansehen findet, einmal im Monat. Zwei Zeilen, nie die Beträge."
     },
     "securityAlways": "Immer in der Glocke, damit eine Anmeldung, die nicht von dir kam, nicht unbemerkt bleibt.",
     "emailUnavailable": "Nicht verfügbar: Der Administrator hat keinen Mailserver eingerichtet (CB_SMTP_HOST).",
@@ -2031,6 +2031,10 @@
       "budgets": {
         "name": "Budgetvorschläge",
         "sends": "Sendet für jede Kategorie, für die sie ein Budget vorschlägt, den Namen, das heutige Budget, den üblichen Monatsbetrag und den vorgeschlagenen. Nie die Buchungen."
+      },
+      "subscriptions": {
+        "name": "Abo-Vorschläge",
+        "sends": "Sendet für jede vorgeschlagene wiederkehrende Buchung den Namen, den gespeicherten Betrag, die letzten Abbuchungen und die Kosten pro Jahr. Nie die Buchungen."
       }
     },
     "wallets": "Für welche Haushaltsbücher",
@@ -3303,6 +3307,31 @@
     "why": {
       "median": "Median",
       "note": "Die Zahlen hat CloudBank berechnet: der Median der vollständigen Monate, auf 5 gerundet. Das Modell hat nur den Text geschrieben. Modell: {{model}}."
+    },
+    "sub": {
+      "title_one": "{{count}} Abo zum Ansehen",
+      "title_other": "{{count}} Abos zum Ansehen",
+      "basis": "Aus deinen Buchungen · erstellt am {{date}}",
+      "reason": {
+        "raised": "Teurer: die letzten 2 Abbuchungen waren {{amount}}",
+        "raisedTwo": "Teurer: die letzten 2 Abbuchungen waren {{prev}} und {{amount}}",
+        "double": "Doppelt: derselbe Zahlungspartner wie „{{other}}“",
+        "alike": "Doppelt? Gleicher Betrag und Rhythmus wie „{{other}}“",
+        "unused": "Seit {{date}} keine Abbuchung bei der Bank gefunden"
+      },
+      "perYear": "{{amount}} pro Jahr",
+      "update": "Aktualisieren",
+      "open": "Öffnen",
+      "updateLabel": "{{name}} auf {{amount}} aktualisieren",
+      "openLabel": "{{name}} öffnen",
+      "why": {
+        "schedule": "Wiederkehrende Buchung",
+        "saved": "Gespeichert",
+        "paid": "Letzte Abbuchungen",
+        "last": "Letzte Abbuchung",
+        "yearly": "Pro Jahr",
+        "note": "CloudBank hat sie in deinen wiederkehrenden Buchungen und Buchungen gefunden: die letzten 2 Abbuchungen mindestens 5 % über dem gespeicherten Betrag, eine zweite wiederkehrende Buchung an denselben Zahlungspartner oder mit gleichem Betrag im gleichen Rhythmus, eine von Hand erfasste, die seit zwei Zeiträumen nicht bezahlt wurde. Das Modell hat nur den Text geschrieben. Modell: {{model}}."
+      }
     }
   }
 }
