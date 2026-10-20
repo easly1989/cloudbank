@@ -765,7 +765,7 @@ paths:
       operationId: listAIProposals
       summary: The current user's AI proposals waiting on this wallet, newest first
       description: >-
-        Open ones, and those back from "later". Rows already saved from the budget
+        Open ones, and those back from "later". Rows already saved from their
         form are left out. Private to the user, even on a shared wallet.
       responses:
         "200":
@@ -784,11 +784,12 @@ paths:
       - { name: proposalId, in: path, required: true, schema: { type: integer, format: int64 } }
     post:
       operationId: actOnAIProposal
-      summary: Later, ignore, or a row saved from the budget form
+      summary: Later, ignore, or a row saved from its form
       description: >-
         later hides the proposal for a week; ignore puts it away until the numbers
-        change; applied marks the row of categoryId saved, and the whole proposal
-        once every row is. A proposal never writes a budget itself.
+        change; applied marks the row of categoryId (a budget proposal) or
+        scheduleId (a subscription proposal) saved, and the whole proposal once
+        every row is. A proposal never writes anything itself.
       requestBody:
         required: true
         content:
@@ -797,7 +798,8 @@ paths:
               type: object
               properties:
                 action: { type: string, enum: [later, ignore, applied] }
-                categoryId: { type: integer, format: int64, description: "with applied: the row's category" }
+                categoryId: { type: integer, format: int64, description: "with applied: the budget row's category" }
+                scheduleId: { type: integer, format: int64, description: "with applied: the subscription row's schedule" }
               required: [action]
       responses:
         "204": { description: Recorded. }
@@ -3644,7 +3646,8 @@ components:
         mail: { type: boolean, description: "bank mails: sends the mail with cards and IBANs hidden" }
         reports: { type: boolean, description: "reports: sends the period's totals and largest expenses" }
         budgets: { type: boolean, description: "budget proposals: sends each proposed category's name, budget, usual and proposed amounts" }
-      required: [suggest, entry, mail, reports, budgets]
+        subscriptions: { type: boolean, description: "subscription proposals: sends each proposed schedule's name, amount, last payments and cost a year" }
+      required: [suggest, entry, mail, reports, budgets, subscriptions]
     AISchedule:
       type: object
       description: The reports that come by themselves besides the monthly one, which comes whenever reports are on.
@@ -3688,7 +3691,7 @@ components:
         id: { type: integer, format: int64 }
         walletId: { type: [integer, "null"], format: int64 }
         walletName: { type: string }
-        feature: { type: string, enum: [suggest, entry, mail, reports] }
+        feature: { type: string, enum: [suggest, entry, mail, reports, budgets, subscriptions] }
         model: { type: string }
         createdAt: { type: string, description: "RFC3339 UTC" }
         sent: { type: string, description: "the text sent, word for word; only when one call is asked for" }
@@ -3776,21 +3779,38 @@ components:
       required: [id, kind, period, body, basis, model, feedback, createdAt]
     AIProposalRow:
       type: object
-      description: One category's proposed monthly budget, in the base currency's minor units, as positive amounts.
+      description: >-
+        One row, in the base currency's minor units, as positive amounts: a
+        category's proposed monthly budget, or a schedule to look at. The budget
+        fields are zero on a subscription row.
       properties:
         categoryId: { type: integer, format: int64 }
-        name: { type: string, description: "the category's path, Parent:Child" }
-        reason: { type: string, enum: [none, over, under], description: "no budget though spent on most months; the budget gone over, or not reached, most months" }
+        name: { type: string, description: "the category's path, Parent:Child; a schedule's name" }
+        reason:
+          type: string
+          enum: [none, over, under, raised, double, alike, unused]
+          description: >-
+            budget: no budget though spent on most months; the budget gone over, or
+            not reached, most months. subscription: the last two payments at least
+            5% over the amount saved; the same payee as an earlier schedule; the
+            same amount just as often as one; registered by hand and not paid for
+            two periods.
         budget: { type: integer, format: int64, description: "today's budget; 0 is none" }
         median: { type: integer, format: int64, description: "the median of the months" }
         proposed: { type: integer, format: int64, description: "the median rounded to 5 of the currency" }
         months: { type: array, items: { type: integer, format: int64 }, description: "what was spent each month, oldest first" }
         hits: { type: integer, description: "the months that made the reason" }
+        scheduleId: { type: integer, format: int64, description: "subscription: the schedule" }
+        amount: { type: integer, format: int64, description: "subscription: what the schedule saves" }
+        paid: { type: array, items: { type: integer, format: int64 }, description: "raised: the last two payments, oldest first; proposed is the latest" }
+        other: { type: string, description: "double, alike: the earlier schedule's name" }
+        last: { type: string, description: "raised, unused: the last payment's date, YYYY-MM-DD" }
+        yearly: { type: integer, format: int64, description: "subscription: what the schedule costs a year at the amount saved" }
       required: [categoryId, name, reason, budget, median, proposed, months, hits]
     AIProposalBasis:
       type: object
       properties:
-        months: { type: array, items: { type: string }, description: "YYYY-MM, the six complete months before the proposal's, oldest first" }
+        months: { type: array, items: { type: string }, description: "YYYY-MM, the six complete months before the proposal's, oldest first; empty for subscriptions" }
         currency: { $ref: "#/components/schemas/AIReportCurrency" }
         rows: { type: array, items: { $ref: "#/components/schemas/AIProposalRow" } }
       required: [months, currency, rows]
@@ -3798,7 +3818,7 @@ components:
       type: object
       properties:
         id: { type: integer, format: int64 }
-        kind: { type: string, enum: [budget] }
+        kind: { type: string, enum: [budget, subscriptions] }
         period: { type: string, description: "YYYY-MM, the month it was made in" }
         body: { type: string, description: "the model's two or three sentences" }
         basis: { $ref: "#/components/schemas/AIProposalBasis" }

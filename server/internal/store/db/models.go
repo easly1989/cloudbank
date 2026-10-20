@@ -87,21 +87,22 @@ type AiSend struct {
 }
 
 type AiSetting struct {
-	UserID       int64
-	Enabled      int64
-	BaseUrl      string
-	Model        string
-	ApiKey       string
-	UpdatedAt    string
-	SuggestOn    int64
-	EntryOn      int64
-	MailOn       int64
-	ReportsOn    int64
-	MonthlyLimit int64
-	Motion       int64
-	WeeklyOn     int64
-	YearlyOn     int64
-	BudgetsOn    int64
+	UserID          int64
+	Enabled         int64
+	BaseUrl         string
+	Model           string
+	ApiKey          string
+	UpdatedAt       string
+	SuggestOn       int64
+	EntryOn         int64
+	MailOn          int64
+	ReportsOn       int64
+	MonthlyLimit    int64
+	Motion          int64
+	WeeklyOn        int64
+	YearlyOn        int64
+	BudgetsOn       int64
+	SubscriptionsOn int64
 }
 
 type AiWalletsOff struct {

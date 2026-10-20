@@ -1788,7 +1788,7 @@
       "summary_weekly": "Resumo semanal",
       "summary_monthly": "Resumo mensal",
       "ai_report": "Resumo de IA pronto",
-      "ai_proposal": "Proposta de orçamento pronta"
+      "ai_proposal": "Proposta da IA pronta"
     },
     "kindHint": {
       "new_device": "Um navegador ou sistema que sua conta nunca usou.",
@@ -1808,7 +1808,7 @@
       "summary_weekly": "Na segunda: entradas, saídas, o que mais pesou e os vencimentos da semana, por carteira.",
       "summary_monthly": "No dia 1: entradas, saídas e o que mais pesou no mês anterior, por carteira.",
       "ai_report": "Quando um resumo programado é escrito, ou pulado no limite do mês. Duas linhas, nunca os valores.",
-      "ai_proposal": "Quando a IA propõe orçamentos a partir do que você gasta de verdade, uma vez por mês. Duas linhas, nunca os valores."
+      "ai_proposal": "Quando a IA propõe orçamentos ou encontra assinaturas para conferir, uma vez por mês. Duas linhas, nunca os valores."
     },
     "securityAlways": "Sempre no sino, para que um acesso que você não fez não passe despercebido.",
     "emailUnavailable": "Indisponível: o administrador não configurou um servidor de e-mail (CB_SMTP_HOST).",
@@ -2031,6 +2031,10 @@
       "budgets": {
         "name": "Propostas de orçamento",
         "sends": "Envia, para cada categoria a que propõe um orçamento, o nome, o orçamento de hoje, o valor mensal habitual e o proposto. Nunca os lançamentos."
+      },
+      "subscriptions": {
+        "name": "Propostas de assinaturas",
+        "sends": "Envia, para cada agendamento proposto, o nome, o valor salvo, as últimas cobranças e quanto custa por ano. Nunca os lançamentos."
       }
     },
     "wallets": "Em quais carteiras",
@@ -3303,6 +3307,31 @@
     "why": {
       "median": "Mediana",
       "note": "Os números foram calculados pelo CloudBank: a mediana dos meses completos, arredondada a 5. O modelo só escreveu o texto. Modelo: {{model}}."
+    },
+    "sub": {
+      "title_one": "{{count}} assinatura para conferir",
+      "title_other": "{{count}} assinaturas para conferir",
+      "basis": "Dos seus lançamentos · gerado em {{date}}",
+      "reason": {
+        "raised": "Aumentou: as últimas 2 cobranças foram de {{amount}}",
+        "raisedTwo": "Aumentou: as últimas 2 cobranças foram de {{prev}} e {{amount}}",
+        "double": "Duplicado: mesmo beneficiário de “{{other}}”",
+        "alike": "Duplicado? Mesmo valor e frequência de “{{other}}”",
+        "unused": "Nenhuma cobrança encontrada no banco desde {{date}}"
+      },
+      "perYear": "{{amount}} por ano",
+      "update": "Atualizar",
+      "open": "Abrir",
+      "updateLabel": "Atualizar {{name}} para {{amount}}",
+      "openLabel": "Abrir {{name}}",
+      "why": {
+        "schedule": "Agendamento",
+        "saved": "Salvo",
+        "paid": "Últimas cobranças",
+        "last": "Última cobrança",
+        "yearly": "Por ano",
+        "note": "O CloudBank os encontrou nos seus agendamentos e lançamentos: as últimas 2 cobranças pelo menos 5% acima do valor salvo, um segundo agendamento para o mesmo beneficiário ou do mesmo valor com a mesma frequência, um agendamento registrado à mão sem pagamento há dois períodos. O modelo só escreveu o texto. Modelo: {{model}}."
+      }
     }
   }
 }

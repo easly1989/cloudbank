@@ -12,11 +12,12 @@ import (
 
 // The AI's jobs, as the log and the switches name them (#696).
 const (
-	FeatureSuggest = "suggest"
-	FeatureEntry   = "entry"
-	FeatureMail    = "mail"
-	FeatureReports = "reports"
-	FeatureBudgets = "budgets"
+	FeatureSuggest       = "suggest"
+	FeatureEntry         = "entry"
+	FeatureMail          = "mail"
+	FeatureReports       = "reports"
+	FeatureBudgets       = "budgets"
+	FeatureSubscriptions = "subscriptions"
 )
 
 // ErrFeatureOff means the job, or the wallet it is for, is switched off. It
@@ -63,6 +64,8 @@ func featureOn(cfg db.GetAISettingsRow, feature string) bool {
 		return cfg.ReportsOn != 0
 	case FeatureBudgets:
 		return cfg.BudgetsOn != 0
+	case FeatureSubscriptions:
+		return cfg.SubscriptionsOn != 0
 	}
 	return false
 }

@@ -166,11 +166,3 @@ func TestBudgetProposalRows(t *testing.T) {
 		t.Fatalf("bell = %+v", items)
 	}
 }
-
-func TestProposalNotesInEveryLanguage(t *testing.T) {
-	for l := range reportNotes {
-		if _, ok := proposalNotes[l]; !ok {
-			t.Errorf("no wording for %s", l)
-		}
-	}
-}

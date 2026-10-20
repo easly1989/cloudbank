@@ -73,6 +73,7 @@ export function ScheduleSheet({
   walk = null,
   onSavedNext,
   seed = null,
+  amount: amountOverride = null,
 }: {
   opened: boolean;
   onClose: () => void;
@@ -86,6 +87,8 @@ export function ScheduleSheet({
   onSavedNext?: () => boolean;
   /** A recurring payment found in the transactions, to fill a new schedule from (#693). */
   seed?: ScheduleProposal | null;
+  /** An amount to fill in instead of the schedule's: a raise the AI found (#699). */
+  amount?: number | null;
 }) {
   const { t } = useTranslation();
   const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
@@ -152,19 +155,15 @@ export function ScheduleSheet({
   const fd = account?.currencyFracDigits ?? 2;
   const dc = account?.currencyDecimalChar ?? ".";
 
-  const fillFromTemplate = (tpl: Template) => {
+  const fillFromTemplate = (tpl: Template, minor = Math.abs(tpl.amount)) => {
     const acc = accounts.find((a) => a.id === tpl.accountId);
     setName(tpl.name);
     setAccountId(tpl.accountId != null ? String(tpl.accountId) : null);
     setDirection(tpl.amount < 0 ? "expense" : "income");
     setAmount(
-      tpl.amount === 0
+      minor === 0
         ? ""
-        : minorToInput(
-            Math.abs(tpl.amount),
-            acc?.currencyFracDigits ?? 2,
-            acc?.currencyDecimalChar ?? ".",
-          ),
+        : minorToInput(minor, acc?.currencyFracDigits ?? 2, acc?.currencyDecimalChar ?? "."),
     );
     setPayeeId(tpl.payeeId != null ? String(tpl.payeeId) : null);
     setCategoryId(tpl.categoryId != null ? String(tpl.categoryId) : null);
@@ -233,11 +232,13 @@ export function ScheduleSheet({
   //    the transaction fields, which the schedule row does not.
   const editingTemplate =
     opened && editing ? (templates.find((tp) => tp.id === editing.templateId) ?? null) : null;
-  const templateKey = editingTemplate ? `${editing?.id}:${editingTemplate.id}` : null;
+  const templateKey = editingTemplate
+    ? `${editing?.id}:${editingTemplate.id}:${amountOverride ?? ""}`
+    : null;
   const [filledFrom, setFilledFrom] = useState<string | null>(null);
   if (templateKey !== filledFrom) {
     setFilledFrom(templateKey);
-    if (editingTemplate) fillFromTemplate(editingTemplate);
+    if (editingTemplate) fillFromTemplate(editingTemplate, amountOverride ?? undefined);
   }
 
   // 4. A proposal filling a new schedule: once it is open, and once the

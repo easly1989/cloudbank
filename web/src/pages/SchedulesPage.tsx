@@ -24,11 +24,14 @@ import {
   type ScheduleOccurrence,
   type ScheduleProposal,
 } from "../api/client";
+import { actOnAIProposal, aiProposalsKey, type AIProposal, type AIProposalRow } from "../api/ai";
 import { attentionColor, expenseColor, incomeColor } from "../amountTone";
 import { useConfirm } from "../components/confirmContext";
 import { EmptyState } from "../components/EmptyState";
 import { asTitle } from "../dates";
 import { PageHeader } from "../components/PageHeader";
+import { useProposal } from "../components/proposalData";
+import { SubscriptionProposal } from "../components/SubscriptionProposal";
 import { Figure, Figures } from "../components/reports/Figures";
 import { formatMinor } from "../money";
 import { useToday } from "../useToday";
@@ -222,9 +225,17 @@ export function SchedulesPage() {
   const [feedOpen, setFeedOpen] = useState(false);
   // The proposal a new schedule is filled in from.
   const [seed, setSeed] = useState<ScheduleProposal | null>(null);
+  // The AI's subscription proposal row the sheet was opened from (#699), and
+  // the new amount of a raised one.
+  const [applying, setApplying] = useState<{
+    proposalId: number;
+    scheduleId: number;
+    amount: number | null;
+  } | null>(null);
   const openSchedule = (s: Schedule | null, walking = false) => {
     if (!walking) setWalk(null);
     setSeed(null);
+    setApplying(null);
     setOpened(null);
     setEditing(s);
     setSheetOpen(true);
@@ -241,6 +252,43 @@ export function SchedulesPage() {
   }
   const scheduleOf = (o: ScheduleOccurrence) =>
     schedules.find((s) => s.id === o.scheduleId) ?? null;
+
+  // The AI's subscription proposal (#699): Apply opens the schedule, a raised
+  // one with the new amount filled in; its row is done once the schedule is
+  // saved or deleted. Rows of schedules deleted since are left out.
+  // ?apply=proposal:schedule comes from the other pages.
+  const proposed = useProposal(walletId, "subscriptions");
+  const subscriptions = useMemo(() => {
+    if (!proposed || !schedulesQuery.isSuccess) return undefined;
+    const rows = proposed.basis.rows.filter((r) => schedules.some((s) => s.id === r.scheduleId));
+    return rows.length > 0 ? { ...proposed, basis: { ...proposed.basis, rows } } : undefined;
+  }, [proposed, schedules, schedulesQuery.isSuccess]);
+  const applyRow = (p: AIProposal, r: AIProposalRow) => {
+    const s = schedules.find((x) => x.id === r.scheduleId);
+    if (!s) return;
+    openSchedule(s);
+    setApplying({
+      proposalId: p.id,
+      scheduleId: s.id,
+      amount: r.reason === "raised" ? r.proposed : null,
+    });
+  };
+  const applyLink = params.get("apply");
+  const [seenApply, setSeenApply] = useState<string | null>(null);
+  if (applyLink && applyLink !== seenApply && subscriptions) {
+    setSeenApply(applyLink);
+    const [pid, sid] = applyLink.split(":").map(Number);
+    const row =
+      subscriptions.id === pid && subscriptions.basis.rows.find((r) => r.scheduleId === sid);
+    if (row) applyRow(subscriptions, row);
+  }
+  const applied = (scheduleId: number) => {
+    if (applying?.scheduleId !== scheduleId) return;
+    setApplying(null);
+    void actOnAIProposal(walletId, applying.proposalId, "applied", { scheduleId })
+      .then(() => qc.invalidateQueries({ queryKey: aiProposalsKey(walletId) }))
+      .catch(notifyError);
+  };
   // A registered occurrence is a transaction: it opens in the register, on its
   // row, where it can be reconciled. One still to register opens in the sheet.
   const openOccurrence = (o: ScheduleOccurrence) => {
@@ -259,6 +307,7 @@ export function SchedulesPage() {
     });
     if (ok) {
       remove.mutate(s.id);
+      applied(s.id);
       setSheetOpen(false);
     }
   };
@@ -451,6 +500,9 @@ export function SchedulesPage() {
       />
     </Figures>
   );
+  const subscriptionBox = subscriptions && (
+    <SubscriptionProposal walletId={walletId} proposal={subscriptions} onApply={applyRow} />
+  );
   const found = (columns: 1 | 2) => (
     <FoundPayments
       proposals={proposals}
@@ -510,6 +562,7 @@ export function SchedulesPage() {
       {schedules.length > 0 && view === "calendar" && (
         <>
           {calendarFigures}
+          {subscriptionBox}
           {compact ? (
             <>
               <div className={classes.bar}>
@@ -562,6 +615,7 @@ export function SchedulesPage() {
         <>
           {listFigures}
           <div className={classes.bar}>{views}</div>
+          {subscriptionBox}
           {found(phone ? 1 : 2)}
           <ScheduleList
             schedules={schedules}
@@ -599,11 +653,18 @@ export function SchedulesPage() {
         onClose={() => {
           setSheetOpen(false);
           setWalk(null);
-          if (deepLink !== null) setParam("schedule", null);
+          setApplying(null);
+          if (deepLink !== null || applyLink) {
+            const next = new URLSearchParams(params);
+            next.delete("schedule");
+            next.delete("apply");
+            setParams(next, { replace: true });
+          }
         }}
         walletId={walletId}
         editing={editing}
         seed={seed}
+        amount={applying && applying.scheduleId === editing?.id ? applying.amount : null}
         walk={
           walk && editing && walk.includes(editing.id)
             ? { index: walk.indexOf(editing.id), total: walk.length }
@@ -615,7 +676,10 @@ export function SchedulesPage() {
           if (s) setEditing(s);
           return !!s;
         }}
-        onSaved={invalidate}
+        onSaved={() => {
+          invalidate();
+          if (editing) applied(editing.id);
+        }}
         onDelete={(s) => void askDelete(s)}
       />
       <CalendarFeedSheet

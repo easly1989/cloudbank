@@ -1788,7 +1788,7 @@
       "summary_weekly": "Weekly summary",
       "summary_monthly": "Monthly summary",
       "ai_report": "AI report ready",
-      "ai_proposal": "Budget proposal ready"
+      "ai_proposal": "AI proposal ready"
     },
     "kindHint": {
       "new_device": "A browser or system your account has not used before.",
@@ -1808,7 +1808,7 @@
       "summary_weekly": "On Monday: money in and out, what took most and the week's bills, per wallet.",
       "summary_monthly": "On the 1st: money in and out and what took most last month, per wallet.",
       "ai_report": "When a scheduled report is written, or skipped at the month's limit. Two lines, never the amounts.",
-      "ai_proposal": "When the AI proposes budgets from what you really spend, once a month. Two lines, never the amounts."
+      "ai_proposal": "When the AI proposes budgets or finds subscriptions to look at, once a month. Two lines, never the amounts."
     },
     "securityAlways": "Always in the bell, so a sign-in you didn't make cannot go unnoticed.",
     "emailUnavailable": "Not available: the administrator has not set up a mail server (CB_SMTP_HOST).",
@@ -2031,6 +2031,10 @@
       "budgets": {
         "name": "Budget proposals",
         "sends": "Sends, for each category it proposes a budget for, its name, today's budget, the usual monthly amount and the proposed one. Never the transactions."
+      },
+      "subscriptions": {
+        "name": "Subscription proposals",
+        "sends": "Sends, for each schedule it proposes, its name, the amount saved, the last payments and what it costs a year. Never the transactions."
       }
     },
     "wallets": "On which wallets",
@@ -3303,6 +3307,31 @@
     "why": {
       "median": "Median",
       "note": "CloudBank worked out the numbers: the median of the complete months, rounded to 5. The model only wrote the text. Model: {{model}}."
+    },
+    "sub": {
+      "title_one": "{{count}} subscription to look at",
+      "title_other": "{{count}} subscriptions to look at",
+      "basis": "From your transactions · made on {{date}}",
+      "reason": {
+        "raised": "Raised: the last 2 payments were {{amount}}",
+        "raisedTwo": "Raised: the last 2 payments were {{prev}} and {{amount}}",
+        "double": "Double: same payee as “{{other}}”",
+        "alike": "Double? Same amount and cadence as “{{other}}”",
+        "unused": "No payment found in the bank since {{date}}"
+      },
+      "perYear": "{{amount}} a year",
+      "update": "Update",
+      "open": "Open",
+      "updateLabel": "Update {{name}} to {{amount}}",
+      "openLabel": "Open {{name}}",
+      "why": {
+        "schedule": "Schedule",
+        "saved": "Saved",
+        "paid": "Last payments",
+        "last": "Last payment",
+        "yearly": "A year",
+        "note": "CloudBank found these in your schedules and transactions: the last 2 payments at least 5% over the amount saved, a second schedule to the same payee or of the same amount just as often, a schedule registered by hand not paid for two periods. The model only wrote the text. Model: {{model}}."
+      }
     }
   }
 }

@@ -14,7 +14,7 @@ import {
 } from "../api/client";
 import { actOnAIProposal, aiProposalsKey, type AIProposal, type AIProposalRow } from "../api/ai";
 import { BudgetProposal } from "../components/BudgetProposal";
-import { useBudgetProposal } from "../components/budgetProposalData";
+import { useProposal } from "../components/proposalData";
 import { useConfirm } from "../components/confirmContext";
 import { PageHeader } from "../components/PageHeader";
 import { baseFmt } from "../components/reports/reportUtils";
@@ -159,7 +159,7 @@ export function BudgetPage() {
 
   // The AI's proposal (#698): Apply opens the sheet filled in; a row is done
   // once saved there. ?apply=proposal:category comes from the other pages.
-  const proposal = useBudgetProposal(walletId);
+  const proposal = useProposal(walletId, "budget");
   const applyRow = (p: AIProposal, r: AIProposalRow) =>
     open({ categoryId: r.categoryId, amount: r.proposed, proposalId: p.id });
   const [params, setParams] = useSearchParams();
@@ -181,7 +181,9 @@ export function BudgetPage() {
   const saved = () => {
     invalidate();
     if (target?.proposalId != null && target.categoryId != null)
-      void actOnAIProposal(walletId, target.proposalId, "applied", target.categoryId)
+      void actOnAIProposal(walletId, target.proposalId, "applied", {
+        categoryId: target.categoryId,
+      })
         .then(() => qc.invalidateQueries({ queryKey: aiProposalsKey(walletId) }))
         .catch(notifyError);
   };

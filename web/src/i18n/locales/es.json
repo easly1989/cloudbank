@@ -1788,7 +1788,7 @@
       "summary_weekly": "Resumen semanal",
       "summary_monthly": "Resumen mensual",
       "ai_report": "Resumen de IA listo",
-      "ai_proposal": "Propuesta de presupuesto lista"
+      "ai_proposal": "Propuesta de IA lista"
     },
     "kindHint": {
       "new_device": "Un navegador o sistema que tu cuenta no había usado nunca.",
@@ -1808,7 +1808,7 @@
       "summary_weekly": "El lunes: ingresos, gastos, en qué se fue más y los vencimientos de la semana, por cartera.",
       "summary_monthly": "El día 1: ingresos, gastos y en qué se fue más el mes anterior, por cartera.",
       "ai_report": "Cuando se escribe un resumen programado, o se omite al llegar al límite del mes. Dos líneas, nunca los importes.",
-      "ai_proposal": "Cuando la IA propone presupuestos a partir de lo que gastas de verdad, una vez al mes. Dos líneas, nunca los importes."
+      "ai_proposal": "Cuando la IA propone presupuestos o encuentra suscripciones que revisar, una vez al mes. Dos líneas, nunca los importes."
     },
     "securityAlways": "Siempre en la campana, para que un inicio de sesión que no has hecho no pase desapercibido.",
     "emailUnavailable": "No disponible: el administrador no ha configurado un servidor de correo (CB_SMTP_HOST).",
@@ -2031,6 +2031,10 @@
       "budgets": {
         "name": "Propuestas de presupuesto",
         "sends": "Envía, por cada categoría a la que propone un presupuesto, su nombre, el presupuesto de hoy, el importe habitual del mes y el propuesto. Nunca los movimientos."
+      },
+      "subscriptions": {
+        "name": "Propuestas de suscripciones",
+        "sends": "Envía, por cada movimiento programado que propone, su nombre, el importe guardado, los últimos cargos y lo que cuesta al año. Nunca los movimientos."
       }
     },
     "wallets": "En qué carteras",
@@ -3303,6 +3307,31 @@
     "why": {
       "median": "Mediana",
       "note": "Los números los ha calculado CloudBank: la mediana de los meses completos, redondeada a 5. El modelo solo ha escrito el texto. Modelo: {{model}}."
+    },
+    "sub": {
+      "title_one": "{{count}} suscripción que revisar",
+      "title_other": "{{count}} suscripciones que revisar",
+      "basis": "De tus movimientos · generado el {{date}}",
+      "reason": {
+        "raised": "Ha subido: los últimos 2 cargos fueron de {{amount}}",
+        "raisedTwo": "Ha subido: los últimos 2 cargos fueron de {{prev}} y {{amount}}",
+        "double": "Doble: mismo beneficiario que «{{other}}»",
+        "alike": "¿Doble? Mismo importe y frecuencia que «{{other}}»",
+        "unused": "Ningún cargo encontrado en el banco desde el {{date}}"
+      },
+      "perYear": "{{amount}} al año",
+      "update": "Actualizar",
+      "open": "Abrir",
+      "updateLabel": "Actualizar {{name}} a {{amount}}",
+      "openLabel": "Abrir {{name}}",
+      "why": {
+        "schedule": "Movimiento programado",
+        "saved": "Guardado",
+        "paid": "Últimos cargos",
+        "last": "Último cargo",
+        "yearly": "Al año",
+        "note": "CloudBank los encontró en tus movimientos programados y tus movimientos: los últimos 2 cargos al menos un 5 % por encima del importe guardado, un segundo movimiento programado al mismo beneficiario o del mismo importe con la misma frecuencia, uno registrado a mano sin pagar desde hace dos periodos. El modelo solo escribió el texto. Modelo: {{model}}."
+      }
     }
   }
 }
