@@ -67,7 +67,7 @@ CloudBank est une **réimplémentation indépendante, en salle blanche**. Il ne 
 ## Fonctions
 
 - **Comptes et opérations :** tous les types de compte de HomeBank, chacun dans sa devise, avec le solde actuel et le solde prévisionnel. Les opérations se marquent pointées et rapprochées, avec ventilations, étiquettes et virements ; la liste des opérations a des filtres, des colonnes au choix, des actions sur plusieurs lignes, la recherche et le rapprochement avec le relevé.
-- **Opérations récurrentes et calendrier :** ce qui revient régulièrement se saisit tout seul, jusqu’à trois mois à l’avance si vous voulez. Un calendrier montre les échéances du mois avec leur état, ce qui reste à payer et ce qui vous attend ; les modèles et les règles d’affectation remplissent le reste.
+- **Opérations récurrentes et calendrier :** ce qui revient régulièrement se saisit tout seul, jusqu’à trois mois à l’avance si vous voulez. Un calendrier montre les échéances du mois avec leur état, ce qui reste à payer et ce qui vous attend ; les modèles et les règles d’affectation remplissent le reste. CloudBank trouve aussi les paiements qui reviennent sans opération récurrente, montre ce que chacune coûte sur un an et met les échéances dans le calendrier du téléphone.
 - **Budget et rapports :** où est allé l’argent, ce qui est entré et sorti, ce que les comptes contiennent et contiendront, ce que coûte une voiture ; par mois, trimestre ou année, avec des vues enregistrées et des téléchargements en CSV et PNG.
 - **Objectifs d’épargne et véhicules :** combien vous avez mis de côté, combien mettre de côté chaque mois pour arriver à temps, et ce qui reste disponible ; pour chaque véhicule, le carburant, les kilomètres, le coût au kilomètre et la consommation.
 - **Import et export :** `.xhb` de HomeBank, QIF, OFX/QFX, CSV et CAMT.053 (ISO 20022) en entrée, avec un assistant ; `.xhb`, QIF et CSV en sortie ; sauvegarde et restauration du classeur.
@@ -77,6 +77,7 @@ CloudBank est une **réimplémentation indépendante, en salle blanche**. Il ne 
 - **Une vue d’ensemble sur mesure :** en haut, ce qui vous attend, en dessous des widgets que vous placez et redimensionnez comme vous voulez, thème clair et sombre dans votre couleur préférée, barre latérale et navigation à réorganiser.
 - **Sécurité :** authentification à deux facteurs, connexion par SSO (OIDC), jetons d’API révocables et secrets chiffrés dans la base de données.
 - **Application installable :** CloudBank s’installe sur téléphone ou ordinateur comme une application, avec des notifications push pour les échéances, et signale quand une nouvelle version est disponible.
+- **Des notifications là où vous les voyez :** une cloche sur chaque page et, au choix, push, e-mail, Matrix, Telegram, Discord, Slack, ntfy, Gotify ou un webhook pour Home Assistant. Vous choisissez quels événements arrivent où (échéances, sécurité, problèmes, argent, résumés) et quand, avec un résumé quotidien et des heures de silence ([le guide](docs/notifications.md)).
 - **IA facultative, avec votre propre clé :** suggestions de catégorie et opérations dictées avec vos mots (« café 3,50 hier »).
 
 ## Démarrage rapide

@@ -6,6 +6,91 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
+## [3.10.0] — 2026-10-20
+
+CloudBank can now tell you things where you will see them: in a bell on every
+page, and by push, email, Matrix, Telegram, Discord, Slack, ntfy, Gotify or a
+webhook into Home Assistant. You choose which events go where and when. The
+Schedules page finds the payments that come round with no schedule, shows what
+each costs in a year, and puts the due dates in your phone's calendar.
+
+### Added
+
+- **The bell.** The first button of every page header (in the top bar on a
+  phone) lists what CloudBank has to tell you, grouped by Today, This week and
+  Earlier, with unread ones counted on it. A click opens the page it is about,
+  switching wallet if needed, and **Mark all as read** clears it.
+- **Settings › Notifications.** An overview of every channel with its state and
+  how many events it gets, and a page per channel: how to connect it, and which
+  events arrive there. Push moved here from Security.
+  - **Push** on this device, as before.
+  - **Email** through the installation's mail server (`CB_SMTP_*`), once you
+    type back a code mailed to the address.
+  - **Matrix**, to a room, with the installation's shared bot
+    (`CB_MATRIX_HOMESERVER`, `CB_MATRIX_TOKEN`) or your own.
+  - **Telegram**, from the installation's shared bot (`CB_TELEGRAM_TOKEN`,
+    linked with one tap on **Connect your chat**) or your own, with an optional
+    topic and silent sending.
+  - **Discord** and **Slack**, through a channel's incoming webhook.
+  - **ntfy**, on `ntfy.sh` or your own server, and **Gotify**.
+  - **A webhook**: a JSON `POST`, signed when you set a secret. The guide has
+    the Home Assistant automation that takes it.
+
+  **Send a test** checks each one, and its page shows the last delivery or the
+  last error. A channel that cannot be reached is retried for several hours,
+  even across a restart. Tokens and webhook addresses are stored encrypted and
+  never shown again; one on your local network needs an administrator.
+- **Events.**
+  - **Bills** due, for every member of the wallet.
+  - **Security**: a sign-in from a new device, two-factor sign-in turned off,
+    a new API token. These always reach the bell.
+  - **Problems**: a bank sync that fails, a bank consent about to end, a
+    mailbox that stopped reading, a bank mail nothing could read, and
+    transactions waiting on Review longer than you chose (3 days by default).
+  - **Money** (off until you turn it on): a large expense you did not type
+    yourself, a balance under the account's threshold, a budget at 80% and
+    100%, a goal reached or falling behind.
+  - **Summaries** (off until you turn it on): a weekly and a monthly one, with
+    money in and out, the period before, the top categories and the week's
+    bills.
+  - **Administration**: a new CloudBank version, for administrators.
+- **Timing.** Each event goes out at once or in a **daily digest** at the hour
+  you pick. **Quiet hours** hold push, email and chat overnight, except
+  problems and security. **Thresholds and wallets** sets the per-account
+  amounts, which wallets you hear from, and whether amounts appear outside
+  the app. The bell is always immediate.
+- **[The notifications guide](docs/notifications.md)**: every channel step by
+  step, Home Assistant, and what an administrator sets up.
+- **Found in your transactions.** The Schedules page offers the payments that
+  come round with no schedule: the same payee, a similar amount, every week,
+  month, three months or year, still going. **Create schedule** opens the sheet
+  filled in from it; **Ignore** stops offering it.
+- **What schedules cost in a year.** The list's figures lead with what goes out
+  and comes in over twelve months, and each schedule shows its yearly total
+  under its amount.
+- **Add to calendar.** In the Schedules calendar view, a private address for
+  your phone's calendar app (iPhone, Google Calendar, Outlook): every due date
+  on its day with its name and amount, never a balance. It can be regenerated
+  or turned off, and the same calendar downloads as a `.ics` file.
+- Ten migrations run at startup, for notifications, their channels, deliveries
+  and timing, known devices, where a transaction came from, ignored recurring
+  payments and calendar addresses.
+
+### Changed
+
+- **A schedule needs a payee**, except a transfer. The payee sits under the
+  amount in the sheet. Schedules saved without one, such as imported ones,
+  still post: a banner counts them and **Complete them one by one** opens each
+  in turn, and a new payee can also go to the transactions they registered
+  without one.
+
+### Fixed
+
+- **Pages pick up what changed elsewhere.** A transaction from bank sync, a
+  bank mail, a scheduled posting or another device showed only after a reload.
+  Pages now refresh when you come back to the tab and every 30 seconds while
+  it is visible.
+
 ## [3.9.0] — 2026-10-17
 
 Bank mails read any mailbox now: Gmail, Libero, iCloud and the others over IMAP
