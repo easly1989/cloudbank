@@ -385,6 +385,9 @@ In CloudBank the URL is `http://<home-assistant>:8123/api/webhook/<webhook id>`.
 With `local_only: true`, Home Assistant accepts it only from your own network,
 so an administrator saves it; drop the `test` condition while you try it out.
 
+To show CloudBank's numbers as sensors instead, such as the bills due this
+week, see [CloudBank in Home Assistant](home-assistant.md).
+
 ## For the administrator: the mail server
 
 Email needs an SMTP server, set with these variables (see
