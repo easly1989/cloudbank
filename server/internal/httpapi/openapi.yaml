@@ -788,7 +788,8 @@ paths:
       description: >-
         later hides the proposal for a week; ignore puts it away until the numbers
         change; applied marks the row of categoryId (a budget or savings
-        proposal) or scheduleId (a subscription proposal) saved, and the whole proposal once
+        proposal), scheduleId (a subscription proposal) or goalId (a goal
+        proposal) saved, and the whole proposal once
         every row is. A proposal never writes anything itself.
       requestBody:
         required: true
@@ -800,6 +801,7 @@ paths:
                 action: { type: string, enum: [later, ignore, applied] }
                 categoryId: { type: integer, format: int64, description: "with applied: the budget row's category" }
                 scheduleId: { type: integer, format: int64, description: "with applied: the subscription row's schedule" }
+                goalId: { type: integer, format: int64, description: "with applied: the goal row's goal" }
               required: [action]
       responses:
         "204": { description: Recorded. }
@@ -3648,7 +3650,8 @@ components:
         budgets: { type: boolean, description: "budget proposals: sends each proposed category's name, budget, usual and proposed amounts" }
         subscriptions: { type: boolean, description: "subscription proposals: sends each proposed schedule's name, amount, last payments and cost a year" }
         savings: { type: boolean, description: "savings proposals: sends each proposed category's name, its average a month before and lately, and the amount proposed" }
-      required: [suggest, entry, mail, reports, budgets, subscriptions, savings]
+        goals: { type: boolean, description: "goal proposals: sends each proposed goal's name, what is left, its date, its pace and what the wallet kept a month" }
+      required: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals]
     AISchedule:
       type: object
       description: The reports that come by themselves besides the monthly one, which comes whenever reports are on.
@@ -3692,7 +3695,7 @@ components:
         id: { type: integer, format: int64 }
         walletId: { type: [integer, "null"], format: int64 }
         walletName: { type: string }
-        feature: { type: string, enum: [suggest, entry, mail, reports, budgets, subscriptions, savings] }
+        feature: { type: string, enum: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals] }
         model: { type: string }
         createdAt: { type: string, description: "RFC3339 UTC" }
         sent: { type: string, description: "the text sent, word for word; only when one call is asked for" }
@@ -3789,14 +3792,16 @@ components:
         name: { type: string, description: "the category's path, Parent:Child; a schedule's name" }
         reason:
           type: string
-          enum: [none, over, under, raised, double, alike, unused, grown]
+          enum: [none, over, under, raised, double, alike, unused, grown, late, move, eta]
           description: >-
             budget: no budget though spent on most months; the budget gone over, or
             not reached, most months. subscription: the last two payments at least
             5% over the amount saved; the same payee as an earlier schedule; the
             same amount just as often as one; registered by hand and not paid for
             two periods. savings: the last three months at least a fifth, and 10
-            a month, over the nine before.
+            a month, over the nine before. goal: a dated goal's pace short of its
+            monthly share; that share more than the wallet kept a month; a goal
+            with no date that its pace reaches.
         budget: { type: integer, format: int64, description: "today's budget; 0 is none" }
         median: { type: integer, format: int64, description: "the median of the months" }
         proposed: { type: integer, format: int64, description: "the median rounded to 5 of the currency" }
@@ -3810,6 +3815,11 @@ components:
         yearly: { type: integer, format: int64, description: "subscription: what the schedule costs a year at the amount saved" }
         before: { type: integer, format: int64, description: "savings: the category's average a month in the nine months before" }
         recent: { type: integer, format: int64, description: "savings: its average a month in the last three; proposed is before rounded to 5" }
+        goalId: { type: integer, format: int64, description: "goal: the goal" }
+        left: { type: integer, format: int64, description: "goal: what is left to put in" }
+        pace: { type: integer, format: int64, description: "goal: what went in a month over the last three full months; proposed is the monthly share (late, move) or the pace (eta)" }
+        date: { type: string, description: "late, move: the goal's date, YYYY-MM-DD" }
+        newDate: { type: string, description: "goal: the end of the month its pace gets there, YYYY-MM-DD" }
       required: [categoryId, name, reason, budget, median, proposed, months, hits]
     AIProposalBasis:
       type: object
@@ -3817,12 +3827,13 @@ components:
         months: { type: array, items: { type: string }, description: "YYYY-MM, the complete months before the proposal's, oldest first: six for budgets, twelve for savings, none for subscriptions" }
         currency: { $ref: "#/components/schemas/AIReportCurrency" }
         rows: { type: array, items: { $ref: "#/components/schemas/AIProposalRow" } }
+        kept: { type: integer, format: int64, description: "goals: what the wallet kept a month in the last three full months" }
       required: [months, currency, rows]
     AIProposal:
       type: object
       properties:
         id: { type: integer, format: int64 }
-        kind: { type: string, enum: [budget, subscriptions, savings] }
+        kind: { type: string, enum: [budget, subscriptions, savings, goals] }
         period: { type: string, description: "YYYY-MM, the month it was made in" }
         body: { type: string, description: "the model's two or three sentences" }
         basis: { $ref: "#/components/schemas/AIProposalBasis" }

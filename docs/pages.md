@@ -413,6 +413,19 @@ balance, and the account a goal is kept in is only a reference.
   stays as it was; **Reopen goal** brings it back.
 - **Editing a goal.** Click its row: its name, target, date, the account it is
   kept in and a note, and every movement in and out, each deletable.
+- **Goals the AI proposes.** With **Goal proposals** switched on in
+  Settings → AI, a box under the figures names up to five goals to look at,
+  by the page's own arithmetic over the last three months:
+  - a dated goal whose pace falls short of its monthly share: **Put in** opens
+    the sheet with this month's share filled in;
+  - a share more than the wallet kept a month in those months: **Move the
+    date** opens the goal with the month its pace gets there;
+  - a goal with no date: **Set the date** opens it with the month its pace
+    gets there.
+
+  Nothing is saved until you save the sheet. **Later**, **Ignore** and
+  **Why?** work as for budget proposals; it is made monthly, and the model is
+  told never to say where to keep or invest the money.
 
 Outside the page, the **Accounts** page and the register say how much an account
 holds for goals, in amber when it holds less, and the dashboard can carry a
@@ -472,9 +485,10 @@ reports** switched on, for a wallet the AI may work on.
 - **Earlier reports** are listed under it, named by their month, week or year;
   **Read** opens one.
 - **Open proposals**: a [budget proposal](#budget), a
-  [subscription proposal](#schedules) or a savings proposal waiting for you,
-  with its rows; **Apply** and **Set budget** open the budget sheet on Budget,
-  **Update** or **Open** the schedule on Schedules.
+  [subscription proposal](#schedules), a savings proposal or a
+  [goal proposal](#goals) waiting for you, with its rows; **Apply** and **Set
+  budget** open the budget sheet on Budget, **Update** or **Open** the schedule
+  on Schedules, **Put in** and the dates the goal on Goals.
 - **Savings the AI proposes.** With **Savings proposals** switched on in
   Settings → AI, up to three categories you spent more on lately: the last
   three complete months at least a fifth, and 10 a month, over the nine
@@ -567,7 +581,7 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | **Notifications** | Which events reach you, in the bell, by push on this device, by email, in Matrix, Telegram, Discord or Slack, through ntfy or Gotify, or through a webhook ([the guide](notifications.md)); the bell itself sits in every page header |
 | **Bank sync** | Bank connections ([Automatic bank sync](bank-sync.md)) |
 | **Bank mails** | The bank's notification mails, read from one folder of a mailbox ([the guide](bank-mails.md)) |
-| **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, budget, subscription and savings proposals, category suggestions, quick entry, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word |
+| **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, budget, subscription, savings and goal proposals, category suggestions, quick entry, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word |
 | **Import & export** | Imports ([Importing transactions](import.md)), exports, backups and a database check |
 | **People** | Administrators only: the people who can sign in |
 | **About** | The version, the licence and the source code; for administrators, whether a newer CloudBank is out and the switch for the daily check ([Upgrading](backup.md#upgrading)) |

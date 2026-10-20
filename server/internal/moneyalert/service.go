@@ -376,7 +376,7 @@ func (s *Service) goal(ctx context.Context, now time.Time) error {
 			if err != nil {
 				return err
 			}
-			need, pace := shareAndPace(g, moves, today, int(base.FracDigits))
+			need, pace := goal.ShareAndPace(g, moves, today, int(base.FracDigits))
 			if pace >= need {
 				continue
 			}
@@ -392,39 +392,4 @@ func (s *Service) goal(ctx context.Context, now time.Time) error {
 		}
 	}
 	return nil
-}
-
-func monthIndex(date string) int {
-	y, _ := strconv.Atoi(date[:4])
-	m, _ := strconv.Atoi(date[5:7])
-	return y*12 + m - 1
-}
-
-// shareAndPace is the Goals page's arithmetic (web/src/pages/goals/goalList.ts)
-// for a dated goal not reached: the monthly share still needed, rounded up to
-// the whole unit, and what went in a month over the last three full months,
-// rounded to it.
-func shareAndPace(g goal.Goal, moves []goal.Contribution, today string, frac int) (need, pace int64) {
-	unit := int64(1)
-	for range frac {
-		unit *= 10
-	}
-	now := monthIndex(today)
-	var sum int64
-	for _, c := range moves {
-		if m := monthIndex(c.Date); m >= now-3 && m < now {
-			sum += c.Amount
-		}
-	}
-	// Math.round of a positive number: half up.
-	pace = max(0, (sum*2/3/unit+1)/2*unit)
-	if sum <= 0 {
-		pace = 0
-	}
-	left := max(0, g.TargetAmount-g.Saved)
-	if *g.TargetDate < today {
-		return left, pace
-	}
-	months := int64(max(1, monthIndex(*g.TargetDate)-now))
-	return (left + months*unit - 1) / (months * unit) * unit, pace
 }

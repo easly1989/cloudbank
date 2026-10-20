@@ -30,6 +30,7 @@ const (
 	KindBudget        = "budget"
 	KindSubscriptions = "subscriptions"
 	KindSavings       = "savings"
+	KindGoals         = "goals"
 )
 
 // proposalKind is what makes one kind of proposal: the AI job it is, its
@@ -55,6 +56,10 @@ var proposalKinds = map[string]proposalKind{
 	KindSavings: {
 		feature: ai.FeatureSavings, rows: (*Service).savingsRows, system: savingsSystem,
 		prompt: ProposalBasis.savingsPrompt, notes: savingsNotes, url: "/insights",
+	},
+	KindGoals: {
+		feature: ai.FeatureGoals, rows: byWallet((*Service).goalRows), system: goalSystem,
+		prompt: ProposalBasis.goalPrompt, notes: goalNotes, url: "/goals",
 	},
 }
 
@@ -111,13 +116,24 @@ type ProposalRow struct {
 	// and in the last three.
 	Before int64 `json:"before,omitempty"`
 	Recent int64 `json:"recent,omitempty"`
+	// A goal (#699): what is left, its pace a month, its date, and the date
+	// its pace gets there; Proposed is the monthly share, or the pace for a
+	// goal with no date.
+	GoalID  int64  `json:"goalId,omitempty"`
+	Left    int64  `json:"left,omitempty"`
+	Pace    int64  `json:"pace,omitempty"`
+	Date    string `json:"date,omitempty"`
+	NewDate string `json:"newDate,omitempty"`
 }
 
-// key is what a row is about: its schedule, or its category. Saving it marks
+// key is what a row is about: its schedule, its goal, or its category. Saving it marks
 // it applied by this key, and an ignored proposal is compared by it.
 func (r ProposalRow) key() int64 {
-	if r.ScheduleID != 0 {
+	switch {
+	case r.ScheduleID != 0:
 		return r.ScheduleID
+	case r.GoalID != 0:
+		return r.GoalID
 	}
 	return r.CategoryID
 }
@@ -136,6 +152,9 @@ type ProposalBasis struct {
 	Months   []string      `json:"months"` // YYYY-MM, oldest first
 	Currency Currency      `json:"currency"`
 	Rows     []ProposalRow `json:"rows"`
+	// Kept is what the wallet kept a month in the last three full months: a
+	// goal proposal's yardstick.
+	Kept int64 `json:"kept,omitempty"`
 }
 
 // Proposal is a proposal as the pages show it. Rows already saved are left

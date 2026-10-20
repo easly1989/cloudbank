@@ -1808,7 +1808,7 @@
       "summary_weekly": "Montags: Einnahmen, Ausgaben, die größten Posten und die Fälligkeiten der Woche, je Haushaltsbuch.",
       "summary_monthly": "Am 1.: Einnahmen, Ausgaben und die größten Posten des Vormonats, je Haushaltsbuch.",
       "ai_report": "Wenn ein geplanter Bericht geschrieben oder am Monatslimit übersprungen wird. Zwei Zeilen, nie die Beträge.",
-      "ai_proposal": "Wenn die KI Budgets vorschlägt oder Abos und Sparmöglichkeiten zum Ansehen findet, je einmal im Monat. Zwei Zeilen, nie die Beträge."
+      "ai_proposal": "Wenn die KI Budgets vorschlägt oder Abos, Sparmöglichkeiten oder Sparziele zum Ansehen findet, je einmal im Monat. Zwei Zeilen, nie die Beträge."
     },
     "securityAlways": "Immer in der Glocke, damit eine Anmeldung, die nicht von dir kam, nicht unbemerkt bleibt.",
     "emailUnavailable": "Nicht verfügbar: Der Administrator hat keinen Mailserver eingerichtet (CB_SMTP_HOST).",
@@ -2039,6 +2039,10 @@
       "savings": {
         "name": "Sparvorschläge",
         "sends": "Sendet für jede vorgeschlagene Kategorie den Namen, den Monatsdurchschnitt von vorher und von zuletzt und den vorgeschlagenen Betrag. Nie die Buchungen."
+      },
+      "goals": {
+        "name": "Sparziel-Vorschläge",
+        "sends": "Sendet für jedes vorgeschlagene Sparziel den Namen, was noch fehlt, das Datum und was im Monat hineinfließt, dazu, was im Haushaltsbuch monatlich übrig bleibt. Nie die Buchungen."
       }
     },
     "wallets": "Für welche Haushaltsbücher",
@@ -3348,6 +3352,32 @@
         "before": "9 Monate davor",
         "recent": "Letzte 3 Monate",
         "note": "CloudBank hat die Zahlen berechnet: den Monatsdurchschnitt jeder Kategorie in den letzten 3 vollen Monaten gegenüber den 9 davor und den früheren Stand, auf 5 gerundet. Das Modell hat nur den Text geschrieben. Modell: {{model}}."
+      }
+    },
+    "goal": {
+      "title_one": "{{count}} Sparziel zum Ansehen",
+      "title_other": "{{count}} Sparziele zum Ansehen",
+      "basis": "Aus dem Tempo der letzten 3 Monate · erstellt am {{date}}",
+      "reason": {
+        "late": "Bis {{month}}: mit {{pace}} im Monat bist du im {{eta}} am Ziel",
+        "lateNone": "Bis {{month}}: in den letzten 3 Monaten nichts eingezahlt",
+        "move": "Bis {{month}} braucht es {{need}} im Monat, mehr als übrig bleibt ({{kept}})",
+        "eta": "Ohne Datum: mit {{pace}} im Monat bist du im {{eta}} am Ziel"
+      },
+      "perMonth": "{{amount}} im Monat",
+      "move": "Datum verschieben",
+      "eta": "Datum setzen",
+      "lateLabel": "{{amount}} in {{name}} einzahlen",
+      "moveLabel": "Datum von {{name}} auf {{month}} verschieben",
+      "etaLabel": "Datum von {{name}} auf {{month}} setzen",
+      "why": {
+        "goal": "Sparziel",
+        "left": "Fehlt",
+        "by": "Bis",
+        "need": "Nötig im Monat",
+        "pace": "Zuletzt im Monat",
+        "eta": "Am Ziel",
+        "note": "CloudBank hat die Zahlen berechnet: das Tempo jedes Sparziels in den letzten 3 vollen Monaten, den Monatsanteil, den sein Datum braucht, und was im Haushaltsbuch in diesen Monaten monatlich übrig blieb ({{kept}}). Das Modell hat nur den Text geschrieben. Modell: {{model}}."
       }
     }
   }

@@ -3,6 +3,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 
 import {
   closeGoal,
@@ -14,8 +15,11 @@ import {
   listGoals,
   reopenGoal,
 } from "../api/client";
+import { actOnAIProposal, aiProposalsKey, type AIProposal, type AIProposalRow } from "../api/ai";
 import { useConfirm } from "../components/confirmContext";
+import { GoalProposal } from "../components/GoalProposal";
 import { PageHeader } from "../components/PageHeader";
+import { useProposal } from "../components/proposalData";
 import { baseFmt } from "../components/reports/reportUtils";
 import { formatMinor } from "../money";
 import { useToday } from "../useToday";
@@ -119,6 +123,49 @@ export function GoalsPage() {
   const closeSheets = () => {
     setGoalSheet((s) => ({ ...s, open: false }));
     setMoneySheet((s) => ({ ...s, open: false }));
+  };
+
+  // The AI's goal proposal (#699): Apply opens Put in on a late goal, where the
+  // month's share is filled in, and the goal with the new date on the others;
+  // the row is done once that sheet saves. Rows of goals reached, closed or
+  // deleted since are left out. ?apply=proposal:goal comes from AI insights.
+  const [params, setParams] = useSearchParams();
+  const proposed = useProposal(walletId, "goals");
+  const goalRows = proposed?.basis.rows.filter((r) => view.open.some((l) => l.id === r.goalId));
+  const proposal =
+    proposed && goalRows && goalRows.length > 0
+      ? { ...proposed, basis: { ...proposed.basis, rows: goalRows } }
+      : undefined;
+  const [applying, setApplying] = useState<{ proposalId: number; goalId: number } | null>(null);
+  const applyRow = (p: AIProposal, r: AIProposalRow) => {
+    const l = lineById(r.goalId ?? null);
+    if (!l) return;
+    if (r.reason === "late") openMoney(l.id, "in");
+    else openGoal(l.id, { name: l.name, targetDate: r.newDate });
+    setApplying({ proposalId: p.id, goalId: l.id });
+  };
+  const applyLink = params.get("apply");
+  const [seenApply, setSeenApply] = useState<string | null>(null);
+  if (applyLink && applyLink !== seenApply && proposal) {
+    setSeenApply(applyLink);
+    const [pid, gid] = applyLink.split(":").map(Number);
+    const row = proposal.id === pid && proposal.basis.rows.find((r) => r.goalId === gid);
+    if (row) applyRow(proposal, row);
+  }
+  const applied = (goalId: number | null) => {
+    if (!applying || applying.goalId !== goalId) return;
+    setApplying(null);
+    void actOnAIProposal(walletId, applying.proposalId, "applied", { goalId })
+      .then(() => qc.invalidateQueries({ queryKey: aiProposalsKey(walletId) }))
+      .catch(notifyError);
+  };
+  const dropApply = () => {
+    setApplying(null);
+    if (applyLink) {
+      const next = new URLSearchParams(params);
+      next.delete("apply");
+      setParams(next, { replace: true });
+    }
   };
 
   const close = useMutation({
@@ -267,6 +314,9 @@ export function GoalsPage() {
         goals.length > 0 && (
           <>
             <Figures view={view} wallet={summary.data?.totals.today ?? null} money={money} />
+            {proposal && (
+              <GoalProposal walletId={walletId} proposal={proposal} onApply={applyRow} />
+            )}
             {phone ? (
               <GoalsPhoneList {...listProps} />
             ) : (
@@ -281,7 +331,10 @@ export function GoalsPage() {
 
       <GoalSheet
         opened={goalSheet.open}
-        onClose={() => setGoalSheet((s) => ({ ...s, open: false }))}
+        onClose={() => {
+          setGoalSheet((s) => ({ ...s, open: false }));
+          dropApply();
+        }}
         walletId={walletId}
         goal={lineById(goalSheet.id)}
         preset={goalSheet.preset}
@@ -289,19 +342,28 @@ export function GoalsPage() {
         fmt={fmt}
         money={money}
         today={today}
-        onSaved={invalidate}
+        onSaved={() => {
+          invalidate();
+          applied(goalSheet.id);
+        }}
         actions={actions}
       />
       <MoneySheet
         opened={moneySheet.open}
-        onClose={() => setMoneySheet((s) => ({ ...s, open: false }))}
+        onClose={() => {
+          setMoneySheet((s) => ({ ...s, open: false }));
+          dropApply();
+        }}
         walletId={walletId}
         goal={lineById(moneySheet.id)}
         direction={moneySheet.direction}
         fmt={fmt}
         money={money}
         today={today}
-        onSaved={invalidate}
+        onSaved={() => {
+          invalidate();
+          applied(moneySheet.id);
+        }}
       />
     </Stack>
   );

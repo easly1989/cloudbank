@@ -1808,7 +1808,7 @@
       "summary_weekly": "Il lunedì: entrate, uscite, dove è andato di più e le scadenze della settimana, per portafoglio.",
       "summary_monthly": "Il giorno 1: entrate, uscite e dove è andato di più nel mese prima, per portafoglio.",
       "ai_report": "Quando un resoconto programmato è scritto, o saltato al limite del mese. Due righe, mai gli importi.",
-      "ai_proposal": "Quando l'AI propone budget, o trova abbonamenti o risparmi da guardare, una volta al mese ciascuno. Due righe, mai gli importi."
+      "ai_proposal": "Quando l'AI propone budget, o trova abbonamenti, risparmi o obiettivi da guardare, una volta al mese ciascuno. Due righe, mai gli importi."
     },
     "securityAlways": "Sempre nella campanella, così un accesso che non hai fatto non passa inosservato.",
     "emailUnavailable": "Non disponibile: l'amministratore non ha configurato un server di posta (CB_SMTP_HOST).",
@@ -2039,6 +2039,10 @@
       "savings": {
         "name": "Proposte di risparmio",
         "sends": "Invia, per ogni categoria che propone, il nome, la media al mese di prima e degli ultimi mesi e l'importo proposto. Mai le transazioni."
+      },
+      "goals": {
+        "name": "Proposte sugli obiettivi",
+        "sends": "Invia, per ogni obiettivo che propone, il nome, quanto manca, la data e quanto ci entra al mese, con quanto avanza al mese nel portafoglio. Mai le transazioni."
       }
     },
     "wallets": "Su quali portafogli",
@@ -3348,6 +3352,32 @@
         "before": "9 mesi prima",
         "recent": "Ultimi 3 mesi",
         "note": "I numeri li ha calcolati CloudBank: la media al mese di ogni categoria negli ultimi 3 mesi completi contro i 9 prima, e il livello di prima arrotondato a 5. Il modello ha scritto solo il testo. Modello: {{model}}."
+      }
+    },
+    "goal": {
+      "title_one": "{{count}} obiettivo da guardare",
+      "title_other": "{{count}} obiettivi da guardare",
+      "basis": "Dal ritmo degli ultimi 3 mesi · generato il {{date}}",
+      "reason": {
+        "late": "Entro {{month}}: al ritmo di {{pace}} al mese arrivi a {{eta}}",
+        "lateNone": "Entro {{month}}: niente versato negli ultimi 3 mesi",
+        "move": "Entro {{month}} servono {{need}} al mese, più di quanto avanzi ({{kept}})",
+        "eta": "Senza data: al ritmo di {{pace}} al mese arrivi a {{eta}}"
+      },
+      "perMonth": "{{amount}} al mese",
+      "move": "Sposta la data",
+      "eta": "Imposta la data",
+      "lateLabel": "Versa {{amount}} in {{name}}",
+      "moveLabel": "Sposta la data di {{name}} a {{month}}",
+      "etaLabel": "Imposta la data di {{name}} a {{month}}",
+      "why": {
+        "goal": "Obiettivo",
+        "left": "Mancano",
+        "by": "Entro",
+        "need": "Servono al mese",
+        "pace": "Al mese di recente",
+        "eta": "Ci arrivi",
+        "note": "I numeri li ha calcolati CloudBank: il ritmo di ogni obiettivo negli ultimi 3 mesi completi, la quota al mese che serve per la sua data e quanto è avanzato al mese nel portafoglio in quei mesi ({{kept}}). Il modello ha scritto solo il testo. Modello: {{model}}."
       }
     }
   }

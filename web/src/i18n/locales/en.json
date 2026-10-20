@@ -1808,7 +1808,7 @@
       "summary_weekly": "On Monday: money in and out, what took most and the week's bills, per wallet.",
       "summary_monthly": "On the 1st: money in and out and what took most last month, per wallet.",
       "ai_report": "When a scheduled report is written, or skipped at the month's limit. Two lines, never the amounts.",
-      "ai_proposal": "When the AI proposes budgets, or finds subscriptions or savings to look at, once a month each. Two lines, never the amounts."
+      "ai_proposal": "When the AI proposes budgets, or finds subscriptions, savings or goals to look at, once a month each. Two lines, never the amounts."
     },
     "securityAlways": "Always in the bell, so a sign-in you didn't make cannot go unnoticed.",
     "emailUnavailable": "Not available: the administrator has not set up a mail server (CB_SMTP_HOST).",
@@ -2039,6 +2039,10 @@
       "savings": {
         "name": "Savings proposals",
         "sends": "Sends, for each category it proposes, its name, its average a month before and lately, and the amount proposed. Never the transactions."
+      },
+      "goals": {
+        "name": "Goal proposals",
+        "sends": "Sends, for each goal it proposes, its name, what is left, its date and what goes in a month, with what the wallet keeps a month. Never the transactions."
       }
     },
     "wallets": "On which wallets",
@@ -3348,6 +3352,32 @@
         "before": "9 months before",
         "recent": "Last 3 months",
         "note": "CloudBank worked out the numbers: each category's average a month in the last 3 complete months against the 9 before, and the earlier level rounded to 5. The model only wrote the text. Model: {{model}}."
+      }
+    },
+    "goal": {
+      "title_one": "{{count}} goal to look at",
+      "title_other": "{{count}} goals to look at",
+      "basis": "From the pace of the last 3 months · made on {{date}}",
+      "reason": {
+        "late": "By {{month}}: at {{pace}} a month you get there in {{eta}}",
+        "lateNone": "By {{month}}: nothing put in over the last 3 months",
+        "move": "By {{month}} needs {{need}} a month, more than you keep ({{kept}})",
+        "eta": "No date: at {{pace}} a month you get there in {{eta}}"
+      },
+      "perMonth": "{{amount}} a month",
+      "move": "Move the date",
+      "eta": "Set the date",
+      "lateLabel": "Put {{amount}} into {{name}}",
+      "moveLabel": "Move the date of {{name}} to {{month}}",
+      "etaLabel": "Set the date of {{name}} to {{month}}",
+      "why": {
+        "goal": "Goal",
+        "left": "Left",
+        "by": "By",
+        "need": "Needs a month",
+        "pace": "Lately a month",
+        "eta": "Gets there",
+        "note": "CloudBank worked out the numbers: each goal's pace over the last 3 complete months, the monthly share its date needs, and what the wallet kept a month in them ({{kept}}). The model only wrote the text. Model: {{model}}."
       }
     }
   }
