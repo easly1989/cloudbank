@@ -149,6 +149,9 @@ func (h *walletHandlers) routes(r chi.Router) {
 		if h.bills != nil {
 			(&billsHandlers{svc: h.bills}).walletRoutes(r)
 		}
+		if h.bills != nil && h.budgets != nil && h.transactions != nil && h.dashboard != nil {
+			(&summaryHandlers{bills: h.bills, budgets: h.budgets, transactions: h.transactions, dashboard: h.dashboard}).walletRoutes(r)
+		}
 		if h.ai != nil {
 			(&aiHandlers{svc: h.ai, insights: h.insights}).walletRoutes(r)
 		}

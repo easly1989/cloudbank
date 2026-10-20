@@ -3414,6 +3414,19 @@ paths:
       responses:
         "200": { description: The bills summary., content: { application/json: { schema: { $ref: "#/components/schemas/BillsSummary" } } } }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/summary:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getWalletSummary
+      summary: "A few numbers for Home Assistant's REST sensors: bills, the month's budget, Review; balances only on request"
+      description: "Meant to be read with an API token (read scope). Amounts are exact decimals in the wallet's currency, not minor units."
+      parameters:
+        - { name: balances, in: query, required: false, schema: { type: boolean }, description: "true adds the balances; left out otherwise" }
+      responses:
+        "200": { description: The summary., content: { application/json: { schema: { $ref: "#/components/schemas/WalletSummary" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/import/csv/preview:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -5076,6 +5089,63 @@ components:
         due: { type: integer }
         paid: { type: integer }
       required: [from, to, bills, totalDue, overdue, due, paid]
+    WalletSummary:
+      type: object
+      description: "The wallet summary for Home Assistant (#701). Amounts are exact decimals in `currency` (or the account's own for each balance)."
+      properties:
+        wallet: { type: string }
+        currency: { type: string, description: "the wallet's base currency code" }
+        today: { type: string, description: "civil date, UTC" }
+        bills:
+          type: object
+          properties:
+            overdue: { type: integer }
+            dueNext7Days: { type: integer }
+            next:
+              type: object
+              nullable: true
+              description: "the next bill not yet overdue; null when there is none"
+              properties:
+                name: { type: string }
+                date: { type: string }
+                amount: { type: number }
+              required: [name, date, amount]
+            totalDue: { type: number, description: "still to pay, overdue included" }
+          required: [overdue, dueNext7Days, next, totalDue]
+        budget:
+          type: object
+          description: "This month's budgeted spending, as positive amounts."
+          properties:
+            month: { type: string, description: "YYYY-MM" }
+            budgeted: { type: number }
+            spent: { type: number }
+            left: { type: number, description: "negative once over" }
+            usedPercent: { type: integer }
+            over: { type: integer, description: "categories past their budget" }
+          required: [month, budgeted, spent, left, usedPercent, over]
+        review:
+          type: object
+          properties:
+            needsCategory: { type: integer }
+            duplicates: { type: integer }
+            unconfirmed: { type: integer }
+          required: [needsCategory, duplicates, unconfirmed]
+        balances:
+          type: object
+          description: "Only with ?balances=true: the total the overview counts, and its accounts."
+          properties:
+            total: { type: number }
+            accounts:
+              type: array
+              items:
+                type: object
+                properties:
+                  name: { type: string }
+                  balance: { type: number }
+                  currency: { type: string }
+                required: [name, balance, currency]
+          required: [total, accounts]
+      required: [wallet, currency, today, bills, budget, review]
     Schedule:
       type: object
       properties:

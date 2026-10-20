@@ -3560,6 +3560,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * A few numbers for Home Assistant's REST sensors: bills, the month's budget, Review; balances only on request
+         * @description Meant to be read with an API token (read scope). Amounts are exact decimals in the wallet's currency, not minor units.
+         */
+        get: operations["getWalletSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/import/csv/preview": {
         parameters: {
             query?: never;
@@ -5610,6 +5632,52 @@ export interface components {
             overdue: number;
             due: number;
             paid: number;
+        };
+        /** @description The wallet summary for Home Assistant (#701). Amounts are exact decimals in `currency` (or the account's own for each balance). */
+        WalletSummary: {
+            wallet: string;
+            /** @description the wallet's base currency code */
+            currency: string;
+            /** @description civil date, UTC */
+            today: string;
+            bills: {
+                overdue: number;
+                dueNext7Days: number;
+                /** @description the next bill not yet overdue; null when there is none */
+                next: {
+                    name: string;
+                    date: string;
+                    amount: number;
+                } | null;
+                /** @description still to pay, overdue included */
+                totalDue: number;
+            };
+            /** @description This month's budgeted spending, as positive amounts. */
+            budget: {
+                /** @description YYYY-MM */
+                month: string;
+                budgeted: number;
+                spent: number;
+                /** @description negative once over */
+                left: number;
+                usedPercent: number;
+                /** @description categories past their budget */
+                over: number;
+            };
+            review: {
+                needsCategory: number;
+                duplicates: number;
+                unconfirmed: number;
+            };
+            /** @description Only with ?balances=true: the total the overview counts, and its accounts. */
+            balances?: {
+                total: number;
+                accounts: {
+                    name: string;
+                    balance: number;
+                    currency: string;
+                }[];
+            };
         };
         Schedule: {
             /** Format: int64 */
@@ -12857,6 +12925,33 @@ export interface operations {
                     "application/json": components["schemas"]["BillsSummary"];
                 };
             };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getWalletSummary: {
+        parameters: {
+            query?: {
+                /** @description true adds the balances; left out otherwise */
+                balances?: boolean;
+            };
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The summary. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletSummary"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
     };

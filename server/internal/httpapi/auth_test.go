@@ -19,6 +19,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
 	"github.com/easly1989/cloudbank/server/internal/backup"
+	"github.com/easly1989/cloudbank/server/internal/bills"
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/category"
 	"github.com/easly1989/cloudbank/server/internal/currency"
@@ -108,7 +109,7 @@ func newTestAPI(t *testing.T) *testClient {
 	mailsvc := mailingest.NewService(st.Read(), st.Write(), mailingest.NewMicrosoft("test-client", "http://127.0.0.1:1", nil))
 	srv := httptest.NewServer(New(Options{
 		Auth: svc, Wallets: wsvc, Currencies: csvc, Accounts: asvc,
-		Categories: catsvc, Payees: psvc, Transactions: tsvc, Tags: tagsvc, Vehicles: vehsvc, Goals: goalsvc, Transfers: xsvc, Dashboard: dsvc, Templates: tplsvc, Schedules: ssvc, Assignments: asvc2, Budgets: bsvc, Reports: rsvc, Import: impsvc, CSV: csvsvc, RateProvider: stubRateProvider{},
+		Categories: catsvc, Payees: psvc, Transactions: tsvc, Tags: tagsvc, Vehicles: vehsvc, Goals: goalsvc, Transfers: xsvc, Dashboard: dsvc, Bills: bills.NewService(st.Read()), Templates: tplsvc, Schedules: ssvc, Assignments: asvc2, Budgets: bsvc, Reports: rsvc, Import: impsvc, CSV: csvsvc, RateProvider: stubRateProvider{},
 		Integrity: intsvc, Backup: bksvc, Attachments: attsvc, Mail: mailsvc, Notifications: nsvc, AI: aisvc, Insights: insightsvc, HotBackup: st, DataDir: t.TempDir(), Health: st,
 		// A local build: the check follows no channel, so it never goes online.
 		Updates: updates.New(st.Write(), "dev", true),
