@@ -703,6 +703,32 @@
       "yearly": "Chaque année, vers le {{date}}",
       "seen_one": "{{count}} fois depuis {{month}}, la dernière le {{date}}",
       "seen_other": "{{count}} fois depuis {{month}}, la dernière le {{date}}"
+    },
+    "feed": {
+      "title": "Ajouter au calendrier",
+      "sub": "Les échéances de {{wallet}} dans le calendrier du téléphone",
+      "intro": "Une adresse privée que le calendrier du téléphone lit tout seul : chaque opération récurrente s’affiche le jour de son échéance, avec son nom et son montant. Jamais le solde d’un compte.",
+      "create": "Créer l’adresse",
+      "explain": "Le calendrier la lit tout seul et se met à jour quand vous modifiez une opération récurrente : chaque échéance s’affiche à son jour, avec son nom et son montant. Jamais le solde d’un compte.",
+      "address": "Adresse du calendrier",
+      "copy": "Copier l’adresse",
+      "copied": "Copiée",
+      "private": "Quiconque a cette adresse voit vos échéances : ne la partagez pas.",
+      "subscribe": "S’abonner",
+      "download": "Télécharger le .ics",
+      "google": "Google Agenda",
+      "googleHow": "Depuis un ordinateur : Autres agendas › + › À partir de l’URL, puis collez l’adresse. Elle s’affiche aussi sur le téléphone.",
+      "apple": "iPhone et Mac",
+      "appleHow": "Touchez « S’abonner », ou allez dans Réglages › Apps › Calendrier › Comptes de calendrier › Ajouter un compte › Autre › Ajouter un calendrier avec abonnement, puis collez l’adresse.",
+      "outlook": "Outlook",
+      "outlookHow": "Ajouter un calendrier › S’abonner à partir du web, puis collez l’adresse.",
+      "regenerate": "Régénérer l’adresse",
+      "regenerateTitle": "Régénérer l’adresse ?",
+      "regenerateBody": "L’adresse actuelle cesse de fonctionner : chaque calendrier abonné doit être ajouté de nouveau avec la nouvelle.",
+      "regenerateHint": "Régénérez-la si l’adresse est parvenue à quelqu’un d’autre : l’ancienne cesse de fonctionner.",
+      "off": "Désactiver",
+      "offTitle": "Désactiver l’adresse ?",
+      "offBody": "Les calendriers abonnés ne reçoivent plus vos échéances."
     }
   },
   "tags": {

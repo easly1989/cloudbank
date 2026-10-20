@@ -2,9 +2,13 @@ package httpapi
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"testing"
+	"time"
 )
 
 func makePayee(t *testing.T, c *testClient, wid int64, name string) int64 {
@@ -254,5 +258,98 @@ func TestScheduleProposals(t *testing.T) {
 	}
 	if got := list(); len(got) != 0 {
 		t.Fatalf("after ignoring = %+v", got)
+	}
+}
+
+// The calendar feed (#694): the address is the reader's, its file carries the
+// schedules and never a balance, and a regenerated or turned-off address
+// answers 404 to anyone.
+func TestScheduleCalendarFeed(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	c.do(http.MethodPost, base+"/transactions", map[string]any{
+		"accountId": acc, "date": time.Now().Format("2006-01-02"), "amount": 123456,
+	}, true).Body.Close()
+	next := time.Now().AddDate(0, 1, 0).Format("2006-01-02")
+	c.do(http.MethodPost, base+"/schedules", map[string]any{
+		"templateId": makeTemplate(t, c, wid, acc), "unit": "month", "everyN": 1, "nextDue": next,
+	}, true).Body.Close()
+
+	feed := func(r *http.Response) map[string]any {
+		t.Helper()
+		defer r.Body.Close()
+		var out struct {
+			Feed map[string]any `json:"feed"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&out)
+		return out.Feed
+	}
+	if f := feed(c.do(http.MethodGet, base+"/schedules/calendar-feed", nil, false)); f != nil {
+		t.Fatalf("feed before any = %+v", f)
+	}
+	f := feed(c.do(http.MethodPost, base+"/schedules/calendar-feed", nil, true))
+	path := fmt.Sprintf("/ical/%d/%s.ics", int64(f["id"].(float64)), f["token"])
+	if again := feed(c.do(http.MethodGet, base+"/schedules/calendar-feed", nil, false)); again["token"] != f["token"] {
+		t.Fatalf("feed shown again = %+v, want %+v", again, f)
+	}
+
+	anon := c.fork() // a calendar app: no session
+	get := func(p string) (int, string) {
+		t.Helper()
+		r := anon.do(http.MethodGet, p, nil, false)
+		defer r.Body.Close()
+		b, _ := io.ReadAll(r.Body)
+		if r.StatusCode == http.StatusOK && !strings.HasPrefix(r.Header.Get("Content-Type"), "text/calendar") {
+			t.Errorf("Content-Type = %q", r.Header.Get("Content-Type"))
+		}
+		return r.StatusCode, string(b)
+	}
+	code, body := get(path)
+	if code != http.StatusOK || !strings.Contains(body, "BEGIN:VEVENT") || !strings.Contains(body, "DTSTART;VALUE=DATE:"+strings.ReplaceAll(next, "-", "")) {
+		t.Fatalf("feed = %d %q", code, body)
+	}
+	if strings.Contains(body, "234,56") || strings.Contains(body, "234.56") {
+		t.Errorf("the feed shows a balance: %q", body)
+	}
+	if code, _ := get(fmt.Sprintf("/ical/%d/%s.ics", int64(f["id"].(float64)), "guess")); code != http.StatusNotFound {
+		t.Errorf("wrong token = %d, want 404", code)
+	}
+
+	c.do(http.MethodPost, "/api/v1/admin/users", map[string]any{"username": "bob", "password": "bobssecret"}, true).Body.Close()
+	bob := c.fork()
+	bob.do(http.MethodPost, "/api/v1/auth/login", map[string]any{"username": "bob", "password": "bobssecret"}, true).Body.Close()
+	for _, m := range []string{http.MethodGet, http.MethodPost, http.MethodDelete} {
+		if r := bob.do(m, base+"/schedules/calendar-feed", nil, true); r.StatusCode != http.StatusNotFound {
+			t.Errorf("bob %s = %d, want 404", m, r.StatusCode)
+		}
+	}
+	if r := bob.do(http.MethodGet, base+"/schedules/calendar.ics", nil, false); r.StatusCode != http.StatusNotFound {
+		t.Errorf("bob download = %d, want 404", r.StatusCode)
+	}
+	r := c.do(http.MethodGet, base+"/schedules/calendar.ics", nil, false)
+	if r.StatusCode != http.StatusOK || !strings.HasPrefix(r.Header.Get("Content-Disposition"), "attachment") {
+		t.Errorf("download = %d %q", r.StatusCode, r.Header.Get("Content-Disposition"))
+	}
+	r.Body.Close()
+
+	c.do(http.MethodPost, base+"/schedules/calendar-feed", nil, true).Body.Close() // regenerate
+	if code, _ := get(path); code != http.StatusNotFound {
+		t.Errorf("old address after regenerate = %d, want 404", code)
+	}
+	if r := c.do(http.MethodDelete, base+"/schedules/calendar-feed", nil, true); r.StatusCode != http.StatusNoContent {
+		t.Fatalf("turn off = %d, want 204", r.StatusCode)
+	}
+	if f := feed(c.do(http.MethodGet, base+"/schedules/calendar-feed", nil, false)); f != nil {
+		t.Errorf("feed after turning off = %+v", f)
+	}
+}
+
+func TestLogPathHidesFeedToken(t *testing.T) {
+	if got := logPath("/ical/7/secret-token.ics"); strings.Contains(got, "secret") {
+		t.Errorf("logPath = %q, keeps the token", got)
+	}
+	if got := logPath("/api/v1/ping"); got != "/api/v1/ping" {
+		t.Errorf("logPath = %q, want the path unchanged", got)
 	}
 }

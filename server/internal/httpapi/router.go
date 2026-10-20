@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -272,6 +273,12 @@ func New(opts Options) http.Handler {
 		}
 	})
 
+	// The schedules' calendar at its private address (#694): no session, the
+	// token in the path is the credential.
+	if opts.Schedules != nil {
+		r.Get("/ical/{feedId}/{token}.ics", feedICS(opts.Schedules))
+	}
+
 	// Everything else is the single-page app.
 	r.Handle("/*", webui.Handler())
 
@@ -308,11 +315,22 @@ func requestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 			next.ServeHTTP(ww, r)
 			logger.Debug("http request",
 				"method", r.Method,
-				"path", r.URL.Path,
+				"path", logPath(r.URL.Path),
 				"status", ww.Status(),
 				"bytes", ww.BytesWritten(),
 				"duration", time.Since(start).String(),
 			)
 		})
 	}
+}
+
+// logPath is a request path fit for the log: a calendar address's token is
+// its whole credential (#694), so it is left out.
+func logPath(p string) string {
+	if rest, ok := strings.CutPrefix(p, "/ical/"); ok {
+		if id, _, found := strings.Cut(rest, "/"); found {
+			return "/ical/" + id + "/[token]"
+		}
+	}
+	return p
 }

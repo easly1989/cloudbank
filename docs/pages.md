@@ -250,6 +250,24 @@ only money coming in.
   the week and not set to post themselves. **Register** posts one as the
   schedule describes it, and **Skip** passes over it. Under it, **Next up** lists
   what comes after today.
+- **Add to calendar.** In the calendar view, at the end of its bar (the calendar
+  icon on a phone): the due dates in your phone's calendar app.
+  - **Create the address** makes a private address for you and this wallet. A
+    calendar app subscribed to it shows every occurrence, from three months back
+    to twelve ahead, on its day with its name and amount, and picks up changes on
+    its own (most apps check every few hours). It never shows a balance.
+  - To subscribe:
+    - **iPhone and Mac**: tap **Subscribe**, or open Settings ›
+      Apps › Calendar › Calendar Accounts › Add Account › Other › Add Subscribed
+      Calendar and paste the address.
+    - **Google Calendar**: on a computer, Other calendars › + › From URL, and
+      paste the address. It then shows in the Google Calendar app on Android and
+      iPhone.
+    - **Outlook**: Add calendar › Subscribe from web, and paste the address.
+  - **Download .ics** saves the same calendar as a file, to import once.
+  - Anyone with the address sees your due dates. **Regenerate the address** if
+    it reached someone else: the old one stops working and calendars have to be
+    subscribed again. **Turn off** stops it altogether.
 - **Opening an occurrence.**
   - One still to register opens in a sheet, where you can change the amount, the
     date or the status before registering it (a bill is rarely the same twice),

@@ -4,6 +4,29 @@
  */
 
 export interface paths {
+    "/ical/{feedId}/{token}.ics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feedId: number;
+                token: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * The schedules' calendar at its private address
+         * @description For a calendar app to subscribe to. No session; the token is the credential. An unknown, regenerated or turned-off address, or one whose user left the wallet, answers 404 (#694).
+         */
+        get: operations["getCalendarFeedICS"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -2651,6 +2674,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/schedules/calendar-feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * The reader's private calendar address for the wallet
+         * @description `feed` is null when the reader has none. The address is `/ical/{id}/{token}.ics` (#694).
+         */
+        get: operations["getCalendarFeed"];
+        put?: never;
+        /**
+         * Make the reader's calendar address, or give it a new token
+         * @description A new token keeps the id; the old address then answers 404.
+         */
+        post: operations["newCalendarFeed"];
+        /** Turn the reader's calendar address off */
+        delete: operations["deleteCalendarFeed"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/schedules/calendar.ics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * The schedules as an iCalendar file to download
+         * @description Three months back to twelve ahead, one all-day event per occurrence with its name and amount; never a balance.
+         */
+        get: operations["downloadScheduleCalendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/schedules/{scheduleId}/skip": {
         parameters: {
             query?: never;
@@ -5065,6 +5137,15 @@ export interface components {
              */
             withoutPayee: number;
         };
+        /** @description A private calendar address, `/ical/{id}/{token}.ics` (#694). */
+        CalendarFeed: {
+            /** Format: int64 */
+            id: number;
+            token: string;
+        };
+        CalendarFeedResponse: {
+            feed: components["schemas"]["CalendarFeed"] | null;
+        };
         /** @description A recurring payment found in the transactions that no schedule covers (#693). */
         ScheduleProposal: {
             /** Format: int64 */
@@ -5643,6 +5724,36 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getCalendarFeedICS: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feedId: number;
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The calendar. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/calendar": string;
+                };
+            };
+            /** @description No such address. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getHealth: {
         parameters: {
             query?: never;
@@ -10625,6 +10736,96 @@ export interface operations {
                 content?: never;
             };
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getCalendarFeed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The address. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarFeedResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    newCalendarFeed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The address. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarFeedResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteCalendarFeed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Turned off. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    downloadScheduleCalendar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The calendar. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/calendar": string;
+                };
+            };
             404: components["responses"]["NotFound"];
         };
     };
