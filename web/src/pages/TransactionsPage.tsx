@@ -114,11 +114,19 @@ export function TransactionsPage() {
   const [accountId, setAccountId] = useState<string | null>(() =>
     new URLSearchParams(window.location.search).get("account"),
   );
+  // A new entry from outside — a home-screen shortcut or shared text (#702) —
+  // starts on the default account, as the overview's Add transaction does.
+  const [arrivedToAdd] = useState(() => {
+    const q = new URLSearchParams(window.location.search);
+    return q.get("new") === "1" || ["title", "text", "url"].some((k) => q.get(k)?.trim());
+  });
+  const preferred = user?.preferences?.defaultAccountId;
   // Fall back to the first account when the chosen one is not in the list — the
   // ?account= link named something that is gone, or nothing was chosen yet.
   // During render, so no query below ever fires for an account that is not there.
   if (accounts.length > 0 && !accounts.some((a) => String(a.id) === accountId)) {
-    setAccountId(String(accounts[0].id));
+    const useDefault = arrivedToAdd && accounts.some((a) => a.id === preferred && !a.closed);
+    setAccountId(String(useDefault ? preferred : accounts[0].id));
   }
   const account = accounts.find((a) => String(a.id) === accountId);
 
@@ -253,11 +261,20 @@ export function TransactionsPage() {
   // The parameter is read, not copied into state: an effect that mirrors the
   // URL into a flag has two sources of truth and renders twice to reconcile
   // them.
-  const openNew = searchParams.get("new") === "1";
+  //
+  // ?kind= presets the sign (the home-screen shortcuts), and text shared from
+  // another app arrives as ?title=&text=&url= (the manifest's share target),
+  // which opens the sheet too (#702).
+  const shared = ["title", "text", "url"]
+    .map((k) => searchParams.get(k)?.trim() ?? "")
+    .filter(Boolean)
+    .join("\n");
+  const kind = searchParams.get("kind");
+  const openNew = searchParams.get("new") === "1" || shared !== "";
   const clearNew = () => {
     if (!openNew) return;
     const next = new URLSearchParams(searchParams);
-    next.delete("new");
+    for (const k of ["new", "kind", "title", "text", "url"]) next.delete(k);
     setSearchParams(next, { replace: true });
   };
   const [transferOpened, transferForm] = useDisclosure(false);
@@ -762,6 +779,8 @@ export function TransactionsPage() {
           onSaved={invalidate}
           templates={templates.filter((tpl) => !tpl.isTransfer)}
           onTemplateSaved={invalidateTemplates}
+          startDirection={kind === "income" || kind === "expense" ? kind : undefined}
+          shared={shared || undefined}
         />
       )}
 

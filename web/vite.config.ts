@@ -26,27 +26,10 @@ export default defineConfig({
       registerType: "prompt",
       injectRegister: false,
       includeAssets: ["logo.svg", "apple-touch-icon-180x180.png"],
-      manifest: {
-        id: "/",
-        name: "CloudBank",
-        short_name: "CloudBank",
-        description: "Self-hosted personal finance — a web port of HomeBank.",
-        start_url: "/",
-        scope: "/",
-        display: "standalone",
-        theme_color: "#3d86e0",
-        background_color: "#ffffff",
-        icons: [
-          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
-          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
-          {
-            src: "maskable-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
-        ],
-      },
+      // The manifest is public/manifest.webmanifest, served by the server in
+      // the reader's language (internal/webui, #702). A generated one would be
+      // precached by the service worker, which would answer in English for good.
+      manifest: false,
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
         // A language is fetched the first time it is used, not with the shell:
