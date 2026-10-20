@@ -40,6 +40,7 @@ import {
   updateAISettings,
   type AIFeature,
   type AIFeatures,
+  type AISchedule,
   type AISend,
 } from "../../api/ai";
 import { AiBox } from "../../components/AiBox";
@@ -93,6 +94,7 @@ export function AiSettings() {
   const [walletsOff, setWalletsOff] = useState<number[]>([]);
   const [limit, setLimit] = useState<number | string>(200);
   const [motion, setMotion] = useState(true);
+  const [schedule, setSchedule] = useState<AISchedule>({ weekly: false, yearly: true });
   const [shown, setShown] = useState<number | null>(null);
   const data = query.data;
   const hasKey = data?.hasKey ?? false;
@@ -110,6 +112,7 @@ export function AiSettings() {
       setWalletsOff(data.walletsOff);
       setLimit(data.monthlyLimit);
       setMotion(data.motion);
+      setSchedule(data.schedule);
     }
   }
 
@@ -126,6 +129,7 @@ export function AiSettings() {
         walletsOff,
         monthlyLimit: typeof limit === "number" ? limit : undefined,
         motion,
+        schedule,
       }),
     onSuccess: (s) => {
       qc.setQueryData(AI_SETTINGS_KEY, s);
@@ -189,6 +193,22 @@ export function AiSettings() {
                   <Text c="dimmed" fz="sm">
                     {t(`ai.feature.${f.key}.sends`)}
                   </Text>
+                  {f.key === "reports" && features.reports && (
+                    <Stack gap={6} mt={8}>
+                      <Text fz="sm">{t("ai.schedule.lead")}</Text>
+                      {(["weekly", "yearly"] as const).map((k) => (
+                        <Checkbox
+                          key={k}
+                          label={t(`ai.schedule.${k}`)}
+                          checked={schedule[k]}
+                          onChange={(e) => {
+                            const on = e.currentTarget.checked;
+                            setSchedule((cur) => ({ ...cur, [k]: on }));
+                          }}
+                        />
+                      ))}
+                    </Stack>
+                  )}
                 </Stack>
                 <Switch
                   aria-label={featureName(f.key)}

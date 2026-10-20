@@ -26,6 +26,7 @@ import {
   IconReportMoney,
   IconSettings,
   IconShieldLock,
+  IconSparkles,
   IconTrendingDown,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -73,6 +74,7 @@ const KIND_ICON: Record<NotificationKind, React.ReactNode> = {
   summary_weekly: <IconCalendarStats size={16} color="var(--mantine-color-dimmed)" />,
   summary_monthly: <IconCalendarStats size={16} color="var(--mantine-color-dimmed)" />,
   new_version: <IconRefresh size={16} color="var(--mantine-color-dimmed)" />,
+  ai_report: <IconSparkles size={16} color="var(--cb-ai-a)" />,
 };
 
 const SECTIONS: BellSection[] = ["today", "week", "earlier"];

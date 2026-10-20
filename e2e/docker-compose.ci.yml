@@ -94,6 +94,7 @@ services:
       CB_TELEGRAM_API: "http://127.0.0.1:9100/telegram"
       # Money events (#691) looked for every two seconds, not five minutes.
       CB_MONEY_INTERVAL: "2s"
+      CB_AI_REPORTS_INTERVAL: "2s"
     volumes:
       - cb-mail-data:/data
 

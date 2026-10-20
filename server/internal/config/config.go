@@ -87,6 +87,9 @@ type Config struct {
 	// MoneyInterval is how often the money events look at the money (#691),
 	// CB_MONEY_INTERVAL, default 5m; 0 turns them off.
 	MoneyInterval time.Duration
+	// AIReportsInterval is how often the scheduled AI reports are looked for
+	// (#697); only the end-to-end tests shorten it.
+	AIReportsInterval time.Duration
 
 	// OIDC/SSO login. When Issuer, ClientID, ClientSecret and RedirectURL are all
 	// set (see OIDCEnabled), a "Sign in with <OIDCName>" button is offered on the
@@ -181,6 +184,7 @@ func Load() Config {
 		TelegramAPI:       strings.TrimSpace(getenv("CB_TELEGRAM_API", "https://api.telegram.org")),
 		NotifyHourlyLimit: getIntEnv("CB_NOTIFY_HOURLY_LIMIT", 30),
 		MoneyInterval:     getDurationEnv("CB_MONEY_INTERVAL", 5*time.Minute),
+		AIReportsInterval: getDurationEnv("CB_AI_REPORTS_INTERVAL", time.Hour),
 
 		OIDCIssuer:        getenv("CB_OIDC_ISSUER", ""),
 		OIDCClientID:      getenv("CB_OIDC_CLIENT_ID", ""),

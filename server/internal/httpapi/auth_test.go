@@ -103,7 +103,8 @@ func newTestAPI(t *testing.T) *testClient {
 	nsvc := notify.NewService(st.Read(), st.Write(), nil)
 	nsvc.SetSender(notify.ChannelWebhook, notify.NewWebhookSender())
 	aisvc := ai.NewService(st.Read(), st.Write())
-	insightsvc := insight.NewService(st.Read(), st.Write(), aisvc, dsvc, rsvc, bsvc, ssvc)
+	insightsvc := insight.NewService(st.Read(), st.Write(), aisvc, rsvc, bsvc, ssvc)
+	insightsvc.SetNotify(nsvc)
 	mailsvc := mailingest.NewService(st.Read(), st.Write(), mailingest.NewMicrosoft("test-client", "http://127.0.0.1:1", nil))
 	srv := httptest.NewServer(New(Options{
 		Auth: svc, Wallets: wsvc, Currencies: csvc, Accounts: asvc,

@@ -83,6 +83,7 @@ func (h *aiHandlers) putSettings(w http.ResponseWriter, r *http.Request) {
 		Model        string       `json:"model"`
 		APIKey       *string      `json:"apiKey"` // omit to keep the stored key
 		Features     *ai.Features `json:"features"`
+		Schedule     *ai.Schedule `json:"schedule"`
 		WalletsOff   []int64      `json:"walletsOff"`
 		MonthlyLimit *int64       `json:"monthlyLimit"`
 		Motion       *bool        `json:"motion"`
@@ -92,7 +93,7 @@ func (h *aiHandlers) putSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	st, err := h.svc.UpdateSettings(r.Context(), u.ID, u.IsAdmin, ai.SettingsInput{
 		Enabled: body.Enabled, BaseURL: body.BaseURL, Model: body.Model, APIKey: body.APIKey,
-		Features: body.Features, WalletsOff: body.WalletsOff, MonthlyLimit: body.MonthlyLimit, Motion: body.Motion,
+		Features: body.Features, Schedule: body.Schedule, WalletsOff: body.WalletsOff, MonthlyLimit: body.MonthlyLimit, Motion: body.Motion,
 	})
 	switch {
 	case errors.Is(err, ai.ErrLocalURL):

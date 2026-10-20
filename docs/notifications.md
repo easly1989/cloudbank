@@ -78,6 +78,7 @@ exception: it is switched on per device, and its boxes can be set before.
 | Goal reached or falling behind | A goal reached its target, or is behind the pace it needs. | Goals |
 | Weekly summary | On Monday, for each wallet you hear from: money in and out last week, the week before, the three categories that took most, and the bills of the next 7 days. A week with nothing to tell sends nothing. | Reports |
 | Monthly summary | On the 1st, the same for last month, without the bills. | Reports |
+| AI report ready | Your AI wrote a scheduled report ([AI insights](pages.md#ai-insights)): the period and the wallet, never the amounts. Also when one was skipped at this month's AI limit. | The report, or Settings → AI |
 | A new CloudBank version | A newer release is out on the channel the server follows. Administrators only. | About |
 
 The three security events always reach the bell, even with every other channel

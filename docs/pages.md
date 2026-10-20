@@ -411,20 +411,34 @@ PNG.
 
 ## AI insights
 
-Monthly reports your own AI writes on the wallet's numbers. The page is in the
+Reports your own AI writes on the wallet's numbers. The page is in the
 sidebar only while the AI is set up in **Settings → AI** with **Monthly
 reports** switched on, for a wallet the AI may work on.
 
+- **They come by themselves.** Last month's report is written on the 1st, at
+  07:00 in your time zone, for every wallet the AI may work on. Under **Monthly
+  reports** in Settings → AI, two more can be ticked: **every Monday, the week
+  before** (off at first) and **in January, the year before** (on). If the
+  server was off at 07:00, the report is written when it is back, while the
+  period is still the latest. A wallet with nothing in the period gets none,
+  and a period that already has a report, even one you asked for, gets no
+  other. The [notification](notifications.md) **AI report ready** says when
+  one is written, and opens it.
 - **Generate now** writes the report of the month picked beside it: the last
   complete month, or any of the twelve before.
-- **The latest report** is shown in full, in the AI box: the frame CloudBank
-  puts round everything the AI wrote. **Why?** opens the numbers it was given,
-  this month against the one before and the six-month average; CloudBank works
-  them out, the model only writes the text. The thumbs say whether it helped.
-- **Earlier reports** are listed under it; **Read** opens one.
+- **The latest report**, or the one a notification opened, is shown in full,
+  in the AI box: the frame CloudBank puts round everything the AI wrote.
+  **Why?** opens the numbers it was given: a month against the one before and
+  the six-month average, a week against the week before and the six-week
+  average, a year against the year before. CloudBank works them out, the model
+  only writes the text. The thumbs say whether it helped.
+- **Earlier reports** are listed under it, named by their month, week or year;
+  **Read** opens one.
 - **Yours alone.** In a shared wallet the others see none of your reports.
 
-At this month's request limit, **Generate now** asks before going past it.
+At this month's request limit, **Generate now** asks before going past it. A
+report that would come by itself is skipped instead, and not written after the
+limit resets; the bell says so once, with a link to Settings → AI.
 
 ## Vehicles
 

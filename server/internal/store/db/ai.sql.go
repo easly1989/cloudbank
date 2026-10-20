@@ -10,6 +10,39 @@ import (
 	"database/sql"
 )
 
+const aIReportDone = `-- name: AIReportDone :one
+SELECT CAST(EXISTS (
+    SELECT 1 FROM ai_reports r
+    WHERE r.user_id = ?1 AND r.wallet_id = ?2
+      AND r.kind = ?3 AND r.period = ?4
+) OR EXISTS (
+    SELECT 1 FROM ai_report_runs x
+    WHERE x.user_id = ?1 AND x.wallet_id = ?2
+      AND x.kind = ?3 AND x.period = ?4
+) AS INTEGER) AS done
+`
+
+type AIReportDoneParams struct {
+	UserID   int64
+	WalletID int64
+	Kind     string
+	Period   string
+}
+
+// Whether a period of a wallet already has a report, or the scheduler already
+// did what it could about it.
+func (q *Queries) AIReportDone(ctx context.Context, arg AIReportDoneParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, aIReportDone,
+		arg.UserID,
+		arg.WalletID,
+		arg.Kind,
+		arg.Period,
+	)
+	var done int64
+	err := row.Scan(&done)
+	return done, err
+}
+
 const aIWalletOff = `-- name: AIWalletOff :one
 SELECT COUNT(*) FROM ai_wallets_off WHERE user_id = ? AND wallet_id = ?
 `
@@ -103,7 +136,8 @@ func (q *Queries) GetAISend(ctx context.Context, arg GetAISendParams) (GetAISend
 }
 
 const getAISettings = `-- name: GetAISettings :one
-SELECT enabled, base_url, model, api_key, suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion
+SELECT enabled, base_url, model, api_key, suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion,
+       weekly_on, yearly_on
 FROM ai_settings WHERE user_id = ?
 `
 
@@ -118,6 +152,8 @@ type GetAISettingsRow struct {
 	ReportsOn    int64
 	MonthlyLimit int64
 	Motion       int64
+	WeeklyOn     int64
+	YearlyOn     int64
 }
 
 func (q *Queries) GetAISettings(ctx context.Context, userID int64) (GetAISettingsRow, error) {
@@ -134,6 +170,8 @@ func (q *Queries) GetAISettings(ctx context.Context, userID int64) (GetAISetting
 		&i.ReportsOn,
 		&i.MonthlyLimit,
 		&i.Motion,
+		&i.WeeklyOn,
+		&i.YearlyOn,
 	)
 	return i, err
 }
@@ -187,6 +225,29 @@ func (q *Queries) InsertAIReport(ctx context.Context, arg InsertAIReportParams) 
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const insertAIReportRun = `-- name: InsertAIReportRun :exec
+INSERT OR IGNORE INTO ai_report_runs (user_id, wallet_id, kind, period, outcome) VALUES (?, ?, ?, ?, ?)
+`
+
+type InsertAIReportRunParams struct {
+	UserID   int64
+	WalletID int64
+	Kind     string
+	Period   string
+	Outcome  string
+}
+
+func (q *Queries) InsertAIReportRun(ctx context.Context, arg InsertAIReportRunParams) error {
+	_, err := q.db.ExecContext(ctx, insertAIReportRun,
+		arg.UserID,
+		arg.WalletID,
+		arg.Kind,
+		arg.Period,
+		arg.Outcome,
+	)
+	return err
 }
 
 const insertAISend = `-- name: InsertAISend :one
@@ -261,6 +322,50 @@ func (q *Queries) LargestExpenses(ctx context.Context, arg LargestExpensesParams
 			&i.Amount,
 			&i.CurrencyID,
 			&i.Payee,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAIReportUsers = `-- name: ListAIReportUsers :many
+SELECT s.user_id, s.weekly_on, s.yearly_on, u.locale
+FROM ai_settings s
+JOIN users u ON u.id = s.user_id
+WHERE s.enabled = 1 AND s.reports_on = 1
+ORDER BY s.user_id
+`
+
+type ListAIReportUsersRow struct {
+	UserID   int64
+	WeeklyOn int64
+	YearlyOn int64
+	Locale   string
+}
+
+// The people whose AI writes reports (#697), with which ones come by themselves.
+func (q *Queries) ListAIReportUsers(ctx context.Context) ([]ListAIReportUsersRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAIReportUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAIReportUsersRow{}
+	for rows.Next() {
+		var i ListAIReportUsersRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.WeeklyOn,
+			&i.YearlyOn,
+			&i.Locale,
 		); err != nil {
 			return nil, err
 		}
@@ -452,15 +557,16 @@ func (q *Queries) SetAIReportFeedback(ctx context.Context, arg SetAIReportFeedba
 const upsertAISettings = `-- name: UpsertAISettings :exec
 INSERT INTO ai_settings (
     user_id, enabled, base_url, model, api_key,
-    suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion, updated_at
+    suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion, weekly_on, yearly_on, updated_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 ON CONFLICT (user_id) DO UPDATE SET
     enabled = excluded.enabled, base_url = excluded.base_url,
     model = excluded.model, api_key = excluded.api_key,
     suggest_on = excluded.suggest_on, entry_on = excluded.entry_on,
     mail_on = excluded.mail_on, reports_on = excluded.reports_on,
     monthly_limit = excluded.monthly_limit, motion = excluded.motion,
+    weekly_on = excluded.weekly_on, yearly_on = excluded.yearly_on,
     updated_at = excluded.updated_at
 `
 
@@ -476,6 +582,8 @@ type UpsertAISettingsParams struct {
 	ReportsOn    int64
 	MonthlyLimit int64
 	Motion       int64
+	WeeklyOn     int64
+	YearlyOn     int64
 }
 
 func (q *Queries) UpsertAISettings(ctx context.Context, arg UpsertAISettingsParams) error {
@@ -491,6 +599,8 @@ func (q *Queries) UpsertAISettings(ctx context.Context, arg UpsertAISettingsPara
 		arg.ReportsOn,
 		arg.MonthlyLimit,
 		arg.Motion,
+		arg.WeeklyOn,
+		arg.YearlyOn,
 	)
 	return err
 }
