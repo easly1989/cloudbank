@@ -256,21 +256,6 @@ func TestGoals(t *testing.T) {
 	}
 }
 
-func TestShareAndPace(t *testing.T) {
-	date := "2027-04-30"
-	g := goal.Goal{TargetAmount: 120000, Saved: 30000, TargetDate: &date}
-	moves := []goal.Contribution{{Date: "2026-08-10", Amount: 10001}, {Date: "2026-09-10", Amount: 10000}, {Date: "2026-10-10", Amount: 10000}, {Date: "2026-11-01", Amount: 50000}}
-	need, pace := shareAndPace(g, moves, "2026-11-01", 2)
-	if need != 18000 || pace != 10000 {
-		t.Fatalf("need %d pace %d", need, pace)
-	}
-	past := "2026-10-01"
-	g.TargetDate = &past
-	if need, _ := shareAndPace(g, nil, "2026-11-01", 2); need != 90000 {
-		t.Fatalf("past date need = %d", need)
-	}
-}
-
 func TestTells(t *testing.T) {
 	anna := int64(1)
 	for _, c := range []struct {

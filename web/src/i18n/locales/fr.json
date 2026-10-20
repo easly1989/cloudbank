@@ -1808,7 +1808,7 @@
       "summary_weekly": "Le lundi : entrées, sorties, les plus gros postes et les échéances de la semaine, par classeur.",
       "summary_monthly": "Le 1er : entrées, sorties et les plus gros postes du mois précédent, par classeur.",
       "ai_report": "Quand un bilan programmé est écrit, ou sauté à la limite du mois. Deux lignes, jamais les montants.",
-      "ai_proposal": "Quand l’IA propose des budgets, ou trouve des abonnements ou des économies à vérifier, une fois par mois chacun. Deux lignes, jamais les montants."
+      "ai_proposal": "Quand l’IA propose des budgets, ou trouve des abonnements, des économies ou des objectifs à vérifier, une fois par mois chacun. Deux lignes, jamais les montants."
     },
     "securityAlways": "Toujours dans la cloche, pour qu’une connexion que vous n’avez pas faite ne passe pas inaperçue.",
     "emailUnavailable": "Indisponible : l’administrateur n’a pas configuré de serveur de messagerie (CB_SMTP_HOST).",
@@ -2039,6 +2039,10 @@
       "savings": {
         "name": "Propositions d’économies",
         "sends": "Envoie, pour chaque catégorie proposée, son nom, sa moyenne mensuelle d’avant et des derniers mois, et le montant proposé. Jamais les opérations."
+      },
+      "goals": {
+        "name": "Propositions d’objectifs",
+        "sends": "Envoie, pour chaque objectif proposé, son nom, ce qui reste, sa date et ce qui y entre par mois, avec ce que le classeur garde par mois. Jamais les opérations."
       }
     },
     "wallets": "Sur quels classeurs",
@@ -3348,6 +3352,32 @@
         "before": "9 mois d’avant",
         "recent": "3 derniers mois",
         "note": "CloudBank a calculé les chiffres : la moyenne mensuelle de chaque catégorie sur les 3 derniers mois complets face aux 9 d’avant, et le niveau d’avant arrondi à 5. Le modèle n’a écrit que le texte. Modèle : {{model}}."
+      }
+    },
+    "goal": {
+      "title_one": "{{count}} objectif à vérifier",
+      "title_other": "{{count}} objectifs à vérifier",
+      "basis": "Au rythme des 3 derniers mois · généré le {{date}}",
+      "reason": {
+        "late": "Pour {{month}} : à {{pace}} par mois, vous y arrivez en {{eta}}",
+        "lateNone": "Pour {{month}} : rien versé ces 3 derniers mois",
+        "move": "Pour {{month}}, il faut {{need}} par mois, plus que ce que vous gardez ({{kept}})",
+        "eta": "Sans date : à {{pace}} par mois, vous y arrivez en {{eta}}"
+      },
+      "perMonth": "{{amount}} par mois",
+      "move": "Déplacer la date",
+      "eta": "Fixer la date",
+      "lateLabel": "Verser {{amount}} dans {{name}}",
+      "moveLabel": "Déplacer la date de {{name}} à {{month}}",
+      "etaLabel": "Fixer la date de {{name}} à {{month}}",
+      "why": {
+        "goal": "Objectif",
+        "left": "Reste",
+        "by": "Pour",
+        "need": "Il faut par mois",
+        "pace": "Par mois récemment",
+        "eta": "Atteint en",
+        "note": "CloudBank a calculé les chiffres : le rythme de chaque objectif sur les 3 derniers mois complets, la part mensuelle que demande sa date et ce que le classeur a gardé par mois sur cette période ({{kept}}). Le modèle n’a écrit que le texte. Modèle : {{model}}."
       }
     }
   }

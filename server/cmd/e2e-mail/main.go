@@ -372,7 +372,15 @@ func (f *fake) chat(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	// So are subscription and savings proposals (#699).
+	// So are subscription, savings and goal proposals (#699).
+	if strings.Contains(text, "Goal proposals") {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"choices": []map[string]any{{"message": map[string]string{
+				"role": "assistant", "content": "Your trip is behind its date.",
+			}}},
+		})
+		return
+	}
 	if strings.Contains(text, "Savings proposals") {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"choices": []map[string]any{{"message": map[string]string{

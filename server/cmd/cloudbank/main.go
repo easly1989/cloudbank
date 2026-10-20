@@ -252,6 +252,7 @@ func run() error {
 	// The AI's reports, asked for or scheduled (#696, #697).
 	insightSvc := insight.NewService(st.Read(), st.Write(), aiSvc, reportSvc, budgetSvc, scheduleSvc)
 	insightSvc.SetNotify(notifySvc)
+	insightSvc.SetGoals(goalSvc)
 
 	opts := httpapi.Options{
 		Logger:            logger,

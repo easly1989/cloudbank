@@ -22,7 +22,10 @@ import { type GoalActions, type Money, useMonthName } from "./goalWords";
 import classes from "./goals.module.css";
 import { notifyError } from "../../notifyError";
 
-/** A new goal's starting values, from one of the empty page's examples. */
+/**
+ * A new goal's starting values, from one of the empty page's examples; on a
+ * goal, the date an AI proposal moves it to (#699).
+ */
 export interface GoalPreset {
   name: string;
   targetAmount?: number;
@@ -85,7 +88,7 @@ export function GoalSheet({
       const amount = goal?.targetAmount ?? preset?.targetAmount;
       setName(goal?.name ?? preset?.name ?? "");
       setTarget(amount ? minorToInput(amount, fmt.fracDigits, fmt.decimalChar) : "");
-      setTargetDate(goal?.targetDate ?? preset?.targetDate ?? "");
+      setTargetDate(preset?.targetDate ?? goal?.targetDate ?? "");
       setAccountId(goal?.accountId != null ? String(goal.accountId) : null);
       setNote(goal?.note ?? "");
     }

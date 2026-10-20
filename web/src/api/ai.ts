@@ -14,6 +14,7 @@ export interface AIFeatures {
   subscriptions: boolean;
   /** Categories that grew lately, back to what they were (#699). */
   savings: boolean;
+  goals: boolean;
 }
 
 export type AIFeature = keyof AIFeatures;
@@ -178,9 +179,19 @@ export const setAIReportFeedback = (walletId: number, id: number, feedback: -1 |
 // --- Proposals (#698, #699) ---
 
 export type AIProposalReason =
-  "none" | "over" | "under" | "raised" | "double" | "alike" | "unused" | "grown";
+  | "none"
+  | "over"
+  | "under"
+  | "raised"
+  | "double"
+  | "alike"
+  | "unused"
+  | "grown"
+  | "late"
+  | "move"
+  | "eta";
 
-export type AIProposalKind = "budget" | "subscriptions" | "savings";
+export type AIProposalKind = "budget" | "subscriptions" | "savings" | "goals";
 
 /**
  * One row, in positive minor units of the base currency: a category's proposed
@@ -213,6 +224,12 @@ export interface AIProposalRow {
   /** Savings: the average a month in the nine months before, and lately. */
   before?: number;
   recent?: number;
+  /** Goal: what is left, its pace a month lately, its date, and when the pace gets there. */
+  goalId?: number;
+  left?: number;
+  pace?: number;
+  date?: string;
+  newDate?: string;
 }
 
 export interface AIProposal {
@@ -220,7 +237,13 @@ export interface AIProposal {
   kind: AIProposalKind;
   period: string;
   body: string;
-  basis: { months: string[]; currency: AIReportCurrency; rows: AIProposalRow[] };
+  basis: {
+    months: string[];
+    currency: AIReportCurrency;
+    rows: AIProposalRow[];
+    /** Goals: what the wallet kept a month in the last three full months. */
+    kept?: number;
+  };
   model: string;
   feedback: -1 | 0 | 1;
   createdAt: string;
@@ -235,7 +258,7 @@ export const actOnAIProposal = (
   walletId: number,
   id: number,
   action: "later" | "ignore" | "applied",
-  row?: { categoryId: number } | { scheduleId: number },
+  row?: { categoryId: number } | { scheduleId: number } | { goalId: number },
 ) =>
   api.post<void>(`/api/v1/wallets/${walletId}/insights/proposals/${id}/actions`, {
     action,

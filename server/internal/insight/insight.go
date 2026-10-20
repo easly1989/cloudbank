@@ -19,6 +19,7 @@ import (
 
 	"github.com/easly1989/cloudbank/server/internal/ai"
 	"github.com/easly1989/cloudbank/server/internal/budget"
+	"github.com/easly1989/cloudbank/server/internal/goal"
 	"github.com/easly1989/cloudbank/server/internal/money"
 	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
@@ -52,6 +53,7 @@ type Service struct {
 	reports  *report.Service
 	budgets  *budget.Service
 	calendar *schedule.Service
+	goals    *goal.Service
 	now      func() time.Time
 }
 
