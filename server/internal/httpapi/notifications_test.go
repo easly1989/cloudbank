@@ -129,9 +129,10 @@ func TestNotificationPreferences(t *testing.T) {
 		t.Fatalf("events = %d, want %d", len(p.Events), len(notify.Catalog))
 	}
 	for _, e := range p.Events {
-		// The money events and the summaries start off (#691, #692); every
-		// other one on.
-		if on := e.Group != "money" && e.Group != "summaries"; e.Channels["inapp"] != on || e.Channels["push"] != on {
+		// The money events and the summaries start off (#691, #692), an
+		// unusual transaction in the bell alone (#700); every other one on.
+		on := e.Group != "money" && e.Group != "summaries" && e.Kind != "unusual_transaction"
+		if e.Channels["inapp"] != (on || e.Kind == "unusual_transaction") || e.Channels["push"] != on {
 			t.Errorf("%s default: %+v", e.Kind, e.Channels)
 		}
 	}

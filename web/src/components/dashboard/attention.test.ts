@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 import type { BudgetReportRow } from "../../api/client";
 import { buildAttentionItems, countOverBudget, monthRange } from "./attention";
 
-const none = { needsCategory: 0, overdueBills: 0, overBudget: 0, duplicates: 0, goalsReached: 0 };
+const none = {
+  needsCategory: 0,
+  overdueBills: 0,
+  overBudget: 0,
+  duplicates: 0,
+  goalsReached: 0,
+  unusual: 0,
+};
 
 describe("buildAttentionItems", () => {
   it("says nothing when there is nothing to do", () => {
@@ -22,8 +29,10 @@ describe("buildAttentionItems", () => {
       overBudget: 3,
       duplicates: 4,
       goalsReached: 5,
+      unusual: 6,
     });
     expect(items.map((i) => i.key)).toEqual([
+      "unusual",
       "needsCategory",
       "overdueBills",
       "overBudget",

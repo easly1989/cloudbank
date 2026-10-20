@@ -20,6 +20,7 @@ export type NotificationKind =
   | "summary_monthly"
   | "ai_report"
   | "ai_proposal"
+  | "unusual_transaction"
   | "new_version";
 export type NotificationChannel = "inapp" | "push" | AddressedChannel;
 export type AddressedChannel =

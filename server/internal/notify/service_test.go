@@ -118,8 +118,9 @@ func TestNotifyFollowsPreferences(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, p := range prefs {
-		want := p.Kind != KindBills && p.Group != GroupMoney && p.Group != GroupSummaries
-		if p.Channels[ChannelInApp] != want || p.Channels[ChannelPush] != want {
+		want := p.Kind != KindBills && p.Group != GroupMoney && p.Group != GroupSummaries && p.Kind != KindUnusual
+		// An unusual transaction starts in the bell alone (#700).
+		if p.Channels[ChannelInApp] != (want || p.Kind == KindUnusual) || p.Channels[ChannelPush] != want {
 			t.Errorf("preference %s = %+v", p.Kind, p.Channels)
 		}
 	}

@@ -67,6 +67,9 @@ func (h *aiHandlers) walletRoutes(r chi.Router) {
 		r.Get("/insights/proposals", h.listProposals)
 		r.Post("/insights/proposals/{proposalId}/actions", h.proposalAction)
 		r.Put("/insights/proposals/{proposalId}/feedback", h.proposalFeedback)
+		r.Get("/insights/unusual", h.getUnusual)
+		r.Post("/insights/unusual/{flagId}/fine", h.unusualFine)
+		r.Put("/insights/unusual/feedback", h.unusualFeedback)
 	}
 }
 
@@ -116,7 +119,8 @@ func (h *aiHandlers) putSettings(w http.ResponseWriter, r *http.Request) {
 		if h.insights != nil && (turnedOn(before.Features.Budgets, st.Features.Budgets) ||
 			turnedOn(before.Features.Subscriptions, st.Features.Subscriptions) ||
 			turnedOn(before.Features.Savings, st.Features.Savings) ||
-			turnedOn(before.Features.Goals, st.Features.Goals)) {
+			turnedOn(before.Features.Goals, st.Features.Goals) ||
+			turnedOn(before.Features.Unusual, st.Features.Unusual)) {
 			ctx := context.WithoutCancel(r.Context())
 			go func() {
 				if err := h.insights.RunUser(ctx, u.ID); err != nil {
@@ -329,6 +333,60 @@ func (h *aiHandlers) proposalFeedback(w http.ResponseWriter, r *http.Request) {
 	switch err := h.insights.SetProposalFeedback(r.Context(), u.ID, wl.ID, id, body.Feedback); {
 	case errors.Is(err, insight.ErrNotFound):
 		writeError(w, http.StatusNotFound, "not_found", "proposal not found")
+	case err != nil:
+		writeError(w, http.StatusInternalServerError, "internal", "could not save the feedback")
+	default:
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+// The unusual transactions (#700) are the asking user's alone too.
+
+func (h *aiHandlers) getUnusual(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	u := userFromContext(r.Context())
+	out, err := h.insights.UnusualOf(r.Context(), u.ID, wl.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not load the unusual transactions")
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+func (h *aiHandlers) unusualFine(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	u := userFromContext(r.Context())
+	id, err := strconv.ParseInt(chi.URLParam(r, "flagId"), 10, 64)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "not_found", "flag not found")
+		return
+	}
+	switch err := h.insights.UnusualFine(r.Context(), u.ID, wl.ID, id); {
+	case errors.Is(err, insight.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "flag not found")
+	case err != nil:
+		writeError(w, http.StatusInternalServerError, "internal", "could not save the flag")
+	default:
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func (h *aiHandlers) unusualFeedback(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	u := userFromContext(r.Context())
+	var body struct {
+		Feedback int64 `json:"feedback"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if body.Feedback < -1 || body.Feedback > 1 {
+		writeError(w, http.StatusBadRequest, "invalid", "feedback is -1, 0 or 1")
+		return
+	}
+	switch err := h.insights.SetUnusualFeedback(r.Context(), u.ID, wl.ID, body.Feedback); {
+	case errors.Is(err, insight.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "nothing written yet")
 	case err != nil:
 		writeError(w, http.StatusInternalServerError, "internal", "could not save the feedback")
 	default:

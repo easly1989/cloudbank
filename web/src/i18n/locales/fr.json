@@ -1788,7 +1788,8 @@
       "summary_weekly": "Récapitulatif hebdomadaire",
       "summary_monthly": "Récapitulatif mensuel",
       "ai_report": "Bilan IA prêt",
-      "ai_proposal": "Proposition de l’IA prête"
+      "ai_proposal": "Proposition de l’IA prête",
+      "unusual_transaction": "Opération inhabituelle"
     },
     "kindHint": {
       "new_device": "Un navigateur ou un système que votre compte n’avait jamais utilisé.",
@@ -1808,7 +1809,8 @@
       "summary_weekly": "Le lundi : entrées, sorties, les plus gros postes et les échéances de la semaine, par classeur.",
       "summary_monthly": "Le 1er : entrées, sorties et les plus gros postes du mois précédent, par classeur.",
       "ai_report": "Quand un bilan programmé est écrit, ou sauté à la limite du mois. Deux lignes, jamais les montants.",
-      "ai_proposal": "Quand l’IA propose des budgets, ou trouve des abonnements, des économies ou des objectifs à vérifier, une fois par mois chacun. Deux lignes, jamais les montants."
+      "ai_proposal": "Quand l’IA propose des budgets, ou trouve des abonnements, des économies ou des objectifs à vérifier, une fois par mois chacun. Deux lignes, jamais les montants.",
+      "unusual_transaction": "Une dépense hors norme pour son tiers, un nouveau tiers avec un montant élevé ou un double débit, trouvés par l’IA dans ce qui vient de la banque, d’un e-mail, d’une opération récurrente, d’un import ou d’un autre membre."
     },
     "securityAlways": "Toujours dans la cloche, pour qu’une connexion que vous n’avez pas faite ne passe pas inaperçue.",
     "emailUnavailable": "Indisponible : l’administrateur n’a pas configuré de serveur de messagerie (CB_SMTP_HOST).",
@@ -2043,6 +2045,10 @@
       "goals": {
         "name": "Propositions d’objectifs",
         "sends": "Envoie, pour chaque objectif proposé, son nom, ce qui reste, sa date et ce qui y entre par mois, avec ce que le classeur garde par mois. Jamais les opérations."
+      },
+      "unusual": {
+        "name": "Opérations inhabituelles",
+        "sends": "Envoie, pour chaque dépense signalée, le tiers, la date et le montant, avec le montant habituel du tiers. Jamais la note."
       }
     },
     "wallets": "Sur quels classeurs",
@@ -2818,7 +2824,10 @@
     "duplicatesAction": "Les vérifier",
     "goalsReached_one": "objectif a atteint sa cible",
     "goalsReached_other": "objectifs ont atteint leur cible",
-    "goalsReachedAction": "Voir les objectifs"
+    "goalsReachedAction": "Voir les objectifs",
+    "unusual_one": "opération semble inhabituelle",
+    "unusual_other": "opérations semblent inhabituelles",
+    "unusualAction": "Les vérifier"
   },
   "common": {
     "cancel": "Annuler",
@@ -3379,6 +3388,32 @@
         "eta": "Atteint en",
         "note": "CloudBank a calculé les chiffres : le rythme de chaque objectif sur les 3 derniers mois complets, la part mensuelle que demande sa date et ce que le classeur a gardé par mois sur cette période ({{kept}}). Le modèle n’a écrit que le texte. Modèle : {{model}}."
       }
+    }
+  },
+  "unusual": {
+    "title_one": "{{count}} opération inhabituelle",
+    "title_other": "{{count}} opérations inhabituelles",
+    "basis": "Des opérations des 30 derniers jours · généré le {{date}}",
+    "basisNoDate": "Des opérations des 30 derniers jours",
+    "reason": {
+      "scale": "{{times}} fois l’habitude : d’habitude {{usual}} ({{payments}} paiements sur la dernière année)",
+      "new": "Nouveau tiers, au-dessus de 95 % de vos dépenses de la dernière année",
+      "double": "Débité deux fois en quelques jours : {{first}} et {{second}}"
+    },
+    "open": "Ouvrir dans les opérations",
+    "openLabel": "Ouvrir {{payee}}, {{amount}}, dans les opérations",
+    "fine": "C’est normal",
+    "fineLabel": "{{payee}}, {{amount}} : c’est normal",
+    "pair": "Voir la paire",
+    "pairLabel": "Voir la paire de {{payee}} parmi les doublons possibles",
+    "notDuplicateLabel": "{{payee}} : pas un doublon",
+    "seeInReview": "Voir dans Vérification",
+    "why": {
+      "transaction": "Opération",
+      "amount": "Montant",
+      "usual": "D’habitude",
+      "payments": "Paiements sur un an",
+      "note": "CloudBank les a trouvées : un montant au moins double de la médiane du tiers et 20 au-dessus, un nouveau tiers au-dessus de 95 % des dépenses de l’année, le même montant au même tiers deux fois en 3 jours. Le modèle n’a écrit que le texte. Modèle : {{model}}."
     }
   }
 }

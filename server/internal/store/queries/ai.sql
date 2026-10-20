@@ -1,15 +1,15 @@
 -- name: GetAISettings :one
 SELECT enabled, base_url, model, api_key, suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion,
-       weekly_on, yearly_on, budgets_on, subscriptions_on, savings_on, goals_on
+       weekly_on, yearly_on, budgets_on, subscriptions_on, savings_on, goals_on, unusual_on
 FROM ai_settings WHERE user_id = ?;
 
 -- name: UpsertAISettings :exec
 INSERT INTO ai_settings (
     user_id, enabled, base_url, model, api_key,
     suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion, weekly_on, yearly_on, budgets_on, subscriptions_on,
-    savings_on, goals_on, updated_at
+    savings_on, goals_on, unusual_on, updated_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 ON CONFLICT (user_id) DO UPDATE SET
     enabled = excluded.enabled, base_url = excluded.base_url,
     model = excluded.model, api_key = excluded.api_key,
@@ -18,7 +18,7 @@ ON CONFLICT (user_id) DO UPDATE SET
     monthly_limit = excluded.monthly_limit, motion = excluded.motion,
     weekly_on = excluded.weekly_on, yearly_on = excluded.yearly_on, budgets_on = excluded.budgets_on,
     subscriptions_on = excluded.subscriptions_on, savings_on = excluded.savings_on,
-    goals_on = excluded.goals_on, updated_at = excluded.updated_at;
+    goals_on = excluded.goals_on, unusual_on = excluded.unusual_on, updated_at = excluded.updated_at;
 
 -- name: ListAIWalletsOff :many
 SELECT wallet_id FROM ai_wallets_off WHERE user_id = ? ORDER BY wallet_id;
