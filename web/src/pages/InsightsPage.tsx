@@ -207,7 +207,7 @@ export function InsightsPage() {
               value={period}
               onChange={(v) => v && setPeriod(v)}
               allowDeselect={false}
-              w={170}
+              w={200}
             />
             <Button
               leftSection={<IconSparkles size={16} />}
