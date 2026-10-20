@@ -1787,7 +1787,8 @@
       "review_waiting": "Buchungen zu prüfen",
       "summary_weekly": "Wochenübersicht",
       "summary_monthly": "Monatsübersicht",
-      "ai_report": "KI-Bericht fertig"
+      "ai_report": "KI-Bericht fertig",
+      "ai_proposal": "Budgetvorschlag fertig"
     },
     "kindHint": {
       "new_device": "Ein Browser oder System, das dein Konto noch nie benutzt hat.",
@@ -1806,7 +1807,8 @@
       "review_waiting": "Buchungen warten seit einigen Tagen unter „Prüfen“.",
       "summary_weekly": "Montags: Einnahmen, Ausgaben, die größten Posten und die Fälligkeiten der Woche, je Haushaltsbuch.",
       "summary_monthly": "Am 1.: Einnahmen, Ausgaben und die größten Posten des Vormonats, je Haushaltsbuch.",
-      "ai_report": "Wenn ein geplanter Bericht geschrieben oder am Monatslimit übersprungen wird. Zwei Zeilen, nie die Beträge."
+      "ai_report": "Wenn ein geplanter Bericht geschrieben oder am Monatslimit übersprungen wird. Zwei Zeilen, nie die Beträge.",
+      "ai_proposal": "Wenn die KI Budgets nach deinen tatsächlichen Ausgaben vorschlägt, einmal im Monat. Zwei Zeilen, nie die Beträge."
     },
     "securityAlways": "Immer in der Glocke, damit eine Anmeldung, die nicht von dir kam, nicht unbemerkt bleibt.",
     "emailUnavailable": "Nicht verfügbar: Der Administrator hat keinen Mailserver eingerichtet (CB_SMTP_HOST).",
@@ -2025,6 +2027,10 @@
       "mail": {
         "name": "Bank-Mails",
         "sends": "Schickt den Text der Bank-Mails, mit verborgenen Kartennummern und IBANs."
+      },
+      "budgets": {
+        "name": "Budgetvorschläge",
+        "sends": "Sendet für jede Kategorie, für die sie ein Budget vorschlägt, den Namen, das heutige Budget, den üblichen Monatsbetrag und den vorgeschlagenen. Nie die Buchungen."
       }
     },
     "wallets": "Für welche Haushaltsbücher",
@@ -3275,6 +3281,28 @@
     "week": "Woche {{range}}",
     "year": "Jahr {{year}}",
     "reportTitleWeek": "Die Woche in Kürze",
-    "reportTitleYear": "{{year}} in Kürze"
+    "reportTitleYear": "{{year}} in Kürze",
+    "proposals": "Offene Vorschläge"
+  },
+  "proposal": {
+    "label": "KI-Vorschlag",
+    "basis": "Aus den letzten {{months}} Monaten · erstellt am {{date}}",
+    "title_one": "{{count}} Budget zu prüfen",
+    "title_other": "{{count}} Budgets zu prüfen",
+    "reason": {
+      "none": "Kein Budget, Ausgaben in {{hits}} von {{months}} Monaten",
+      "over": "Budget überschritten in {{hits}} von {{months}} Monaten",
+      "under": "Budget nicht erreicht in {{hits}} von {{months}} Monaten"
+    },
+    "none": "keins",
+    "apply": "Übernehmen",
+    "applyLabel": "{{amount}} im Monat für {{name}} übernehmen",
+    "later": "Später",
+    "ignore": "Ignorieren",
+    "seeInBudget": "Im Budget ansehen",
+    "why": {
+      "median": "Median",
+      "note": "Die Zahlen hat CloudBank berechnet: der Median der vollständigen Monate, auf 5 gerundet. Das Modell hat nur den Text geschrieben. Modell: {{model}}."
+    }
   }
 }

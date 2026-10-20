@@ -1,7 +1,9 @@
 package httpapi
 
 import (
+	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -62,6 +64,9 @@ func (h *aiHandlers) walletRoutes(r chi.Router) {
 		r.Get("/insights/reports", h.listReports)
 		r.Post("/insights/reports", h.generateReport)
 		r.Put("/insights/reports/{reportId}/feedback", h.reportFeedback)
+		r.Get("/insights/proposals", h.listProposals)
+		r.Post("/insights/proposals/{proposalId}/actions", h.proposalAction)
+		r.Put("/insights/proposals/{proposalId}/feedback", h.proposalFeedback)
 	}
 }
 
@@ -91,6 +96,7 @@ func (h *aiHandlers) putSettings(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &body) {
 		return
 	}
+	before, _ := h.svc.Settings(r.Context(), u.ID)
 	st, err := h.svc.UpdateSettings(r.Context(), u.ID, u.IsAdmin, ai.SettingsInput{
 		Enabled: body.Enabled, BaseURL: body.BaseURL, Model: body.Model, APIKey: body.APIKey,
 		Features: body.Features, Schedule: body.Schedule, WalletsOff: body.WalletsOff, MonthlyLimit: body.MonthlyLimit, Motion: body.Motion,
@@ -105,6 +111,15 @@ func (h *aiHandlers) putSettings(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		writeError(w, http.StatusInternalServerError, "internal", "could not save AI settings")
 	default:
+		// Budget proposals just turned on come at once, not at the next run.
+		if h.insights != nil && st.Enabled && st.Features.Budgets && (!before.Enabled || !before.Features.Budgets) {
+			ctx := context.WithoutCancel(r.Context())
+			go func() {
+				if err := h.insights.RunUser(ctx, u.ID); err != nil {
+					slog.Warn("budget proposals", "err", err)
+				}
+			}()
+		}
 		writeJSON(w, http.StatusOK, st)
 	}
 }
@@ -239,6 +254,74 @@ func (h *aiHandlers) reportFeedback(w http.ResponseWriter, r *http.Request) {
 	switch err := h.insights.SetFeedback(r.Context(), u.ID, wl.ID, id, body.Feedback); {
 	case errors.Is(err, insight.ErrNotFound):
 		writeError(w, http.StatusNotFound, "not_found", "report not found")
+	case err != nil:
+		writeError(w, http.StatusInternalServerError, "internal", "could not save the feedback")
+	default:
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+// The proposals are the asking user's alone too.
+
+func (h *aiHandlers) listProposals(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	u := userFromContext(r.Context())
+	props, err := h.insights.Proposals(r.Context(), u.ID, wl.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not load the proposals")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"proposals": props})
+}
+
+func (h *aiHandlers) proposalAction(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	u := userFromContext(r.Context())
+	id, err := strconv.ParseInt(chi.URLParam(r, "proposalId"), 10, 64)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "not_found", "proposal not found")
+		return
+	}
+	var body struct {
+		Action     string `json:"action"`
+		CategoryID int64  `json:"categoryId"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	switch err := h.insights.Act(r.Context(), u.ID, wl.ID, id, body.Action, body.CategoryID); {
+	case errors.Is(err, insight.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "proposal not found")
+	case errors.Is(err, insight.ErrBadAction):
+		writeError(w, http.StatusBadRequest, "invalid", err.Error())
+	case err != nil:
+		writeError(w, http.StatusInternalServerError, "internal", "could not save the proposal")
+	default:
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func (h *aiHandlers) proposalFeedback(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	u := userFromContext(r.Context())
+	id, err := strconv.ParseInt(chi.URLParam(r, "proposalId"), 10, 64)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "not_found", "proposal not found")
+		return
+	}
+	var body struct {
+		Feedback int64 `json:"feedback"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if body.Feedback < -1 || body.Feedback > 1 {
+		writeError(w, http.StatusBadRequest, "invalid", "feedback is -1, 0 or 1")
+		return
+	}
+	switch err := h.insights.SetProposalFeedback(r.Context(), u.ID, wl.ID, id, body.Feedback); {
+	case errors.Is(err, insight.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "proposal not found")
 	case err != nil:
 		writeError(w, http.StatusInternalServerError, "internal", "could not save the feedback")
 	default:

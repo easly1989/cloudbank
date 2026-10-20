@@ -23,6 +23,7 @@ export function AiBox({
   feedback,
   onFeedback,
   motion,
+  actions,
 }: {
   label: string;
   basis: string;
@@ -33,6 +34,8 @@ export function AiBox({
   onFeedback?: (f: Feedback) => void;
   /** Overrides the saved setting, for the preview beside the switch. */
   motion?: boolean;
+  /** Buttons on the left of the foot: a proposal's Later and Ignore. */
+  actions?: ReactNode;
 }) {
   const { t } = useTranslation();
   const settings = useQuery({ queryKey: AI_SETTINGS_KEY, queryFn: getAISettings });
@@ -71,21 +74,24 @@ export function AiBox({
         {children}
       </Box>
       {showWhy && why && <Box className={classes.why}>{why}</Box>}
-      {(why || onFeedback) && (
+      {(why || onFeedback || actions) && (
         <Group justify="space-between" mt={8} gap="xs">
-          {why ? (
-            <Anchor
-              component="button"
-              type="button"
-              fz="xs"
-              aria-expanded={showWhy}
-              onClick={() => setShowWhy((v) => !v)}
-            >
-              {showWhy ? t("ai.box.hideWhy") : t("ai.box.why")}
-            </Anchor>
-          ) : (
-            <span />
-          )}
+          <Group gap={4}>
+            {actions}
+            {why ? (
+              <Anchor
+                component="button"
+                type="button"
+                fz="xs"
+                aria-expanded={showWhy}
+                onClick={() => setShowWhy((v) => !v)}
+              >
+                {showWhy ? t("ai.box.hideWhy") : t("ai.box.why")}
+              </Anchor>
+            ) : (
+              <span />
+            )}
+          </Group>
           {onFeedback && (
             <Group gap={2}>
               <ActionIcon

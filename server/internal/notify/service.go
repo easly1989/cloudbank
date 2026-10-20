@@ -39,6 +39,7 @@ const (
 	KindSummaryWeekly    Kind = "summary_weekly"
 	KindSummaryMonthly   Kind = "summary_monthly"
 	KindAIReport         Kind = "ai_report"
+	KindAIProposal       Kind = "ai_proposal"
 )
 
 // Group is how the settings page and the bell sort events.
@@ -111,6 +112,7 @@ var Catalog = []EventInfo{
 	{Kind: KindSummaryWeekly, Group: GroupSummaries},
 	{Kind: KindSummaryMonthly, Group: GroupSummaries},
 	{Kind: KindAIReport, Group: GroupAI, Default: true},
+	{Kind: KindAIProposal, Group: GroupAI, Default: true},
 	{Kind: KindNewVersion, Group: GroupAdmin, Default: true},
 }
 

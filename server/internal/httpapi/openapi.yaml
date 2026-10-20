@@ -758,6 +758,72 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/insights/proposals:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: listAIProposals
+      summary: The current user's AI proposals waiting on this wallet, newest first
+      description: >-
+        Open ones, and those back from "later". Rows already saved from the budget
+        form are left out. Private to the user, even on a shared wallet.
+      responses:
+        "200":
+          description: The proposals.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { proposals: { type: array, items: { $ref: "#/components/schemas/AIProposal" } } }
+                required: [proposals]
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/insights/proposals/{proposalId}/actions:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: proposalId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: actOnAIProposal
+      summary: Later, ignore, or a row saved from the budget form
+      description: >-
+        later hides the proposal for a week; ignore puts it away until the numbers
+        change; applied marks the row of categoryId saved, and the whole proposal
+        once every row is. A proposal never writes a budget itself.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action: { type: string, enum: [later, ignore, applied] }
+                categoryId: { type: integer, format: int64, description: "with applied: the row's category" }
+              required: [action]
+      responses:
+        "204": { description: Recorded. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/insights/proposals/{proposalId}/feedback:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: proposalId, in: path, required: true, schema: { type: integer, format: int64 } }
+    put:
+      operationId: setAIProposalFeedback
+      summary: Thumbs up (1), down (-1) or neither (0) on one of the user's proposals
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { feedback: { type: integer, enum: [-1, 0, 1] } }
+              required: [feedback]
+      responses:
+        "204": { description: Recorded. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/mail:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -3577,7 +3643,8 @@ components:
         entry: { type: boolean, description: "quick entry: sends the sentence typed" }
         mail: { type: boolean, description: "bank mails: sends the mail with cards and IBANs hidden" }
         reports: { type: boolean, description: "reports: sends the period's totals and largest expenses" }
-      required: [suggest, entry, mail, reports]
+        budgets: { type: boolean, description: "budget proposals: sends each proposed category's name, budget, usual and proposed amounts" }
+      required: [suggest, entry, mail, reports, budgets]
     AISchedule:
       type: object
       description: The reports that come by themselves besides the monthly one, which comes whenever reports are on.
@@ -3703,6 +3770,38 @@ components:
         period: { type: string, description: "YYYY-MM for a month, the Monday YYYY-MM-DD for a week, YYYY for a year" }
         body: { type: string, description: "the model's text: paragraphs separated by a blank line" }
         basis: { $ref: "#/components/schemas/AIReportBasis" }
+        model: { type: string }
+        feedback: { type: integer, enum: [-1, 0, 1] }
+        createdAt: { type: string, description: "RFC3339 UTC" }
+      required: [id, kind, period, body, basis, model, feedback, createdAt]
+    AIProposalRow:
+      type: object
+      description: One category's proposed monthly budget, in the base currency's minor units, as positive amounts.
+      properties:
+        categoryId: { type: integer, format: int64 }
+        name: { type: string, description: "the category's path, Parent:Child" }
+        reason: { type: string, enum: [none, over, under], description: "no budget though spent on most months; the budget gone over, or not reached, most months" }
+        budget: { type: integer, format: int64, description: "today's budget; 0 is none" }
+        median: { type: integer, format: int64, description: "the median of the months" }
+        proposed: { type: integer, format: int64, description: "the median rounded to 5 of the currency" }
+        months: { type: array, items: { type: integer, format: int64 }, description: "what was spent each month, oldest first" }
+        hits: { type: integer, description: "the months that made the reason" }
+      required: [categoryId, name, reason, budget, median, proposed, months, hits]
+    AIProposalBasis:
+      type: object
+      properties:
+        months: { type: array, items: { type: string }, description: "YYYY-MM, the six complete months before the proposal's, oldest first" }
+        currency: { $ref: "#/components/schemas/AIReportCurrency" }
+        rows: { type: array, items: { $ref: "#/components/schemas/AIProposalRow" } }
+      required: [months, currency, rows]
+    AIProposal:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        kind: { type: string, enum: [budget] }
+        period: { type: string, description: "YYYY-MM, the month it was made in" }
+        body: { type: string, description: "the model's two or three sentences" }
+        basis: { $ref: "#/components/schemas/AIProposalBasis" }
         model: { type: string }
         feedback: { type: integer, enum: [-1, 0, 1] }
         createdAt: { type: string, description: "RFC3339 UTC" }
@@ -4053,7 +4152,7 @@ components:
       required: [category]
     NotificationKind:
       type: string
-      enum: [new_device, two_factor_off, new_api_token, bank_sync_failed, consent_expiring, mail_stopped, mail_unrecognized, review_waiting, bills, large_transaction, low_balance, budget, goal, summary_weekly, summary_monthly, ai_report, new_version]
+      enum: [new_device, two_factor_off, new_api_token, bank_sync_failed, consent_expiring, mail_stopped, mail_unrecognized, review_waiting, bills, large_transaction, low_balance, budget, goal, summary_weekly, summary_monthly, ai_report, ai_proposal, new_version]
     NotificationChannel:
       type: string
       enum: [inapp, push, email, matrix, telegram, discord, slack, ntfy, gotify, webhook]

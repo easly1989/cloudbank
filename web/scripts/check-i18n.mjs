@@ -291,6 +291,7 @@ const SAME_IN = {
   // German borrows these as they are, and capitalizes them as nouns.
   de: [
     "min. {{amount}}",
+    "Median",
     "Homeserver",
     "Server",
     "Links",

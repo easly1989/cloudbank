@@ -30,6 +30,8 @@ export interface SheetTarget {
   line?: BudgetLine;
   /** A suggested monthly amount, as a magnitude. */
   amount?: number;
+  /** An AI proposal's row (#698): its amount wins over the saved plan. */
+  proposalId?: number;
 }
 
 type Scope = "every" | "year";
@@ -107,10 +109,18 @@ export function BudgetSheet({
       const e = entryOf(id);
       const b = e.year ?? e.every;
       setCategoryId(id != null ? String(id) : null);
-      setMode(b?.mode ?? "same");
-      setSame(b ? plain(b.same, fmt) : target?.amount ? plain(target.amount, fmt) : "");
+      // A proposal sets the same amount every month, every year.
+      const proposed = target?.proposalId != null && !!target.amount;
+      setMode(proposed ? "same" : (b?.mode ?? "same"));
+      setSame(
+        proposed || (!b && target?.amount)
+          ? plain(target!.amount!, fmt)
+          : b
+            ? plain(b.same, fmt)
+            : "",
+      );
       setMonthly((b?.monthly ?? Array(12).fill(0)).map((v) => plain(v, fmt)));
-      setScope(e.year ? "year" : "every");
+      setScope(e.year && !proposed ? "year" : "every");
     }
   }
 

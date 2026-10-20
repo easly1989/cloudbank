@@ -3,7 +3,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import {
   clearCategoryBudget,
@@ -12,6 +12,9 @@ import {
   listCategories,
   listCurrencies,
 } from "../api/client";
+import { actOnAIProposal, aiProposalsKey, type AIProposal, type AIProposalRow } from "../api/ai";
+import { BudgetProposal } from "../components/BudgetProposal";
+import { useBudgetProposal } from "../components/budgetProposalData";
 import { useConfirm } from "../components/confirmContext";
 import { PageHeader } from "../components/PageHeader";
 import { baseFmt } from "../components/reports/reportUtils";
@@ -154,6 +157,38 @@ export function BudgetPage() {
     setSheetOpen(true);
   };
 
+  // The AI's proposal (#698): Apply opens the sheet filled in; a row is done
+  // once saved there. ?apply=proposal:category comes from the other pages.
+  const proposal = useBudgetProposal(walletId);
+  const applyRow = (p: AIProposal, r: AIProposalRow) =>
+    open({ categoryId: r.categoryId, amount: r.proposed, proposalId: p.id });
+  const [params, setParams] = useSearchParams();
+  const link = params.get("apply");
+  const [seenLink, setSeenLink] = useState<string | null>(null);
+  if (link && link !== seenLink && proposal) {
+    setSeenLink(link);
+    const [pid, cid] = link.split(":").map(Number);
+    const row = proposal.id === pid && proposal.basis.rows.find((r) => r.categoryId === cid);
+    if (row) applyRow(proposal, row);
+  }
+  const closeSheet = () => {
+    setSheetOpen(false);
+    if (link) {
+      params.delete("apply");
+      setParams(params, { replace: true });
+    }
+  };
+  const saved = () => {
+    invalidate();
+    if (target?.proposalId != null && target.categoryId != null)
+      void actOnAIProposal(walletId, target.proposalId, "applied", target.categoryId)
+        .then(() => qc.invalidateQueries({ queryKey: aiProposalsKey(walletId) }))
+        .catch(notifyError);
+  };
+  const proposalBox = proposal && (
+    <BudgetProposal walletId={walletId} proposal={proposal} onApply={applyRow} />
+  );
+
   const remove = useMutation({
     mutationFn: async (id: number) => {
       await clearCategoryBudget(walletId, id, 0);
@@ -248,11 +283,14 @@ export function BudgetPage() {
       />
 
       {noBudgets ? (
-        <BudgetEmpty
-          suggestions={suggestions}
-          money={money}
-          onAdd={(l, amount) => open(l ? { categoryId: l.id, amount } : null)}
-        />
+        <>
+          {proposalBox}
+          <BudgetEmpty
+            suggestions={suggestions}
+            money={money}
+            onAdd={(l, amount) => open(l ? { categoryId: l.id, amount } : null)}
+          />
+        </>
       ) : (
         <>
           {phone && periodBar}
@@ -263,6 +301,7 @@ export function BudgetPage() {
             money={money}
             period={phone ? undefined : periodBar}
           />
+          {proposalBox}
           {phone ? (
             <BudgetPhoneList view={view} pace={pace} money={money} actions={actions} />
           ) : (
@@ -284,7 +323,7 @@ export function BudgetPage() {
 
       <BudgetSheet
         opened={sheetOpen}
-        onClose={() => setSheetOpen(false)}
+        onClose={closeSheet}
         walletId={walletId}
         target={target}
         year={period.year}
@@ -295,7 +334,7 @@ export function BudgetPage() {
         thisYear={thisYear}
         fmt={fmt}
         money={money}
-        onSaved={invalidate}
+        onSaved={saved}
         onTransactions={transactions}
         onRemove={(id) => void removeBudget(id)}
       />

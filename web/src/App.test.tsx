@@ -142,7 +142,7 @@ describe("App routing", () => {
           baseUrl: "",
           model: "",
           hasKey: false,
-          features: { suggest: false, entry: false, mail: false, reports: false },
+          features: { suggest: false, entry: false, mail: false, reports: false, budgets: false },
           walletsOff: [],
           monthlyLimit: 200,
           used: 0,
