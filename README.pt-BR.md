@@ -67,7 +67,7 @@ O CloudBank é uma **reimplementação independente, em sala limpa**. Ele não c
 ## Recursos
 
 - **Contas e lançamentos:** todos os tipos de conta do HomeBank, cada uma na sua moeda, com o saldo atual e o previsto. Os lançamentos são marcados como conferidos e conciliados, com divisões, tags e transferências; a lista de lançamentos tem filtros, colunas à escolha, ações sobre várias linhas, pesquisa e conciliação com o extrato.
-- **Agendamentos e calendário:** o que se repete se registra sozinho, até três meses antes se você quiser. Um calendário mostra os vencimentos do mês com o status, o que falta pagar e o que vem pela frente; os modelos e as regras de classificação preenchem o resto.
+- **Agendamentos e calendário:** o que se repete se registra sozinho, até três meses antes se você quiser. Um calendário mostra os vencimentos do mês com o status, o que falta pagar e o que vem pela frente; os modelos e as regras de classificação preenchem o resto. O CloudBank também encontra os pagamentos que se repetem sem um agendamento, mostra quanto cada um custa em um ano e coloca os vencimentos no calendário do celular.
 - **Orçamento e relatórios:** para onde foi o dinheiro, o que entrou e o que saiu, o que as contas têm e terão, quanto custa um carro; por mês, trimestre ou ano, com visões salvas e downloads em CSV e PNG.
 - **Metas de economia e veículos:** quanto você guardou, quanto guardar por mês para chegar a tempo, e quanto sobra livre; para cada veículo, o combustível, os quilômetros, o custo por quilômetro e o consumo.
 - **Importar e exportar:** `.xhb` do HomeBank, QIF, OFX/QFX, CSV e CAMT.053 (ISO 20022) na entrada, com um assistente; `.xhb`, QIF e CSV na saída; backup e restauração da carteira.
@@ -77,6 +77,7 @@ O CloudBank é uma **reimplementação independente, em sala limpa**. Ele não c
 - **Uma visão geral do seu jeito:** em cima, o que vem pela frente; embaixo, widgets que você posiciona e redimensiona como quiser, tema claro e escuro na sua cor preferida, barra lateral e navegação que você pode reordenar.
 - **Segurança:** autenticação em dois fatores, login com SSO (OIDC), tokens de API revogáveis e segredos criptografados no banco de dados.
 - **App instalável:** o CloudBank se instala no celular ou no computador como um app, com notificações push dos vencimentos, e avisa quando há uma versão nova.
+- **Notificações onde você as vê:** um sino em cada página e, se quiser, push, e-mail, Matrix, Telegram, Discord, Slack, ntfy, Gotify ou um webhook para o Home Assistant. Você escolhe quais eventos chegam aonde (vencimentos, segurança, problemas, dinheiro, resumos) e quando, com um resumo diário e horas de silêncio ([o guia](docs/notifications.md)).
 - **IA opcional, com a sua própria chave:** sugestões de categoria e lançamentos escritos com as suas palavras (“café 3,50 ontem”).
 
 ## Início rápido
