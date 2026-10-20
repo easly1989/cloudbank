@@ -1767,7 +1767,8 @@
       "bills": "Échéances",
       "money": "Argent",
       "admin": "Administration",
-      "summaries": "Récapitulatifs"
+      "summaries": "Récapitulatifs",
+      "ai": "IA"
     },
     "kind": {
       "new_device": "Connexion depuis un nouvel appareil",
@@ -1785,7 +1786,8 @@
       "new_version": "Nouvelle version de CloudBank",
       "review_waiting": "Opérations à vérifier",
       "summary_weekly": "Récapitulatif hebdomadaire",
-      "summary_monthly": "Récapitulatif mensuel"
+      "summary_monthly": "Récapitulatif mensuel",
+      "ai_report": "Bilan IA prêt"
     },
     "kindHint": {
       "new_device": "Un navigateur ou un système que votre compte n’avait jamais utilisé.",
@@ -1803,7 +1805,8 @@
       "new_version": "Une version plus récente est sortie sur le canal que suit ce serveur.",
       "review_waiting": "Des opérations attendent dans « À vérifier » depuis quelques jours.",
       "summary_weekly": "Le lundi : entrées, sorties, les plus gros postes et les échéances de la semaine, par classeur.",
-      "summary_monthly": "Le 1er : entrées, sorties et les plus gros postes du mois précédent, par classeur."
+      "summary_monthly": "Le 1er : entrées, sorties et les plus gros postes du mois précédent, par classeur.",
+      "ai_report": "Quand un bilan programmé est écrit, ou sauté à la limite du mois. Deux lignes, jamais les montants."
     },
     "securityAlways": "Toujours dans la cloche, pour qu’une connexion que vous n’avez pas faite ne passe pas inaperçue.",
     "emailUnavailable": "Indisponible : l’administrateur n’a pas configuré de serveur de messagerie (CB_SMTP_HOST).",
@@ -2058,7 +2061,12 @@
     "sentNone": "Rien pour l’instant.",
     "sentWhere": "{{when}} · {{wallet}}",
     "sentOn": "Envoyé le {{when}}",
-    "show": "Afficher"
+    "show": "Afficher",
+    "schedule": {
+      "lead": "Le 1er de chaque mois, sur le mois précédent. Et aussi :",
+      "weekly": "Chaque lundi, la semaine précédente",
+      "yearly": "En janvier, l’année précédente"
+    }
   },
   "setup": {
     "title": "Bienvenue dans CloudBank",
@@ -3259,7 +3267,14 @@
       "expense": "Dépenses",
       "net": "Solde",
       "avg": "Moyenne sur 6 mois",
-      "note": "CloudBank a calculé les chiffres ; le modèle n’a écrit que le texte. Modèle : {{model}}."
-    }
+      "note": "CloudBank a calculé les chiffres ; le modèle n’a écrit que le texte. Modèle : {{model}}.",
+      "thisWeek": "Cette semaine",
+      "prevWeek": "Semaine précédente",
+      "avgWeek": "Moyenne sur 6 semaines"
+    },
+    "week": "Semaine {{range}}",
+    "year": "Année {{year}}",
+    "reportTitleWeek": "La semaine en bref",
+    "reportTitleYear": "{{year}} en bref"
   }
 }

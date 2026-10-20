@@ -1,11 +1,21 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// The AI's monthly report (#696) on the real server, written by the pretend AI
-// provider in ../server/cmd/e2e-mail: switched on in the settings, the page
-// appears in the sidebar, "Generate now" writes last month's report into the
-// AI box, and the box's colours flow unless the reader or the system says no.
-// It runs after mail-ai.spec.ts, which pointed the AI at the pretend provider.
+// The AI's monthly report (#696, #697) on the real server, written by the
+// pretend AI provider in ../server/cmd/e2e-mail: switched on in the settings,
+// last month's report comes by itself and the bell opens it, the page appears
+// in the sidebar, "Generate now" writes another into the AI box, and the box's
+// colours flow unless the reader or the system says no. It runs after
+// mail-ai.spec.ts, which pointed the AI at the pretend provider.
 test.describe.configure({ mode: "serial" });
+
+// The report is written from 07:00 on the 1st, in the reader's time zone: on
+// the 1st before 07:00 UTC the test reads in a zone where it is already later.
+const now = new Date();
+const TZ =
+  now.getUTCDate() === 1 && now.getUTCHours() < 7
+    ? "Pacific/Kiritimati"
+    : "UTC";
+test.use({ timezoneId: TZ });
 
 const H = { "X-Requested-With": "XMLHttpRequest" };
 const FAKE = process.env.E2E_MAIL_FAKE_URL ?? "http://127.0.0.1:9100";
@@ -38,11 +48,15 @@ const report = (page: Page) => page.getByRole("region", { name: "AI report" });
 const animation = (page: Page) =>
   report(page).evaluate((el) => getComputedStyle(el).animationName);
 
-test("Generate now writes last month's report in the AI box", async ({
+test("last month's report comes by itself and the bell opens it", async ({
   page,
 }) => {
   await signIn(page);
-  await setAI(page, { motion: true });
+  const zone = await page.request.put("/api/v1/notifications/settings", {
+    headers: H,
+    data: { timezone: TZ },
+  });
+  expect(zone.ok()).toBe(true);
 
   // Last month's money, on the account the bank-mail specs created.
   const [wallet] = (await (
@@ -70,7 +84,27 @@ test("Generate now writes last month's report in the AI box", async ({
     );
     expect(res.ok()).toBe(true);
   }
+  await setAI(page, { motion: true });
 
+  const month = new Date(
+    Date.UTC(n.getUTCFullYear(), n.getUTCMonth() - 1, 1),
+  ).toLocaleString("en", { month: "long", timeZone: "UTC" });
+  await page.goto("/");
+  const note = page.getByText(`${month} report ready`);
+  await expect(async () => {
+    await page.reload();
+    await page.getByRole("button", { name: /^Notifications/ }).click();
+    await expect(note).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
+  await note.click();
+  await expect(page).toHaveURL(/\/insights\?report=\d+$/);
+  await expect(report(page)).toContainText("A quiet month");
+});
+
+test("Generate now writes last month's report in the AI box", async ({
+  page,
+}) => {
+  await signIn(page);
   await page.goto("/");
   await page.getByRole("link", { name: "AI insights" }).click();
   await expect(page).toHaveURL(/\/insights$/);
@@ -81,7 +115,9 @@ test("Generate now writes last month's report in the AI box", async ({
     /Plex Mono|monospace/,
   );
   await report(page).getByRole("button", { name: "Why?" }).click();
-  await expect(report(page).getByRole("cell", { name: "Income" })).toBeVisible();
+  await expect(
+    report(page).getByRole("cell", { name: "Income" }),
+  ).toBeVisible();
 
   // The model got the numbers, never the memo.
   const sent = await (await page.request.get(`${FAKE}/ai/last`)).text();

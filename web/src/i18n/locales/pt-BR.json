@@ -1767,7 +1767,8 @@
       "bills": "Vencimentos",
       "money": "Dinheiro",
       "admin": "Administração",
-      "summaries": "Resumos"
+      "summaries": "Resumos",
+      "ai": "IA"
     },
     "kind": {
       "new_device": "Acesso de um novo dispositivo",
@@ -1785,7 +1786,8 @@
       "new_version": "Nova versão do CloudBank",
       "review_waiting": "Lançamentos para revisar",
       "summary_weekly": "Resumo semanal",
-      "summary_monthly": "Resumo mensal"
+      "summary_monthly": "Resumo mensal",
+      "ai_report": "Resumo de IA pronto"
     },
     "kindHint": {
       "new_device": "Um navegador ou sistema que sua conta nunca usou.",
@@ -1803,7 +1805,8 @@
       "new_version": "Saiu uma versão mais recente no canal que este servidor segue.",
       "review_waiting": "Lançamentos esperando na página Revisão há alguns dias.",
       "summary_weekly": "Na segunda: entradas, saídas, o que mais pesou e os vencimentos da semana, por carteira.",
-      "summary_monthly": "No dia 1: entradas, saídas e o que mais pesou no mês anterior, por carteira."
+      "summary_monthly": "No dia 1: entradas, saídas e o que mais pesou no mês anterior, por carteira.",
+      "ai_report": "Quando um resumo programado é escrito, ou pulado no limite do mês. Duas linhas, nunca os valores."
     },
     "securityAlways": "Sempre no sino, para que um acesso que você não fez não passe despercebido.",
     "emailUnavailable": "Indisponível: o administrador não configurou um servidor de e-mail (CB_SMTP_HOST).",
@@ -2058,7 +2061,12 @@
     "sentNone": "Nada ainda.",
     "sentWhere": "{{when}} · {{wallet}}",
     "sentOn": "Enviado em {{when}}",
-    "show": "Mostrar"
+    "show": "Mostrar",
+    "schedule": {
+      "lead": "No dia 1º de cada mês, sobre o mês anterior. E também:",
+      "weekly": "Toda segunda-feira, a semana anterior",
+      "yearly": "Em janeiro, o ano anterior"
+    }
   },
   "setup": {
     "title": "Boas-vindas ao CloudBank",
@@ -3259,7 +3267,14 @@
       "expense": "Despesas",
       "net": "Saldo",
       "avg": "Média de 6 meses",
-      "note": "O CloudBank calculou os números; o modelo só escreveu o texto. Modelo: {{model}}."
-    }
+      "note": "O CloudBank calculou os números; o modelo só escreveu o texto. Modelo: {{model}}.",
+      "thisWeek": "Esta semana",
+      "prevWeek": "Semana anterior",
+      "avgWeek": "Média de 6 semanas"
+    },
+    "week": "Semana {{range}}",
+    "year": "Ano {{year}}",
+    "reportTitleWeek": "A semana em resumo",
+    "reportTitleYear": "{{year}} em resumo"
   }
 }

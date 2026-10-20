@@ -51,6 +51,15 @@ type AiReport struct {
 	CreatedAt string
 }
 
+type AiReportRun struct {
+	UserID    int64
+	WalletID  int64
+	Kind      string
+	Period    string
+	Outcome   string
+	CreatedAt string
+}
+
 type AiSend struct {
 	ID        int64
 	UserID    int64
@@ -74,6 +83,8 @@ type AiSetting struct {
 	ReportsOn    int64
 	MonthlyLimit int64
 	Motion       int64
+	WeeklyOn     int64
+	YearlyOn     int64
 }
 
 type AiWalletsOff struct {

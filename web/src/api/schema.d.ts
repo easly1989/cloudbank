@@ -3752,8 +3752,15 @@ export interface components {
             entry: boolean;
             /** @description bank mails: sends the mail with cards and IBANs hidden */
             mail: boolean;
-            /** @description reports: sends the month's totals and largest expenses */
+            /** @description reports: sends the period's totals and largest expenses */
             reports: boolean;
+        };
+        /** @description The reports that come by themselves besides the monthly one, which comes whenever reports are on. */
+        AISchedule: {
+            /** @description every Monday, on the week before */
+            weekly: boolean;
+            /** @description in January, on the year before */
+            yearly: boolean;
         };
         /** @description A user's AI configuration. The API key is never returned; only hasKey. */
         AISettings: {
@@ -3765,6 +3772,7 @@ export interface components {
             /** @description whether an API key is stored */
             hasKey: boolean;
             features: components["schemas"]["AIFeatures"];
+            schedule: components["schemas"]["AISchedule"];
             /** @description the wallets the AI must not work on */
             walletsOff: number[];
             /**
@@ -3789,6 +3797,7 @@ export interface components {
             /** @description omit to keep the stored key; empty string clears it */
             apiKey?: string;
             features?: components["schemas"]["AIFeatures"];
+            schedule?: components["schemas"]["AISchedule"];
             walletsOff?: number[];
             /** Format: int64 */
             monthlyLimit?: number;
@@ -3809,7 +3818,7 @@ export interface components {
             /** @description the text sent, word for word; only when one call is asked for */
             sent?: string;
         };
-        /** @description A month's money in and out (positive amounts) and what was kept, in minor units. */
+        /** @description A period's money in and out (positive amounts) and what was kept, in minor units. */
         AIReportFigures: {
             /** Format: int64 */
             income: number;
@@ -3828,11 +3837,13 @@ export interface components {
         };
         /** @description The numbers the server computed for a report, in the wallet's base currency. */
         AIReportBasis: {
-            /** @description YYYY-MM */
-            month: string;
+            kind: components["schemas"]["AIReportKind"];
+            /** @description YYYY-MM for a month, the Monday YYYY-MM-DD for a week, YYYY for a year */
+            period: string;
             currency: components["schemas"]["AIReportCurrency"];
             figures: components["schemas"]["AIReportFigures"];
             prev: components["schemas"]["AIReportFigures"];
+            /** @description the average of the six periods before; zero for a year */
             avg: components["schemas"]["AIReportFigures"];
             categories: {
                 name: string;
@@ -3863,12 +3874,13 @@ export interface components {
                 amount: number;
             }[];
         };
+        /** @enum {string} */
+        AIReportKind: "monthly" | "weekly" | "yearly";
         AIReport: {
             /** Format: int64 */
             id: number;
-            /** @enum {string} */
-            kind: "monthly";
-            /** @description YYYY-MM */
+            kind: components["schemas"]["AIReportKind"];
+            /** @description YYYY-MM for a month, the Monday YYYY-MM-DD for a week, YYYY for a year */
             period: string;
             /** @description the model's text: paragraphs separated by a blank line */
             body: string;
@@ -4296,7 +4308,7 @@ export interface components {
             } | null;
         };
         /** @enum {string} */
-        NotificationKind: "new_device" | "two_factor_off" | "new_api_token" | "bank_sync_failed" | "consent_expiring" | "mail_stopped" | "mail_unrecognized" | "review_waiting" | "bills" | "large_transaction" | "low_balance" | "budget" | "goal" | "summary_weekly" | "summary_monthly" | "new_version";
+        NotificationKind: "new_device" | "two_factor_off" | "new_api_token" | "bank_sync_failed" | "consent_expiring" | "mail_stopped" | "mail_unrecognized" | "review_waiting" | "bills" | "large_transaction" | "low_balance" | "budget" | "goal" | "summary_weekly" | "summary_monthly" | "ai_report" | "new_version";
         /** @enum {string} */
         NotificationChannel: "inapp" | "push" | "email" | "matrix" | "telegram" | "discord" | "slack" | "ntfy" | "gotify" | "webhook";
         Notification: {
@@ -4406,7 +4418,7 @@ export interface components {
              * @description Security always reaches the bell; money and summaries start off; admin is listed for administrators only.
              * @enum {string}
              */
-            group: "security" | "problems" | "bills" | "money" | "summaries" | "admin";
+            group: "security" | "problems" | "bills" | "money" | "summaries" | "ai" | "admin";
             /** @description Collected in the daily digest outside the app; always false for security and the summaries. */
             digest: boolean;
             channels: {

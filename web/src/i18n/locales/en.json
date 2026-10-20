@@ -1767,7 +1767,8 @@
       "bills": "Bills",
       "money": "Money",
       "admin": "Administration",
-      "summaries": "Summaries"
+      "summaries": "Summaries",
+      "ai": "AI"
     },
     "kind": {
       "new_device": "A sign-in from a new device",
@@ -1785,7 +1786,8 @@
       "new_version": "A new CloudBank version",
       "review_waiting": "Transactions to review",
       "summary_weekly": "Weekly summary",
-      "summary_monthly": "Monthly summary"
+      "summary_monthly": "Monthly summary",
+      "ai_report": "AI report ready"
     },
     "kindHint": {
       "new_device": "A browser or system your account has not used before.",
@@ -1803,7 +1805,8 @@
       "new_version": "A newer release is out on the channel this server follows.",
       "review_waiting": "Transactions waiting on the Review page for a few days.",
       "summary_weekly": "On Monday: money in and out, what took most and the week's bills, per wallet.",
-      "summary_monthly": "On the 1st: money in and out and what took most last month, per wallet."
+      "summary_monthly": "On the 1st: money in and out and what took most last month, per wallet.",
+      "ai_report": "When a scheduled report is written, or skipped at the month's limit. Two lines, never the amounts."
     },
     "securityAlways": "Always in the bell, so a sign-in you didn't make cannot go unnoticed.",
     "emailUnavailable": "Not available: the administrator has not set up a mail server (CB_SMTP_HOST).",
@@ -2058,7 +2061,12 @@
     "sentNone": "Nothing yet.",
     "sentWhere": "{{when}} · {{wallet}}",
     "sentOn": "Sent on {{when}}",
-    "show": "Show"
+    "show": "Show",
+    "schedule": {
+      "lead": "On the 1st of every month, on the month before. And also:",
+      "weekly": "Every Monday, the week before",
+      "yearly": "In January, the year before"
+    }
   },
   "setup": {
     "title": "Welcome to CloudBank",
@@ -3259,7 +3267,14 @@
       "expense": "Expenses",
       "net": "Net",
       "avg": "6-month average",
-      "note": "CloudBank worked out the numbers; the model only wrote the text. Model: {{model}}."
-    }
+      "note": "CloudBank worked out the numbers; the model only wrote the text. Model: {{model}}.",
+      "thisWeek": "This week",
+      "prevWeek": "Week before",
+      "avgWeek": "6-week average"
+    },
+    "week": "Week {{range}}",
+    "year": "Year {{year}}",
+    "reportTitleWeek": "The week in short",
+    "reportTitleYear": "{{year}} in short"
   }
 }

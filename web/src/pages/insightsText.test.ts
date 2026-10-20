@@ -1,6 +1,27 @@
 import { describe, expect, it } from "vitest";
 
-import { paragraphs, splitAmounts } from "./insightsText";
+import { paragraphs, periodLabel, splitAmounts } from "./insightsText";
+
+// A t that shows its key and values, so the test reads what reaches it.
+const t = ((key: string, v?: Record<string, string>) =>
+  `${key}:${Object.values(v ?? {}).join("|")}`) as unknown as Parameters<typeof periodLabel>[2];
+
+describe("periodLabel", () => {
+  it("names a month, a week and a year", () => {
+    expect(periodLabel({ kind: "monthly", period: "2026-09" }, "en", t)).toBe("September 2026");
+    expect(periodLabel({ kind: "yearly", period: "2025" }, "en", t)).toBe("insights.year:2025");
+  });
+
+  // ICU puts thin spaces round the dash, hence \s.
+  it("names the month once for a week inside it, twice across two", () => {
+    expect(periodLabel({ kind: "weekly", period: "2026-10-12" }, "en", t)).toMatch(
+      /^insights\.week:October 12\s–\s18$/,
+    );
+    expect(periodLabel({ kind: "weekly", period: "2026-09-28" }, "en", t)).toMatch(
+      /^insights\.week:September 28\s–\sOctober 4$/,
+    );
+  });
+});
 
 const amounts = (text: string) => splitAmounts(text).filter((_, i) => i % 2 === 1);
 

@@ -13,26 +13,31 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/ai"
 	"github.com/easly1989/cloudbank/server/internal/budget"
-	"github.com/easly1989/cloudbank/server/internal/dashboard"
 	"github.com/easly1989/cloudbank/server/internal/money"
 	"github.com/easly1989/cloudbank/server/internal/report"
 	"github.com/easly1989/cloudbank/server/internal/schedule"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
-// KindMonthly is a report on one calendar month.
-const KindMonthly = "monthly"
+// The kinds of report: one calendar month, one week from Monday to Sunday, one
+// calendar year (#697).
+const (
+	KindMonthly = "monthly"
+	KindWeekly  = "weekly"
+	KindYearly  = "yearly"
+)
 
 // ErrBadPeriod is a month that is not a complete one from the last year.
 var ErrBadPeriod = errors.New("insight: choose a complete month from the last twelve")
 
-// ErrNoData is a month with nothing in it to report on.
-var ErrNoData = errors.New("insight: the month has no transactions")
+// ErrNoData is a period with nothing in it to report on.
+var ErrNoData = errors.New("insight: the period has no transactions")
 
 // Asker is the AI's one way to the model.
 type Asker interface {
@@ -43,7 +48,7 @@ type Asker interface {
 type Service struct {
 	q, rq    *db.Queries
 	ai       Asker
-	dash     *dashboard.Service
+	notify   Notifier
 	reports  *report.Service
 	budgets  *budget.Service
 	calendar *schedule.Service
@@ -51,10 +56,10 @@ type Service struct {
 }
 
 // NewService wires the report writer to the services that hold the numbers.
-func NewService(read, write *sql.DB, asker Asker, dash *dashboard.Service, reports *report.Service,
+func NewService(read, write *sql.DB, asker Asker, reports *report.Service,
 	budgets *budget.Service, calendar *schedule.Service) *Service {
 	return &Service{
-		q: db.New(write), rq: db.New(read), ai: asker, dash: dash, reports: reports,
+		q: db.New(write), rq: db.New(read), ai: asker, reports: reports,
 		budgets: budgets, calendar: calendar, now: time.Now,
 	}
 }
@@ -69,7 +74,7 @@ type Currency struct {
 	FracDigits   int    `json:"fracDigits"`
 }
 
-// Figures are a month's money in and out, as positive amounts, and what was
+// Figures are a period's money in and out, as positive amounts, and what was
 // kept (in − out).
 type Figures struct {
 	Income  int64 `json:"income"`
@@ -77,8 +82,8 @@ type Figures struct {
 	Net     int64 `json:"net"`
 }
 
-// CategoryFigure is one category's spending this month, the month before, and
-// on average over the six months before this one.
+// CategoryFigure is one category's spending in the period, the one before, and
+// on average over the six before it (none for a year).
 type CategoryFigure struct {
 	Name   string `json:"name"`
 	Amount int64  `json:"amount"`
@@ -86,7 +91,7 @@ type CategoryFigure struct {
 	Avg    int64  `json:"avg"`
 }
 
-// Expense is one of the month's largest expenses.
+// Expense is one of the period's largest expenses.
 type Expense struct {
 	Date   string `json:"date"`
 	Payee  string `json:"payee"`
@@ -100,17 +105,20 @@ type OverBudget struct {
 	Actual int64  `json:"actual"`
 }
 
-// Bill is a schedule falling due the month after.
+// Bill is a schedule falling due after the period: the month after a month, the
+// seven days after a week.
 type Bill struct {
 	Name   string `json:"name"`
 	Date   string `json:"date"`
 	Amount int64  `json:"amount"`
 }
 
-// Basis is every number a monthly report rests on, in the wallet's base
-// currency: what "Why?" shows, and all the model is told.
+// Basis is every number a report rests on, in the wallet's base currency:
+// what "Why?" shows, and all the model is told. Period is the month
+// (YYYY-MM), the week's Monday (YYYY-MM-DD) or the year (YYYY).
 type Basis struct {
-	Month      string           `json:"month"`
+	Kind       string           `json:"kind"`
+	Period     string           `json:"period"`
 	Currency   Currency         `json:"currency"`
 	Figures    Figures          `json:"figures"`
 	Prev       Figures          `json:"prev"`
@@ -152,8 +160,40 @@ func (s *Service) checkPeriod(period string) (time.Time, error) {
 
 const day = "2006-01-02"
 
-func monthRange(m time.Time) (string, string) {
-	return m.Format(day), m.AddDate(0, 1, -1).Format(day)
+// span is the stretch of time a report is about, and what it is set against.
+type span struct {
+	kind, period       string
+	from, to           time.Time // the period, both days included
+	prevFrom, prevTo   time.Time // the one before
+	avgFrom            time.Time // the average runs from here to prevTo...
+	avgN               int64     // ...over this many periods; 0 is none
+	billsFrom, billsTo time.Time // zero: no bills
+	budgets            bool
+}
+
+func monthSpan(m time.Time) span {
+	return span{
+		kind: KindMonthly, period: m.Format("2006-01"), from: m, to: m.AddDate(0, 1, -1),
+		prevFrom: m.AddDate(0, -1, 0), prevTo: m.AddDate(0, 0, -1), avgFrom: m.AddDate(0, -6, 0), avgN: 6,
+		billsFrom: m.AddDate(0, 1, 0), billsTo: m.AddDate(0, 2, -1), budgets: true,
+	}
+}
+
+// weekSpan is the week starting on Monday mon.
+func weekSpan(mon time.Time) span {
+	return span{
+		kind: KindWeekly, period: mon.Format(day), from: mon, to: mon.AddDate(0, 0, 6),
+		prevFrom: mon.AddDate(0, 0, -7), prevTo: mon.AddDate(0, 0, -1), avgFrom: mon.AddDate(0, 0, -42), avgN: 6,
+		billsFrom: mon.AddDate(0, 0, 7), billsTo: mon.AddDate(0, 0, 13),
+	}
+}
+
+func yearSpan(y int) span {
+	jan := time.Date(y, 1, 1, 0, 0, 0, 0, time.UTC)
+	return span{
+		kind: KindYearly, period: strconv.Itoa(y), from: jan, to: jan.AddDate(1, 0, -1),
+		prevFrom: jan.AddDate(-1, 0, 0), prevTo: jan.AddDate(0, 0, -1),
+	}
 }
 
 func abs(v int64) int64 {
@@ -171,11 +211,32 @@ func convertToBase(amount int64, cur, base db.Currency) int64 {
 	return int64(math.Round(scaled))
 }
 
+// figures is the money in and out from one day to another, as the overview's
+// chart counts it: transfers and categories kept out of the reports left out.
+func (s *Service) figures(ctx context.Context, walletID int64, from, to time.Time, curByID map[int64]db.Currency, base db.Currency) (Figures, error) {
+	rows, err := s.rq.MonthlyIncomeExpense(ctx, db.MonthlyIncomeExpenseParams{
+		WalletID: walletID, FromDate: from.Format(day), ToDate: to.Format(day),
+	})
+	if err != nil {
+		return Figures{}, err
+	}
+	var f Figures
+	for _, r := range rows {
+		f.Income += convertToBase(r.Income, curByID[r.CurrencyID], base)
+		f.Expense -= convertToBase(r.Expense, curByID[r.CurrencyID], base)
+	}
+	f.Net = f.Income - f.Expense
+	return f, nil
+}
+
 // Basis computes the numbers for a month of a wallet.
 func (s *Service) Basis(ctx context.Context, walletID int64, m time.Time) (Basis, error) {
-	from, to := monthRange(m)
-	period := m.Format("2006-01")
-	out := Basis{Month: period, Categories: []CategoryFigure{}, Largest: []Expense{}, OverBudget: []OverBudget{}, Bills: []Bill{}}
+	return s.basis(ctx, walletID, monthSpan(m))
+}
+
+func (s *Service) basis(ctx context.Context, walletID int64, sp span) (Basis, error) {
+	from, to := sp.from.Format(day), sp.to.Format(day)
+	out := Basis{Kind: sp.kind, Period: sp.period, Categories: []CategoryFigure{}, Largest: []Expense{}, OverBudget: []OverBudget{}, Bills: []Bill{}}
 
 	currencies, err := s.rq.ListCurrenciesForWallet(ctx, walletID)
 	if err != nil {
@@ -194,34 +255,26 @@ func (s *Service) Basis(ctx context.Context, walletID int64, m time.Time) (Basis
 		DecimalChar: base.DecimalChar, GroupChar: base.GroupChar, FracDigits: int(base.FracDigits),
 	}
 
-	// The month, the one before, and the six before it, from the overview's
-	// income and expense series (transfers left out). The series ends today, so
-	// it is asked for enough months to reach back six before the report's.
-	n := s.now().UTC()
-	back := (n.Year()-m.Year())*12 + int(n.Month()-m.Month()) + 7
-	dash, err := s.dash.Build(ctx, walletID, from, to, dashboard.GroupByCategory, back)
-	if err != nil {
+	// The period, the one before, and the average of the six before.
+	if out.Figures, err = s.figures(ctx, walletID, sp.from, sp.to, curByID, base); err != nil {
 		return Basis{}, err
 	}
-	byMonth := map[string]Figures{}
-	for _, p := range dash.IncomeExpense {
-		byMonth[p.Month] = Figures{Income: p.Income, Expense: p.Expense, Net: p.Income - p.Expense}
-	}
-	out.Figures = byMonth[period]
-	out.Prev = byMonth[m.AddDate(0, -1, 0).Format("2006-01")]
-	for i := 1; i <= 6; i++ {
-		f := byMonth[m.AddDate(0, -i, 0).Format("2006-01")]
-		out.Avg.Income += f.Income
-		out.Avg.Expense += f.Expense
-	}
-	out.Avg.Income /= 6
-	out.Avg.Expense /= 6
-	out.Avg.Net = out.Avg.Income - out.Avg.Expense
 	if out.Figures.Income == 0 && out.Figures.Expense == 0 {
 		return Basis{}, ErrNoData
 	}
+	if out.Prev, err = s.figures(ctx, walletID, sp.prevFrom, sp.prevTo, curByID, base); err != nil {
+		return Basis{}, err
+	}
+	if sp.avgN > 0 {
+		six, err := s.figures(ctx, walletID, sp.avgFrom, sp.prevTo, curByID, base)
+		if err != nil {
+			return Basis{}, err
+		}
+		out.Avg = Figures{Income: six.Income / sp.avgN, Expense: six.Expense / sp.avgN}
+		out.Avg.Net = out.Avg.Income - out.Avg.Expense
+	}
 
-	// Spending by category: this month, the one before, the six before.
+	// Spending by category: the period, the one before, the six before.
 	cats, err := s.rq.ListCategoriesForWallet(ctx, walletID)
 	if err != nil {
 		return Basis{}, err
@@ -255,18 +308,22 @@ func (s *Service) Basis(ctx context.Context, walletID int64, m time.Time) (Basis
 	if err != nil {
 		return Basis{}, err
 	}
-	pf, pt := monthRange(m.AddDate(0, -1, 0))
-	prev, err := spent(pf, pt)
+	prev, err := spent(sp.prevFrom.Format(day), sp.prevTo.Format(day))
 	if err != nil {
 		return Basis{}, err
 	}
-	sixFrom, _ := monthRange(m.AddDate(0, -6, 0))
-	six, err := spent(sixFrom, pt)
-	if err != nil {
-		return Basis{}, err
+	six := map[int64]int64{}
+	if sp.avgN > 0 {
+		if six, err = spent(sp.avgFrom.Format(day), sp.prevTo.Format(day)); err != nil {
+			return Basis{}, err
+		}
 	}
 	for id, v := range now {
-		out.Categories = append(out.Categories, CategoryFigure{Name: names[id], Amount: v, Prev: prev[id], Avg: six[id] / 6})
+		c := CategoryFigure{Name: names[id], Amount: v, Prev: prev[id]}
+		if sp.avgN > 0 {
+			c.Avg = six[id] / sp.avgN
+		}
+		out.Categories = append(out.Categories, c)
 	}
 	sort.Slice(out.Categories, func(i, j int) bool {
 		if out.Categories[i].Amount != out.Categories[j].Amount {
@@ -291,21 +348,25 @@ func (s *Service) Basis(ctx context.Context, walletID int64, m time.Time) (Basis
 		out.Largest = out.Largest[:3]
 	}
 
-	// The budgets the month went over.
-	b, err := s.budgets.Report(ctx, walletID, from, to, to)
-	if err != nil {
-		return Basis{}, err
-	}
-	for _, r := range b.Rows {
-		if r.IsIncome || !r.Budgeted || r.Budget == 0 || abs(r.Actual) <= abs(r.Budget) {
-			continue
+	// The budgets a month went over; budgets are monthly, so only a month's.
+	if sp.budgets {
+		b, err := s.budgets.Report(ctx, walletID, from, to, to)
+		if err != nil {
+			return Basis{}, err
 		}
-		out.OverBudget = append(out.OverBudget, OverBudget{Name: r.Name, Budget: abs(r.Budget), Actual: abs(r.Actual)})
+		for _, r := range b.Rows {
+			if r.IsIncome || !r.Budgeted || r.Budget == 0 || abs(r.Actual) <= abs(r.Budget) {
+				continue
+			}
+			out.OverBudget = append(out.OverBudget, OverBudget{Name: r.Name, Budget: abs(r.Budget), Actual: abs(r.Actual)})
+		}
 	}
 
-	// The schedules due the month after: what is coming.
-	nf, nt := monthRange(m.AddDate(0, 1, 0))
-	cal, err := s.calendar.Calendar(ctx, walletID, nf, nt, n)
+	// The schedules due after the period: what is coming.
+	if sp.billsFrom.IsZero() {
+		return out, nil
+	}
+	cal, err := s.calendar.Calendar(ctx, walletID, sp.billsFrom.Format(day), sp.billsTo.Format(day), s.now().UTC())
 	if err != nil {
 		return Basis{}, err
 	}
@@ -340,27 +401,51 @@ var languages = map[string]string{
 	"en": "English", "it": "Italian", "es": "Spanish", "fr": "French", "de": "German", "pt-BR": "Brazilian Portuguese",
 }
 
-const system = "You write a short monthly money report for the owner of a personal-finance wallet. " +
-	"Use only the numbers given: never invent one, and compute nothing but simple differences " +
-	"and percentages between them. Write 3 to 5 short paragraphs of plain text, with no headings, " +
-	"no lists and no markdown, separated by a blank line. Say what changed and what stands out; " +
-	"give no investment advice. Write amounts as the reader's language writes them, with the " +
+const system = "You write a short money report for the owner of a personal-finance wallet, on a month, " +
+	"a week or a year. Use only the numbers given: never invent one, and compute nothing but simple " +
+	"differences and percentages between them. Write 3 to 5 short paragraphs of plain text, with no " +
+	"headings, no lists and no markdown, separated by a blank line. Say what changed and what stands " +
+	"out; give no investment advice. Write amounts as the reader's language writes them, with the " +
 	"currency symbol."
 
-// prompt is what the model is told about a month: the numbers, line by line.
+// words are how the prompt names a kind of period.
+var words = map[string]struct{ unit, units, bills string }{
+	KindMonthly: {"month", "months", "Bills due next month"},
+	KindWeekly:  {"week", "weeks", "Bills due in the next 7 days"},
+	KindYearly:  {"year", "years", ""},
+}
+
+// prompt is what the model is told about a period: the numbers, line by line.
 func (b Basis) prompt(lang string) string {
 	var w strings.Builder
 	fig := func(f Figures) string {
 		return fmt.Sprintf("income %s, expenses %s, kept %s", b.plain(f.Income), b.plain(f.Expense), b.plain(f.Net))
 	}
-	fmt.Fprintf(&w, "Month: %s (currency %s, symbol %s)\n", b.Month, b.Currency.Code, b.Currency.Symbol)
-	fmt.Fprintf(&w, "This month: %s\n", fig(b.Figures))
-	fmt.Fprintf(&w, "The month before: %s\n", fig(b.Prev))
-	fmt.Fprintf(&w, "Average of the six months before: %s\n", fig(b.Avg))
+	wd := words[b.Kind]
+	what := b.Period
+	if b.Kind == KindWeekly {
+		if mon, err := time.Parse(day, b.Period); err == nil {
+			what = b.Period + " to " + mon.AddDate(0, 0, 6).Format(day)
+		}
+	}
+	fmt.Fprintf(&w, "%s%s: %s (currency %s, symbol %s)\n", strings.ToUpper(wd.unit[:1]), wd.unit[1:], what, b.Currency.Code, b.Currency.Symbol)
+	fmt.Fprintf(&w, "This %s: %s\n", wd.unit, fig(b.Figures))
+	fmt.Fprintf(&w, "The %s before: %s\n", wd.unit, fig(b.Prev))
+	if b.Kind != KindYearly {
+		fmt.Fprintf(&w, "Average of the six %s before: %s\n", wd.units, fig(b.Avg))
+	}
 	if len(b.Categories) > 0 {
-		w.WriteString("Spending by category (this month / the month before / six-month average):\n")
+		if b.Kind == KindYearly {
+			w.WriteString("Spending by category (this year / the year before):\n")
+		} else {
+			fmt.Fprintf(&w, "Spending by category (this %s / the %s before / six-%s average):\n", wd.unit, wd.unit, wd.unit)
+		}
 		for _, c := range b.Categories {
-			fmt.Fprintf(&w, "- %s: %s / %s / %s\n", c.Name, b.plain(c.Amount), b.plain(c.Prev), b.plain(c.Avg))
+			if b.Kind == KindYearly {
+				fmt.Fprintf(&w, "- %s: %s / %s\n", c.Name, b.plain(c.Amount), b.plain(c.Prev))
+			} else {
+				fmt.Fprintf(&w, "- %s: %s / %s / %s\n", c.Name, b.plain(c.Amount), b.plain(c.Prev), b.plain(c.Avg))
+			}
 		}
 	}
 	if len(b.Largest) > 0 {
@@ -379,8 +464,8 @@ func (b Basis) prompt(lang string) string {
 			fmt.Fprintf(&w, "- %s: spent %s of %s\n", o.Name, b.plain(o.Actual), b.plain(o.Budget))
 		}
 	}
-	if len(b.Bills) > 0 {
-		w.WriteString("Bills due next month:\n")
+	if len(b.Bills) > 0 && wd.bills != "" {
+		w.WriteString(wd.bills + ":\n")
 		for _, x := range b.Bills {
 			fmt.Fprintf(&w, "- %s %s %s\n", x.Date, x.Name, b.plain(x.Amount))
 		}
@@ -403,7 +488,13 @@ func (s *Service) Generate(ctx context.Context, userID, walletID int64, period s
 	if err != nil {
 		return Report{}, err
 	}
-	basis, err := s.Basis(ctx, walletID, m)
+	return s.write(ctx, userID, walletID, monthSpan(m), confirm)
+}
+
+// write computes a period's numbers, has the model write about them and keeps
+// the report.
+func (s *Service) write(ctx context.Context, userID, walletID int64, sp span, confirm bool) (Report, error) {
+	basis, err := s.basis(ctx, walletID, sp)
 	if err != nil {
 		return Report{}, err
 	}
@@ -430,7 +521,7 @@ func (s *Service) Generate(ctx context.Context, userID, walletID int64, period s
 		return Report{}, err
 	}
 	row, err := s.q.InsertAIReport(ctx, db.InsertAIReportParams{
-		UserID: userID, WalletID: walletID, Kind: KindMonthly, Period: period,
+		UserID: userID, WalletID: walletID, Kind: sp.kind, Period: sp.period,
 		Body: body, Basis: string(raw), Model: ans.Model,
 	})
 	if err != nil {

@@ -38,6 +38,7 @@ const (
 	KindReviewWaiting    Kind = "review_waiting"
 	KindSummaryWeekly    Kind = "summary_weekly"
 	KindSummaryMonthly   Kind = "summary_monthly"
+	KindAIReport         Kind = "ai_report"
 )
 
 // Group is how the settings page and the bell sort events.
@@ -51,6 +52,8 @@ const (
 	GroupMoney    Group = "money"
 	// GroupSummaries is a digest already: it comes at the digest time (#692).
 	GroupSummaries Group = "summaries"
+	// GroupAI is what the AI wrote, or could not write (#697).
+	GroupAI Group = "ai"
 	// GroupAdmin is for administrators only: nobody else sees or gets it.
 	GroupAdmin Group = "admin"
 )
@@ -107,6 +110,7 @@ var Catalog = []EventInfo{
 	{Kind: KindGoal, Group: GroupMoney},
 	{Kind: KindSummaryWeekly, Group: GroupSummaries},
 	{Kind: KindSummaryMonthly, Group: GroupSummaries},
+	{Kind: KindAIReport, Group: GroupAI, Default: true},
 	{Kind: KindNewVersion, Group: GroupAdmin, Default: true},
 }
 

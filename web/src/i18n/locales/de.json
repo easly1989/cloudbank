@@ -1767,7 +1767,8 @@
       "bills": "Fälligkeiten",
       "money": "Geld",
       "admin": "Administration",
-      "summaries": "Übersichten"
+      "summaries": "Übersichten",
+      "ai": "KI"
     },
     "kind": {
       "new_device": "Anmeldung von einem neuen Gerät",
@@ -1785,7 +1786,8 @@
       "new_version": "Neue CloudBank-Version",
       "review_waiting": "Buchungen zu prüfen",
       "summary_weekly": "Wochenübersicht",
-      "summary_monthly": "Monatsübersicht"
+      "summary_monthly": "Monatsübersicht",
+      "ai_report": "KI-Bericht fertig"
     },
     "kindHint": {
       "new_device": "Ein Browser oder System, das dein Konto noch nie benutzt hat.",
@@ -1803,7 +1805,8 @@
       "new_version": "Auf dem Kanal, dem dieser Server folgt, ist eine neuere Version erschienen.",
       "review_waiting": "Buchungen warten seit einigen Tagen unter „Prüfen“.",
       "summary_weekly": "Montags: Einnahmen, Ausgaben, die größten Posten und die Fälligkeiten der Woche, je Haushaltsbuch.",
-      "summary_monthly": "Am 1.: Einnahmen, Ausgaben und die größten Posten des Vormonats, je Haushaltsbuch."
+      "summary_monthly": "Am 1.: Einnahmen, Ausgaben und die größten Posten des Vormonats, je Haushaltsbuch.",
+      "ai_report": "Wenn ein geplanter Bericht geschrieben oder am Monatslimit übersprungen wird. Zwei Zeilen, nie die Beträge."
     },
     "securityAlways": "Immer in der Glocke, damit eine Anmeldung, die nicht von dir kam, nicht unbemerkt bleibt.",
     "emailUnavailable": "Nicht verfügbar: Der Administrator hat keinen Mailserver eingerichtet (CB_SMTP_HOST).",
@@ -2058,7 +2061,12 @@
     "sentNone": "Noch nichts.",
     "sentWhere": "{{when}} · {{wallet}}",
     "sentOn": "Geschickt am {{when}}",
-    "show": "Anzeigen"
+    "show": "Anzeigen",
+    "schedule": {
+      "lead": "Am 1. jedes Monats, über den Vormonat. Außerdem:",
+      "weekly": "Jeden Montag, die Vorwoche",
+      "yearly": "Im Januar, das Vorjahr"
+    }
   },
   "setup": {
     "title": "Willkommen bei CloudBank",
@@ -3259,7 +3267,14 @@
       "expense": "Ausgaben",
       "net": "Saldo",
       "avg": "Schnitt 6 Monate",
-      "note": "CloudBank hat die Zahlen berechnet; das Modell hat nur den Text geschrieben. Modell: {{model}}."
-    }
+      "note": "CloudBank hat die Zahlen berechnet; das Modell hat nur den Text geschrieben. Modell: {{model}}.",
+      "thisWeek": "Diese Woche",
+      "prevWeek": "Vorwoche",
+      "avgWeek": "Schnitt 6 Wochen"
+    },
+    "week": "Woche {{range}}",
+    "year": "Jahr {{year}}",
+    "reportTitleWeek": "Die Woche in Kürze",
+    "reportTitleYear": "{{year}} in Kürze"
   }
 }

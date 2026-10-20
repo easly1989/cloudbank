@@ -12,12 +12,19 @@ export interface AIFeatures {
 
 export type AIFeature = keyof AIFeatures;
 
+/** The reports that come by themselves besides the monthly one (#697). */
+export interface AISchedule {
+  weekly: boolean;
+  yearly: boolean;
+}
+
 export interface AISettings {
   enabled: boolean;
   baseUrl: string;
   model: string;
   hasKey: boolean;
   features: AIFeatures;
+  schedule: AISchedule;
   /** The wallets the AI must not work on. */
   walletsOff: number[];
   monthlyLimit: number;
@@ -36,6 +43,7 @@ export interface AISettingsInput {
   /** Omit to keep the stored key; empty string clears it. */
   apiKey?: string;
   features?: AIFeatures;
+  schedule?: AISchedule;
   walletsOff?: number[];
   monthlyLimit?: number;
   motion?: boolean;
@@ -121,9 +129,13 @@ export interface AIReportCurrency {
   fracDigits: number;
 }
 
+export type AIReportKind = "monthly" | "weekly" | "yearly";
+
 /** The numbers the server computed; all the model was told. */
 export interface AIReportBasis {
-  month: string;
+  kind: AIReportKind;
+  /** YYYY-MM, the week's Monday YYYY-MM-DD, or YYYY. */
+  period: string;
   currency: AIReportCurrency;
   figures: AIReportFigures;
   prev: AIReportFigures;
@@ -136,7 +148,7 @@ export interface AIReportBasis {
 
 export interface AIReport {
   id: number;
-  kind: "monthly";
+  kind: AIReportKind;
   period: string;
   /** Paragraphs separated by a blank line. */
   body: string;
