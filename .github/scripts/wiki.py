@@ -25,7 +25,12 @@ RAW = f"https://github.com/{REPO}/raw/main/"
 ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # Page names that a plain title-casing of the file name would get wrong.
-NAMES = {"migrate-from-homebank.md": "Migrate-from-HomeBank", "sso.md": "SSO"}
+NAMES = {
+    "migrate-from-homebank.md": "Migrate-from-HomeBank",
+    "sso.md": "SSO",
+    "ai.md": "AI",
+    "home-assistant.md": "Home-Assistant",
+}
 
 LINK = re.compile(r"(!?)\[([^\]]*)\]\(([^)\s]+)\)")
 FENCE = re.compile(r"^(```|~~~)")
