@@ -26,6 +26,10 @@ func (h *scheduleHandlers) walletRoutes(r chi.Router) {
 	r.Get("/schedules/calendar", h.calendar)
 	r.Get("/schedules/proposals", h.proposals)
 	r.Post("/schedules/proposals/ignore", h.ignoreProposal)
+	r.Get("/schedules/calendar-feed", h.getFeed)
+	r.Post("/schedules/calendar-feed", h.newFeed)
+	r.Delete("/schedules/calendar-feed", h.deleteFeed)
+	r.Get("/schedules/calendar.ics", h.downloadICS)
 	r.Route("/schedules/{scheduleId}", func(r chi.Router) {
 		r.Get("/", h.get)
 		r.Patch("/", h.update)
@@ -148,6 +152,83 @@ func (h *scheduleHandlers) ignoreProposal(w http.ResponseWriter, r *http.Request
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// getFeed is the reader's private calendar address for the wallet (#694), or
+// null when they have none.
+func (h *scheduleHandlers) getFeed(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	f, err := h.svc.FeedOf(r.Context(), userFromContext(r.Context()).ID, wl.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not read the calendar address")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"feed": f})
+}
+
+// newFeed makes the reader's address, or gives it a new token so the old one
+// stops working.
+func (h *scheduleHandlers) newFeed(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	f, err := h.svc.NewFeed(r.Context(), userFromContext(r.Context()).ID, wl.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not make the calendar address")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"feed": f})
+}
+
+// deleteFeed turns the reader's address off.
+func (h *scheduleHandlers) deleteFeed(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	if err := h.svc.DeleteFeed(r.Context(), userFromContext(r.Context()).ID, wl.ID); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not turn the calendar address off")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// downloadICS is the same calendar as a file, for a reader signed in.
+func (h *scheduleHandlers) downloadICS(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	ics, err := h.svc.ICS(r.Context(), wl.ID, wl.Title, time.Now().UTC())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not build the calendar")
+		return
+	}
+	writeICS(w, ics, "attachment")
+}
+
+// feedICS serves a calendar at its private address, outside the API and its
+// session: a calendar app sends no cookie, so the token in the path is the
+// whole credential. It is the one schedule route outside the wallet subtree,
+// and an unknown, regenerated or turned-off address answers 404 (#694).
+func feedICS(svc *schedule.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.ParseInt(chi.URLParam(r, "feedId"), 10, 64)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		ics, err := svc.FeedICS(r.Context(), id, chi.URLParam(r, "token"), time.Now().UTC())
+		if errors.Is(err, schedule.ErrFeedNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		if err != nil {
+			http.Error(w, "could not build the calendar", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Referrer-Policy", "no-referrer")
+		writeICS(w, ics, "inline")
+	}
+}
+
+func writeICS(w http.ResponseWriter, ics []byte, disposition string) {
+	w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
+	w.Header().Set("Content-Disposition", disposition+`; filename="cloudbank.ics"`)
+	w.Header().Set("Cache-Control", "private, no-store")
+	_, _ = w.Write(ics)
 }
 
 func (h *scheduleHandlers) create(w http.ResponseWriter, r *http.Request) {

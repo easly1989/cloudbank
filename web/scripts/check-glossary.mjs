@@ -24,6 +24,7 @@ const SKIP = new Set(["Schedules (the page)", "today / future balance"]);
 const EXCEPTIONS = {
   it: {
     // A sign-in account, or one at another service, not a CloudBank account.
+    "schedules.feed.appleHow": ["account"], // the calendar accounts in iOS Settings
     "banksync.connectHint": ["account"],
     "twofa.hint": ["account"],
     "setup.subtitle": ["account"],
@@ -50,6 +51,8 @@ const EXCEPTIONS = {
     "paymentModes.4": ["transfer"],
   },
   de: {
+    // The calendar accounts in iOS Settings, not a CloudBank account.
+    "schedules.feed.appleHow": ["account"],
     // The plural, Haushaltsbücher, changes the stem's vowel.
     "tour.wallet.title": ["wallet"],
     "backup.hotHint": ["wallet"],
