@@ -18,6 +18,7 @@ const (
 	FeatureReports       = "reports"
 	FeatureBudgets       = "budgets"
 	FeatureSubscriptions = "subscriptions"
+	FeatureSavings       = "savings"
 )
 
 // ErrFeatureOff means the job, or the wallet it is for, is switched off. It
@@ -66,6 +67,8 @@ func featureOn(cfg db.GetAISettingsRow, feature string) bool {
 		return cfg.BudgetsOn != 0
 	case FeatureSubscriptions:
 		return cfg.SubscriptionsOn != 0
+	case FeatureSavings:
+		return cfg.SavingsOn != 0
 	}
 	return false
 }

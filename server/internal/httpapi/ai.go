@@ -114,7 +114,8 @@ func (h *aiHandlers) putSettings(w http.ResponseWriter, r *http.Request) {
 		// Proposals just turned on come at once, not at the next run.
 		turnedOn := func(was, is bool) bool { return st.Enabled && is && (!before.Enabled || !was) }
 		if h.insights != nil && (turnedOn(before.Features.Budgets, st.Features.Budgets) ||
-			turnedOn(before.Features.Subscriptions, st.Features.Subscriptions)) {
+			turnedOn(before.Features.Subscriptions, st.Features.Subscriptions) ||
+			turnedOn(before.Features.Savings, st.Features.Savings)) {
 			ctx := context.WithoutCancel(r.Context())
 			go func() {
 				if err := h.insights.RunUser(ctx, u.ID); err != nil {

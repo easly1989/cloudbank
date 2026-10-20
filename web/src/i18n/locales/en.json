@@ -1808,7 +1808,7 @@
       "summary_weekly": "On Monday: money in and out, what took most and the week's bills, per wallet.",
       "summary_monthly": "On the 1st: money in and out and what took most last month, per wallet.",
       "ai_report": "When a scheduled report is written, or skipped at the month's limit. Two lines, never the amounts.",
-      "ai_proposal": "When the AI proposes budgets or finds subscriptions to look at, once a month. Two lines, never the amounts."
+      "ai_proposal": "When the AI proposes budgets, or finds subscriptions or savings to look at, once a month each. Two lines, never the amounts."
     },
     "securityAlways": "Always in the bell, so a sign-in you didn't make cannot go unnoticed.",
     "emailUnavailable": "Not available: the administrator has not set up a mail server (CB_SMTP_HOST).",
@@ -2035,6 +2035,10 @@
       "subscriptions": {
         "name": "Subscription proposals",
         "sends": "Sends, for each schedule it proposes, its name, the amount saved, the last payments and what it costs a year. Never the transactions."
+      },
+      "savings": {
+        "name": "Savings proposals",
+        "sends": "Sends, for each category it proposes, its name, its average a month before and lately, and the amount proposed. Never the transactions."
       }
     },
     "wallets": "On which wallets",
@@ -3331,6 +3335,19 @@
         "last": "Last payment",
         "yearly": "A year",
         "note": "CloudBank found these in your schedules and transactions: the last 2 payments at least 5% over the amount saved, a second schedule to the same payee or of the same amount just as often, a schedule registered by hand not paid for two periods. The model only wrote the text. Model: {{model}}."
+      }
+    },
+    "save": {
+      "title": "You could keep {{amount}} a month",
+      "basis": "Last 3 months against the 9 before · made on {{date}}",
+      "reason": "+{{pct}}%: {{recent}} a month against {{before}}",
+      "apply": "Set budget",
+      "applyLabel": "Set a budget of {{amount}} a month for {{name}}",
+      "details": "See the details",
+      "why": {
+        "before": "9 months before",
+        "recent": "Last 3 months",
+        "note": "CloudBank worked out the numbers: each category's average a month in the last 3 complete months against the 9 before, and the earlier level rounded to 5. The model only wrote the text. Model: {{model}}."
       }
     }
   }
