@@ -788,8 +788,8 @@ paths:
       description: >-
         later hides the proposal for a week; ignore puts it away until the numbers
         change; applied marks the row of categoryId (a budget or savings
-        proposal), scheduleId (a subscription proposal) or goalId (a goal
-        proposal) saved, and the whole proposal once
+        proposal), scheduleId (a subscription proposal), goalId (a goal
+        proposal) or payeeId (a rule proposal) saved, and the whole proposal once
         every row is. A proposal never writes anything itself.
       requestBody:
         required: true
@@ -802,6 +802,7 @@ paths:
                 categoryId: { type: integer, format: int64, description: "with applied: the budget row's category" }
                 scheduleId: { type: integer, format: int64, description: "with applied: the subscription row's schedule" }
                 goalId: { type: integer, format: int64, description: "with applied: the goal row's goal" }
+                payeeId: { type: integer, format: int64, description: "with applied: the rule row's payee" }
               required: [action]
       responses:
         "204": { description: Recorded. }
@@ -3714,7 +3715,8 @@ components:
         savings: { type: boolean, description: "savings proposals: sends each proposed category's name, its average a month before and lately, and the amount proposed" }
         goals: { type: boolean, description: "goal proposals: sends each proposed goal's name, what is left, its date, its pace and what the wallet kept a month" }
         unusual: { type: boolean, description: "unusual transactions: sends each flagged expense's payee, date and amount, with the payee's usual amount" }
-      required: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals, unusual]
+        rules: { type: boolean, description: "rule proposals: sends each proposed payee's name, its category and how many of its transactions have it; never an amount, a memo or a date" }
+      required: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals, unusual, rules]
     AISchedule:
       type: object
       description: The reports that come by themselves besides the monthly one, which comes whenever reports are on.
@@ -3758,7 +3760,7 @@ components:
         id: { type: integer, format: int64 }
         walletId: { type: [integer, "null"], format: int64 }
         walletName: { type: string }
-        feature: { type: string, enum: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals, unusual] }
+        feature: { type: string, enum: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals, unusual, rules] }
         model: { type: string }
         createdAt: { type: string, description: "RFC3339 UTC" }
         sent: { type: string, description: "the text sent, word for word; only when one call is asked for" }
@@ -3855,7 +3857,7 @@ components:
         name: { type: string, description: "the category's path, Parent:Child; a schedule's name" }
         reason:
           type: string
-          enum: [none, over, under, raised, double, alike, unused, grown, late, move, eta]
+          enum: [none, over, under, raised, double, alike, unused, grown, late, move, eta, rule]
           description: >-
             budget: no budget though spent on most months; the budget gone over, or
             not reached, most months. subscription: the last two payments at least
@@ -3864,7 +3866,9 @@ components:
             two periods. savings: the last three months at least a fifth, and 10
             a month, over the nine before. goal: a dated goal's pace short of its
             monthly share; that share more than the wallet kept a month; a goal
-            with no date that its pace reaches.
+            with no date that its pace reaches. rule: a payee whose transactions of
+            the last twelve months that no rule decides have a category at least
+            three times, four in five of them the same.
         budget: { type: integer, format: int64, description: "today's budget; 0 is none" }
         median: { type: integer, format: int64, description: "the median of the months" }
         proposed: { type: integer, format: int64, description: "the median rounded to 5 of the currency" }
@@ -3883,6 +3887,10 @@ components:
         pace: { type: integer, format: int64, description: "goal: what went in a month over the last three full months; proposed is the monthly share (late, move) or the pace (eta)" }
         date: { type: string, description: "late, move: the goal's date, YYYY-MM-DD" }
         newDate: { type: string, description: "goal: the end of the month its pace gets there, YYYY-MM-DD" }
+        payeeId: { type: integer, format: int64, description: "rule: the payee; name is the payee's name, categoryId the category proposed and hits how many have it" }
+        category: { type: string, description: "rule: the category's path, Parent:Child" }
+        total: { type: integer, description: "rule: the payee's transactions of the last twelve months that no rule decides" }
+        without: { type: integer, description: "rule: how many of them have no category" }
       required: [categoryId, name, reason, budget, median, proposed, months, hits]
     AIProposalBasis:
       type: object
@@ -3896,7 +3904,7 @@ components:
       type: object
       properties:
         id: { type: integer, format: int64 }
-        kind: { type: string, enum: [budget, subscriptions, savings, goals] }
+        kind: { type: string, enum: [budget, subscriptions, savings, goals, rules] }
         period: { type: string, description: "YYYY-MM, the month it was made in" }
         body: { type: string, description: "the model's two or three sentences" }
         basis: { $ref: "#/components/schemas/AIProposalBasis" }

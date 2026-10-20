@@ -29,6 +29,7 @@ import {
   IconPencilBolt,
   IconPigMoney,
   IconTarget,
+  IconWand,
   IconZoomExclamation,
   type Icon,
 } from "@tabler/icons-react";
@@ -64,6 +65,7 @@ const FEATURES: { key: AIFeature; icon: Icon }[] = [
   { key: "savings", icon: IconCoin },
   { key: "goals", icon: IconTarget },
   { key: "unusual", icon: IconZoomExclamation },
+  { key: "rules", icon: IconWand },
   { key: "suggest", icon: IconCategory },
   { key: "entry", icon: IconPencilBolt },
   { key: "mail", icon: IconMail },
@@ -79,6 +81,7 @@ const NO_FEATURES: AIFeatures = {
   savings: false,
   goals: false,
   unusual: false,
+  rules: false,
 };
 
 /** The first of next month, UTC, when the count starts again. */

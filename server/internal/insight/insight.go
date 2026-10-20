@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/ai"
+	"github.com/easly1989/cloudbank/server/internal/assignment"
 	"github.com/easly1989/cloudbank/server/internal/budget"
 	"github.com/easly1989/cloudbank/server/internal/goal"
 	"github.com/easly1989/cloudbank/server/internal/money"
@@ -54,6 +55,7 @@ type Service struct {
 	budgets  *budget.Service
 	calendar *schedule.Service
 	goals    *goal.Service
+	rules    *assignment.Service
 	now      func() time.Time
 }
 

@@ -21,6 +21,7 @@ const FEATURE: Record<AIProposalKind, AIFeature> = {
   subscriptions: "subscriptions",
   savings: "savings",
   goals: "goals",
+  rules: "rules",
 };
 
 /** Whether the AI does a job on a wallet. */
@@ -55,7 +56,9 @@ export const applyPath = (p: AIProposal, r: AIProposalRow) =>
     ? `/schedules?view=list&apply=${p.id}:${r.scheduleId}`
     : p.kind === "goals"
       ? `/goals?apply=${p.id}:${r.goalId}`
-      : `/budget?apply=${p.id}:${r.categoryId}`;
+      : p.kind === "rules"
+        ? `/assignments?apply=${p.id}:${r.payeeId}`
+        : `/budget?apply=${p.id}:${r.categoryId}`;
 
 /** A whole amount without its zeros: "60 €" rather than "60,00 €". */
 export function round(v: number, cur: AIProposal["basis"]["currency"]) {
