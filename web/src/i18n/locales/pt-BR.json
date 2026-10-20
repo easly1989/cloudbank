@@ -1808,7 +1808,7 @@
       "summary_weekly": "Na segunda: entradas, saídas, o que mais pesou e os vencimentos da semana, por carteira.",
       "summary_monthly": "No dia 1: entradas, saídas e o que mais pesou no mês anterior, por carteira.",
       "ai_report": "Quando um resumo programado é escrito, ou pulado no limite do mês. Duas linhas, nunca os valores.",
-      "ai_proposal": "Quando a IA propõe orçamentos ou encontra assinaturas para conferir, uma vez por mês. Duas linhas, nunca os valores."
+      "ai_proposal": "Quando a IA propõe orçamentos, ou encontra assinaturas ou economias para conferir, uma vez por mês cada. Duas linhas, nunca os valores."
     },
     "securityAlways": "Sempre no sino, para que um acesso que você não fez não passe despercebido.",
     "emailUnavailable": "Indisponível: o administrador não configurou um servidor de e-mail (CB_SMTP_HOST).",
@@ -2035,6 +2035,10 @@
       "subscriptions": {
         "name": "Propostas de assinaturas",
         "sends": "Envia, para cada agendamento proposto, o nome, o valor salvo, as últimas cobranças e quanto custa por ano. Nunca os lançamentos."
+      },
+      "savings": {
+        "name": "Propostas de economia",
+        "sends": "Envia, para cada categoria proposta, o nome, a média mensal de antes e dos últimos meses e o valor proposto. Nunca os lançamentos."
       }
     },
     "wallets": "Em quais carteiras",
@@ -3331,6 +3335,19 @@
         "last": "Última cobrança",
         "yearly": "Por ano",
         "note": "O CloudBank os encontrou nos seus agendamentos e lançamentos: as últimas 2 cobranças pelo menos 5% acima do valor salvo, um segundo agendamento para o mesmo beneficiário ou do mesmo valor com a mesma frequência, um agendamento registrado à mão sem pagamento há dois períodos. O modelo só escreveu o texto. Modelo: {{model}}."
+      }
+    },
+    "save": {
+      "title": "Você poderia economizar {{amount}} por mês",
+      "basis": "Últimos 3 meses contra os 9 anteriores · gerado em {{date}}",
+      "reason": "+{{pct}}%: {{recent}} por mês contra {{before}}",
+      "apply": "Definir orçamento",
+      "applyLabel": "Definir um orçamento de {{amount}} por mês para {{name}}",
+      "details": "Ver os detalhes",
+      "why": {
+        "before": "9 meses antes",
+        "recent": "Últimos 3 meses",
+        "note": "O CloudBank calculou os números: a média mensal de cada categoria nos últimos 3 meses completos contra os 9 anteriores, e o nível anterior arredondado a 5. O modelo só escreveu o texto. Modelo: {{model}}."
       }
     }
   }

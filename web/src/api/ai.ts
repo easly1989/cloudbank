@@ -12,6 +12,8 @@ export interface AIFeatures {
   budgets: boolean;
   /** Schedules raised, doubled or no longer paid (#699). */
   subscriptions: boolean;
+  /** Categories that grew lately, back to what they were (#699). */
+  savings: boolean;
 }
 
 export type AIFeature = keyof AIFeatures;
@@ -175,9 +177,10 @@ export const setAIReportFeedback = (walletId: number, id: number, feedback: -1 |
 
 // --- Proposals (#698, #699) ---
 
-export type AIProposalReason = "none" | "over" | "under" | "raised" | "double" | "alike" | "unused";
+export type AIProposalReason =
+  "none" | "over" | "under" | "raised" | "double" | "alike" | "unused" | "grown";
 
-export type AIProposalKind = "budget" | "subscriptions";
+export type AIProposalKind = "budget" | "subscriptions" | "savings";
 
 /**
  * One row, in positive minor units of the base currency: a category's proposed
@@ -207,6 +210,9 @@ export interface AIProposalRow {
   last?: string;
   /** What the schedule costs a year at the amount saved. */
   yearly?: number;
+  /** Savings: the average a month in the nine months before, and lately. */
+  before?: number;
+  recent?: number;
 }
 
 export interface AIProposal {

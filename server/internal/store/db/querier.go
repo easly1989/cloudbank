@@ -399,6 +399,9 @@ type Querier interface {
 	MoveMailMessagesToTransaction(ctx context.Context, arg MoveMailMessagesToTransactionParams) error
 	NextAccountPosition(ctx context.Context, walletID int64) (int64, error)
 	NextAssignmentPosition(ctx context.Context, walletID int64) (int64, error)
+	// The rows of the user's proposal of a kind still waiting on a wallet, for
+	// another kind to leave out what it already proposes.
+	OpenAIProposalBasis(ctx context.Context, arg OpenAIProposalBasisParams) (string, error)
 	// What each payee holds, per account currency: its transactions dated in
 	// [from_date, to_date], their sum, and the latest one on or before to_date.
 	// The caller adds the currencies up.

@@ -98,6 +98,10 @@ func (s *Service) runFor(ctx context.Context, u db.ListAIReportUsersRow) error {
 		if u.SubscriptionsOn != 0 {
 			kinds = append(kinds, KindSubscriptions)
 		}
+		// After the budget proposal, whose categories it leaves out.
+		if u.SavingsOn != 0 {
+			kinds = append(kinds, KindSavings)
+		}
 	}
 	if len(spans) == 0 && len(kinds) == 0 {
 		return nil

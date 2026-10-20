@@ -30,6 +30,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { dateBounds, emptyFilters, type DatePreset } from "./registerFilterModel";
 import { GridDashboard, type GridDashboardHandle } from "../components/dashboard/GridDashboard";
 import { BudgetProposalBox } from "../components/BudgetProposal";
+import { SavingsProposalBox } from "../components/SavingsProposal";
 import { PageHeader } from "../components/PageHeader";
 import { OverviewFigures } from "../components/dashboard/OverviewFigures";
 import { pickBalances } from "../components/dashboard/overviewFigureModel";
@@ -469,6 +470,7 @@ export function DashboardPage() {
         something the one person who removes it will then miss. */}
       <NeedsAttention walletId={walletId} />
       <BudgetProposalBox walletId={walletId} short />
+      <SavingsProposalBox walletId={walletId} short />
       {quick.form}
 
       <GridDashboard
