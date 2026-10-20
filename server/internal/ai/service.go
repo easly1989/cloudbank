@@ -38,6 +38,13 @@ type Features struct {
 	Reports bool `json:"reports"`
 }
 
+// Schedule is which reports come by themselves besides the monthly one,
+// which comes whenever reports are on (#697).
+type Schedule struct {
+	Weekly bool `json:"weekly"`
+	Yearly bool `json:"yearly"`
+}
+
 // Settings is the public (safe) view of a user's AI configuration — never the key.
 type Settings struct {
 	Enabled  bool     `json:"enabled"`
@@ -45,6 +52,7 @@ type Settings struct {
 	Model    string   `json:"model"`
 	HasKey   bool     `json:"hasKey"`
 	Features Features `json:"features"`
+	Schedule Schedule `json:"schedule"`
 	// WalletsOff are the wallets taken out of the AI's reach; every other one
 	// of the user's wallets is in.
 	WalletsOff   []int64 `json:"walletsOff"`
@@ -65,6 +73,7 @@ type SettingsInput struct {
 	Model        string
 	APIKey       *string
 	Features     *Features
+	Schedule     *Schedule
 	WalletsOff   []int64 // nil keeps the stored list; empty clears it
 	MonthlyLimit *int64
 	Motion       *bool
@@ -103,7 +112,7 @@ func NewService(read, write *sql.DB) *Service {
 func (s *Service) load(ctx context.Context, userID int64) (db.GetAISettingsRow, error) {
 	row, err := s.rq.GetAISettings(ctx, userID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return db.GetAISettingsRow{MonthlyLimit: DefaultMonthlyLimit, Motion: 1}, nil
+		return db.GetAISettingsRow{MonthlyLimit: DefaultMonthlyLimit, Motion: 1, YearlyOn: 1}, nil
 	}
 	if err != nil {
 		return db.GetAISettingsRow{}, err
@@ -146,6 +155,7 @@ func (s *Service) Settings(ctx context.Context, userID int64) (Settings, error) 
 		Features: Features{
 			Suggest: row.SuggestOn != 0, Entry: row.EntryOn != 0, Mail: row.MailOn != 0, Reports: row.ReportsOn != 0,
 		},
+		Schedule:   Schedule{Weekly: row.WeeklyOn != 0, Yearly: row.YearlyOn != 0},
 		WalletsOff: off, MonthlyLimit: row.MonthlyLimit, Used: used, Motion: row.Motion != 0, Local: local,
 	}, nil
 }
@@ -176,7 +186,10 @@ func (s *Service) UpdateSettings(ctx context.Context, userID int64, admin bool, 
 		UserID: userID, Enabled: flag(in.Enabled), BaseUrl: strings.TrimSpace(in.BaseURL),
 		Model: strings.TrimSpace(in.Model), ApiKey: secrets.Seal(key),
 		SuggestOn: row.SuggestOn, EntryOn: row.EntryOn, MailOn: row.MailOn, ReportsOn: row.ReportsOn,
-		MonthlyLimit: row.MonthlyLimit, Motion: row.Motion,
+		MonthlyLimit: row.MonthlyLimit, Motion: row.Motion, WeeklyOn: row.WeeklyOn, YearlyOn: row.YearlyOn,
+	}
+	if sc := in.Schedule; sc != nil {
+		p.WeeklyOn, p.YearlyOn = flag(sc.Weekly), flag(sc.Yearly)
 	}
 	if f := in.Features; f != nil {
 		p.SuggestOn, p.EntryOn, p.MailOn, p.ReportsOn = flag(f.Suggest), flag(f.Entry), flag(f.Mail), flag(f.Reports)

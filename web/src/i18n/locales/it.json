@@ -1767,7 +1767,8 @@
       "bills": "Scadenze",
       "money": "Soldi",
       "admin": "Amministrazione",
-      "summaries": "Riepiloghi"
+      "summaries": "Riepiloghi",
+      "ai": "AI"
     },
     "kind": {
       "new_device": "Accesso da un nuovo dispositivo",
@@ -1785,7 +1786,8 @@
       "new_version": "Nuova versione di CloudBank",
       "review_waiting": "Transazioni da rivedere",
       "summary_weekly": "Riepilogo settimanale",
-      "summary_monthly": "Riepilogo mensile"
+      "summary_monthly": "Riepilogo mensile",
+      "ai_report": "Resoconto AI pronto"
     },
     "kindHint": {
       "new_device": "Un browser o un sistema che il tuo account non ha mai usato.",
@@ -1803,7 +1805,8 @@
       "new_version": "È uscita una versione più recente sul canale che segue questo server.",
       "review_waiting": "Transazioni in attesa nella pagina Revisione da qualche giorno.",
       "summary_weekly": "Il lunedì: entrate, uscite, dove è andato di più e le scadenze della settimana, per portafoglio.",
-      "summary_monthly": "Il giorno 1: entrate, uscite e dove è andato di più nel mese prima, per portafoglio."
+      "summary_monthly": "Il giorno 1: entrate, uscite e dove è andato di più nel mese prima, per portafoglio.",
+      "ai_report": "Quando un resoconto programmato è scritto, o saltato al limite del mese. Due righe, mai gli importi."
     },
     "securityAlways": "Sempre nella campanella, così un accesso che non hai fatto non passa inosservato.",
     "emailUnavailable": "Non disponibile: l'amministratore non ha configurato un server di posta (CB_SMTP_HOST).",
@@ -2058,7 +2061,12 @@
     "sentNone": "Ancora niente.",
     "sentWhere": "{{when}} · {{wallet}}",
     "sentOn": "Inviato il {{when}}",
-    "show": "Mostra"
+    "show": "Mostra",
+    "schedule": {
+      "lead": "Il 1° di ogni mese, il mese prima. E inoltre:",
+      "weekly": "Ogni lunedì, la settimana prima",
+      "yearly": "A gennaio, l'anno prima"
+    }
   },
   "setup": {
     "title": "Benvenuto in CloudBank",
@@ -3259,7 +3267,14 @@
       "expense": "Uscite",
       "net": "Saldo",
       "avg": "Media 6 mesi",
-      "note": "I numeri li ha calcolati CloudBank; il modello ha scritto solo il testo. Modello: {{model}}."
-    }
+      "note": "I numeri li ha calcolati CloudBank; il modello ha scritto solo il testo. Modello: {{model}}.",
+      "thisWeek": "Questa settimana",
+      "prevWeek": "Settimana prima",
+      "avgWeek": "Media 6 settimane"
+    },
+    "week": "Settimana {{range}}",
+    "year": "Anno {{year}}",
+    "reportTitleWeek": "La settimana in breve",
+    "reportTitleYear": "Il {{year}} in breve"
   }
 }

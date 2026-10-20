@@ -3576,8 +3576,15 @@ components:
         suggest: { type: boolean, description: "category suggestions: sends the payee and the amount" }
         entry: { type: boolean, description: "quick entry: sends the sentence typed" }
         mail: { type: boolean, description: "bank mails: sends the mail with cards and IBANs hidden" }
-        reports: { type: boolean, description: "reports: sends the month's totals and largest expenses" }
+        reports: { type: boolean, description: "reports: sends the period's totals and largest expenses" }
       required: [suggest, entry, mail, reports]
+    AISchedule:
+      type: object
+      description: The reports that come by themselves besides the monthly one, which comes whenever reports are on.
+      properties:
+        weekly: { type: boolean, description: "every Monday, on the week before" }
+        yearly: { type: boolean, description: "in January, on the year before" }
+      required: [weekly, yearly]
     AISettings:
       type: object
       description: A user's AI configuration. The API key is never returned; only hasKey.
@@ -3587,12 +3594,13 @@ components:
         model: { type: string }
         hasKey: { type: boolean, description: "whether an API key is stored" }
         features: { $ref: "#/components/schemas/AIFeatures" }
+        schedule: { $ref: "#/components/schemas/AISchedule" }
         walletsOff: { type: array, items: { type: integer, format: int64 }, description: "the wallets the AI must not work on" }
         monthlyLimit: { type: integer, format: int64, description: "calls to the model a calendar month" }
         used: { type: integer, format: int64, description: "calls this calendar month (UTC)" }
         motion: { type: boolean, description: "the colours flowing round the AI box" }
         local: { type: boolean, description: "the provider is on the server's own network: nothing leaves it" }
-      required: [enabled, baseUrl, model, hasKey, features, walletsOff, monthlyLimit, used, motion, local]
+      required: [enabled, baseUrl, model, hasKey, features, schedule, walletsOff, monthlyLimit, used, motion, local]
     AISettingsInput:
       type: object
       properties:
@@ -3601,6 +3609,7 @@ components:
         model: { type: string }
         apiKey: { type: string, description: "omit to keep the stored key; empty string clears it" }
         features: { $ref: "#/components/schemas/AIFeatures" }
+        schedule: { $ref: "#/components/schemas/AISchedule" }
         walletsOff: { type: array, items: { type: integer, format: int64 } }
         monthlyLimit: { type: integer, format: int64, minimum: 1, maximum: 100000 }
         motion: { type: boolean }
@@ -3619,7 +3628,7 @@ components:
       required: [id, walletId, walletName, feature, model, createdAt]
     AIReportFigures:
       type: object
-      description: A month's money in and out (positive amounts) and what was kept, in minor units.
+      description: A period's money in and out (positive amounts) and what was kept, in minor units.
       properties:
         income: { type: integer, format: int64 }
         expense: { type: integer, format: int64 }
@@ -3639,11 +3648,12 @@ components:
       type: object
       description: The numbers the server computed for a report, in the wallet's base currency.
       properties:
-        month: { type: string, description: "YYYY-MM" }
+        kind: { $ref: "#/components/schemas/AIReportKind" }
+        period: { type: string, description: "YYYY-MM for a month, the Monday YYYY-MM-DD for a week, YYYY for a year" }
         currency: { $ref: "#/components/schemas/AIReportCurrency" }
         figures: { $ref: "#/components/schemas/AIReportFigures" }
         prev: { $ref: "#/components/schemas/AIReportFigures" }
-        avg: { $ref: "#/components/schemas/AIReportFigures" }
+        avg: { $ref: "#/components/schemas/AIReportFigures", description: "the average of the six periods before; zero for a year" }
         categories:
           type: array
           items:
@@ -3681,13 +3691,16 @@ components:
               date: { type: string }
               amount: { type: integer, format: int64 }
             required: [name, date, amount]
-      required: [month, currency, figures, prev, avg, categories, largest, overBudget, bills]
+      required: [kind, period, currency, figures, prev, avg, categories, largest, overBudget, bills]
+    AIReportKind:
+      type: string
+      enum: [monthly, weekly, yearly]
     AIReport:
       type: object
       properties:
         id: { type: integer, format: int64 }
-        kind: { type: string, enum: [monthly] }
-        period: { type: string, description: "YYYY-MM" }
+        kind: { $ref: "#/components/schemas/AIReportKind" }
+        period: { type: string, description: "YYYY-MM for a month, the Monday YYYY-MM-DD for a week, YYYY for a year" }
         body: { type: string, description: "the model's text: paragraphs separated by a blank line" }
         basis: { $ref: "#/components/schemas/AIReportBasis" }
         model: { type: string }
@@ -4040,7 +4053,7 @@ components:
       required: [category]
     NotificationKind:
       type: string
-      enum: [new_device, two_factor_off, new_api_token, bank_sync_failed, consent_expiring, mail_stopped, mail_unrecognized, review_waiting, bills, large_transaction, low_balance, budget, goal, summary_weekly, summary_monthly, new_version]
+      enum: [new_device, two_factor_off, new_api_token, bank_sync_failed, consent_expiring, mail_stopped, mail_unrecognized, review_waiting, bills, large_transaction, low_balance, budget, goal, summary_weekly, summary_monthly, ai_report, new_version]
     NotificationChannel:
       type: string
       enum: [inapp, push, email, matrix, telegram, discord, slack, ntfy, gotify, webhook]
@@ -4124,7 +4137,7 @@ components:
       type: object
       properties:
         kind: { $ref: "#/components/schemas/NotificationKind" }
-        group: { type: string, enum: [security, problems, bills, money, summaries, admin], description: "Security always reaches the bell; money and summaries start off; admin is listed for administrators only." }
+        group: { type: string, enum: [security, problems, bills, money, summaries, ai, admin], description: "Security always reaches the bell; money and summaries start off; admin is listed for administrators only." }
         digest: { type: boolean, description: "Collected in the daily digest outside the app; always false for security and the summaries." }
         channels:
           type: object

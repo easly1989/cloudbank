@@ -249,6 +249,10 @@ func run() error {
 		Budgets: budgetSvc, Goals: goalSvc, Reports: reportSvc, Bills: billsSvc, Waiting: transactionSvc,
 	}, notifySvc, logger)
 
+	// The AI's reports, asked for or scheduled (#696, #697).
+	insightSvc := insight.NewService(st.Read(), st.Write(), aiSvc, reportSvc, budgetSvc, scheduleSvc)
+	insightSvc.SetNotify(notifySvc)
+
 	opts := httpapi.Options{
 		Logger:            logger,
 		Health:            st,
@@ -269,7 +273,7 @@ func run() error {
 		Push:              pushSvc,
 		Notifications:     notifySvc,
 		AI:                aiSvc,
-		Insights:          insight.NewService(st.Read(), st.Write(), aiSvc, dashboardSvc, reportSvc, budgetSvc, scheduleSvc),
+		Insights:          insightSvc,
 		BankSync:          bankSyncSvc,
 		Mail:              mailSvc,
 		Templates:         templateSvc,
@@ -363,6 +367,10 @@ func run() error {
 	go notifySvc.Run(ctx)
 	if cfg.MoneyInterval > 0 {
 		go moneySvc.Run(ctx, cfg.MoneyInterval)
+	}
+	// The scheduled AI reports; never in the demo, which has no AI.
+	if opts.Insights != nil && cfg.AIReportsInterval > 0 {
+		go opts.Insights.Run(ctx, cfg.AIReportsInterval, logger)
 	}
 
 	// The demo's accounts: idle ones deleted every few minutes, all of them
