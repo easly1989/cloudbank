@@ -10,6 +10,39 @@ import (
 	"database/sql"
 )
 
+const aIProposalDone = `-- name: AIProposalDone :one
+SELECT CAST(EXISTS (
+    SELECT 1 FROM ai_proposals p
+    WHERE p.user_id = ?1 AND p.wallet_id = ?2
+      AND p.kind = ?3 AND p.period = ?4
+) OR EXISTS (
+    SELECT 1 FROM ai_report_runs x
+    WHERE x.user_id = ?1 AND x.wallet_id = ?2
+      AND x.kind = ?3 AND x.period = ?4
+) AS INTEGER) AS done
+`
+
+type AIProposalDoneParams struct {
+	UserID   int64
+	WalletID int64
+	Kind     string
+	Period   string
+}
+
+// Whether a month of a wallet already has a proposal of the kind, or the
+// scheduler already did what it could about it.
+func (q *Queries) AIProposalDone(ctx context.Context, arg AIProposalDoneParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, aIProposalDone,
+		arg.UserID,
+		arg.WalletID,
+		arg.Kind,
+		arg.Period,
+	)
+	var done int64
+	err := row.Scan(&done)
+	return done, err
+}
+
 const aIReportDone = `-- name: AIReportDone :one
 SELECT CAST(EXISTS (
     SELECT 1 FROM ai_reports r
@@ -98,6 +131,49 @@ func (q *Queries) CountAISendsSince(ctx context.Context, arg CountAISendsSincePa
 	return count, err
 }
 
+const getAIProposal = `-- name: GetAIProposal :one
+SELECT id, kind, period, body, basis, model, state, applied, feedback, created_at
+FROM ai_proposals
+WHERE id = ? AND user_id = ? AND wallet_id = ?
+`
+
+type GetAIProposalParams struct {
+	ID       int64
+	UserID   int64
+	WalletID int64
+}
+
+type GetAIProposalRow struct {
+	ID        int64
+	Kind      string
+	Period    string
+	Body      string
+	Basis     string
+	Model     string
+	State     string
+	Applied   string
+	Feedback  int64
+	CreatedAt string
+}
+
+func (q *Queries) GetAIProposal(ctx context.Context, arg GetAIProposalParams) (GetAIProposalRow, error) {
+	row := q.db.QueryRowContext(ctx, getAIProposal, arg.ID, arg.UserID, arg.WalletID)
+	var i GetAIProposalRow
+	err := row.Scan(
+		&i.ID,
+		&i.Kind,
+		&i.Period,
+		&i.Body,
+		&i.Basis,
+		&i.Model,
+		&i.State,
+		&i.Applied,
+		&i.Feedback,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getAISend = `-- name: GetAISend :one
 SELECT s.id, s.wallet_id, COALESCE(w.title, '') AS wallet_name, s.feature, s.model, s.sent, s.created_at
 FROM ai_sends s
@@ -137,7 +213,7 @@ func (q *Queries) GetAISend(ctx context.Context, arg GetAISendParams) (GetAISend
 
 const getAISettings = `-- name: GetAISettings :one
 SELECT enabled, base_url, model, api_key, suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion,
-       weekly_on, yearly_on
+       weekly_on, yearly_on, budgets_on
 FROM ai_settings WHERE user_id = ?
 `
 
@@ -154,6 +230,7 @@ type GetAISettingsRow struct {
 	Motion       int64
 	WeeklyOn     int64
 	YearlyOn     int64
+	BudgetsOn    int64
 }
 
 func (q *Queries) GetAISettings(ctx context.Context, userID int64) (GetAISettingsRow, error) {
@@ -172,8 +249,42 @@ func (q *Queries) GetAISettings(ctx context.Context, userID int64) (GetAISetting
 		&i.Motion,
 		&i.WeeklyOn,
 		&i.YearlyOn,
+		&i.BudgetsOn,
 	)
 	return i, err
+}
+
+const insertAIProposal = `-- name: InsertAIProposal :one
+INSERT INTO ai_proposals (user_id, wallet_id, kind, period, body, basis, model)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (user_id, wallet_id, kind, period) DO NOTHING
+RETURNING id
+`
+
+type InsertAIProposalParams struct {
+	UserID   int64
+	WalletID int64
+	Kind     string
+	Period   string
+	Body     string
+	Basis    string
+	Model    string
+}
+
+// A month already proposed, by a run at the same time, inserts nothing.
+func (q *Queries) InsertAIProposal(ctx context.Context, arg InsertAIProposalParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, insertAIProposal,
+		arg.UserID,
+		arg.WalletID,
+		arg.Kind,
+		arg.Period,
+		arg.Body,
+		arg.Basis,
+		arg.Model,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const insertAIReport = `-- name: InsertAIReport :one
@@ -336,22 +447,45 @@ func (q *Queries) LargestExpenses(ctx context.Context, arg LargestExpensesParams
 	return items, nil
 }
 
+const lastIgnoredAIProposal = `-- name: LastIgnoredAIProposal :one
+SELECT basis FROM ai_proposals
+WHERE user_id = ? AND wallet_id = ? AND kind = ? AND state = 'ignored'
+ORDER BY created_at DESC, id DESC
+LIMIT 1
+`
+
+type LastIgnoredAIProposalParams struct {
+	UserID   int64
+	WalletID int64
+	Kind     string
+}
+
+func (q *Queries) LastIgnoredAIProposal(ctx context.Context, arg LastIgnoredAIProposalParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, lastIgnoredAIProposal, arg.UserID, arg.WalletID, arg.Kind)
+	var basis string
+	err := row.Scan(&basis)
+	return basis, err
+}
+
 const listAIReportUsers = `-- name: ListAIReportUsers :many
-SELECT s.user_id, s.weekly_on, s.yearly_on, u.locale
+SELECT s.user_id, s.reports_on, s.weekly_on, s.yearly_on, s.budgets_on, u.locale
 FROM ai_settings s
 JOIN users u ON u.id = s.user_id
-WHERE s.enabled = 1 AND s.reports_on = 1
+WHERE s.enabled = 1 AND (s.reports_on = 1 OR s.budgets_on = 1)
 ORDER BY s.user_id
 `
 
 type ListAIReportUsersRow struct {
-	UserID   int64
-	WeeklyOn int64
-	YearlyOn int64
-	Locale   string
+	UserID    int64
+	ReportsOn int64
+	WeeklyOn  int64
+	YearlyOn  int64
+	BudgetsOn int64
+	Locale    string
 }
 
-// The people whose AI writes reports (#697), with which ones come by themselves.
+// The people whose AI writes reports (#697) or budget proposals (#698), with
+// which ones come by themselves.
 func (q *Queries) ListAIReportUsers(ctx context.Context) ([]ListAIReportUsersRow, error) {
 	rows, err := q.db.QueryContext(ctx, listAIReportUsers)
 	if err != nil {
@@ -363,8 +497,10 @@ func (q *Queries) ListAIReportUsers(ctx context.Context) ([]ListAIReportUsersRow
 		var i ListAIReportUsersRow
 		if err := rows.Scan(
 			&i.UserID,
+			&i.ReportsOn,
 			&i.WeeklyOn,
 			&i.YearlyOn,
+			&i.BudgetsOn,
 			&i.Locale,
 		); err != nil {
 			return nil, err
@@ -516,6 +652,68 @@ func (q *Queries) ListAIWalletsOff(ctx context.Context, userID int64) ([]int64, 
 	return items, nil
 }
 
+const listOpenAIProposals = `-- name: ListOpenAIProposals :many
+SELECT id, kind, period, body, basis, model, state, applied, feedback, created_at
+FROM ai_proposals
+WHERE user_id = ?1 AND wallet_id = ?2
+  AND (state = 'open' OR (state = 'later' AND later_until <= ?3))
+ORDER BY created_at DESC, id DESC
+`
+
+type ListOpenAIProposalsParams struct {
+	UserID   int64
+	WalletID int64
+	Now      string
+}
+
+type ListOpenAIProposalsRow struct {
+	ID        int64
+	Kind      string
+	Period    string
+	Body      string
+	Basis     string
+	Model     string
+	State     string
+	Applied   string
+	Feedback  int64
+	CreatedAt string
+}
+
+// The proposals waiting for the user on a wallet: open, or back from later.
+func (q *Queries) ListOpenAIProposals(ctx context.Context, arg ListOpenAIProposalsParams) ([]ListOpenAIProposalsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listOpenAIProposals, arg.UserID, arg.WalletID, arg.Now)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListOpenAIProposalsRow{}
+	for rows.Next() {
+		var i ListOpenAIProposalsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.Period,
+			&i.Body,
+			&i.Basis,
+			&i.Model,
+			&i.State,
+			&i.Applied,
+			&i.Feedback,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const purgeAISends = `-- name: PurgeAISends :exec
 DELETE FROM ai_sends WHERE user_id = ? AND created_at < ?
 `
@@ -527,6 +725,79 @@ type PurgeAISendsParams struct {
 
 func (q *Queries) PurgeAISends(ctx context.Context, arg PurgeAISendsParams) error {
 	_, err := q.db.ExecContext(ctx, purgeAISends, arg.UserID, arg.CreatedAt)
+	return err
+}
+
+const replaceOpenAIProposals = `-- name: ReplaceOpenAIProposals :exec
+UPDATE ai_proposals SET state = 'replaced'
+WHERE user_id = ? AND wallet_id = ? AND kind = ? AND period <> ? AND state IN ('open', 'later')
+`
+
+type ReplaceOpenAIProposalsParams struct {
+	UserID   int64
+	WalletID int64
+	Kind     string
+	Period   string
+}
+
+// A new month's proposal takes the place of the earlier ones still waiting.
+func (q *Queries) ReplaceOpenAIProposals(ctx context.Context, arg ReplaceOpenAIProposalsParams) error {
+	_, err := q.db.ExecContext(ctx, replaceOpenAIProposals,
+		arg.UserID,
+		arg.WalletID,
+		arg.Kind,
+		arg.Period,
+	)
+	return err
+}
+
+const setAIProposalFeedback = `-- name: SetAIProposalFeedback :execrows
+UPDATE ai_proposals SET feedback = ? WHERE id = ? AND user_id = ? AND wallet_id = ?
+`
+
+type SetAIProposalFeedbackParams struct {
+	Feedback int64
+	ID       int64
+	UserID   int64
+	WalletID int64
+}
+
+func (q *Queries) SetAIProposalFeedback(ctx context.Context, arg SetAIProposalFeedbackParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, setAIProposalFeedback,
+		arg.Feedback,
+		arg.ID,
+		arg.UserID,
+		arg.WalletID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const setAIProposalState = `-- name: SetAIProposalState :exec
+UPDATE ai_proposals SET state = ?, later_until = ?, applied = ?
+WHERE id = ? AND user_id = ? AND wallet_id = ?
+`
+
+type SetAIProposalStateParams struct {
+	State      string
+	LaterUntil string
+	Applied    string
+	ID         int64
+	UserID     int64
+	WalletID   int64
+}
+
+func (q *Queries) SetAIProposalState(ctx context.Context, arg SetAIProposalStateParams) error {
+	_, err := q.db.ExecContext(ctx, setAIProposalState,
+		arg.State,
+		arg.LaterUntil,
+		arg.Applied,
+		arg.ID,
+		arg.UserID,
+		arg.WalletID,
+	)
 	return err
 }
 
@@ -557,16 +828,16 @@ func (q *Queries) SetAIReportFeedback(ctx context.Context, arg SetAIReportFeedba
 const upsertAISettings = `-- name: UpsertAISettings :exec
 INSERT INTO ai_settings (
     user_id, enabled, base_url, model, api_key,
-    suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion, weekly_on, yearly_on, updated_at
+    suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion, weekly_on, yearly_on, budgets_on, updated_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 ON CONFLICT (user_id) DO UPDATE SET
     enabled = excluded.enabled, base_url = excluded.base_url,
     model = excluded.model, api_key = excluded.api_key,
     suggest_on = excluded.suggest_on, entry_on = excluded.entry_on,
     mail_on = excluded.mail_on, reports_on = excluded.reports_on,
     monthly_limit = excluded.monthly_limit, motion = excluded.motion,
-    weekly_on = excluded.weekly_on, yearly_on = excluded.yearly_on,
+    weekly_on = excluded.weekly_on, yearly_on = excluded.yearly_on, budgets_on = excluded.budgets_on,
     updated_at = excluded.updated_at
 `
 
@@ -584,6 +855,7 @@ type UpsertAISettingsParams struct {
 	Motion       int64
 	WeeklyOn     int64
 	YearlyOn     int64
+	BudgetsOn    int64
 }
 
 func (q *Queries) UpsertAISettings(ctx context.Context, arg UpsertAISettingsParams) error {
@@ -601,6 +873,7 @@ func (q *Queries) UpsertAISettings(ctx context.Context, arg UpsertAISettingsPara
 		arg.Motion,
 		arg.WeeklyOn,
 		arg.YearlyOn,
+		arg.BudgetsOn,
 	)
 	return err
 }

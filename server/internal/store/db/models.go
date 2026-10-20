@@ -38,6 +38,22 @@ type Account struct {
 	DefaultPaymentMode int64
 }
 
+type AiProposal struct {
+	ID         int64
+	UserID     int64
+	WalletID   int64
+	Kind       string
+	Period     string
+	Body       string
+	Basis      string
+	Model      string
+	State      string
+	LaterUntil string
+	Applied    string
+	Feedback   int64
+	CreatedAt  string
+}
+
 type AiReport struct {
 	ID        int64
 	UserID    int64
@@ -85,6 +101,7 @@ type AiSetting struct {
 	Motion       int64
 	WeeklyOn     int64
 	YearlyOn     int64
+	BudgetsOn    int64
 }
 
 type AiWalletsOff struct {

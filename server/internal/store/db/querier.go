@@ -10,6 +10,9 @@ import (
 )
 
 type Querier interface {
+	// Whether a month of a wallet already has a proposal of the kind, or the
+	// scheduler already did what it could about it.
+	AIProposalDone(ctx context.Context, arg AIProposalDoneParams) (int64, error)
 	// Whether a period of a wallet already has a report, or the scheduler already
 	// did what it could about it.
 	AIReportDone(ctx context.Context, arg AIReportDoneParams) (int64, error)
@@ -132,6 +135,7 @@ type Querier interface {
 	FindMailboxByAddress(ctx context.Context, arg FindMailboxByAddressParams) (Mailbox, error)
 	FindNotificationCode(ctx context.Context, arg FindNotificationCodeParams) (FindNotificationCodeRow, error)
 	FindTransactionByImportRef(ctx context.Context, arg FindTransactionByImportRefParams) (int64, error)
+	GetAIProposal(ctx context.Context, arg GetAIProposalParams) (GetAIProposalRow, error)
 	GetAISend(ctx context.Context, arg GetAISendParams) (GetAISendRow, error)
 	GetAISettings(ctx context.Context, userID int64) (GetAISettingsRow, error)
 	GetAPIToken(ctx context.Context, id string) (ApiToken, error)
@@ -181,6 +185,8 @@ type Querier interface {
 	GetWalletMembership(ctx context.Context, arg GetWalletMembershipParams) (string, error)
 	GoalSaved(ctx context.Context, goalID int64) (int64, error)
 	HasReminder(ctx context.Context, arg HasReminderParams) (int64, error)
+	// A month already proposed, by a run at the same time, inserts nothing.
+	InsertAIProposal(ctx context.Context, arg InsertAIProposalParams) (int64, error)
 	InsertAIReport(ctx context.Context, arg InsertAIReportParams) (InsertAIReportRow, error)
 	InsertAIReportRun(ctx context.Context, arg InsertAIReportRunParams) error
 	InsertAISend(ctx context.Context, arg InsertAISendParams) (int64, error)
@@ -229,6 +235,7 @@ type Querier interface {
 	// are left out, as on the overview's chart; the caller converts and keeps the
 	// top three.
 	LargestExpenses(ctx context.Context, arg LargestExpensesParams) ([]LargestExpensesRow, error)
+	LastIgnoredAIProposal(ctx context.Context, arg LastIgnoredAIProposalParams) (string, error)
 	// The most recent valuation (by date, then id) for each asset account in a wallet;
 	// used to fold recorded values into net-worth totals.
 	LatestValuationsForWallet(ctx context.Context, walletID int64) ([]LatestValuationsForWalletRow, error)
@@ -237,7 +244,8 @@ type Querier interface {
 	// the link: same account, payee and category. The demo's seeded year comes
 	// from a HomeBank file, which does not record which schedule posted what.
 	LinkTemplateTransactions(ctx context.Context, templateID sql.NullInt64) (int64, error)
-	// The people whose AI writes reports (#697), with which ones come by themselves.
+	// The people whose AI writes reports (#697) or budget proposals (#698), with
+	// which ones come by themselves.
 	ListAIReportUsers(ctx context.Context) ([]ListAIReportUsersRow, error)
 	ListAIReports(ctx context.Context, arg ListAIReportsParams) ([]ListAIReportsRow, error)
 	ListAISends(ctx context.Context, arg ListAISendsParams) ([]ListAISendsRow, error)
@@ -318,6 +326,8 @@ type Querier interface {
 	ListNotificationThresholds(ctx context.Context, arg ListNotificationThresholdsParams) ([]ListNotificationThresholdsRow, error)
 	// Newest first; a notification about a wallet the person has left is hidden.
 	ListNotifications(ctx context.Context, arg ListNotificationsParams) ([]ListNotificationsRow, error)
+	// The proposals waiting for the user on a wallet: open, or back from later.
+	ListOpenAIProposals(ctx context.Context, arg ListOpenAIProposalsParams) ([]ListOpenAIProposalsRow, error)
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID int64) ([]ListPushSubscriptionsForUserRow, error)
 	ListPushUserIDs(ctx context.Context) ([]int64, error)
@@ -417,6 +427,8 @@ type Querier interface {
 	RememberDevice(ctx context.Context, arg RememberDeviceParams) (int64, error)
 	RenameTag(ctx context.Context, arg RenameTagParams) error
 	ReparentChildren(ctx context.Context, arg ReparentChildrenParams) error
+	// A new month's proposal takes the place of the earlier ones still waiting.
+	ReplaceOpenAIProposals(ctx context.Context, arg ReplaceOpenAIProposalsParams) error
 	RescheduleNotificationDelivery(ctx context.Context, arg RescheduleNotificationDeliveryParams) error
 	// A feed whose user is still an active member of its wallet, with the wallet's
 	// title for the calendar's name.
@@ -430,6 +442,8 @@ type Querier interface {
 	// filters. Each row also carries the total match count (window) so the caller
 	// can paginate.
 	SearchTransactions(ctx context.Context, arg SearchTransactionsParams) ([]SearchTransactionsRow, error)
+	SetAIProposalFeedback(ctx context.Context, arg SetAIProposalFeedbackParams) (int64, error)
+	SetAIProposalState(ctx context.Context, arg SetAIProposalStateParams) error
 	SetAIReportFeedback(ctx context.Context, arg SetAIReportFeedbackParams) (int64, error)
 	SetAppConfig(ctx context.Context, arg SetAppConfigParams) error
 	SetAssignmentPosition(ctx context.Context, arg SetAssignmentPositionParams) error

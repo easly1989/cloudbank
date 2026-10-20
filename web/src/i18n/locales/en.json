@@ -1787,7 +1787,8 @@
       "review_waiting": "Transactions to review",
       "summary_weekly": "Weekly summary",
       "summary_monthly": "Monthly summary",
-      "ai_report": "AI report ready"
+      "ai_report": "AI report ready",
+      "ai_proposal": "Budget proposal ready"
     },
     "kindHint": {
       "new_device": "A browser or system your account has not used before.",
@@ -1806,7 +1807,8 @@
       "review_waiting": "Transactions waiting on the Review page for a few days.",
       "summary_weekly": "On Monday: money in and out, what took most and the week's bills, per wallet.",
       "summary_monthly": "On the 1st: money in and out and what took most last month, per wallet.",
-      "ai_report": "When a scheduled report is written, or skipped at the month's limit. Two lines, never the amounts."
+      "ai_report": "When a scheduled report is written, or skipped at the month's limit. Two lines, never the amounts.",
+      "ai_proposal": "When the AI proposes budgets from what you really spend, once a month. Two lines, never the amounts."
     },
     "securityAlways": "Always in the bell, so a sign-in you didn't make cannot go unnoticed.",
     "emailUnavailable": "Not available: the administrator has not set up a mail server (CB_SMTP_HOST).",
@@ -2025,6 +2027,10 @@
       "mail": {
         "name": "Bank mails",
         "sends": "Sends the text of the bank's mails, with card numbers and IBANs hidden."
+      },
+      "budgets": {
+        "name": "Budget proposals",
+        "sends": "Sends, for each category it proposes a budget for, its name, today's budget, the usual monthly amount and the proposed one. Never the transactions."
       }
     },
     "wallets": "On which wallets",
@@ -3275,6 +3281,28 @@
     "week": "Week {{range}}",
     "year": "Year {{year}}",
     "reportTitleWeek": "The week in short",
-    "reportTitleYear": "{{year}} in short"
+    "reportTitleYear": "{{year}} in short",
+    "proposals": "Open proposals"
+  },
+  "proposal": {
+    "label": "AI suggestion",
+    "basis": "From the last {{months}} months · made on {{date}}",
+    "title_one": "{{count}} budget to review",
+    "title_other": "{{count}} budgets to review",
+    "reason": {
+      "none": "No budget, spent on in {{hits}} of {{months}} months",
+      "over": "Over budget in {{hits}} of {{months}} months",
+      "under": "Under budget in {{hits}} of {{months}} months"
+    },
+    "none": "none",
+    "apply": "Apply",
+    "applyLabel": "Apply {{amount}} a month to {{name}}",
+    "later": "Later",
+    "ignore": "Ignore",
+    "seeInBudget": "See in Budget",
+    "why": {
+      "median": "Median",
+      "note": "CloudBank worked out the numbers: the median of the complete months, rounded to 5. The model only wrote the text. Model: {{model}}."
+    }
   }
 }

@@ -29,6 +29,7 @@ import { type DashboardAccount, type User, getDashboard, savePreferences } from 
 import { useAuth } from "../auth/AuthProvider";
 import { dateBounds, emptyFilters, type DatePreset } from "./registerFilterModel";
 import { GridDashboard, type GridDashboardHandle } from "../components/dashboard/GridDashboard";
+import { BudgetProposalBox } from "../components/BudgetProposal";
 import { PageHeader } from "../components/PageHeader";
 import { OverviewFigures } from "../components/dashboard/OverviewFigures";
 import { pickBalances } from "../components/dashboard/overviewFigureModel";
@@ -467,6 +468,7 @@ export function DashboardPage() {
         but an overdue bill is not a preference. Something you can remove is
         something the one person who removes it will then miss. */}
       <NeedsAttention walletId={walletId} />
+      <BudgetProposalBox walletId={walletId} short />
       {quick.form}
 
       <GridDashboard

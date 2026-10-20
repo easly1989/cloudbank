@@ -1787,7 +1787,8 @@
       "review_waiting": "Lançamentos para revisar",
       "summary_weekly": "Resumo semanal",
       "summary_monthly": "Resumo mensal",
-      "ai_report": "Resumo de IA pronto"
+      "ai_report": "Resumo de IA pronto",
+      "ai_proposal": "Proposta de orçamento pronta"
     },
     "kindHint": {
       "new_device": "Um navegador ou sistema que sua conta nunca usou.",
@@ -1806,7 +1807,8 @@
       "review_waiting": "Lançamentos esperando na página Revisão há alguns dias.",
       "summary_weekly": "Na segunda: entradas, saídas, o que mais pesou e os vencimentos da semana, por carteira.",
       "summary_monthly": "No dia 1: entradas, saídas e o que mais pesou no mês anterior, por carteira.",
-      "ai_report": "Quando um resumo programado é escrito, ou pulado no limite do mês. Duas linhas, nunca os valores."
+      "ai_report": "Quando um resumo programado é escrito, ou pulado no limite do mês. Duas linhas, nunca os valores.",
+      "ai_proposal": "Quando a IA propõe orçamentos a partir do que você gasta de verdade, uma vez por mês. Duas linhas, nunca os valores."
     },
     "securityAlways": "Sempre no sino, para que um acesso que você não fez não passe despercebido.",
     "emailUnavailable": "Indisponível: o administrador não configurou um servidor de e-mail (CB_SMTP_HOST).",
@@ -2025,6 +2027,10 @@
       "mail": {
         "name": "E-mails do banco",
         "sends": "Envia o texto dos e-mails do banco, com os cartões e os IBAN ocultos."
+      },
+      "budgets": {
+        "name": "Propostas de orçamento",
+        "sends": "Envia, para cada categoria a que propõe um orçamento, o nome, o orçamento de hoje, o valor mensal habitual e o proposto. Nunca os lançamentos."
       }
     },
     "wallets": "Em quais carteiras",
@@ -3275,6 +3281,28 @@
     "week": "Semana {{range}}",
     "year": "Ano {{year}}",
     "reportTitleWeek": "A semana em resumo",
-    "reportTitleYear": "{{year}} em resumo"
+    "reportTitleYear": "{{year}} em resumo",
+    "proposals": "Propostas abertas"
+  },
+  "proposal": {
+    "label": "Sugestão de IA",
+    "basis": "Dos últimos {{months}} meses · gerada em {{date}}",
+    "title_one": "{{count}} orçamento para revisar",
+    "title_other": "{{count}} orçamentos para revisar",
+    "reason": {
+      "none": "Sem orçamento, gasto em {{hits}} de {{months}} meses",
+      "over": "Orçamento estourado em {{hits}} de {{months}} meses",
+      "under": "Orçamento não atingido em {{hits}} de {{months}} meses"
+    },
+    "none": "nenhum",
+    "apply": "Aplicar",
+    "applyLabel": "Aplicar {{amount}} por mês a {{name}}",
+    "later": "Mais tarde",
+    "ignore": "Ignorar",
+    "seeInBudget": "Ver em Orçamento",
+    "why": {
+      "median": "Mediana",
+      "note": "Os números foram calculados pelo CloudBank: a mediana dos meses completos, arredondada a 5. O modelo só escreveu o texto. Modelo: {{model}}."
+    }
   }
 }

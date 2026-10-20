@@ -84,8 +84,13 @@ func (s *Service) runFor(ctx context.Context, u db.ListAIReportUsersRow) error {
 			loc = st.Location()
 		}
 	}
-	spans := due(s.now().In(loc), u.WeeklyOn != 0, u.YearlyOn != 0)
-	if len(spans) == 0 {
+	local := s.now().In(loc)
+	var spans []span
+	if u.ReportsOn != 0 {
+		spans = due(local, u.WeeklyOn != 0, u.YearlyOn != 0)
+	}
+	proposing := u.BudgetsOn != 0 && (local.Day() != 1 || local.Hour() >= reportHour)
+	if len(spans) == 0 && !proposing {
 		return nil
 	}
 	wallets, err := s.rq.ListWalletsForUser(ctx, u.UserID)
@@ -134,6 +139,11 @@ func (s *Service) runFor(ctx context.Context, u db.ListAIReportUsersRow) error {
 				// for a model at home; the monthly limit bounds the retries.
 				errs = append(errs, fmt.Errorf("%s %s, wallet %d: %w", sp.kind, sp.period, w.ID, err))
 			}
+		}
+	}
+	if proposing {
+		if err := s.proposeFor(ctx, u, local, wallets, off); err != nil {
+			errs = append(errs, err)
 		}
 	}
 	return errors.Join(errs...)

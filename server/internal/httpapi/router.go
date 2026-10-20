@@ -244,7 +244,7 @@ func New(opts Options) http.Handler {
 					(&notificationHandlers{svc: opts.Notifications}).routes(pr)
 				}
 				if opts.AI != nil {
-					(&aiHandlers{svc: opts.AI}).routes(pr)
+					(&aiHandlers{svc: opts.AI, insights: opts.Insights}).routes(pr)
 				}
 				if opts.Updates != nil {
 					pr.Group(func(ar chi.Router) {
