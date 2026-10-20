@@ -160,16 +160,19 @@ export function BudgetPage() {
   // The AI's proposal (#698): Apply opens the sheet filled in; a row is done
   // once saved there. ?apply=proposal:category comes from the other pages.
   const proposal = useProposal(walletId, "budget");
+  const savings = useProposal(walletId, "savings");
   const applyRow = (p: AIProposal, r: AIProposalRow) =>
     open({ categoryId: r.categoryId, amount: r.proposed, proposalId: p.id });
   const [params, setParams] = useSearchParams();
   const link = params.get("apply");
   const [seenLink, setSeenLink] = useState<string | null>(null);
-  if (link && link !== seenLink && proposal) {
+  // The savings proposal (#699) opens its rows here too.
+  if (link && link !== seenLink && (proposal || savings)) {
     setSeenLink(link);
     const [pid, cid] = link.split(":").map(Number);
-    const row = proposal.id === pid && proposal.basis.rows.find((r) => r.categoryId === cid);
-    if (row) applyRow(proposal, row);
+    const p = [proposal, savings].find((x) => x?.id === pid);
+    const row = p?.basis.rows.find((r) => r.categoryId === cid);
+    if (p && row) applyRow(p, row);
   }
   const closeSheet = () => {
     setSheetOpen(false);

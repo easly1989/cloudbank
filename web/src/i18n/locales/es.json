@@ -1808,7 +1808,7 @@
       "summary_weekly": "El lunes: ingresos, gastos, en qué se fue más y los vencimientos de la semana, por cartera.",
       "summary_monthly": "El día 1: ingresos, gastos y en qué se fue más el mes anterior, por cartera.",
       "ai_report": "Cuando se escribe un resumen programado, o se omite al llegar al límite del mes. Dos líneas, nunca los importes.",
-      "ai_proposal": "Cuando la IA propone presupuestos o encuentra suscripciones que revisar, una vez al mes. Dos líneas, nunca los importes."
+      "ai_proposal": "Cuando la IA propone presupuestos, o encuentra suscripciones o ahorros que revisar, una vez al mes cada uno. Dos líneas, nunca los importes."
     },
     "securityAlways": "Siempre en la campana, para que un inicio de sesión que no has hecho no pase desapercibido.",
     "emailUnavailable": "No disponible: el administrador no ha configurado un servidor de correo (CB_SMTP_HOST).",
@@ -2035,6 +2035,10 @@
       "subscriptions": {
         "name": "Propuestas de suscripciones",
         "sends": "Envía, por cada movimiento programado que propone, su nombre, el importe guardado, los últimos cargos y lo que cuesta al año. Nunca los movimientos."
+      },
+      "savings": {
+        "name": "Propuestas de ahorro",
+        "sends": "Envía, por cada categoría que propone, su nombre, su media al mes de antes y de los últimos meses, y el importe propuesto. Nunca los movimientos."
       }
     },
     "wallets": "En qué carteras",
@@ -3331,6 +3335,19 @@
         "last": "Último cargo",
         "yearly": "Al año",
         "note": "CloudBank los encontró en tus movimientos programados y tus movimientos: los últimos 2 cargos al menos un 5 % por encima del importe guardado, un segundo movimiento programado al mismo beneficiario o del mismo importe con la misma frecuencia, uno registrado a mano sin pagar desde hace dos periodos. El modelo solo escribió el texto. Modelo: {{model}}."
+      }
+    },
+    "save": {
+      "title": "Podrías ahorrar {{amount}} al mes",
+      "basis": "Últimos 3 meses frente a los 9 anteriores · generado el {{date}}",
+      "reason": "+{{pct}} %: {{recent}} al mes frente a {{before}}",
+      "apply": "Fijar presupuesto",
+      "applyLabel": "Fijar un presupuesto de {{amount}} al mes para {{name}}",
+      "details": "Ver los detalles",
+      "why": {
+        "before": "9 meses antes",
+        "recent": "Últimos 3 meses",
+        "note": "CloudBank calculó las cifras: la media al mes de cada categoría en los últimos 3 meses completos frente a los 9 anteriores, y el nivel anterior redondeado a 5. El modelo solo escribió el texto. Modelo: {{model}}."
       }
     }
   }

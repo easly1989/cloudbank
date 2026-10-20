@@ -24,6 +24,7 @@ import {
   IconCalendarRepeat,
   IconCategory,
   IconChartDots,
+  IconCoin,
   IconMail,
   IconPencilBolt,
   IconPigMoney,
@@ -58,6 +59,7 @@ const FEATURES: { key: AIFeature; icon: Icon }[] = [
   { key: "reports", icon: IconChartDots },
   { key: "budgets", icon: IconPigMoney },
   { key: "subscriptions", icon: IconCalendarRepeat },
+  { key: "savings", icon: IconCoin },
   { key: "suggest", icon: IconCategory },
   { key: "entry", icon: IconPencilBolt },
   { key: "mail", icon: IconMail },
@@ -70,6 +72,7 @@ const NO_FEATURES: AIFeatures = {
   reports: false,
   budgets: false,
   subscriptions: false,
+  savings: false,
 };
 
 /** The first of next month, UTC, when the count starts again. */

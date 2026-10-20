@@ -1808,7 +1808,7 @@
       "summary_weekly": "Le lundi : entrées, sorties, les plus gros postes et les échéances de la semaine, par classeur.",
       "summary_monthly": "Le 1er : entrées, sorties et les plus gros postes du mois précédent, par classeur.",
       "ai_report": "Quand un bilan programmé est écrit, ou sauté à la limite du mois. Deux lignes, jamais les montants.",
-      "ai_proposal": "Quand l’IA propose des budgets ou trouve des abonnements à vérifier, une fois par mois. Deux lignes, jamais les montants."
+      "ai_proposal": "Quand l’IA propose des budgets, ou trouve des abonnements ou des économies à vérifier, une fois par mois chacun. Deux lignes, jamais les montants."
     },
     "securityAlways": "Toujours dans la cloche, pour qu’une connexion que vous n’avez pas faite ne passe pas inaperçue.",
     "emailUnavailable": "Indisponible : l’administrateur n’a pas configuré de serveur de messagerie (CB_SMTP_HOST).",
@@ -2035,6 +2035,10 @@
       "subscriptions": {
         "name": "Propositions d’abonnements",
         "sends": "Envoie, pour chaque opération récurrente proposée, son nom, le montant enregistré, les derniers prélèvements et ce qu’elle coûte par an. Jamais les opérations."
+      },
+      "savings": {
+        "name": "Propositions d’économies",
+        "sends": "Envoie, pour chaque catégorie proposée, son nom, sa moyenne mensuelle d’avant et des derniers mois, et le montant proposé. Jamais les opérations."
       }
     },
     "wallets": "Sur quels classeurs",
@@ -3331,6 +3335,19 @@
         "last": "Dernier prélèvement",
         "yearly": "Par an",
         "note": "CloudBank les a trouvés dans vos opérations récurrentes et vos opérations : les 2 derniers prélèvements au moins 5 % au-dessus du montant enregistré, une deuxième opération récurrente vers le même tiers ou du même montant à la même fréquence, une opération récurrente saisie à la main et non payée depuis deux périodes. Le modèle n’a écrit que le texte. Modèle : {{model}}."
+      }
+    },
+    "save": {
+      "title": "Vous pourriez garder {{amount}} par mois",
+      "basis": "Les 3 derniers mois face aux 9 d’avant · généré le {{date}}",
+      "reason": "+{{pct}} % : {{recent}} par mois contre {{before}}",
+      "apply": "Fixer un budget",
+      "applyLabel": "Fixer un budget de {{amount}} par mois pour {{name}}",
+      "details": "Voir le détail",
+      "why": {
+        "before": "9 mois d’avant",
+        "recent": "3 derniers mois",
+        "note": "CloudBank a calculé les chiffres : la moyenne mensuelle de chaque catégorie sur les 3 derniers mois complets face aux 9 d’avant, et le niveau d’avant arrondi à 5. Le modèle n’a écrit que le texte. Modèle : {{model}}."
       }
     }
   }
