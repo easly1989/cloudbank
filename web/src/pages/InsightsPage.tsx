@@ -20,6 +20,8 @@ import {
 } from "../api/ai";
 import { AiBox, type Feedback } from "../components/AiBox";
 import { useAskPastLimit } from "../components/aiLimit";
+import { BudgetProposal } from "../components/BudgetProposal";
+import { useBudgetProposal } from "../components/budgetProposalData";
 import { PageHeader } from "../components/PageHeader";
 import { formatMinor } from "../money";
 import { notifyError } from "../notifyError";
@@ -152,6 +154,7 @@ export function InsightsPage() {
   }
 
   const settings = useQuery({ queryKey: AI_SETTINGS_KEY, queryFn: getAISettings });
+  const proposal = useBudgetProposal(walletId);
   const on = aiReportsOn(settings.data) && !settings.data?.walletsOff.includes(walletId);
   const reports = useQuery({
     queryKey: aiReportsKey(walletId),
@@ -266,6 +269,14 @@ export function InsightsPage() {
               <p key={i}>{withAmounts(p)}</p>
             ))}
           </AiBox>
+        )}
+        {proposal && (
+          <Stack gap="xs">
+            <Text fw={650} fz="sm">
+              {t("insights.proposals")}
+            </Text>
+            <BudgetProposal walletId={walletId} proposal={proposal} />
+          </Stack>
         )}
         {others.length > 0 && (
           <Stack gap="xs">

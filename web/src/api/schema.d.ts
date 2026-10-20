@@ -734,6 +734,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/insights/proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * The current user's AI proposals waiting on this wallet, newest first
+         * @description Open ones, and those back from "later". Rows already saved from the budget form are left out. Private to the user, even on a shared wallet.
+         */
+        get: operations["listAIProposals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/insights/proposals/{proposalId}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                proposalId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Later, ignore, or a row saved from the budget form
+         * @description later hides the proposal for a week; ignore puts it away until the numbers change; applied marks the row of categoryId saved, and the whole proposal once every row is. A proposal never writes a budget itself.
+         */
+        post: operations["actOnAIProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/insights/proposals/{proposalId}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                proposalId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Thumbs up (1), down (-1) or neither (0) on one of the user's proposals */
+        put: operations["setAIProposalFeedback"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/mail": {
         parameters: {
             query?: never;
@@ -3754,6 +3819,8 @@ export interface components {
             mail: boolean;
             /** @description reports: sends the period's totals and largest expenses */
             reports: boolean;
+            /** @description budget proposals: sends each proposed category's name, budget, usual and proposed amounts */
+            budgets: boolean;
         };
         /** @description The reports that come by themselves besides the monthly one, which comes whenever reports are on. */
         AISchedule: {
@@ -3885,6 +3952,59 @@ export interface components {
             /** @description the model's text: paragraphs separated by a blank line */
             body: string;
             basis: components["schemas"]["AIReportBasis"];
+            model: string;
+            /** @enum {integer} */
+            feedback: -1 | 0 | 1;
+            /** @description RFC3339 UTC */
+            createdAt: string;
+        };
+        /** @description One category's proposed monthly budget, in the base currency's minor units, as positive amounts. */
+        AIProposalRow: {
+            /** Format: int64 */
+            categoryId: number;
+            /** @description the category's path, Parent:Child */
+            name: string;
+            /**
+             * @description no budget though spent on most months; the budget gone over, or not reached, most months
+             * @enum {string}
+             */
+            reason: "none" | "over" | "under";
+            /**
+             * Format: int64
+             * @description today's budget; 0 is none
+             */
+            budget: number;
+            /**
+             * Format: int64
+             * @description the median of the months
+             */
+            median: number;
+            /**
+             * Format: int64
+             * @description the median rounded to 5 of the currency
+             */
+            proposed: number;
+            /** @description what was spent each month, oldest first */
+            months: number[];
+            /** @description the months that made the reason */
+            hits: number;
+        };
+        AIProposalBasis: {
+            /** @description YYYY-MM, the six complete months before the proposal's, oldest first */
+            months: string[];
+            currency: components["schemas"]["AIReportCurrency"];
+            rows: components["schemas"]["AIProposalRow"][];
+        };
+        AIProposal: {
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            kind: "budget";
+            /** @description YYYY-MM, the month it was made in */
+            period: string;
+            /** @description the model's two or three sentences */
+            body: string;
+            basis: components["schemas"]["AIProposalBasis"];
             model: string;
             /** @enum {integer} */
             feedback: -1 | 0 | 1;
@@ -4308,7 +4428,7 @@ export interface components {
             } | null;
         };
         /** @enum {string} */
-        NotificationKind: "new_device" | "two_factor_off" | "new_api_token" | "bank_sync_failed" | "consent_expiring" | "mail_stopped" | "mail_unrecognized" | "review_waiting" | "bills" | "large_transaction" | "low_balance" | "budget" | "goal" | "summary_weekly" | "summary_monthly" | "ai_report" | "new_version";
+        NotificationKind: "new_device" | "two_factor_off" | "new_api_token" | "bank_sync_failed" | "consent_expiring" | "mail_stopped" | "mail_unrecognized" | "review_waiting" | "bills" | "large_transaction" | "low_balance" | "budget" | "goal" | "summary_weekly" | "summary_monthly" | "ai_report" | "ai_proposal" | "new_version";
         /** @enum {string} */
         NotificationChannel: "inapp" | "push" | "email" | "matrix" | "telegram" | "discord" | "slack" | "ntfy" | "gotify" | "webhook";
         Notification: {
@@ -7240,6 +7360,99 @@ export interface operations {
             path: {
                 walletId: number;
                 reportId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {integer} */
+                    feedback: -1 | 0 | 1;
+                };
+            };
+        };
+        responses: {
+            /** @description Recorded. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listAIProposals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The proposals. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        proposals: components["schemas"]["AIProposal"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    actOnAIProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                proposalId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    action: "later" | "ignore" | "applied";
+                    /**
+                     * Format: int64
+                     * @description with applied: the row's category
+                     */
+                    categoryId?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Recorded. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setAIProposalFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                proposalId: number;
             };
             cookie?: never;
         };

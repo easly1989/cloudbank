@@ -25,6 +25,7 @@ import {
   IconChartDots,
   IconMail,
   IconPencilBolt,
+  IconPigMoney,
   type Icon,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -54,12 +55,19 @@ import { SettingsGroup } from "./SettingsLayout";
 
 const FEATURES: { key: AIFeature; icon: Icon }[] = [
   { key: "reports", icon: IconChartDots },
+  { key: "budgets", icon: IconPigMoney },
   { key: "suggest", icon: IconCategory },
   { key: "entry", icon: IconPencilBolt },
   { key: "mail", icon: IconMail },
 ];
 
-const NO_FEATURES: AIFeatures = { suggest: false, entry: false, mail: false, reports: false };
+const NO_FEATURES: AIFeatures = {
+  suggest: false,
+  entry: false,
+  mail: false,
+  reports: false,
+  budgets: false,
+};
 
 /** The first of next month, UTC, when the count starts again. */
 function resetDay(lang: string): string {

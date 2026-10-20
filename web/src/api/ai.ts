@@ -8,6 +8,8 @@ export interface AIFeatures {
   entry: boolean;
   mail: boolean;
   reports: boolean;
+  /** Budget proposals from what is really spent (#698). */
+  budgets: boolean;
 }
 
 export type AIFeature = keyof AIFeatures;
@@ -168,3 +170,52 @@ export const generateAIReport = (walletId: number, period: string, confirm = fal
 
 export const setAIReportFeedback = (walletId: number, id: number, feedback: -1 | 0 | 1) =>
   api.put<void>(`/api/v1/wallets/${walletId}/insights/reports/${id}/feedback`, { feedback });
+
+// --- Proposals (#698) ---
+
+export type AIProposalReason = "none" | "over" | "under";
+
+/** One category's proposed monthly budget: positive minor units of the base currency. */
+export interface AIProposalRow {
+  categoryId: number;
+  /** The category's path, Parent:Child. */
+  name: string;
+  reason: AIProposalReason;
+  /** Today's budget; 0 is none. */
+  budget: number;
+  median: number;
+  proposed: number;
+  /** What was spent each month, oldest first. */
+  months: number[];
+  hits: number;
+}
+
+export interface AIProposal {
+  id: number;
+  kind: "budget";
+  period: string;
+  body: string;
+  basis: { months: string[]; currency: AIReportCurrency; rows: AIProposalRow[] };
+  model: string;
+  feedback: -1 | 0 | 1;
+  createdAt: string;
+}
+
+export const aiProposalsKey = (walletId: number) => ["aiProposals", walletId] as const;
+
+export const listAIProposals = (walletId: number) =>
+  api.get<{ proposals: AIProposal[] }>(`/api/v1/wallets/${walletId}/insights/proposals`);
+
+export const actOnAIProposal = (
+  walletId: number,
+  id: number,
+  action: "later" | "ignore" | "applied",
+  categoryId?: number,
+) =>
+  api.post<void>(`/api/v1/wallets/${walletId}/insights/proposals/${id}/actions`, {
+    action,
+    categoryId,
+  });
+
+export const setAIProposalFeedback = (walletId: number, id: number, feedback: -1 | 0 | 1) =>
+  api.put<void>(`/api/v1/wallets/${walletId}/insights/proposals/${id}/feedback`, { feedback });

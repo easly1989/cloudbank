@@ -363,6 +363,15 @@ func (f *fake) chat(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
 	f.aiLast = text
 	f.mu.Unlock()
+	// A budget proposal (#698) is two or three sentences.
+	if strings.Contains(text, "Budget proposals") {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"choices": []map[string]any{{"message": map[string]string{
+				"role": "assistant", "content": "Your rent comes back every month without a budget.",
+			}}},
+		})
+		return
+	}
 	// A monthly report (#696) is plain paragraphs, not JSON.
 	if strings.Contains(text, "Write the report in") {
 		writeJSON(w, http.StatusOK, map[string]any{
