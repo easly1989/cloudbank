@@ -293,6 +293,24 @@ only money coming in.
   - **Ignore** stops offering that payee at that cadence in this wallet.
   - A payee that a schedule already pays is not offered, and neither are
     transfers or void transactions.
+- **Subscriptions the AI points out.** With **Subscription proposals** switched
+  on in **Settings → AI**, the AI box under the figures lists up to five
+  schedules worth a look. CloudBank has no way to know whether you use a
+  service, so it goes by what the bank shows:
+  - **Raised**: the last two payments to the payee, a period apart, are at
+    least 5% over the amount the schedule saves. **Update** opens the schedule
+    with the latest amount filled in.
+  - **Double**: a second schedule to the same payee, or of the same amount
+    just as often as an earlier one. **Open** opens the second, where its
+    delete button is.
+  - **Not paid**: a schedule that does not post itself, whose payee has not
+    been paid for two of its periods. **Open** opens it.
+  - Nothing changes until you save or delete the schedule, which takes the row
+    off the proposal. **Later**, **Ignore** and **Why?** work as for
+    [budget proposals](#budget); an ignored proposal comes back when a new
+    schedule turns up or an amount moves by more than a fifth.
+  - It is made monthly, like a budget proposal, and only looks at schedules in
+    the wallet's base currency.
 - **Adding and editing.** **New schedule** opens a sheet beside the page: the
   name, the amount, the payee, the account, how often and from when, and whether
   it posts itself. **More details** holds the category, memo, payment mode, the
@@ -450,8 +468,10 @@ reports** switched on, for a wallet the AI may work on.
   only writes the text. The thumbs say whether it helped.
 - **Earlier reports** are listed under it, named by their month, week or year;
   **Read** opens one.
-- **Open proposals**: a [budget proposal](#budget) waiting for you, with its
-  rows; **Apply** opens the budget sheet on Budget.
+- **Open proposals**: a [budget proposal](#budget) or a
+  [subscription proposal](#schedules) waiting for you, with its rows; **Apply**
+  opens the budget sheet on Budget, **Update** or **Open** the schedule on
+  Schedules.
 - **Yours alone.** In a shared wallet the others see none of your reports.
 
 At this month's request limit, **Generate now** asks before going past it. A
@@ -533,7 +553,7 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | **Notifications** | Which events reach you, in the bell, by push on this device, by email, in Matrix, Telegram, Discord or Slack, through ntfy or Gotify, or through a webhook ([the guide](notifications.md)); the bell itself sits in every page header |
 | **Bank sync** | Bank connections ([Automatic bank sync](bank-sync.md)) |
 | **Bank mails** | The bank's notification mails, read from one folder of a mailbox ([the guide](bank-mails.md)) |
-| **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, category suggestions, quick entry, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word |
+| **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, budget and subscription proposals, category suggestions, quick entry, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word |
 | **Import & export** | Imports ([Importing transactions](import.md)), exports, backups and a database check |
 | **People** | Administrators only: the people who can sign in |
 | **About** | The version, the licence and the source code; for administrators, whether a newer CloudBank is out and the switch for the daily check ([Upgrading](backup.md#upgrading)) |

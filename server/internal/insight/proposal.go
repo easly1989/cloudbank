@@ -17,14 +17,41 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
-// Budget proposals (#698): budgets set from what is really spent. CloudBank
-// works out every amount from the budget report of the six complete months
-// before this one; the model only says, in two or three sentences, why. A
-// proposal never writes: Apply opens the budget form filled in, and the row is
-// done when the user saves it there.
+// Proposals (#698, #699): CloudBank works out every row from the wallet's own
+// numbers; the model only says, in two or three sentences, why. A proposal
+// never writes: Apply opens the form filled in, and the row is done when the
+// user saves it there.
+//
+// Budget proposals (#698) set budgets from what is really spent, from the
+// budget report of the six complete months before this one.
 
-// KindBudget is a proposal of budgets.
-const KindBudget = "budget"
+// The kinds of proposal.
+const (
+	KindBudget        = "budget"
+	KindSubscriptions = "subscriptions"
+)
+
+// proposalKind is what makes one kind of proposal: the AI job it is, its
+// rows, what the model is told, and the notification's lines and link.
+type proposalKind struct {
+	feature string
+	rows    func(s *Service, ctx context.Context, walletID int64, today time.Time) (ProposalBasis, error)
+	system  string
+	prompt  func(b ProposalBasis, lang string) string
+	notes   map[string][2]string
+	url     string
+}
+
+var proposalKinds = map[string]proposalKind{
+	KindBudget: {
+		feature: ai.FeatureBudgets, rows: (*Service).budgetRows, system: proposalSystem,
+		prompt: ProposalBasis.prompt, notes: proposalNotes, url: "/budget",
+	},
+	KindSubscriptions: {
+		feature: ai.FeatureSubscriptions, rows: (*Service).subscriptionRows, system: subscriptionSystem,
+		prompt: ProposalBasis.subscriptionPrompt, notes: subscriptionNotes, url: "/schedules?view=list",
+	},
+}
 
 const (
 	proposalMonths = 6
@@ -48,8 +75,8 @@ const (
 	reasonUnder = "under" // the budget was not reached most months
 )
 
-// ProposalRow is one category's proposed budget, in the base currency, as a
-// positive monthly amount.
+// ProposalRow is one row of a proposal, in the base currency, as positive
+// amounts: a category's proposed monthly budget, or a schedule to look at.
 type ProposalRow struct {
 	CategoryID int64   `json:"categoryId"`
 	Name       string  `json:"name"`
@@ -59,6 +86,33 @@ type ProposalRow struct {
 	Proposed   int64   `json:"proposed"`
 	Months     []int64 `json:"months"` // what was spent, oldest first
 	Hits       int     `json:"hits"`   // the months that made the reason
+	// A subscription (#699): the schedule, the amount it saves, the payments
+	// that raised it, the schedule it doubles, the last payment found and what
+	// it costs a year at the amount saved.
+	ScheduleID int64   `json:"scheduleId,omitempty"`
+	Amount     int64   `json:"amount,omitempty"`
+	Paid       []int64 `json:"paid,omitempty"`
+	Other      string  `json:"other,omitempty"`
+	Last       string  `json:"last,omitempty"`
+	Yearly     int64   `json:"yearly,omitempty"`
+}
+
+// key is what a row is about: its schedule, or its category. Saving it marks
+// it applied by this key, and an ignored proposal is compared by it.
+func (r ProposalRow) key() int64 {
+	if r.ScheduleID != 0 {
+		return r.ScheduleID
+	}
+	return r.CategoryID
+}
+
+// figure is the amount an ignored proposal's row is compared by: the one
+// proposed, or what a schedule not raised costs a year.
+func (r ProposalRow) figure() int64 {
+	if r.ScheduleID != 0 && r.Reason != reasonRaised {
+		return r.Yearly
+	}
+	return r.Proposed
 }
 
 // ProposalBasis is everything a proposal rests on.
@@ -112,17 +166,9 @@ func (s *Service) budgetRows(ctx context.Context, walletID int64, today time.Tim
 	month := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.UTC)
 	basis := ProposalBasis{Rows: []ProposalRow{}}
 
-	currencies, err := s.rq.ListCurrenciesForWallet(ctx, walletID)
-	if err != nil {
+	var err error
+	if basis.Currency, _, err = s.baseCurrency(ctx, walletID); err != nil {
 		return basis, err
-	}
-	for _, c := range currencies {
-		if c.IsBase != 0 {
-			basis.Currency = Currency{
-				Code: c.IsoCode, Symbol: c.Symbol, SymbolPrefix: c.SymbolPrefix != 0,
-				DecimalChar: c.DecimalChar, GroupChar: c.GroupChar, FracDigits: int(c.FracDigits),
-			}
-		}
 	}
 	cats, err := s.rq.ListCategoriesForWallet(ctx, walletID)
 	if err != nil {
@@ -246,17 +292,34 @@ func (s *Service) budgetRows(ctx context.Context, walletID int64, today time.Tim
 	return basis, nil
 }
 
+// baseCurrency is the wallet's base currency, and its id.
+func (s *Service) baseCurrency(ctx context.Context, walletID int64) (Currency, int64, error) {
+	currencies, err := s.rq.ListCurrenciesForWallet(ctx, walletID)
+	if err != nil {
+		return Currency{}, 0, err
+	}
+	for _, c := range currencies {
+		if c.IsBase != 0 {
+			return Currency{
+				Code: c.IsoCode, Symbol: c.Symbol, SymbolPrefix: c.SymbolPrefix != 0,
+				DecimalChar: c.DecimalChar, GroupChar: c.GroupChar, FracDigits: int(c.FracDigits),
+			}, c.ID, nil
+		}
+	}
+	return Currency{}, 0, nil
+}
+
 // changedFrom tells whether rows differ enough from an ignored proposal's to
-// be proposed again: a category it did not have, or an amount moved by more
-// than a fifth.
+// be proposed again: a row it did not have, or an amount moved by more than a
+// fifth.
 func changedFrom(rows, ignored []ProposalRow) bool {
 	was := map[int64]int64{}
 	for _, r := range ignored {
-		was[r.CategoryID] = r.Proposed
+		was[r.key()] = r.figure()
 	}
 	for _, r := range rows {
-		old, ok := was[r.CategoryID]
-		if !ok || float64(abs(r.Proposed-old)) > changedShare*float64(old) {
+		old, ok := was[r.key()]
+		if !ok || float64(abs(r.figure()-old)) > changedShare*float64(old) {
 			return true
 		}
 	}
@@ -293,17 +356,18 @@ func (b ProposalBasis) prompt(lang string) string {
 	return w.String()
 }
 
-// propose makes this month's budget proposal for a wallet, today being the
-// person's local date. It replaces the proposals still waiting.
-func (s *Service) propose(ctx context.Context, userID, walletID int64, today time.Time) (int64, error) {
-	basis, err := s.budgetRows(ctx, walletID, today)
+// propose makes this month's proposal of a kind for a wallet, today being the
+// person's local date. It replaces the proposals of the kind still waiting.
+func (s *Service) propose(ctx context.Context, kind string, userID, walletID int64, today time.Time) (int64, error) {
+	k := proposalKinds[kind]
+	basis, err := k.rows(s, ctx, walletID, today)
 	if err != nil {
 		return 0, err
 	}
 	if len(basis.Rows) == 0 {
 		return 0, ErrNoProposal
 	}
-	if raw, err := s.rq.LastIgnoredAIProposal(ctx, db.LastIgnoredAIProposalParams{UserID: userID, WalletID: walletID, Kind: KindBudget}); err == nil {
+	if raw, err := s.rq.LastIgnoredAIProposal(ctx, db.LastIgnoredAIProposalParams{UserID: userID, WalletID: walletID, Kind: kind}); err == nil {
 		var was ProposalBasis
 		if json.Unmarshal([]byte(raw), &was) == nil && !changedFrom(basis.Rows, was.Rows) {
 			return 0, errUnchanged
@@ -316,8 +380,8 @@ func (s *Service) propose(ctx context.Context, userID, walletID int64, today tim
 		lang = u.Locale
 	}
 	ans, err := s.ai.Ask(ctx, ai.Call{
-		UserID: userID, WalletID: walletID, Feature: ai.FeatureBudgets,
-		System: proposalSystem, User: basis.prompt(lang), MaxTokens: 300,
+		UserID: userID, WalletID: walletID, Feature: k.feature,
+		System: k.system, User: k.prompt(basis, lang), MaxTokens: 300,
 	})
 	if err != nil {
 		return 0, err
@@ -335,7 +399,7 @@ func (s *Service) propose(ctx context.Context, userID, walletID int64, today tim
 	}
 	period := today.Format("2006-01")
 	id, err := s.q.InsertAIProposal(ctx, db.InsertAIProposalParams{
-		UserID: userID, WalletID: walletID, Kind: KindBudget, Period: period,
+		UserID: userID, WalletID: walletID, Kind: kind, Period: period,
 		Body: body, Basis: string(raw), Model: ans.Model,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
@@ -344,30 +408,30 @@ func (s *Service) propose(ctx context.Context, userID, walletID int64, today tim
 	if err != nil {
 		return 0, err
 	}
-	return id, s.q.ReplaceOpenAIProposals(ctx, db.ReplaceOpenAIProposalsParams{UserID: userID, WalletID: walletID, Kind: KindBudget, Period: period})
+	return id, s.q.ReplaceOpenAIProposals(ctx, db.ReplaceOpenAIProposalsParams{UserID: userID, WalletID: walletID, Kind: kind, Period: period})
 }
 
-// proposeFor makes this month's proposal on each wallet in the AI's reach that
-// has none yet, and tells the person.
-func (s *Service) proposeFor(ctx context.Context, u db.ListAIReportUsersRow, local time.Time, wallets []db.ListWalletsForUserRow, off map[int64]bool) error {
+// proposeFor makes this month's proposal of a kind on each wallet in the AI's
+// reach that has none yet, and tells the person.
+func (s *Service) proposeFor(ctx context.Context, u db.ListAIReportUsersRow, kind string, local time.Time, wallets []db.ListWalletsForUserRow, off map[int64]bool) error {
 	period := local.Format("2006-01")
-	sp := span{kind: KindBudget, period: period}
+	sp := span{kind: kind, period: period}
 	var errs []error
 	for _, w := range wallets {
 		if off[w.ID] {
 			continue
 		}
-		done, err := s.rq.AIProposalDone(ctx, db.AIProposalDoneParams{UserID: u.UserID, WalletID: w.ID, Kind: KindBudget, Period: period})
+		done, err := s.rq.AIProposalDone(ctx, db.AIProposalDoneParams{UserID: u.UserID, WalletID: w.ID, Kind: kind, Period: period})
 		if err != nil {
 			return err
 		}
 		if done != 0 {
 			continue
 		}
-		id, err := s.propose(ctx, u.UserID, w.ID, local)
+		id, err := s.propose(ctx, kind, u.UserID, w.ID, local)
 		switch {
 		case err == nil:
-			s.tellProposal(ctx, u, id, w.ID, w.Title)
+			s.tellProposal(ctx, u, kind, id, w.ID, w.Title)
 		case errors.Is(err, ErrNoProposal), errors.Is(err, errUnchanged):
 			s.record(ctx, u.UserID, w.ID, sp, outcomeNoData)
 		case errors.Is(err, ai.ErrLimit):
@@ -377,25 +441,26 @@ func (s *Service) proposeFor(ctx context.Context, u db.ListAIReportUsersRow, loc
 		case errors.Is(err, ai.ErrNotConfigured):
 			return nil
 		default:
-			errs = append(errs, fmt.Errorf("budget proposal %s, wallet %d: %w", period, w.ID, err))
+			errs = append(errs, fmt.Errorf("%s proposal %s, wallet %d: %w", kind, period, w.ID, err))
 		}
 	}
 	return errors.Join(errs...)
 }
 
-func (s *Service) tellProposal(ctx context.Context, u db.ListAIReportUsersRow, id, walletID int64, walletName string) {
+func (s *Service) tellProposal(ctx context.Context, u db.ListAIReportUsersRow, kind string, id, walletID int64, walletName string) {
 	if s.notify == nil {
 		return
 	}
-	text := locale.Pick(proposalNotes, u.Locale)
+	k := proposalKinds[kind]
+	text := locale.Pick(k.notes, u.Locale)
 	_ = s.notify.Notify(ctx, u.UserID, notify.Event{
 		Kind: notify.KindAIProposal, Ref: fmt.Sprintf("ai-proposal:%d", id),
-		Title: text[0], Body: fmt.Sprintf(text[1], walletName), URL: "/budget", WalletID: walletID,
+		Title: text[0], Body: fmt.Sprintf(text[1], walletName), URL: k.url, WalletID: walletID,
 	})
 }
 
-// proposalNotes is the notification's two lines in each language; %s is the
-// wallet.
+// proposalNotes is a budget proposal's notification, two lines in each
+// language; %s is the wallet.
 var proposalNotes = map[string][2]string{
 	"en":    {"Budget proposal ready", "%s: in Budget."},
 	"it":    {"Proposta di budget pronta", "%s: la trovi in Budget."},
@@ -405,8 +470,8 @@ var proposalNotes = map[string][2]string{
 	"pt-BR": {"Proposta de orçamento pronta", "%s: está em Orçamento."},
 }
 
-// RunUser makes what is due for one person now: on turning budget proposals
-// on, they come at once rather than at the next run.
+// RunUser makes what is due for one person now: on turning a kind of
+// proposal on, it comes at once rather than at the next run.
 func (s *Service) RunUser(ctx context.Context, userID int64) error {
 	users, err := s.rq.ListAIReportUsers(ctx)
 	if err != nil {
@@ -446,7 +511,7 @@ func proposalOf(r db.GetAIProposalRow) Proposal {
 	p := Proposal{ID: r.ID, Kind: r.Kind, Period: r.Period, Body: r.Body, Model: r.Model, Feedback: r.Feedback, CreatedAt: r.CreatedAt}
 	_ = json.Unmarshal([]byte(r.Basis), &p.Basis)
 	applied := appliedOf(r.Applied)
-	p.Basis.Rows = slices.DeleteFunc(p.Basis.Rows, func(x ProposalRow) bool { return slices.Contains(applied, x.CategoryID) })
+	p.Basis.Rows = slices.DeleteFunc(p.Basis.Rows, func(x ProposalRow) bool { return slices.Contains(applied, x.key()) })
 	return p
 }
 
@@ -458,12 +523,13 @@ const (
 )
 
 // ErrBadAction is an action a proposal does not take.
-var ErrBadAction = errors.New("insight: the action is later, ignore or applied, with a category of the proposal")
+var ErrBadAction = errors.New("insight: the action is later, ignore or applied, with a row of the proposal")
 
 // Act records what the user did: Later hides the proposal a week, Ignore puts
-// it away until the numbers change, Applied marks a row saved from the budget
-// form, and the whole proposal once every row is.
-func (s *Service) Act(ctx context.Context, userID, walletID, id int64, action string, categoryID int64) error {
+// it away until the numbers change, Applied marks a row saved from its form,
+// the row being its category or schedule, and the whole proposal once every
+// row is.
+func (s *Service) Act(ctx context.Context, userID, walletID, id int64, action string, row int64) error {
 	r, err := s.rq.GetAIProposal(ctx, db.GetAIProposalParams{ID: id, UserID: userID, WalletID: walletID})
 	if errors.Is(err, sql.ErrNoRows) {
 		return ErrNotFound
@@ -484,12 +550,12 @@ func (s *Service) Act(ctx context.Context, userID, walletID, id int64, action st
 	case ActionApplied:
 		var basis ProposalBasis
 		_ = json.Unmarshal([]byte(r.Basis), &basis)
-		if !slices.ContainsFunc(basis.Rows, func(x ProposalRow) bool { return x.CategoryID == categoryID }) {
+		if row == 0 || !slices.ContainsFunc(basis.Rows, func(x ProposalRow) bool { return x.key() == row }) {
 			return ErrBadAction
 		}
 		applied := appliedOf(r.Applied)
-		if !slices.Contains(applied, categoryID) {
-			applied = append(applied, categoryID)
+		if !slices.Contains(applied, row) {
+			applied = append(applied, row)
 		}
 		raw, _ := json.Marshal(applied)
 		p.Applied = string(raw)

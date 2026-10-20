@@ -10,6 +10,8 @@ export interface AIFeatures {
   reports: boolean;
   /** Budget proposals from what is really spent (#698). */
   budgets: boolean;
+  /** Schedules raised, doubled or no longer paid (#699). */
+  subscriptions: boolean;
 }
 
 export type AIFeature = keyof AIFeatures;
@@ -171,28 +173,45 @@ export const generateAIReport = (walletId: number, period: string, confirm = fal
 export const setAIReportFeedback = (walletId: number, id: number, feedback: -1 | 0 | 1) =>
   api.put<void>(`/api/v1/wallets/${walletId}/insights/reports/${id}/feedback`, { feedback });
 
-// --- Proposals (#698) ---
+// --- Proposals (#698, #699) ---
 
-export type AIProposalReason = "none" | "over" | "under";
+export type AIProposalReason = "none" | "over" | "under" | "raised" | "double" | "alike" | "unused";
 
-/** One category's proposed monthly budget: positive minor units of the base currency. */
+export type AIProposalKind = "budget" | "subscriptions";
+
+/**
+ * One row, in positive minor units of the base currency: a category's proposed
+ * monthly budget, or a schedule to look at (the budget fields are zero then).
+ */
 export interface AIProposalRow {
   categoryId: number;
-  /** The category's path, Parent:Child. */
+  /** The category's path, Parent:Child; a schedule's name. */
   name: string;
   reason: AIProposalReason;
   /** Today's budget; 0 is none. */
   budget: number;
   median: number;
+  /** The budget proposed; a raised schedule's latest payment. */
   proposed: number;
   /** What was spent each month, oldest first. */
   months: number[];
   hits: number;
+  scheduleId?: number;
+  /** What the schedule saves. */
+  amount?: number;
+  /** Raised: the last two payments, oldest first. */
+  paid?: number[];
+  /** Double, alike: the earlier schedule's name. */
+  other?: string;
+  /** Raised, unused: the last payment's date. */
+  last?: string;
+  /** What the schedule costs a year at the amount saved. */
+  yearly?: number;
 }
 
 export interface AIProposal {
   id: number;
-  kind: "budget";
+  kind: AIProposalKind;
   period: string;
   body: string;
   basis: { months: string[]; currency: AIReportCurrency; rows: AIProposalRow[] };
@@ -210,11 +229,11 @@ export const actOnAIProposal = (
   walletId: number,
   id: number,
   action: "later" | "ignore" | "applied",
-  categoryId?: number,
+  row?: { categoryId: number } | { scheduleId: number },
 ) =>
   api.post<void>(`/api/v1/wallets/${walletId}/insights/proposals/${id}/actions`, {
     action,
-    categoryId,
+    ...row,
   });
 
 export const setAIProposalFeedback = (walletId: number, id: number, feedback: -1 | 0 | 1) =>

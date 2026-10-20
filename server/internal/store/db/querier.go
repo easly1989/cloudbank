@@ -244,7 +244,7 @@ type Querier interface {
 	// the link: same account, payee and category. The demo's seeded year comes
 	// from a HomeBank file, which does not record which schedule posted what.
 	LinkTemplateTransactions(ctx context.Context, templateID sql.NullInt64) (int64, error)
-	// The people whose AI writes reports (#697) or budget proposals (#698), with
+	// The people whose AI writes reports (#697) or proposals (#698, #699), with
 	// which ones come by themselves.
 	ListAIReportUsers(ctx context.Context) ([]ListAIReportUsersRow, error)
 	ListAIReports(ctx context.Context, arg ListAIReportsParams) ([]ListAIReportsRow, error)
@@ -350,6 +350,13 @@ type Querier interface {
 	ListSchedulesForCalendar(ctx context.Context, walletID int64) ([]ListSchedulesForCalendarRow, error)
 	ListSchedulesForWallet(ctx context.Context, walletID int64) ([]ListSchedulesForWalletRow, error)
 	ListSplits(ctx context.Context, transactionID int64) ([]Split, error)
+	// What the payees of the wallet's schedules were paid in a date range, the
+	// transactions the schedules registered included; transfers, reminders and
+	// void ones left out.
+	ListSubscriptionPayments(ctx context.Context, arg ListSubscriptionPaymentsParams) ([]ListSubscriptionPaymentsRow, error)
+	// The schedules a subscription proposal (#699) looks at: expenses to a payee,
+	// not transfers, still running, with their account's currency.
+	ListSubscriptionSchedules(ctx context.Context, walletID int64) ([]ListSubscriptionSchedulesRow, error)
 	ListTagsForWallet(ctx context.Context, walletID int64) ([]Tag, error)
 	ListTagsWithCounts(ctx context.Context, walletID int64) ([]ListTagsWithCountsRow, error)
 	ListTemplateSplits(ctx context.Context, templateID int64) ([]TemplateSplit, error)

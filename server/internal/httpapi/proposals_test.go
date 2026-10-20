@@ -193,3 +193,89 @@ func TestAIBudgetProposals(t *testing.T) {
 		t.Errorf("thumb = %d", r.StatusCode)
 	}
 }
+
+// A subscription proposal (#699) through the API: it comes when its switch is
+// turned on, its row is the schedule, and Applied by the schedule closes it.
+func TestAISubscriptionProposals(t *testing.T) {
+	c := newTestAPI(t)
+	model := newFakeModel(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	gym := makePayee(t, c, wid, "Gym")
+	tpl := decodeTemplate(t, c.do(http.MethodPost, base+"/templates", map[string]any{
+		"name": "Gym membership", "accountId": acc, "amount": -3900, "payeeId": gym,
+	}, true))
+	sc := decodeTxn(t, c.do(http.MethodPost, base+"/schedules", map[string]any{
+		"templateId": tpl["id"], "unit": "month", "everyN": 1, "nextDue": time.Now().UTC().Format("2006-01-02"), "autoPost": false,
+	}, true))
+	scheduleID := int64(sc["id"].(float64))
+	if n := time.Now().UTC(); n.Day() == 1 && n.Hour() < 7 {
+		c.do(http.MethodPut, "/api/v1/notifications/settings", map[string]any{"timezone": "Pacific/Kiritimati"}, true).Body.Close()
+	}
+	// Paid five and four months ago, not since.
+	for _, m := range []int{-5, -4} {
+		c.do(http.MethodPost, base+"/transactions", map[string]any{
+			"accountId": acc, "date": time.Now().UTC().AddDate(0, m, 0).Format("2006-01-02"), "amount": -3900, "payeeId": gym,
+		}, true).Body.Close()
+	}
+
+	type proposal struct {
+		ID    int64  `json:"id"`
+		Kind  string `json:"kind"`
+		Basis struct {
+			Rows []struct {
+				ScheduleID int64  `json:"scheduleId"`
+				Reason     string `json:"reason"`
+				Amount     int64  `json:"amount"`
+				Yearly     int64  `json:"yearly"`
+			} `json:"rows"`
+		} `json:"basis"`
+	}
+	waitFor := func(want int) []proposal {
+		t.Helper()
+		var out struct {
+			Proposals []proposal `json:"proposals"`
+		}
+		for range 100 {
+			r := c.do(http.MethodGet, base+"/insights/proposals", nil, false)
+			_ = json.NewDecoder(r.Body).Decode(&out)
+			r.Body.Close()
+			if len(out.Proposals) == want {
+				return out.Proposals
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+		t.Fatalf("proposals = %+v, want %d", out.Proposals, want)
+		return nil
+	}
+	r := c.do(http.MethodPut, "/api/v1/ai/settings", map[string]any{
+		"enabled": true, "baseUrl": model.srv.URL, "model": "m", "apiKey": "k",
+		"features": map[string]bool{"subscriptions": true},
+	}, true)
+	var st struct {
+		Features map[string]bool `json:"features"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&st)
+	r.Body.Close()
+	if !st.Features["subscriptions"] || st.Features["budgets"] {
+		t.Fatalf("features = %+v", st.Features)
+	}
+	ps := waitFor(1)
+	rows := ps[0].Basis.Rows
+	if ps[0].Kind != "subscriptions" || len(rows) != 1 || rows[0].ScheduleID != scheduleID ||
+		rows[0].Reason != "unused" || rows[0].Amount != 3900 || rows[0].Yearly != 46800 {
+		t.Fatalf("proposal = %+v", ps[0])
+	}
+	act := func(body map[string]any) int {
+		r := c.do(http.MethodPost, base+"/insights/proposals/"+strconv.FormatInt(ps[0].ID, 10)+"/actions", body, true)
+		r.Body.Close()
+		return r.StatusCode
+	}
+	if code := act(map[string]any{"action": "applied", "scheduleId": scheduleID + 1}); code != http.StatusBadRequest {
+		t.Fatalf("a schedule not in it = %d, want 400", code)
+	}
+	if code := act(map[string]any{"action": "applied", "scheduleId": scheduleID}); code != http.StatusNoContent {
+		t.Fatalf("applied = %d", code)
+	}
+	waitFor(0)
+}

@@ -213,24 +213,25 @@ func (q *Queries) GetAISend(ctx context.Context, arg GetAISendParams) (GetAISend
 
 const getAISettings = `-- name: GetAISettings :one
 SELECT enabled, base_url, model, api_key, suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion,
-       weekly_on, yearly_on, budgets_on
+       weekly_on, yearly_on, budgets_on, subscriptions_on
 FROM ai_settings WHERE user_id = ?
 `
 
 type GetAISettingsRow struct {
-	Enabled      int64
-	BaseUrl      string
-	Model        string
-	ApiKey       string
-	SuggestOn    int64
-	EntryOn      int64
-	MailOn       int64
-	ReportsOn    int64
-	MonthlyLimit int64
-	Motion       int64
-	WeeklyOn     int64
-	YearlyOn     int64
-	BudgetsOn    int64
+	Enabled         int64
+	BaseUrl         string
+	Model           string
+	ApiKey          string
+	SuggestOn       int64
+	EntryOn         int64
+	MailOn          int64
+	ReportsOn       int64
+	MonthlyLimit    int64
+	Motion          int64
+	WeeklyOn        int64
+	YearlyOn        int64
+	BudgetsOn       int64
+	SubscriptionsOn int64
 }
 
 func (q *Queries) GetAISettings(ctx context.Context, userID int64) (GetAISettingsRow, error) {
@@ -250,6 +251,7 @@ func (q *Queries) GetAISettings(ctx context.Context, userID int64) (GetAISetting
 		&i.WeeklyOn,
 		&i.YearlyOn,
 		&i.BudgetsOn,
+		&i.SubscriptionsOn,
 	)
 	return i, err
 }
@@ -468,23 +470,24 @@ func (q *Queries) LastIgnoredAIProposal(ctx context.Context, arg LastIgnoredAIPr
 }
 
 const listAIReportUsers = `-- name: ListAIReportUsers :many
-SELECT s.user_id, s.reports_on, s.weekly_on, s.yearly_on, s.budgets_on, u.locale
+SELECT s.user_id, s.reports_on, s.weekly_on, s.yearly_on, s.budgets_on, s.subscriptions_on, u.locale
 FROM ai_settings s
 JOIN users u ON u.id = s.user_id
-WHERE s.enabled = 1 AND (s.reports_on = 1 OR s.budgets_on = 1)
+WHERE s.enabled = 1 AND (s.reports_on = 1 OR s.budgets_on = 1 OR s.subscriptions_on = 1)
 ORDER BY s.user_id
 `
 
 type ListAIReportUsersRow struct {
-	UserID    int64
-	ReportsOn int64
-	WeeklyOn  int64
-	YearlyOn  int64
-	BudgetsOn int64
-	Locale    string
+	UserID          int64
+	ReportsOn       int64
+	WeeklyOn        int64
+	YearlyOn        int64
+	BudgetsOn       int64
+	SubscriptionsOn int64
+	Locale          string
 }
 
-// The people whose AI writes reports (#697) or budget proposals (#698), with
+// The people whose AI writes reports (#697) or proposals (#698, #699), with
 // which ones come by themselves.
 func (q *Queries) ListAIReportUsers(ctx context.Context) ([]ListAIReportUsersRow, error) {
 	rows, err := q.db.QueryContext(ctx, listAIReportUsers)
@@ -501,6 +504,7 @@ func (q *Queries) ListAIReportUsers(ctx context.Context) ([]ListAIReportUsersRow
 			&i.WeeklyOn,
 			&i.YearlyOn,
 			&i.BudgetsOn,
+			&i.SubscriptionsOn,
 			&i.Locale,
 		); err != nil {
 			return nil, err
@@ -714,6 +718,115 @@ func (q *Queries) ListOpenAIProposals(ctx context.Context, arg ListOpenAIProposa
 	return items, nil
 }
 
+const listSubscriptionPayments = `-- name: ListSubscriptionPayments :many
+SELECT CAST(t.payee_id AS INTEGER) AS payee_id, t.date, t.amount
+FROM transactions t
+WHERE t.wallet_id = ?1
+  AND t.date >= ?2 AND t.date <= ?3
+  AND t.amount < 0 AND t.status NOT IN (3, 4)
+  AND t.payee_id IN (
+      SELECT tpl.payee_id FROM schedules sch
+      JOIN templates tpl ON tpl.id = sch.template_id
+      WHERE sch.wallet_id = ?1
+  )
+  AND NOT EXISTS (SELECT 1 FROM transfers tr WHERE tr.txn_from_id = t.id OR tr.txn_to_id = t.id)
+ORDER BY t.payee_id, t.date, t.id
+`
+
+type ListSubscriptionPaymentsParams struct {
+	WalletID int64
+	FromDate string
+	ToDate   string
+}
+
+type ListSubscriptionPaymentsRow struct {
+	PayeeID int64
+	Date    string
+	Amount  int64
+}
+
+// What the payees of the wallet's schedules were paid in a date range, the
+// transactions the schedules registered included; transfers, reminders and
+// void ones left out.
+func (q *Queries) ListSubscriptionPayments(ctx context.Context, arg ListSubscriptionPaymentsParams) ([]ListSubscriptionPaymentsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listSubscriptionPayments, arg.WalletID, arg.FromDate, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSubscriptionPaymentsRow{}
+	for rows.Next() {
+		var i ListSubscriptionPaymentsRow
+		if err := rows.Scan(&i.PayeeID, &i.Date, &i.Amount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSubscriptionSchedules = `-- name: ListSubscriptionSchedules :many
+SELECT sch.id, sch.unit, sch.every_n, sch.auto_post, tpl.name, tpl.amount,
+       CAST(tpl.payee_id AS INTEGER) AS payee_id, a.currency_id
+FROM schedules sch
+JOIN templates tpl ON tpl.id = sch.template_id
+JOIN accounts a ON a.id = tpl.account_id
+WHERE sch.wallet_id = ? AND tpl.is_transfer = 0 AND tpl.payee_id IS NOT NULL
+  AND tpl.amount < 0 AND (sch.remaining IS NULL OR sch.remaining > 0)
+ORDER BY sch.id
+`
+
+type ListSubscriptionSchedulesRow struct {
+	ID         int64
+	Unit       string
+	EveryN     int64
+	AutoPost   int64
+	Name       string
+	Amount     int64
+	PayeeID    int64
+	CurrencyID int64
+}
+
+// The schedules a subscription proposal (#699) looks at: expenses to a payee,
+// not transfers, still running, with their account's currency.
+func (q *Queries) ListSubscriptionSchedules(ctx context.Context, walletID int64) ([]ListSubscriptionSchedulesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listSubscriptionSchedules, walletID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSubscriptionSchedulesRow{}
+	for rows.Next() {
+		var i ListSubscriptionSchedulesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Unit,
+			&i.EveryN,
+			&i.AutoPost,
+			&i.Name,
+			&i.Amount,
+			&i.PayeeID,
+			&i.CurrencyID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const purgeAISends = `-- name: PurgeAISends :exec
 DELETE FROM ai_sends WHERE user_id = ? AND created_at < ?
 `
@@ -828,9 +941,10 @@ func (q *Queries) SetAIReportFeedback(ctx context.Context, arg SetAIReportFeedba
 const upsertAISettings = `-- name: UpsertAISettings :exec
 INSERT INTO ai_settings (
     user_id, enabled, base_url, model, api_key,
-    suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion, weekly_on, yearly_on, budgets_on, updated_at
+    suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion, weekly_on, yearly_on, budgets_on, subscriptions_on,
+    updated_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 ON CONFLICT (user_id) DO UPDATE SET
     enabled = excluded.enabled, base_url = excluded.base_url,
     model = excluded.model, api_key = excluded.api_key,
@@ -838,24 +952,25 @@ ON CONFLICT (user_id) DO UPDATE SET
     mail_on = excluded.mail_on, reports_on = excluded.reports_on,
     monthly_limit = excluded.monthly_limit, motion = excluded.motion,
     weekly_on = excluded.weekly_on, yearly_on = excluded.yearly_on, budgets_on = excluded.budgets_on,
-    updated_at = excluded.updated_at
+    subscriptions_on = excluded.subscriptions_on, updated_at = excluded.updated_at
 `
 
 type UpsertAISettingsParams struct {
-	UserID       int64
-	Enabled      int64
-	BaseUrl      string
-	Model        string
-	ApiKey       string
-	SuggestOn    int64
-	EntryOn      int64
-	MailOn       int64
-	ReportsOn    int64
-	MonthlyLimit int64
-	Motion       int64
-	WeeklyOn     int64
-	YearlyOn     int64
-	BudgetsOn    int64
+	UserID          int64
+	Enabled         int64
+	BaseUrl         string
+	Model           string
+	ApiKey          string
+	SuggestOn       int64
+	EntryOn         int64
+	MailOn          int64
+	ReportsOn       int64
+	MonthlyLimit    int64
+	Motion          int64
+	WeeklyOn        int64
+	YearlyOn        int64
+	BudgetsOn       int64
+	SubscriptionsOn int64
 }
 
 func (q *Queries) UpsertAISettings(ctx context.Context, arg UpsertAISettingsParams) error {
@@ -874,6 +989,7 @@ func (q *Queries) UpsertAISettings(ctx context.Context, arg UpsertAISettingsPara
 		arg.WeeklyOn,
 		arg.YearlyOn,
 		arg.BudgetsOn,
+		arg.SubscriptionsOn,
 	)
 	return err
 }

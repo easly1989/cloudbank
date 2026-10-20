@@ -89,8 +89,17 @@ func (s *Service) runFor(ctx context.Context, u db.ListAIReportUsersRow) error {
 	if u.ReportsOn != 0 {
 		spans = due(local, u.WeeklyOn != 0, u.YearlyOn != 0)
 	}
-	proposing := u.BudgetsOn != 0 && (local.Day() != 1 || local.Hour() >= reportHour)
-	if len(spans) == 0 && !proposing {
+	// Proposals are monthly, from 07:00 on the 1st like the monthly report.
+	var kinds []string
+	if local.Day() != 1 || local.Hour() >= reportHour {
+		if u.BudgetsOn != 0 {
+			kinds = append(kinds, KindBudget)
+		}
+		if u.SubscriptionsOn != 0 {
+			kinds = append(kinds, KindSubscriptions)
+		}
+	}
+	if len(spans) == 0 && len(kinds) == 0 {
 		return nil
 	}
 	wallets, err := s.rq.ListWalletsForUser(ctx, u.UserID)
@@ -141,8 +150,8 @@ func (s *Service) runFor(ctx context.Context, u db.ListAIReportUsersRow) error {
 			}
 		}
 	}
-	if proposing {
-		if err := s.proposeFor(ctx, u, local, wallets, off); err != nil {
+	for _, kind := range kinds {
+		if err := s.proposeFor(ctx, u, kind, local, wallets, off); err != nil {
 			errs = append(errs, err)
 		}
 	}

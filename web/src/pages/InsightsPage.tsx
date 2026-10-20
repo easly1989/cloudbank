@@ -21,7 +21,8 @@ import {
 import { AiBox, type Feedback } from "../components/AiBox";
 import { useAskPastLimit } from "../components/aiLimit";
 import { BudgetProposal } from "../components/BudgetProposal";
-import { useBudgetProposal } from "../components/budgetProposalData";
+import { useProposal } from "../components/proposalData";
+import { SubscriptionProposal } from "../components/SubscriptionProposal";
 import { PageHeader } from "../components/PageHeader";
 import { formatMinor } from "../money";
 import { notifyError } from "../notifyError";
@@ -154,7 +155,8 @@ export function InsightsPage() {
   }
 
   const settings = useQuery({ queryKey: AI_SETTINGS_KEY, queryFn: getAISettings });
-  const proposal = useBudgetProposal(walletId);
+  const proposal = useProposal(walletId, "budget");
+  const subscriptions = useProposal(walletId, "subscriptions");
   const on = aiReportsOn(settings.data) && !settings.data?.walletsOff.includes(walletId);
   const reports = useQuery({
     queryKey: aiReportsKey(walletId),
@@ -270,12 +272,13 @@ export function InsightsPage() {
             ))}
           </AiBox>
         )}
-        {proposal && (
+        {(proposal || subscriptions) && (
           <Stack gap="xs">
             <Text fw={650} fz="sm">
               {t("insights.proposals")}
             </Text>
-            <BudgetProposal walletId={walletId} proposal={proposal} />
+            {proposal && <BudgetProposal walletId={walletId} proposal={proposal} />}
+            {subscriptions && <SubscriptionProposal walletId={walletId} proposal={subscriptions} />}
           </Stack>
         )}
         {others.length > 0 && (
