@@ -25,6 +25,8 @@ pull request: an edit made in the wiki is overwritten.
   and what happens when the bank's own row arrives.
 - [Notifications](notifications.md): the bell, push, email, Matrix, Telegram, Discord, Slack, ntfy, Gotify and webhooks; which
   events go where, and connecting Home Assistant.
+- [CloudBank in Home Assistant](home-assistant.md): bills, this month's budget
+  and Review as sensors, read with an API token; balances only if you ask.
 - [Schedules in your phone's calendar](pages.md#schedules): **Add to calendar**
   and how to subscribe on an iPhone, in Google Calendar or in Outlook.
 
