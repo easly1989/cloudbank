@@ -19,6 +19,7 @@ import { formatMinor } from "../money";
 const FEATURE: Record<AIProposalKind, AIFeature> = {
   budget: "budgets",
   subscriptions: "subscriptions",
+  savings: "savings",
 };
 
 /** Whether the AI makes proposals of a kind on a wallet. */

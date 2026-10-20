@@ -770,7 +770,7 @@ export interface paths {
         put?: never;
         /**
          * Later, ignore, or a row saved from its form
-         * @description later hides the proposal for a week; ignore puts it away until the numbers change; applied marks the row of categoryId (a budget proposal) or scheduleId (a subscription proposal) saved, and the whole proposal once every row is. A proposal never writes anything itself.
+         * @description later hides the proposal for a week; ignore puts it away until the numbers change; applied marks the row of categoryId (a budget or savings proposal) or scheduleId (a subscription proposal) saved, and the whole proposal once every row is. A proposal never writes anything itself.
          */
         post: operations["actOnAIProposal"];
         delete?: never;
@@ -3823,6 +3823,8 @@ export interface components {
             budgets: boolean;
             /** @description subscription proposals: sends each proposed schedule's name, amount, last payments and cost a year */
             subscriptions: boolean;
+            /** @description savings proposals: sends each proposed category's name, its average a month before and lately, and the amount proposed */
+            savings: boolean;
         };
         /** @description The reports that come by themselves besides the monthly one, which comes whenever reports are on. */
         AISchedule: {
@@ -3880,7 +3882,7 @@ export interface components {
             walletId: number | null;
             walletName: string;
             /** @enum {string} */
-            feature: "suggest" | "entry" | "mail" | "reports" | "budgets" | "subscriptions";
+            feature: "suggest" | "entry" | "mail" | "reports" | "budgets" | "subscriptions" | "savings";
             model: string;
             /** @description RFC3339 UTC */
             createdAt: string;
@@ -3967,10 +3969,10 @@ export interface components {
             /** @description the category's path, Parent:Child; a schedule's name */
             name: string;
             /**
-             * @description budget: no budget though spent on most months; the budget gone over, or not reached, most months. subscription: the last two payments at least 5% over the amount saved; the same payee as an earlier schedule; the same amount just as often as one; registered by hand and not paid for two periods.
+             * @description budget: no budget though spent on most months; the budget gone over, or not reached, most months. subscription: the last two payments at least 5% over the amount saved; the same payee as an earlier schedule; the same amount just as often as one; registered by hand and not paid for two periods. savings: the last three months at least a fifth, and 10 a month, over the nine before.
              * @enum {string}
              */
-            reason: "none" | "over" | "under" | "raised" | "double" | "alike" | "unused";
+            reason: "none" | "over" | "under" | "raised" | "double" | "alike" | "unused" | "grown";
             /**
              * Format: int64
              * @description today's budget; 0 is none
@@ -4011,9 +4013,19 @@ export interface components {
              * @description subscription: what the schedule costs a year at the amount saved
              */
             yearly?: number;
+            /**
+             * Format: int64
+             * @description savings: the category's average a month in the nine months before
+             */
+            before?: number;
+            /**
+             * Format: int64
+             * @description savings: its average a month in the last three; proposed is before rounded to 5
+             */
+            recent?: number;
         };
         AIProposalBasis: {
-            /** @description YYYY-MM, the six complete months before the proposal's, oldest first; empty for subscriptions */
+            /** @description YYYY-MM, the complete months before the proposal's, oldest first: six for budgets, twelve for savings, none for subscriptions */
             months: string[];
             currency: components["schemas"]["AIReportCurrency"];
             rows: components["schemas"]["AIProposalRow"][];
@@ -4022,7 +4034,7 @@ export interface components {
             /** Format: int64 */
             id: number;
             /** @enum {string} */
-            kind: "budget" | "subscriptions";
+            kind: "budget" | "subscriptions" | "savings";
             /** @description YYYY-MM, the month it was made in */
             period: string;
             /** @description the model's two or three sentences */

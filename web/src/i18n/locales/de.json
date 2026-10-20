@@ -1808,7 +1808,7 @@
       "summary_weekly": "Montags: Einnahmen, Ausgaben, die größten Posten und die Fälligkeiten der Woche, je Haushaltsbuch.",
       "summary_monthly": "Am 1.: Einnahmen, Ausgaben und die größten Posten des Vormonats, je Haushaltsbuch.",
       "ai_report": "Wenn ein geplanter Bericht geschrieben oder am Monatslimit übersprungen wird. Zwei Zeilen, nie die Beträge.",
-      "ai_proposal": "Wenn die KI Budgets vorschlägt oder Abos zum Ansehen findet, einmal im Monat. Zwei Zeilen, nie die Beträge."
+      "ai_proposal": "Wenn die KI Budgets vorschlägt oder Abos und Sparmöglichkeiten zum Ansehen findet, je einmal im Monat. Zwei Zeilen, nie die Beträge."
     },
     "securityAlways": "Immer in der Glocke, damit eine Anmeldung, die nicht von dir kam, nicht unbemerkt bleibt.",
     "emailUnavailable": "Nicht verfügbar: Der Administrator hat keinen Mailserver eingerichtet (CB_SMTP_HOST).",
@@ -2035,6 +2035,10 @@
       "subscriptions": {
         "name": "Abo-Vorschläge",
         "sends": "Sendet für jede vorgeschlagene wiederkehrende Buchung den Namen, den gespeicherten Betrag, die letzten Abbuchungen und die Kosten pro Jahr. Nie die Buchungen."
+      },
+      "savings": {
+        "name": "Sparvorschläge",
+        "sends": "Sendet für jede vorgeschlagene Kategorie den Namen, den Monatsdurchschnitt von vorher und von zuletzt und den vorgeschlagenen Betrag. Nie die Buchungen."
       }
     },
     "wallets": "Für welche Haushaltsbücher",
@@ -3331,6 +3335,19 @@
         "last": "Letzte Abbuchung",
         "yearly": "Pro Jahr",
         "note": "CloudBank hat sie in deinen wiederkehrenden Buchungen und Buchungen gefunden: die letzten 2 Abbuchungen mindestens 5 % über dem gespeicherten Betrag, eine zweite wiederkehrende Buchung an denselben Zahlungspartner oder mit gleichem Betrag im gleichen Rhythmus, eine von Hand erfasste, die seit zwei Zeiträumen nicht bezahlt wurde. Das Modell hat nur den Text geschrieben. Modell: {{model}}."
+      }
+    },
+    "save": {
+      "title": "Du könntest {{amount}} im Monat behalten",
+      "basis": "Letzte 3 Monate gegenüber den 9 davor · erstellt am {{date}}",
+      "reason": "+{{pct}} %: {{recent}} im Monat gegenüber {{before}}",
+      "apply": "Budget festlegen",
+      "applyLabel": "Budget von {{amount}} im Monat für {{name}} festlegen",
+      "details": "Details ansehen",
+      "why": {
+        "before": "9 Monate davor",
+        "recent": "Letzte 3 Monate",
+        "note": "CloudBank hat die Zahlen berechnet: den Monatsdurchschnitt jeder Kategorie in den letzten 3 vollen Monaten gegenüber den 9 davor und den früheren Stand, auf 5 gerundet. Das Modell hat nur den Text geschrieben. Modell: {{model}}."
       }
     }
   }

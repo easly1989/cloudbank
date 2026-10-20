@@ -22,6 +22,7 @@ import { AiBox, type Feedback } from "../components/AiBox";
 import { useAskPastLimit } from "../components/aiLimit";
 import { BudgetProposal } from "../components/BudgetProposal";
 import { useProposal } from "../components/proposalData";
+import { SavingsProposal } from "../components/SavingsProposal";
 import { SubscriptionProposal } from "../components/SubscriptionProposal";
 import { PageHeader } from "../components/PageHeader";
 import { formatMinor } from "../money";
@@ -157,6 +158,7 @@ export function InsightsPage() {
   const settings = useQuery({ queryKey: AI_SETTINGS_KEY, queryFn: getAISettings });
   const proposal = useProposal(walletId, "budget");
   const subscriptions = useProposal(walletId, "subscriptions");
+  const savings = useProposal(walletId, "savings");
   const on = aiReportsOn(settings.data) && !settings.data?.walletsOff.includes(walletId);
   const reports = useQuery({
     queryKey: aiReportsKey(walletId),
@@ -218,6 +220,18 @@ export function InsightsPage() {
     />
   );
 
+  // The proposals waiting (#698, #699), shown with reports off too.
+  const proposals = (proposal || subscriptions || savings) && (
+    <Stack gap="xs">
+      <Text fw={650} fz="sm">
+        {t("insights.proposals")}
+      </Text>
+      {proposal && <BudgetProposal walletId={walletId} proposal={proposal} />}
+      {subscriptions && <SubscriptionProposal walletId={walletId} proposal={subscriptions} />}
+      {savings && <SavingsProposal walletId={walletId} proposal={savings} />}
+    </Stack>
+  );
+
   if (settings.isPending) return header;
   if (!on) {
     const walletOff = aiReportsOn(settings.data);
@@ -235,6 +249,7 @@ export function InsightsPage() {
             </Anchor>
           </Stack>
         </Card>
+        {proposals}
       </Stack>
     );
   }
@@ -272,15 +287,7 @@ export function InsightsPage() {
             ))}
           </AiBox>
         )}
-        {(proposal || subscriptions) && (
-          <Stack gap="xs">
-            <Text fw={650} fz="sm">
-              {t("insights.proposals")}
-            </Text>
-            {proposal && <BudgetProposal walletId={walletId} proposal={proposal} />}
-            {subscriptions && <SubscriptionProposal walletId={walletId} proposal={subscriptions} />}
-          </Stack>
-        )}
+        {proposals}
         {others.length > 0 && (
           <Stack gap="xs">
             <Text fw={650} fz="sm">

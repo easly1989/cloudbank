@@ -1,15 +1,15 @@
 -- name: GetAISettings :one
 SELECT enabled, base_url, model, api_key, suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion,
-       weekly_on, yearly_on, budgets_on, subscriptions_on
+       weekly_on, yearly_on, budgets_on, subscriptions_on, savings_on
 FROM ai_settings WHERE user_id = ?;
 
 -- name: UpsertAISettings :exec
 INSERT INTO ai_settings (
     user_id, enabled, base_url, model, api_key,
     suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion, weekly_on, yearly_on, budgets_on, subscriptions_on,
-    updated_at
+    savings_on, updated_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 ON CONFLICT (user_id) DO UPDATE SET
     enabled = excluded.enabled, base_url = excluded.base_url,
     model = excluded.model, api_key = excluded.api_key,
@@ -17,7 +17,7 @@ ON CONFLICT (user_id) DO UPDATE SET
     mail_on = excluded.mail_on, reports_on = excluded.reports_on,
     monthly_limit = excluded.monthly_limit, motion = excluded.motion,
     weekly_on = excluded.weekly_on, yearly_on = excluded.yearly_on, budgets_on = excluded.budgets_on,
-    subscriptions_on = excluded.subscriptions_on, updated_at = excluded.updated_at;
+    subscriptions_on = excluded.subscriptions_on, savings_on = excluded.savings_on, updated_at = excluded.updated_at;
 
 -- name: ListAIWalletsOff :many
 SELECT wallet_id FROM ai_wallets_off WHERE user_id = ? ORDER BY wallet_id;
@@ -91,10 +91,10 @@ LIMIT 20;
 -- name: ListAIReportUsers :many
 -- The people whose AI writes reports (#697) or proposals (#698, #699), with
 -- which ones come by themselves.
-SELECT s.user_id, s.reports_on, s.weekly_on, s.yearly_on, s.budgets_on, s.subscriptions_on, u.locale
+SELECT s.user_id, s.reports_on, s.weekly_on, s.yearly_on, s.budgets_on, s.subscriptions_on, s.savings_on, u.locale
 FROM ai_settings s
 JOIN users u ON u.id = s.user_id
-WHERE s.enabled = 1 AND (s.reports_on = 1 OR s.budgets_on = 1 OR s.subscriptions_on = 1)
+WHERE s.enabled = 1 AND (s.reports_on = 1 OR s.budgets_on = 1 OR s.subscriptions_on = 1 OR s.savings_on = 1)
 ORDER BY s.user_id;
 
 -- name: AIReportDone :one
@@ -150,6 +150,14 @@ ORDER BY created_at DESC, id DESC;
 SELECT id, kind, period, body, basis, model, state, applied, feedback, created_at
 FROM ai_proposals
 WHERE id = ? AND user_id = ? AND wallet_id = ?;
+
+-- name: OpenAIProposalBasis :one
+-- The rows of the user's proposal of a kind still waiting on a wallet, for
+-- another kind to leave out what it already proposes.
+SELECT basis FROM ai_proposals
+WHERE user_id = ? AND wallet_id = ? AND kind = ? AND state IN ('open', 'later')
+ORDER BY created_at DESC, id DESC
+LIMIT 1;
 
 -- name: LastIgnoredAIProposal :one
 SELECT basis FROM ai_proposals

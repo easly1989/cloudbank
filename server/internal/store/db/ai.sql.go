@@ -213,7 +213,7 @@ func (q *Queries) GetAISend(ctx context.Context, arg GetAISendParams) (GetAISend
 
 const getAISettings = `-- name: GetAISettings :one
 SELECT enabled, base_url, model, api_key, suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion,
-       weekly_on, yearly_on, budgets_on, subscriptions_on
+       weekly_on, yearly_on, budgets_on, subscriptions_on, savings_on
 FROM ai_settings WHERE user_id = ?
 `
 
@@ -232,6 +232,7 @@ type GetAISettingsRow struct {
 	YearlyOn        int64
 	BudgetsOn       int64
 	SubscriptionsOn int64
+	SavingsOn       int64
 }
 
 func (q *Queries) GetAISettings(ctx context.Context, userID int64) (GetAISettingsRow, error) {
@@ -252,6 +253,7 @@ func (q *Queries) GetAISettings(ctx context.Context, userID int64) (GetAISetting
 		&i.YearlyOn,
 		&i.BudgetsOn,
 		&i.SubscriptionsOn,
+		&i.SavingsOn,
 	)
 	return i, err
 }
@@ -470,10 +472,10 @@ func (q *Queries) LastIgnoredAIProposal(ctx context.Context, arg LastIgnoredAIPr
 }
 
 const listAIReportUsers = `-- name: ListAIReportUsers :many
-SELECT s.user_id, s.reports_on, s.weekly_on, s.yearly_on, s.budgets_on, s.subscriptions_on, u.locale
+SELECT s.user_id, s.reports_on, s.weekly_on, s.yearly_on, s.budgets_on, s.subscriptions_on, s.savings_on, u.locale
 FROM ai_settings s
 JOIN users u ON u.id = s.user_id
-WHERE s.enabled = 1 AND (s.reports_on = 1 OR s.budgets_on = 1 OR s.subscriptions_on = 1)
+WHERE s.enabled = 1 AND (s.reports_on = 1 OR s.budgets_on = 1 OR s.subscriptions_on = 1 OR s.savings_on = 1)
 ORDER BY s.user_id
 `
 
@@ -484,6 +486,7 @@ type ListAIReportUsersRow struct {
 	YearlyOn        int64
 	BudgetsOn       int64
 	SubscriptionsOn int64
+	SavingsOn       int64
 	Locale          string
 }
 
@@ -505,6 +508,7 @@ func (q *Queries) ListAIReportUsers(ctx context.Context) ([]ListAIReportUsersRow
 			&i.YearlyOn,
 			&i.BudgetsOn,
 			&i.SubscriptionsOn,
+			&i.SavingsOn,
 			&i.Locale,
 		); err != nil {
 			return nil, err
@@ -827,6 +831,28 @@ func (q *Queries) ListSubscriptionSchedules(ctx context.Context, walletID int64)
 	return items, nil
 }
 
+const openAIProposalBasis = `-- name: OpenAIProposalBasis :one
+SELECT basis FROM ai_proposals
+WHERE user_id = ? AND wallet_id = ? AND kind = ? AND state IN ('open', 'later')
+ORDER BY created_at DESC, id DESC
+LIMIT 1
+`
+
+type OpenAIProposalBasisParams struct {
+	UserID   int64
+	WalletID int64
+	Kind     string
+}
+
+// The rows of the user's proposal of a kind still waiting on a wallet, for
+// another kind to leave out what it already proposes.
+func (q *Queries) OpenAIProposalBasis(ctx context.Context, arg OpenAIProposalBasisParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, openAIProposalBasis, arg.UserID, arg.WalletID, arg.Kind)
+	var basis string
+	err := row.Scan(&basis)
+	return basis, err
+}
+
 const purgeAISends = `-- name: PurgeAISends :exec
 DELETE FROM ai_sends WHERE user_id = ? AND created_at < ?
 `
@@ -942,9 +968,9 @@ const upsertAISettings = `-- name: UpsertAISettings :exec
 INSERT INTO ai_settings (
     user_id, enabled, base_url, model, api_key,
     suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion, weekly_on, yearly_on, budgets_on, subscriptions_on,
-    updated_at
+    savings_on, updated_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 ON CONFLICT (user_id) DO UPDATE SET
     enabled = excluded.enabled, base_url = excluded.base_url,
     model = excluded.model, api_key = excluded.api_key,
@@ -952,7 +978,7 @@ ON CONFLICT (user_id) DO UPDATE SET
     mail_on = excluded.mail_on, reports_on = excluded.reports_on,
     monthly_limit = excluded.monthly_limit, motion = excluded.motion,
     weekly_on = excluded.weekly_on, yearly_on = excluded.yearly_on, budgets_on = excluded.budgets_on,
-    subscriptions_on = excluded.subscriptions_on, updated_at = excluded.updated_at
+    subscriptions_on = excluded.subscriptions_on, savings_on = excluded.savings_on, updated_at = excluded.updated_at
 `
 
 type UpsertAISettingsParams struct {
@@ -971,6 +997,7 @@ type UpsertAISettingsParams struct {
 	YearlyOn        int64
 	BudgetsOn       int64
 	SubscriptionsOn int64
+	SavingsOn       int64
 }
 
 func (q *Queries) UpsertAISettings(ctx context.Context, arg UpsertAISettingsParams) error {
@@ -990,6 +1017,7 @@ func (q *Queries) UpsertAISettings(ctx context.Context, arg UpsertAISettingsPara
 		arg.YearlyOn,
 		arg.BudgetsOn,
 		arg.SubscriptionsOn,
+		arg.SavingsOn,
 	)
 	return err
 }

@@ -29,13 +29,14 @@ import (
 const (
 	KindBudget        = "budget"
 	KindSubscriptions = "subscriptions"
+	KindSavings       = "savings"
 )
 
 // proposalKind is what makes one kind of proposal: the AI job it is, its
 // rows, what the model is told, and the notification's lines and link.
 type proposalKind struct {
 	feature string
-	rows    func(s *Service, ctx context.Context, walletID int64, today time.Time) (ProposalBasis, error)
+	rows    func(s *Service, ctx context.Context, userID, walletID int64, today time.Time) (ProposalBasis, error)
 	system  string
 	prompt  func(b ProposalBasis, lang string) string
 	notes   map[string][2]string
@@ -44,13 +45,24 @@ type proposalKind struct {
 
 var proposalKinds = map[string]proposalKind{
 	KindBudget: {
-		feature: ai.FeatureBudgets, rows: (*Service).budgetRows, system: proposalSystem,
+		feature: ai.FeatureBudgets, rows: byWallet((*Service).budgetRows), system: proposalSystem,
 		prompt: ProposalBasis.prompt, notes: proposalNotes, url: "/budget",
 	},
 	KindSubscriptions: {
-		feature: ai.FeatureSubscriptions, rows: (*Service).subscriptionRows, system: subscriptionSystem,
+		feature: ai.FeatureSubscriptions, rows: byWallet((*Service).subscriptionRows), system: subscriptionSystem,
 		prompt: ProposalBasis.subscriptionPrompt, notes: subscriptionNotes, url: "/schedules?view=list",
 	},
+	KindSavings: {
+		feature: ai.FeatureSavings, rows: (*Service).savingsRows, system: savingsSystem,
+		prompt: ProposalBasis.savingsPrompt, notes: savingsNotes, url: "/insights",
+	},
+}
+
+// byWallet is rows that look at the wallet alone, not at the person.
+func byWallet(f func(s *Service, ctx context.Context, walletID int64, today time.Time) (ProposalBasis, error)) func(*Service, context.Context, int64, int64, time.Time) (ProposalBasis, error) {
+	return func(s *Service, ctx context.Context, _, walletID int64, today time.Time) (ProposalBasis, error) {
+		return f(s, ctx, walletID, today)
+	}
 }
 
 const (
@@ -95,6 +107,10 @@ type ProposalRow struct {
 	Other      string  `json:"other,omitempty"`
 	Last       string  `json:"last,omitempty"`
 	Yearly     int64   `json:"yearly,omitempty"`
+	// Savings (#699): a category's average a month in the nine months before,
+	// and in the last three.
+	Before int64 `json:"before,omitempty"`
+	Recent int64 `json:"recent,omitempty"`
 }
 
 // key is what a row is about: its schedule, or its category. Saving it marks
@@ -160,89 +176,113 @@ func median(v []int64) int64 {
 	return (s[n/2-1] + s[n/2]) / 2
 }
 
-// budgetRows works out the rows for a wallet, with today the person's local
-// date: the six complete months before today's, against today's budgets.
-func (s *Service) budgetRows(ctx context.Context, walletID int64, today time.Time) (ProposalBasis, error) {
-	month := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.UTC)
-	basis := ProposalBasis{Rows: []ProposalRow{}}
+// spending is what each budget line of a wallet took in each of n complete
+// months, oldest first, as positive amounts in the base currency, with the
+// budget it had each month and the one it has today.
+type spending struct {
+	currency Currency
+	months   []string          // YYYY-MM
+	spent    map[int64][]int64 // per line
+	budget   map[int64][]int64 // per line, 0 for none
+	today    map[int64]int64   // today's budget lines
+	names    map[int64]string  // Parent:Child
+	parent   map[int64]int64
+	children map[int64]bool
+}
 
+// spendingOf reads the n complete months before today's, the person's local
+// date.
+func (s *Service) spendingOf(ctx context.Context, walletID int64, today time.Time, n int) (spending, error) {
+	month := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.UTC)
+	sp := spending{
+		spent: map[int64][]int64{}, budget: map[int64][]int64{}, today: map[int64]int64{},
+		names: map[int64]string{}, parent: map[int64]int64{}, children: map[int64]bool{},
+	}
 	var err error
-	if basis.Currency, _, err = s.baseCurrency(ctx, walletID); err != nil {
-		return basis, err
+	if sp.currency, _, err = s.baseCurrency(ctx, walletID); err != nil {
+		return sp, err
 	}
 	cats, err := s.rq.ListCategoriesForWallet(ctx, walletID)
 	if err != nil {
-		return basis, err
+		return sp, err
 	}
-	names := map[int64]string{}
-	parent := map[int64]int64{}
-	children := map[int64]bool{}
 	for _, c := range cats {
-		names[c.ID] = c.Name
-		parent[c.ID] = c.ParentID.Int64
-		children[c.ParentID.Int64] = true
+		sp.names[c.ID] = c.Name
+		sp.parent[c.ID] = c.ParentID.Int64
+		sp.children[c.ParentID.Int64] = true
 	}
 	for _, c := range cats {
 		if c.ParentID.Valid {
-			names[c.ID] = names[c.ParentID.Int64] + ":" + c.Name
+			sp.names[c.ID] = sp.names[c.ParentID.Int64] + ":" + c.Name
 		}
 	}
 
 	// Today's budgets, then each month's spending and budget per budget line.
 	now, err := s.budgets.Report(ctx, walletID, month.Format(day), month.AddDate(0, 1, -1).Format(day), today.Format(day))
 	if err != nil {
-		return basis, err
+		return sp, err
 	}
-	type line struct {
-		spent, budget [proposalMonths]int64
+	for _, r := range now.Rows {
+		if r.Budgeted && !r.IsIncome {
+			sp.today[r.CategoryID] = abs(r.Budget)
+		}
 	}
-	lines := map[int64]*line{}
-	for i := range proposalMonths {
-		m := month.AddDate(0, i-proposalMonths, 0)
+	for i := range n {
+		m := month.AddDate(0, i-n, 0)
 		last := m.AddDate(0, 1, -1).Format(day)
-		basis.Months = append(basis.Months, m.Format("2006-01"))
+		sp.months = append(sp.months, m.Format("2006-01"))
 		rep, err := s.budgets.Report(ctx, walletID, m.Format(day), last, last)
 		if err != nil {
-			return basis, err
+			return sp, err
 		}
 		for _, r := range rep.Rows {
 			if r.IsIncome {
 				continue
 			}
-			l := lines[r.CategoryID]
-			if l == nil {
-				l = &line{}
-				lines[r.CategoryID] = l
+			if sp.spent[r.CategoryID] == nil {
+				sp.spent[r.CategoryID] = make([]int64, n)
+				sp.budget[r.CategoryID] = make([]int64, n)
 			}
-			l.spent[i] = max(0, -r.Actual)
+			sp.spent[r.CategoryID][i] = max(0, -r.Actual)
 			if r.Budgeted {
-				l.budget[i] = abs(r.Budget)
+				sp.budget[r.CategoryID][i] = abs(r.Budget)
 			}
 		}
 	}
+	return sp, nil
+}
 
-	// Today's budget lines. A category its parent's budget covers is not
-	// proposed one of its own; nor is a parent without one, as its budget would
-	// cover its subcategories too.
-	budget := map[int64]int64{}
-	for _, r := range now.Rows {
-		if r.Budgeted && !r.IsIncome {
-			budget[r.CategoryID] = abs(r.Budget)
-		}
+// proposable tells whether a line can be proposed a budget: one it has, or
+// one of its own. A category its parent's budget covers is not; nor is a
+// parent without one, as its budget would cover its subcategories too.
+func (sp spending) proposable(id int64) bool {
+	_, budgeted := sp.today[id]
+	_, covered := sp.today[sp.parent[id]]
+	return budgeted || (!covered && !sp.children[id])
+}
+
+// budgetRows works out the rows for a wallet, with today the person's local
+// date: the six complete months before today's, against today's budgets.
+func (s *Service) budgetRows(ctx context.Context, walletID int64, today time.Time) (ProposalBasis, error) {
+	basis := ProposalBasis{Rows: []ProposalRow{}}
+	sp, err := s.spendingOf(ctx, walletID, today, proposalMonths)
+	if err != nil {
+		return basis, err
 	}
-	for id, l := range lines {
-		b, budgeted := budget[id]
-		if _, covered := budget[parent[id]]; !budgeted && (covered || children[id]) {
+	basis.Currency, basis.Months = sp.currency, sp.months
+	for id, spent := range sp.spent {
+		if !sp.proposable(id) {
 			continue
 		}
-		row := ProposalRow{CategoryID: id, Name: names[id], Months: l.spent[:]}
+		b, budgeted := sp.today[id]
+		row := ProposalRow{CategoryID: id, Name: sp.names[id], Months: spent}
 		row.Median = median(row.Months)
 		row.Proposed = roundTo5(row.Median, basis.Currency.FracDigits)
 		if row.Proposed == 0 {
 			continue
 		}
 		if !budgeted {
-			for _, v := range l.spent {
+			for _, v := range spent {
 				if v > 0 {
 					row.Hits++
 				}
@@ -254,8 +294,8 @@ func (s *Service) budgetRows(ctx context.Context, walletID int64, today time.Tim
 		} else {
 			row.Budget = b
 			over, under := 0, 0
-			for i, v := range l.spent {
-				switch b := l.budget[i]; {
+			for i, v := range spent {
+				switch b := sp.budget[id][i]; {
 				case b == 0:
 				case v > b:
 					over++
@@ -360,7 +400,7 @@ func (b ProposalBasis) prompt(lang string) string {
 // person's local date. It replaces the proposals of the kind still waiting.
 func (s *Service) propose(ctx context.Context, kind string, userID, walletID int64, today time.Time) (int64, error) {
 	k := proposalKinds[kind]
-	basis, err := k.rows(s, ctx, walletID, today)
+	basis, err := k.rows(s, ctx, userID, walletID, today)
 	if err != nil {
 		return 0, err
 	}
