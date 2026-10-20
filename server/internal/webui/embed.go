@@ -89,6 +89,18 @@ func handler(sub fs.FS) http.Handler {
 		} else {
 			w.Header().Set("Cache-Control", "no-cache")
 		}
+		// The manifest names its shortcuts in the reader's language (#702).
+		if upath == "manifest.webmanifest" {
+			data, err := fs.ReadFile(sub, upath)
+			if err != nil {
+				http.Error(w, "manifest unavailable", http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/manifest+json")
+			w.Header().Set("Vary", "Accept-Language")
+			_, _ = w.Write(localizeManifest(data, r.Header.Get("Accept-Language")))
+			return
+		}
 		fileServer.ServeHTTP(w, r)
 	})
 }

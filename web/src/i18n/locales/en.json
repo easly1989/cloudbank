@@ -101,7 +101,13 @@
     "signExpense": "Expense — switch to income",
     "signIncome": "Income — switch to expense",
     "savedTo": "Saved to {{account}}",
-    "removeSplit": "Remove this split line"
+    "removeSplit": "Remove this split line",
+    "shared": {
+      "title": "Shared text",
+      "close": "Close the shared text",
+      "all": "Show all",
+      "less": "Show less"
+    }
   },
   "transfers": {
     "add": "Transfer",
@@ -2090,7 +2096,8 @@
       "lead": "On the 1st of every month, on the month before. And also:",
       "weekly": "Every Monday, the week before",
       "yearly": "In January, the year before"
-    }
+    },
+    "fromShared": "From the shared text: check the fields and save"
   },
   "setup": {
     "title": "Welcome to CloudBank",

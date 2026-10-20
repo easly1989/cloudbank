@@ -345,6 +345,8 @@ var (
 	// them: a card payment and a transfer received.
 	rePaid     = regexp.MustCompile(`pagamento di ([\d.,]+) EUR .*?presso (.+?)[,.]`)
 	reReceived = regexp.MustCompile(`ricevuto un bonifico di ([\d.,]+) EUR da (.+?)\.`)
+	// And the shared notification of a quick entry (#702).
+	reEntry = regexp.MustCompile(`payment of ([\d.]+) EUR at (.+?) on `)
 )
 
 // chat answers an OpenAI-compatible chat completion the way the bank-mail
@@ -403,6 +405,18 @@ func (f *fake) chat(w http.ResponseWriter, r *http.Request) {
 			"choices": []map[string]any{{"message": map[string]string{
 				"role": "assistant", "content": "Your streaming now costs more than the schedule says.",
 			}}},
+		})
+		return
+	}
+	// A quick entry (#702): text shared from a bank's notification.
+	if _, desc, ok := strings.Cut(text, "\nDescription: "); ok {
+		entry := map[string]any{"amount": 0, "direction": "expense", "date": "", "payee": "", "category": "", "tags": []string{}, "memo": ""}
+		if m := reEntry.FindStringSubmatch(desc); m != nil {
+			entry["amount"], entry["payee"], entry["memo"] = m[1], m[2], "Card payment"
+		}
+		content, _ := json.Marshal(entry)
+		writeJSON(w, http.StatusOK, map[string]any{
+			"choices": []map[string]any{{"message": map[string]string{"role": "assistant", "content": string(content)}}},
 		})
 		return
 	}

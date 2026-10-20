@@ -101,7 +101,13 @@
     "signExpense": "Dépense — passer en revenu",
     "signIncome": "Revenu — passer en dépense",
     "savedTo": "Enregistrée dans {{account}}",
-    "removeSplit": "Retirer cette ligne de ventilation"
+    "removeSplit": "Retirer cette ligne de ventilation",
+    "shared": {
+      "title": "Texte partagé",
+      "close": "Fermer le texte partagé",
+      "all": "Tout afficher",
+      "less": "Afficher moins"
+    }
   },
   "transfers": {
     "add": "Virement",
@@ -2090,7 +2096,8 @@
       "lead": "Le 1er de chaque mois, sur le mois précédent. Et aussi :",
       "weekly": "Chaque lundi, la semaine précédente",
       "yearly": "En janvier, l’année précédente"
-    }
+    },
+    "fromShared": "D'après le texte partagé : vérifiez les champs et enregistrez"
   },
   "setup": {
     "title": "Bienvenue dans CloudBank",
