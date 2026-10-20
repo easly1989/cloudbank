@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 
 import { getBills, getBudgetReport, getTransactionReview, listGoals } from "../../api/client";
 import { countReachedOpen } from "../../pages/goals/goalList";
+import { useUnusual } from "../unusualData";
 import { buildAttentionItems, countOverBudget, monthRange } from "./attention";
 import { ATTENTION } from "../../pages/overviewTheme";
 
@@ -50,6 +51,7 @@ export function NeedsAttention({ walletId }: { walletId: number }) {
     queryFn: () => listGoals(walletId),
     enabled: walletId > 0,
   });
+  const unusual = useUnusual(walletId);
 
   const items = buildAttentionItems({
     needsCategory: review.data?.needsCategory.length ?? 0,
@@ -57,6 +59,7 @@ export function NeedsAttention({ walletId }: { walletId: number }) {
     overdueBills: bills.data?.overdue ?? 0,
     overBudget: countOverBudget(budget.data?.rows),
     goalsReached: countReachedOpen(goals.data),
+    unusual: unusual?.rows.length ?? 0,
   });
 
   if (items.length === 0) return null;

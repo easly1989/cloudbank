@@ -29,6 +29,7 @@ import {
   IconPencilBolt,
   IconPigMoney,
   IconTarget,
+  IconZoomExclamation,
   type Icon,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -62,6 +63,7 @@ const FEATURES: { key: AIFeature; icon: Icon }[] = [
   { key: "subscriptions", icon: IconCalendarRepeat },
   { key: "savings", icon: IconCoin },
   { key: "goals", icon: IconTarget },
+  { key: "unusual", icon: IconZoomExclamation },
   { key: "suggest", icon: IconCategory },
   { key: "entry", icon: IconPencilBolt },
   { key: "mail", icon: IconMail },
@@ -76,6 +78,7 @@ const NO_FEATURES: AIFeatures = {
   subscriptions: false,
   savings: false,
   goals: false,
+  unusual: false,
 };
 
 /** The first of next month, UTC, when the count starts again. */

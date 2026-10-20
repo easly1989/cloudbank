@@ -1788,7 +1788,8 @@
       "summary_weekly": "Weekly summary",
       "summary_monthly": "Monthly summary",
       "ai_report": "AI report ready",
-      "ai_proposal": "AI proposal ready"
+      "ai_proposal": "AI proposal ready",
+      "unusual_transaction": "Unusual transaction"
     },
     "kindHint": {
       "new_device": "A browser or system your account has not used before.",
@@ -1808,7 +1809,8 @@
       "summary_weekly": "On Monday: money in and out, what took most and the week's bills, per wallet.",
       "summary_monthly": "On the 1st: money in and out and what took most last month, per wallet.",
       "ai_report": "When a scheduled report is written, or skipped at the month's limit. Two lines, never the amounts.",
-      "ai_proposal": "When the AI proposes budgets, or finds subscriptions, savings or goals to look at, once a month each. Two lines, never the amounts."
+      "ai_proposal": "When the AI proposes budgets, or finds subscriptions, savings or goals to look at, once a month each. Two lines, never the amounts.",
+      "unusual_transaction": "An expense out of scale for its payee, a new payee with a large amount, or a double charge, found by the AI in what came from the bank, a mail, a schedule, an import or another member."
     },
     "securityAlways": "Always in the bell, so a sign-in you didn't make cannot go unnoticed.",
     "emailUnavailable": "Not available: the administrator has not set up a mail server (CB_SMTP_HOST).",
@@ -2043,6 +2045,10 @@
       "goals": {
         "name": "Goal proposals",
         "sends": "Sends, for each goal it proposes, its name, what is left, its date and what goes in a month, with what the wallet keeps a month. Never the transactions."
+      },
+      "unusual": {
+        "name": "Unusual transactions",
+        "sends": "Sends, for each expense it flags, the payee, the date and the amount, with the payee's usual amount. Never the memo."
       }
     },
     "wallets": "On which wallets",
@@ -2818,7 +2824,10 @@
     "duplicatesAction": "Check them",
     "goalsReached_one": "goal reached its target",
     "goalsReached_other": "goals reached their target",
-    "goalsReachedAction": "Review goals"
+    "goalsReachedAction": "Review goals",
+    "unusual_one": "transaction looks unusual",
+    "unusual_other": "transactions look unusual",
+    "unusualAction": "Check them"
   },
   "common": {
     "cancel": "Cancel",
@@ -3379,6 +3388,32 @@
         "eta": "Gets there",
         "note": "CloudBank worked out the numbers: each goal's pace over the last 3 complete months, the monthly share its date needs, and what the wallet kept a month in them ({{kept}}). The model only wrote the text. Model: {{model}}."
       }
+    }
+  },
+  "unusual": {
+    "title_one": "{{count}} unusual transaction",
+    "title_other": "{{count}} unusual transactions",
+    "basis": "From the transactions of the last 30 days · made on {{date}}",
+    "basisNoDate": "From the transactions of the last 30 days",
+    "reason": {
+      "scale": "{{times}} times the usual: usually {{usual}} ({{payments}} payments in the last year)",
+      "new": "A new payee, above 95% of your expenses in the last year",
+      "double": "Charged twice in a few days: {{first}} and {{second}}"
+    },
+    "open": "Open in the register",
+    "openLabel": "Open {{payee}}, {{amount}}, in the register",
+    "fine": "It's fine",
+    "fineLabel": "{{payee}}, {{amount}}: it's fine",
+    "pair": "See the pair",
+    "pairLabel": "See the pair of {{payee}} among the possible duplicates",
+    "notDuplicateLabel": "{{payee}}: not a duplicate",
+    "seeInReview": "See in Review",
+    "why": {
+      "transaction": "Transaction",
+      "amount": "Amount",
+      "usual": "Usually",
+      "payments": "Payments in a year",
+      "note": "CloudBank found these: an amount at least twice the payee's median and 20 above it, a new payee above 95% of the year's expenses, the same amount to the same payee twice within 3 days. The model only wrote the text. Model: {{model}}."
     }
   }
 }

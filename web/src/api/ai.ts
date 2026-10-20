@@ -15,6 +15,8 @@ export interface AIFeatures {
   /** Categories that grew lately, back to what they were (#699). */
   savings: boolean;
   goals: boolean;
+  /** Expenses out of scale, new payees, double charges (#700). */
+  unusual: boolean;
 }
 
 export type AIFeature = keyof AIFeatures;
@@ -267,3 +269,44 @@ export const actOnAIProposal = (
 
 export const setAIProposalFeedback = (walletId: number, id: number, feedback: -1 | 0 | 1) =>
   api.put<void>(`/api/v1/wallets/${walletId}/insights/proposals/${id}/feedback`, { feedback });
+
+// --- Unusual transactions (#700) ---
+
+/** An expense flagged, the amount positive in its account's currency. */
+export interface AIUnusualRow {
+  id: number;
+  transactionId: number;
+  accountId: number;
+  date: string;
+  payee: string;
+  amount: number;
+  currency: AIReportCurrency;
+  kind: "scale" | "new" | "double";
+  /** Scale: the payee's median; new: the amount it is above. */
+  usual: number;
+  /** Scale: the payee's expenses in the year before. */
+  payments: number;
+  /** Double: the first charge. */
+  otherId?: number;
+  otherDate?: string;
+}
+
+export interface AIUnusual {
+  /** The model's sentences; empty until it wrote some. */
+  body: string;
+  model: string;
+  feedback: -1 | 0 | 1;
+  createdAt: string;
+  rows: AIUnusualRow[];
+}
+
+export const aiUnusualKey = (walletId: number) => ["aiUnusual", walletId] as const;
+
+export const getAIUnusual = (walletId: number) =>
+  api.get<AIUnusual>(`/api/v1/wallets/${walletId}/insights/unusual`);
+
+export const setAIUnusualFine = (walletId: number, id: number) =>
+  api.post<void>(`/api/v1/wallets/${walletId}/insights/unusual/${id}/fine`, {});
+
+export const setAIUnusualFeedback = (walletId: number, feedback: -1 | 0 | 1) =>
+  api.put<void>(`/api/v1/wallets/${walletId}/insights/unusual/feedback`, { feedback });

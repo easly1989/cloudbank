@@ -828,6 +828,55 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/insights/unusual:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      operationId: getAIUnusual
+      summary: The current user's unusual transactions on this wallet, newest first
+      description: >-
+        The expenses flagged in the last 30 days and not handled, with the
+        model's sentences about them. A double whose pair was merged or marked
+        not a duplicate on Review is left out. Private to the user, even on a
+        shared wallet.
+      responses:
+        "200":
+          description: The flags.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIUnusual" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/insights/unusual/{flagId}/fine:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: flagId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: setAIUnusualFine
+      summary: "It's fine: the flag is put away until the expense's amount changes"
+      responses:
+        "204": { description: Recorded. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/insights/unusual/feedback:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    put:
+      operationId: setAIUnusualFeedback
+      summary: Thumbs up (1), down (-1) or neither (0) on the sentences about the unusual transactions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { feedback: { type: integer, enum: [-1, 0, 1] } }
+              required: [feedback]
+      responses:
+        "204": { description: Recorded. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/mail:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -3651,7 +3700,8 @@ components:
         subscriptions: { type: boolean, description: "subscription proposals: sends each proposed schedule's name, amount, last payments and cost a year" }
         savings: { type: boolean, description: "savings proposals: sends each proposed category's name, its average a month before and lately, and the amount proposed" }
         goals: { type: boolean, description: "goal proposals: sends each proposed goal's name, what is left, its date, its pace and what the wallet kept a month" }
-      required: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals]
+        unusual: { type: boolean, description: "unusual transactions: sends each flagged expense's payee, date and amount, with the payee's usual amount" }
+      required: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals, unusual]
     AISchedule:
       type: object
       description: The reports that come by themselves besides the monthly one, which comes whenever reports are on.
@@ -3695,7 +3745,7 @@ components:
         id: { type: integer, format: int64 }
         walletId: { type: [integer, "null"], format: int64 }
         walletName: { type: string }
-        feature: { type: string, enum: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals] }
+        feature: { type: string, enum: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals, unusual] }
         model: { type: string }
         createdAt: { type: string, description: "RFC3339 UTC" }
         sent: { type: string, description: "the text sent, word for word; only when one call is asked for" }
@@ -3841,6 +3891,40 @@ components:
         feedback: { type: integer, enum: [-1, 0, 1] }
         createdAt: { type: string, description: "RFC3339 UTC" }
       required: [id, kind, period, body, basis, model, feedback, createdAt]
+    AIUnusualRow:
+      type: object
+      description: An expense flagged, the amount positive in its account's currency.
+      properties:
+        id: { type: integer, format: int64 }
+        transactionId: { type: integer, format: int64 }
+        accountId: { type: integer, format: int64 }
+        date: { type: string, description: "YYYY-MM-DD" }
+        payee: { type: string }
+        amount: { type: integer, format: int64 }
+        currency: { $ref: "#/components/schemas/AIReportCurrency" }
+        kind:
+          type: string
+          enum: [scale, new, double]
+          description: >-
+            scale: at least twice the payee's median and 20 above it, with 4
+            expenses in the year before; new: the payee's first transaction,
+            above 95% of the wallet's expenses in the year before and at least
+            50; double: the same payee, amount and account charged twice within
+            3 days, by the bank, a mail, a schedule or an import.
+        usual: { type: integer, format: int64, description: "scale: the payee's median; new: the amount it is above" }
+        payments: { type: integer, format: int64, description: "scale: the payee's expenses in the year before" }
+        otherId: { type: integer, format: int64, description: "double: the first charge" }
+        otherDate: { type: string, description: "double: the first charge's date" }
+      required: [id, transactionId, accountId, date, payee, amount, currency, kind, usual, payments]
+    AIUnusual:
+      type: object
+      properties:
+        body: { type: string, description: "the model's sentences; empty until it wrote some" }
+        model: { type: string }
+        feedback: { type: integer, enum: [-1, 0, 1] }
+        createdAt: { type: string, description: "RFC3339 UTC, when the sentences were written" }
+        rows: { type: array, items: { $ref: "#/components/schemas/AIUnusualRow" } }
+      required: [body, model, feedback, createdAt, rows]
     SuggestCategoryRequest:
       type: object
       description: Only the payee and the amount are sent to the model, never the memo.
@@ -4187,7 +4271,7 @@ components:
       required: [category]
     NotificationKind:
       type: string
-      enum: [new_device, two_factor_off, new_api_token, bank_sync_failed, consent_expiring, mail_stopped, mail_unrecognized, review_waiting, bills, large_transaction, low_balance, budget, goal, summary_weekly, summary_monthly, ai_report, ai_proposal, new_version]
+      enum: [new_device, two_factor_off, new_api_token, bank_sync_failed, consent_expiring, mail_stopped, mail_unrecognized, review_waiting, bills, large_transaction, low_balance, budget, goal, summary_weekly, summary_monthly, ai_report, ai_proposal, unusual_transaction, new_version]
     NotificationChannel:
       type: string
       enum: [inapp, push, email, matrix, telegram, discord, slack, ntfy, gotify, webhook]

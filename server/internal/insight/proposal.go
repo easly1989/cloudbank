@@ -530,18 +530,29 @@ var proposalNotes = map[string][2]string{
 }
 
 // RunUser makes what is due for one person now: on turning a kind of
-// proposal on, it comes at once rather than at the next run.
+// proposal, or the unusual transactions, on, they come at once rather than
+// at the next run.
 func (s *Service) RunUser(ctx context.Context, userID int64) error {
 	users, err := s.rq.ListAIReportUsers(ctx)
 	if err != nil {
 		return err
 	}
+	var errs []error
 	for _, u := range users {
 		if u.UserID == userID {
-			return s.runFor(ctx, u)
+			errs = append(errs, s.runFor(ctx, u))
 		}
 	}
-	return nil
+	watchers, err := s.rq.ListAIUnusualUsers(ctx)
+	if err != nil {
+		return err
+	}
+	for _, u := range watchers {
+		if u.UserID == userID {
+			errs = append(errs, s.unusualFor(ctx, u))
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // Proposals returns the user's proposals waiting on a wallet, newest first,

@@ -1788,7 +1788,8 @@
       "summary_weekly": "Wochenübersicht",
       "summary_monthly": "Monatsübersicht",
       "ai_report": "KI-Bericht fertig",
-      "ai_proposal": "KI-Vorschlag fertig"
+      "ai_proposal": "KI-Vorschlag fertig",
+      "unusual_transaction": "Ungewöhnliche Buchung"
     },
     "kindHint": {
       "new_device": "Ein Browser oder System, das dein Konto noch nie benutzt hat.",
@@ -1808,7 +1809,8 @@
       "summary_weekly": "Montags: Einnahmen, Ausgaben, die größten Posten und die Fälligkeiten der Woche, je Haushaltsbuch.",
       "summary_monthly": "Am 1.: Einnahmen, Ausgaben und die größten Posten des Vormonats, je Haushaltsbuch.",
       "ai_report": "Wenn ein geplanter Bericht geschrieben oder am Monatslimit übersprungen wird. Zwei Zeilen, nie die Beträge.",
-      "ai_proposal": "Wenn die KI Budgets vorschlägt oder Abos, Sparmöglichkeiten oder Sparziele zum Ansehen findet, je einmal im Monat. Zwei Zeilen, nie die Beträge."
+      "ai_proposal": "Wenn die KI Budgets vorschlägt oder Abos, Sparmöglichkeiten oder Sparziele zum Ansehen findet, je einmal im Monat. Zwei Zeilen, nie die Beträge.",
+      "unusual_transaction": "Eine Ausgabe, die für ihren Zahlungspartner aus dem Rahmen fällt, ein neuer Zahlungspartner mit hohem Betrag oder eine doppelte Abbuchung, von der KI gefunden in dem, was von der Bank, einer Mail, einer wiederkehrenden Buchung, einem Import oder einem anderen Mitglied kommt."
     },
     "securityAlways": "Immer in der Glocke, damit eine Anmeldung, die nicht von dir kam, nicht unbemerkt bleibt.",
     "emailUnavailable": "Nicht verfügbar: Der Administrator hat keinen Mailserver eingerichtet (CB_SMTP_HOST).",
@@ -2043,6 +2045,10 @@
       "goals": {
         "name": "Sparziel-Vorschläge",
         "sends": "Sendet für jedes vorgeschlagene Sparziel den Namen, was noch fehlt, das Datum und was im Monat hineinfließt, dazu, was im Haushaltsbuch monatlich übrig bleibt. Nie die Buchungen."
+      },
+      "unusual": {
+        "name": "Ungewöhnliche Buchungen",
+        "sends": "Sendet für jede markierte Ausgabe den Zahlungspartner, das Datum und den Betrag, dazu den üblichen Betrag des Zahlungspartners. Nie die Notiz."
       }
     },
     "wallets": "Für welche Haushaltsbücher",
@@ -2818,7 +2824,10 @@
     "duplicatesAction": "Prüfen",
     "goalsReached_one": "Sparziel hat sein Ziel erreicht",
     "goalsReached_other": "Sparziele haben ihr Ziel erreicht",
-    "goalsReachedAction": "Sparziele ansehen"
+    "goalsReachedAction": "Sparziele ansehen",
+    "unusual_one": "Buchung wirkt ungewöhnlich",
+    "unusual_other": "Buchungen wirken ungewöhnlich",
+    "unusualAction": "Prüfen"
   },
   "common": {
     "cancel": "Abbrechen",
@@ -3379,6 +3388,32 @@
         "eta": "Am Ziel",
         "note": "CloudBank hat die Zahlen berechnet: das Tempo jedes Sparziels in den letzten 3 vollen Monaten, den Monatsanteil, den sein Datum braucht, und was im Haushaltsbuch in diesen Monaten monatlich übrig blieb ({{kept}}). Das Modell hat nur den Text geschrieben. Modell: {{model}}."
       }
+    }
+  },
+  "unusual": {
+    "title_one": "{{count}} ungewöhnliche Buchung",
+    "title_other": "{{count}} ungewöhnliche Buchungen",
+    "basis": "Aus den Buchungen der letzten 30 Tage · erstellt am {{date}}",
+    "basisNoDate": "Aus den Buchungen der letzten 30 Tage",
+    "reason": {
+      "scale": "Das {{times}}-Fache des Üblichen: sonst {{usual}} ({{payments}} Zahlungen im letzten Jahr)",
+      "new": "Neuer Zahlungspartner, über 95 % deiner Ausgaben im letzten Jahr",
+      "double": "In wenigen Tagen doppelt abgebucht: {{first}} und {{second}}"
+    },
+    "open": "In den Buchungen öffnen",
+    "openLabel": "{{payee}}, {{amount}}, in den Buchungen öffnen",
+    "fine": "Passt so",
+    "fineLabel": "{{payee}}, {{amount}}: passt so",
+    "pair": "Paar ansehen",
+    "pairLabel": "Das Paar von {{payee}} unter den möglichen Duplikaten ansehen",
+    "notDuplicateLabel": "{{payee}}: kein Duplikat",
+    "seeInReview": "In der Prüfung ansehen",
+    "why": {
+      "transaction": "Buchung",
+      "amount": "Betrag",
+      "usual": "Sonst",
+      "payments": "Zahlungen im Jahr",
+      "note": "CloudBank hat sie gefunden: ein Betrag mindestens doppelt so hoch wie der Median des Zahlungspartners und 20 darüber, ein neuer Zahlungspartner über 95 % der Ausgaben des Jahres, derselbe Betrag an denselben Zahlungspartner zweimal in 3 Tagen. Das Modell hat nur den Text geschrieben. Modell: {{model}}."
     }
   }
 }

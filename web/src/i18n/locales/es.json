@@ -1788,7 +1788,8 @@
       "summary_weekly": "Resumen semanal",
       "summary_monthly": "Resumen mensual",
       "ai_report": "Resumen de IA listo",
-      "ai_proposal": "Propuesta de IA lista"
+      "ai_proposal": "Propuesta de IA lista",
+      "unusual_transaction": "Movimiento inusual"
     },
     "kindHint": {
       "new_device": "Un navegador o sistema que tu cuenta no había usado nunca.",
@@ -1808,7 +1809,8 @@
       "summary_weekly": "El lunes: ingresos, gastos, en qué se fue más y los vencimientos de la semana, por cartera.",
       "summary_monthly": "El día 1: ingresos, gastos y en qué se fue más el mes anterior, por cartera.",
       "ai_report": "Cuando se escribe un resumen programado, o se omite al llegar al límite del mes. Dos líneas, nunca los importes.",
-      "ai_proposal": "Cuando la IA propone presupuestos, o encuentra suscripciones, ahorros o metas que revisar, una vez al mes cada uno. Dos líneas, nunca los importes."
+      "ai_proposal": "Cuando la IA propone presupuestos, o encuentra suscripciones, ahorros o metas que revisar, una vez al mes cada uno. Dos líneas, nunca los importes.",
+      "unusual_transaction": "Un gasto fuera de escala para su beneficiario, un beneficiario nuevo con un importe alto o un doble cargo, encontrados por la IA en lo que llega del banco, de un correo, de un movimiento programado, de una importación o de otro miembro."
     },
     "securityAlways": "Siempre en la campana, para que un inicio de sesión que no has hecho no pase desapercibido.",
     "emailUnavailable": "No disponible: el administrador no ha configurado un servidor de correo (CB_SMTP_HOST).",
@@ -2043,6 +2045,10 @@
       "goals": {
         "name": "Propuestas de metas",
         "sends": "Envía, por cada meta que propone, su nombre, lo que falta, su fecha y lo que entra al mes, con lo que le sobra a la cartera cada mes. Nunca los movimientos."
+      },
+      "unusual": {
+        "name": "Movimientos inusuales",
+        "sends": "Envía, por cada gasto que señala, el beneficiario, la fecha y el importe, con el importe habitual del beneficiario. Nunca la nota."
       }
     },
     "wallets": "En qué carteras",
@@ -2818,7 +2824,10 @@
     "duplicatesAction": "Revisarlas",
     "goalsReached_one": "meta alcanzó su objetivo",
     "goalsReached_other": "metas alcanzaron su objetivo",
-    "goalsReachedAction": "Ver metas"
+    "goalsReachedAction": "Ver metas",
+    "unusual_one": "movimiento parece inusual",
+    "unusual_other": "movimientos parecen inusuales",
+    "unusualAction": "Revisarlos"
   },
   "common": {
     "cancel": "Cancelar",
@@ -3379,6 +3388,32 @@
         "eta": "Llegas",
         "note": "CloudBank calculó las cifras: el ritmo de cada meta en los últimos 3 meses completos, la cuota al mes que pide su fecha y lo que le sobró al mes a la cartera en esos meses ({{kept}}). El modelo solo escribió el texto. Modelo: {{model}}."
       }
+    }
+  },
+  "unusual": {
+    "title_one": "{{count}} movimiento inusual",
+    "title_other": "{{count}} movimientos inusuales",
+    "basis": "De los movimientos de los últimos 30 días · generado el {{date}}",
+    "basisNoDate": "De los movimientos de los últimos 30 días",
+    "reason": {
+      "scale": "{{times}} veces lo habitual: normalmente {{usual}} ({{payments}} pagos en el último año)",
+      "new": "Beneficiario nuevo, por encima del 95% de tus gastos del último año",
+      "double": "Cobrado dos veces en pocos días: {{first}} y {{second}}"
+    },
+    "open": "Abrir en movimientos",
+    "openLabel": "Abrir {{payee}}, {{amount}}, en movimientos",
+    "fine": "Está bien",
+    "fineLabel": "{{payee}}, {{amount}}: está bien",
+    "pair": "Ver la pareja",
+    "pairLabel": "Ver la pareja de {{payee}} entre los posibles duplicados",
+    "notDuplicateLabel": "{{payee}}: no es duplicado",
+    "seeInReview": "Ver en Revisión",
+    "why": {
+      "transaction": "Movimiento",
+      "amount": "Importe",
+      "usual": "Normalmente",
+      "payments": "Pagos en un año",
+      "note": "CloudBank encontró estos movimientos: un importe de al menos el doble de la mediana del beneficiario y 20 por encima, un beneficiario nuevo por encima del 95% de los gastos del año, el mismo importe al mismo beneficiario dos veces en 3 días. El modelo solo escribió el texto. Modelo: {{model}}."
     }
   }
 }

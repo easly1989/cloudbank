@@ -1788,7 +1788,8 @@
       "summary_weekly": "Riepilogo settimanale",
       "summary_monthly": "Riepilogo mensile",
       "ai_report": "Resoconto AI pronto",
-      "ai_proposal": "Proposta AI pronta"
+      "ai_proposal": "Proposta AI pronta",
+      "unusual_transaction": "Transazione insolita"
     },
     "kindHint": {
       "new_device": "Un browser o un sistema che il tuo account non ha mai usato.",
@@ -1808,7 +1809,8 @@
       "summary_weekly": "Il lunedì: entrate, uscite, dove è andato di più e le scadenze della settimana, per portafoglio.",
       "summary_monthly": "Il giorno 1: entrate, uscite e dove è andato di più nel mese prima, per portafoglio.",
       "ai_report": "Quando un resoconto programmato è scritto, o saltato al limite del mese. Due righe, mai gli importi.",
-      "ai_proposal": "Quando l'AI propone budget, o trova abbonamenti, risparmi o obiettivi da guardare, una volta al mese ciascuno. Due righe, mai gli importi."
+      "ai_proposal": "Quando l'AI propone budget, o trova abbonamenti, risparmi o obiettivi da guardare, una volta al mese ciascuno. Due righe, mai gli importi.",
+      "unusual_transaction": "Un'uscita fuori scala per il suo beneficiario, un beneficiario nuovo con un importo alto o un doppio addebito, trovati dall'AI tra quello che arriva dalla banca, da una mail, da una programmata, da un'importazione o da un altro membro."
     },
     "securityAlways": "Sempre nella campanella, così un accesso che non hai fatto non passa inosservato.",
     "emailUnavailable": "Non disponibile: l'amministratore non ha configurato un server di posta (CB_SMTP_HOST).",
@@ -2043,6 +2045,10 @@
       "goals": {
         "name": "Proposte sugli obiettivi",
         "sends": "Invia, per ogni obiettivo che propone, il nome, quanto manca, la data e quanto ci entra al mese, con quanto avanza al mese nel portafoglio. Mai le transazioni."
+      },
+      "unusual": {
+        "name": "Transazioni insolite",
+        "sends": "Invia, per ogni uscita che segnala, il beneficiario, la data e l'importo, con l'importo solito del beneficiario. Mai la nota."
       }
     },
     "wallets": "Su quali portafogli",
@@ -2818,7 +2824,10 @@
     "duplicatesAction": "Controllale",
     "goalsReached_one": "obiettivo ha raggiunto il traguardo",
     "goalsReached_other": "obiettivi hanno raggiunto il traguardo",
-    "goalsReachedAction": "Vai agli obiettivi"
+    "goalsReachedAction": "Vai agli obiettivi",
+    "unusual_one": "transazione sembra insolita",
+    "unusual_other": "transazioni sembrano insolite",
+    "unusualAction": "Controllali"
   },
   "common": {
     "cancel": "Annulla",
@@ -3379,6 +3388,32 @@
         "eta": "Ci arrivi",
         "note": "I numeri li ha calcolati CloudBank: il ritmo di ogni obiettivo negli ultimi 3 mesi completi, la quota al mese che serve per la sua data e quanto è avanzato al mese nel portafoglio in quei mesi ({{kept}}). Il modello ha scritto solo il testo. Modello: {{model}}."
       }
+    }
+  },
+  "unusual": {
+    "title_one": "{{count}} transazione insolita",
+    "title_other": "{{count}} transazioni insolite",
+    "basis": "Dalle transazioni degli ultimi 30 giorni · generato il {{date}}",
+    "basisNoDate": "Dalle transazioni degli ultimi 30 giorni",
+    "reason": {
+      "scale": "{{times}} volte il solito: di solito {{usual}} ({{payments}} pagamenti nell'ultimo anno)",
+      "new": "Beneficiario nuovo, più del 95% delle tue uscite dell'ultimo anno",
+      "double": "Addebitato due volte in pochi giorni: {{first}} e {{second}}"
+    },
+    "open": "Apri nel registro",
+    "openLabel": "Apri {{payee}}, {{amount}}, nel registro",
+    "fine": "Va bene così",
+    "fineLabel": "{{payee}}, {{amount}}: va bene così",
+    "pair": "Vedi la coppia",
+    "pairLabel": "Vedi la coppia di {{payee}} tra i possibili duplicati",
+    "notDuplicateLabel": "{{payee}}: non è un duplicato",
+    "seeInReview": "Vedi in Revisione",
+    "why": {
+      "transaction": "Transazione",
+      "amount": "Importo",
+      "usual": "Di solito",
+      "payments": "Pagamenti in un anno",
+      "note": "Le transazioni le ha trovate CloudBank: un importo almeno doppio della mediana del beneficiario e 20 sopra, un beneficiario nuovo sopra il 95% delle uscite dell'anno, lo stesso importo allo stesso beneficiario due volte in 3 giorni. Il modello ha scritto solo il testo. Modello: {{model}}."
     }
   }
 }
