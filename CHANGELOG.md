@@ -6,6 +6,74 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
+## [3.11.0] — 2026-10-21
+
+The AI does more than fill in fields now. With your own model, it writes a
+report on each month (and, if you like, each week and year), proposes budgets
+from what you really spend, points out subscriptions that cost more, categories
+grown lately, goals falling behind and transactions that look odd. CloudBank
+works out every number; the model only writes the words, in a box you can tell
+apart, and nothing it proposes is saved until you save it. Home Assistant can
+show CloudBank's numbers as sensors, and a phone adds a transaction in two
+taps.
+
+### Added
+
+- **Settings → AI, rebuilt.** Your provider (any OpenAI-compatible service, or
+  a model on your own network that an administrator sets), then each job on its
+  own switch, each saying what it sends; the wallets the AI may work on; a
+  monthly request limit with this month's count; and the last 90 days of what
+  was sent, word for word. Off, nothing goes to any model.
+- **The AI box.** Everything the AI wrote sits in one frame with a slowly
+  changing border (still under reduced motion, or when turned off), with
+  **Why?** for the numbers it was given and thumbs to say whether it helped.
+- **AI insights**, a page of reports the AI writes on a wallet's numbers: last
+  month's on the 1st at 07:00 in your time zone, every Monday's and each year's
+  if you tick them, or any month on **Generate now**. A new **AI report ready**
+  notification opens it.
+- **Budget proposals.** Up to five budgets a month from the six complete months
+  before: a category spent on with no budget, or a budget gone over or not
+  reached, gets the median rounded to 5. **Apply** opens the budget sheet
+  filled in. On Budget, short on the overview and in AI insights.
+- **Subscription proposals** on Schedules: the last payments over the amount
+  saved, a schedule that looks doubled, one no longer seen in the bank.
+- **Savings proposals**: up to three categories you spent more on lately, with
+  what going back to before would keep a month; **Set budget** opens the sheet
+  at the earlier level.
+- **Goal proposals** on Goals: a goal falling behind gets what to put in a
+  month (**Put in** opens the money sheet), one asking more than the wallet
+  keeps a later date, one with no date a date. No investment advice.
+- **Unusual transactions** on Review and the overview: a payee charged far more
+  than usual, a large first payment to a new payee, the same charge twice in a
+  few days. **Open in the register**, **It's fine**, and for a double charge
+  **See the pair** among the possible duplicates. New ones reach the bell.
+- **[The AI guide](docs/ai.md)**: setting it up, what each job does and sends,
+  what stays with you, and the limit.
+- **Home Assistant sensors.** `GET /api/v1/wallets/{walletId}/summary`, read
+  with a personal API token: bills overdue and due this week, the next bill,
+  this month's budget and what waits on Review, in plain decimals; balances only
+  with `?balances=true`. [The guide](docs/home-assistant.md) has the YAML.
+- **Quick add from the phone.** A long press on the installed app's icon offers
+  **New expense** and **New income** (named in your language), opening the
+  entry sheet on your default account with the sign set. On Android, sharing a
+  bank's notification text with CloudBank opens the sheet with it: read at once
+  by the AI's quick entry when it is on, or shown on top to copy from. Nothing
+  is saved until **Save** ([how, and what an iPhone can do](docs/pages.md#adding-from-your-phone)).
+- Seven migrations run at startup, for AI reports, schedules, proposals and
+  unusual transactions.
+
+### Changed
+
+- **The category suggestion no longer sends the memo**, only the payee and the
+  amount.
+- **The web-app manifest** is now served by the server, so the shortcuts speak
+  your language; it is no longer kept by the offline app shell.
+
+### Fixed
+
+- **Quick entry's amount** came back as `23.5`; it is written in the account's
+  own format, `23,50`.
+
 ## [3.10.0] — 2026-10-20
 
 CloudBank can now tell you things where you will see them: in a bell on every
@@ -1095,7 +1163,9 @@ HomeBank feature parity, shipped as a single Docker container.
 - CI (lint, race tests, build, Docker smoke, Playwright e2e) and automated GHCR
   publishing (`:latest` nightly, `:main` stable, `:vX.Y.Z` per release).
 
-[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.9.0...HEAD
+[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.11.0...HEAD
+[3.11.0]: https://github.com/easly1989/cloudbank/compare/v3.10.0...v3.11.0
+[3.10.0]: https://github.com/easly1989/cloudbank/compare/v3.9.0...v3.10.0
 [3.9.0]: https://github.com/easly1989/cloudbank/compare/v3.8.1...v3.9.0
 [3.8.1]: https://github.com/easly1989/cloudbank/compare/v3.8.0...v3.8.1
 [3.8.0]: https://github.com/easly1989/cloudbank/compare/v3.7.0...v3.8.0

@@ -114,16 +114,19 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 ### Secure & on every device
 
 - **Two-factor authentication (TOTP)** — optional per-user 2FA with authenticator apps (QR enrolment + one-time recovery codes) and a two-step login.
-- **Personal API tokens** — scoped, revocable bearer tokens for programmatic access.
-- **Installable PWA** — a web-app manifest, icons and an offline app shell, so CloudBank installs to your phone's home screen or your desktop.
+- **Personal API tokens** — scoped, revocable bearer tokens for programmatic access, and a wallet summary that **Home Assistant** reads as sensors: bills due, this month's budget, what waits on Review, balances only if you ask ([the guide](docs/home-assistant.md)).
+- **Installable PWA** — a web-app manifest, icons and an offline app shell, so CloudBank installs to your phone's home screen or your desktop. A long press on the icon offers **New expense** and **New income**, and on Android a bank's notification shared with CloudBank opens the entry sheet with its text ([how](docs/pages.md#adding-from-your-phone)).
 - **Notifications where you will see them** — a bell on every page, plus push, email, **Matrix**, **Telegram**, **Discord**, **Slack**, **ntfy**, **Gotify** or a signed **webhook** (Home Assistant included). Choose which events reach which channel — bills, security, problems such as a failing bank sync, money (large expenses, low balances, budgets, goals), weekly and monthly summaries — and when: at once, in a daily digest, or after your quiet hours ([the guide](docs/notifications.md)).
 - **Encrypted secrets at rest** — set `CB_SECRET_KEY` to encrypt bank credentials, AI keys, mailbox sign-ins and other secrets in the database (see [Configuration](#configuration)).
 - **Told when to update** — an open page offers a new build of the app instead of swapping it in under you, and admins are told when a newer CloudBank is published, with the steps to update ([turn it off](docs/backup.md#upgrading) if you prefer).
 
 ### Optional AI (bring-your-own-key)
 
-- **Category suggestions** — provider-agnostic; suggests a category for a transaction from its description.
-- **Natural-language entry** — type "coffee 3.50 yesterday" and get a pre-filled transaction to review. Your API key is stored server-side, is write-only, and is never returned to the browser.
+- **Off until you set it up, with your own key** — any OpenAI-compatible service, or a model on your own network (Ollama, LM Studio). Each job has its own switch and says what it sends; you pick the wallets, cap the requests a month, and can read the last 90 days of what was sent, word for word. The key stays on the server and is never returned to the browser ([the guide](docs/ai.md)).
+- **Reports** — a report on each month (and, if you like, each week and year), written on numbers CloudBank works out, in a box you can tell apart, with **Why?** to see them.
+- **Proposals** — budgets from what you really spend, subscriptions that cost more or look doubled, categories grown lately, goals falling behind. Each opens the usual sheet filled in; nothing is saved until you save it.
+- **Unusual transactions** — a payee charged far more than usual, a large first payment to a new payee, the same charge twice: on Review, on the overview and in the bell.
+- **Category suggestions and natural-language entry** — type "coffee 3.50 yesterday", or share a bank's notification from your phone, and get a pre-filled transaction to review.
 
 ## Quick start
 
@@ -216,6 +219,8 @@ Every guide, grouped by what you are trying to do: **[docs/README.md](docs/READM
 - **Migrating from HomeBank**: [docs/migrate-from-homebank.md](docs/migrate-from-homebank.md).
 - **Automatic bank sync** (SimpleFIN, Enable Banking & Pluggy): [docs/bank-sync.md](docs/bank-sync.md).
 - **Bank mails** — read the bank's payment notices from Outlook.com or any IMAP mailbox, with patterns or the AI: [docs/bank-mails.md](docs/bank-mails.md).
+- **The AI, and what it sees** — setting up your own model, what each job sends and what stays with you: [docs/ai.md](docs/ai.md).
+- **Home Assistant sensors** — bills, this month's budget and Review as sensors, with an API token: [docs/home-assistant.md](docs/home-assistant.md).
 - **Writing a bank import plugin**: [docs/import-plugins.md](docs/import-plugins.md).
 - **Contributing / running from source**: [CONTRIBUTING.md](CONTRIBUTING.md).
 
