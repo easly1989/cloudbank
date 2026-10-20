@@ -115,7 +115,8 @@ func (h *aiHandlers) putSettings(w http.ResponseWriter, r *http.Request) {
 		turnedOn := func(was, is bool) bool { return st.Enabled && is && (!before.Enabled || !was) }
 		if h.insights != nil && (turnedOn(before.Features.Budgets, st.Features.Budgets) ||
 			turnedOn(before.Features.Subscriptions, st.Features.Subscriptions) ||
-			turnedOn(before.Features.Savings, st.Features.Savings)) {
+			turnedOn(before.Features.Savings, st.Features.Savings) ||
+			turnedOn(before.Features.Goals, st.Features.Goals)) {
 			ctx := context.WithoutCancel(r.Context())
 			go func() {
 				if err := h.insights.RunUser(ctx, u.ID); err != nil {
@@ -289,14 +290,12 @@ func (h *aiHandlers) proposalAction(w http.ResponseWriter, r *http.Request) {
 		Action     string `json:"action"`
 		CategoryID int64  `json:"categoryId"`
 		ScheduleID int64  `json:"scheduleId"`
+		GoalID     int64  `json:"goalId"`
 	}
 	if !decodeJSON(w, r, &body) {
 		return
 	}
-	row := body.CategoryID
-	if body.ScheduleID != 0 {
-		row = body.ScheduleID
-	}
+	row := max(body.CategoryID, body.ScheduleID, body.GoalID) // only one is sent
 	switch err := h.insights.Act(r.Context(), u.ID, wl.ID, id, body.Action, row); {
 	case errors.Is(err, insight.ErrNotFound):
 		writeError(w, http.StatusNotFound, "not_found", "proposal not found")
