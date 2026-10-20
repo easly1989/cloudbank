@@ -42,9 +42,10 @@ on, on that device, until you turn it off.
   the wallet, to see each account's share.
 - **What wants your attention.** When something needs you, like an overdue bill
   or bank transactions to review, a card says so and links to it.
-- **What the AI proposes.** A [budget proposal](#budget) or a
-  [savings proposal](#ai-insights) waiting for you shows under it, short, with a
-  link to the rows.
+- **What the AI proposes.** A [budget proposal](#budget), a
+  [savings proposal](#ai-insights) or [unusual transactions](#review) waiting
+  for you show under it, short, with a link to the rows. Unusual transactions
+  also count in what wants your attention.
 - **Widgets.** Below the overview, widgets show your accounts, the budget, where
   your money goes, what is scheduled and more.
 - **Customise.** Drag widgets to move them, resize them, hide the ones you don't
@@ -544,6 +545,21 @@ partial: its distance carries on to the next full fill.
 Review collects the imported, bank-synced and mail-read transactions that need
 you:
 
+- **Unusual transactions.** With **Unusual transactions** switched on in
+  Settings → AI, a box on top lists the expenses of the last 30 days that look
+  wrong, among those you did not type in yourself (from the bank, a mail, a
+  schedule, an import or another member):
+  - an amount at least twice the payee's usual one (the median of at least four
+    expenses in the year before) and 20 above it;
+  - a new payee with an amount above 95% of the wallet's expenses in the year
+    before, and at least 50;
+  - the same payee charged the same amount twice within 3 days on one account.
+
+  **Open in the register** opens the transaction; **It's fine** puts it away
+  until its amount changes. A double charge leads to its pair among the
+  possible duplicates with **See the pair**, and **Not a duplicate** puts both
+  away. Each new one reaches the bell as **Unusual transaction**, opening it in
+  the register; turning the switch on looks at the last 30 days without telling.
 - **Needs a category.** Transactions that arrived without a category. Set one
   and they leave the list.
 - **Possible duplicates.** Pairs that look like the same movement entered twice,
@@ -581,7 +597,7 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | **Notifications** | Which events reach you, in the bell, by push on this device, by email, in Matrix, Telegram, Discord or Slack, through ntfy or Gotify, or through a webhook ([the guide](notifications.md)); the bell itself sits in every page header |
 | **Bank sync** | Bank connections ([Automatic bank sync](bank-sync.md)) |
 | **Bank mails** | The bank's notification mails, read from one folder of a mailbox ([the guide](bank-mails.md)) |
-| **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, budget, subscription, savings and goal proposals, category suggestions, quick entry, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word |
+| **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, budget, subscription, savings and goal proposals, unusual transactions, category suggestions, quick entry, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word |
 | **Import & export** | Imports ([Importing transactions](import.md)), exports, backups and a database check |
 | **People** | Administrators only: the people who can sign in |
 | **About** | The version, the licence and the source code; for administrators, whether a newer CloudBank is out and the switch for the daily check ([Upgrading](backup.md#upgrading)) |

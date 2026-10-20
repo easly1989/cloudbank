@@ -57,6 +57,8 @@ type Querier interface {
 	CountKnownDevices(ctx context.Context, userID int64) (int64, error)
 	CountNotificationCodeAttempt(ctx context.Context, arg CountNotificationCodeAttemptParams) (int64, error)
 	CountOIDCIdentitiesForUser(ctx context.Context, userID int64) (int64, error)
+	// How many transactions, of any date and sign, each payee of a wallet has.
+	CountPayeeTransactions(ctx context.Context, walletID int64) ([]CountPayeeTransactionsRow, error)
 	CountPayeesInWallet(ctx context.Context, arg CountPayeesInWalletParams) (int64, error)
 	CountPayeesWithCategory(ctx context.Context, defaultCategoryID sql.NullInt64) (int64, error)
 	CountSubcategories(ctx context.Context, parentID sql.NullInt64) (int64, error)
@@ -138,6 +140,7 @@ type Querier interface {
 	GetAIProposal(ctx context.Context, arg GetAIProposalParams) (GetAIProposalRow, error)
 	GetAISend(ctx context.Context, arg GetAISendParams) (GetAISendRow, error)
 	GetAISettings(ctx context.Context, userID int64) (GetAISettingsRow, error)
+	GetAIUnusualScan(ctx context.Context, arg GetAIUnusualScanParams) (GetAIUnusualScanRow, error)
 	GetAPIToken(ctx context.Context, id string) (ApiToken, error)
 	GetAccount(ctx context.Context, id int64) (Account, error)
 	// An account's currency decimals, if the account is in the wallet.
@@ -190,6 +193,7 @@ type Querier interface {
 	InsertAIReport(ctx context.Context, arg InsertAIReportParams) (InsertAIReportRow, error)
 	InsertAIReportRun(ctx context.Context, arg InsertAIReportRunParams) error
 	InsertAISend(ctx context.Context, arg InsertAISendParams) (int64, error)
+	InsertAIUnusual(ctx context.Context, arg InsertAIUnusualParams) (int64, error)
 	InsertAPIToken(ctx context.Context, arg InsertAPITokenParams) (ApiToken, error)
 	InsertAccessRecoveryCode(ctx context.Context, arg InsertAccessRecoveryCodeParams) error
 	InsertAccount(ctx context.Context, arg InsertAccountParams) (Account, error)
@@ -249,6 +253,8 @@ type Querier interface {
 	ListAIReportUsers(ctx context.Context) ([]ListAIReportUsersRow, error)
 	ListAIReports(ctx context.Context, arg ListAIReportsParams) ([]ListAIReportsRow, error)
 	ListAISends(ctx context.Context, arg ListAISendsParams) ([]ListAISendsRow, error)
+	// The people whose AI looks for unusual transactions (#700).
+	ListAIUnusualUsers(ctx context.Context) ([]ListAIUnusualUsersRow, error)
 	ListAIWalletsOff(ctx context.Context, userID int64) ([]int64, error)
 	ListAPITokensForUser(ctx context.Context, userID int64) ([]ApiToken, error)
 	// The full account ledger ordered chronologically (date, then id) with a
@@ -328,6 +334,9 @@ type Querier interface {
 	ListNotifications(ctx context.Context, arg ListNotificationsParams) ([]ListNotificationsRow, error)
 	// The proposals waiting for the user on a wallet: open, or back from later.
 	ListOpenAIProposals(ctx context.Context, arg ListOpenAIProposalsParams) ([]ListOpenAIProposalsRow, error)
+	// The expenses flagged and not handled, flagged since a moment, newest first.
+	// A double whose pair was merged or marked not a duplicate on Review is gone.
+	ListOpenAIUnusual(ctx context.Context, arg ListOpenAIUnusualParams) ([]ListOpenAIUnusualRow, error)
 	ListPayeesForWallet(ctx context.Context, walletID int64) ([]Payee, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID int64) ([]ListPushSubscriptionsForUserRow, error)
 	ListPushUserIDs(ctx context.Context) ([]int64, error)
@@ -372,6 +381,9 @@ type Querier interface {
 	// booked, dated on or before a day: a bank-sync merge would have replaced
 	// their mail: ref with the bank's.
 	ListUnconfirmedMailRows(ctx context.Context, arg ListUnconfirmedMailRowsParams) ([]Transaction, error)
+	// A wallet's expenses since a day, transfers left out, oldest first: who and
+	// what wrote them, the payee and the account's currency.
+	ListUnusualExpenses(ctx context.Context, arg ListUnusualExpensesParams) ([]ListUnusualExpensesRow, error)
 	ListUpcomingSchedules(ctx context.Context, arg ListUpcomingSchedulesParams) ([]ListUpcomingSchedulesRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
 	ListValuationsForAccount(ctx context.Context, accountID int64) ([]AssetValuation, error)
@@ -391,6 +403,7 @@ type Querier interface {
 	MarkAllNotificationsRead(ctx context.Context, userID int64) error
 	MarkNotificationRead(ctx context.Context, arg MarkNotificationReadParams) (int64, error)
 	MaxTransactionID(ctx context.Context) (int64, error)
+	MaxWalletTransactionID(ctx context.Context, walletID int64) (int64, error)
 	// Per-month income (amount > 0) and expense (amount < 0) totals in a date range,
 	// excluding internal transfers (payment_mode 5), with each row's account
 	// currency for base conversion. Drives the dashboard income/expense chart.
@@ -436,6 +449,8 @@ type Querier interface {
 	RefreshEBankingConnectionSession(ctx context.Context, arg RefreshEBankingConnectionSessionParams) (BankConnection, error)
 	RememberDevice(ctx context.Context, arg RememberDeviceParams) (int64, error)
 	RenameTag(ctx context.Context, arg RenameTagParams) error
+	// An expense put away as fine is flagged again once its amount has changed.
+	ReopenAIUnusual(ctx context.Context, arg ReopenAIUnusualParams) error
 	ReparentChildren(ctx context.Context, arg ReparentChildrenParams) error
 	// A new month's proposal takes the place of the earlier ones still waiting.
 	ReplaceOpenAIProposals(ctx context.Context, arg ReplaceOpenAIProposalsParams) error
@@ -455,6 +470,10 @@ type Querier interface {
 	SetAIProposalFeedback(ctx context.Context, arg SetAIProposalFeedbackParams) (int64, error)
 	SetAIProposalState(ctx context.Context, arg SetAIProposalStateParams) error
 	SetAIReportFeedback(ctx context.Context, arg SetAIReportFeedbackParams) (int64, error)
+	SetAIUnusualBody(ctx context.Context, arg SetAIUnusualBodyParams) error
+	SetAIUnusualFeedback(ctx context.Context, arg SetAIUnusualFeedbackParams) (int64, error)
+	SetAIUnusualFine(ctx context.Context, arg SetAIUnusualFineParams) (int64, error)
+	SetAIUnusualScanned(ctx context.Context, arg SetAIUnusualScannedParams) error
 	SetAppConfig(ctx context.Context, arg SetAppConfigParams) error
 	SetAssignmentPosition(ctx context.Context, arg SetAssignmentPositionParams) error
 	SetBankConnectionAutoSync(ctx context.Context, arg SetBankConnectionAutoSyncParams) (int64, error)

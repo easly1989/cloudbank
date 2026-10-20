@@ -105,6 +105,31 @@ type AiSetting struct {
 	SubscriptionsOn int64
 	SavingsOn       int64
 	GoalsOn         int64
+	UnusualOn       int64
+}
+
+type AiUnusual struct {
+	ID            int64
+	UserID        int64
+	WalletID      int64
+	TransactionID int64
+	Kind          string
+	OtherID       sql.NullInt64
+	Amount        int64
+	Usual         int64
+	Payments      int64
+	State         string
+	CreatedAt     string
+}
+
+type AiUnusualScan struct {
+	UserID    int64
+	WalletID  int64
+	LastTxn   int64
+	Body      string
+	Model     string
+	Feedback  int64
+	WrittenAt string
 }
 
 type AiWalletsOff struct {

@@ -76,6 +76,7 @@ const KIND_ICON: Record<NotificationKind, React.ReactNode> = {
   new_version: <IconRefresh size={16} color="var(--mantine-color-dimmed)" />,
   ai_report: <IconSparkles size={16} color="var(--cb-ai-a)" />,
   ai_proposal: <IconSparkles size={16} color="var(--cb-ai-a)" />,
+  unusual_transaction: <IconSparkles size={16} color="var(--cb-ai-a)" />,
 };
 
 const SECTIONS: BellSection[] = ["today", "week", "earlier"];

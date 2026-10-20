@@ -799,6 +799,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/insights/unusual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * The current user's unusual transactions on this wallet, newest first
+         * @description The expenses flagged in the last 30 days and not handled, with the model's sentences about them. A double whose pair was merged or marked not a duplicate on Review is left out. Private to the user, even on a shared wallet.
+         */
+        get: operations["getAIUnusual"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/insights/unusual/{flagId}/fine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                flagId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** It's fine: the flag is put away until the expense's amount changes */
+        post: operations["setAIUnusualFine"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/insights/unusual/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Thumbs up (1), down (-1) or neither (0) on the sentences about the unusual transactions */
+        put: operations["setAIUnusualFeedback"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/mail": {
         parameters: {
             query?: never;
@@ -3827,6 +3888,8 @@ export interface components {
             savings: boolean;
             /** @description goal proposals: sends each proposed goal's name, what is left, its date, its pace and what the wallet kept a month */
             goals: boolean;
+            /** @description unusual transactions: sends each flagged expense's payee, date and amount, with the payee's usual amount */
+            unusual: boolean;
         };
         /** @description The reports that come by themselves besides the monthly one, which comes whenever reports are on. */
         AISchedule: {
@@ -3884,7 +3947,7 @@ export interface components {
             walletId: number | null;
             walletName: string;
             /** @enum {string} */
-            feature: "suggest" | "entry" | "mail" | "reports" | "budgets" | "subscriptions" | "savings" | "goals";
+            feature: "suggest" | "entry" | "mail" | "reports" | "budgets" | "subscriptions" | "savings" | "goals" | "unusual";
             model: string;
             /** @description RFC3339 UTC */
             createdAt: string;
@@ -4071,6 +4134,53 @@ export interface components {
             feedback: -1 | 0 | 1;
             /** @description RFC3339 UTC */
             createdAt: string;
+        };
+        /** @description An expense flagged, the amount positive in its account's currency. */
+        AIUnusualRow: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            transactionId: number;
+            /** Format: int64 */
+            accountId: number;
+            /** @description YYYY-MM-DD */
+            date: string;
+            payee: string;
+            /** Format: int64 */
+            amount: number;
+            currency: components["schemas"]["AIReportCurrency"];
+            /**
+             * @description scale: at least twice the payee's median and 20 above it, with 4 expenses in the year before; new: the payee's first transaction, above 95% of the wallet's expenses in the year before and at least 50; double: the same payee, amount and account charged twice within 3 days, by the bank, a mail, a schedule or an import.
+             * @enum {string}
+             */
+            kind: "scale" | "new" | "double";
+            /**
+             * Format: int64
+             * @description scale: the payee's median; new: the amount it is above
+             */
+            usual: number;
+            /**
+             * Format: int64
+             * @description scale: the payee's expenses in the year before
+             */
+            payments: number;
+            /**
+             * Format: int64
+             * @description double: the first charge
+             */
+            otherId?: number;
+            /** @description double: the first charge's date */
+            otherDate?: string;
+        };
+        AIUnusual: {
+            /** @description the model's sentences; empty until it wrote some */
+            body: string;
+            model: string;
+            /** @enum {integer} */
+            feedback: -1 | 0 | 1;
+            /** @description RFC3339 UTC, when the sentences were written */
+            createdAt: string;
+            rows: components["schemas"]["AIUnusualRow"][];
         };
         /** @description Only the payee and the amount are sent to the model, never the memo. */
         SuggestCategoryRequest: {
@@ -4489,7 +4599,7 @@ export interface components {
             } | null;
         };
         /** @enum {string} */
-        NotificationKind: "new_device" | "two_factor_off" | "new_api_token" | "bank_sync_failed" | "consent_expiring" | "mail_stopped" | "mail_unrecognized" | "review_waiting" | "bills" | "large_transaction" | "low_balance" | "budget" | "goal" | "summary_weekly" | "summary_monthly" | "ai_report" | "ai_proposal" | "new_version";
+        NotificationKind: "new_device" | "two_factor_off" | "new_api_token" | "bank_sync_failed" | "consent_expiring" | "mail_stopped" | "mail_unrecognized" | "review_waiting" | "bills" | "large_transaction" | "low_balance" | "budget" | "goal" | "summary_weekly" | "summary_monthly" | "ai_report" | "ai_proposal" | "unusual_transaction" | "new_version";
         /** @enum {string} */
         NotificationChannel: "inapp" | "push" | "email" | "matrix" | "telegram" | "discord" | "slack" | "ntfy" | "gotify" | "webhook";
         Notification: {
@@ -7524,6 +7634,83 @@ export interface operations {
             path: {
                 walletId: number;
                 proposalId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {integer} */
+                    feedback: -1 | 0 | 1;
+                };
+            };
+        };
+        responses: {
+            /** @description Recorded. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getAIUnusual: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The flags. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIUnusual"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setAIUnusualFine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                flagId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recorded. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setAIUnusualFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
             };
             cookie?: never;
         };

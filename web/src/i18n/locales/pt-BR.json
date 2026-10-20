@@ -1788,7 +1788,8 @@
       "summary_weekly": "Resumo semanal",
       "summary_monthly": "Resumo mensal",
       "ai_report": "Resumo de IA pronto",
-      "ai_proposal": "Proposta da IA pronta"
+      "ai_proposal": "Proposta da IA pronta",
+      "unusual_transaction": "Lançamento incomum"
     },
     "kindHint": {
       "new_device": "Um navegador ou sistema que sua conta nunca usou.",
@@ -1808,7 +1809,8 @@
       "summary_weekly": "Na segunda: entradas, saídas, o que mais pesou e os vencimentos da semana, por carteira.",
       "summary_monthly": "No dia 1: entradas, saídas e o que mais pesou no mês anterior, por carteira.",
       "ai_report": "Quando um resumo programado é escrito, ou pulado no limite do mês. Duas linhas, nunca os valores.",
-      "ai_proposal": "Quando a IA propõe orçamentos, ou encontra assinaturas, economias ou metas para conferir, uma vez por mês cada. Duas linhas, nunca os valores."
+      "ai_proposal": "Quando a IA propõe orçamentos, ou encontra assinaturas, economias ou metas para conferir, uma vez por mês cada. Duas linhas, nunca os valores.",
+      "unusual_transaction": "Um gasto fora do normal para o beneficiário, um beneficiário novo com valor alto ou uma cobrança em dobro, encontrados pela IA no que vem do banco, de um e-mail, de um agendamento, de uma importação ou de outro membro."
     },
     "securityAlways": "Sempre no sino, para que um acesso que você não fez não passe despercebido.",
     "emailUnavailable": "Indisponível: o administrador não configurou um servidor de e-mail (CB_SMTP_HOST).",
@@ -2043,6 +2045,10 @@
       "goals": {
         "name": "Propostas de metas",
         "sends": "Envia, para cada meta proposta, o nome, quanto falta, a data e quanto entra por mês, com quanto sobra na carteira por mês. Nunca os lançamentos."
+      },
+      "unusual": {
+        "name": "Lançamentos incomuns",
+        "sends": "Envia, para cada gasto sinalizado, o beneficiário, a data e o valor, com o valor habitual do beneficiário. Nunca a nota."
       }
     },
     "wallets": "Em quais carteiras",
@@ -2818,7 +2824,10 @@
     "duplicatesAction": "Verificar",
     "goalsReached_one": "meta atingiu o objetivo",
     "goalsReached_other": "metas atingiram o objetivo",
-    "goalsReachedAction": "Ver as metas"
+    "goalsReachedAction": "Ver as metas",
+    "unusual_one": "lançamento parece incomum",
+    "unusual_other": "lançamentos parecem incomuns",
+    "unusualAction": "Verificar"
   },
   "common": {
     "cancel": "Cancelar",
@@ -3379,6 +3388,32 @@
         "eta": "Chega em",
         "note": "O CloudBank calculou os números: o ritmo de cada meta nos últimos 3 meses completos, a parcela mensal que a data pede e quanto sobrou por mês na carteira nesses meses ({{kept}}). O modelo só escreveu o texto. Modelo: {{model}}."
       }
+    }
+  },
+  "unusual": {
+    "title_one": "{{count}} lançamento incomum",
+    "title_other": "{{count}} lançamentos incomuns",
+    "basis": "Dos lançamentos dos últimos 30 dias · gerado em {{date}}",
+    "basisNoDate": "Dos lançamentos dos últimos 30 dias",
+    "reason": {
+      "scale": "{{times}} vezes o habitual: normalmente {{usual}} ({{payments}} pagamentos no último ano)",
+      "new": "Beneficiário novo, acima de 95% dos seus gastos do último ano",
+      "double": "Cobrado duas vezes em poucos dias: {{first}} e {{second}}"
+    },
+    "open": "Abrir nos lançamentos",
+    "openLabel": "Abrir {{payee}}, {{amount}}, nos lançamentos",
+    "fine": "Está certo",
+    "fineLabel": "{{payee}}, {{amount}}: está certo",
+    "pair": "Ver o par",
+    "pairLabel": "Ver o par de {{payee}} entre as possíveis duplicatas",
+    "notDuplicateLabel": "{{payee}}: não é duplicata",
+    "seeInReview": "Ver em Revisão",
+    "why": {
+      "transaction": "Lançamento",
+      "amount": "Valor",
+      "usual": "Normalmente",
+      "payments": "Pagamentos em um ano",
+      "note": "O CloudBank os encontrou: um valor de pelo menos o dobro da mediana do beneficiário e 20 acima, um beneficiário novo acima de 95% dos gastos do ano, o mesmo valor ao mesmo beneficiário duas vezes em 3 dias. O modelo só escreveu o texto. Modelo: {{model}}."
     }
   }
 }

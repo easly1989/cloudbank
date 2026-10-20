@@ -40,6 +40,7 @@ const (
 	KindSummaryMonthly   Kind = "summary_monthly"
 	KindAIReport         Kind = "ai_report"
 	KindAIProposal       Kind = "ai_proposal"
+	KindUnusual          Kind = "unusual_transaction"
 )
 
 // Group is how the settings page and the bell sort events.
@@ -85,11 +86,12 @@ var Channels = []Channel{ChannelInApp, ChannelPush, ChannelEmail, ChannelMatrix,
 func addressed(ch Channel) bool { return ch != ChannelInApp && ch != ChannelPush }
 
 // EventInfo is one entry of the catalog: the event's group and whether it is
-// on for someone who never changed it.
+// on for someone who never changed it, everywhere or in the bell alone.
 type EventInfo struct {
 	Kind    Kind
 	Group   Group
 	Default bool
+	InApp   bool
 }
 
 // Catalog lists every event, in the order the settings page shows them.
@@ -113,6 +115,7 @@ var Catalog = []EventInfo{
 	{Kind: KindSummaryMonthly, Group: GroupSummaries},
 	{Kind: KindAIReport, Group: GroupAI, Default: true},
 	{Kind: KindAIProposal, Group: GroupAI, Default: true},
+	{Kind: KindUnusual, Group: GroupAI, InApp: true},
 	{Kind: KindNewVersion, Group: GroupAdmin, Default: true},
 }
 
@@ -358,7 +361,7 @@ func (s *Service) enabled(ctx context.Context, userID int64, ev EventInfo) (map[
 func channelsFor(ev EventInfo, prefs []db.ListNotificationPrefsRow) map[Channel]bool {
 	on := map[Channel]bool{}
 	for _, ch := range Channels {
-		on[ch] = ev.Default
+		on[ch] = ev.Default || (ev.InApp && ch == ChannelInApp)
 	}
 	for _, p := range prefs {
 		if Kind(p.Kind) == ev.Kind {

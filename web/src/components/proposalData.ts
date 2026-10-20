@@ -23,15 +23,19 @@ const FEATURE: Record<AIProposalKind, AIFeature> = {
   goals: "goals",
 };
 
-/** Whether the AI makes proposals of a kind on a wallet. */
-export const aiProposalsOn = (s: AISettings | undefined, walletId: number, kind: AIProposalKind) =>
+/** Whether the AI does a job on a wallet. */
+export const aiFeatureOn = (s: AISettings | undefined, walletId: number, feature: AIFeature) =>
   !!s &&
   s.enabled &&
   s.hasKey &&
   s.baseUrl !== "" &&
   s.model !== "" &&
-  s.features[FEATURE[kind]] &&
+  s.features[feature] &&
   !s.walletsOff.includes(walletId);
+
+/** Whether the AI makes proposals of a kind on a wallet. */
+export const aiProposalsOn = (s: AISettings | undefined, walletId: number, kind: AIProposalKind) =>
+  aiFeatureOn(s, walletId, FEATURE[kind]);
 
 /** The proposal of a kind waiting on a wallet, if the AI makes them there. */
 export function useProposal(walletId: number, kind: AIProposalKind) {
