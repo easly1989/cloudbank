@@ -58,6 +58,9 @@ const BankSyncCallback = lazy(() =>
 const ReportsPage = lazy(() =>
   import("./pages/ReportsPage").then((m) => ({ default: m.ReportsPage })),
 );
+const InsightsPage = lazy(() =>
+  import("./pages/InsightsPage").then((m) => ({ default: m.InsightsPage })),
+);
 // Settings is its own screen with its own shell, so it sits outside AppLayout
 // and loads as one chunk: its sections are small and always visited together.
 const SettingsLayout = lazy(() =>
@@ -188,6 +191,7 @@ function AuthenticatedApp() {
           <Route path="bank-sync/callback" element={<BankSyncCallback />} />
           <Route path="review" element={<ReviewPage />} />
           <Route path="reports" element={<ReportsPage />} />
+          <Route path="insights" element={<InsightsPage />} />
           <Route path="wallet" element={<Navigate to="/settings/wallet" replace />} />
           <Route path="admin/users" element={<Navigate to="/settings/people" replace />} />
           <Route path="wallet/new" element={<CreateWalletPage />} />

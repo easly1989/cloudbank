@@ -1,0 +1,60 @@
+/* The AI box (#696): an iridescent border whose colours flow slowly round it,
+   and a label in the same gradient. The motion stops when the reader turns it
+   off in Settings › AI, and always under prefers-reduced-motion. */
+.box {
+  border-radius: 12px;
+  padding: 14px 16px 12px;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--cb-ledger-surface), var(--cb-ledger-surface)) padding-box,
+    linear-gradient(110deg, var(--cb-ai-a), var(--cb-ai-b), var(--cb-ai-a)) border-box;
+  background-size:
+    100% 100%,
+    200% 100%;
+  animation: flow 9s linear infinite;
+}
+@keyframes flow {
+  to {
+    background-position:
+      0 0,
+      200% 0;
+  }
+}
+@keyframes flowText {
+  to {
+    background-position: 200% 0;
+  }
+}
+.label {
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+  background: linear-gradient(110deg, var(--cb-ai-a), var(--cb-ai-b), var(--cb-ai-a));
+  background-size: 200% 100%;
+  animation: flowText 9s linear infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.body p {
+  margin: 0 0 8px;
+}
+.body p:last-child {
+  margin-bottom: 0;
+}
+.why {
+  border-top: 1px solid var(--cb-ledger-border);
+  margin-top: 10px;
+  padding-top: 8px;
+}
+.box[data-motion="off"],
+.box[data-motion="off"] .label {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .box,
+  .label {
+    animation: none;
+  }
+}

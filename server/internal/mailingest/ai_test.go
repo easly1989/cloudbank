@@ -26,7 +26,7 @@ var (
 
 func (a *fakeAI) Configured(context.Context, int64) bool { return a.configured }
 
-func (a *fakeAI) ReadBankMail(_ context.Context, _ int64, subject, body, _ string) (*ai.MailReading, error) {
+func (a *fakeAI) ReadBankMail(_ context.Context, _, _ int64, subject, body, _ string) (*ai.MailReading, error) {
 	if !a.configured {
 		return nil, ai.ErrNotConfigured
 	}

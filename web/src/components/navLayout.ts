@@ -202,12 +202,13 @@ export function migrateNavLayout(raw: unknown): NavLayout {
       continue;
     }
     const target = groups.find((g) => g.id === defId) ?? groups[0];
-    if (target) target.entries.push({ kind: "item", to });
+    // hidden: false, as a saved entry migrates to, so migrating twice changes nothing.
+    if (target) target.entries.push({ kind: "item", to, hidden: false });
     else
       groups.push({
         id: defId ?? "other",
         labelKey: "nav.group.other",
-        entries: [{ kind: "item", to }],
+        entries: [{ kind: "item", to, hidden: false }],
       });
     seenItems.add(to);
   }

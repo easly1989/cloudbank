@@ -58,7 +58,7 @@ type chatResponse struct {
 }
 
 // chat sends a system+user prompt and returns the assistant's reply text.
-func (c *client) chat(ctx context.Context, system, user string) (string, error) {
+func (c *client) chat(ctx context.Context, system, user string, maxTokens int) (string, error) {
 	body, err := json.Marshal(map[string]any{
 		"model": c.model,
 		"messages": []map[string]string{
@@ -66,9 +66,10 @@ func (c *client) chat(ctx context.Context, system, user string) (string, error) 
 			{"role": "user", "content": user},
 		},
 		"temperature": 0,
-		// Enough headroom for the full JSON object (amount, direction, date, payee,
-		// category, tags, memo) — 64 truncated it and broke JSON parsing.
-		"max_tokens": 300,
+		// 300 is headroom for the entry's full JSON object (amount, direction,
+		// date, payee, category, tags, memo) — 64 truncated it and broke JSON
+		// parsing; a report asks for more.
+		"max_tokens": maxTokens,
 	})
 	if err != nil {
 		return "", err

@@ -220,7 +220,7 @@ describe("navLayout", () => {
       ),
     };
     const insights = migrateNavLayout(noVehicles).groups.find((g) => g.id === "insights");
-    expect(insights?.entries).toContainEqual({ kind: "item", to: "/vehicles" });
+    expect(insights?.entries).toContainEqual({ kind: "item", to: "/vehicles", hidden: false });
     expect(unseenNavPages(noVehicles)).not.toContain("/vehicles");
   });
 });

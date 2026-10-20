@@ -79,13 +79,13 @@ func TestSuggestCategory(t *testing.T) {
 	ctx := context.Background()
 	food, _ := q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: wid, Name: "Food"})
 	groceries, _ := q.InsertCategory(ctx, db.InsertCategoryParams{
-		WalletID: wid, Name: "Groceries", ParentID: nullID(food.ID),
+		WalletID: wid, Name: "Groceries", ParentID: someID(food.ID),
 	})
 	_, _ = q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: wid, Name: "Salary"})
 
 	key := "k"
 	if _, err := svc.UpdateSettings(ctx, uid, true, SettingsInput{
-		Enabled: true, BaseURL: "https://api.example/v1", Model: "m", APIKey: &key,
+		Enabled: true, BaseURL: "https://api.example/v1", Model: "m", APIKey: &key, Features: &Features{Suggest: true},
 	}); err != nil {
 		t.Fatalf("UpdateSettings: %v", err)
 	}
@@ -93,7 +93,7 @@ func TestSuggestCategory(t *testing.T) {
 	// The model replies with the full "Parent:Sub" name.
 	mock := &mockDoer{reply: "Food:Groceries"}
 	svc.hc = mock
-	got, err := svc.SuggestCategory(ctx, uid, true, wid, SuggestInput{Payee: "Local Market", Memo: "weekly shop", Amount: "-42.00 €"})
+	got, err := svc.SuggestCategory(ctx, uid, wid, false, SuggestInput{Payee: "Local Market", Amount: "-42.00 €"})
 	if err != nil {
 		t.Fatalf("SuggestCategory: %v", err)
 	}
@@ -108,17 +108,17 @@ func TestSuggestCategory(t *testing.T) {
 
 	// A leaf-name reply also resolves, tolerating quotes/case.
 	svc.hc = &mockDoer{reply: "\"salary\""}
-	if got, err := svc.SuggestCategory(ctx, uid, true, wid, SuggestInput{Payee: "ACME"}); err != nil || got == nil || got.Name != "Salary" {
+	if got, err := svc.SuggestCategory(ctx, uid, wid, false, SuggestInput{Payee: "ACME"}); err != nil || got == nil || got.Name != "Salary" {
 		t.Fatalf("leaf-name suggestion = %+v, err %v", got, err)
 	}
 
 	// "none" (or an unlisted name) yields no suggestion, no error.
 	svc.hc = &mockDoer{reply: "none"}
-	if got, err := svc.SuggestCategory(ctx, uid, true, wid, SuggestInput{Payee: "Mystery"}); err != nil || got != nil {
+	if got, err := svc.SuggestCategory(ctx, uid, wid, false, SuggestInput{Payee: "Mystery"}); err != nil || got != nil {
 		t.Fatalf("none reply = %+v, err %v; want nil/nil", got, err)
 	}
 	svc.hc = &mockDoer{reply: "Something Not In The List"}
-	if got, _ := svc.SuggestCategory(ctx, uid, true, wid, SuggestInput{Payee: "X"}); got != nil {
+	if got, _ := svc.SuggestCategory(ctx, uid, wid, false, SuggestInput{Payee: "X"}); got != nil {
 		t.Fatalf("unlisted reply should not match, got %+v", got)
 	}
 }
@@ -128,16 +128,16 @@ func TestSuggestCategoryDisabled(t *testing.T) {
 	ctx := context.Background()
 	_, _ = q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: wid, Name: "Food"})
 	// Not configured at all.
-	if _, err := svc.SuggestCategory(ctx, uid, true, wid, SuggestInput{Payee: "X"}); !errors.Is(err, ErrNotConfigured) {
+	if _, err := svc.SuggestCategory(ctx, uid, wid, false, SuggestInput{Payee: "X"}); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("err = %v, want ErrNotConfigured", err)
 	}
 	// Enabled but no key → still not configured.
 	if _, err := svc.UpdateSettings(ctx, uid, true, SettingsInput{Enabled: true, BaseURL: "https://api.example/v1", Model: "m"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.SuggestCategory(ctx, uid, true, wid, SuggestInput{Payee: "X"}); !errors.Is(err, ErrNotConfigured) {
+	if _, err := svc.SuggestCategory(ctx, uid, wid, false, SuggestInput{Payee: "X"}); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("no-key err = %v, want ErrNotConfigured", err)
 	}
 }
 
-func nullID(v int64) sql.NullInt64 { return sql.NullInt64{Int64: v, Valid: true} }
+func someID(v int64) sql.NullInt64 { return sql.NullInt64{Int64: v, Valid: true} }

@@ -33,6 +33,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/httpapi"
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/importio"
+	"github.com/easly1989/cloudbank/server/internal/insight"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
 	"github.com/easly1989/cloudbank/server/internal/mailingest"
 	"github.com/easly1989/cloudbank/server/internal/moneyalert"
@@ -268,6 +269,7 @@ func run() error {
 		Push:              pushSvc,
 		Notifications:     notifySvc,
 		AI:                aiSvc,
+		Insights:          insight.NewService(st.Read(), st.Write(), aiSvc, dashboardSvc, reportSvc, budgetSvc, scheduleSvc),
 		BankSync:          bankSyncSvc,
 		Mail:              mailSvc,
 		Templates:         templateSvc,
