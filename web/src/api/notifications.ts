@@ -18,6 +18,7 @@ export type NotificationKind =
   | "goal"
   | "summary_weekly"
   | "summary_monthly"
+  | "ai_report"
   | "new_version";
 export type NotificationChannel = "inapp" | "push" | AddressedChannel;
 export type AddressedChannel =
@@ -45,7 +46,7 @@ export interface NotificationList {
 export interface NotificationPreference {
   kind: NotificationKind;
   /** Security always reaches the bell; admin is listed for administrators only. */
-  group: "security" | "problems" | "bills" | "money" | "summaries" | "admin";
+  group: "security" | "problems" | "bills" | "money" | "summaries" | "ai" | "admin";
   channels: Record<NotificationChannel, boolean>;
   /** Collected in the daily digest outside the app (#692). */
   digest: boolean;

@@ -10,6 +10,9 @@ import (
 )
 
 type Querier interface {
+	// Whether a period of a wallet already has a report, or the scheduler already
+	// did what it could about it.
+	AIReportDone(ctx context.Context, arg AIReportDoneParams) (int64, error)
 	AIWalletOff(ctx context.Context, arg AIWalletOffParams) (int64, error)
 	// Today/future transaction sums for a single account; the caller adds the
 	// account's initial balance. Mirrors AccountBalanceDeltas (the per-wallet form).
@@ -179,6 +182,7 @@ type Querier interface {
 	GoalSaved(ctx context.Context, goalID int64) (int64, error)
 	HasReminder(ctx context.Context, arg HasReminderParams) (int64, error)
 	InsertAIReport(ctx context.Context, arg InsertAIReportParams) (InsertAIReportRow, error)
+	InsertAIReportRun(ctx context.Context, arg InsertAIReportRunParams) error
 	InsertAISend(ctx context.Context, arg InsertAISendParams) (int64, error)
 	InsertAPIToken(ctx context.Context, arg InsertAPITokenParams) (ApiToken, error)
 	InsertAccessRecoveryCode(ctx context.Context, arg InsertAccessRecoveryCodeParams) error
@@ -233,6 +237,8 @@ type Querier interface {
 	// the link: same account, payee and category. The demo's seeded year comes
 	// from a HomeBank file, which does not record which schedule posted what.
 	LinkTemplateTransactions(ctx context.Context, templateID sql.NullInt64) (int64, error)
+	// The people whose AI writes reports (#697), with which ones come by themselves.
+	ListAIReportUsers(ctx context.Context) ([]ListAIReportUsersRow, error)
 	ListAIReports(ctx context.Context, arg ListAIReportsParams) ([]ListAIReportsRow, error)
 	ListAISends(ctx context.Context, arg ListAISendsParams) ([]ListAISendsRow, error)
 	ListAIWalletsOff(ctx context.Context, userID int64) ([]int64, error)
