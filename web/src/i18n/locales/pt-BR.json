@@ -101,7 +101,13 @@
     "signExpense": "Despesa — mudar para receita",
     "signIncome": "Receita — mudar para despesa",
     "savedTo": "Salvo em {{account}}",
-    "removeSplit": "Remover esta linha de divisão"
+    "removeSplit": "Remover esta linha de divisão",
+    "shared": {
+      "title": "Texto compartilhado",
+      "close": "Fechar o texto compartilhado",
+      "all": "Mostrar tudo",
+      "less": "Mostrar menos"
+    }
   },
   "transfers": {
     "add": "Transferência",
@@ -2090,7 +2096,8 @@
       "lead": "No dia 1º de cada mês, sobre o mês anterior. E também:",
       "weekly": "Toda segunda-feira, a semana anterior",
       "yearly": "Em janeiro, o ano anterior"
-    }
+    },
+    "fromShared": "Do texto compartilhado: confira os campos e salve"
   },
   "setup": {
     "title": "Boas-vindas ao CloudBank",

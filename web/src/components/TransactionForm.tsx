@@ -30,7 +30,15 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Fragment, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { errorColor } from "../amountTone";
@@ -73,7 +81,7 @@ import {
   suggestCategory,
   updateTransaction,
 } from "../api/client";
-import { minorToInput } from "../money";
+import { minorToInput, parseMinor } from "../money";
 import { sameName } from "../sameName";
 import { PAYMENT_MODES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
@@ -81,6 +89,7 @@ import { AttachmentsField } from "./AttachmentsField";
 import { ENTRY_SHEET } from "./entrySheetTheme";
 import { todayCivil } from "../civilDate";
 import { ErrorMessage } from "./ErrorMessage";
+import { SharedText } from "./SharedText";
 import { useCreateFromSheet } from "./useCreateFromSheet";
 
 // How a save resolves: close the sheet, or stay open for another entry — with
@@ -98,6 +107,8 @@ export function TransactionForm({
   onSaved,
   templates,
   onTemplateSaved,
+  startDirection,
+  shared,
 }: {
   opened: boolean;
   onClose: () => void;
@@ -110,6 +121,10 @@ export function TransactionForm({
   onSaved: (savedId?: number) => void;
   templates: Template[];
   onTemplateSaved: () => void;
+  /** The sign a new entry starts with: the home-screen shortcuts (#702). */
+  startDirection?: "expense" | "income";
+  /** Text shared from another app, such as a bank's notification (#702). */
+  shared?: string;
 }) {
   const { t } = useTranslation();
   const confirm = useConfirm();
@@ -220,8 +235,14 @@ export function TransactionForm({
   // Natural-language quick entry: describe a transaction and let the model fill
   // the fields. Only unmatched names are left blank — never invented.
   const [quickText, setQuickText] = useState("");
+  // Shared text stays on screen while the sheet is open. toParse is a fresh
+  // object each time the sheet opens with it, so it is read once per opening.
+  const [sharedText, setSharedText] = useState("");
+  const [toParse, setToParse] = useState<{ text: string } | null>(null);
+  const parsedRef = useRef<{ text: string } | null>(null);
   const parse = useMutation({
-    mutationFn: () => askPastLimit((confirm) => parseEntry(walletId, quickText.trim(), confirm)),
+    mutationFn: (text: string) =>
+      askPastLimit((confirm) => parseEntry(walletId, text.trim(), confirm)),
     onSuccess: (res) => {
       if (!res) return; // the user kept to this month's limit
       const e = res.entry;
@@ -233,14 +254,19 @@ export function TransactionForm({
         });
         return;
       }
-      if (e.amount) setAmount(e.amount);
+      // The model writes "23.5": shown in the account's own format, "23,50".
+      if (e.amount) {
+        const minor = parseMinor(e.amount, fd, ".");
+        setAmount(minor === null ? e.amount : minorToInput(minor, fd, dc));
+      }
       setDirection(e.direction);
       if (e.date) setDate(e.date);
       if (e.memo) setMemo(e.memo);
       if (e.categoryId != null) setCategoryId(String(e.categoryId));
       if (e.payeeId != null) setPayeeId(String(e.payeeId));
       if (e.tags && e.tags.length > 0) setTags(e.tags);
-      setQuickText("");
+      // Shared text stays in the field, so the reader can see what was read.
+      if (!sharedText) setQuickText("");
     },
     onError: (err: unknown) =>
       notifications.show({
@@ -327,8 +353,20 @@ export function TransactionForm({
       setMoreOpen(
         hasDetails(init, place, account.defaultPaymentMode) || (editing?.attachmentCount ?? 0) > 0,
       );
+      const fresh = !editing && !duplicate;
+      if (fresh && startDirection) setDirection(startDirection);
+      setSharedText(fresh && shared ? shared : "");
+      setToParse(fresh && shared ? { text: shared } : null);
+      setQuickText(fresh && shared ? shared : "");
     }
   }
+  // With the AI's quick entry on, shared text is read at once: the fields fill
+  // in, and nothing is saved until Save.
+  useEffect(() => {
+    if (!toParse || !aiEntry || parsedRef.current === toParse) return;
+    parsedRef.current = toParse;
+    parse.mutate(toParse.text);
+  }, [toParse, aiEntry, parse]);
 
   const sign = direction === "expense" ? -1 : 1;
   const totalMinor = (parseAmount(amount, fd, dc) ?? 0) * sign;
@@ -833,11 +871,12 @@ export function TransactionForm({
                 label={t("ai.quickEntry")}
                 placeholder={t("ai.quickEntryPlaceholder")}
                 value={quickText}
+                description={sharedText ? t("ai.fromShared") : undefined}
                 onChange={(e) => setQuickText(e.currentTarget.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    if (quickText.trim()) parse.mutate();
+                    if (quickText.trim()) parse.mutate(quickText);
                   }
                 }}
                 rightSection={
@@ -846,12 +885,16 @@ export function TransactionForm({
                     aria-label={t("ai.quickEntry")}
                     loading={parse.isPending}
                     disabled={!quickText.trim()}
-                    onClick={() => parse.mutate()}
+                    onClick={() => parse.mutate(quickText)}
                   >
                     <IconSparkles size={16} />
                   </ActionIcon>
                 }
               />
+            )}
+
+            {sharedText && !aiEntry && (
+              <SharedText text={sharedText} onClose={() => setSharedText("")} />
             )}
 
             {/* The amount comes first and large: it is the one field every

@@ -101,7 +101,13 @@
     "signExpense": "Uscita — passa a entrata",
     "signIncome": "Entrata — passa a uscita",
     "savedTo": "Salvata su {{account}}",
-    "removeSplit": "Togli questa riga"
+    "removeSplit": "Togli questa riga",
+    "shared": {
+      "title": "Testo condiviso",
+      "close": "Chiudi il testo condiviso",
+      "all": "Mostra tutto",
+      "less": "Mostra meno"
+    }
   },
   "transfers": {
     "add": "Giroconto",
@@ -2090,7 +2096,8 @@
       "lead": "Il 1° di ogni mese, il mese prima. E inoltre:",
       "weekly": "Ogni lunedì, la settimana prima",
       "yearly": "A gennaio, l'anno prima"
-    }
+    },
+    "fromShared": "Dal testo condiviso: controlla i campi e salva"
   },
   "setup": {
     "title": "Benvenuto in CloudBank",
