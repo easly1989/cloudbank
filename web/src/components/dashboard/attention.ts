@@ -24,6 +24,8 @@ export interface AttentionInput {
   duplicates: number;
   /** Goals reached and waiting to be closed (#572). */
   goalsReached: number;
+  /** Unusual transactions the AI flagged (#700); 0 with it off. */
+  unusual: number;
 }
 
 /**
@@ -35,6 +37,7 @@ export interface AttentionInput {
  */
 export function buildAttentionItems(input: AttentionInput): AttentionItem[] {
   const all: AttentionItem[] = [
+    { key: "unusual", count: input.unusual, to: "/review?from=dashboard" },
     { key: "needsCategory", count: input.needsCategory, to: "/review?from=dashboard" },
     { key: "overdueBills", count: input.overdueBills, to: "/schedules" },
     { key: "overBudget", count: input.overBudget, to: "/budget" },

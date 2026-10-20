@@ -373,6 +373,10 @@ func run() error {
 	if opts.Insights != nil && cfg.AIReportsInterval > 0 {
 		go opts.Insights.Run(ctx, cfg.AIReportsInterval, logger)
 	}
+	// Unusual transactions (#700) are told as soon as the money events are.
+	if opts.Insights != nil && cfg.MoneyInterval > 0 {
+		go opts.Insights.RunUnusualEvery(ctx, cfg.MoneyInterval, logger)
+	}
 
 	// The demo's accounts: idle ones deleted every few minutes, all of them
 	// every night.

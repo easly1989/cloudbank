@@ -31,6 +31,7 @@ import { dateBounds, emptyFilters, type DatePreset } from "./registerFilterModel
 import { GridDashboard, type GridDashboardHandle } from "../components/dashboard/GridDashboard";
 import { BudgetProposalBox } from "../components/BudgetProposal";
 import { SavingsProposalBox } from "../components/SavingsProposal";
+import { UnusualBoxFor } from "../components/UnusualBox";
 import { PageHeader } from "../components/PageHeader";
 import { OverviewFigures } from "../components/dashboard/OverviewFigures";
 import { pickBalances } from "../components/dashboard/overviewFigureModel";
@@ -471,6 +472,7 @@ export function DashboardPage() {
       <NeedsAttention walletId={walletId} />
       <BudgetProposalBox walletId={walletId} short />
       <SavingsProposalBox walletId={walletId} short />
+      <UnusualBoxFor walletId={walletId} short />
       {quick.form}
 
       <GridDashboard

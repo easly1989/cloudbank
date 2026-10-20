@@ -42,10 +42,13 @@ import {
   listTemplates,
   mergeTransactions,
 } from "../api/client";
+import { aiUnusualKey } from "../api/ai";
 import { TransactionForm } from "../components/TransactionForm";
 import { useDateFormat } from "../dates";
 import { formatMinor, type MoneyFormat } from "../money";
 import { useWallet } from "../wallet/WalletProvider";
+import { UnusualBox } from "../components/UnusualBox";
+import { pairAnchor, useUnusual } from "../components/unusualData";
 import { PageHeader } from "../components/PageHeader";
 import { amountColor, errorColor } from "../amountTone";
 import { compareRows, type CompareField, type CompareRow, type Described } from "./reviewCompare";
@@ -137,6 +140,11 @@ export function ReviewPage() {
   const reversals = (review.data?.reversals ?? []).filter(
     (p) => !onlyAccount || p.payment.accountId === onlyAccount,
   );
+  // The AI's unusual transactions (#700), on top: they need a look first.
+  const unusual = useUnusual(walletId);
+  const unusualRows = (unusual?.rows ?? []).filter(
+    (r) => !onlyAccount || r.accountId === onlyAccount,
+  );
   const accountById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
   // Where the page was opened from, and so where its way out goes (#570):
   // ?from=N is the register of account N, ?from=dashboard the overview. Opened
@@ -186,6 +194,7 @@ export function ReviewPage() {
     void qc.invalidateQueries({ queryKey: ["register", walletId] });
     void qc.invalidateQueries({ queryKey: ["dashboard", walletId] });
     void qc.invalidateQueries({ queryKey: ["accounts", walletId] });
+    void qc.invalidateQueries({ queryKey: aiUnusualKey(walletId) });
   };
 
   const setCategory = useMutation({
@@ -445,7 +454,8 @@ export function ReviewPage() {
     needs.length === 0 &&
     dups.length === 0 &&
     unconfirmed.length === 0 &&
-    reversals.length === 0;
+    reversals.length === 0 &&
+    unusualRows.length === 0;
   const scopeName = onlyAccount ? accountById.get(onlyAccount)?.name : undefined;
 
   return (
@@ -484,6 +494,10 @@ export function ReviewPage() {
             {t("review.allAccounts")}
           </Button>
         </Group>
+      )}
+
+      {unusual && unusualRows.length > 0 && (
+        <UnusualBox walletId={walletId} unusual={{ ...unusual, rows: unusualRows }} />
       )}
 
       {review.isError && <Text c={errorColor}>{t("review.error")}</Text>}
@@ -622,6 +636,7 @@ export function ReviewPage() {
               dups.map((p) => (
                 <Card
                   key={`${p.a.id}:${p.b.id}`}
+                  id={pairAnchor(p.a.id, p.b.id)}
                   withBorder
                   padding="sm"
                   bg="var(--mantine-color-body)"

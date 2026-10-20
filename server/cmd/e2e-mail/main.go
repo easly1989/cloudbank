@@ -372,6 +372,15 @@ func (f *fake) chat(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	// So are the unusual transactions (#700).
+	if strings.Contains(text, "Unusual expenses") {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"choices": []map[string]any{{"message": map[string]string{
+				"role": "assistant", "content": "Your power bill is three times the usual.",
+			}}},
+		})
+		return
+	}
 	// So are subscription, savings and goal proposals (#699).
 	if strings.Contains(text, "Goal proposals") {
 		writeJSON(w, http.StatusOK, map[string]any{

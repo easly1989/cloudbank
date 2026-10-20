@@ -80,6 +80,7 @@ exception: it is switched on per device, and its boxes can be set before.
 | Monthly summary | On the 1st, the same for last month, without the bills. | Reports |
 | AI report ready | Your AI wrote a scheduled report ([AI insights](pages.md#ai-insights)): the period and the wallet, never the amounts. Also when one was skipped at this month's AI limit. | The report, or Settings → AI |
 | AI proposal ready | Your AI proposed budgets from what you really spend ([Budget](pages.md#budget)), found subscriptions to look at ([Schedules](pages.md#schedules)), savings ([AI insights](pages.md#ai-insights)) or goals ([Goals](pages.md#goals)), once a month each. The wallet, never the amounts. | Budget, Schedules, AI insights or Goals |
+| Unusual transaction | Your AI found an expense out of scale for its payee, a new payee with a large amount, or a double charge ([Review](pages.md#review)). On in the bell, off elsewhere. | The transaction in the register |
 | A new CloudBank version | A newer release is out on the channel the server follows. Administrators only. | About |
 
 The three security events always reach the bell, even with every other channel
