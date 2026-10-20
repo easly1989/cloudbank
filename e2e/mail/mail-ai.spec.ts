@@ -69,6 +69,7 @@ test("with the AI after the patterns, a mail no pattern reads is written by it",
       baseUrl: `${FAKE}/v1`,
       model: "pretend",
       apiKey: "pretend-not-a-key",
+      features: { suggest: false, entry: false, mail: true, reports: false },
     },
   });
   expect(ai.ok()).toBe(true);

@@ -47,7 +47,8 @@
       "show_other": "Les afficher",
       "keep_one": "Laisser masquée",
       "keep_other": "Laisser masquées"
-    }
+    },
+    "aiInsights": "Analyses IA"
   },
   "transactions": {
     "createCategory": "Créer « {{name}} »",
@@ -1985,11 +1986,9 @@
     }
   },
   "ai": {
-    "title": "IA (avec votre propre clé)",
-    "hint": "Facultatif. Connectez un fournisseur d’IA pour obtenir des suggestions de catégorie. Fonctionne avec les services compatibles OpenAI, y compris un moteur local (Ollama, LM Studio) via son URL, que seul un administrateur peut définir. Votre clé reste sur le serveur et ne sert qu’à vos requêtes.",
+    "hint": "Un service compatible OpenAI, ou un modèle sur votre propre réseau (Ollama, LM Studio) que seul un administrateur peut configurer. Votre clé reste sur le serveur.",
     "enable": "Activer les fonctions d’IA",
     "baseUrl": "URL de base",
-    "baseUrlHint": "Point d’accès compatible OpenAI, ex. https://api.openai.com/v1 ou http://localhost:11434/v1",
     "model": "Modèle",
     "apiKey": "Clé d’API",
     "apiKeyPlaceholder": "sk-…",
@@ -2002,7 +2001,64 @@
     "quickEntry": "Saisie rapide",
     "quickEntryPlaceholder": "ex. 12,40 café au Bar Central hier",
     "quickEntryRun": "Remplir d’après la description",
-    "noParse": "Impossible de lire cette description."
+    "noParse": "Impossible de lire cette description.",
+    "provider": "Votre fournisseur",
+    "enableHint": "Désactivé, CloudBank n’envoie rien à aucun modèle.",
+    "features": "Ce que fait l’IA",
+    "featuresHint": "Chaque fonction s’active séparément et dit ce qu’elle envoie au modèle.",
+    "feature": {
+      "reports": {
+        "name": "Bilans mensuels",
+        "sends": "Envoie les totaux du mois par catégorie, comparés au mois précédent et à vos budgets, les trois plus grosses dépenses (tiers, montant et date) et les échéances du mois suivant. Jamais les notes."
+      },
+      "suggest": {
+        "name": "Suggestion de catégorie",
+        "sends": "Envoie le tiers et le montant de l’opération, avec la liste de vos catégories."
+      },
+      "entry": {
+        "name": "Saisie rapide",
+        "sends": "Envoie la phrase que vous écrivez, avec la liste de vos catégories, tiers et étiquettes."
+      },
+      "mail": {
+        "name": "E-mails de la banque",
+        "sends": "Envoie le texte des e-mails de la banque, avec les cartes et les IBAN masqués."
+      }
+    },
+    "wallets": "Sur quels classeurs",
+    "walletsHint": "L’IA ne travaille que sur ceux qui sont cochés. Ce qu’elle écrit, vous seul le voyez, même dans les classeurs partagés.",
+    "walletOf": "Classeur de {{owner}}",
+    "look": "Apparence",
+    "lookHint": "Comment s’affiche ce que l’IA écrit.",
+    "motion": "Couleurs en mouvement",
+    "motionHint": "La bordure du cadre IA change lentement de couleur. Elle reste immobile si votre système demande moins d’animations.",
+    "box": {
+      "example": "Suggestion de l’IA",
+      "exampleBasis": "Exemple",
+      "exampleText": "Tout ce que l’IA écrit apparaît dans un cadre comme celui-ci.",
+      "why": "Pourquoi ?",
+      "hideWhy": "Masquer les chiffres",
+      "useful": "Utile",
+      "notUseful": "Pas utile"
+    },
+    "thisMonth": "Ce mois-ci",
+    "used_one": "{{count}} requête sur {{limit}}",
+    "used_other": "{{count}} requêtes sur {{limit}}",
+    "resets": "repart à zéro le {{date}}",
+    "limit": {
+      "label": "Requêtes par mois",
+      "note": "À la limite, la lecture des e-mails de la banque s’arrête ; ce que vous demandez vous-même demande d’abord confirmation.",
+      "title": "Limite du mois atteinte",
+      "body_one": "Vous avez utilisé la {{count}} requête de ce mois. Celle-ci la dépasserait : l’envoyer quand même ? La limite se change dans Paramètres › IA et repart à zéro le {{date}}.",
+      "body_other": "Vous avez utilisé les {{count}} requêtes de ce mois. Celle-ci les dépasserait : l’envoyer quand même ? La limite se change dans Paramètres › IA et repart à zéro le {{date}}.",
+      "go": "Envoyer quand même",
+      "stop": "Annuler"
+    },
+    "sent": "Ce qui a été envoyé",
+    "sentHint": "Les 90 derniers jours, mot pour mot.",
+    "sentNone": "Rien pour l’instant.",
+    "sentWhere": "{{when}} · {{wallet}}",
+    "sentOn": "Envoyé le {{when}}",
+    "show": "Afficher"
   },
   "setup": {
     "title": "Bienvenue dans CloudBank",
@@ -2599,7 +2655,7 @@
     "apiTokensHint": "Les jetons permettent à un script ou à une autre application d’agir en votre nom. Révoquez-en un et il cesse aussitôt de fonctionner.",
     "notificationsHint": "Où CloudBank vous joint quand quelque chose a besoin de vous.",
     "ai": "IA",
-    "aiHint": "Sert à suggérer des catégories. Votre clé est conservée chiffrée et ne quitte jamais ce serveur.",
+    "aiHint": "Votre propre fournisseur d’IA : ce qu’il fait, sur quels classeurs, et ce qui lui a été envoyé.",
     "bankSyncHint": "Les connexions à vos banques, avec leur état et leur historique.",
     "importHint": "Les relevés, et les règles qui les classent.",
     "backupHint": "Une copie à partir de laquelle restaurer, et une vérification que la base de données est saine.",
@@ -3151,7 +3207,7 @@
     "provider_error": "Le fournisseur de la banque n’a pas répondu comme prévu. Réessayez plus tard.",
     "not_configured": "Ce fournisseur n’est pas encore configuré pour le classeur.",
     "ai_error": "Le fournisseur d’IA a répondu par une erreur.",
-    "ai_disabled": "L’IA est désactivée. Activez-la d’abord dans les Paramètres.",
+    "ai_disabled": "L’IA est désactivée pour cela. Activez-la dans Paramètres › IA.",
     "rate_limited": "Trop de tentatives. Patientez un peu et réessayez.",
     "too_large": "Le fichier est trop volumineux.",
     "invalid_file": "Le fichier n’a pas pu être lu. Vérifiez que c’est le bon type de fichier.",
@@ -3178,6 +3234,32 @@
     "unreachable": "Le serveur de messagerie ne répond pas : vérifiez son nom et son port.",
     "tls_failed": "La connexion au serveur de messagerie n’a pas pu être chiffrée.",
     "ai_not_configured": "Configurez d’abord l’IA, dans Paramètres › IA.",
-    "hourly_limit": "Trop de messages cette heure-ci. Réessayez plus tard."
+    "hourly_limit": "Trop de messages cette heure-ci. Réessayez plus tard.",
+    "no_data": "Ce mois n’a aucune opération sur laquelle écrire."
+  },
+  "insights": {
+    "title": "Analyses IA",
+    "hint": "Des bilans que votre IA écrit sur les chiffres du classeur. Vous seul les voyez.",
+    "month": "Mois",
+    "generate": "Générer maintenant",
+    "off": "L’IA n’écrit pas de bilans",
+    "offHint": "Configurez un fournisseur et activez les bilans mensuels : l’IA écrira ici sur les mois du classeur.",
+    "walletOff": "Ce classeur est hors de portée de l’IA",
+    "walletOffHint": "Cochez-le parmi les classeurs de l’IA pour qu’elle écrive sur ses mois.",
+    "toSettings": "Ouvrir Paramètres › IA",
+    "none": "Aucun bilan pour l’instant. Choisissez un mois et générez-en un.",
+    "label": "Bilan IA",
+    "basis": "{{month}} · généré le {{date}}",
+    "reportTitle": "{{month}} en bref",
+    "earlier": "Bilans précédents",
+    "read": "Lire",
+    "readMonth": "Lire {{month}}",
+    "why": {
+      "income": "Revenus",
+      "expense": "Dépenses",
+      "net": "Solde",
+      "avg": "Moyenne sur 6 mois",
+      "note": "CloudBank a calculé les chiffres ; le modèle n’a écrit que le texte. Modèle : {{model}}."
+    }
   }
 }

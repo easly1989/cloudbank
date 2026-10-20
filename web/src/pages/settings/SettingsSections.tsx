@@ -12,7 +12,6 @@ import {
 } from "../../aboutLinks";
 
 import { AccessCodesCard } from "../../components/AccessCodesCard";
-import { AiSettingsCard } from "../../components/AiSettingsCard";
 import { EntryFieldsCard } from "../../components/EntryFieldsCard";
 import { Logo } from "../../components/Logo";
 import { NavLayoutEditor } from "../../components/NavLayoutEditor";
@@ -26,6 +25,7 @@ import { MailSettings } from "../MailSettings";
 import { PreferencesPage } from "../PreferencesPage";
 import { WalletSettingsPage } from "../WalletSettingsPage";
 import { UsersPage } from "../admin/UsersPage";
+import { AiSettings } from "./AiSettings";
 import { SettingsGroup } from "./SettingsLayout";
 
 // One component per section of the settings screen. They are thin on purpose:
@@ -108,7 +108,7 @@ export function MailSection() {
 }
 
 export function AiSection() {
-  return <AiSettingsCard />;
+  return <AiSettings />;
 }
 
 export function DataSection() {

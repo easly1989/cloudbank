@@ -35,6 +35,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { errorColor } from "../amountTone";
 import { useAuth } from "../auth/AuthProvider";
+import { useAskPastLimit } from "./aiLimit";
 import { useConfirm } from "./confirmContext";
 import { CreatableSelect } from "./CreatableSelect";
 import {
@@ -60,6 +61,7 @@ import {
   createTemplate,
   createTransaction,
   findDuplicateTransactions,
+  AI_SETTINGS_KEY,
   getAISettings,
   listAccounts,
   listCategories,
@@ -177,22 +179,28 @@ export function TransactionForm({
   const [moreOpen, setMoreOpen] = useState(false);
 
   // Opt-in AI category suggestion, shown only when the user has enabled and
-  // keyed a provider. It fills the category from the current payee/memo/amount.
+  // keyed a provider and switched suggestions on. It fills the category from
+  // the payee and the amount: the memo never goes to the model (#696).
   const aiSettings = useQuery({
-    queryKey: ["aiSettings"],
+    queryKey: AI_SETTINGS_KEY,
     queryFn: getAISettings,
     staleTime: 60_000,
     // The demo build has no AI to ask.
     enabled: !__DEMO__,
   });
-  const aiEnabled = !!(aiSettings.data?.enabled && aiSettings.data?.hasKey);
+  const aiReady = !!(aiSettings.data?.enabled && aiSettings.data?.hasKey);
+  const aiSuggest = aiReady && !!aiSettings.data?.features.suggest;
+  const aiEntry = aiReady && !!aiSettings.data?.features.entry;
+  const askPastLimit = useAskPastLimit();
   const payeeName = useMemo(
     () => payeesQuery.data?.find((p) => String(p.id) === payeeId)?.name ?? "",
     [payeesQuery.data, payeeId],
   );
   const suggest = useMutation({
-    mutationFn: () => suggestCategory(walletId, { payee: payeeName, memo, amount }),
+    mutationFn: () =>
+      askPastLimit((confirm) => suggestCategory(walletId, { payee: payeeName, amount, confirm })),
     onSuccess: (res) => {
+      if (!res) return; // the user kept to this month's limit
       if (res.category) setCategoryId(String(res.category.id));
       else
         notifications.show({
@@ -213,8 +221,9 @@ export function TransactionForm({
   // the fields. Only unmatched names are left blank — never invented.
   const [quickText, setQuickText] = useState("");
   const parse = useMutation({
-    mutationFn: () => parseEntry(walletId, quickText.trim()),
+    mutationFn: () => askPastLimit((confirm) => parseEntry(walletId, quickText.trim(), confirm)),
     onSuccess: (res) => {
+      if (!res) return; // the user kept to this month's limit
       const e = res.entry;
       if (!e) {
         notifications.show({
@@ -666,14 +675,14 @@ export function TransactionForm({
           disabled={isSplit}
           clearable
         />
-        {aiEnabled && !isSplit && (
+        {aiSuggest && !isSplit && (
           <Button
             variant="subtle"
             size="compact-xs"
             mt={4}
             leftSection={<IconSparkles size={14} />}
             loading={suggest.isPending}
-            disabled={!payeeName && !memo}
+            disabled={!payeeName}
             onClick={() => suggest.mutate()}
           >
             {t("ai.suggestCategory")}
@@ -819,7 +828,7 @@ export function TransactionForm({
         <Drawer.Body>
           <Stack gap={ENTRY_SHEET.gap} mih="100%" onKeyDown={onEnter}>
             {/* Natural-language quick entry (only when AI is enabled). */}
-            {aiEnabled && !editing && (
+            {aiEntry && !editing && (
               <TextInput
                 label={t("ai.quickEntry")}
                 placeholder={t("ai.quickEntryPlaceholder")}

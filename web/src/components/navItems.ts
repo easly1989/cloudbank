@@ -8,6 +8,7 @@ import {
   IconLayoutDashboard,
   IconPigMoney,
   IconReportMoney,
+  IconSparkles,
   IconTag,
   IconTemplate,
   IconUserDollar,
@@ -55,6 +56,14 @@ export const NAV_ITEMS: NavItemDef[] = [
   { to: "/budget", labelKey: "nav.budget", icon: IconReportMoney, end: false, adminOnly: false },
   { to: "/goals", labelKey: "nav.goals", icon: IconPigMoney, end: false, adminOnly: false },
   { to: "/reports", labelKey: "nav.reports", icon: IconChartBar, end: false, adminOnly: false },
+  // Shown only while the AI writes reports (#696): see SidebarNav.
+  {
+    to: "/insights",
+    labelKey: "nav.aiInsights",
+    icon: IconSparkles,
+    end: false,
+    adminOnly: false,
+  },
   // Until #537 these three were reached only from Settings › wallet › Manage data.
   {
     to: "/categories",
@@ -83,7 +92,7 @@ export interface NavGroupDef {
 export const NAV_GROUPS: NavGroupDef[] = [
   { labelKey: "nav.group.money", items: ["/accounts", "/transactions"] },
   { labelKey: "nav.group.planning", items: ["/schedules", "/budget", "/goals"] },
-  { labelKey: "nav.group.insights", items: ["/reports", "/vehicles"] },
+  { labelKey: "nav.group.insights", items: ["/reports", "/insights", "/vehicles"] },
   {
     labelKey: "nav.group.wallet",
     items: ["/categories", "/payees", "/tags", "/assignments", "/templates", "/currencies"],

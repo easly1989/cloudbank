@@ -17,7 +17,7 @@ import { NavLink as RouterNavLink } from "react-router-dom";
 
 import { NAV } from "./shellTheme";
 
-import { listAccounts } from "../api/client";
+import { AI_SETTINGS_KEY, aiReportsOn, getAISettings, listAccounts } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { formatMinor } from "../money";
 import { negativeOnlyColor } from "../amountTone";
@@ -69,7 +69,13 @@ export function SidebarNav({
     [user?.preferences?.navLayout],
   );
 
-  const canSee = (i: NavItemDef) => !i.adminOnly || isAdmin;
+  const ai = useQuery({
+    queryKey: AI_SETTINGS_KEY,
+    queryFn: getAISettings,
+    enabled: !__DEMO__,
+  });
+  const canSee = (i: NavItemDef) =>
+    (!i.adminOnly || isAdmin) && (i.to !== "/insights" || aiReportsOn(ai.data));
   const groupLabel = (g: NavGroupLayout) => g.label ?? (g.labelKey ? t(g.labelKey) : "");
 
   // Resolve each visible group to its renderable items + separators. Groups with

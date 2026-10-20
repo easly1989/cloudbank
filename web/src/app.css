@@ -251,6 +251,17 @@ body {
   --cb-band-bulk: #18243c;
 }
 
+/* Whatever the AI wrote (#696): a violet into teal that collides with none of
+   the money colours, the accent or the category palette. */
+:root {
+  --cb-ai-a: #6a4fe0;
+  --cb-ai-b: #0b7593;
+}
+:root[data-mantine-color-scheme="dark"] {
+  --cb-ai-a: #a693ff;
+  --cb-ai-b: #4cc8ea;
+}
+
 /* The sidebar is the whole of the chrome, so it is a surface of its own: a
    recessed rail the pages sit beside, not a panel floating on them. The tile
    gives it #f6f7f9 against white; dark keeps the same relation, one step below

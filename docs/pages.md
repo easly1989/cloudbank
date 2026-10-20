@@ -25,6 +25,7 @@ on, on that device, until you turn it off.
 - [Budget](#budget)
 - [Goals](#goals)
 - [Reports](#reports)
+- [AI insights](#ai-insights)
 - [Vehicles](#vehicles)
 - [Review](#review)
 - [Search](#search)
@@ -408,6 +409,23 @@ which accounts to add up. **Saved views** keep a tab, its period and its filters
 name, to come back to. Each tab downloads its figures as CSV and its chart as
 PNG.
 
+## AI insights
+
+Monthly reports your own AI writes on the wallet's numbers. The page is in the
+sidebar only while the AI is set up in **Settings → AI** with **Monthly
+reports** switched on, for a wallet the AI may work on.
+
+- **Generate now** writes the report of the month picked beside it: the last
+  complete month, or any of the twelve before.
+- **The latest report** is shown in full, in the AI box: the frame CloudBank
+  puts round everything the AI wrote. **Why?** opens the numbers it was given,
+  this month against the one before and the six-month average; CloudBank works
+  them out, the model only writes the text. The thumbs say whether it helped.
+- **Earlier reports** are listed under it; **Read** opens one.
+- **Yours alone.** In a shared wallet the others see none of your reports.
+
+At this month's request limit, **Generate now** asks before going past it.
+
 ## Vehicles
 
 What each car, motorbike or van costs to run. A row per vehicle shows its last
@@ -483,7 +501,7 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | **Notifications** | Which events reach you, in the bell, by push on this device, by email, in Matrix, Telegram, Discord or Slack, through ntfy or Gotify, or through a webhook ([the guide](notifications.md)); the bell itself sits in every page header |
 | **Bank sync** | Bank connections ([Automatic bank sync](bank-sync.md)) |
 | **Bank mails** | The bank's notification mails, read from one folder of a mailbox ([the guide](bank-mails.md)) |
-| **AI** | The optional AI, with your own key: category suggestions, and reading [bank mails](bank-mails.md) no pattern reads |
+| **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, category suggestions, quick entry, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word |
 | **Import & export** | Imports ([Importing transactions](import.md)), exports, backups and a database check |
 | **People** | Administrators only: the people who can sign in |
 | **About** | The version, the licence and the source code; for administrators, whether a newer CloudBank is out and the switch for the daily check ([Upgrading](backup.md#upgrading)) |

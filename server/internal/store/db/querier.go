@@ -10,6 +10,7 @@ import (
 )
 
 type Querier interface {
+	AIWalletOff(ctx context.Context, arg AIWalletOffParams) (int64, error)
 	// Today/future transaction sums for a single account; the caller adds the
 	// account's initial balance. Mirrors AccountBalanceDeltas (the per-wallet form).
 	AccountBalanceDelta(ctx context.Context, arg AccountBalanceDeltaParams) (AccountBalanceDeltaRow, error)
@@ -17,6 +18,7 @@ type Querier interface {
 	// header: future = all, today = dated on/before today, bank = reconciled(2)
 	// dated on/before today. The application adds each account's initial balance.
 	AccountBalanceDeltas(ctx context.Context, arg AccountBalanceDeltasParams) ([]AccountBalanceDeltasRow, error)
+	AddAIWalletOff(ctx context.Context, arg AddAIWalletOffParams) error
 	AddAssignmentTag(ctx context.Context, arg AddAssignmentTagParams) error
 	AddTransactionTag(ctx context.Context, arg AddTransactionTagParams) error
 	AddWalletMember(ctx context.Context, arg AddWalletMemberParams) error
@@ -35,10 +37,12 @@ type Querier interface {
 	// Category amounts in a date range, from both plain transactions and split
 	// lines, with each row's account currency so the app can convert to base.
 	CategoryExpenseTotals(ctx context.Context, arg CategoryExpenseTotalsParams) ([]CategoryExpenseTotalsRow, error)
+	ClearAIWalletsOff(ctx context.Context, userID int64) error
 	ClearUserTOTP(ctx context.Context, id int64) error
 	ClearWalletBase(ctx context.Context, walletID int64) error
 	ConsumeAccessRecoveryCode(ctx context.Context, arg ConsumeAccessRecoveryCodeParams) (int64, error)
 	ConsumeRecoveryCode(ctx context.Context, arg ConsumeRecoveryCodeParams) (int64, error)
+	CountAISendsSince(ctx context.Context, arg CountAISendsSinceParams) (int64, error)
 	// Ownership checks for the ids a request names (#543): each counts how many of
 	// the given ids are rows of the wallet.
 	CountAccountsInWallet(ctx context.Context, arg CountAccountsInWalletParams) (int64, error)
@@ -125,6 +129,7 @@ type Querier interface {
 	FindMailboxByAddress(ctx context.Context, arg FindMailboxByAddressParams) (Mailbox, error)
 	FindNotificationCode(ctx context.Context, arg FindNotificationCodeParams) (FindNotificationCodeRow, error)
 	FindTransactionByImportRef(ctx context.Context, arg FindTransactionByImportRefParams) (int64, error)
+	GetAISend(ctx context.Context, arg GetAISendParams) (GetAISendRow, error)
 	GetAISettings(ctx context.Context, userID int64) (GetAISettingsRow, error)
 	GetAPIToken(ctx context.Context, id string) (ApiToken, error)
 	GetAccount(ctx context.Context, id int64) (Account, error)
@@ -173,6 +178,8 @@ type Querier interface {
 	GetWalletMembership(ctx context.Context, arg GetWalletMembershipParams) (string, error)
 	GoalSaved(ctx context.Context, goalID int64) (int64, error)
 	HasReminder(ctx context.Context, arg HasReminderParams) (int64, error)
+	InsertAIReport(ctx context.Context, arg InsertAIReportParams) (InsertAIReportRow, error)
+	InsertAISend(ctx context.Context, arg InsertAISendParams) (int64, error)
 	InsertAPIToken(ctx context.Context, arg InsertAPITokenParams) (ApiToken, error)
 	InsertAccessRecoveryCode(ctx context.Context, arg InsertAccessRecoveryCodeParams) error
 	InsertAccount(ctx context.Context, arg InsertAccountParams) (Account, error)
@@ -213,6 +220,11 @@ type Querier interface {
 	InsertValuation(ctx context.Context, arg InsertValuationParams) (AssetValuation, error)
 	InsertVehicle(ctx context.Context, arg InsertVehicleParams) (Vehicle, error)
 	IsNotificationWalletOff(ctx context.Context, arg IsNotificationWalletOffParams) (int64, error)
+	// The month's largest expenses for a report (#696): date, amount in the
+	// account's currency, payee. Transfers and categories kept out of the reports
+	// are left out, as on the overview's chart; the caller converts and keeps the
+	// top three.
+	LargestExpenses(ctx context.Context, arg LargestExpensesParams) ([]LargestExpensesRow, error)
 	// The most recent valuation (by date, then id) for each asset account in a wallet;
 	// used to fold recorded values into net-worth totals.
 	LatestValuationsForWallet(ctx context.Context, walletID int64) ([]LatestValuationsForWalletRow, error)
@@ -221,6 +233,9 @@ type Querier interface {
 	// the link: same account, payee and category. The demo's seeded year comes
 	// from a HomeBank file, which does not record which schedule posted what.
 	LinkTemplateTransactions(ctx context.Context, templateID sql.NullInt64) (int64, error)
+	ListAIReports(ctx context.Context, arg ListAIReportsParams) ([]ListAIReportsRow, error)
+	ListAISends(ctx context.Context, arg ListAISendsParams) ([]ListAISendsRow, error)
+	ListAIWalletsOff(ctx context.Context, userID int64) ([]int64, error)
 	ListAPITokensForUser(ctx context.Context, userID int64) ([]ApiToken, error)
 	// The full account ledger ordered chronologically (date, then id) with a
 	// server-computed cumulative delta. The application adds the account's initial
@@ -377,6 +392,7 @@ type Querier interface {
 	PayeePaymentCounts(ctx context.Context, arg PayeePaymentCountsParams) ([]PayeePaymentCountsRow, error)
 	PruneBankSyncRuns(ctx context.Context, arg PruneBankSyncRunsParams) error
 	PruneMailMessages(ctx context.Context, arg PruneMailMessagesParams) error
+	PurgeAISends(ctx context.Context, arg PurgeAISendsParams) error
 	PurgeNotificationsBefore(ctx context.Context, createdAt string) (int64, error)
 	// A tag merge moves the rules too; OR IGNORE skips a rule that already adds
 	// the target (its row goes away with the source tag).
@@ -408,6 +424,7 @@ type Querier interface {
 	// filters. Each row also carries the total match count (window) so the caller
 	// can paginate.
 	SearchTransactions(ctx context.Context, arg SearchTransactionsParams) ([]SearchTransactionsRow, error)
+	SetAIReportFeedback(ctx context.Context, arg SetAIReportFeedbackParams) (int64, error)
 	SetAppConfig(ctx context.Context, arg SetAppConfigParams) error
 	SetAssignmentPosition(ctx context.Context, arg SetAssignmentPositionParams) error
 	SetBankConnectionAutoSync(ctx context.Context, arg SetBankConnectionAutoSyncParams) (int64, error)

@@ -40,6 +40,9 @@ var (
 	// x's a bank masks a card with, which may come first ("XXXX XXXX 5678").
 	reDigitRun = regexp.MustCompile(`[\d*•_xX][\d \-_*•xX]*\d`)
 	reAmount   = regexp.MustCompile(`^\d[\d.,' ]*$`)
+	// An ISO date has eight digits but is no card: today's date grounds the
+	// quick entry, and the reports date their rows.
+	reISODate = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 )
 
 // hideNumbers blanks out every card number and IBAN, and any other long
@@ -49,6 +52,9 @@ var (
 func hideNumbers(s string) string {
 	s = reIBAN.ReplaceAllString(s, "[IBAN]")
 	return reDigitRun.ReplaceAllStringFunc(s, func(run string) string {
+		if reISODate.MatchString(run) {
+			return run
+		}
 		digits, masked := 0, false
 		for _, r := range run {
 			switch {
@@ -65,10 +71,11 @@ func hideNumbers(s string) string {
 	})
 }
 
-// Configured reports whether the user has AI enabled and complete.
+// Configured reports whether the user has the AI enabled, complete, and set
+// to read bank mails.
 func (s *Service) Configured(ctx context.Context, userID int64) bool {
 	cfg, err := s.load(ctx, userID)
-	return err == nil && cfg.Enabled != 0 && cfg.ApiKey != "" && cfg.BaseUrl != "" && cfg.Model != ""
+	return err == nil && ready(cfg) && cfg.MailOn != 0
 }
 
 // ReadBankMail asks the user's model what payment a bank's mail reports.
@@ -76,19 +83,8 @@ func (s *Service) Configured(ctx context.Context, userID int64) bool {
 // and no error when the model says the mail is no payment, or answers with
 // something that cannot be one; an error means the provider could not be asked.
 // received (YYYY-MM-DD) grounds a date the mail writes without its year.
-func (s *Service) ReadBankMail(ctx context.Context, userID int64, subject, body, received string) (*MailReading, error) {
-	cfg, err := s.load(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	if cfg.Enabled == 0 || cfg.ApiKey == "" || cfg.BaseUrl == "" || cfg.Model == "" {
-		return nil, ErrNotConfigured
-	}
-	// Only an administrator's own provider may be on the local network (#543).
-	admin := false
-	if u, err := s.rq.GetUserByID(ctx, userID); err == nil {
-		admin = u.IsAdmin != 0
-	}
+// Reading mails is automatic, so it never goes past the monthly limit.
+func (s *Service) ReadBankMail(ctx context.Context, userID, walletID int64, subject, body, received string) (*MailReading, error) {
 	if len(body) > mailMax {
 		// The cut can split a character; drop what is left of it.
 		body = strings.ToValidUTF8(body[:mailMax], "")
@@ -103,12 +99,14 @@ func (s *Service) ReadBankMail(ctx context.Context, userID int64, subject, body,
 		"If the mail is anything else (an advert, a login or security notice, a statement ready, a " +
 		"reminder), reply {\"payment\":false}. Never invent an amount. Card numbers, IBANs and other " +
 		"long numbers are hidden as [hidden] and [IBAN]."
-	user := fmt.Sprintf("Received: %s\nSubject: %s\n\n%s", received, hideNumbers(subject), hideNumbers(body))
-	reply, err := newClient(cfg.BaseUrl, cfg.ApiKey, cfg.Model, s.hc, admin).chat(ctx, system, user)
+	reply, err := s.Ask(ctx, Call{
+		UserID: userID, WalletID: walletID, Feature: FeatureMail, System: system,
+		User: fmt.Sprintf("Received: %s\nSubject: %s\n\n%s", received, subject, body),
+	})
 	if err != nil {
 		return nil, err
 	}
-	return readingOf(reply), nil
+	return readingOf(reply.Text), nil
 }
 
 // readingOf checks the model's answer: anything incomplete is no reading.

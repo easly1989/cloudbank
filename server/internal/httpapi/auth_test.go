@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/easly1989/cloudbank/server/internal/account"
+	"github.com/easly1989/cloudbank/server/internal/ai"
 	"github.com/easly1989/cloudbank/server/internal/assignment"
 	"github.com/easly1989/cloudbank/server/internal/attachment"
 	"github.com/easly1989/cloudbank/server/internal/auth"
@@ -25,6 +26,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/goal"
 	"github.com/easly1989/cloudbank/server/internal/importer"
 	"github.com/easly1989/cloudbank/server/internal/importio"
+	"github.com/easly1989/cloudbank/server/internal/insight"
 	"github.com/easly1989/cloudbank/server/internal/integrity"
 	"github.com/easly1989/cloudbank/server/internal/mailingest"
 	"github.com/easly1989/cloudbank/server/internal/notify"
@@ -100,11 +102,13 @@ func newTestAPI(t *testing.T) *testClient {
 	// Webhooks are sent for real, to the tests' own httptest servers; no mail server.
 	nsvc := notify.NewService(st.Read(), st.Write(), nil)
 	nsvc.SetSender(notify.ChannelWebhook, notify.NewWebhookSender())
+	aisvc := ai.NewService(st.Read(), st.Write())
+	insightsvc := insight.NewService(st.Read(), st.Write(), aisvc, dsvc, rsvc, bsvc, ssvc)
 	mailsvc := mailingest.NewService(st.Read(), st.Write(), mailingest.NewMicrosoft("test-client", "http://127.0.0.1:1", nil))
 	srv := httptest.NewServer(New(Options{
 		Auth: svc, Wallets: wsvc, Currencies: csvc, Accounts: asvc,
 		Categories: catsvc, Payees: psvc, Transactions: tsvc, Tags: tagsvc, Vehicles: vehsvc, Goals: goalsvc, Transfers: xsvc, Dashboard: dsvc, Templates: tplsvc, Schedules: ssvc, Assignments: asvc2, Budgets: bsvc, Reports: rsvc, Import: impsvc, CSV: csvsvc, RateProvider: stubRateProvider{},
-		Integrity: intsvc, Backup: bksvc, Attachments: attsvc, Mail: mailsvc, Notifications: nsvc, HotBackup: st, DataDir: t.TempDir(), Health: st,
+		Integrity: intsvc, Backup: bksvc, Attachments: attsvc, Mail: mailsvc, Notifications: nsvc, AI: aisvc, Insights: insightsvc, HotBackup: st, DataDir: t.TempDir(), Health: st,
 		// A local build: the check follows no channel, so it never goes online.
 		Updates: updates.New(st.Write(), "dev", true),
 	}))

@@ -256,8 +256,8 @@ not sign its mails, or for a forward that breaks the signature.
 
 ## Reading mails with the AI
 
-If you have set up an AI provider in **Settings → AI**, a mailbox can have its
-mails read by it. **How mails are read** offers four modes:
+If you have set up an AI provider in **Settings → AI** and switched on **Bank
+mails** there, a mailbox can have its mails read by it. **How mails are read** offers four modes:
 
 - **Patterns only**: the default.
 - **Patterns first, then the AI**: the AI reads only the mails no pattern reads.
