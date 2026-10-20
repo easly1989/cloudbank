@@ -1788,7 +1788,7 @@
       "summary_weekly": "Riepilogo settimanale",
       "summary_monthly": "Riepilogo mensile",
       "ai_report": "Resoconto AI pronto",
-      "ai_proposal": "Proposta di budget pronta"
+      "ai_proposal": "Proposta AI pronta"
     },
     "kindHint": {
       "new_device": "Un browser o un sistema che il tuo account non ha mai usato.",
@@ -1808,7 +1808,7 @@
       "summary_weekly": "Il lunedì: entrate, uscite, dove è andato di più e le scadenze della settimana, per portafoglio.",
       "summary_monthly": "Il giorno 1: entrate, uscite e dove è andato di più nel mese prima, per portafoglio.",
       "ai_report": "Quando un resoconto programmato è scritto, o saltato al limite del mese. Due righe, mai gli importi.",
-      "ai_proposal": "Quando l'AI propone budget da quello che spendi davvero, una volta al mese. Due righe, mai gli importi."
+      "ai_proposal": "Quando l'AI propone budget o trova abbonamenti da guardare, una volta al mese. Due righe, mai gli importi."
     },
     "securityAlways": "Sempre nella campanella, così un accesso che non hai fatto non passa inosservato.",
     "emailUnavailable": "Non disponibile: l'amministratore non ha configurato un server di posta (CB_SMTP_HOST).",
@@ -2031,6 +2031,10 @@
       "budgets": {
         "name": "Proposte di budget",
         "sends": "Invia, per ogni categoria a cui propone un budget, il nome, il budget di oggi, l'importo abituale del mese e quello proposto. Mai le transazioni."
+      },
+      "subscriptions": {
+        "name": "Proposte sugli abbonamenti",
+        "sends": "Invia, per ogni programmata che propone, il nome, l'importo salvato, gli ultimi addebiti e quanto costa all'anno. Mai le transazioni."
       }
     },
     "wallets": "Su quali portafogli",
@@ -3303,6 +3307,31 @@
     "why": {
       "median": "Mediana",
       "note": "I numeri li ha calcolati CloudBank: la mediana dei mesi completi, arrotondata a 5. Il modello ha scritto solo il testo. Modello: {{model}}."
+    },
+    "sub": {
+      "title_one": "{{count}} abbonamento da guardare",
+      "title_other": "{{count}} abbonamenti da guardare",
+      "basis": "Dalle tue transazioni · generato il {{date}}",
+      "reason": {
+        "raised": "Aumentato: gli ultimi 2 addebiti sono di {{amount}}",
+        "raisedTwo": "Aumentato: gli ultimi 2 addebiti sono di {{prev}} e {{amount}}",
+        "double": "Doppio: stesso beneficiario di «{{other}}»",
+        "alike": "Doppio? Stesso importo e cadenza di «{{other}}»",
+        "unused": "Nessun addebito trovato in banca dal {{date}}"
+      },
+      "perYear": "{{amount}} l'anno",
+      "update": "Aggiorna",
+      "open": "Apri",
+      "updateLabel": "Aggiorna {{name}} a {{amount}}",
+      "openLabel": "Apri {{name}}",
+      "why": {
+        "schedule": "Programmata",
+        "saved": "Salvato",
+        "paid": "Ultimi addebiti",
+        "last": "Ultimo addebito",
+        "yearly": "All'anno",
+        "note": "Li ha trovati CloudBank nelle tue programmate e transazioni: gli ultimi 2 addebiti almeno il 5% sopra l'importo salvato, una seconda programmata allo stesso beneficiario o dello stesso importo con la stessa cadenza, una programmata registrata a mano non pagata da due periodi. Il modello ha scritto solo il testo. Modello: {{model}}."
+      }
     }
   }
 }

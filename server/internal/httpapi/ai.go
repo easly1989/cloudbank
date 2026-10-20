@@ -111,12 +111,14 @@ func (h *aiHandlers) putSettings(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		writeError(w, http.StatusInternalServerError, "internal", "could not save AI settings")
 	default:
-		// Budget proposals just turned on come at once, not at the next run.
-		if h.insights != nil && st.Enabled && st.Features.Budgets && (!before.Enabled || !before.Features.Budgets) {
+		// Proposals just turned on come at once, not at the next run.
+		turnedOn := func(was, is bool) bool { return st.Enabled && is && (!before.Enabled || !was) }
+		if h.insights != nil && (turnedOn(before.Features.Budgets, st.Features.Budgets) ||
+			turnedOn(before.Features.Subscriptions, st.Features.Subscriptions)) {
 			ctx := context.WithoutCancel(r.Context())
 			go func() {
 				if err := h.insights.RunUser(ctx, u.ID); err != nil {
-					slog.Warn("budget proposals", "err", err)
+					slog.Warn("AI proposals", "err", err)
 				}
 			}()
 		}
@@ -285,11 +287,16 @@ func (h *aiHandlers) proposalAction(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Action     string `json:"action"`
 		CategoryID int64  `json:"categoryId"`
+		ScheduleID int64  `json:"scheduleId"`
 	}
 	if !decodeJSON(w, r, &body) {
 		return
 	}
-	switch err := h.insights.Act(r.Context(), u.ID, wl.ID, id, body.Action, body.CategoryID); {
+	row := body.CategoryID
+	if body.ScheduleID != 0 {
+		row = body.ScheduleID
+	}
+	switch err := h.insights.Act(r.Context(), u.ID, wl.ID, id, body.Action, row); {
 	case errors.Is(err, insight.ErrNotFound):
 		writeError(w, http.StatusNotFound, "not_found", "proposal not found")
 	case errors.Is(err, insight.ErrBadAction):

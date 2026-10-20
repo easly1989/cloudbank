@@ -79,7 +79,7 @@ exception: it is switched on per device, and its boxes can be set before.
 | Weekly summary | On Monday, for each wallet you hear from: money in and out last week, the week before, the three categories that took most, and the bills of the next 7 days. A week with nothing to tell sends nothing. | Reports |
 | Monthly summary | On the 1st, the same for last month, without the bills. | Reports |
 | AI report ready | Your AI wrote a scheduled report ([AI insights](pages.md#ai-insights)): the period and the wallet, never the amounts. Also when one was skipped at this month's AI limit. | The report, or Settings → AI |
-| Budget proposal ready | Your AI proposed budgets from what you really spend ([Budget](pages.md#budget)), once a month. The wallet, never the amounts. | Budget |
+| AI proposal ready | Your AI proposed budgets from what you really spend ([Budget](pages.md#budget)), or found subscriptions to look at ([Schedules](pages.md#schedules)), once a month each. The wallet, never the amounts. | Budget, or Schedules |
 | A new CloudBank version | A newer release is out on the channel the server follows. Administrators only. | About |
 
 The three security events always reach the bell, even with every other channel

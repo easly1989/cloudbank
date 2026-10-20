@@ -21,6 +21,7 @@ import {
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
+  IconCalendarRepeat,
   IconCategory,
   IconChartDots,
   IconMail,
@@ -56,6 +57,7 @@ import { SettingsGroup } from "./SettingsLayout";
 const FEATURES: { key: AIFeature; icon: Icon }[] = [
   { key: "reports", icon: IconChartDots },
   { key: "budgets", icon: IconPigMoney },
+  { key: "subscriptions", icon: IconCalendarRepeat },
   { key: "suggest", icon: IconCategory },
   { key: "entry", icon: IconPencilBolt },
   { key: "mail", icon: IconMail },
@@ -67,6 +69,7 @@ const NO_FEATURES: AIFeatures = {
   mail: false,
   reports: false,
   budgets: false,
+  subscriptions: false,
 };
 
 /** The first of next month, UTC, when the count starts again. */

@@ -745,7 +745,7 @@ export interface paths {
         };
         /**
          * The current user's AI proposals waiting on this wallet, newest first
-         * @description Open ones, and those back from "later". Rows already saved from the budget form are left out. Private to the user, even on a shared wallet.
+         * @description Open ones, and those back from "later". Rows already saved from their form are left out. Private to the user, even on a shared wallet.
          */
         get: operations["listAIProposals"];
         put?: never;
@@ -769,8 +769,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Later, ignore, or a row saved from the budget form
-         * @description later hides the proposal for a week; ignore puts it away until the numbers change; applied marks the row of categoryId saved, and the whole proposal once every row is. A proposal never writes a budget itself.
+         * Later, ignore, or a row saved from its form
+         * @description later hides the proposal for a week; ignore puts it away until the numbers change; applied marks the row of categoryId (a budget proposal) or scheduleId (a subscription proposal) saved, and the whole proposal once every row is. A proposal never writes anything itself.
          */
         post: operations["actOnAIProposal"];
         delete?: never;
@@ -3821,6 +3821,8 @@ export interface components {
             reports: boolean;
             /** @description budget proposals: sends each proposed category's name, budget, usual and proposed amounts */
             budgets: boolean;
+            /** @description subscription proposals: sends each proposed schedule's name, amount, last payments and cost a year */
+            subscriptions: boolean;
         };
         /** @description The reports that come by themselves besides the monthly one, which comes whenever reports are on. */
         AISchedule: {
@@ -3878,7 +3880,7 @@ export interface components {
             walletId: number | null;
             walletName: string;
             /** @enum {string} */
-            feature: "suggest" | "entry" | "mail" | "reports";
+            feature: "suggest" | "entry" | "mail" | "reports" | "budgets" | "subscriptions";
             model: string;
             /** @description RFC3339 UTC */
             createdAt: string;
@@ -3958,17 +3960,17 @@ export interface components {
             /** @description RFC3339 UTC */
             createdAt: string;
         };
-        /** @description One category's proposed monthly budget, in the base currency's minor units, as positive amounts. */
+        /** @description One row, in the base currency's minor units, as positive amounts: a category's proposed monthly budget, or a schedule to look at. The budget fields are zero on a subscription row. */
         AIProposalRow: {
             /** Format: int64 */
             categoryId: number;
-            /** @description the category's path, Parent:Child */
+            /** @description the category's path, Parent:Child; a schedule's name */
             name: string;
             /**
-             * @description no budget though spent on most months; the budget gone over, or not reached, most months
+             * @description budget: no budget though spent on most months; the budget gone over, or not reached, most months. subscription: the last two payments at least 5% over the amount saved; the same payee as an earlier schedule; the same amount just as often as one; registered by hand and not paid for two periods.
              * @enum {string}
              */
-            reason: "none" | "over" | "under";
+            reason: "none" | "over" | "under" | "raised" | "double" | "alike" | "unused";
             /**
              * Format: int64
              * @description today's budget; 0 is none
@@ -3988,9 +3990,30 @@ export interface components {
             months: number[];
             /** @description the months that made the reason */
             hits: number;
+            /**
+             * Format: int64
+             * @description subscription: the schedule
+             */
+            scheduleId?: number;
+            /**
+             * Format: int64
+             * @description subscription: what the schedule saves
+             */
+            amount?: number;
+            /** @description raised: the last two payments, oldest first; proposed is the latest */
+            paid?: number[];
+            /** @description double, alike: the earlier schedule's name */
+            other?: string;
+            /** @description raised, unused: the last payment's date, YYYY-MM-DD */
+            last?: string;
+            /**
+             * Format: int64
+             * @description subscription: what the schedule costs a year at the amount saved
+             */
+            yearly?: number;
         };
         AIProposalBasis: {
-            /** @description YYYY-MM, the six complete months before the proposal's, oldest first */
+            /** @description YYYY-MM, the six complete months before the proposal's, oldest first; empty for subscriptions */
             months: string[];
             currency: components["schemas"]["AIReportCurrency"];
             rows: components["schemas"]["AIProposalRow"][];
@@ -3999,7 +4022,7 @@ export interface components {
             /** Format: int64 */
             id: number;
             /** @enum {string} */
-            kind: "budget";
+            kind: "budget" | "subscriptions";
             /** @description YYYY-MM, the month it was made in */
             period: string;
             /** @description the model's two or three sentences */
@@ -7427,9 +7450,14 @@ export interface operations {
                     action: "later" | "ignore" | "applied";
                     /**
                      * Format: int64
-                     * @description with applied: the row's category
+                     * @description with applied: the budget row's category
                      */
                     categoryId?: number;
+                    /**
+                     * Format: int64
+                     * @description with applied: the subscription row's schedule
+                     */
+                    scheduleId?: number;
                 };
             };
         };
