@@ -104,6 +104,7 @@ type AiSetting struct {
 	BudgetsOn       int64
 	SubscriptionsOn int64
 	SavingsOn       int64
+	GoalsOn         int64
 }
 
 type AiWalletsOff struct {
