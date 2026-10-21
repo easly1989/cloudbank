@@ -30,6 +30,7 @@ import {
   IconMessageQuestion,
   IconPencilBolt,
   IconPigMoney,
+  IconReceipt,
   IconTarget,
   IconUsers,
   IconWand,
@@ -74,6 +75,7 @@ const FEATURES: { key: AIFeature; icon: Icon }[] = [
   { key: "import", icon: IconFileSpreadsheet },
   { key: "suggest", icon: IconCategory },
   { key: "entry", icon: IconPencilBolt },
+  { key: "receipts", icon: IconReceipt },
   { key: "mail", icon: IconMail },
 ];
 
@@ -91,6 +93,7 @@ const NO_FEATURES: AIFeatures = {
   payees: false,
   import: false,
   ask: false,
+  receipts: false,
 };
 
 /** The first of next month, UTC, when the count starts again. */

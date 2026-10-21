@@ -25,6 +25,8 @@ export interface AIFeatures {
   import: boolean;
   /** Answers to questions about the wallet's own numbers (#704). */
   ask: boolean;
+  /** A receipt's photo read into the entry sheet (#707). */
+  receipts: boolean;
 }
 
 export type AIFeature = keyof AIFeatures;
@@ -168,6 +170,17 @@ export const proposeCSVMapping = (
   file: { content: string; delimiter: string; hasHeader: boolean },
   confirm = false,
 ) => api.post<CSVProposal>(`/api/v1/wallets/${walletId}/ai/csv-mapping`, { ...file, confirm });
+
+/** The photo goes to the model and is not kept; the log keeps a line about it (#707). */
+export const parseReceipt = (walletId: number, photo: Blob, confirm = false) => {
+  const form = new FormData();
+  form.append("photo", photo, "receipt.jpg");
+  form.append("confirm", String(confirm));
+  return api.postForm<{ entry: ParsedEntry | null }>(
+    `/api/v1/wallets/${walletId}/ai/parse-receipt`,
+    form,
+  );
+};
 
 export interface ParsedEntry {
   amount: string;

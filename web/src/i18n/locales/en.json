@@ -2086,6 +2086,10 @@
       "ask": {
         "name": "Ask your data",
         "sends": "Sends your question, the names of your categories, accounts, tags and busiest payees, and the results of the queries the AI picked. Never a transaction or a memo."
+      },
+      "receipts": {
+        "name": "Receipts",
+        "sends": "Sends the photo of a receipt, shrunk by your browser and without its location, with your category, payee and tag names. The photo is not kept unless you attach it."
       }
     },
     "wallets": "On which wallets",
@@ -2128,7 +2132,18 @@
       "weekly": "Every Monday, the week before",
       "yearly": "In January, the year before"
     },
-    "fromShared": "From the shared text: check the fields and save"
+    "fromShared": "From the shared text: check the fields and save",
+    "receipt": {
+      "scan": "Scan a receipt",
+      "photo": "Receipt photo",
+      "remove": "Remove the photo",
+      "sends": "Sends this photo and your category, payee and tag names to your AI. The photo is not kept unless you attach it.",
+      "read": "Read with AI",
+      "done": "Read by the AI: check the fields and save.",
+      "attach": "Attach the photo to the transaction",
+      "attachFailed": "Saved, but the photo could not be attached",
+      "unreadable": "The AI could not read a receipt in this photo."
+    }
   },
   "setup": {
     "title": "Welcome to CloudBank",
@@ -3365,7 +3380,8 @@
     "tls_failed": "The connection to the mail server could not be encrypted.",
     "ai_not_configured": "Set up the AI first, in Settings › AI.",
     "hourly_limit": "Too many messages this hour. Try again later.",
-    "no_data": "That month has no transactions to write about."
+    "no_data": "That month has no transactions to write about.",
+    "ai_no_vision": "The provider refused the photo: the model chosen may not read images. Pick one that does in Settings › AI."
   },
   "insights": {
     "title": "AI insights",

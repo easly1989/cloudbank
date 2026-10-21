@@ -46,6 +46,9 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"image"
+	_ "image/jpeg" // the receipt photos the pretend AI decodes
+	_ "image/png"
 	"io"
 	"log"
 	"net"
@@ -355,17 +358,56 @@ var (
 func (f *fake) chat(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		Messages []struct {
-			Content string `json:"content"`
+			Content json.RawMessage `json:"content"`
 		} `json:"messages"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil || len(in.Messages) == 0 {
 		http.Error(w, "want a chat completion", http.StatusBadRequest)
 		return
 	}
-	text := in.Messages[len(in.Messages)-1].Content
+	// The content is the text, or text and a photo as parts (#707).
+	var text string
+	var parts []struct {
+		Type     string `json:"type"`
+		Text     string `json:"text"`
+		ImageURL struct {
+			URL string `json:"url"`
+		} `json:"image_url"`
+	}
+	if json.Unmarshal(in.Messages[len(in.Messages)-1].Content, &text) != nil {
+		_ = json.Unmarshal(in.Messages[len(in.Messages)-1].Content, &parts)
+	}
+	photo := ""
+	for _, p := range parts {
+		switch p.Type {
+		case "text":
+			text += p.Text
+		case "image_url":
+			// Only a photo that decodes is read: the receipt is always the same one.
+			_, b64, _ := strings.Cut(p.ImageURL.URL, ";base64,")
+			data, err := base64.StdEncoding.DecodeString(b64)
+			if err != nil {
+				http.Error(w, "the photo is not base64", http.StatusBadRequest)
+				return
+			}
+			cfg, kind, err := image.DecodeConfig(bytes.NewReader(data))
+			if err != nil {
+				http.Error(w, "the photo does not decode", http.StatusBadRequest)
+				return
+			}
+			photo = fmt.Sprintf("[photo %s %dx%d]", kind, cfg.Width, cfg.Height)
+		}
+	}
 	f.mu.Lock()
-	f.aiLast = text
+	f.aiLast = strings.TrimSpace(text + "\n" + photo)
 	f.mu.Unlock()
+	if photo != "" {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"choices": []map[string]any{{"message": map[string]string{"role": "assistant", "content": `{"amount":12.5,` +
+				`"direction":"expense","date":"2026-10-20","payee":"Corner Bakery","category":"","tags":[],"memo":"Bread and pastries"}`}}},
+		})
+		return
+	}
 	// A budget proposal (#698) is two or three sentences.
 	if strings.Contains(text, "Budget proposals") {
 		writeJSON(w, http.StatusOK, map[string]any{

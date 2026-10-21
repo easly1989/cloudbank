@@ -798,6 +798,36 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { description: "This month's limit is reached (ai_limit); ask the user, then send confirm.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "502": { description: The AI provider request failed. }
+  /api/v1/wallets/{walletId}/ai/parse-receipt:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: parseReceipt
+      summary: Read a receipt's photo into transaction fields
+      description: >-
+        The photo goes to the provider and nowhere else: never to disk, and the
+        log of what was sent keeps a line about it instead of its bytes. 400
+        invalid_file when it is not a JPEG, PNG or WebP of up to 5 MB, told by its
+        bytes; 400 ai_disabled when the AI, its "receipts" switch or this wallet
+        are off; 502 ai_no_vision when the provider refused the photo, most often
+        a model that does not read images.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo: { type: string, format: binary }
+                confirm: { type: string, enum: ["true", "false"], description: "the user's yes to a call past this month's limit" }
+              required: [photo]
+      responses:
+        "200": { description: The parsed fields (entry may be null)., content: { application/json: { schema: { $ref: "#/components/schemas/ParseEntryResult" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "This month's limit is reached (ai_limit); ask the user, then send confirm.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "502": { description: "The AI provider request failed (ai_error), or refused the photo (ai_no_vision)." }
   /api/v1/ai/sends:
     get:
       operationId: listAISends
@@ -4003,7 +4033,8 @@ components:
         payees: { type: boolean, description: "payee cleanup: sends the payee names only" }
         import: { type: boolean, description: "CSV column mapping: sends the column names and the shape of three rows; dates and numbers as written, words never" }
         ask: { type: boolean, description: "ask your data: sends the question, the category, account and tag names, the busiest payees, and the results of the queries picked" }
-      required: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals, unusual, rules, payees, import, ask]
+        receipts: { type: boolean, description: "receipts: sends the photo, shrunk by the browser, with the category, payee and tag names; the photo is not kept unless attached" }
+      required: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals, unusual, rules, payees, import, ask, receipts]
     AISchedule:
       type: object
       description: The reports that come by themselves besides the monthly one, which comes whenever reports are on.

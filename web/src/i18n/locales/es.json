@@ -2086,6 +2086,10 @@
       "ask": {
         "name": "Preguntas sobre tus datos",
         "sends": "Envía tu pregunta, los nombres de tus categorías, cuentas, etiquetas y beneficiarios más usados, y los resultados de las consultas que eligió la IA. Nunca un movimiento ni una nota."
+      },
+      "receipts": {
+        "name": "Tiques",
+        "sends": "Envía la foto de un tique, reducida por tu navegador y sin su ubicación, con los nombres de tus categorías, beneficiarios y etiquetas. La foto no se guarda salvo que la adjuntes."
       }
     },
     "wallets": "En qué carteras",
@@ -2128,7 +2132,18 @@
       "weekly": "Cada lunes, la semana anterior",
       "yearly": "En enero, el año anterior"
     },
-    "fromShared": "Del texto compartido: revisa los campos y guarda"
+    "fromShared": "Del texto compartido: revisa los campos y guarda",
+    "receipt": {
+      "scan": "Leer un tique",
+      "photo": "Foto del tique",
+      "remove": "Quitar la foto",
+      "sends": "Envía esta foto y los nombres de tus categorías, beneficiarios y etiquetas a tu IA. La foto no se guarda salvo que la adjuntes.",
+      "read": "Leer con la IA",
+      "done": "Leído por la IA: revisa los campos y guarda.",
+      "attach": "Adjuntar la foto al movimiento",
+      "attachFailed": "Guardado, pero no se pudo adjuntar la foto",
+      "unreadable": "La IA no encontró un tique legible en esta foto."
+    }
   },
   "setup": {
     "title": "Bienvenido a CloudBank",
@@ -3365,7 +3380,8 @@
     "tls_failed": "No se pudo cifrar la conexión con el servidor de correo.",
     "ai_not_configured": "Configura antes la IA, en Ajustes › IA.",
     "hourly_limit": "Demasiados mensajes en esta hora. Inténtalo más tarde.",
-    "no_data": "Ese mes no tiene movimientos sobre los que escribir."
+    "no_data": "Ese mes no tiene movimientos sobre los que escribir.",
+    "ai_no_vision": "El proveedor rechazó la foto: puede que el modelo elegido no lea imágenes. Elige uno que sí en Ajustes › IA."
   },
   "insights": {
     "title": "Análisis con IA",

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/easly1989/cloudbank/server/internal/store/db"
@@ -25,6 +26,7 @@ const (
 	FeaturePayees        = "payees"
 	FeatureImport        = "import"
 	FeatureAsk           = "ask"
+	FeatureReceipts      = "receipts"
 )
 
 // ErrFeatureOff means the job, or the wallet it is for, is switched off. It
@@ -51,6 +53,27 @@ type Call struct {
 	User    string
 	// MaxTokens bounds the reply; 0 is a short one.
 	MaxTokens int
+	// Image is a photo sent with the text (#707); the log keeps only a line about it.
+	Image *Image
+}
+
+// Image is a photo for the model, kept in memory only.
+type Image struct {
+	// Type is image/jpeg, image/png or image/webp.
+	Type string
+	Data []byte
+	// Width and Height are 0 when unknown.
+	Width, Height int
+}
+
+// logLine is what the log keeps of a photo instead of its bytes.
+func (i *Image) logLine() string {
+	kind := strings.ToUpper(strings.TrimPrefix(i.Type, "image/"))
+	size := fmt.Sprintf("%d KB", (len(i.Data)+1023)/1024)
+	if i.Width > 0 {
+		return fmt.Sprintf("[photo %s %d×%d, %s, not kept]", kind, i.Width, i.Height, size)
+	}
+	return fmt.Sprintf("[photo %s, %s, not kept]", kind, size)
 }
 
 // Answer is the model's reply and the model that gave it.
@@ -87,6 +110,8 @@ func featureOn(cfg db.GetAISettingsRow, feature string) bool {
 		return cfg.ImportOn != 0
 	case FeatureAsk:
 		return cfg.AskOn != 0
+	case FeatureReceipts:
+		return cfg.ReceiptsOn != 0
 	}
 	return false
 }
@@ -110,6 +135,10 @@ func (s *Service) Ask(ctx context.Context, c Call) (Answer, error) {
 	}
 
 	user := hideNumbers(c.User)
+	sent := c.System + "\n\n" + user
+	if c.Image != nil {
+		sent += "\n\n" + c.Image.logLine()
+	}
 	wallet := sql.NullInt64{Int64: c.WalletID, Valid: c.WalletID != 0}
 	cutoff := s.now().UTC().Add(-sendsKept).Format("2006-01-02T15:04:05.000Z")
 	if err := s.q.PurgeAISends(ctx, db.PurgeAISendsParams{UserID: c.UserID, CreatedAt: cutoff}); err != nil {
@@ -117,7 +146,7 @@ func (s *Service) Ask(ctx context.Context, c Call) (Answer, error) {
 	}
 	if _, err := s.q.InsertAISend(ctx, db.InsertAISendParams{
 		UserID: c.UserID, WalletID: wallet, Feature: c.Feature, Model: cfg.Model,
-		Sent: c.System + "\n\n" + user,
+		Sent: sent,
 	}); err != nil {
 		return Answer{}, err
 	}
@@ -131,7 +160,7 @@ func (s *Service) Ask(ctx context.Context, c Call) (Answer, error) {
 	if tokens == 0 {
 		tokens = 300
 	}
-	text, err := newClient(cfg.BaseUrl, cfg.ApiKey, cfg.Model, s.hc, admin).chat(ctx, c.System, user, tokens)
+	text, err := newClient(cfg.BaseUrl, cfg.ApiKey, cfg.Model, s.hc, admin).chat(ctx, c.System, user, c.Image, tokens)
 	if err != nil {
 		return Answer{}, err
 	}

@@ -18,7 +18,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     credentials: "same-origin",
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      // A form sets its own multipart type, with the boundary.
+      ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
       "X-Requested-With": "XMLHttpRequest",
       ...(init?.headers ?? {}),
     },
@@ -53,6 +54,7 @@ export const api = {
   patch: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
   del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  postForm: <T>(path: string, form: FormData) => request<T>(path, { method: "POST", body: form }),
 };
 
 export interface Health {

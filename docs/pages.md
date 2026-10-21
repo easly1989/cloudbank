@@ -142,6 +142,13 @@ With CloudBank installed on the phone (**Add to Home screen**, over HTTPS; see
   Nothing is saved until you press **Save**. Only text can be shared: a
   screenshot cannot be read. Many notifications offer **Copy** or **Share** on
   a long press; otherwise copy the text from the bank's app.
+- **A receipt.** With the AI's **Receipts** on (**Settings → AI**), **Scan a
+  receipt** in the entry sheet opens the camera (on a computer, a file picker).
+  The photo shows in the sheet, shrunk by the browser and without the place it
+  was taken; nothing is sent until **Read with AI**. The total, the date, the
+  shop and a short memo fill in, with a category from yours. **Attach the
+  photo to the transaction**, off at first, keeps it as an attachment when you
+  save; otherwise it is dropped when the sheet closes.
 - **iPhone and iPad.** iOS offers neither shortcuts nor sharing to installed web
   apps. The **Shortcuts** app gets close: a shortcut with **Open URLs** on
   `https://cloudbank.example.com/transactions?new=1&kind=expense` (or
@@ -665,7 +672,7 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | **Notifications** | Which events reach you, in the bell, by push on this device, by email, in Matrix, Telegram, Discord or Slack, through ntfy or Gotify, or through a webhook ([the guide](notifications.md)); the bell itself sits in every page header |
 | **Bank sync** | Bank connections ([Automatic bank sync](bank-sync.md)) |
 | **Bank mails** | The bank's notification mails, read from one folder of a mailbox ([the guide](bank-mails.md)) |
-| **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, ask your data, budget, subscription, savings, goal and rule proposals, payee cleanup, CSV columns, unusual transactions, category suggestions, quick entry, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word. See [the AI guide](ai.md) |
+| **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, ask your data, budget, subscription, savings, goal and rule proposals, payee cleanup, CSV columns, unusual transactions, category suggestions, quick entry, receipts, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word. See [the AI guide](ai.md) |
 | **Import & export** | Imports ([Importing transactions](import.md)), exports, backups and a database check |
 | **People** | Administrators only: the people who can sign in |
 | **About** | The version, the licence and the source code; for administrators, whether a newer CloudBank is out and the switch for the daily check ([Upgrading](backup.md#upgrading)) |
