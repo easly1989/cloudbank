@@ -30,7 +30,9 @@ pull request: an edit made in the wiki is overwritten.
 - [CloudBank in Home Assistant](home-assistant.md): bills, this month's budget
   and Review as sensors, read with an API token; balances only if you ask.
 - [Adding from your phone](pages.md#adding-from-your-phone): the home-screen
-  shortcuts and sharing a bank's notification, on Android and on an iPhone.
+  shortcuts, sharing a bank's notification, and scanning a receipt.
+- [Ask your data](pages.md#ai-insights): a question about your money, answered
+  from CloudBank's own queries, with the numbers it used.
 - [Schedules in your phone's calendar](pages.md#schedules): **Add to calendar**
   and how to subscribe on an iPhone, in Google Calendar or in Outlook.
 

@@ -127,6 +127,9 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 - **Proposals** — budgets from what you really spend, subscriptions that cost more or look doubled, categories grown lately, goals falling behind. Each opens the usual sheet filled in; nothing is saved until you save it.
 - **Unusual transactions** — a payee charged far more than usual, a large first payment to a new payee, the same charge twice: on Review, on the overview and in the bell.
 - **Category suggestions and natural-language entry** — type "coffee 3.50 yesterday", or share a bank's notification from your phone, and get a pre-filled transaction to review.
+- **Housekeeping** — rules for the payees you always file alike, Review's uncategorised rows filled in at once, raw bank payee names (`AMZN MKTP IT*2K3`) cleaned up, and the columns of a CSV it has never seen mapped, then remembered for the next file.
+- **Ask your data** — a question in your own words, answered from CloudBank's own read-only queries, with the numbers used beside the answer.
+- **Receipts** — a receipt's photo, shrunk in your browser and sent only when you say so, fills in the entry sheet; it is kept only if you attach it.
 
 ## Quick start
 
