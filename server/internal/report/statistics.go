@@ -32,6 +32,7 @@ type Filter struct {
 	To         string
 	Status     *int
 	PayeeID    *int64
+	AccountID  *int64
 	CategoryID *int64 // includes child categories
 	Tags       []string
 	AmountMin  *int64
@@ -164,6 +165,10 @@ func (s *Service) conds(ctx context.Context, walletID int64, f Filter) (parts []
 		parts = append(parts, "t.payee_id = ?")
 		args = append(args, *f.PayeeID)
 	}
+	if f.AccountID != nil {
+		parts = append(parts, "t.account_id = ?")
+		args = append(args, *f.AccountID)
+	}
 	if f.AmountMin != nil {
 		parts = append(parts, "t.amount >= ?")
 		args = append(args, *f.AmountMin)
@@ -267,6 +272,34 @@ func (s *Service) Statistics(ctx context.Context, walletID int64, f Filter, grou
 	sortGroups(out.Groups)
 	out.Currency = currencyInfo(base)
 	return out, nil
+}
+
+// Count is how many transactions the filter keeps; a split counts once when
+// one of its lines is in the category and of the type.
+func (s *Service) Count(ctx context.Context, walletID int64, f Filter) (int64, error) {
+	parts, args, catIDs, err := s.conds(ctx, walletID, f)
+	if err != nil {
+		return 0, err
+	}
+	sign := signCond(f.Type, "t.amount")
+	if len(catIDs) > 0 {
+		ph := placeholders(len(catIDs))
+		parts = append(parts, "((t.category_id IN ("+ph+")"+sign+") OR t.id IN (SELECT transaction_id FROM splits WHERE category_id IN ("+ph+")"+signCond(f.Type, "amount")+"))")
+		for range 2 {
+			for _, id := range catIDs {
+				args = append(args, id)
+			}
+		}
+	} else if sign != "" {
+		parts = append(parts, "(t.is_split = 0"+sign+" OR t.id IN (SELECT transaction_id FROM splits WHERE 1 = 1"+signCond(f.Type, "amount")+"))")
+	}
+	var n int64
+	err = s.db.QueryRowContext(ctx, `
+SELECT COUNT(*) FROM transactions t
+JOIN accounts a ON a.id = t.account_id
+LEFT JOIN payees p ON p.id = t.payee_id
+WHERE `+strings.Join(parts, " AND "), args...).Scan(&n)
+	return n, err
 }
 
 func (s *Service) baseAndCurrencies(ctx context.Context, walletID int64) (*db.Currency, map[int64]db.Currency, error) {

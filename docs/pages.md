@@ -508,10 +508,19 @@ PNG.
 
 ## AI insights
 
-Reports your own AI writes on the wallet's numbers. The page is in the
-sidebar only while the AI is set up in **Settings → AI** with **Monthly
-reports** switched on, for a wallet the AI may work on.
+Reports your own AI writes on the wallet's numbers, and its answers to your
+questions. The page is in the sidebar only while the AI is set up in
+**Settings → AI** with **Monthly reports** or **Ask your data** switched on,
+for a wallet the AI may work on.
 
+- **Ask your data**, at the top: a question in your own words, such as *how
+  much did I spend on restaurants this summer?*, or one of the three examples
+  under the field. The AI picks among CloudBank's own read-only queries,
+  CloudBank runs them on this wallet, and the answer comes in the AI box with
+  **Numbers used**: each query, its filters and period, and what it returned.
+  When no query fits, the box says so. Questions are not kept; **Earlier**
+  brings back the ones asked since you opened the page. Each question is two
+  requests against the [monthly limit](ai.md#the-monthly-limit).
 - **They come by themselves.** Last month's report is written on the 1st, at
   07:00 in your time zone, for every wallet the AI may work on. Under **Monthly
   reports** in Settings → AI, two more can be ticked: **every Monday, the week
@@ -656,7 +665,7 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | **Notifications** | Which events reach you, in the bell, by push on this device, by email, in Matrix, Telegram, Discord or Slack, through ntfy or Gotify, or through a webhook ([the guide](notifications.md)); the bell itself sits in every page header |
 | **Bank sync** | Bank connections ([Automatic bank sync](bank-sync.md)) |
 | **Bank mails** | The bank's notification mails, read from one folder of a mailbox ([the guide](bank-mails.md)) |
-| **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, budget, subscription, savings, goal and rule proposals, payee cleanup, CSV columns, unusual transactions, category suggestions, quick entry, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word. See [the AI guide](ai.md) |
+| **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, ask your data, budget, subscription, savings, goal and rule proposals, payee cleanup, CSV columns, unusual transactions, category suggestions, quick entry, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word. See [the AI guide](ai.md) |
 | **Import & export** | Imports ([Importing transactions](import.md)), exports, backups and a database check |
 | **People** | Administrators only: the people who can sign in |
 | **About** | The version, the licence and the source code; for administrators, whether a newer CloudBank is out and the switch for the daily check ([Upgrading](backup.md#upgrading)) |

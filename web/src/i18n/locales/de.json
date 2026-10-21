@@ -2082,6 +2082,10 @@
       "import": {
         "name": "CSV-Spalten",
         "sends": "Sendet die Spaltennamen einer unbekannten CSV und die Form von drei Zeilen: Daten und Zahlen wie geschrieben, nie die Wörter."
+      },
+      "ask": {
+        "name": "Fragen an deine Daten",
+        "sends": "Sendet deine Frage, die Namen deiner Kategorien, Konten, Tags und häufigsten Zahlungspartner sowie die Ergebnisse der Abfragen, die die KI gewählt hat. Nie eine Buchung oder Notiz."
       }
     },
     "wallets": "Für welche Haushaltsbücher",
@@ -3394,7 +3398,42 @@
     "year": "Jahr {{year}}",
     "reportTitleWeek": "Die Woche in Kürze",
     "reportTitleYear": "{{year}} in Kürze",
-    "proposals": "Offene Vorschläge"
+    "proposals": "Offene Vorschläge",
+    "ask": {
+      "field": "Frag deine Daten",
+      "placeholder": "Frag nach deinem Geld, z. B. wie viel für Restaurants diesen Sommer?",
+      "send": "Fragen",
+      "example1": "Wie viel habe ich diesen Sommer für Restaurants ausgegeben?",
+      "example2": "Was waren meine drei größten Ausgaben im letzten Monat?",
+      "example3": "Wie haben sich meine Lebensmittelausgaben dieses Jahr verändert?",
+      "note": "Die KI wählt unter den schreibgeschützten Abfragen von CloudBank; sie erhält die Namen deiner Kategorien, Konten und Tags und die angefragten Ergebnisse. Jede Frage zählt als zwei Anfragen.",
+      "label": "KI-Antwort",
+      "basis": "{{wallet}} · {{date}}",
+      "asked": "Deine Frage:",
+      "none": "Keine Abfrage von CloudBank kann das beantworten. Nenne einen Zeitraum, eine Kategorie oder ein Konto.",
+      "used": "Verwendete Zahlen, von CloudBank berechnet",
+      "head": {
+        "tool": "Abfrage",
+        "filters": "Filter",
+        "period": "Zeitraum",
+        "result": "Ergebnis"
+      },
+      "tool": {
+        "total": "Summe",
+        "by_month": "Nach Monat",
+        "by_category": "Nach Kategorie",
+        "largest": "Größte Ausgaben",
+        "balances": "Salden"
+      },
+      "type": {
+        "expense": "Ausgaben",
+        "income": "Einnahmen"
+      },
+      "count_one": "{{count}} Buchung",
+      "count_other": "{{count}} Buchungen",
+      "noPayee": "(kein Zahlungspartner)",
+      "earlier": "Vorher:"
+    }
   },
   "proposal": {
     "label": "KI-Vorschlag",

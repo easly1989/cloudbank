@@ -27,6 +27,7 @@ import {
   IconCoin,
   IconFileSpreadsheet,
   IconMail,
+  IconMessageQuestion,
   IconPencilBolt,
   IconPigMoney,
   IconTarget,
@@ -62,6 +63,7 @@ import { SettingsGroup } from "./SettingsLayout";
 
 const FEATURES: { key: AIFeature; icon: Icon }[] = [
   { key: "reports", icon: IconChartDots },
+  { key: "ask", icon: IconMessageQuestion },
   { key: "budgets", icon: IconPigMoney },
   { key: "subscriptions", icon: IconCalendarRepeat },
   { key: "savings", icon: IconCoin },
@@ -88,6 +90,7 @@ const NO_FEATURES: AIFeatures = {
   rules: false,
   payees: false,
   import: false,
+  ask: false,
 };
 
 /** The first of next month, UTC, when the count starts again. */

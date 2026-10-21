@@ -2082,6 +2082,10 @@
       "import": {
         "name": "Colonnes CSV",
         "sends": "Envoie les noms des colonnes d'un CSV inconnu et la forme de trois lignes : dates et nombres tels qu'écrits, jamais les mots."
+      },
+      "ask": {
+        "name": "Questions sur vos données",
+        "sends": "Envoie votre question, les noms de vos catégories, comptes, étiquettes et tiers les plus fréquents, et les résultats des requêtes choisies par l'IA. Jamais une opération ni une note."
       }
     },
     "wallets": "Sur quels classeurs",
@@ -3394,7 +3398,42 @@
     "year": "Année {{year}}",
     "reportTitleWeek": "La semaine en bref",
     "reportTitleYear": "{{year}} en bref",
-    "proposals": "Propositions ouvertes"
+    "proposals": "Propositions ouvertes",
+    "ask": {
+      "field": "Posez une question sur vos données",
+      "placeholder": "Une question sur votre argent, p. ex. combien au restaurant cet été ?",
+      "send": "Demander",
+      "example1": "Combien ai-je dépensé au restaurant cet été ?",
+      "example2": "Quelles ont été mes trois plus grosses dépenses le mois dernier ?",
+      "example3": "Comment mes dépenses de courses ont-elles évolué cette année ?",
+      "note": "L'IA choisit parmi les requêtes en lecture seule de CloudBank ; elle reçoit les noms de vos catégories, comptes et étiquettes, et les résultats demandés. Chaque question compte pour deux requêtes.",
+      "label": "Réponse de l'IA",
+      "basis": "{{wallet}} · {{date}}",
+      "asked": "Votre question :",
+      "none": "Aucune requête de CloudBank ne peut répondre à cela. Essayez de préciser une période, une catégorie ou un compte.",
+      "used": "Chiffres utilisés, calculés par CloudBank",
+      "head": {
+        "tool": "Requête",
+        "filters": "Filtres",
+        "period": "Période",
+        "result": "Résultat"
+      },
+      "tool": {
+        "total": "Total",
+        "by_month": "Par mois",
+        "by_category": "Par catégorie",
+        "largest": "Plus grosses dépenses",
+        "balances": "Soldes"
+      },
+      "type": {
+        "expense": "dépenses",
+        "income": "revenus"
+      },
+      "count_one": "{{count}} opération",
+      "count_other": "{{count}} opérations",
+      "noPayee": "(sans tiers)",
+      "earlier": "Avant :"
+    }
   },
   "proposal": {
     "label": "Suggestion IA",
