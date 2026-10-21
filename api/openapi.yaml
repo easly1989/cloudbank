@@ -867,6 +867,36 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { description: "This month's limit is reached (ai_limit); ask the user, then send confirm.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "502": { description: The AI provider request failed. }
+  /api/v1/wallets/{walletId}/insights/ask:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: askAI
+      summary: Answer a question about this wallet's numbers
+      description: >-
+        Two calls to the model: the first picks up to three of CloudBank's
+        read-only queries from the question and the wallet's names, the second
+        answers from their results. Nothing is stored. An empty answer means no
+        query fitted and the second call was not made. 400 ai_disabled when the
+        AI, its "ask" switch or this wallet are off; 400 bad_question for an
+        empty question or one over 300 characters.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                question: { type: string, maxLength: 300 }
+                confirm: { type: boolean, description: "the user's yes to calls past this month's limit" }
+              required: [question]
+      responses:
+        "200": { description: The answer., content: { application/json: { schema: { $ref: "#/components/schemas/AIAskAnswer" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "This month's limit is reached (ai_limit); ask the user, then send confirm.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "502": { description: The AI provider request failed. }
   /api/v1/wallets/{walletId}/insights/reports/{reportId}/feedback:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -3972,7 +4002,8 @@ components:
         rules: { type: boolean, description: "rule proposals: sends each proposed payee's name, its category and how many of its transactions have it; never an amount, a memo or a date" }
         payees: { type: boolean, description: "payee cleanup: sends the payee names only" }
         import: { type: boolean, description: "CSV column mapping: sends the column names and the shape of three rows; dates and numbers as written, words never" }
-      required: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals, unusual, rules, payees, import]
+        ask: { type: boolean, description: "ask your data: sends the question, the category, account and tag names, the busiest payees, and the results of the queries picked" }
+      required: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals, unusual, rules, payees, import, ask]
     AISchedule:
       type: object
       description: The reports that come by themselves besides the monthly one, which comes whenever reports are on.
@@ -4102,6 +4133,38 @@ components:
         feedback: { type: integer, enum: [-1, 0, 1] }
         createdAt: { type: string, description: "RFC3339 UTC" }
       required: [id, kind, period, body, basis, model, feedback, createdAt]
+    AIAskItem:
+      type: object
+      description: One line of a query's result, its amount signed in the base currency's minor units.
+      properties:
+        label: { type: string, description: "a month (YYYY-MM), a category, a payee or an account" }
+        date: { type: string, description: "YYYY-MM-DD, for a largest expense" }
+        amount: { type: integer, format: int64 }
+      required: [label, amount]
+    AIAskUsed:
+      type: object
+      description: A query CloudBank ran for the answer, its filters by name, and what it returned.
+      properties:
+        tool: { type: string, enum: [total, by_month, by_category, largest, balances] }
+        category: { type: string }
+        payee: { type: string }
+        account: { type: string }
+        tag: { type: string }
+        type: { type: string, enum: [expense, income] }
+        from: { type: string }
+        to: { type: string }
+        date: { type: string, description: "the day of the balances" }
+        total: { type: integer, format: int64, description: "the sum (total, by_month, by_category, balances)" }
+        count: { type: integer, format: int64, description: "how many transactions (total)" }
+        items: { type: array, items: { $ref: "#/components/schemas/AIAskItem" } }
+      required: [tool, total, count, items]
+    AIAskAnswer:
+      type: object
+      properties:
+        answer: { type: string, description: "empty when no query could answer" }
+        used: { type: array, items: { $ref: "#/components/schemas/AIAskUsed" } }
+        currency: { $ref: "#/components/schemas/AIReportCurrency" }
+      required: [answer, used, currency]
     AIProposalRow:
       type: object
       description: >-

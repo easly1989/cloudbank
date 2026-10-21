@@ -396,8 +396,10 @@ func (s *Service) basis(ctx context.Context, walletID int64, sp span) (Basis, er
 
 // plain writes an amount for the model: no grouping, so a large amount is not
 // mistaken for a card number and hidden.
-func (b Basis) plain(v int64) string {
-	return money.Format(v, b.Currency.FracDigits, ".", "", "", false) + " " + b.Currency.Code
+func (b Basis) plain(v int64) string { return b.Currency.plain(v) }
+
+func (c Currency) plain(v int64) string {
+	return money.Format(v, c.FracDigits, ".", "", "", false) + " " + c.Code
 }
 
 // languages names the app's languages for the model.

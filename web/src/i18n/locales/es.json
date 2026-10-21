@@ -2082,6 +2082,10 @@
       "import": {
         "name": "Columnas CSV",
         "sends": "Envía los nombres de columna de un CSV desconocido y la forma de tres filas: fechas y números tal como están, nunca las palabras."
+      },
+      "ask": {
+        "name": "Preguntas sobre tus datos",
+        "sends": "Envía tu pregunta, los nombres de tus categorías, cuentas, etiquetas y beneficiarios más usados, y los resultados de las consultas que eligió la IA. Nunca un movimiento ni una nota."
       }
     },
     "wallets": "En qué carteras",
@@ -3394,7 +3398,42 @@
     "year": "Año {{year}}",
     "reportTitleWeek": "La semana en breve",
     "reportTitleYear": "{{year}} en breve",
-    "proposals": "Propuestas abiertas"
+    "proposals": "Propuestas abiertas",
+    "ask": {
+      "field": "Pregunta sobre tus datos",
+      "placeholder": "Pregunta sobre tu dinero, p. ej. ¿cuánto gasté en restaurantes este verano?",
+      "send": "Preguntar",
+      "example1": "¿Cuánto gasté en restaurantes este verano?",
+      "example2": "¿Cuáles fueron mis tres mayores gastos el mes pasado?",
+      "example3": "¿Cómo ha cambiado mi gasto en supermercado este año?",
+      "note": "La IA elige entre las consultas de solo lectura de CloudBank; recibe los nombres de tus categorías, cuentas y etiquetas, y los resultados que pidió. Cada pregunta son dos solicitudes.",
+      "label": "Respuesta de IA",
+      "basis": "{{wallet}} · {{date}}",
+      "asked": "Preguntaste:",
+      "none": "Ninguna consulta de CloudBank puede responder a esto. Prueba a indicar un periodo, una categoría o una cuenta.",
+      "used": "Cifras usadas, calculadas por CloudBank",
+      "head": {
+        "tool": "Consulta",
+        "filters": "Filtros",
+        "period": "Periodo",
+        "result": "Resultado"
+      },
+      "tool": {
+        "total": "Total",
+        "by_month": "Por mes",
+        "by_category": "Por categoría",
+        "largest": "Mayores gastos",
+        "balances": "Saldos"
+      },
+      "type": {
+        "expense": "gastos",
+        "income": "ingresos"
+      },
+      "count_one": "{{count}} movimiento",
+      "count_other": "{{count}} movimientos",
+      "noPayee": "(sin beneficiario)",
+      "earlier": "Antes:"
+    }
   },
   "proposal": {
     "label": "Sugerencia de IA",

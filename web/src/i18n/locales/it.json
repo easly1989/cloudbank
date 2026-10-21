@@ -2082,6 +2082,10 @@
       "import": {
         "name": "Colonne CSV",
         "sends": "Invia i nomi delle colonne di un CSV sconosciuto e la forma di tre righe: date e numeri come sono scritti, mai le parole."
+      },
+      "ask": {
+        "name": "Domande sui dati",
+        "sends": "Invia la domanda, i nomi di categorie, conti, tag e dei beneficiari più usati, e i risultati delle query scelte dall'AI. Mai una transazione o una nota."
       }
     },
     "wallets": "Su quali portafogli",
@@ -3394,7 +3398,42 @@
     "year": "Anno {{year}}",
     "reportTitleWeek": "La settimana in breve",
     "reportTitleYear": "Il {{year}} in breve",
-    "proposals": "Proposte aperte"
+    "proposals": "Proposte aperte",
+    "ask": {
+      "field": "Fai una domanda sui tuoi dati",
+      "placeholder": "Chiedi dei tuoi soldi, es. quanto ho speso al ristorante quest'estate?",
+      "send": "Chiedi",
+      "example1": "Quanto ho speso al ristorante quest'estate?",
+      "example2": "Quali sono state le mie tre spese più grandi il mese scorso?",
+      "example3": "Come sono cambiate le mie spese alimentari quest'anno?",
+      "note": "L'AI sceglie tra le query di sola lettura di CloudBank; riceve i nomi di categorie, conti e tag, e i risultati che ha chiesto. Ogni domanda vale due richieste.",
+      "label": "Risposta AI",
+      "basis": "{{wallet}} · {{date}}",
+      "asked": "Hai chiesto:",
+      "none": "Nessuna query di CloudBank sa rispondere a questa domanda. Prova a indicare un periodo, una categoria o un conto.",
+      "used": "Numeri usati, calcolati da CloudBank",
+      "head": {
+        "tool": "Query",
+        "filters": "Filtri",
+        "period": "Periodo",
+        "result": "Risultato"
+      },
+      "tool": {
+        "total": "Totale",
+        "by_month": "Per mese",
+        "by_category": "Per categoria",
+        "largest": "Spese più grandi",
+        "balances": "Saldi"
+      },
+      "type": {
+        "expense": "spese",
+        "income": "entrate"
+      },
+      "count_one": "{{count}} transazione",
+      "count_other": "{{count}} transazioni",
+      "noPayee": "(nessun beneficiario)",
+      "earlier": "Prima:"
+    }
   },
   "proposal": {
     "label": "Suggerimento AI",
