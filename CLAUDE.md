@@ -38,7 +38,7 @@ cd e2e && npm run test:i18n                    # every page in every language; n
 cd e2e && npm run test:mail                    # bank mails end to end against a pretend Microsoft (see docker-compose.ci.yml)
 ```
 
-Prerequisites: Go 1.27.2+, Node 22+ (CI and the image use 26), Docker. `golangci-lint` v2.14.0 runs in CI but not in `make lint`.
+Prerequisites: Go 1.27.3+, Node 22+ (CI and the image use 26), Docker. `golangci-lint` v2.14.0 runs in CI but not in `make lint`.
 
 `make` is not available on Windows by default — `CONTRIBUTING.md` lists the direct command behind
 each target. Two constraints keep a Windows checkout honest: `.gitattributes` pins line endings to
