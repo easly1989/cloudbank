@@ -646,7 +646,7 @@ export interface paths {
         put?: never;
         /**
          * Propose a payee and a category for the review's rows that need a category
-         * @description The payee is the row's own or an existing payee named in the bank's text; the category comes from the payee's history, or else from the model, which is sent only the payee, the amount and the date. At most one call to the model. Nothing is saved.
+         * @description The payee is the row's own or an existing payee named in the bank's text; the category comes from the payee's history, or else from the model, which is sent only the payee, the amount and the date, in one call for each 30 rows. Nothing is saved.
          */
         post: operations["proposeCategories"];
         delete?: never;

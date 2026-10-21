@@ -655,7 +655,7 @@ paths:
       description: >-
         The payee is the row's own or an existing payee named in the bank's text; the category
         comes from the payee's history, or else from the model, which is sent only the payee, the
-        amount and the date. At most one call to the model. Nothing is saved.
+        amount and the date, in one call for each 30 rows. Nothing is saved.
       requestBody:
         required: true
         content:

@@ -3,10 +3,14 @@ package ai
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
+
+	"golang.org/x/text/unicode/norm"
 
 	"github.com/easly1989/cloudbank/server/internal/money"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
@@ -17,8 +21,8 @@ import (
 // existing payee whose name is in the bank's text, found here without the
 // model; a row with neither gets nothing. A payee whose past transactions
 // nearly all share one category gets it from that history, no model either.
-// Only the rest go to the model, and only with the payee, the amount and the
-// date: never the bank's text. Nothing is saved here.
+// Only the rest go to the model, bulkMax rows a call, and only with the
+// payee, the amount and the date: never the bank's text. Nothing is saved here.
 
 // Sources of a proposal.
 const (
@@ -27,7 +31,7 @@ const (
 )
 
 const (
-	// bulkMax bounds the rows of one call to the model.
+	// bulkMax bounds the rows of one call to the model; more rows take more calls.
 	bulkMax = 30
 	// A payee's category comes from history with at least historyMin of its
 	// transactions of the last historyMonths with a category, historyShare
@@ -48,9 +52,10 @@ type BulkProposal struct {
 	Source     string `json:"source"`
 }
 
-// ProposeCategories proposes for the wallet's rows that need a category. It
-// asks the model at most once, for up to bulkMax rows; confirm is the user's
-// yes to a call past this month's limit.
+// ProposeCategories proposes for the wallet's rows that need a category, one
+// call to the model for each bulkMax rows it is left with; confirm is the
+// user's yes to calls past this month's limit. A call after the first that
+// fails leaves its rows, and the later ones, with their payee only.
 func (s *Service) ProposeCategories(ctx context.Context, userID, walletID int64, confirm bool) ([]BulkProposal, error) {
 	if _, err := s.allowed(ctx, userID, walletID, FeatureSuggest); err != nil {
 		return nil, err
@@ -87,7 +92,7 @@ func (s *Service) ProposeCategories(ctx context.Context, userID, walletID int64,
 		}
 		if cat, ok := history[payee]; ok {
 			out = append(out, BulkProposal{ID: r.ID, PayeeID: payee, CategoryID: &cat, Source: SourceHistory})
-		} else if len(ask) < bulkMax {
+		} else {
 			ask = append(ask, BulkProposal{ID: r.ID, PayeeID: payee, Source: SourceAI})
 			asked = append(asked, r)
 		}
@@ -108,22 +113,30 @@ func (s *Service) ProposeCategories(ctx context.Context, userID, walletID int64,
 	if err != nil {
 		return nil, err
 	}
-	reply, err := s.Ask(ctx, Call{
-		UserID: userID, WalletID: walletID, Feature: FeatureSuggest, Confirm: confirm,
-		System: bulkSystem, User: bulkPrompt(asked, ask, names, accounts, catNames), MaxTokens: 50 + 25*len(ask),
-	})
-	if err != nil {
-		return nil, err
-	}
-	picked := parseBulkReply(reply.Text, byName)
-	for i, p := range ask {
-		if cat, ok := picked[i+1]; ok {
-			p.CategoryID = &cat
+	for start := 0; start < len(ask); start += bulkMax {
+		end := min(start+bulkMax, len(ask))
+		reply, err := s.Ask(ctx, Call{
+			UserID: userID, WalletID: walletID, Feature: FeatureSuggest, Confirm: confirm,
+			System: bulkSystem, User: bulkPrompt(asked[start:end], ask[start:end], names, accounts, catNames),
+			MaxTokens: 50 + 25*(end-start),
+		})
+		if err != nil && start == 0 {
+			return nil, err
 		}
-		// The payee found stands even when the model proposes no category.
-		out = append(out, p)
+		if err != nil {
+			// What the earlier calls found is kept; these rows keep their payee.
+			slog.Warn("AI bulk categories", "err", err)
+			break
+		}
+		picked := parseBulkReply(reply.Text, byName)
+		for i := start; i < end; i++ {
+			if cat, ok := picked[i-start+1]; ok {
+				ask[i].CategoryID = &cat
+			}
+		}
 	}
-	return sortByRows(out, rows), nil
+	// The payee found stands even when the model proposes no category.
+	return sortByRows(append(out, ask...), rows), nil
 }
 
 // sortByRows puts the proposals in the rows' order.
@@ -160,19 +173,23 @@ func historyCategories(counts []db.ListPayeeCategoryCountsRow) map[int64]int64 {
 	return out
 }
 
-// folded lowercases a text and keeps its letters and digits as words, accents
-// dropped, so "CAFE'" and "Café" meet.
+// folded lowercases a text and keeps its letters and digits as words, marks
+// dropped, so "CAFE'" and "Café" meet, in any script.
 func folded(s string) string {
 	var b strings.Builder
 	space := true
-	for _, r := range strings.ToLower(s) {
-		if f, ok := accents[r]; ok {
-			r = f
-		}
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r > 0x24F {
-			b.WriteRune(r)
+	for _, r := range norm.NFD.String(strings.ToLower(s)) {
+		switch {
+		case unicode.Is(unicode.Mn, r):
+			continue
+		case unicode.IsLetter(r) || unicode.IsDigit(r):
+			if f, ok := unmarked[r]; ok {
+				b.WriteString(f)
+			} else {
+				b.WriteRune(r)
+			}
 			space = false
-		} else if !space {
+		case !space:
 			b.WriteByte(' ')
 			space = true
 		}
@@ -180,21 +197,8 @@ func folded(s string) string {
 	return strings.TrimSpace(b.String())
 }
 
-// shortcut: the Latin-1 and common Latin Extended-A accents only; other
-// scripts are kept as they are, which still matches the same spelling.
-var accents = func() map[rune]rune {
-	m := map[rune]rune{}
-	for base, list := range map[rune]string{
-		'a': "àáâãäåāăą", 'c': "çćč", 'd': "ď", 'e': "èéêëēėęě", 'g': "ğ", 'i': "ìíîïīį",
-		'l': "ł", 'n': "ñńň", 'o': "òóôõöøō", 'r': "ř", 's': "śšş", 't': "ť", 'u': "ùúûüūůű",
-		'y': "ýÿ", 'z': "źżž",
-	} {
-		for _, r := range list {
-			m[r] = base
-		}
-	}
-	return m
-}()
+// unmarked spells the letters that carry their mark without decomposing.
+var unmarked = map[rune]string{'ł': "l", 'ø': "o", 'đ': "d", 'ħ': "h", 'ß': "ss", 'æ': "ae", 'œ': "oe", 'ı': "i"}
 
 // payeeInText is the existing payee whose whole name is in the bank's text,
 // the longest when several are; 0 when none.

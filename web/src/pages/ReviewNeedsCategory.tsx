@@ -41,11 +41,10 @@ type Option = { value: string; label: string };
 
 const ROW_RULE = "1px solid var(--mantine-color-default-border)";
 
-function Mark({ draft, hasPayee }: { draft?: Draft; hasPayee: boolean }) {
+function Mark({ draft }: { draft?: Draft }) {
   const { t } = useTranslation();
   const small = { fz: 11.5, c: "dimmed" } as const;
-  // A row with its own payee and no proposal is past one call's rows.
-  if (!draft) return hasPayee ? null : <Text {...small}>{t("review.propose.noPayee")}</Text>;
+  if (!draft) return <Text {...small}>{t("review.propose.noPayee")}</Text>;
   if (draft.categoryId === null) return <Text {...small}>{t("review.propose.noCategory")}</Text>;
   if (draft.source === "history")
     return (
@@ -311,13 +310,13 @@ export function ReviewNeedsCategory({
                       {acc ? ` · ${acc.name}` : ""} ·{" "}
                       <span data-cb-sensitive>{formatMinor(tx.amount, fmtFor(acc))}</span>
                     </Text>
-                    {proposing && !phone && <Mark draft={d} hasPayee={!!tx.payeeId} />}
+                    {proposing && !phone && <Mark draft={d} />}
                   </Group>
                 </div>
                 {phone ? (
                   <Stack gap={6} style={{ gridColumn: proposing ? "2" : "1" }}>
                     {pickers}
-                    {proposing && <Mark draft={d} hasPayee={!!tx.payeeId} />}
+                    {proposing && <Mark draft={d} />}
                   </Stack>
                 ) : (
                   pickers

@@ -1,8 +1,13 @@
 package ai
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -116,7 +121,7 @@ func TestProposeCategories(t *testing.T) {
 }
 
 func TestPayeeInText(t *testing.T) {
-	payees := []db.Payee{{ID: 1, Name: "Bar"}, {ID: 2, Name: "Bar Roma"}, {ID: 3, Name: "Café"}, {ID: 4, Name: "Al"}}
+	payees := []db.Payee{{ID: 1, Name: "Bar"}, {ID: 2, Name: "Bar Roma"}, {ID: 3, Name: "Café"}, {ID: 4, Name: "Al"}, {ID: 5, Name: "Lodz"}, {ID: 6, Name: "Strasse"}}
 	for text, want := range map[string]int64{
 		"POS BAR ROMA 12":   2, // the longest wins
 		"bar-roma":          2,
@@ -124,11 +129,82 @@ func TestPayeeInText(t *testing.T) {
 		"BARCLAYS":          0,
 		"CAFFE":             0,
 		"cafe' centrale":    3,
+		"CAFÉ":              3,
+		"Łódź":              5, // a mark that does not decompose
+		"Straße":            6,
 		"ADDEBITO AL CONTO": 0, // too short to look for
 		"":                  0,
 	} {
 		if got := payeeInText(text, payees); got != want {
 			t.Errorf("payeeInText(%q) = %d, want %d", text, got, want)
 		}
+	}
+}
+
+// batchDoer answers "1: Sport" to the first calls and fails from call failFrom.
+type batchDoer struct{ calls, failFrom int }
+
+func (d *batchDoer) Do(*http.Request) (*http.Response, error) {
+	d.calls++
+	if d.failFrom > 0 && d.calls >= d.failFrom {
+		return &http.Response{StatusCode: http.StatusInternalServerError, Body: io.NopCloser(strings.NewReader("{}"))}, nil
+	}
+	body, _ := json.Marshal(map[string]any{"choices": []map[string]any{{"message": map[string]string{"content": "1: Sport"}}}})
+	return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewReader(body))}, nil
+}
+
+func TestProposeCategoriesInBatches(t *testing.T) {
+	svc, q, uid, wid := newFixture(t)
+	ctx := context.Background()
+	cur, _ := q.InsertCurrency(ctx, db.InsertCurrencyParams{
+		WalletID: wid, IsoCode: "EUR", Name: "Euro", Symbol: "€", DecimalChar: ",", GroupChar: ".", FracDigits: 2, IsBase: 1, Rate: 1,
+	})
+	acc, _ := q.InsertAccount(ctx, db.InsertAccountParams{WalletID: wid, Name: "A", Type: "checking", CurrencyID: cur.ID, Position: 1})
+	ts := transaction.NewService(svc.db)
+	sport, _ := q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: wid, Name: "Sport"})
+	yoga, _ := q.InsertPayee(ctx, db.InsertPayeeParams{WalletID: wid, Name: "Yoga"})
+	// 2*bulkMax+1 rows for the model: three calls.
+	for i := range 2*bulkMax + 1 {
+		tx, err := ts.Create(ctx, wid, transaction.Input{AccountID: acc.ID, Date: fmt.Sprintf("2026-%02d-%02d", 1+i/28, 1+i%28), Amount: -100, PayeeID: &yoga.ID})
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = q.SetTransactionImportRef(ctx, db.SetTransactionImportRefParams{ImportRef: fmt.Sprint("r", i), ID: tx.ID, WalletID: wid})
+	}
+	key := "k"
+	if _, err := svc.UpdateSettings(ctx, uid, true, SettingsInput{
+		Enabled: true, BaseURL: "https://api.example/v1", Model: "m", APIKey: &key, Features: &Features{Suggest: true},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	filed := func(ps []BulkProposal) (n int) {
+		for _, p := range ps {
+			if p.CategoryID != nil && *p.CategoryID == sport.ID {
+				n++
+			}
+		}
+		return n
+	}
+
+	// Every batch is asked: the first row of each comes back Sport.
+	d := &batchDoer{}
+	svc.hc = d
+	got, err := svc.ProposeCategories(ctx, uid, wid, false)
+	if err != nil || len(got) != 2*bulkMax+1 || d.calls != 3 || filed(got) != 3 {
+		t.Fatalf("got %d proposals, %d filed, %d calls, err %v; want %d, 3, 3", len(got), filed(got), d.calls, err, 2*bulkMax+1)
+	}
+
+	// A later call that fails keeps what came before; the rest keep their payee.
+	d = &batchDoer{failFrom: 2}
+	svc.hc = d
+	got, err = svc.ProposeCategories(ctx, uid, wid, false)
+	if err != nil || len(got) != 2*bulkMax+1 || d.calls != 2 || filed(got) != 1 {
+		t.Fatalf("got %d proposals, %d filed, %d calls, err %v; want %d, 1, 2", len(got), filed(got), d.calls, err, 2*bulkMax+1)
+	}
+
+	// The first call failing is an error.
+	svc.hc = &batchDoer{failFrom: 1}
+	if _, err := svc.ProposeCategories(ctx, uid, wid, false); err == nil {
+		t.Fatal("a failing first call should fail")
 	}
 }
