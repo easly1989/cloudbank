@@ -204,17 +204,30 @@ func (s *Service) Merge(ctx context.Context, walletID, sourceID, targetID int64)
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
-	qtx := s.q.WithTx(tx)
-	if err := qtx.ReassignTransactionPayee(ctx, db.ReassignTransactionPayeeParams{
-		PayeeID: sql.NullInt64{Int64: targetID, Valid: true}, PayeeID_2: sql.NullInt64{Int64: sourceID, Valid: true},
-	}); err != nil {
-		return err
-	}
-	// Future: reassign assignments.set_payee_id (#19).
-	if err := qtx.DeletePayee(ctx, sourceID); err != nil {
+	if err := mergeInto(ctx, s.q.WithTx(tx), sourceID, targetID); err != nil {
 		return err
 	}
 	return tx.Commit()
+}
+
+// mergeInto moves everything that points at source to target — transactions,
+// templates, the rules that set it, its ignored recurring payments — then
+// deletes source. Both payees are the caller's to have checked.
+func mergeInto(ctx context.Context, qtx *db.Queries, sourceID, targetID int64) error {
+	to, from := sql.NullInt64{Int64: targetID, Valid: true}, sql.NullInt64{Int64: sourceID, Valid: true}
+	if err := qtx.ReassignTransactionPayee(ctx, db.ReassignTransactionPayeeParams{PayeeID: to, PayeeID_2: from}); err != nil {
+		return err
+	}
+	if err := qtx.ReassignTemplatePayee(ctx, db.ReassignTemplatePayeeParams{ToID: to, FromID: from}); err != nil {
+		return err
+	}
+	if err := qtx.ReassignAssignmentPayee(ctx, db.ReassignAssignmentPayeeParams{ToID: to, FromID: from}); err != nil {
+		return err
+	}
+	if err := qtx.CopyRecurringIgnored(ctx, db.CopyRecurringIgnoredParams{ToID: targetID, FromID: sourceID}); err != nil {
+		return err
+	}
+	return qtx.DeletePayee(ctx, sourceID)
 }
 
 func isUnique(err error) bool {

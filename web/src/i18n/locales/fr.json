@@ -2074,6 +2074,10 @@
       "rules": {
         "name": "Propositions de règles",
         "sends": "Envoie, pour chaque tiers proposé, son nom, sa catégorie et combien de ses opérations l’ont. Jamais de montant, de note ni de date."
+      },
+      "payees": {
+        "name": "Nettoyage des tiers",
+        "sends": "Envoie uniquement les noms des tiers. Jamais de montant, de note ni de date."
       }
     },
     "wallets": "Sur quels classeurs",
@@ -2386,6 +2390,39 @@
       "usage_other": "{{count}} opérations, la dernière le {{date}}",
       "seeReports": "Le voir dans les rapports",
       "usePayment": "L’utiliser"
+    },
+    "cleanup": {
+      "button": "Nettoyer les noms",
+      "label": "Proposition de l'IA",
+      "basis": "Noms des tiers uniquement · {{date}}",
+      "title": "Noms propres pour {{names}}, en {{groups}}",
+      "note": "Seuls les noms des tiers sont partis chez votre fournisseur d'IA. Rien ne change avant d'appliquer ; le dernier nettoyage peut être annulé.",
+      "merges": "Fusionne avec le tiers existant",
+      "renamed": "Renommé",
+      "become_one": "{{count}} tiers devient un seul",
+      "become_other": "{{count}} tiers deviennent un seul",
+      "include": "Inclure {{name}}",
+      "name": "Nom propre",
+      "rule": "Règle pour les prochains imports : le tiers contient",
+      "ruleText": "Texte de la règle",
+      "covers_one": "couvre {{count}} de ces noms",
+      "covers_other": "couvre {{count}} de ces noms",
+      "apply": "Appliquer {{n}}",
+      "done_one": "{{count}} nom nettoyé",
+      "done_other": "{{count}} noms nettoyés",
+      "none": "L'IA n'a trouvé aucun nom à nettoyer.",
+      "last": "Nettoyage du {{date}} : {{payees}}, {{names}}, {{rules}}.",
+      "payees_one": "{{count}} tiers",
+      "payees_other": "{{count}} tiers",
+      "names_one": "{{count}} nom",
+      "names_other": "{{count}} noms",
+      "rules_one": "{{count}} règle",
+      "rules_other": "{{count}} règles",
+      "groups_one": "{{count}} groupe",
+      "groups_other": "{{count}} groupes",
+      "undo": "Annuler le dernier nettoyage",
+      "undone": "Nettoyage annulé",
+      "undoConflict": "Un tiers porte maintenant l'un des noms à rétablir. Renommez-le, puis annulez à nouveau."
     }
   },
   "currencies": {

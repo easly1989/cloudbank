@@ -48,6 +48,9 @@ type Querier interface {
 	ClearWalletBase(ctx context.Context, walletID int64) error
 	ConsumeAccessRecoveryCode(ctx context.Context, arg ConsumeAccessRecoveryCodeParams) (int64, error)
 	ConsumeRecoveryCode(ctx context.Context, arg ConsumeRecoveryCodeParams) (int64, error)
+	// A merged payee's ignored recurring payments go with it to the payee it
+	// became; its own rows go with it when it is deleted.
+	CopyRecurringIgnored(ctx context.Context, arg CopyRecurringIgnoredParams) error
 	CountAISendsSince(ctx context.Context, arg CountAISendsSinceParams) (int64, error)
 	// Ownership checks for the ids a request names (#543): each counts how many of
 	// the given ids are rows of the wallet.
@@ -64,6 +67,8 @@ type Querier interface {
 	CountSubcategories(ctx context.Context, parentID sql.NullInt64) (int64, error)
 	CountTemplateSchedules(ctx context.Context, templateID int64) (int64, error)
 	CountTemplatesInWallet(ctx context.Context, arg CountTemplatesInWalletParams) (int64, error)
+	// Every payee's transactions in a wallet, all dates: what a cleanup moves.
+	CountTransactionsByPayee(ctx context.Context, walletID int64) ([]CountTransactionsByPayeeRow, error)
 	CountTransactionsForAccount(ctx context.Context, accountID int64) (int64, error)
 	CountTransactionsWithCategory(ctx context.Context, categoryID sql.NullInt64) (int64, error)
 	CountTransactionsWithPayee(ctx context.Context, payeeID sql.NullInt64) (int64, error)
@@ -82,6 +87,7 @@ type Querier interface {
 	DeleteAccount(ctx context.Context, id int64) error
 	DeleteAssignment(ctx context.Context, id int64) error
 	DeleteAssignmentTags(ctx context.Context, assignmentID int64) error
+	DeleteAssignmentsByIDs(ctx context.Context, arg DeleteAssignmentsByIDsParams) error
 	DeleteAttachment(ctx context.Context, id int64) error
 	DeleteBankConnection(ctx context.Context, arg DeleteBankConnectionParams) (int64, error)
 	DeleteBankLink(ctx context.Context, arg DeleteBankLinkParams) error
@@ -102,6 +108,7 @@ type Querier interface {
 	DeleteNotificationDelivery(ctx context.Context, id int64) error
 	DeleteOtherUserSessions(ctx context.Context, arg DeleteOtherUserSessionsParams) error
 	DeletePayee(ctx context.Context, id int64) error
+	DeletePayeeCleanup(ctx context.Context, walletID int64) error
 	DeletePluggyConfig(ctx context.Context, walletID int64) error
 	DeletePushSubscription(ctx context.Context, arg DeletePushSubscriptionParams) error
 	DeletePushSubscriptionByEndpoint(ctx context.Context, endpoint string) error
@@ -166,6 +173,7 @@ type Querier interface {
 	GetNotificationChannel(ctx context.Context, arg GetNotificationChannelParams) (NotificationChannel, error)
 	GetNotificationSettings(ctx context.Context, userID int64) (NotificationSetting, error)
 	GetPayee(ctx context.Context, id int64) (Payee, error)
+	GetPayeeCleanup(ctx context.Context, walletID int64) (PayeeCleanup, error)
 	GetPluggyConfig(ctx context.Context, walletID int64) (BankPluggyConfig, error)
 	GetSchedule(ctx context.Context, id int64) (Schedule, error)
 	// One schedule in the list's shape: its template's name, amount and payee,
@@ -220,6 +228,8 @@ type Querier interface {
 	InsertNotification(ctx context.Context, arg InsertNotificationParams) error
 	InsertNotificationDelivery(ctx context.Context, arg InsertNotificationDeliveryParams) error
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
+	// A payee back with its own id: undoing a cleanup's merge (#708).
+	InsertPayeeWithID(ctx context.Context, arg InsertPayeeWithIDParams) error
 	InsertRecoveryCode(ctx context.Context, arg InsertRecoveryCodeParams) error
 	InsertRecurringIgnored(ctx context.Context, arg InsertRecurringIgnoredParams) error
 	InsertReminderIfNew(ctx context.Context, arg InsertReminderIfNewParams) (int64, error)
@@ -269,6 +279,7 @@ type Querier interface {
 	ListAdminRecipients(ctx context.Context) ([]ListAdminRecipientsRow, error)
 	ListAllSchedules(ctx context.Context) ([]Schedule, error)
 	ListAllWalletIDs(ctx context.Context) ([]int64, error)
+	ListAssignmentIDsSettingPayee(ctx context.Context, setPayeeID sql.NullInt64) ([]int64, error)
 	// The tags every rule of the wallet adds, by rule then name.
 	ListAssignmentTagsForWallet(ctx context.Context, walletID int64) ([]ListAssignmentTagsForWalletRow, error)
 	ListAssignmentsForWallet(ctx context.Context, walletID int64) ([]Assignment, error)
@@ -352,6 +363,7 @@ type Querier interface {
 	// transfers, reminders and void ones, and the payees a schedule already pays.
 	ListRecurringCandidates(ctx context.Context, arg ListRecurringCandidatesParams) ([]ListRecurringCandidatesRow, error)
 	ListRecurringIgnored(ctx context.Context, walletID int64) ([]ListRecurringIgnoredRow, error)
+	ListRecurringIgnoredForPayee(ctx context.Context, payeeID int64) ([]string, error)
 	ListReviewWaiting(ctx context.Context, walletID int64) ([]ListReviewWaitingRow, error)
 	// Every schedule in the wallet with the template fields the Bills view needs:
 	// amount (signed), the target account and its currency (for base conversion),
@@ -375,9 +387,11 @@ type Querier interface {
 	ListSubscriptionSchedules(ctx context.Context, walletID int64) ([]ListSubscriptionSchedulesRow, error)
 	ListTagsForWallet(ctx context.Context, walletID int64) ([]Tag, error)
 	ListTagsWithCounts(ctx context.Context, walletID int64) ([]ListTagsWithCountsRow, error)
+	ListTemplateIDsWithPayee(ctx context.Context, payeeID sql.NullInt64) ([]int64, error)
 	ListTemplateSplits(ctx context.Context, templateID int64) ([]TemplateSplit, error)
 	ListTemplateTransactionsWithoutPayee(ctx context.Context, arg ListTemplateTransactionsWithoutPayeeParams) ([]int64, error)
 	ListTemplatesForWallet(ctx context.Context, walletID int64) ([]Template, error)
+	ListTransactionIDsWithPayee(ctx context.Context, payeeID sql.NullInt64) ([]int64, error)
 	ListTransactionTags(ctx context.Context, transactionID int64) ([]string, error)
 	ListTransactionsByIDs(ctx context.Context, arg ListTransactionsByIDsParams) ([]Transaction, error)
 	ListTransactionsForAccount(ctx context.Context, arg ListTransactionsForAccountParams) ([]ListTransactionsForAccountRow, error)
@@ -415,8 +429,13 @@ type Querier interface {
 	// excluding internal transfers (payment_mode 5), with each row's account
 	// currency for base conversion. Drives the dashboard income/expense chart.
 	MonthlyIncomeExpense(ctx context.Context, arg MonthlyIncomeExpenseParams) ([]MonthlyIncomeExpenseRow, error)
+	MoveAssignmentsToPayee(ctx context.Context, arg MoveAssignmentsToPayeeParams) error
 	// The mails that wrote a transaction now point at the one it was merged into.
 	MoveMailMessagesToTransaction(ctx context.Context, arg MoveMailMessagesToTransactionParams) error
+	MoveTemplatesToPayee(ctx context.Context, arg MoveTemplatesToPayeeParams) error
+	// Undoing a merge: the transactions it moved, those still on the payee it
+	// moved them to.
+	MoveTransactionsToPayee(ctx context.Context, arg MoveTransactionsToPayeeParams) error
 	NextAccountPosition(ctx context.Context, walletID int64) (int64, error)
 	NextAssignmentPosition(ctx context.Context, walletID int64) (int64, error)
 	// The rows of the user's proposal of a kind still waiting on a wallet, for
@@ -440,6 +459,7 @@ type Querier interface {
 	PruneMailMessages(ctx context.Context, arg PruneMailMessagesParams) error
 	PurgeAISends(ctx context.Context, arg PurgeAISendsParams) error
 	PurgeNotificationsBefore(ctx context.Context, createdAt string) (int64, error)
+	ReassignAssignmentPayee(ctx context.Context, arg ReassignAssignmentPayeeParams) error
 	// A tag merge moves the rules too; OR IGNORE skips a rule that already adds
 	// the target (its row goes away with the source tag).
 	ReassignAssignmentTag(ctx context.Context, arg ReassignAssignmentTagParams) error
@@ -449,6 +469,7 @@ type Querier interface {
 	// tag is already present on that transaction (those source rows go away when the
 	// source tag is deleted).
 	ReassignTag(ctx context.Context, arg ReassignTagParams) error
+	ReassignTemplatePayee(ctx context.Context, arg ReassignTemplatePayeeParams) error
 	ReassignTransactionCategory(ctx context.Context, arg ReassignTransactionCategoryParams) error
 	ReassignTransactionPayee(ctx context.Context, arg ReassignTransactionPayeeParams) error
 	RecordBankSyncOutcome(ctx context.Context, arg RecordBankSyncOutcomeParams) error
@@ -567,6 +588,7 @@ type Querier interface {
 	UpsertExchangeRate(ctx context.Context, arg UpsertExchangeRateParams) error
 	UpsertNotificationChannel(ctx context.Context, arg UpsertNotificationChannelParams) error
 	UpsertNotificationSettings(ctx context.Context, arg UpsertNotificationSettingsParams) error
+	UpsertPayeeCleanup(ctx context.Context, arg UpsertPayeeCleanupParams) error
 	UpsertPluggyConfig(ctx context.Context, arg UpsertPluggyConfigParams) error
 	UpsertPushSubscription(ctx context.Context, arg UpsertPushSubscriptionParams) error
 	// The code was right: the channel sends from now on. A Telegram chat linked

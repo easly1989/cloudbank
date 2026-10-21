@@ -276,6 +276,32 @@ export const deletePayee = (walletId: number, id: number) =>
 export const mergePayee = (walletId: number, id: number, targetId: number) =>
   api.post<void>(`/api/v1/wallets/${walletId}/payees/${id}/merge`, { targetId });
 
+/** One clean name for some payees (#708); rule, when set, adds a "payee contains" rule. */
+export interface PayeeCleanupGroup {
+  name: string;
+  payeeIds: number[];
+  rule?: string;
+}
+
+/** A cleanup applied: clean payees, payees renamed or merged, rules added. */
+export interface PayeeCleanupSummary {
+  payees: number;
+  names: number;
+  rules: number;
+  createdAt: string;
+}
+
+export const payeeCleanupKey = (walletId: number) => ["payee-cleanup", walletId] as const;
+
+export const cleanUpPayees = (walletId: number, groups: PayeeCleanupGroup[]) =>
+  api.post<PayeeCleanupSummary>(`/api/v1/wallets/${walletId}/payees/cleanup`, { groups });
+
+export const getLastPayeeCleanup = (walletId: number) =>
+  api.get<{ cleanup: PayeeCleanupSummary | null }>(`/api/v1/wallets/${walletId}/payees/cleanup`);
+
+export const undoPayeeCleanup = (walletId: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/payees/cleanup`);
+
 /** What one payee held in a period, and what it is usually given (#554). */
 export interface PayeeActivity {
   payeeId: number;
