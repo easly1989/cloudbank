@@ -46,6 +46,7 @@ thumbs say whether it helped.
 | **Unusual transactions**: a payee far over its usual amount, a large new payee, a charge taken twice | [Review](pages.md#review), the overview and the bell |
 | **Category suggestion**: one transaction's category, or a payee and a category for many at once | The entry sheet, and [Review](pages.md#review) |
 | **Quick entry**: a sentence, or [text shared](pages.md#adding-from-your-phone) from your phone, turned into the fields | The entry sheet |
+| **Receipts**: a receipt's photo turned into the fields | The entry sheet's [Scan a receipt](pages.md#adding-from-your-phone) |
 | **Bank mails**: the mails no pattern reads | [Bank mails](bank-mails.md) |
 
 **Ask your data** works in two steps. The model first picks, from your
@@ -82,6 +83,12 @@ Each job's switch says what it sends:
 - **Category suggestion**: the payee and the amount, with your categories; in
   Review also the date, for each row it asks about. Never the bank's text.
 - **Quick entry**: the sentence you write, with your categories, payees and tags.
+- **Receipts**: the photo, once you press **Read with AI**, shrunk by your
+  browser to at most 1600 pixels and without the place it was taken, with your
+  categories, payees and tags. The photo is never stored on the server unless
+  you attach it to the transaction; What was sent shows a line about it instead
+  of the photo. The model must read images: a provider that refuses the photo
+  says so.
 - **Bank mails**: the mail's text, with card numbers and IBANs hidden first.
 
 **What was sent**, at the foot of Settings → AI, lists the last 90 days word
@@ -102,7 +109,7 @@ for word.
 
 **Requests a month** caps how many calls CloudBank makes for you. At the limit,
 bank mails are no longer read by the AI, what you ask for yourself (Generate
-now, a quick entry, a question) asks before going past it, and reports that would come by
+now, a quick entry, a receipt, a question) asks before going past it, and reports that would come by
 themselves are skipped; the bell says so once. The count starts again on the
 first of the month. A question counts twice: one request to pick the queries,
 one to answer.

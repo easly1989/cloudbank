@@ -7,6 +7,7 @@ package ai
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,13 +58,28 @@ type chatResponse struct {
 	} `json:"choices"`
 }
 
-// chat sends a system+user prompt and returns the assistant's reply text.
-func (c *client) chat(ctx context.Context, system, user string, maxTokens int) (string, error) {
+// StatusError is a provider's answer that is not a 2xx: only its status.
+type StatusError struct{ Status int }
+
+func (e *StatusError) Error() string { return fmt.Sprintf("ai: provider returned %d", e.Status) }
+
+// chat sends a system+user prompt, with a photo when img is set, and returns
+// the assistant's reply text.
+func (c *client) chat(ctx context.Context, system, user string, img *Image, maxTokens int) (string, error) {
+	var content any = user
+	if img != nil {
+		content = []map[string]any{
+			{"type": "text", "text": user},
+			{"type": "image_url", "image_url": map[string]string{
+				"url": "data:" + img.Type + ";base64," + base64.StdEncoding.EncodeToString(img.Data),
+			}},
+		}
+	}
 	body, err := json.Marshal(map[string]any{
 		"model": c.model,
-		"messages": []map[string]string{
+		"messages": []map[string]any{
 			{"role": "system", "content": system},
-			{"role": "user", "content": user},
+			{"role": "user", "content": content},
 		},
 		"temperature": 0,
 		// 300 is headroom for the entry's full JSON object (amount, direction,
@@ -93,7 +109,7 @@ func (c *client) chat(ctx context.Context, system, user string, maxTokens int) (
 	// Only the status goes back to the user, never the body: the URL is the
 	// user's, so whatever answers it must not be read back through the app (#543).
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("ai: provider returned %d", resp.StatusCode)
+		return "", &StatusError{Status: resp.StatusCode}
 	}
 	var out chatResponse
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {

@@ -2086,6 +2086,10 @@
       "ask": {
         "name": "Perguntas sobre seus dados",
         "sends": "Envia sua pergunta, os nomes das suas categorias, contas, tags e beneficiários mais usados, e os resultados das consultas escolhidas pela IA. Nunca um lançamento ou uma nota."
+      },
+      "receipts": {
+        "name": "Recibos",
+        "sends": "Envia a foto de um recibo, reduzida pelo navegador e sem a localização, com os nomes das suas categorias, beneficiários e tags. A foto não é guardada a menos que você a anexe."
       }
     },
     "wallets": "Em quais carteiras",
@@ -2128,7 +2132,18 @@
       "weekly": "Toda segunda-feira, a semana anterior",
       "yearly": "Em janeiro, o ano anterior"
     },
-    "fromShared": "Do texto compartilhado: confira os campos e salve"
+    "fromShared": "Do texto compartilhado: confira os campos e salve",
+    "receipt": {
+      "scan": "Ler um recibo",
+      "photo": "Foto do recibo",
+      "remove": "Remover a foto",
+      "sends": "Envia esta foto e os nomes das suas categorias, beneficiários e tags para a sua IA. A foto não é guardada a menos que você a anexe.",
+      "read": "Ler com a IA",
+      "done": "Lido pela IA: confira os campos e salve.",
+      "attach": "Anexar a foto ao lançamento",
+      "attachFailed": "Salvo, mas não foi possível anexar a foto",
+      "unreadable": "A IA não encontrou um recibo legível nesta foto."
+    }
   },
   "setup": {
     "title": "Boas-vindas ao CloudBank",
@@ -3365,7 +3380,8 @@
     "tls_failed": "Não foi possível criptografar a conexão com o servidor de e-mail.",
     "ai_not_configured": "Configure antes a IA, em Configurações › IA.",
     "hourly_limit": "Mensagens demais nesta hora. Tente mais tarde.",
-    "no_data": "Esse mês não tem lançamentos sobre os quais escrever."
+    "no_data": "Esse mês não tem lançamentos sobre os quais escrever.",
+    "ai_no_vision": "O provedor recusou a foto: o modelo escolhido pode não ler imagens. Escolha um que leia em Configurações › IA."
   },
   "insights": {
     "title": "Análises com IA",

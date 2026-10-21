@@ -47,7 +47,38 @@ func (s *Service) ParseEntry(ctx context.Context, userID, walletID int64, confir
 	if text == "" {
 		return nil, nil
 	}
+	return s.parseFields(ctx, Call{
+		UserID: userID, WalletID: walletID, Feature: FeatureEntry, Confirm: confirm, System: entrySystem,
+	}, today, "\nDescription: "+text)
+}
 
+const entrySystem = "You extract structured fields from a short natural-language description of a single " +
+	"expense or income, and reply with ONLY a minified JSON object — no prose, no code fences. " +
+	entryKeys +
+	"Example — input \"lunch with Anna 15\", today 2026-09-08, Categories include \"Dining\", Tags " +
+	"include \"friends\" → {\"amount\":15,\"direction\":\"expense\",\"date\":\"2026-09-08\"," +
+	"\"payee\":\"\",\"category\":\"Dining\",\"tags\":[\"friends\"],\"memo\":\"Lunch with Anna\"}"
+
+// entryKeys are the fields the model fills, for a description or a receipt.
+const entryKeys = "Keys: " +
+	"\"amount\" (a positive number), " +
+	"\"direction\" (\"expense\" or \"income\"), " +
+	"\"date\" (\"YYYY-MM-DD\"; resolve relative or short dates using today's date; if none is " +
+	"mentioned use today), " +
+	"\"payee\" (the merchant, shop or person, or \"\"), " +
+	"\"category\" (the single best-fitting category, copied verbatim from the provided Categories " +
+	"list, or \"\" — choose by meaning, e.g. a dinner, lunch, drinks or a night out maps to a " +
+	"dining/social category), " +
+	"\"tags\" (an array of 0-3 relevant tags, each copied verbatim from the provided Tags list when " +
+	"one fits), " +
+	"\"memo\" (a concise human description of what it was — e.g. the place or purpose, like " +
+	"\"Dinner at Mondrigo\" — never filler or test words; \"\" if nothing meaningful). " +
+	"Never invent an amount or a date. "
+
+// parseFields asks the model to fill a transaction's fields: c carries the job
+// and its system prompt, tail ends the prompt after the wallet's names.
+func (s *Service) parseFields(ctx context.Context, c Call, today, tail string) (*ParsedEntry, error) {
+	walletID := c.WalletID
 	cats, err := s.rq.ListCategoriesForWallet(ctx, walletID)
 	if err != nil {
 		return nil, err
@@ -64,29 +95,8 @@ func (s *Service) ParseEntry(ctx context.Context, userID, walletID int64, confir
 	}
 	tagNames, tagByName := tagIndex(tags)
 
-	system := "You extract structured fields from a short natural-language description of a single " +
-		"expense or income, and reply with ONLY a minified JSON object — no prose, no code fences. " +
-		"Keys: " +
-		"\"amount\" (a positive number), " +
-		"\"direction\" (\"expense\" or \"income\"), " +
-		"\"date\" (\"YYYY-MM-DD\"; resolve relative or short dates using today's date; if none is " +
-		"mentioned use today), " +
-		"\"payee\" (the merchant, shop or person, or \"\"), " +
-		"\"category\" (the single best-fitting category, copied verbatim from the provided Categories " +
-		"list, or \"\" — choose by meaning, e.g. a dinner, lunch, drinks or a night out maps to a " +
-		"dining/social category), " +
-		"\"tags\" (an array of 0-3 relevant tags, each copied verbatim from the provided Tags list when " +
-		"one fits), " +
-		"\"memo\" (a concise human description of what it was — e.g. the place or purpose, like " +
-		"\"Dinner at Mondrigo\" — never filler or test words; \"\" if nothing meaningful). " +
-		"Never invent an amount or a date. " +
-		"Example — input \"lunch with Anna 15\", today 2026-09-08, Categories include \"Dining\", Tags " +
-		"include \"friends\" → {\"amount\":15,\"direction\":\"expense\",\"date\":\"2026-09-08\"," +
-		"\"payee\":\"\",\"category\":\"Dining\",\"tags\":[\"friends\"],\"memo\":\"Lunch with Anna\"}"
-	reply, err := s.Ask(ctx, Call{
-		UserID: userID, WalletID: walletID, Feature: FeatureEntry, Confirm: confirm,
-		System: system, User: entryPrompt(text, today, catNames, payeeNames, tagNames),
-	})
+	c.User = entryPrompt(today, catNames, payeeNames, tagNames) + tail
+	reply, err := s.Ask(ctx, c)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +140,7 @@ func payeeIndex(payees []db.Payee) ([]string, map[string]int64) {
 	return names, byName
 }
 
-func entryPrompt(text, today string, categories, payees, tags []string) string {
+func entryPrompt(today string, categories, payees, tags []string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Today: %s\n", today)
 	if len(categories) > 0 {
@@ -151,7 +161,6 @@ func entryPrompt(text, today string, categories, payees, tags []string) string {
 			fmt.Fprintf(&b, "- %s\n", n)
 		}
 	}
-	fmt.Fprintf(&b, "\nDescription: %s", text)
 	return b.String()
 }
 

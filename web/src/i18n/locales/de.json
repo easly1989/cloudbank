@@ -2086,6 +2086,10 @@
       "ask": {
         "name": "Fragen an deine Daten",
         "sends": "Sendet deine Frage, die Namen deiner Kategorien, Konten, Tags und häufigsten Zahlungspartner sowie die Ergebnisse der Abfragen, die die KI gewählt hat. Nie eine Buchung oder Notiz."
+      },
+      "receipts": {
+        "name": "Kassenbons",
+        "sends": "Sendet das Foto eines Kassenbons, vom Browser verkleinert und ohne Standort, mit den Namen deiner Kategorien, Zahlungspartner und Tags. Das Foto wird nur aufbewahrt, wenn du es anhängst."
       }
     },
     "wallets": "Für welche Haushaltsbücher",
@@ -2128,7 +2132,18 @@
       "weekly": "Jeden Montag, die Vorwoche",
       "yearly": "Im Januar, das Vorjahr"
     },
-    "fromShared": "Aus dem geteilten Text: Felder prüfen und speichern"
+    "fromShared": "Aus dem geteilten Text: Felder prüfen und speichern",
+    "receipt": {
+      "scan": "Kassenbon lesen",
+      "photo": "Foto des Kassenbons",
+      "remove": "Foto entfernen",
+      "sends": "Sendet dieses Foto und die Namen deiner Kategorien, Zahlungspartner und Tags an deine KI. Das Foto wird nur aufbewahrt, wenn du es anhängst.",
+      "read": "Mit KI lesen",
+      "done": "Von der KI gelesen: prüfe die Felder und speichere.",
+      "attach": "Foto an die Buchung anhängen",
+      "attachFailed": "Gespeichert, aber das Foto konnte nicht angehängt werden",
+      "unreadable": "Die KI hat auf diesem Foto keinen lesbaren Kassenbon gefunden."
+    }
   },
   "setup": {
     "title": "Willkommen bei CloudBank",
@@ -3365,7 +3380,8 @@
     "tls_failed": "Die Verbindung zum Mailserver konnte nicht verschlüsselt werden.",
     "ai_not_configured": "Richte zuerst die KI ein, unter Einstellungen › KI.",
     "hourly_limit": "Zu viele Nachrichten in dieser Stunde. Versuche es später.",
-    "no_data": "Dieser Monat hat keine Buchungen, über die sich schreiben ließe."
+    "no_data": "Dieser Monat hat keine Buchungen, über die sich schreiben ließe.",
+    "ai_no_vision": "Der Anbieter hat das Foto abgelehnt: Das gewählte Modell liest vielleicht keine Bilder. Wähle unter Einstellungen › KI eines, das es kann."
   },
   "insights": {
     "title": "KI-Auswertungen",

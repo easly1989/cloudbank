@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -61,6 +62,7 @@ func (h *aiHandlers) routes(r chi.Router) {
 func (h *aiHandlers) walletRoutes(r chi.Router) {
 	r.Post("/ai/suggest-category", h.suggestCategory)
 	r.Post("/ai/parse-entry", h.parseEntry)
+	r.Post("/ai/parse-receipt", h.parseReceipt)
 	r.Post("/ai/propose-categories", h.proposeCategories)
 	r.Post("/ai/payee-cleanup", h.proposePayeeCleanup)
 	r.Post("/ai/csv-mapping", h.proposeCSVMapping)
@@ -270,6 +272,58 @@ func (h *aiHandlers) parseEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"entry": entry})
+}
+
+// parseReceipt reads a receipt's photo (#707), sent as the multipart field
+// "photo" with "confirm". The parts are read straight into memory, so the
+// photo never reaches a temporary file.
+func (h *aiHandlers) parseReceipt(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	u := userFromContext(r.Context())
+	r.Body = http.MaxBytesReader(w, r.Body, ai.ReceiptMax+(64<<10))
+	mr, err := r.MultipartReader()
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body", "send the photo as multipart form data")
+		return
+	}
+	var photo []byte
+	confirm := false
+	for {
+		part, err := mr.NextPart()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "too_large", "send a photo of up to 5 MB")
+			return
+		}
+		b, err := io.ReadAll(io.LimitReader(part, ai.ReceiptMax+1))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "too_large", "send a photo of up to 5 MB")
+			return
+		}
+		switch part.FormName() {
+		case "photo":
+			photo = b
+		case "confirm":
+			confirm = string(b) == "true"
+		}
+	}
+	img, err := ai.CheckImage(photo)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_file", aiErrorMessage(err))
+		return
+	}
+	today := time.Now().UTC().Format("2006-01-02")
+	entry, err := h.svc.ParseReceipt(r.Context(), u.ID, wl.ID, confirm, img, today)
+	switch {
+	case errors.Is(err, ai.ErrNoVision):
+		writeError(w, http.StatusBadGateway, "ai_no_vision", aiErrorMessage(err))
+	case err != nil:
+		writeAIError(w, err)
+	default:
+		writeJSON(w, http.StatusOK, map[string]any{"entry": entry})
+	}
 }
 
 // The reports are the asking user's alone: every query is by user and wallet.
