@@ -272,6 +272,15 @@ export const bulkTagTransactions = (
     replace,
   });
 
+/** Each row its own category, and payee where given; all or nothing (#706). */
+export const bulkCategorizeTransactions = (
+  walletId: number,
+  rows: { id: number; payeeId?: number; categoryId: number }[],
+) =>
+  api.post<{ updated: number }>(`/api/v1/wallets/${walletId}/transactions/bulk-categorize`, {
+    rows,
+  });
+
 // --- Bank-sync review (uncategorized imports + duplicate finder) ---
 
 export interface ReviewTxn {

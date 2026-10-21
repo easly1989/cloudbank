@@ -1023,7 +1023,22 @@
     "reversal": "Payment reversed",
     "reversalHint": "{{account}} · two rows from mails that cancel out: the bank usually books neither",
     "deleteBoth": "Delete both",
-    "confirmDeleteBothTitle": "Delete both rows?"
+    "confirmDeleteBothTitle": "Delete both rows?",
+    "propose": {
+      "button": "Propose categories",
+      "hint": "Proposals come from your history first; the rest go to your AI provider with the payee, the amount and the date only. Nothing is saved until you confirm.",
+      "summary": "{{history}} from history · {{ai}} by AI · {{date}}",
+      "selectAll": "Select all ({{n}})",
+      "confirm": "Confirm {{n}}",
+      "fromHistory": "From history",
+      "ai": "AI",
+      "noPayee": "No payee recognised",
+      "noCategory": "No category proposed",
+      "none": "No proposals: none of these transactions names a payee you already have.",
+      "include": "Include: {{memo}}",
+      "done_one": "{{count}} transaction filed",
+      "done_other": "{{count}} transactions filed"
+    }
   },
   "banksync": {
     "title": "Bank sync",
@@ -2026,7 +2041,7 @@
       },
       "suggest": {
         "name": "Category suggestion",
-        "sends": "Sends the transaction's payee and amount, with the list of your categories."
+        "sends": "Sends the transaction's payee, amount and date, with the list of your categories. In Review, the payees of several transactions at once."
       },
       "entry": {
         "name": "Quick entry",

@@ -633,6 +633,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/ai/propose-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Propose a payee and a category for the review's rows that need a category
+         * @description The payee is the row's own or an existing payee named in the bank's text; the category comes from the payee's history, or else from the model, which is sent only the payee, the amount and the date, in one call for each 30 rows. Nothing is saved.
+         */
+        post: operations["proposeCategories"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/ai/parse-entry": {
         parameters: {
             query?: never;
@@ -2404,6 +2426,25 @@ export interface paths {
         put?: never;
         /** Add or replace tags across many transactions (all-or-nothing) */
         post: operations["bulkTagTransactions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/transactions/bulk-categorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set each transaction's own category, and payee where given (all-or-nothing) */
+        post: operations["bulkCategorizeTransactions"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7431,6 +7472,68 @@ export interface operations {
             };
         };
     };
+    proposeCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The user's yes to a call past this month's limit. */
+                    confirm?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description The proposals; rows without one are left out. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        proposals: {
+                            /** Format: int64 */
+                            id: number;
+                            /** Format: int64 */
+                            payeeId: number;
+                            /**
+                             * Format: int64
+                             * @description Absent when the model proposed none for the payee.
+                             */
+                            categoryId?: number;
+                            /** @enum {string} */
+                            source: "history" | "ai";
+                        }[];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description This month's limit is reached (ai_limit); ask the user, then send confirm. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The AI provider request failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     parseEntry: {
         parameters: {
             query?: never;
@@ -10765,6 +10868,48 @@ export interface operations {
                     tags: string[];
                     /** @description true replaces each transaction's tags with these; false adds them */
                     replace?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Applied. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        updated: number;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    bulkCategorizeTransactions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    rows: {
+                        /** Format: int64 */
+                        id: number;
+                        /**
+                         * Format: int64
+                         * @description Omit to keep the payee.
+                         */
+                        payeeId?: number;
+                        /** Format: int64 */
+                        categoryId: number;
+                    }[];
                 };
             };
         };
