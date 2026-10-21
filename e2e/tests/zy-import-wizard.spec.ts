@@ -100,34 +100,53 @@ async function start(
   return panel;
 }
 
-test("a generic CSV maps, previews and imports", async ({ page }) => {
+test("a generic CSV maps, previews and imports, and the next file comes mapped", async ({
+  page,
+}) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   const account = await setUp(page);
+  // A header of its own, so a rerun meets no mapping the last run remembered.
+  const memo = `Description ${Date.now()}`;
+  const file = `Date,${memo},Amount
+2026-09-01,Coffee shop,-3.50
+2026-09-02,Salary,2450.00
+`;
 
-  const panel = await start(
-    page,
-    "Generic CSV",
-    account,
-    "bank.csv",
-    "Date,Description,Amount\n2026-09-01,Coffee shop,-3.50\n2026-09-02,Salary,2450.00\n",
-  );
-
-  // Map by position: date, amount, debit, credit, payee, memo, …
-  const fields = panel.locator("input.mantine-Select-input");
-  for (const [i, column] of [
-    [0, "Date"],
-    [1, "Amount"],
-    [5, "Description"],
+  let panel = await start(page, "Generic CSV", account, "bank.csv", file);
+  // One row per column of the file, its first value beside it (#709).
+  await expect(
+    panel.getByTestId("csv-column").filter({ hasText: memo }),
+  ).toContainText("Coffee shop");
+  for (const [column, field] of [
+    ["Date", "Date"],
+    ["Amount", "Amount"],
+    [memo, "Memo"],
   ] as const) {
-    await fields.nth(i).click();
-    await page.getByRole("option", { name: column, exact: true }).click();
+    await panel.getByRole("combobox", { name: `Field for ${column}` }).click();
+    await page.getByRole("option", { name: field, exact: true }).click();
   }
+  await expect(
+    panel.getByRole("checkbox", { name: /^Remember this mapping/ }),
+  ).toBeChecked();
   await panel.getByRole("button", { name: "Preview" }).click();
 
   await expect(panel.getByRole("cell", { name: "2026-09-02" })).toBeVisible();
   await panel.getByRole("button", { name: /^Import 2/ }).click();
   await expect(page.getByText("Created 2 transactions.")).toBeVisible();
+
+  // The same columns again: mapped already, and Forget lets them go.
+  panel = await start(page, "Generic CSV", account, "bank.csv", file);
+  await expect(panel.getByTestId("csv-remembered")).toContainText(
+    "Mapping remembered from",
+  );
+  await expect(
+    panel.getByRole("combobox", { name: `Field for ${memo}` }),
+  ).toHaveValue("Memo");
+  await panel.getByRole("button", { name: "Forget" }).click();
+  await expect(panel.getByTestId("csv-remembered")).toBeHidden();
+  await panel.getByRole("button", { name: "Preview" }).click();
+  await expect(panel.getByRole("cell", { name: "2026-09-02" })).toHaveCount(1);
   expect(errors).toEqual([]);
 });
 

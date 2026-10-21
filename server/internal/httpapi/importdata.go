@@ -27,6 +27,8 @@ func (h *importDataHandlers) walletRoutes(r chi.Router) {
 	r.Post("/import/ofx/preview", h.previewOFX)
 	r.Post("/import/camt/preview", h.previewCAMT)
 	r.Post("/import/commit", h.commit)
+	r.Put("/import/csv-mappings", h.rememberMapping)
+	r.Delete("/import/csv-mappings/{mappingId}", h.forgetMapping)
 	r.Get("/export/csv", h.exportCSV)
 	r.Get("/export/qif", h.exportQIF)
 }
@@ -117,6 +119,46 @@ func (h *importDataHandlers) previewCSV(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	writeJSON(w, http.StatusOK, res)
+}
+
+// rememberMapping keeps a generic CSV's mapping for the next file with the
+// same header row (#709).
+func (h *importDataHandlers) rememberMapping(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body struct {
+		Columns []string `json:"columns"`
+		importio.CSVMapping
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	m, err := h.svc.RememberMapping(r.Context(), wl.ID, body.Columns, body.CSVMapping)
+	if errors.Is(err, importio.ErrBadMapping) {
+		writeError(w, http.StatusBadRequest, "invalid", "the mapping does not fit the columns")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not remember the mapping")
+		return
+	}
+	writeJSON(w, http.StatusOK, m)
+}
+
+func (h *importDataHandlers) forgetMapping(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, err := strconv.ParseInt(chi.URLParam(r, "mappingId"), 10, 64)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "not_found", "mapping not found")
+		return
+	}
+	switch err := h.svc.ForgetMapping(r.Context(), wl.ID, id); {
+	case err == nil:
+		w.WriteHeader(http.StatusNoContent)
+	case errors.Is(err, importio.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "mapping not found")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", "could not forget the mapping")
+	}
 }
 
 // parsedPreviewBody is the request for the QIF and OFX previews (no column

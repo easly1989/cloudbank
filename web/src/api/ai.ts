@@ -21,6 +21,8 @@ export interface AIFeatures {
   rules: boolean;
   /** Payee names cleaned up and merged (#708). */
   payees: boolean;
+  /** The column mapping of an unknown CSV (#709). */
+  import: boolean;
 }
 
 export type AIFeature = keyof AIFeatures;
@@ -142,6 +144,21 @@ export const proposePayeeCleanup = (walletId: number, confirm = false) =>
   api.post<{ groups: CleanupProposal[] }>(`/api/v1/wallets/${walletId}/ai/payee-cleanup`, {
     confirm,
   });
+
+/** The model's reading of a generic CSV (#709); a field it could not tell is absent. */
+export interface CSVProposal {
+  mapping: Record<string, number>;
+  dateFormat: "" | "iso" | "dmy" | "mdy";
+  decimalChar: string;
+  invertAmount: boolean;
+}
+
+/** The server reads the file's first rows; only their shapes go to the model. */
+export const proposeCSVMapping = (
+  walletId: number,
+  file: { content: string; delimiter: string; hasHeader: boolean },
+  confirm = false,
+) => api.post<CSVProposal>(`/api/v1/wallets/${walletId}/ai/csv-mapping`, { ...file, confirm });
 
 export interface ParsedEntry {
   amount: string;

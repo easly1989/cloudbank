@@ -25,6 +25,7 @@ import {
   IconCategory,
   IconChartDots,
   IconCoin,
+  IconFileSpreadsheet,
   IconMail,
   IconPencilBolt,
   IconPigMoney,
@@ -68,6 +69,7 @@ const FEATURES: { key: AIFeature; icon: Icon }[] = [
   { key: "unusual", icon: IconZoomExclamation },
   { key: "rules", icon: IconWand },
   { key: "payees", icon: IconUsers },
+  { key: "import", icon: IconFileSpreadsheet },
   { key: "suggest", icon: IconCategory },
   { key: "entry", icon: IconPencilBolt },
   { key: "mail", icon: IconMail },
@@ -85,6 +87,7 @@ const NO_FEATURES: AIFeatures = {
   unusual: false,
   rules: false,
   payees: false,
+  import: false,
 };
 
 /** The first of next month, UTC, when the count starts again. */

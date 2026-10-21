@@ -688,6 +688,45 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { description: "This month's limit is reached (ai_limit); ask the user, then send confirm.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "502": { description: The AI provider request failed. }
+  /api/v1/wallets/{walletId}/ai/csv-mapping:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: proposeCSVMapping
+      summary: Ask the model how to read a generic CSV
+      description: >-
+        The server reads the column names and the first three rows; only their shapes go out:
+        dates and numbers as written, a cell of words as "text, N words". Nothing is saved.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content: { type: string }
+                delimiter: { type: string, maxLength: 1 }
+                hasHeader: { type: boolean }
+                confirm: { type: boolean, description: The user's yes to calls past this month's limit. }
+              required: [content]
+      responses:
+        "200":
+          description: The proposal; a field the model could not tell is left out.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mapping: { type: object, additionalProperties: { type: integer } }
+                  dateFormat: { type: string, enum: ["", iso, dmy, mdy] }
+                  decimalChar: { type: string, enum: [".", ","] }
+                  invertAmount: { type: boolean }
+                required: [mapping, dateFormat, decimalChar, invertAmount]
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "This month's limit is reached (ai_limit); ask the user, then send confirm.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "502": { description: The AI provider request failed. }
   /api/v1/wallets/{walletId}/ai/payee-cleanup:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -3627,6 +3666,37 @@ paths:
         "200": { description: The preview., content: { application/json: { schema: { $ref: "#/components/schemas/CSVPreview" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/import/csv-mappings:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+    put:
+      operationId: rememberCSVMapping
+      summary: Remember a generic CSV's mapping for the next files with the same header row
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/CSVMapping"
+                - type: object
+                  properties:
+                    columns: { type: array, maxItems: 200, items: { type: string, maxLength: 200 }, description: the header row, in order }
+                  required: [columns]
+      responses:
+        "200": { description: Remembered; it replaces the one kept for these columns., content: { application/json: { schema: { $ref: "#/components/schemas/CSVMapping" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/import/csv-mappings/{mappingId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: mappingId, in: path, required: true, schema: { type: integer, format: int64 } }
+    delete:
+      operationId: forgetCSVMapping
+      summary: Forget a remembered CSV mapping
+      responses:
+        "204": { description: Forgotten. }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/import/qif/preview:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -3901,7 +3971,8 @@ components:
         unusual: { type: boolean, description: "unusual transactions: sends each flagged expense's payee, date and amount, with the payee's usual amount" }
         rules: { type: boolean, description: "rule proposals: sends each proposed payee's name, its category and how many of its transactions have it; never an amount, a memo or a date" }
         payees: { type: boolean, description: "payee cleanup: sends the payee names only" }
-      required: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals, unusual, rules, payees]
+        import: { type: boolean, description: "CSV column mapping: sends the column names and the shape of three rows; dates and numbers as written, words never" }
+      required: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals, unusual, rules, payees, import]
     AISchedule:
       type: object
       description: The reports that come by themselves besides the monthly one, which comes whenever reports are on.
@@ -3945,7 +4016,7 @@ components:
         id: { type: integer, format: int64 }
         walletId: { type: [integer, "null"], format: int64 }
         walletName: { type: string }
-        feature: { type: string, enum: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals, unusual, rules, payees] }
+        feature: { type: string, enum: [suggest, entry, mail, reports, budgets, subscriptions, savings, goals, unusual, rules, payees, import] }
         model: { type: string }
         createdAt: { type: string, description: "RFC3339 UTC" }
         sent: { type: string, description: "the text sent, word for word; only when one call is asked for" }
@@ -5734,7 +5805,20 @@ components:
       properties:
         columns: { type: array, items: { type: string }, description: "detected/generated column names for the mapping UI" }
         rows: { type: array, items: { $ref: "#/components/schemas/CSVPreviewRow" } }
+        sample: { type: array, items: { type: string }, description: "a generic file's first data row, before it is mapped" }
+        remembered: { $ref: "#/components/schemas/CSVMapping" }
       required: [columns, rows]
+    CSVMapping:
+      type: object
+      description: How a generic CSV is read; remembered per wallet by its header row.
+      properties:
+        id: { type: integer, format: int64 }
+        mapping: { type: object, additionalProperties: { type: integer }, description: "field → column index" }
+        dateFormat: { type: string, enum: ["", iso, dmy, mdy] }
+        decimalChar: { type: string, enum: [".", ","] }
+        invertAmount: { type: boolean }
+        createdAt: { type: string, format: date-time }
+      required: [mapping, dateFormat, decimalChar, invertAmount]
     CSVCommitRow:
       type: object
       properties:
