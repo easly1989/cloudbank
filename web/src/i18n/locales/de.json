@@ -2055,6 +2055,10 @@
       "unusual": {
         "name": "Ungewöhnliche Buchungen",
         "sends": "Sendet für jede markierte Ausgabe den Zahlungspartner, das Datum und den Betrag, dazu den üblichen Betrag des Zahlungspartners. Nie die Notiz."
+      },
+      "rules": {
+        "name": "Regelvorschläge",
+        "sends": "Sendet für jeden vorgeschlagenen Zahlungspartner den Namen, seine Kategorie und wie viele seiner Buchungen sie haben. Nie Beträge, Notizen oder Daten."
       }
     },
     "wallets": "Für welche Haushaltsbücher",
@@ -3394,6 +3398,24 @@
         "pace": "Zuletzt im Monat",
         "eta": "Am Ziel",
         "note": "CloudBank hat die Zahlen berechnet: das Tempo jedes Sparziels in den letzten 3 vollen Monaten, den Monatsanteil, den sein Datum braucht, und was im Haushaltsbuch in diesen Monaten monatlich übrig blieb ({{kept}}). Das Modell hat nur den Text geschrieben. Modell: {{model}}."
+      }
+    },
+    "rule": {
+      "title_one": "{{count}} Regel zum Anlegen",
+      "title_other": "{{count}} Regeln zum Anlegen",
+      "basis": "Aus den letzten 12 Monaten · erstellt am {{date}}",
+      "reason": "{{category}} bei {{hits}} von {{total}} Buchungen",
+      "without_one": "{{count}} ohne Kategorie",
+      "without_other": "{{count}} ohne Kategorie",
+      "create": "Regel anlegen",
+      "createLabel": "Regel anlegen: Zahlungspartner ist {{name}}, Kategorie {{category}}",
+      "why": {
+        "payee": "Zahlungspartner",
+        "category": "Kategorie",
+        "hits": "Mit ihr",
+        "total": "Buchungen",
+        "without": "Ohne Kategorie",
+        "note": "CloudBank hat je Zahlungspartner die Buchungen der letzten 12 Monate gezählt, die noch keine Regel ausfüllt. Das Modell hat nur den Text geschrieben. Modell: {{model}}."
       }
     }
   },

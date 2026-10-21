@@ -4,6 +4,7 @@ import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 
 import {
   applyAssignments,
@@ -14,11 +15,16 @@ import {
   listPayees,
   reorderAssignments,
   type Assignment,
+  type AssignmentInput,
   type Category,
   type Payee,
+  type RuleTest,
 } from "../api/client";
+import { actOnAIProposal, aiProposalsKey, type AIProposal, type AIProposalRow } from "../api/ai";
 import { useConfirm } from "../components/confirmContext";
 import { PageHeader } from "../components/PageHeader";
+import { useProposal } from "../components/proposalData";
+import { RuleProposal } from "../components/RuleProposal";
 import { useToday } from "../useToday";
 import { useWallet } from "../wallet/WalletProvider";
 import { useDayMonth } from "./categories/labels";
@@ -155,10 +161,63 @@ export function AssignmentsPage() {
     },
   };
 
+  // The AI's rule proposal (#705): Create rule opens a new rule filled in, and
+  // the row is done once it is saved; then the transactions already there
+  // without a category can be filled in too. ?apply=proposal:payee comes from
+  // AI insights.
+  const [params, setParams] = useSearchParams();
+  const proposal = useProposal(walletId, "rules");
+  const [draft, setDraft] = useState<Partial<AssignmentInput>>();
+  const [applying, setApplying] = useState<{ proposalId: number; payeeId: number } | null>(null);
+  const applyRow = (p: AIProposal, r: AIProposalRow) => {
+    setEditing(null);
+    setDraft({
+      matchField: "payee",
+      matchType: "exact",
+      pattern: r.name,
+      caseSensitive: false,
+      setCategoryId: r.categoryId,
+      setTags: [],
+      applyOnManual: true,
+      applyOnImport: true,
+    });
+    setApplying({ proposalId: p.id, payeeId: r.payeeId ?? 0 });
+    setSheetOpen(true);
+  };
+  const applyLink = params.get("apply");
+  const [seenApply, setSeenApply] = useState<string | null>(null);
+  if (applyLink && applyLink !== seenApply && proposal) {
+    setSeenApply(applyLink);
+    const [pid, payeeId] = applyLink.split(":").map(Number);
+    const row = proposal.id === pid && proposal.basis.rows.find((r) => r.payeeId === payeeId);
+    if (row) applyRow(proposal, row);
+  }
+  const saved = (rule: Assignment, preview?: RuleTest) => {
+    invalidate();
+    if (!applying) return;
+    const { proposalId, payeeId } = applying;
+    setApplying(null);
+    void actOnAIProposal(walletId, proposalId, "applied", { payeeId })
+      .then(() => qc.invalidateQueries({ queryKey: aiProposalsKey(walletId) }))
+      .catch(notifyError);
+    if (preview && preview.withoutCategory > 0)
+      void actions.onApply({ ...rule, matches: preview.count - preview.taken });
+  };
+  const closeSheet = () => {
+    setSheetOpen(false);
+    setApplying(null);
+    if (applyLink) {
+      const next = new URLSearchParams(params);
+      next.delete("apply");
+      setParams(next, { replace: true });
+    }
+  };
+
   if (!currentWallet) return null;
 
   const openNew = () => {
     setEditing(null);
+    setDraft(undefined);
     setSheetOpen(true);
   };
   const empty = order.length === 0 && query.isSuccess;
@@ -191,6 +250,8 @@ export function AssignmentsPage() {
         }
       />
 
+      {proposal && <RuleProposal walletId={walletId} proposal={proposal} onApply={applyRow} />}
+
       {empty && <RulesEmpty onAdd={openNew} />}
 
       {order.length > 0 && (
@@ -208,15 +269,16 @@ export function AssignmentsPage() {
 
       <RuleSheet
         opened={sheetOpen}
-        onClose={() => setSheetOpen(false)}
+        onClose={closeSheet}
         walletId={walletId}
         editing={editing}
         position={editing ? order.findIndex((r) => r.id === editing.id) + 1 : order.length + 1}
         count={order.length}
         lookups={lookups}
         day={day}
-        onSaved={invalidate}
+        onSaved={saved}
         actions={actions}
+        draft={draft}
       />
     </Stack>
   );

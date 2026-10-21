@@ -23,6 +23,7 @@ import { useAskPastLimit } from "../components/aiLimit";
 import { BudgetProposal } from "../components/BudgetProposal";
 import { GoalProposal } from "../components/GoalProposal";
 import { useProposal } from "../components/proposalData";
+import { RuleProposal } from "../components/RuleProposal";
 import { SavingsProposal } from "../components/SavingsProposal";
 import { SubscriptionProposal } from "../components/SubscriptionProposal";
 import { PageHeader } from "../components/PageHeader";
@@ -161,6 +162,7 @@ export function InsightsPage() {
   const subscriptions = useProposal(walletId, "subscriptions");
   const savings = useProposal(walletId, "savings");
   const goals = useProposal(walletId, "goals");
+  const rules = useProposal(walletId, "rules");
   const on = aiReportsOn(settings.data) && !settings.data?.walletsOff.includes(walletId);
   const reports = useQuery({
     queryKey: aiReportsKey(walletId),
@@ -222,8 +224,8 @@ export function InsightsPage() {
     />
   );
 
-  // The proposals waiting (#698, #699), shown with reports off too.
-  const proposals = (proposal || subscriptions || savings || goals) && (
+  // The proposals waiting (#698, #699, #705), shown with reports off too.
+  const proposals = (proposal || subscriptions || savings || goals || rules) && (
     <Stack gap="xs">
       <Text fw={650} fz="sm">
         {t("insights.proposals")}
@@ -232,6 +234,7 @@ export function InsightsPage() {
       {subscriptions && <SubscriptionProposal walletId={walletId} proposal={subscriptions} />}
       {savings && <SavingsProposal walletId={walletId} proposal={savings} />}
       {goals && <GoalProposal walletId={walletId} proposal={goals} />}
+      {rules && <RuleProposal walletId={walletId} proposal={rules} />}
     </Stack>
   );
 

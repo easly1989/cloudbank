@@ -2055,6 +2055,10 @@
       "unusual": {
         "name": "Opérations inhabituelles",
         "sends": "Envoie, pour chaque dépense signalée, le tiers, la date et le montant, avec le montant habituel du tiers. Jamais la note."
+      },
+      "rules": {
+        "name": "Propositions de règles",
+        "sends": "Envoie, pour chaque tiers proposé, son nom, sa catégorie et combien de ses opérations l’ont. Jamais de montant, de note ni de date."
       }
     },
     "wallets": "Sur quels classeurs",
@@ -3394,6 +3398,24 @@
         "pace": "Par mois récemment",
         "eta": "Atteint en",
         "note": "CloudBank a calculé les chiffres : le rythme de chaque objectif sur les 3 derniers mois complets, la part mensuelle que demande sa date et ce que le classeur a gardé par mois sur cette période ({{kept}}). Le modèle n’a écrit que le texte. Modèle : {{model}}."
+      }
+    },
+    "rule": {
+      "title_one": "{{count}} règle à ajouter",
+      "title_other": "{{count}} règles à ajouter",
+      "basis": "Sur les 12 derniers mois · faite le {{date}}",
+      "reason": "{{category}} pour {{hits}} opérations sur {{total}}",
+      "without_one": "{{count}} sans catégorie",
+      "without_other": "{{count}} sans catégorie",
+      "create": "Créer la règle",
+      "createLabel": "Créer une règle : le tiers est {{name}}, catégorie {{category}}",
+      "why": {
+        "payee": "Tiers",
+        "category": "Catégorie",
+        "hits": "Avec elle",
+        "total": "Opérations",
+        "without": "Sans catégorie",
+        "note": "CloudBank a compté, tiers par tiers, les opérations des 12 derniers mois qu’aucune règle ne remplit encore. Le modèle n’a écrit que le texte. Modèle : {{model}}."
       }
     }
   },

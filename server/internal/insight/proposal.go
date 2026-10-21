@@ -31,6 +31,7 @@ const (
 	KindSubscriptions = "subscriptions"
 	KindSavings       = "savings"
 	KindGoals         = "goals"
+	KindRules         = "rules"
 )
 
 // proposalKind is what makes one kind of proposal: the AI job it is, its
@@ -60,6 +61,10 @@ var proposalKinds = map[string]proposalKind{
 	KindGoals: {
 		feature: ai.FeatureGoals, rows: byWallet((*Service).goalRows), system: goalSystem,
 		prompt: ProposalBasis.goalPrompt, notes: goalNotes, url: "/goals",
+	},
+	KindRules: {
+		feature: ai.FeatureRules, rows: byWallet((*Service).ruleRows), system: rulesSystem,
+		prompt: ProposalBasis.rulesPrompt, notes: rulesNotes, url: "/assignments",
 	},
 }
 
@@ -124,12 +129,21 @@ type ProposalRow struct {
 	Pace    int64  `json:"pace,omitempty"`
 	Date    string `json:"date,omitempty"`
 	NewDate string `json:"newDate,omitempty"`
+	// A rule (#705): the payee, its category's path, and its transactions no
+	// rule decides, of which Hits have that category and Without none.
+	PayeeID  int64  `json:"payeeId,omitempty"`
+	Category string `json:"category,omitempty"`
+	Total    int    `json:"total,omitempty"`
+	Without  int    `json:"without,omitempty"`
 }
 
-// key is what a row is about: its schedule, its goal, or its category. Saving it marks
-// it applied by this key, and an ignored proposal is compared by it.
+// key is what a row is about: its schedule, its goal, its payee, or its
+// category. Saving it marks it applied by this key, and an ignored proposal is
+// compared by it.
 func (r ProposalRow) key() int64 {
 	switch {
+	case r.PayeeID != 0:
+		return r.PayeeID
 	case r.ScheduleID != 0:
 		return r.ScheduleID
 	case r.GoalID != 0:
@@ -139,8 +153,11 @@ func (r ProposalRow) key() int64 {
 }
 
 // figure is the amount an ignored proposal's row is compared by: the one
-// proposed, or what a schedule not raised costs a year.
+// proposed, what a schedule not raised costs a year, or a payee's transactions.
 func (r ProposalRow) figure() int64 {
+	if r.PayeeID != 0 {
+		return int64(r.Total)
+	}
 	if r.ScheduleID != 0 && r.Reason != reasonRaised {
 		return r.Yearly
 	}
@@ -369,16 +386,23 @@ func (s *Service) baseCurrency(ctx context.Context, walletID int64) (Currency, i
 }
 
 // changedFrom tells whether rows differ enough from an ignored proposal's to
-// be proposed again: a row it did not have, or an amount moved by more than a
-// fifth.
+// be proposed again: a row it did not have, an amount moved by more than a
+// fifth, or a payee with another category or half as many transactions more.
 func changedFrom(rows, ignored []ProposalRow) bool {
-	was := map[int64]int64{}
+	was := map[int64]ProposalRow{}
 	for _, r := range ignored {
-		was[r.key()] = r.figure()
+		was[r.key()] = r
 	}
 	for _, r := range rows {
 		old, ok := was[r.key()]
-		if !ok || float64(abs(r.figure()-old)) > changedShare*float64(old) {
+		switch {
+		case !ok:
+			return true
+		case r.PayeeID != 0:
+			if r.CategoryID != old.CategoryID || float64(r.figure()-old.figure()) >= rulesGrown*float64(old.figure()) {
+				return true
+			}
+		case float64(abs(r.figure()-old.figure())) > changedShare*float64(old.figure()):
 			return true
 		}
 	}

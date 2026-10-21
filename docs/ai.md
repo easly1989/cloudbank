@@ -39,6 +39,7 @@ thumbs say whether it helped.
 | **Subscription proposals**: schedules that cost more, look doubled, or no longer appear in the bank | [Schedules](pages.md#schedules) |
 | **Savings proposals**: categories grown lately | [AI insights](pages.md#ai-insights) and the overview |
 | **Goal proposals**: goals behind, or with no date | [Goals](pages.md#goals) |
+| **Rule proposals**: payees you always file under one category, a rule each | [Rules](pages.md#rules) |
 | **Unusual transactions**: a payee far over its usual amount, a large new payee, a charge taken twice | [Review](pages.md#review), the overview and the bell |
 | **Category suggestion** | The entry sheet |
 | **Quick entry**: a sentence, or [text shared](pages.md#adding-from-your-phone) from your phone, turned into the fields | The entry sheet |
@@ -56,6 +57,8 @@ Each job's switch says what it sends:
   month's bills. Never the memos.
 - **Budget, subscription, savings and goal proposals**: for each line proposed,
   its name and the figures behind the proposal. Never the transactions.
+- **Rule proposals**: for each payee proposed, its name, its category and how
+  many of its transactions have it. Never an amount, a memo or a date.
 - **Unusual transactions**: for each expense flagged, the payee, the date and the
   amount, with the payee's usual amount. Never the memo.
 - **Category suggestion**: the payee and the amount, with your categories.
