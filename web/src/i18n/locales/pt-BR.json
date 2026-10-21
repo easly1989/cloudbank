@@ -2078,6 +2078,10 @@
       "payees": {
         "name": "Limpeza de beneficiários",
         "sends": "Envia só os nomes dos beneficiários. Nunca valores, notas ou datas."
+      },
+      "import": {
+        "name": "Colunas CSV",
+        "sends": "Envia os nomes das colunas de um CSV desconhecido e a forma de três linhas: datas e números como escritos, nunca as palavras."
       }
     },
     "wallets": "Em quais carteiras",
@@ -2658,7 +2662,7 @@
     "next": "Próximo",
     "back": "Voltar",
     "preview": "Prévia",
-    "mapHint": "Associe cada campo do lançamento a uma coluna do seu arquivo. A data é obrigatória, mais o Valor ou Débito/Crédito.",
+    "mapHint": "Cada coluna do seu arquivo, o primeiro valor e o campo que ela preenche. A data é obrigatória, mais o Valor, ou Débito e Crédito quando saídas e entradas têm uma coluna cada.",
     "fields": {
       "date": "Data",
       "amount": "Valor",
@@ -2671,7 +2675,6 @@
       "paymode": "Forma de pagamento",
       "tags": "Tags"
     },
-    "debitCreditHint": "Use no lugar do Valor quando o seu arquivo tem colunas separadas para saídas e entradas.",
     "invertAmount": "Inverter o sinal",
     "invertAmountHint": "Ative se o seu banco escreve as despesas como positivas e as receitas como negativas.",
     "applyRules": "Aplicar as regras de importação",
@@ -2691,7 +2694,32 @@
     "updatedCount_one": "{{count}} lançamento pendente conciliado.",
     "updatedCount_other": "{{count}} lançamentos pendentes conciliados.",
     "reviewImported": "Revisar e classificar",
-    "importAnother": "Importar outro arquivo"
+    "importAnother": "Importar outro arquivo",
+    "fieldFor": "Campo para {{column}}",
+    "notImported": "Não importada",
+    "remember": "Lembrar este mapeamento para arquivos com estas colunas",
+    "remembered": "Mapeamento lembrado desde {{date}} para arquivos com estas colunas.",
+    "forget": "Esquecer",
+    "forgotten": "Mapeamento esquecido",
+    "ai": {
+      "label": "Proposta da IA",
+      "basis": "Nomes das colunas e forma dos valores · {{date}}",
+      "title": "{{fields}} reconhecidos",
+      "noneMatched": "Nenhuma coluna reconhecida",
+      "missing": "Nenhuma coluna de data ou de valor encontrada: escolha abaixo.",
+      "note": "Só os nomes das colunas e a forma de três linhas foram para o seu provedor de IA, nunca o texto. Confira os campos e depois a prévia.",
+      "asking": "Perguntando à IA como ler as colunas…",
+      "mark": "Proposto pela IA",
+      "decimalComma": "Valores com vírgula decimal.",
+      "decimalPoint": "Valores com ponto decimal.",
+      "signInverted": "Despesas escritas como positivas: o sinal é invertido.",
+      "signKept": "Despesas já negativas.",
+      "dates": {
+        "iso": "Datas lidas como ano-mês-dia.",
+        "dmy": "Datas lidas como dia-mês-ano.",
+        "mdy": "Datas lidas como mês-dia-ano."
+      }
+    }
   },
   "exportCsv": {
     "description": "Baixe os lançamentos de uma conta como CSV no dialeto do HomeBank (que pode ser importado de novo no HomeBank).",

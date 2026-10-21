@@ -2078,6 +2078,10 @@
       "payees": {
         "name": "Limpieza de beneficiarios",
         "sends": "Envía solo los nombres de los beneficiarios. Nunca importes, notas ni fechas."
+      },
+      "import": {
+        "name": "Columnas CSV",
+        "sends": "Envía los nombres de columna de un CSV desconocido y la forma de tres filas: fechas y números tal como están, nunca las palabras."
       }
     },
     "wallets": "En qué carteras",
@@ -2658,7 +2662,7 @@
     "next": "Siguiente",
     "back": "Atrás",
     "preview": "Vista previa",
-    "mapHint": "Asocia cada campo del movimiento a una columna de tu archivo. La fecha es obligatoria, y también el importe o bien débito y crédito.",
+    "mapHint": "Cada columna de tu archivo, su primer valor y el campo que rellena. La fecha es obligatoria, y también el importe, o débito y crédito cuando salidas y entradas tienen una columna cada una.",
     "fields": {
       "date": "Fecha",
       "amount": "Importe",
@@ -2671,7 +2675,6 @@
       "paymode": "Forma de pago",
       "tags": "Etiquetas"
     },
-    "debitCreditHint": "Úsalo en lugar del importe cuando tu archivo tenga columnas separadas para salidas y entradas.",
     "invertAmount": "Invertir el signo",
     "invertAmountHint": "Actívalo si tu banco escribe los gastos en positivo y los ingresos en negativo.",
     "applyRules": "Aplicar las reglas de importación",
@@ -2691,7 +2694,32 @@
     "updatedCount_one": "{{count}} movimiento pendiente conciliado.",
     "updatedCount_other": "{{count}} movimientos pendientes conciliados.",
     "reviewImported": "Revisar y clasificar",
-    "importAnother": "Importar otro archivo"
+    "importAnother": "Importar otro archivo",
+    "fieldFor": "Campo para {{column}}",
+    "notImported": "No se importa",
+    "remember": "Recordar este mapeo para archivos con estas columnas",
+    "remembered": "Mapeo recordado desde el {{date}} para archivos con estas columnas.",
+    "forget": "Olvidar",
+    "forgotten": "Mapeo olvidado",
+    "ai": {
+      "label": "Propuesta de la IA",
+      "basis": "Nombres de columna y forma de los valores · {{date}}",
+      "title": "{{fields}} reconocidos",
+      "noneMatched": "Ninguna columna reconocida",
+      "missing": "No se encontró una columna de fecha o de importe: elígelas abajo.",
+      "note": "A tu proveedor de IA solo fueron los nombres de las columnas y la forma de tres filas, nunca su texto. Revisa los campos y luego la vista previa.",
+      "asking": "Preguntando a la IA cómo leer las columnas…",
+      "mark": "Propuesto por la IA",
+      "decimalComma": "Importes con coma decimal.",
+      "decimalPoint": "Importes con punto decimal.",
+      "signInverted": "Gastos escritos en positivo: se invierte el signo.",
+      "signKept": "Gastos ya negativos.",
+      "dates": {
+        "iso": "Fechas leídas como año-mes-día.",
+        "dmy": "Fechas leídas como día-mes-año.",
+        "mdy": "Fechas leídas como mes-día-año."
+      }
+    }
   },
   "exportCsv": {
     "description": "Descarga los movimientos de una cuenta en un CSV con el formato de HomeBank (se puede volver a importar en HomeBank).",

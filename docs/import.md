@@ -63,8 +63,10 @@ that needs **MM-DD-YYYY**. The separator between day, month and year can be `/`,
 
 ### Mapping the columns
 
-Each transaction field is a dropdown listing your file's columns: their names
-when the file has a header, **Column 1**, **Column 2**, … when it does not.
+Each column of your file is a row: its name (or **Column 1**, **Column 2**, …
+when the file has no header), its first value, and a dropdown with the field it
+fills, **Not imported** until you pick one. A field fills one column: picking it
+on another row moves it there.
 
 | Field | Required | Notes |
 | --- | --- | --- |
@@ -85,6 +87,18 @@ cell, or parentheses around it, makes it negative.
 **Invert sign** flips every amount, for the banks that write expenses as positive
 numbers and income as negative ones.
 
+**Remember this mapping** (ticked unless you untick it) keeps the mapping, the
+date format, the decimal and the sign for the next file with the same column
+names in the same order: that file's columns come mapped, with **Forget** to
+drop what was kept. A file without a header row is never remembered.
+
+**With the AI.** With **CSV columns** switched on in Settings → AI, a file whose
+columns nothing remembers comes mapped by the AI, which also reads the date
+format, the decimal and the sign; a ✦ marks each field it proposed. It is sent
+the column names and the shape of three rows: dates and numbers as written, a
+cell of words as "text, 3 words", never the words themselves. Check the fields
+before **Preview**. See [the AI guide](ai.md).
+
 ### An example
 
 A typical European bank export, with separate columns for money out and in:
@@ -97,8 +111,8 @@ Data operazione;Descrizione;Uscite;Entrate
 
 - **Source:** Generic CSV, delimiter `;`, decimal `1234,56`, first row is a
   header, date format **DD-MM-YYYY** (or Auto-detect).
-- **Map columns:** Date → *Data operazione*, Memo → *Descrizione*,
-  Debit (out) → *Uscite*, Credit (in) → *Entrate*.
+- **Map columns:** *Data operazione* → Date, *Descrizione* → Memo,
+  *Uscite* → Debit (out), *Entrate* → Credit (in).
 - **Review:** two rows, −3.50 on 1 September and +1,850.00 on 2 September.
 
 ## HomeBank CSV
