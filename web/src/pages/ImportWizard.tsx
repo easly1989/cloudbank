@@ -6,6 +6,7 @@ import {
   Checkbox,
   FileInput,
   Group,
+  Loader,
   SegmentedControl,
   Select,
   Stack,
@@ -16,6 +17,8 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 import { IconAlertTriangle, IconFileImport } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -23,8 +26,10 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import {
-  CSV_FIELDS,
+  AI_SETTINGS_KEY,
   commitImport,
+  forgetCSVMapping,
+  getAISettings,
   listAccounts,
   listCategories,
   listImportPlugins,
@@ -34,14 +39,22 @@ import {
   previewOFX,
   previewPlugin,
   previewQIF,
+  proposeCSVMapping,
+  rememberCSVMapping,
   type Account,
   type CSVDateFormat,
+  type CSVMapping,
   type CSVPreview,
+  type CSVProposal,
   type CSVPreviewRow,
 } from "../api/client";
+import { useAskPastLimit } from "../components/aiLimit";
+import { aiFeatureOn } from "../components/proposalData";
 import { formatMinor } from "../money";
+import { notifyError } from "../notifyError";
 import { useWallet } from "../wallet/WalletProvider";
 import { ErrorMessage } from "../components/ErrorMessage";
+import { CsvProposalBox, ImportColumns, RememberedBar } from "./ImportColumns";
 
 type Format = "homebank" | "generic" | "qif" | "ofx" | "camt" | "plugin";
 type Phase = "source" | "map" | "review" | "done";
@@ -56,14 +69,11 @@ function readAsBase64(file: File): Promise<string> {
   });
 }
 
-// Only the date is strictly required; the amount may be a single signed column
-// or separate debit/credit columns (validated separately).
-const REQUIRED_FIELDS = ["date"];
-
 export function ImportWizard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentWallet } = useWallet();
   const navigate = useNavigate();
+  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
   const walletId = currentWallet?.id ?? 0;
 
   const accountsQuery = useQuery({
@@ -114,6 +124,12 @@ export function ImportWizard() {
   const [invertAmount, setInvertAmount] = useState(false);
   const [columns, setColumns] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Record<string, number>>({});
+  // The map step's first row, the AI's reading of the file and the mapping the
+  // wallet remembers for its columns (#709).
+  const [sample, setSample] = useState<string[]>([]);
+  const [proposed, setProposed] = useState<(CSVProposal & { madeOn: string }) | null>(null);
+  const [remembered, setRemembered] = useState<CSVMapping | null>(null);
+  const [remember, setRemember] = useState(true);
   const [rows, setRows] = useState<CSVPreviewRow[]>([]);
   const [applyRules, setApplyRules] = useState(false);
   const [created, setCreated] = useState(0);
@@ -121,6 +137,38 @@ export function ImportWizard() {
   const [error, setError] = useState<unknown>(null);
 
   const showMapping = format === "generic";
+  const aiSettings = useQuery({ queryKey: AI_SETTINGS_KEY, queryFn: getAISettings });
+  const aiOn = aiFeatureOn(aiSettings.data, walletId, "import");
+  const askPastLimit = useAskPastLimit();
+  const read = (m: CSVMapping | CSVProposal) => {
+    setMapping(m.mapping);
+    if (m.dateFormat) setDateFormat(m.dateFormat);
+    setDecimalChar(m.decimalChar);
+    setInvertAmount(m.invertAmount);
+  };
+  const propose = useMutation({
+    mutationFn: () =>
+      askPastLimit((ok) => proposeCSVMapping(walletId, { content, delimiter, hasHeader }, ok)),
+    onSuccess: (res) => {
+      if (!res) return;
+      read(res);
+      setProposed({
+        ...res,
+        madeOn: new Intl.DateTimeFormat(i18n.language, { day: "numeric", month: "long" }).format(
+          new Date(),
+        ),
+      });
+    },
+    onError: notifyError,
+  });
+  const forget = useMutation({
+    mutationFn: (id: number) => forgetCSVMapping(walletId, id),
+    onSuccess: () => {
+      setRemembered(null);
+      notifications.show({ message: t("importCsv.forgotten"), autoClose: 1600 });
+    },
+    onError: notifyError,
+  });
 
   const account = useMemo<Account | undefined>(
     () => accounts.find((a) => String(a.id) === accountId),
@@ -202,6 +250,14 @@ export function ImportWizard() {
       return commitImport(walletId, Number(accountId), keep);
     },
     onSuccess: (res) => {
+      // The mapping that worked, for the next file with these columns.
+      if (showMapping && hasHeader && remember)
+        rememberCSVMapping(walletId, columns, {
+          mapping,
+          dateFormat,
+          decimalChar,
+          invertAmount,
+        }).catch(notifyError);
       setCreated(res.created);
       setUpdated(res.updated ?? 0);
       setPhase("done");
@@ -229,6 +285,14 @@ export function ImportWizard() {
       // First pass: detect columns to drive the mapping step.
       const res = await preview.mutateAsync({ withMapping: false, rules: applyRules });
       setColumns(res.columns);
+      setSample(res.sample ?? []);
+      setProposed(null);
+      setRemembered(res.remembered ?? null);
+      if (res.remembered) read(res.remembered);
+      else {
+        setMapping({});
+        if (aiOn) propose.mutate();
+      }
       setPhase("map");
       return;
     }
@@ -270,6 +334,10 @@ export function ImportWizard() {
     setRows([]);
     setColumns([]);
     setMapping({});
+    setSample([]);
+    setProposed(null);
+    setRemembered(null);
+    setRemember(true);
     setCreated(0);
     setError(null);
   };
@@ -405,38 +473,47 @@ export function ImportWizard() {
       {phase === "map" && (
         <Card withBorder>
           <Stack>
+            {remembered ? (
+              <RememberedBar
+                mapping={remembered}
+                onForget={() => remembered.id && forget.mutate(remembered.id)}
+              />
+            ) : proposed ? (
+              <CsvProposalBox proposal={proposed} madeOn={proposed.madeOn} />
+            ) : (
+              propose.isPending && (
+                <Group gap="xs">
+                  <Loader size="xs" />
+                  <Text size="sm" c="dimmed">
+                    {t("importCsv.ai.asking")}
+                  </Text>
+                </Group>
+              )
+            )}
             <Text size="sm" c="dimmed">
               {t("importCsv.mapHint")}
             </Text>
-            {CSV_FIELDS.map((field) => (
-              <Select
-                key={field}
-                label={t(`importCsv.fields.${field}`)}
-                description={
-                  field === "debit" || field === "credit"
-                    ? t("importCsv.debitCreditHint")
-                    : undefined
-                }
-                required={REQUIRED_FIELDS.includes(field)}
-                clearable
-                data={columns.map((c, i) => ({ value: String(i), label: c }))}
-                value={mapping[field] !== undefined ? String(mapping[field]) : null}
-                onChange={(v) =>
-                  setMapping((m) => {
-                    const next = { ...m };
-                    if (v === null) delete next[field];
-                    else next[field] = Number(v);
-                    return next;
-                  })
-                }
-              />
-            ))}
+            <ImportColumns
+              columns={columns}
+              sample={sample}
+              mapping={mapping}
+              proposed={proposed?.mapping}
+              phone={phone}
+              onChange={setMapping}
+            />
             <Switch
               label={t("importCsv.invertAmount")}
               description={t("importCsv.invertAmountHint")}
               checked={invertAmount}
               onChange={(e) => setInvertAmount(e.currentTarget.checked)}
             />
+            {hasHeader && (
+              <Checkbox
+                label={t("importCsv.remember")}
+                checked={remember}
+                onChange={(e) => setRemember(e.currentTarget.checked)}
+              />
+            )}
             <Group justify="space-between">
               <Button variant="default" onClick={() => setPhase("source")}>
                 {t("importCsv.back")}

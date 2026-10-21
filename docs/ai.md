@@ -41,6 +41,7 @@ thumbs say whether it helped.
 | **Goal proposals**: goals behind, or with no date | [Goals](pages.md#goals) |
 | **Rule proposals**: payees you always file under one category, a rule each | [Rules](pages.md#rules) |
 | **Payee cleanup**: raw bank names (AMZN MKTP IT*2K3) grouped under one clean name, with a rule for the next imports | [Payees](pages.md#categories-payees-and-currencies) |
+| **CSV columns**: an unknown bank CSV's columns, date format, decimal and sign | The import's [Map columns](import.md#mapping-the-columns) step |
 | **Unusual transactions**: a payee far over its usual amount, a large new payee, a charge taken twice | [Review](pages.md#review), the overview and the bell |
 | **Category suggestion**: one transaction's category, or a payee and a category for many at once | The entry sheet, and [Review](pages.md#review) |
 | **Quick entry**: a sentence, or [text shared](pages.md#adding-from-your-phone) from your phone, turned into the fields | The entry sheet |
@@ -61,6 +62,8 @@ Each job's switch says what it sends:
 - **Rule proposals**: for each payee proposed, its name, its category and how
   many of its transactions have it. Never an amount, a memo or a date.
 - **Payee cleanup**: the payee names only. Never an amount, a memo or a date.
+- **CSV columns**: the column names and three rows' shapes: dates and numbers
+  as written, a cell of words as "text, 3 words". Never the words.
 - **Unusual transactions**: for each expense flagged, the payee, the date and the
   amount, with the payee's usual amount. Never the memo.
 - **Category suggestion**: the payee and the amount, with your categories; in

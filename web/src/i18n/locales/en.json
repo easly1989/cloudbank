@@ -2078,6 +2078,10 @@
       "payees": {
         "name": "Payee cleanup",
         "sends": "Sends the payee names only. Never an amount, a memo or a date."
+      },
+      "import": {
+        "name": "CSV columns",
+        "sends": "Sends the column names of an unknown CSV and the shape of three rows: dates and numbers as written, never the words."
       }
     },
     "wallets": "On which wallets",
@@ -2658,7 +2662,7 @@
     "next": "Next",
     "back": "Back",
     "preview": "Preview",
-    "mapHint": "Match each transaction field to a column in your file. Date is required, plus either Amount or Debit/Credit.",
+    "mapHint": "Each column of your file, its first value, and the field it fills. Date is required, plus Amount, or Debit and Credit when money out and money in have a column each.",
     "fields": {
       "date": "Date",
       "amount": "Amount",
@@ -2671,7 +2675,6 @@
       "paymode": "Payment mode",
       "tags": "Tags"
     },
-    "debitCreditHint": "Use instead of Amount when your file has separate money-out and money-in columns.",
     "invertAmount": "Invert sign",
     "invertAmountHint": "Turn on if your bank writes expenses as positive and income as negative.",
     "applyRules": "Apply import rules",
@@ -2691,7 +2694,32 @@
     "updatedCount_one": "Reconciled {{count}} pending transaction.",
     "updatedCount_other": "Reconciled {{count}} pending transactions.",
     "reviewImported": "Review & categorise",
-    "importAnother": "Import another file"
+    "importAnother": "Import another file",
+    "fieldFor": "Field for {{column}}",
+    "notImported": "Not imported",
+    "remember": "Remember this mapping for files with these columns",
+    "remembered": "Mapping remembered from {{date}} for files with these columns.",
+    "forget": "Forget",
+    "forgotten": "Mapping forgotten",
+    "ai": {
+      "label": "AI proposal",
+      "basis": "Column names and value shapes · {{date}}",
+      "title": "{{fields}} matched",
+      "noneMatched": "No column matched",
+      "missing": "No date or amount column was found: pick them below.",
+      "note": "Only the column names and the shape of three rows went to your AI provider, never their text. Check the fields, then preview.",
+      "asking": "Asking the AI how to read the columns…",
+      "mark": "Proposed by the AI",
+      "decimalComma": "Amounts with a decimal comma.",
+      "decimalPoint": "Amounts with a decimal point.",
+      "signInverted": "Expenses written as positive: the sign is inverted.",
+      "signKept": "Expenses already negative.",
+      "dates": {
+        "iso": "Dates read as year-month-day.",
+        "dmy": "Dates read as day-month-year.",
+        "mdy": "Dates read as month-day-year."
+      }
+    }
   },
   "exportCsv": {
     "description": "Download an account's transactions as a HomeBank-dialect CSV (re-importable into HomeBank).",

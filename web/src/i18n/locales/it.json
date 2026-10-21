@@ -2078,6 +2078,10 @@
       "payees": {
         "name": "Pulizia dei beneficiari",
         "sends": "Invia solo i nomi dei beneficiari. Mai importi, note o date."
+      },
+      "import": {
+        "name": "Colonne CSV",
+        "sends": "Invia i nomi delle colonne di un CSV sconosciuto e la forma di tre righe: date e numeri come sono scritti, mai le parole."
       }
     },
     "wallets": "Su quali portafogli",
@@ -2658,7 +2662,7 @@
     "next": "Avanti",
     "back": "Indietro",
     "preview": "Anteprima",
-    "mapHint": "Associa ogni campo della transazione a una colonna del file. La data è obbligatoria, più Importo oppure Dare/Avere.",
+    "mapHint": "Ogni colonna del file, il suo primo valore e il campo che riempie. La data è obbligatoria, più l'Importo, oppure Dare e Avere quando uscite ed entrate hanno una colonna ciascuna.",
     "fields": {
       "date": "Data",
       "amount": "Importo",
@@ -2671,7 +2675,6 @@
       "paymode": "Modalità",
       "tags": "Tag"
     },
-    "debitCreditHint": "Usa al posto di Importo quando il file ha colonne separate per uscite ed entrate.",
     "invertAmount": "Inverti segno",
     "invertAmountHint": "Attiva se la banca scrive le spese come positive e le entrate come negative.",
     "applyRules": "Applica regole di importazione",
@@ -2691,7 +2694,32 @@
     "updatedCount_one": "Riconciliata {{count}} transazione in sospeso.",
     "updatedCount_other": "Riconciliate {{count}} transazioni in sospeso.",
     "reviewImported": "Rivedi e categorizza",
-    "importAnother": "Importa un altro file"
+    "importAnother": "Importa un altro file",
+    "fieldFor": "Campo per {{column}}",
+    "notImported": "Non importata",
+    "remember": "Ricorda questa mappatura per i file con queste colonne",
+    "remembered": "Mappatura ricordata dal {{date}} per i file con queste colonne.",
+    "forget": "Dimentica",
+    "forgotten": "Mappatura dimenticata",
+    "ai": {
+      "label": "Proposta dell'AI",
+      "basis": "Nomi delle colonne e forma dei valori · {{date}}",
+      "title": "{{fields}} riconosciuti",
+      "noneMatched": "Nessuna colonna riconosciuta",
+      "missing": "Non è stata trovata una colonna per la data o l'importo: sceglile qui sotto.",
+      "note": "Al tuo fornitore AI sono andati solo i nomi delle colonne e la forma di tre righe, mai il loro testo. Controlla i campi, poi l'anteprima.",
+      "asking": "Chiedo all'AI come leggere le colonne…",
+      "mark": "Proposto dall'AI",
+      "decimalComma": "Importi con la virgola decimale.",
+      "decimalPoint": "Importi con il punto decimale.",
+      "signInverted": "Uscite scritte in positivo: il segno viene invertito.",
+      "signKept": "Uscite già negative.",
+      "dates": {
+        "iso": "Date lette come anno-mese-giorno.",
+        "dmy": "Date lette come giorno-mese-anno.",
+        "mdy": "Date lette come mese-giorno-anno."
+      }
+    }
   },
   "exportCsv": {
     "description": "Scarica le transazioni di un conto come CSV in formato HomeBank (re-importabile in HomeBank).",

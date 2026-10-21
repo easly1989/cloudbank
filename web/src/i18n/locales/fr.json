@@ -2078,6 +2078,10 @@
       "payees": {
         "name": "Nettoyage des tiers",
         "sends": "Envoie uniquement les noms des tiers. Jamais de montant, de note ni de date."
+      },
+      "import": {
+        "name": "Colonnes CSV",
+        "sends": "Envoie les noms des colonnes d'un CSV inconnu et la forme de trois lignes : dates et nombres tels qu'écrits, jamais les mots."
       }
     },
     "wallets": "Sur quels classeurs",
@@ -2658,7 +2662,7 @@
     "next": "Suivant",
     "back": "Retour",
     "preview": "Aperçu",
-    "mapHint": "Associez chaque champ de l’opération à une colonne de votre fichier. La date est obligatoire, ainsi que le montant ou bien débit et crédit.",
+    "mapHint": "Chaque colonne de votre fichier, sa première valeur et le champ qu'elle remplit. La date est obligatoire, ainsi que le montant, ou débit et crédit quand sorties et entrées ont chacune leur colonne.",
     "fields": {
       "date": "Date",
       "amount": "Montant",
@@ -2671,7 +2675,6 @@
       "paymode": "Moyen de paiement",
       "tags": "Étiquettes"
     },
-    "debitCreditHint": "À utiliser à la place du montant quand votre fichier a des colonnes séparées pour les sorties et les entrées.",
     "invertAmount": "Inverser le signe",
     "invertAmountHint": "Activez si votre banque écrit les dépenses en positif et les revenus en négatif.",
     "applyRules": "Appliquer les règles d’import",
@@ -2691,7 +2694,32 @@
     "updatedCount_one": "{{count}} opération en attente rapprochée.",
     "updatedCount_other": "{{count}} opérations en attente rapprochées.",
     "reviewImported": "Vérifier et classer",
-    "importAnother": "Importer un autre fichier"
+    "importAnother": "Importer un autre fichier",
+    "fieldFor": "Champ pour {{column}}",
+    "notImported": "Non importée",
+    "remember": "Retenir ce mappage pour les fichiers avec ces colonnes",
+    "remembered": "Mappage retenu depuis le {{date}} pour les fichiers avec ces colonnes.",
+    "forget": "Oublier",
+    "forgotten": "Mappage oublié",
+    "ai": {
+      "label": "Proposition de l'IA",
+      "basis": "Noms des colonnes et forme des valeurs · {{date}}",
+      "title": "{{fields}} reconnus",
+      "noneMatched": "Aucune colonne reconnue",
+      "missing": "Aucune colonne de date ou de montant trouvée : choisissez-les ci-dessous.",
+      "note": "Seuls les noms des colonnes et la forme de trois lignes sont partis chez votre fournisseur d'IA, jamais leur texte. Vérifiez les champs, puis l'aperçu.",
+      "asking": "L'IA lit les colonnes…",
+      "mark": "Proposé par l'IA",
+      "decimalComma": "Montants avec une virgule décimale.",
+      "decimalPoint": "Montants avec un point décimal.",
+      "signInverted": "Dépenses écrites en positif : le signe est inversé.",
+      "signKept": "Dépenses déjà négatives.",
+      "dates": {
+        "iso": "Dates lues comme année-mois-jour.",
+        "dmy": "Dates lues comme jour-mois-année.",
+        "mdy": "Dates lues comme mois-jour-année."
+      }
+    }
   },
   "exportCsv": {
     "description": "Téléchargez les opérations d’un compte dans un CSV au format HomeBank (réimportable dans HomeBank).",

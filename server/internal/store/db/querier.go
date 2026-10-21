@@ -92,6 +92,7 @@ type Querier interface {
 	DeleteBankConnection(ctx context.Context, arg DeleteBankConnectionParams) (int64, error)
 	DeleteBankLink(ctx context.Context, arg DeleteBankLinkParams) error
 	DeleteBankSyncRuns(ctx context.Context, connectionID int64) error
+	DeleteCSVMapping(ctx context.Context, arg DeleteCSVMappingParams) (int64, error)
 	DeleteCalendarFeed(ctx context.Context, arg DeleteCalendarFeedParams) error
 	DeleteCategory(ctx context.Context, id int64) error
 	DeleteCategoryBudget(ctx context.Context, arg DeleteCategoryBudgetParams) error
@@ -157,6 +158,7 @@ type Querier interface {
 	GetAttachment(ctx context.Context, id int64) (Attachment, error)
 	GetBankConnection(ctx context.Context, id int64) (BankConnection, error)
 	GetBaseCurrency(ctx context.Context, walletID int64) (Currency, error)
+	GetCSVMapping(ctx context.Context, arg GetCSVMappingParams) (CsvMapping, error)
 	GetCalendarFeed(ctx context.Context, arg GetCalendarFeedParams) (GetCalendarFeedRow, error)
 	GetCategory(ctx context.Context, id int64) (Category, error)
 	GetContribution(ctx context.Context, id int64) (GoalContribution, error)
@@ -582,6 +584,7 @@ type Querier interface {
 	UpdateWalletBaseCurrency(ctx context.Context, arg UpdateWalletBaseCurrencyParams) error
 	UpsertAISettings(ctx context.Context, arg UpsertAISettingsParams) error
 	UpsertBankLink(ctx context.Context, arg UpsertBankLinkParams) error
+	UpsertCSVMapping(ctx context.Context, arg UpsertCSVMappingParams) (CsvMapping, error)
 	// A new token keeps the row's id, so a regenerated address differs only in it.
 	UpsertCalendarFeed(ctx context.Context, arg UpsertCalendarFeedParams) (int64, error)
 	UpsertEBankingConfig(ctx context.Context, arg UpsertEBankingConfigParams) error

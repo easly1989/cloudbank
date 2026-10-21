@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/easly1989/cloudbank/server/internal/ai"
+	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/insight"
 )
 
@@ -62,6 +63,7 @@ func (h *aiHandlers) walletRoutes(r chi.Router) {
 	r.Post("/ai/parse-entry", h.parseEntry)
 	r.Post("/ai/propose-categories", h.proposeCategories)
 	r.Post("/ai/payee-cleanup", h.proposePayeeCleanup)
+	r.Post("/ai/csv-mapping", h.proposeCSVMapping)
 	if h.insights != nil {
 		r.Get("/insights/reports", h.listReports)
 		r.Post("/insights/reports", h.generateReport)
@@ -221,6 +223,33 @@ func (h *aiHandlers) proposePayeeCleanup(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"groups": out})
+}
+
+// proposeCSVMapping asks the model to map a generic CSV's columns (#709): the
+// file's first rows are read here, and only their shapes go out.
+func (h *aiHandlers) proposeCSVMapping(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	u := userFromContext(r.Context())
+	var body struct {
+		Content   string `json:"content"`
+		Delimiter string `json:"delimiter"`
+		HasHeader bool   `json:"hasHeader"`
+		Confirm   bool   `json:"confirm"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	columns, rows, err := importio.Sample(body.Content, body.Delimiter, body.HasHeader, 3)
+	if err != nil || len(columns) == 0 {
+		writeError(w, http.StatusBadRequest, "invalid_file", "could not read the CSV file")
+		return
+	}
+	out, err := h.svc.ProposeCSVMapping(r.Context(), u.ID, wl.ID, columns, rows, body.Confirm)
+	if err != nil {
+		writeAIError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (h *aiHandlers) parseEntry(w http.ResponseWriter, r *http.Request) {

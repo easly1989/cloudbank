@@ -45,9 +45,23 @@ export interface CSVPreviewRow {
   candidates?: { id: number; date: string; memo: string }[];
 }
 
+/** How a generic CSV is read; a wallet remembers it by the header row (#709). */
+export interface CSVMapping {
+  id?: number;
+  mapping: Record<string, number>;
+  dateFormat: CSVDateFormat;
+  decimalChar: string;
+  invertAmount: boolean;
+  createdAt?: string;
+}
+
 export interface CSVPreview {
   columns: string[];
   rows: CSVPreviewRow[];
+  /** A generic file's first data row, before it is mapped. */
+  sample?: string[];
+  /** The wallet's mapping for files with these columns. */
+  remembered?: CSVMapping;
 }
 
 export interface CSVCommitRow {
@@ -104,6 +118,12 @@ export const CSV_FIELDS = [
 
 export const previewCSV = (walletId: number, body: CSVPreviewRequest) =>
   api.post<CSVPreview>(`/api/v1/wallets/${walletId}/import/csv/preview`, body);
+
+export const rememberCSVMapping = (walletId: number, columns: string[], m: CSVMapping) =>
+  api.put<CSVMapping>(`/api/v1/wallets/${walletId}/import/csv-mappings`, { columns, ...m });
+
+export const forgetCSVMapping = (walletId: number, id: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/import/csv-mappings/${id}`);
 
 export const previewQIF = (walletId: number, body: ParsedPreviewRequest) =>
   api.post<CSVPreview>(`/api/v1/wallets/${walletId}/import/qif/preview`, body);

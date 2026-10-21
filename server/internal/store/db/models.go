@@ -108,6 +108,7 @@ type AiSetting struct {
 	UnusualOn       int64
 	RulesOn         int64
 	PayeesOn        int64
+	ImportOn        int64
 }
 
 type AiUnusual struct {
@@ -290,6 +291,17 @@ type Category struct {
 	IsIncome int64
 	NoBudget int64
 	NoReport int64
+}
+
+type CsvMapping struct {
+	ID           int64
+	WalletID     int64
+	Header       string
+	Mapping      string
+	DateFormat   string
+	DecimalChar  string
+	InvertAmount int64
+	CreatedAt    string
 }
 
 type Currency struct {
