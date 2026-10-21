@@ -2082,6 +2082,10 @@
       "import": {
         "name": "Colunas CSV",
         "sends": "Envia os nomes das colunas de um CSV desconhecido e a forma de três linhas: datas e números como escritos, nunca as palavras."
+      },
+      "ask": {
+        "name": "Perguntas sobre seus dados",
+        "sends": "Envia sua pergunta, os nomes das suas categorias, contas, tags e beneficiários mais usados, e os resultados das consultas escolhidas pela IA. Nunca um lançamento ou uma nota."
       }
     },
     "wallets": "Em quais carteiras",
@@ -3394,7 +3398,42 @@
     "year": "Ano {{year}}",
     "reportTitleWeek": "A semana em resumo",
     "reportTitleYear": "{{year}} em resumo",
-    "proposals": "Propostas abertas"
+    "proposals": "Propostas abertas",
+    "ask": {
+      "field": "Pergunte sobre seus dados",
+      "placeholder": "Pergunte sobre seu dinheiro, ex.: quanto gastei em restaurantes neste verão?",
+      "send": "Perguntar",
+      "example1": "Quanto gastei em restaurantes neste verão?",
+      "example2": "Quais foram meus três maiores gastos no mês passado?",
+      "example3": "Como mudou meu gasto com mercado este ano?",
+      "note": "A IA escolhe entre as consultas somente leitura do CloudBank; recebe os nomes das suas categorias, contas e tags, e os resultados que pediu. Cada pergunta conta como duas solicitações.",
+      "label": "Resposta da IA",
+      "basis": "{{wallet}} · {{date}}",
+      "asked": "Você perguntou:",
+      "none": "Nenhuma consulta do CloudBank consegue responder a isso. Tente indicar um período, uma categoria ou uma conta.",
+      "used": "Números usados, calculados pelo CloudBank",
+      "head": {
+        "tool": "Consulta",
+        "filters": "Filtros",
+        "period": "Período",
+        "result": "Resultado"
+      },
+      "tool": {
+        "total": "Total",
+        "by_month": "Por mês",
+        "by_category": "Por categoria",
+        "largest": "Maiores gastos",
+        "balances": "Saldos"
+      },
+      "type": {
+        "expense": "despesas",
+        "income": "receitas"
+      },
+      "count_one": "{{count}} lançamento",
+      "count_other": "{{count}} lançamentos",
+      "noPayee": "(sem beneficiário)",
+      "earlier": "Antes:"
+    }
   },
   "proposal": {
     "label": "Sugestão de IA",

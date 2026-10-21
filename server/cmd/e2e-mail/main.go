@@ -417,6 +417,34 @@ func (f *fake) chat(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	// Ask your data (#704): the first call picks the total of the category the
+	// question names, since 2000; the second reads the total back.
+	if q, ok := strings.CutPrefix(text, "Question: "); ok {
+		content := `{"tools":[]}`
+		if _, res, ok := strings.Cut(q, "\nResults:\n1. "); ok {
+			_, total, _ := strings.Cut(res, ": ")
+			total, _, _ = strings.Cut(total, " over")
+			content = "That comes to " + strings.TrimPrefix(total, "-") + "."
+		} else if _, cats, ok := strings.Cut(q, "\nCategories: "); ok {
+			question, _, _ := strings.Cut(q, "\n")
+			_, today, _ := strings.Cut(q, "\nToday: ")
+			today, _, _ = strings.Cut(today, "\n")
+			cats, _, _ = strings.Cut(cats, "\n")
+			for _, c := range strings.Split(cats, ", ") {
+				if c != "" && strings.Contains(strings.ToLower(question), strings.ToLower(c)) {
+					pick, _ := json.Marshal(map[string]any{"tools": []map[string]string{
+						{"tool": "total", "from": "2000-01-01", "to": today, "category": c, "type": "expense"},
+					}})
+					content = string(pick)
+					break
+				}
+			}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"choices": []map[string]any{{"message": map[string]string{"role": "assistant", "content": content}}},
+		})
+		return
+	}
 	// Review's bulk categorisation (#706): every numbered row is Sport.
 	if rows, ok := strings.CutPrefix(text, "Transactions:\n"); ok {
 		var lines []string

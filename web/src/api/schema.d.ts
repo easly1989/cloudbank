@@ -780,6 +780,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/insights/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer a question about this wallet's numbers
+         * @description Two calls to the model: the first picks up to three of CloudBank's read-only queries from the question and the wallet's names, the second answers from their results. Nothing is stored. An empty answer means no query fitted and the second call was not made. 400 ai_disabled when the AI, its "ask" switch or this wallet are off; 400 bad_question for an empty question or one over 300 characters.
+         */
+        post: operations["askAI"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/insights/reports/{reportId}/feedback": {
         parameters: {
             query?: never;
@@ -4066,6 +4088,8 @@ export interface components {
             payees: boolean;
             /** @description CSV column mapping: sends the column names and the shape of three rows; dates and numbers as written, words never */
             import: boolean;
+            /** @description ask your data: sends the question, the category, account and tag names, the busiest payees, and the results of the queries picked */
+            ask: boolean;
         };
         /** @description The reports that come by themselves besides the monthly one, which comes whenever reports are on. */
         AISchedule: {
@@ -4202,6 +4226,47 @@ export interface components {
             feedback: -1 | 0 | 1;
             /** @description RFC3339 UTC */
             createdAt: string;
+        };
+        /** @description One line of a query's result, its amount signed in the base currency's minor units. */
+        AIAskItem: {
+            /** @description a month (YYYY-MM), a category, a payee or an account */
+            label: string;
+            /** @description YYYY-MM-DD, for a largest expense */
+            date?: string;
+            /** Format: int64 */
+            amount: number;
+        };
+        /** @description A query CloudBank ran for the answer, its filters by name, and what it returned. */
+        AIAskUsed: {
+            /** @enum {string} */
+            tool: "total" | "by_month" | "by_category" | "largest" | "balances";
+            category?: string;
+            payee?: string;
+            account?: string;
+            tag?: string;
+            /** @enum {string} */
+            type?: "expense" | "income";
+            from?: string;
+            to?: string;
+            /** @description the day of the balances */
+            date?: string;
+            /**
+             * Format: int64
+             * @description the sum (total, by_month, by_category, balances)
+             */
+            total: number;
+            /**
+             * Format: int64
+             * @description how many transactions (total)
+             */
+            count: number;
+            items: components["schemas"]["AIAskItem"][];
+        };
+        AIAskAnswer: {
+            /** @description empty when no query could answer */
+            answer: string;
+            used: components["schemas"]["AIAskUsed"][];
+            currency: components["schemas"]["AIReportCurrency"];
         };
         /** @description One row, in the base currency's minor units, as positive amounts: a category's proposed monthly budget, or a schedule to look at. The budget fields are zero on a subscription row. */
         AIProposalRow: {
@@ -7942,6 +8007,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AIReport"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description This month's limit is reached (ai_limit); ask the user, then send confirm. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The AI provider request failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    askAI: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    question: string;
+                    /** @description the user's yes to calls past this month's limit */
+                    confirm?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description The answer. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIAskAnswer"];
                 };
             };
             400: components["responses"]["BadRequest"];

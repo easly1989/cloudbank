@@ -68,6 +68,7 @@ func (h *aiHandlers) walletRoutes(r chi.Router) {
 		r.Get("/insights/reports", h.listReports)
 		r.Post("/insights/reports", h.generateReport)
 		r.Put("/insights/reports/{reportId}/feedback", h.reportFeedback)
+		r.Post("/insights/ask", h.ask)
 		r.Get("/insights/proposals", h.listProposals)
 		r.Post("/insights/proposals/{proposalId}/actions", h.proposalAction)
 		r.Put("/insights/proposals/{proposalId}/feedback", h.proposalFeedback)
@@ -304,6 +305,27 @@ func (h *aiHandlers) generateReport(w http.ResponseWriter, r *http.Request) {
 		writeAIError(w, err)
 	default:
 		writeJSON(w, http.StatusCreated, rep)
+	}
+}
+
+func (h *aiHandlers) ask(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	u := userFromContext(r.Context())
+	var body struct {
+		Question string `json:"question"`
+		Confirm  bool   `json:"confirm"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	ans, err := h.insights.Ask(r.Context(), u.ID, wl.ID, body.Question, body.Confirm)
+	switch {
+	case errors.Is(err, insight.ErrBadQuestion):
+		writeError(w, http.StatusBadRequest, "bad_question", "ask a question of up to 300 characters")
+	case err != nil:
+		writeAIError(w, err)
+	default:
+		writeJSON(w, http.StatusOK, ans)
 	}
 }
 
