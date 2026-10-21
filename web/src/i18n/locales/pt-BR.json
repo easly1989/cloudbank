@@ -2074,6 +2074,10 @@
       "rules": {
         "name": "Propostas de regras",
         "sends": "Envia, para cada beneficiário proposto, o nome, a categoria e quantos lançamentos dele a têm. Nunca valores, notas ou datas."
+      },
+      "payees": {
+        "name": "Limpeza de beneficiários",
+        "sends": "Envia só os nomes dos beneficiários. Nunca valores, notas ou datas."
       }
     },
     "wallets": "Em quais carteiras",
@@ -2386,6 +2390,39 @@
       "usage_other": "{{count}} lançamentos, o último em {{date}}",
       "seeReports": "Ver nos relatórios",
       "usePayment": "Usar"
+    },
+    "cleanup": {
+      "button": "Limpar nomes",
+      "label": "Proposta da IA",
+      "basis": "Só os nomes dos beneficiários · {{date}}",
+      "title": "Nomes limpos para {{names}}, em {{groups}}",
+      "note": "Só os nomes dos beneficiários foram para o seu provedor de IA. Nada muda até você aplicar; a última limpeza pode ser desfeita.",
+      "merges": "Junta-se ao beneficiário existente",
+      "renamed": "Renomeado",
+      "become_one": "{{count}} beneficiário vira um",
+      "become_other": "{{count}} beneficiários viram um",
+      "include": "Incluir {{name}}",
+      "name": "Nome limpo",
+      "rule": "Regra para as próximas importações: o beneficiário contém",
+      "ruleText": "Texto da regra",
+      "covers_one": "cobre {{count}} destes nomes",
+      "covers_other": "cobre {{count}} destes nomes",
+      "apply": "Aplicar {{n}}",
+      "done_one": "{{count}} nome limpo",
+      "done_other": "{{count}} nomes limpos",
+      "none": "A IA não encontrou nomes para limpar.",
+      "last": "Limpeza de {{date}}: {{payees}}, {{names}}, {{rules}}.",
+      "payees_one": "{{count}} beneficiário",
+      "payees_other": "{{count}} beneficiários",
+      "names_one": "{{count}} nome",
+      "names_other": "{{count}} nomes",
+      "rules_one": "{{count}} regra",
+      "rules_other": "{{count}} regras",
+      "groups_one": "{{count}} grupo",
+      "groups_other": "{{count}} grupos",
+      "undo": "Desfazer a última limpeza",
+      "undone": "Limpeza desfeita",
+      "undoConflict": "Um beneficiário agora tem um dos nomes a recuperar. Renomeie-o e desfaça de novo."
     }
   },
   "currencies": {

@@ -2074,6 +2074,10 @@
       "rules": {
         "name": "Rule proposals",
         "sends": "Sends, for each payee it proposes, its name, its category and how many of its transactions have it. Never an amount, a memo or a date."
+      },
+      "payees": {
+        "name": "Payee cleanup",
+        "sends": "Sends the payee names only. Never an amount, a memo or a date."
       }
     },
     "wallets": "On which wallets",
@@ -2386,6 +2390,39 @@
       "usage_other": "{{count}} transactions, the last on {{date}}",
       "seeReports": "See it in the reports",
       "usePayment": "Use it"
+    },
+    "cleanup": {
+      "button": "Clean up names",
+      "label": "AI proposal",
+      "basis": "Payee names only · {{date}}",
+      "title": "Clean names for {{names}}, in {{groups}}",
+      "note": "Only the payee names went to your AI provider. Nothing changes until you apply; the last cleanup can be undone.",
+      "merges": "Merges into the existing payee",
+      "renamed": "Renamed",
+      "become_one": "{{count}} payee becomes one",
+      "become_other": "{{count}} payees become one",
+      "include": "Include {{name}}",
+      "name": "Clean name",
+      "rule": "Rule for future imports: payee contains",
+      "ruleText": "Rule text",
+      "covers_one": "covers {{count}} of these names",
+      "covers_other": "covers {{count}} of these names",
+      "apply": "Apply {{n}}",
+      "done_one": "{{count}} name cleaned up",
+      "done_other": "{{count}} names cleaned up",
+      "none": "The AI found no names to clean up.",
+      "last": "Cleanup of {{date}}: {{payees}}, {{names}}, {{rules}}.",
+      "payees_one": "{{count}} payee",
+      "payees_other": "{{count}} payees",
+      "names_one": "{{count}} name",
+      "names_other": "{{count}} names",
+      "rules_one": "{{count}} rule",
+      "rules_other": "{{count}} rules",
+      "groups_one": "{{count}} group",
+      "groups_other": "{{count}} groups",
+      "undo": "Undo last cleanup",
+      "undone": "Cleanup undone",
+      "undoConflict": "A payee now has one of the names to bring back. Rename it, then undo again."
     }
   },
   "currencies": {
