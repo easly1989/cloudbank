@@ -6,6 +6,70 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
+## [3.12.0] — 2026-10-21
+
+The AI now helps with the chores around the numbers. It proposes rules for
+the payees you always file alike, fills in Review's uncategorised rows in one
+go, cleans up the raw names banks give payees, maps the columns of a CSV it
+has never seen, answers questions about your money from CloudBank's own
+queries, and reads a receipt's photo into the entry sheet. As before, each
+job has its own switch and says what it sends, and nothing it proposes is
+saved until you save it.
+
+### Added
+
+- **Rule proposals** on Rules and in AI insights: up to eight payees you keep
+  filing under one category by hand (three or more of the last year's
+  transactions no rule decides, four in five in the same category).
+  **Create rule** opens the rule sheet filled in; saving it offers to fill in
+  the payee's transactions still without a category. The model hears payee
+  and category names and counts, never an amount, a memo or a date.
+- **Propose categories** on Review's "Needs a category" card: a payee for each
+  row, its own or one named in the bank's text, and a category from the
+  payee's history or else from the model, which is sent the payee, the amount
+  and the date. Every row stays editable; **Confirm** saves the ticked ones
+  at once.
+- **Clean up names** on Payees: the model, which sees the payee names only,
+  groups raw bank names (`AMZN MKTP IT*2K3`) under one clean name, with a
+  "payee contains" rule for the next imports. Everything is editable before
+  **Apply**, and the last cleanup can be undone.
+- **CSV columns.** The map step of a generic CSV shows one row per column,
+  with its first value and the field it fills. With the AI on, a file nothing
+  remembers is mapped by the model, which also tells the date order, decimal
+  mark and sign from the column names and the shape of three rows (never
+  their words). The mapping is remembered per wallet by the header row, so
+  the next file from the same bank comes mapped without the AI; **Forget**
+  drops it.
+- **Ask your data** at the top of AI insights: a question in your own words.
+  The model picks up to three of CloudBank's read-only queries (a total, by
+  month, by category, the largest expenses, the balances), CloudBank runs
+  them on the wallet, and the answer comes with **Numbers used**. The model
+  never writes a query or sees a transaction; questions are not kept. Each
+  counts as two requests.
+- **Receipts.** **Scan a receipt** in the entry sheet opens the camera. The
+  photo is shrunk in the browser, without the place it was taken, and only
+  **Read with AI** sends it; the total, date, shop and a short memo fill in.
+  It is never stored unless you tick **Attach the photo to the transaction**,
+  and What was sent keeps a line about it instead of the photo.
+- Each of these has its own switch in Settings → AI, off at first, except
+  Propose categories, which uses Category suggestion's.
+- Five migrations run at startup, for rule proposals, payee cleanups, CSV
+  mappings and the new switches.
+
+### Changed
+
+- **Category suggestion** now also sends the date, for Review's proposals; its
+  switch says so.
+- Built with **Go 1.27.3**, which fixes GO-2026-6809 in `crypto/x509`.
+
+### Fixed
+
+- **Merging payees** now moves their templates, the rules that set them and
+  their ignored recurring payments too, instead of leaving those without a
+  payee.
+- **AI insights' month picker** cut "September 2026"; it now fits the longest
+  month in every language.
+
 ## [3.11.0] — 2026-10-21
 
 The AI does more than fill in fields now. With your own model, it writes a
@@ -1163,7 +1227,8 @@ HomeBank feature parity, shipped as a single Docker container.
 - CI (lint, race tests, build, Docker smoke, Playwright e2e) and automated GHCR
   publishing (`:latest` nightly, `:main` stable, `:vX.Y.Z` per release).
 
-[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.11.0...HEAD
+[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.12.0...HEAD
+[3.12.0]: https://github.com/easly1989/cloudbank/compare/v3.11.0...v3.12.0
 [3.11.0]: https://github.com/easly1989/cloudbank/compare/v3.10.0...v3.11.0
 [3.10.0]: https://github.com/easly1989/cloudbank/compare/v3.9.0...v3.10.0
 [3.9.0]: https://github.com/easly1989/cloudbank/compare/v3.8.1...v3.9.0
