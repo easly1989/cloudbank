@@ -61,3 +61,69 @@ WHERE wallet_id = sqlc.arg(wallet_id)
   AND date >= sqlc.arg(from_date)
   AND date <= sqlc.arg(to_date)
 GROUP BY payee_id, payment_mode;
+
+-- name: CountTransactionsByPayee :many
+-- Every payee's transactions in a wallet, all dates: what a cleanup moves.
+SELECT payee_id, COUNT(*) AS txn_count
+FROM transactions
+WHERE wallet_id = ? AND payee_id IS NOT NULL
+GROUP BY payee_id;
+
+-- name: InsertPayeeWithID :exec
+-- A payee back with its own id: undoing a cleanup's merge (#708).
+INSERT INTO payees (id, wallet_id, name, default_category_id, default_payment_mode)
+VALUES (?, ?, ?, ?, ?);
+
+-- name: ListTransactionIDsWithPayee :many
+SELECT id FROM transactions WHERE payee_id = ? ORDER BY id;
+
+-- name: ListTemplateIDsWithPayee :many
+SELECT id FROM templates WHERE payee_id = ? ORDER BY id;
+
+-- name: ListAssignmentIDsSettingPayee :many
+SELECT id FROM assignments WHERE set_payee_id = ? ORDER BY id;
+
+-- name: ListRecurringIgnoredForPayee :many
+SELECT cadence FROM recurring_ignored WHERE payee_id = ? ORDER BY cadence;
+
+-- name: ReassignTemplatePayee :exec
+UPDATE templates SET payee_id = sqlc.arg(to_id) WHERE payee_id = sqlc.arg(from_id);
+
+-- name: ReassignAssignmentPayee :exec
+UPDATE assignments SET set_payee_id = sqlc.arg(to_id) WHERE set_payee_id = sqlc.arg(from_id);
+
+-- name: CopyRecurringIgnored :exec
+-- A merged payee's ignored recurring payments go with it to the payee it
+-- became; its own rows go with it when it is deleted.
+INSERT OR IGNORE INTO recurring_ignored (wallet_id, payee_id, cadence)
+SELECT r.wallet_id, sqlc.arg(to_id), r.cadence FROM recurring_ignored r WHERE r.payee_id = sqlc.arg(from_id);
+
+-- name: MoveTransactionsToPayee :exec
+-- Undoing a merge: the transactions it moved, those still on the payee it
+-- moved them to.
+UPDATE transactions SET payee_id = sqlc.arg(to_id)
+WHERE payee_id = sqlc.arg(from_id) AND id IN (sqlc.slice(ids));
+
+-- name: MoveTemplatesToPayee :exec
+UPDATE templates SET payee_id = sqlc.arg(to_id)
+WHERE payee_id = sqlc.arg(from_id) AND id IN (sqlc.slice(ids));
+
+-- name: MoveAssignmentsToPayee :exec
+UPDATE assignments SET set_payee_id = sqlc.arg(to_id)
+WHERE set_payee_id = sqlc.arg(from_id) AND id IN (sqlc.slice(ids));
+
+-- name: DeleteAssignmentsByIDs :exec
+DELETE FROM assignments WHERE wallet_id = sqlc.arg(wallet_id) AND id IN (sqlc.slice(ids));
+
+-- name: UpsertPayeeCleanup :exec
+INSERT INTO payee_cleanups (wallet_id, payees, names, rules, undo)
+VALUES (?, ?, ?, ?, ?)
+ON CONFLICT (wallet_id) DO UPDATE SET
+    payees = excluded.payees, names = excluded.names, rules = excluded.rules, undo = excluded.undo,
+    created_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now');
+
+-- name: GetPayeeCleanup :one
+SELECT * FROM payee_cleanups WHERE wallet_id = ?;
+
+-- name: DeletePayeeCleanup :exec
+DELETE FROM payee_cleanups WHERE wallet_id = ?;

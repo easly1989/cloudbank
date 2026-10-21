@@ -107,6 +107,7 @@ type AiSetting struct {
 	GoalsOn         int64
 	UnusualOn       int64
 	RulesOn         int64
+	PayeesOn        int64
 }
 
 type AiUnusual struct {
@@ -517,6 +518,15 @@ type Payee struct {
 	Name               string
 	DefaultCategoryID  sql.NullInt64
 	DefaultPaymentMode sql.NullInt64
+}
+
+type PayeeCleanup struct {
+	WalletID  int64
+	Payees    int64
+	Names     int64
+	Rules     int64
+	Undo      string
+	CreatedAt string
 }
 
 type PushReminder struct {

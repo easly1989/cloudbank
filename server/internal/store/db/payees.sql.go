@@ -8,7 +8,61 @@ package db
 import (
 	"context"
 	"database/sql"
+	"strings"
 )
+
+const copyRecurringIgnored = `-- name: CopyRecurringIgnored :exec
+INSERT OR IGNORE INTO recurring_ignored (wallet_id, payee_id, cadence)
+SELECT r.wallet_id, ?1, r.cadence FROM recurring_ignored r WHERE r.payee_id = ?2
+`
+
+type CopyRecurringIgnoredParams struct {
+	ToID   int64
+	FromID int64
+}
+
+// A merged payee's ignored recurring payments go with it to the payee it
+// became; its own rows go with it when it is deleted.
+func (q *Queries) CopyRecurringIgnored(ctx context.Context, arg CopyRecurringIgnoredParams) error {
+	_, err := q.db.ExecContext(ctx, copyRecurringIgnored, arg.ToID, arg.FromID)
+	return err
+}
+
+const countTransactionsByPayee = `-- name: CountTransactionsByPayee :many
+SELECT payee_id, COUNT(*) AS txn_count
+FROM transactions
+WHERE wallet_id = ? AND payee_id IS NOT NULL
+GROUP BY payee_id
+`
+
+type CountTransactionsByPayeeRow struct {
+	PayeeID  sql.NullInt64
+	TxnCount int64
+}
+
+// Every payee's transactions in a wallet, all dates: what a cleanup moves.
+func (q *Queries) CountTransactionsByPayee(ctx context.Context, walletID int64) ([]CountTransactionsByPayeeRow, error) {
+	rows, err := q.db.QueryContext(ctx, countTransactionsByPayee, walletID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CountTransactionsByPayeeRow{}
+	for rows.Next() {
+		var i CountTransactionsByPayeeRow
+		if err := rows.Scan(&i.PayeeID, &i.TxnCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
 
 const countTransactionsWithPayee = `-- name: CountTransactionsWithPayee :one
 SELECT COUNT(*) FROM transactions WHERE payee_id = ?
@@ -21,12 +75,46 @@ func (q *Queries) CountTransactionsWithPayee(ctx context.Context, payeeID sql.Nu
 	return count, err
 }
 
+const deleteAssignmentsByIDs = `-- name: DeleteAssignmentsByIDs :exec
+DELETE FROM assignments WHERE wallet_id = ?1 AND id IN (/*SLICE:ids*/?)
+`
+
+type DeleteAssignmentsByIDsParams struct {
+	WalletID int64
+	Ids      []int64
+}
+
+func (q *Queries) DeleteAssignmentsByIDs(ctx context.Context, arg DeleteAssignmentsByIDsParams) error {
+	query := deleteAssignmentsByIDs
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.WalletID)
+	if len(arg.Ids) > 0 {
+		for _, v := range arg.Ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(arg.Ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
 const deletePayee = `-- name: DeletePayee :exec
 DELETE FROM payees WHERE id = ?
 `
 
 func (q *Queries) DeletePayee(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, deletePayee, id)
+	return err
+}
+
+const deletePayeeCleanup = `-- name: DeletePayeeCleanup :exec
+DELETE FROM payee_cleanups WHERE wallet_id = ?
+`
+
+func (q *Queries) DeletePayeeCleanup(ctx context.Context, walletID int64) error {
+	_, err := q.db.ExecContext(ctx, deletePayeeCleanup, walletID)
 	return err
 }
 
@@ -43,6 +131,24 @@ func (q *Queries) GetPayee(ctx context.Context, id int64) (Payee, error) {
 		&i.Name,
 		&i.DefaultCategoryID,
 		&i.DefaultPaymentMode,
+	)
+	return i, err
+}
+
+const getPayeeCleanup = `-- name: GetPayeeCleanup :one
+SELECT wallet_id, payees, names, rules, undo, created_at FROM payee_cleanups WHERE wallet_id = ?
+`
+
+func (q *Queries) GetPayeeCleanup(ctx context.Context, walletID int64) (PayeeCleanup, error) {
+	row := q.db.QueryRowContext(ctx, getPayeeCleanup, walletID)
+	var i PayeeCleanup
+	err := row.Scan(
+		&i.WalletID,
+		&i.Payees,
+		&i.Names,
+		&i.Rules,
+		&i.Undo,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -78,6 +184,58 @@ func (q *Queries) InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee
 	return i, err
 }
 
+const insertPayeeWithID = `-- name: InsertPayeeWithID :exec
+INSERT INTO payees (id, wallet_id, name, default_category_id, default_payment_mode)
+VALUES (?, ?, ?, ?, ?)
+`
+
+type InsertPayeeWithIDParams struct {
+	ID                 int64
+	WalletID           int64
+	Name               string
+	DefaultCategoryID  sql.NullInt64
+	DefaultPaymentMode sql.NullInt64
+}
+
+// A payee back with its own id: undoing a cleanup's merge (#708).
+func (q *Queries) InsertPayeeWithID(ctx context.Context, arg InsertPayeeWithIDParams) error {
+	_, err := q.db.ExecContext(ctx, insertPayeeWithID,
+		arg.ID,
+		arg.WalletID,
+		arg.Name,
+		arg.DefaultCategoryID,
+		arg.DefaultPaymentMode,
+	)
+	return err
+}
+
+const listAssignmentIDsSettingPayee = `-- name: ListAssignmentIDsSettingPayee :many
+SELECT id FROM assignments WHERE set_payee_id = ? ORDER BY id
+`
+
+func (q *Queries) ListAssignmentIDsSettingPayee(ctx context.Context, setPayeeID sql.NullInt64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listAssignmentIDsSettingPayee, setPayeeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPayeesForWallet = `-- name: ListPayeesForWallet :many
 SELECT id, wallet_id, name, default_category_id, default_payment_mode FROM payees WHERE wallet_id = ? ORDER BY name
 `
@@ -109,6 +267,173 @@ func (q *Queries) ListPayeesForWallet(ctx context.Context, walletID int64) ([]Pa
 		return nil, err
 	}
 	return items, nil
+}
+
+const listRecurringIgnoredForPayee = `-- name: ListRecurringIgnoredForPayee :many
+SELECT cadence FROM recurring_ignored WHERE payee_id = ? ORDER BY cadence
+`
+
+func (q *Queries) ListRecurringIgnoredForPayee(ctx context.Context, payeeID int64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listRecurringIgnoredForPayee, payeeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var cadence string
+		if err := rows.Scan(&cadence); err != nil {
+			return nil, err
+		}
+		items = append(items, cadence)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTemplateIDsWithPayee = `-- name: ListTemplateIDsWithPayee :many
+SELECT id FROM templates WHERE payee_id = ? ORDER BY id
+`
+
+func (q *Queries) ListTemplateIDsWithPayee(ctx context.Context, payeeID sql.NullInt64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listTemplateIDsWithPayee, payeeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTransactionIDsWithPayee = `-- name: ListTransactionIDsWithPayee :many
+SELECT id FROM transactions WHERE payee_id = ? ORDER BY id
+`
+
+func (q *Queries) ListTransactionIDsWithPayee(ctx context.Context, payeeID sql.NullInt64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listTransactionIDsWithPayee, payeeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const moveAssignmentsToPayee = `-- name: MoveAssignmentsToPayee :exec
+UPDATE assignments SET set_payee_id = ?1
+WHERE set_payee_id = ?2 AND id IN (/*SLICE:ids*/?)
+`
+
+type MoveAssignmentsToPayeeParams struct {
+	ToID   sql.NullInt64
+	FromID sql.NullInt64
+	Ids    []int64
+}
+
+func (q *Queries) MoveAssignmentsToPayee(ctx context.Context, arg MoveAssignmentsToPayeeParams) error {
+	query := moveAssignmentsToPayee
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.ToID)
+	queryParams = append(queryParams, arg.FromID)
+	if len(arg.Ids) > 0 {
+		for _, v := range arg.Ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(arg.Ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
+const moveTemplatesToPayee = `-- name: MoveTemplatesToPayee :exec
+UPDATE templates SET payee_id = ?1
+WHERE payee_id = ?2 AND id IN (/*SLICE:ids*/?)
+`
+
+type MoveTemplatesToPayeeParams struct {
+	ToID   sql.NullInt64
+	FromID sql.NullInt64
+	Ids    []int64
+}
+
+func (q *Queries) MoveTemplatesToPayee(ctx context.Context, arg MoveTemplatesToPayeeParams) error {
+	query := moveTemplatesToPayee
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.ToID)
+	queryParams = append(queryParams, arg.FromID)
+	if len(arg.Ids) > 0 {
+		for _, v := range arg.Ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(arg.Ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
+const moveTransactionsToPayee = `-- name: MoveTransactionsToPayee :exec
+UPDATE transactions SET payee_id = ?1
+WHERE payee_id = ?2 AND id IN (/*SLICE:ids*/?)
+`
+
+type MoveTransactionsToPayeeParams struct {
+	ToID   sql.NullInt64
+	FromID sql.NullInt64
+	Ids    []int64
+}
+
+// Undoing a merge: the transactions it moved, those still on the payee it
+// moved them to.
+func (q *Queries) MoveTransactionsToPayee(ctx context.Context, arg MoveTransactionsToPayeeParams) error {
+	query := moveTransactionsToPayee
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.ToID)
+	queryParams = append(queryParams, arg.FromID)
+	if len(arg.Ids) > 0 {
+		for _, v := range arg.Ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(arg.Ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
 }
 
 const payeeActivity = `-- name: PayeeActivity :many
@@ -268,6 +593,34 @@ func (q *Queries) PayeePaymentCounts(ctx context.Context, arg PayeePaymentCounts
 	return items, nil
 }
 
+const reassignAssignmentPayee = `-- name: ReassignAssignmentPayee :exec
+UPDATE assignments SET set_payee_id = ?1 WHERE set_payee_id = ?2
+`
+
+type ReassignAssignmentPayeeParams struct {
+	ToID   sql.NullInt64
+	FromID sql.NullInt64
+}
+
+func (q *Queries) ReassignAssignmentPayee(ctx context.Context, arg ReassignAssignmentPayeeParams) error {
+	_, err := q.db.ExecContext(ctx, reassignAssignmentPayee, arg.ToID, arg.FromID)
+	return err
+}
+
+const reassignTemplatePayee = `-- name: ReassignTemplatePayee :exec
+UPDATE templates SET payee_id = ?1 WHERE payee_id = ?2
+`
+
+type ReassignTemplatePayeeParams struct {
+	ToID   sql.NullInt64
+	FromID sql.NullInt64
+}
+
+func (q *Queries) ReassignTemplatePayee(ctx context.Context, arg ReassignTemplatePayeeParams) error {
+	_, err := q.db.ExecContext(ctx, reassignTemplatePayee, arg.ToID, arg.FromID)
+	return err
+}
+
 const reassignTransactionPayee = `-- name: ReassignTransactionPayee :exec
 UPDATE transactions SET payee_id = ? WHERE payee_id = ?
 `
@@ -299,6 +652,33 @@ func (q *Queries) UpdatePayee(ctx context.Context, arg UpdatePayeeParams) error 
 		arg.DefaultCategoryID,
 		arg.DefaultPaymentMode,
 		arg.ID,
+	)
+	return err
+}
+
+const upsertPayeeCleanup = `-- name: UpsertPayeeCleanup :exec
+INSERT INTO payee_cleanups (wallet_id, payees, names, rules, undo)
+VALUES (?, ?, ?, ?, ?)
+ON CONFLICT (wallet_id) DO UPDATE SET
+    payees = excluded.payees, names = excluded.names, rules = excluded.rules, undo = excluded.undo,
+    created_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+`
+
+type UpsertPayeeCleanupParams struct {
+	WalletID int64
+	Payees   int64
+	Names    int64
+	Rules    int64
+	Undo     string
+}
+
+func (q *Queries) UpsertPayeeCleanup(ctx context.Context, arg UpsertPayeeCleanupParams) error {
+	_, err := q.db.ExecContext(ctx, upsertPayeeCleanup,
+		arg.WalletID,
+		arg.Payees,
+		arg.Names,
+		arg.Rules,
+		arg.Undo,
 	)
 	return err
 }

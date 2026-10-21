@@ -429,6 +429,33 @@ func (f *fake) chat(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	// The payee cleanup (#708): names with a code after a star are one payee,
+	// named by what comes before it.
+	if rows, ok := strings.CutPrefix(text, "Payees:\n"); ok {
+		groups := map[string][]string{}
+		var order []string
+		for _, l := range strings.Split(rows, "\n") {
+			n, name, ok := strings.Cut(l, ". ")
+			head, _, star := strings.Cut(name, "*")
+			head = strings.TrimSpace(head)
+			if !ok || !star || head == "" {
+				continue
+			}
+			clean := strings.ToUpper(head[:1]) + strings.ToLower(head[1:])
+			if groups[clean] == nil {
+				order = append(order, clean)
+			}
+			groups[clean] = append(groups[clean], n)
+		}
+		var lines []string
+		for _, clean := range order {
+			lines = append(lines, strings.Join(groups[clean], ", ")+" -> "+clean)
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"choices": []map[string]any{{"message": map[string]string{"role": "assistant", "content": strings.Join(lines, "\n")}}},
+		})
+		return
+	}
 	// A quick entry (#702): text shared from a bank's notification.
 	if _, desc, ok := strings.Cut(text, "\nDescription: "); ok {
 		entry := map[string]any{"amount": 0, "direction": "expense", "date": "", "payee": "", "category": "", "tags": []string{}, "memo": ""}

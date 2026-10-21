@@ -61,6 +61,7 @@ func (h *aiHandlers) walletRoutes(r chi.Router) {
 	r.Post("/ai/suggest-category", h.suggestCategory)
 	r.Post("/ai/parse-entry", h.parseEntry)
 	r.Post("/ai/propose-categories", h.proposeCategories)
+	r.Post("/ai/payee-cleanup", h.proposePayeeCleanup)
 	if h.insights != nil {
 		r.Get("/insights/reports", h.listReports)
 		r.Post("/insights/reports", h.generateReport)
@@ -203,6 +204,23 @@ func (h *aiHandlers) proposeCategories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"proposals": out})
+}
+
+func (h *aiHandlers) proposePayeeCleanup(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	u := userFromContext(r.Context())
+	var body struct {
+		Confirm bool `json:"confirm"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	out, err := h.svc.ProposePayeeCleanup(r.Context(), u.ID, wl.ID, body.Confirm)
+	if err != nil {
+		writeAIError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"groups": out})
 }
 
 func (h *aiHandlers) parseEntry(w http.ResponseWriter, r *http.Request) {

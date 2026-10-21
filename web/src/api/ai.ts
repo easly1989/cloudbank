@@ -19,6 +19,8 @@ export interface AIFeatures {
   unusual: boolean;
   /** Payees always filed under one category, a rule each (#705). */
   rules: boolean;
+  /** Payee names cleaned up and merged (#708). */
+  payees: boolean;
 }
 
 export type AIFeature = keyof AIFeatures;
@@ -116,6 +118,28 @@ export interface CategoryProposal {
 /** Review's proposals (#706): only the payee, the amount and the date go to the model. */
 export const proposeCategories = (walletId: number, confirm = false) =>
   api.post<{ proposals: CategoryProposal[] }>(`/api/v1/wallets/${walletId}/ai/propose-categories`, {
+    confirm,
+  });
+
+export interface CleanupPayee {
+  id: number;
+  name: string;
+  transactions: number;
+}
+
+/** A clean name for some payees, the one that keeps its row first (#708). */
+export interface CleanupProposal {
+  name: string;
+  /** A payee outside the group that already has the name. */
+  targetId?: number;
+  payees: CleanupPayee[];
+  /** The text a "payee contains" rule would match; empty when none is long enough. */
+  rule: string;
+}
+
+/** Only the payee names go to the model. */
+export const proposePayeeCleanup = (walletId: number, confirm = false) =>
+  api.post<{ groups: CleanupProposal[] }>(`/api/v1/wallets/${walletId}/ai/payee-cleanup`, {
     confirm,
   });
 

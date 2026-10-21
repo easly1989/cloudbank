@@ -2074,6 +2074,10 @@
       "rules": {
         "name": "Regelvorschläge",
         "sends": "Sendet für jeden vorgeschlagenen Zahlungspartner den Namen, seine Kategorie und wie viele seiner Buchungen sie haben. Nie Beträge, Notizen oder Daten."
+      },
+      "payees": {
+        "name": "Zahlungspartner bereinigen",
+        "sends": "Sendet nur die Namen der Zahlungspartner. Nie Beträge, Notizen oder Daten."
       }
     },
     "wallets": "Für welche Haushaltsbücher",
@@ -2386,6 +2390,39 @@
       "usage_other": "{{count}} Buchungen, die letzte am {{date}}",
       "seeReports": "In den Berichten ansehen",
       "usePayment": "Übernehmen"
+    },
+    "cleanup": {
+      "button": "Namen bereinigen",
+      "label": "KI-Vorschlag",
+      "basis": "Nur die Namen der Zahlungspartner · {{date}}",
+      "title": "Saubere Namen für {{names}}, in {{groups}}",
+      "note": "An deinen KI-Anbieter gingen nur die Namen der Zahlungspartner. Nichts ändert sich, bis du übernimmst; die letzte Bereinigung lässt sich rückgängig machen.",
+      "merges": "Wird mit dem vorhandenen Zahlungspartner zusammengeführt",
+      "renamed": "Umbenannt",
+      "become_one": "{{count}} Zahlungspartner wird zu einem",
+      "become_other": "{{count}} Zahlungspartner werden zu einem",
+      "include": "{{name}} einbeziehen",
+      "name": "Sauberer Name",
+      "rule": "Regel für künftige Importe: Zahlungspartner enthält",
+      "ruleText": "Regeltext",
+      "covers_one": "deckt {{count}} dieser Namen ab",
+      "covers_other": "deckt {{count}} dieser Namen ab",
+      "apply": "{{n}} übernehmen",
+      "done_one": "{{count}} Name bereinigt",
+      "done_other": "{{count}} Namen bereinigt",
+      "none": "Die KI hat keine Namen zum Bereinigen gefunden.",
+      "last": "Bereinigung vom {{date}}: {{payees}}, {{names}}, {{rules}}.",
+      "payees_one": "{{count}} Zahlungspartner",
+      "payees_other": "{{count}} Zahlungspartner",
+      "names_one": "{{count}} Name",
+      "names_other": "{{count}} Namen",
+      "rules_one": "{{count}} Regel",
+      "rules_other": "{{count}} Regeln",
+      "groups_one": "{{count}} Gruppe",
+      "groups_other": "{{count}} Gruppen",
+      "undo": "Letzte Bereinigung rückgängig machen",
+      "undone": "Bereinigung rückgängig gemacht",
+      "undoConflict": "Ein Zahlungspartner trägt jetzt einen der Namen, die zurückkommen sollen. Benenne ihn um und mache es dann erneut rückgängig."
     }
   },
   "currencies": {
