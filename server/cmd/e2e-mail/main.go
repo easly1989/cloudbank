@@ -52,6 +52,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -453,6 +454,41 @@ func (f *fake) chat(w http.ResponseWriter, r *http.Request) {
 		}
 		writeJSON(w, http.StatusOK, map[string]any{
 			"choices": []map[string]any{{"message": map[string]string{"role": "assistant", "content": strings.Join(lines, "\n")}}},
+		})
+		return
+	}
+	// The CSV column mapping (#709): each column by its name; the first
+	// value says how dates and decimals are written.
+	if cols, ok := strings.CutPrefix(text, "Columns:\n"); ok {
+		answer := map[string]any{"dateFormat": "iso", "decimalChar": ".", "invertAmount": false}
+		for _, l := range strings.Split(cols, "\n") {
+			n, rest, ok := strings.Cut(l, ". ")
+			name, values, _ := strings.Cut(rest, ": ")
+			i, err := strconv.Atoi(n)
+			if !ok || err != nil {
+				continue
+			}
+			first, _, _ := strings.Cut(values, " | ")
+			switch name = strings.ToLower(name); {
+			case strings.Contains(name, "date") && answer["date"] == nil:
+				answer["date"] = i
+				if strings.Contains(first, "/") {
+					answer["dateFormat"] = "dmy"
+				}
+			case strings.Contains(name, "amount"):
+				answer["amount"] = i
+				if strings.Contains(first, ",") {
+					answer["decimalChar"] = ","
+				}
+			case strings.Contains(name, "description"):
+				answer["memo"] = i
+			case strings.Contains(name, "counterparty"):
+				answer["payee"] = i
+			}
+		}
+		content, _ := json.Marshal(answer)
+		writeJSON(w, http.StatusOK, map[string]any{
+			"choices": []map[string]any{{"message": map[string]string{"role": "assistant", "content": string(content)}}},
 		})
 		return
 	}

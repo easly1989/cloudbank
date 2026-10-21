@@ -2078,6 +2078,10 @@
       "payees": {
         "name": "Zahlungspartner bereinigen",
         "sends": "Sendet nur die Namen der Zahlungspartner. Nie Beträge, Notizen oder Daten."
+      },
+      "import": {
+        "name": "CSV-Spalten",
+        "sends": "Sendet die Spaltennamen einer unbekannten CSV und die Form von drei Zeilen: Daten und Zahlen wie geschrieben, nie die Wörter."
       }
     },
     "wallets": "Für welche Haushaltsbücher",
@@ -2658,7 +2662,7 @@
     "next": "Weiter",
     "back": "Zurück",
     "preview": "Vorschau",
-    "mapHint": "Ordne jedem Buchungsfeld eine Spalte deiner Datei zu. Datum ist Pflicht, dazu entweder Betrag oder Soll/Haben.",
+    "mapHint": "Jede Spalte deiner Datei, ihr erster Wert und das Feld, das sie füllt. Datum ist Pflicht, dazu Betrag, oder Soll und Haben, wenn Geld raus und Geld rein je eine Spalte haben.",
     "fields": {
       "date": "Datum",
       "amount": "Betrag",
@@ -2671,7 +2675,6 @@
       "paymode": "Zahlungsart",
       "tags": "Tags"
     },
-    "debitCreditHint": "Statt Betrag verwenden, wenn deine Datei getrennte Spalten für Geld raus und Geld rein hat.",
     "invertAmount": "Vorzeichen umkehren",
     "invertAmountHint": "Einschalten, wenn deine Bank Ausgaben positiv und Einnahmen negativ schreibt.",
     "applyRules": "Importregeln anwenden",
@@ -2691,7 +2694,32 @@
     "updatedCount_one": "{{count}} vorgemerkte Buchung abgeglichen.",
     "updatedCount_other": "{{count}} vorgemerkte Buchungen abgeglichen.",
     "reviewImported": "Prüfen und einordnen",
-    "importAnother": "Weitere Datei importieren"
+    "importAnother": "Weitere Datei importieren",
+    "fieldFor": "Feld für {{column}}",
+    "notImported": "Nicht importiert",
+    "remember": "Diese Zuordnung für Dateien mit diesen Spalten merken",
+    "remembered": "Zuordnung gemerkt seit {{date}} für Dateien mit diesen Spalten.",
+    "forget": "Vergessen",
+    "forgotten": "Zuordnung vergessen",
+    "ai": {
+      "label": "KI-Vorschlag",
+      "basis": "Spaltennamen und Form der Werte · {{date}}",
+      "title": "{{fields}} erkannt",
+      "noneMatched": "Keine Spalte erkannt",
+      "missing": "Keine Spalte für Datum oder Betrag gefunden: wähle sie unten.",
+      "note": "An deinen KI-Anbieter gingen nur die Spaltennamen und die Form von drei Zeilen, nie ihr Text. Prüfe die Felder, dann die Vorschau.",
+      "asking": "Die KI liest die Spalten…",
+      "mark": "Von der KI vorgeschlagen",
+      "decimalComma": "Beträge mit Dezimalkomma.",
+      "decimalPoint": "Beträge mit Dezimalpunkt.",
+      "signInverted": "Ausgaben positiv geschrieben: das Vorzeichen wird umgekehrt.",
+      "signKept": "Ausgaben schon negativ.",
+      "dates": {
+        "iso": "Daten gelesen als Jahr-Monat-Tag.",
+        "dmy": "Daten gelesen als Tag-Monat-Jahr.",
+        "mdy": "Daten gelesen als Monat-Tag-Jahr."
+      }
+    }
   },
   "exportCsv": {
     "description": "Lade die Buchungen eines Kontos als CSV im HomeBank-Format herunter (wieder in HomeBank importierbar).",

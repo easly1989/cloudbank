@@ -101,6 +101,10 @@ type MatchCandidate struct {
 type Preview struct {
 	Columns []string     `json:"columns"`
 	Rows    []PreviewRow `json:"rows"`
+	// Sample is a generic file's first data row, beside its columns (#709).
+	Sample []string `json:"sample,omitempty"`
+	// Remembered is the wallet's mapping for files with these columns.
+	Remembered *CSVMapping `json:"remembered,omitempty"`
 }
 
 // Preview parses the CSV, rescales amounts to the account currency, flags
@@ -123,9 +127,19 @@ func (s *Service) Preview(ctx context.Context, walletID int64, req PreviewReques
 	if err != nil {
 		return Preview{}, err
 	}
-	// Generic file without a mapping: hand back the columns so the UI can map.
+	// Generic file without a mapping: hand back the columns so the UI can map,
+	// with the first row and the mapping remembered for them.
 	if req.Dialect == DialectGeneric && len(req.Mapping) == 0 {
-		return Preview{Columns: columns, Rows: []PreviewRow{}}, nil
+		out := Preview{Columns: columns, Rows: []PreviewRow{}, Sample: []string{}}
+		if _, rows, err := Sample(req.Content, delimiter, req.HasHeader, 1); err == nil && len(rows) > 0 {
+			out.Sample = rows[0]
+		}
+		if req.HasHeader {
+			if out.Remembered, err = s.RememberedMapping(ctx, walletID, columns); err != nil {
+				return Preview{}, err
+			}
+		}
+		return out, nil
 	}
 
 	acc, err := s.accts.Get(ctx, req.AccountID)

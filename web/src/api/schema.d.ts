@@ -655,6 +655,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/ai/csv-mapping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask the model how to read a generic CSV
+         * @description The server reads the column names and the first three rows; only their shapes go out: dates and numbers as written, a cell of words as "text, N words". Nothing is saved.
+         */
+        post: operations["proposeCSVMapping"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/ai/payee-cleanup": {
         parameters: {
             query?: never;
@@ -3688,6 +3710,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/import/csv-mappings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Remember a generic CSV's mapping for the next files with the same header row */
+        put: operations["rememberCSVMapping"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/import/csv-mappings/{mappingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mappingId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Forget a remembered CSV mapping */
+        delete: operations["forgetCSVMapping"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/import/qif/preview": {
         parameters: {
             query?: never;
@@ -4003,6 +4064,8 @@ export interface components {
             rules: boolean;
             /** @description payee cleanup: sends the payee names only */
             payees: boolean;
+            /** @description CSV column mapping: sends the column names and the shape of three rows; dates and numbers as written, words never */
+            import: boolean;
         };
         /** @description The reports that come by themselves besides the monthly one, which comes whenever reports are on. */
         AISchedule: {
@@ -4060,7 +4123,7 @@ export interface components {
             walletId: number | null;
             walletName: string;
             /** @enum {string} */
-            feature: "suggest" | "entry" | "mail" | "reports" | "budgets" | "subscriptions" | "savings" | "goals" | "unusual" | "rules" | "payees";
+            feature: "suggest" | "entry" | "mail" | "reports" | "budgets" | "subscriptions" | "savings" | "goals" | "unusual" | "rules" | "payees" | "import";
             model: string;
             /** @description RFC3339 UTC */
             createdAt: string;
@@ -6301,6 +6364,25 @@ export interface components {
             /** @description detected/generated column names for the mapping UI */
             columns: string[];
             rows: components["schemas"]["CSVPreviewRow"][];
+            /** @description a generic file's first data row, before it is mapped */
+            sample?: string[];
+            remembered?: components["schemas"]["CSVMapping"];
+        };
+        /** @description How a generic CSV is read; remembered per wallet by its header row. */
+        CSVMapping: {
+            /** Format: int64 */
+            id?: number;
+            /** @description field → column index */
+            mapping: {
+                [key: string]: number;
+            };
+            /** @enum {string} */
+            dateFormat: "" | "iso" | "dmy" | "mdy";
+            /** @enum {string} */
+            decimalChar: "." | ",";
+            invertAmount: boolean;
+            /** Format: date-time */
+            createdAt?: string;
         };
         CSVCommitRow: {
             /** @description YYYY-MM-DD */
@@ -7558,6 +7640,66 @@ export interface operations {
                             /** @enum {string} */
                             source: "history" | "ai";
                         }[];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description This month's limit is reached (ai_limit); ask the user, then send confirm. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The AI provider request failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    proposeCSVMapping: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    content: string;
+                    delimiter?: string;
+                    hasHeader?: boolean;
+                    /** @description The user's yes to calls past this month's limit. */
+                    confirm?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description The proposal; a field the model could not tell is left out. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        mapping: {
+                            [key: string]: number;
+                        };
+                        /** @enum {string} */
+                        dateFormat: "" | "iso" | "dmy" | "mdy";
+                        /** @enum {string} */
+                        decimalChar: "." | ",";
+                        invertAmount: boolean;
                     };
                 };
             };
@@ -13363,6 +13505,59 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    rememberCSVMapping: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CSVMapping"] & {
+                    /** @description the header row */
+                    columns: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Remembered; it replaces the one kept for these columns. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CSVMapping"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    forgetCSVMapping: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mappingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Forgotten. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             404: components["responses"]["NotFound"];
         };
     };
