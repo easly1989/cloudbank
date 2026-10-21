@@ -337,6 +337,9 @@ type Querier interface {
 	// The expenses flagged and not handled, flagged since a moment, newest first.
 	// A double whose pair was merged or marked not a duplicate on Review is gone.
 	ListOpenAIUnusual(ctx context.Context, arg ListOpenAIUnusualParams) ([]ListOpenAIUnusualRow, error)
+	// How many of the wallet's transactions since a day each payee has in each
+	// category, split ones left out: the history Review's proposals (#706) read.
+	ListPayeeCategoryCounts(ctx context.Context, arg ListPayeeCategoryCountsParams) ([]ListPayeeCategoryCountsRow, error)
 	// The transactions with a payee since a day, split ones left out, with what a
 	// rule can read: the ground of the AI's rule proposals (#705). The columns
 	// are ListWalletTransactionsForRules's.

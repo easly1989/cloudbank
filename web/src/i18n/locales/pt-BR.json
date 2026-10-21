@@ -1023,7 +1023,22 @@
     "reversal": "Pagamento estornado",
     "reversalHint": "{{account}} · duas linhas de e-mails que se anulam: o banco costuma não registrar nenhuma",
     "deleteBoth": "Excluir as duas",
-    "confirmDeleteBothTitle": "Excluir as duas linhas?"
+    "confirmDeleteBothTitle": "Excluir as duas linhas?",
+    "propose": {
+      "button": "Propor categorias",
+      "hint": "As propostas vêm primeiro do seu histórico; o resto vai para o seu provedor de IA só com o beneficiário, o valor e a data. Nada é salvo até você confirmar.",
+      "summary": "{{history}} do histórico · {{ai}} da IA · {{date}}",
+      "selectAll": "Selecionar todos ({{n}})",
+      "confirm": "Confirmar {{n}}",
+      "fromHistory": "Do histórico",
+      "ai": "IA",
+      "noPayee": "Nenhum beneficiário reconhecido",
+      "noCategory": "Nenhuma categoria proposta",
+      "none": "Sem propostas: nenhum destes lançamentos cita um beneficiário que você já tem.",
+      "include": "Incluir: {{memo}}",
+      "done_one": "{{count}} lançamento classificado",
+      "done_other": "{{count}} lançamentos classificados"
+    }
   },
   "banksync": {
     "title": "Sincronização bancária",
@@ -2026,7 +2041,7 @@
       },
       "suggest": {
         "name": "Sugestão de categoria",
-        "sends": "Envia o beneficiário e o valor do lançamento, com a lista das suas categorias."
+        "sends": "Envia o beneficiário, o valor e a data do lançamento, com a lista das suas categorias. Em Revisão, os beneficiários de vários lançamentos de uma vez."
       },
       "entry": {
         "name": "Entrada rápida",

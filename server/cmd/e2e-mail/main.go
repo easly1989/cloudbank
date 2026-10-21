@@ -416,6 +416,19 @@ func (f *fake) chat(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	// Review's bulk categorisation (#706): every numbered row is Sport.
+	if rows, ok := strings.CutPrefix(text, "Transactions:\n"); ok {
+		var lines []string
+		for _, l := range strings.Split(rows, "\n") {
+			if n, _, ok := strings.Cut(l, ". Payee: "); ok {
+				lines = append(lines, n+": Sport")
+			}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"choices": []map[string]any{{"message": map[string]string{"role": "assistant", "content": strings.Join(lines, "\n")}}},
+		})
+		return
+	}
 	// A quick entry (#702): text shared from a bank's notification.
 	if _, desc, ok := strings.Cut(text, "\nDescription: "); ok {
 		entry := map[string]any{"amount": 0, "direction": "expense", "date": "", "payee": "", "category": "", "tags": []string{}, "memo": ""}

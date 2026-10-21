@@ -7,7 +7,6 @@ import {
   Divider,
   Group,
   Stack,
-  Select,
   Text,
   Tooltip,
 } from "@mantine/core";
@@ -30,7 +29,6 @@ import {
   type Account,
   type ReviewTxn,
   type Transaction,
-  bulkEditTransactions,
   deleteTransaction,
   dismissAllDuplicatePairs,
   dismissDuplicatePair,
@@ -54,6 +52,7 @@ import { amountColor, errorColor } from "../amountTone";
 import { compareRows, type CompareField, type CompareRow, type Described } from "./reviewCompare";
 import { notifyError } from "../notifyError";
 import { ReviewUnconfirmed } from "./ReviewUnconfirmed";
+import { ReviewNeedsCategory } from "./ReviewNeedsCategory";
 
 // The label each compared field goes by (#484).
 // Compared fields hidden in privacy mode (#626): who, and what was written.
@@ -168,6 +167,10 @@ export function ReviewPage() {
     }));
   }, [categoriesQuery.data]);
 
+  const payeeOptions = useMemo(
+    () => (payeesQuery.data ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+    [payeesQuery.data],
+  );
   const payeeById = useMemo(
     () => new Map((payeesQuery.data ?? []).map((p) => [p.id, p.name])),
     [payeesQuery.data],
@@ -197,12 +200,6 @@ export function ReviewPage() {
     void qc.invalidateQueries({ queryKey: aiUnusualKey(walletId) });
   };
 
-  const setCategory = useMutation({
-    mutationFn: (v: { id: number; categoryId: number }) =>
-      bulkEditTransactions(walletId, [v.id], "category", v.categoryId),
-    onSuccess: refresh,
-    onError,
-  });
   const merge = useMutation({
     mutationFn: (v: { keepId: number; dropId: number }) =>
       mergeTransactions(walletId, v.keepId, v.dropId),
@@ -545,62 +542,15 @@ export function ReviewPage() {
       )}
 
       {!done && (
-        <Card withBorder data-tour="review-categories">
-          <Stack gap="sm">
-            <Text fw={600}>{t("review.needsCategory", { count: needs.length })}</Text>
-            {needs.length === 0 ? (
-              <Text c="dimmed" size="sm">
-                {t("review.needsCategoryEmpty")}
-              </Text>
-            ) : (
-              needs.map((tx) => {
-                const acc = accountById.get(tx.accountId);
-                return (
-                  // The bank's description is what the category is chosen from, so it
-                  // is shown whole (#486). The picker keeps one width beside it; on
-                  // a phone it goes underneath, full width, instead of being squeezed.
-                  <Box
-                    key={tx.id}
-                    data-testid="needs-category-row"
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: phone ? "minmax(0, 1fr)" : "minmax(0, 1fr) 240px",
-                      gap: "8px 20px",
-                      alignItems: "start",
-                      paddingTop: 12,
-                      borderTop: ROW_RULE,
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
-                      <Text
-                        size="sm"
-                        style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
-                        data-cb-sensitive={!!tx.memo || undefined}
-                      >
-                        {tx.memo || t("review.noMemo")}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {fmtDate(tx.date)}
-                        {acc ? ` · ${acc.name}` : ""} ·{" "}
-                        <span data-cb-sensitive>{formatMinor(tx.amount, fmtFor(acc))}</span>
-                      </Text>
-                    </div>
-                    <Select
-                      placeholder={t("transactions.category")}
-                      aria-label={t("transactions.category")}
-                      data={categoryOptions}
-                      value={tx.categoryId ? String(tx.categoryId) : null}
-                      onChange={(v) =>
-                        v && setCategory.mutate({ id: tx.id, categoryId: Number(v) })
-                      }
-                      searchable
-                    />
-                  </Box>
-                );
-              })
-            )}
-          </Stack>
-        </Card>
+        <ReviewNeedsCategory
+          walletId={walletId}
+          needs={needs}
+          accountById={accountById}
+          fmtFor={fmtFor}
+          categoryOptions={categoryOptions}
+          payeeOptions={payeeOptions}
+          onChanged={refresh}
+        />
       )}
 
       {!done && (

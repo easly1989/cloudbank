@@ -1023,7 +1023,22 @@
     "reversal": "Paiement annulé",
     "reversalHint": "{{account}} · deux lignes d’e-mails qui s’annulent : d’habitude la banque n’enregistre ni l’une ni l’autre",
     "deleteBoth": "Supprimer les deux",
-    "confirmDeleteBothTitle": "Supprimer les deux lignes ?"
+    "confirmDeleteBothTitle": "Supprimer les deux lignes ?",
+    "propose": {
+      "button": "Proposer des catégories",
+      "hint": "Les propositions viennent d’abord de votre historique ; le reste part chez votre fournisseur d’IA avec le tiers, le montant et la date seulement. Rien n’est enregistré avant votre confirmation.",
+      "summary": "{{history}} de l’historique · {{ai}} par l’IA · {{date}}",
+      "selectAll": "Tout sélectionner ({{n}})",
+      "confirm": "Confirmer {{n}}",
+      "fromHistory": "De l’historique",
+      "ai": "IA",
+      "noPayee": "Aucun tiers reconnu",
+      "noCategory": "Aucune catégorie proposée",
+      "none": "Aucune proposition : aucune de ces opérations ne nomme un tiers que vous avez déjà.",
+      "include": "Inclure : {{memo}}",
+      "done_one": "{{count}} opération classée",
+      "done_other": "{{count}} opérations classées"
+    }
   },
   "banksync": {
     "title": "Connexion bancaire",
@@ -2026,7 +2041,7 @@
       },
       "suggest": {
         "name": "Suggestion de catégorie",
-        "sends": "Envoie le tiers et le montant de l’opération, avec la liste de vos catégories."
+        "sends": "Envoie le tiers, le montant et la date de l’opération, avec la liste de vos catégories. Dans À vérifier, les tiers de plusieurs opérations à la fois."
       },
       "entry": {
         "name": "Saisie rapide",
