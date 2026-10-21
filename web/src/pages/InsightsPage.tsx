@@ -1,7 +1,7 @@
 import { Anchor, Button, Card, Group, Select, Stack, Table, Text } from "@mantine/core";
 import { IconSparkles } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Fragment, useState, type ReactNode } from "react";
+import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
@@ -22,7 +22,7 @@ import { AiBox, type Feedback } from "../components/AiBox";
 import { useAskPastLimit } from "../components/aiLimit";
 import { BudgetProposal } from "../components/BudgetProposal";
 import { GoalProposal } from "../components/GoalProposal";
-import { useProposal } from "../components/proposalData";
+import { aiFeatureOn, useProposal } from "../components/proposalData";
 import { RuleProposal } from "../components/RuleProposal";
 import { SavingsProposal } from "../components/SavingsProposal";
 import { SubscriptionProposal } from "../components/SubscriptionProposal";
@@ -31,7 +31,9 @@ import { formatMinor } from "../money";
 import { notifyError } from "../notifyError";
 import { sensitive } from "../privacy";
 import { useWallet } from "../wallet/WalletProvider";
-import { monthName, paragraphs, periodLabel, splitAmounts } from "./insightsText";
+import { InsightsAsk } from "./InsightsAsk";
+import { monthName, paragraphs, periodLabel } from "./insightsText";
+import { withAmounts } from "./withAmounts";
 
 // AI insights (#696, #697): the reports the reader's own AI wrote on the
 // wallet's numbers, monthly, weekly or yearly. The one a notification opened,
@@ -56,26 +58,6 @@ function titleOf(r: AIReport, lang: string, t: TFunction): string {
 
 const madeOn = (iso: string, lang: string) =>
   new Intl.DateTimeFormat(lang, { day: "numeric", month: "long" }).format(new Date(iso));
-
-/** A paragraph with its amounts in the money face, and hidden in privacy mode. */
-function withAmounts(text: string): ReactNode[] {
-  return splitAmounts(text).map((part, i) =>
-    i % 2 ? (
-      <Text
-        key={i}
-        span
-        ff="monospace"
-        fz="inherit"
-        style={{ whiteSpace: "nowrap" }}
-        {...sensitive}
-      >
-        {part}
-      </Text>
-    ) : (
-      <Fragment key={i}>{part}</Fragment>
-    ),
-  );
-}
 
 /** The numbers CloudBank computed and gave the model: "Why?". */
 function Why({ report }: { report: AIReport }) {
@@ -164,6 +146,7 @@ export function InsightsPage() {
   const goals = useProposal(walletId, "goals");
   const rules = useProposal(walletId, "rules");
   const on = aiReportsOn(settings.data) && !settings.data?.walletsOff.includes(walletId);
+  const askBox = aiFeatureOn(settings.data, walletId, "ask") && <InsightsAsk walletId={walletId} />;
   const reports = useQuery({
     queryKey: aiReportsKey(walletId),
     queryFn: () => listAIReports(walletId),
@@ -244,6 +227,7 @@ export function InsightsPage() {
     return (
       <Stack gap="lg">
         {header}
+        {askBox}
         <Card withBorder maw={560}>
           <Stack gap="xs">
             <Text fw={600}>{walletOff ? t("insights.walletOff") : t("insights.off")}</Text>
@@ -267,6 +251,7 @@ export function InsightsPage() {
   return (
     <Stack gap="lg">
       {header}
+      {askBox}
       <Stack gap="lg" maw={760}>
         {reports.isSuccess && !shown && (
           <Card withBorder>

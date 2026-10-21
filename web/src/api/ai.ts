@@ -23,6 +23,8 @@ export interface AIFeatures {
   payees: boolean;
   /** The column mapping of an unknown CSV (#709). */
   import: boolean;
+  /** Answers to questions about the wallet's own numbers (#704). */
+  ask: boolean;
 }
 
 export type AIFeature = keyof AIFeatures;
@@ -71,9 +73,16 @@ export const getAISettings = () => api.get<AISettings>("/api/v1/ai/settings");
 export const updateAISettings = (body: AISettingsInput) =>
   api.put<AISettings>("/api/v1/ai/settings", body);
 
+/** Whether the AI is on and complete. */
+const aiReady = (s: AISettings | undefined): s is AISettings =>
+  !!s && s.enabled && s.hasKey && s.baseUrl !== "" && s.model !== "";
+
 /** Whether the AI is ready to write reports: on, complete, and reports on. */
-export const aiReportsOn = (s: AISettings | undefined) =>
-  !!s && s.enabled && s.hasKey && s.baseUrl !== "" && s.model !== "" && s.features.reports;
+export const aiReportsOn = (s: AISettings | undefined) => aiReady(s) && s.features.reports;
+
+/** Whether AI insights has something to show: reports, or questions (#704). */
+export const aiInsightsOn = (s: AISettings | undefined) =>
+  aiReady(s) && (s.features.reports || s.features.ask);
 
 /** One call to the model, as the log keeps it. */
 export interface AISend {
@@ -234,6 +243,38 @@ export const generateAIReport = (walletId: number, period: string, confirm = fal
 
 export const setAIReportFeedback = (walletId: number, id: number, feedback: -1 | 0 | 1) =>
   api.put<void>(`/api/v1/wallets/${walletId}/insights/reports/${id}/feedback`, { feedback });
+
+// --- Ask your data (#704) ---
+
+export type AIAskTool = "total" | "by_month" | "by_category" | "largest" | "balances";
+
+/** A query CloudBank ran for an answer, its filters by name, amounts signed in minor units. */
+export interface AIAskUsed {
+  tool: AIAskTool;
+  category?: string;
+  payee?: string;
+  account?: string;
+  tag?: string;
+  type?: "expense" | "income";
+  from?: string;
+  to?: string;
+  /** The day of the balances. */
+  date?: string;
+  total: number;
+  count: number;
+  items: { label: string; date?: string; amount: number }[];
+}
+
+export interface AIAskAnswer {
+  /** Empty when no query could answer. */
+  answer: string;
+  used: AIAskUsed[];
+  currency: AIReportCurrency;
+}
+
+/** Two calls to the model; nothing is kept. */
+export const askAI = (walletId: number, question: string, confirm = false) =>
+  api.post<AIAskAnswer>(`/api/v1/wallets/${walletId}/insights/ask`, { question, confirm });
 
 // --- Proposals (#698, #699) ---
 

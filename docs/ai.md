@@ -35,6 +35,7 @@ thumbs say whether it helped.
 | Job | Where it shows |
 | --- | --- |
 | **Monthly reports**, and weekly or yearly ones if you tick them | [AI insights](pages.md#ai-insights), and a notification when one is written |
+| **Ask your data**: a question in your own words, answered from the wallet's numbers | [AI insights](pages.md#ai-insights) |
 | **Budget proposals**: budgets from what you really spend | [Budget](pages.md#budget) and the overview |
 | **Subscription proposals**: schedules that cost more, look doubled, or no longer appear in the bank | [Schedules](pages.md#schedules) |
 | **Savings proposals**: categories grown lately | [AI insights](pages.md#ai-insights) and the overview |
@@ -47,6 +48,15 @@ thumbs say whether it helped.
 | **Quick entry**: a sentence, or [text shared](pages.md#adding-from-your-phone) from your phone, turned into the fields | The entry sheet |
 | **Bank mails**: the mails no pattern reads | [Bank mails](bank-mails.md) |
 
+**Ask your data** works in two steps. The model first picks, from your
+question, up to three of CloudBank's own read-only queries (a total, a total by
+month or by category, the largest expenses, the account balances) with their
+period and filters; CloudBank runs them on this wallet alone; the model then
+answers in a sentence or three from what they returned. Under the answer,
+**Numbers used** lists each query and its result as CloudBank computed it. The
+model never writes a query and never sees a transaction. Questions are not
+kept: the earlier ones stay a click away until you leave the page.
+
 Nothing the AI proposes is saved by itself: **Apply** and the like open the
 usual sheet, filled in, and you save it there.
 
@@ -57,6 +67,9 @@ Each job's switch says what it sends:
 - **Monthly reports**: the month's totals by category, against the month before
   and your budgets, the three largest expenses (payee, amount and date) and next
   month's bills. Never the memos.
+- **Ask your data**: your question, the names of your categories, accounts and
+  tags and of your 200 busiest payees, then the results of the queries it
+  picked. Never a transaction or a memo.
 - **Budget, subscription, savings and goal proposals**: for each line proposed,
   its name and the figures behind the proposal. Never the transactions.
 - **Rule proposals**: for each payee proposed, its name, its category and how
@@ -89,6 +102,7 @@ for word.
 
 **Requests a month** caps how many calls CloudBank makes for you. At the limit,
 bank mails are no longer read by the AI, what you ask for yourself (Generate
-now, a quick entry) asks before going past it, and reports that would come by
+now, a quick entry, a question) asks before going past it, and reports that would come by
 themselves are skipped; the bell says so once. The count starts again on the
-first of the month.
+first of the month. A question counts twice: one request to pick the queries,
+one to answer.

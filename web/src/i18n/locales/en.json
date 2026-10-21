@@ -2082,6 +2082,10 @@
       "import": {
         "name": "CSV columns",
         "sends": "Sends the column names of an unknown CSV and the shape of three rows: dates and numbers as written, never the words."
+      },
+      "ask": {
+        "name": "Ask your data",
+        "sends": "Sends your question, the names of your categories, accounts, tags and busiest payees, and the results of the queries the AI picked. Never a transaction or a memo."
       }
     },
     "wallets": "On which wallets",
@@ -3394,7 +3398,42 @@
     "year": "Year {{year}}",
     "reportTitleWeek": "The week in short",
     "reportTitleYear": "{{year}} in short",
-    "proposals": "Open proposals"
+    "proposals": "Open proposals",
+    "ask": {
+      "field": "Ask your data",
+      "placeholder": "Ask about your money, e.g. how much on restaurants this summer?",
+      "send": "Ask",
+      "example1": "How much did I spend on restaurants this summer?",
+      "example2": "What were my three biggest expenses last month?",
+      "example3": "How has my grocery spending changed this year?",
+      "note": "The AI picks among CloudBank's own read-only queries; it gets your category, account and tag names, and the results it asked for. Each question is two requests.",
+      "label": "AI answer",
+      "basis": "{{wallet}} · {{date}}",
+      "asked": "You asked:",
+      "none": "None of CloudBank's queries could answer this. Try naming a period, a category or an account.",
+      "used": "Numbers used, computed by CloudBank",
+      "head": {
+        "tool": "Tool",
+        "filters": "Filters",
+        "period": "Period",
+        "result": "Result"
+      },
+      "tool": {
+        "total": "Total",
+        "by_month": "By month",
+        "by_category": "By category",
+        "largest": "Largest expenses",
+        "balances": "Balances"
+      },
+      "type": {
+        "expense": "expenses",
+        "income": "income"
+      },
+      "count_one": "{{count}} transaction",
+      "count_other": "{{count}} transactions",
+      "noPayee": "(no payee)",
+      "earlier": "Earlier:"
+    }
   },
   "proposal": {
     "label": "AI suggestion",
