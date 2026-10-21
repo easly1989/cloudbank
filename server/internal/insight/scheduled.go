@@ -105,6 +105,9 @@ func (s *Service) runFor(ctx context.Context, u db.ListAIReportUsersRow) error {
 		if u.GoalsOn != 0 {
 			kinds = append(kinds, KindGoals)
 		}
+		if u.RulesOn != 0 {
+			kinds = append(kinds, KindRules)
+		}
 	}
 	if len(spans) == 0 && len(kinds) == 0 {
 		return nil

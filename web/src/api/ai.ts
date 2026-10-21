@@ -17,6 +17,8 @@ export interface AIFeatures {
   goals: boolean;
   /** Expenses out of scale, new payees, double charges (#700). */
   unusual: boolean;
+  /** Payees always filed under one category, a rule each (#705). */
+  rules: boolean;
 }
 
 export type AIFeature = keyof AIFeatures;
@@ -191,9 +193,10 @@ export type AIProposalReason =
   | "grown"
   | "late"
   | "move"
-  | "eta";
+  | "eta"
+  | "rule";
 
-export type AIProposalKind = "budget" | "subscriptions" | "savings" | "goals";
+export type AIProposalKind = "budget" | "subscriptions" | "savings" | "goals" | "rules";
 
 /**
  * One row, in positive minor units of the base currency: a category's proposed
@@ -232,6 +235,15 @@ export interface AIProposalRow {
   pace?: number;
   date?: string;
   newDate?: string;
+  /**
+   * Rule: the payee (name is its name, categoryId the category proposed), the
+   * category's path, and its transactions no rule decides: hits have that
+   * category, without none.
+   */
+  payeeId?: number;
+  category?: string;
+  total?: number;
+  without?: number;
 }
 
 export interface AIProposal {
@@ -260,7 +272,7 @@ export const actOnAIProposal = (
   walletId: number,
   id: number,
   action: "later" | "ignore" | "applied",
-  row?: { categoryId: number } | { scheduleId: number } | { goalId: number },
+  row?: { categoryId: number } | { scheduleId: number } | { goalId: number } | { payeeId: number },
 ) =>
   api.post<void>(`/api/v1/wallets/${walletId}/insights/proposals/${id}/actions`, {
     action,

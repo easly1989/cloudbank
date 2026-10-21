@@ -2055,6 +2055,10 @@
       "unusual": {
         "name": "Transazioni insolite",
         "sends": "Invia, per ogni uscita che segnala, il beneficiario, la data e l'importo, con l'importo solito del beneficiario. Mai la nota."
+      },
+      "rules": {
+        "name": "Proposte di regole",
+        "sends": "Invia, per ogni beneficiario che propone, il nome, la sua categoria e quante sue transazioni la hanno. Mai importi, note o date."
       }
     },
     "wallets": "Su quali portafogli",
@@ -3394,6 +3398,24 @@
         "pace": "Al mese di recente",
         "eta": "Ci arrivi",
         "note": "I numeri li ha calcolati CloudBank: il ritmo di ogni obiettivo negli ultimi 3 mesi completi, la quota al mese che serve per la sua data e quanto è avanzato al mese nel portafoglio in quei mesi ({{kept}}). Il modello ha scritto solo il testo. Modello: {{model}}."
+      }
+    },
+    "rule": {
+      "title_one": "{{count}} regola da aggiungere",
+      "title_other": "{{count}} regole da aggiungere",
+      "basis": "Dagli ultimi 12 mesi · fatta il {{date}}",
+      "reason": "{{category}} in {{hits}} transazioni su {{total}}",
+      "without_one": "{{count}} senza categoria",
+      "without_other": "{{count}} senza categoria",
+      "create": "Crea regola",
+      "createLabel": "Crea una regola: il beneficiario è {{name}}, categoria {{category}}",
+      "why": {
+        "payee": "Beneficiario",
+        "category": "Categoria",
+        "hits": "Con questa",
+        "total": "Transazioni",
+        "without": "Senza categoria",
+        "note": "CloudBank ha contato, beneficiario per beneficiario, le transazioni degli ultimi 12 mesi che nessuna regola compila ancora. Il modello ha scritto solo il testo. Modello: {{model}}."
       }
     }
   },

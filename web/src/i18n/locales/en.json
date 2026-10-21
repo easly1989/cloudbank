@@ -2055,6 +2055,10 @@
       "unusual": {
         "name": "Unusual transactions",
         "sends": "Sends, for each expense it flags, the payee, the date and the amount, with the payee's usual amount. Never the memo."
+      },
+      "rules": {
+        "name": "Rule proposals",
+        "sends": "Sends, for each payee it proposes, its name, its category and how many of its transactions have it. Never an amount, a memo or a date."
       }
     },
     "wallets": "On which wallets",
@@ -3394,6 +3398,24 @@
         "pace": "Lately a month",
         "eta": "Gets there",
         "note": "CloudBank worked out the numbers: each goal's pace over the last 3 complete months, the monthly share its date needs, and what the wallet kept a month in them ({{kept}}). The model only wrote the text. Model: {{model}}."
+      }
+    },
+    "rule": {
+      "title_one": "{{count}} rule to add",
+      "title_other": "{{count}} rules to add",
+      "basis": "From the last 12 months · made on {{date}}",
+      "reason": "{{category}} in {{hits}} of {{total}} transactions",
+      "without_one": "{{count}} without a category",
+      "without_other": "{{count}} without a category",
+      "create": "Create rule",
+      "createLabel": "Create a rule: payee is {{name}}, category {{category}}",
+      "why": {
+        "payee": "Payee",
+        "category": "Category",
+        "hits": "With it",
+        "total": "Transactions",
+        "without": "Without a category",
+        "note": "CloudBank counted, payee by payee, the transactions of the last 12 months that no rule fills in yet. The model only wrote the text. Model: {{model}}."
       }
     }
   },
