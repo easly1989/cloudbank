@@ -2086,6 +2086,10 @@
       "ask": {
         "name": "Questions sur vos données",
         "sends": "Envoie votre question, les noms de vos catégories, comptes, étiquettes et tiers les plus fréquents, et les résultats des requêtes choisies par l'IA. Jamais une opération ni une note."
+      },
+      "receipts": {
+        "name": "Tickets de caisse",
+        "sends": "Envoie la photo d'un ticket, réduite par votre navigateur et sans sa position, avec les noms de vos catégories, tiers et étiquettes. La photo n'est pas conservée sauf si vous la joignez."
       }
     },
     "wallets": "Sur quels classeurs",
@@ -2128,7 +2132,18 @@
       "weekly": "Chaque lundi, la semaine précédente",
       "yearly": "En janvier, l’année précédente"
     },
-    "fromShared": "D'après le texte partagé : vérifiez les champs et enregistrez"
+    "fromShared": "D'après le texte partagé : vérifiez les champs et enregistrez",
+    "receipt": {
+      "scan": "Lire un ticket",
+      "photo": "Photo du ticket",
+      "remove": "Retirer la photo",
+      "sends": "Envoie cette photo et les noms de vos catégories, tiers et étiquettes à votre IA. La photo n'est pas conservée sauf si vous la joignez.",
+      "read": "Lire avec l'IA",
+      "done": "Lu par l'IA : vérifiez les champs et enregistrez.",
+      "attach": "Joindre la photo à l'opération",
+      "attachFailed": "Enregistrée, mais la photo n'a pas pu être jointe",
+      "unreadable": "L'IA n'a pas trouvé de ticket lisible sur cette photo."
+    }
   },
   "setup": {
     "title": "Bienvenue dans CloudBank",
@@ -3365,7 +3380,8 @@
     "tls_failed": "La connexion au serveur de messagerie n’a pas pu être chiffrée.",
     "ai_not_configured": "Configurez d’abord l’IA, dans Paramètres › IA.",
     "hourly_limit": "Trop de messages cette heure-ci. Réessayez plus tard.",
-    "no_data": "Ce mois n’a aucune opération sur laquelle écrire."
+    "no_data": "Ce mois n’a aucune opération sur laquelle écrire.",
+    "ai_no_vision": "Le fournisseur a refusé la photo : le modèle choisi ne lit peut-être pas les images. Choisissez-en un qui les lit dans Paramètres › IA."
   },
   "insights": {
     "title": "Analyses IA",

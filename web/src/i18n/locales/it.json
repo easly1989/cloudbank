@@ -2086,6 +2086,10 @@
       "ask": {
         "name": "Domande sui dati",
         "sends": "Invia la domanda, i nomi di categorie, conti, tag e dei beneficiari più usati, e i risultati delle query scelte dall'AI. Mai una transazione o una nota."
+      },
+      "receipts": {
+        "name": "Scontrini",
+        "sends": "Invia la foto di uno scontrino, ridotta dal browser e senza la posizione, con i nomi di categorie, beneficiari e tag. La foto non viene conservata se non la alleghi."
       }
     },
     "wallets": "Su quali portafogli",
@@ -2128,7 +2132,18 @@
       "weekly": "Ogni lunedì, la settimana prima",
       "yearly": "A gennaio, l'anno prima"
     },
-    "fromShared": "Dal testo condiviso: controlla i campi e salva"
+    "fromShared": "Dal testo condiviso: controlla i campi e salva",
+    "receipt": {
+      "scan": "Leggi uno scontrino",
+      "photo": "Foto dello scontrino",
+      "remove": "Togli la foto",
+      "sends": "Invia questa foto e i nomi di categorie, beneficiari e tag alla tua AI. La foto non viene conservata se non la alleghi.",
+      "read": "Leggi con l'AI",
+      "done": "Letto dall'AI: controlla i campi e salva.",
+      "attach": "Allega la foto alla transazione",
+      "attachFailed": "Salvata, ma non è stato possibile allegare la foto",
+      "unreadable": "L'AI non ha trovato uno scontrino leggibile in questa foto."
+    }
   },
   "setup": {
     "title": "Benvenuto in CloudBank",
@@ -3365,7 +3380,8 @@
     "tls_failed": "Non è stato possibile cifrare la connessione al server di posta.",
     "ai_not_configured": "Prima configura l'AI, in Impostazioni › AI.",
     "hourly_limit": "Troppi messaggi in quest'ora. Riprova più tardi.",
-    "no_data": "Quel mese non ha transazioni di cui scrivere."
+    "no_data": "Quel mese non ha transazioni di cui scrivere.",
+    "ai_no_vision": "Il provider ha rifiutato la foto: il modello scelto potrebbe non leggere le immagini. Scegline uno che le legge in Impostazioni › AI."
   },
   "insights": {
     "title": "Approfondimenti AI",

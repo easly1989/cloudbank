@@ -65,6 +65,7 @@ const TRANSLATED = new Set([
   "unreachable",
   "tls_failed",
   "ai_not_configured",
+  "ai_no_vision",
 ]);
 
 /**
@@ -80,6 +81,7 @@ const KEEP_DETAIL = new Set([
   "microsoft_error",
   "unreachable",
   "tls_failed",
+  "ai_no_vision",
 ]);
 
 /** Turns any error into the words the reader sees. */

@@ -718,6 +718,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/ai/parse-receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read a receipt's photo into transaction fields
+         * @description The photo goes to the provider and nowhere else: never to disk, and the log of what was sent keeps a line about it instead of its bytes. 400 invalid_file when it is not a JPEG, PNG or WebP of up to 5 MB, told by its bytes; 400 ai_disabled when the AI, its "receipts" switch or this wallet are off; 502 ai_no_vision when the provider refused the photo, most often a model that does not read images.
+         */
+        post: operations["parseReceipt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/sends": {
         parameters: {
             query?: never;
@@ -4090,6 +4112,8 @@ export interface components {
             import: boolean;
             /** @description ask your data: sends the question, the category, account and tag names, the busiest payees, and the results of the queries picked */
             ask: boolean;
+            /** @description receipts: sends the photo, shrunk by the browser, with the category, payee and tag names; the photo is not kept unless attached */
+            receipts: boolean;
         };
         /** @description The reports that come by themselves besides the monthly one, which comes whenever reports are on. */
         AISchedule: {
@@ -7897,6 +7921,59 @@ export interface operations {
                 };
             };
             /** @description The AI provider request failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    parseReceipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    photo: string;
+                    /**
+                     * @description the user's yes to a call past this month's limit
+                     * @enum {string}
+                     */
+                    confirm?: "true" | "false";
+                };
+            };
+        };
+        responses: {
+            /** @description The parsed fields (entry may be null). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParseEntryResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description This month's limit is reached (ai_limit); ask the user, then send confirm. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The AI provider request failed (ai_error), or refused the photo (ai_no_vision). */
             502: {
                 headers: {
                     [name: string]: unknown;
