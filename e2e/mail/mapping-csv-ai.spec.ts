@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { expect, test, type Page } from "@playwright/test";
 
 // The CSV column mapping (#709) on the real server, asked of the pretend AI
@@ -70,7 +72,7 @@ test("an unknown CSV comes mapped by the AI, and the next one by memory", async 
   // A column name of its own, so a rerun meets no mapping the last one kept.
   const s = Date.now().toString(36);
   // And a word in the rows the model must never see.
-  const secret = `Q${Math.random().toString(36).slice(2, 8)}`;
+  const secret = `Q${randomUUID().slice(0, 6)}`;
   const file =
     `Booking date;Description;Counterparty;Amount;Balance ${s}\n` +
     `03/10/2026;CARD PAYMENT MILANO ${secret};Corner shop;-42,30;2457,70\n` +
