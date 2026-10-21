@@ -39,6 +39,9 @@ func (h *payeeHandlers) walletRoutes(r chi.Router) {
 	if h.rep != nil {
 		r.Get("/payees/activity", h.activity)
 	}
+	r.Get("/payees/cleanup", h.lastCleanup)
+	r.Post("/payees/cleanup", h.cleanup)
+	r.Delete("/payees/cleanup", h.undoCleanup)
 	r.Route("/payees/{payeeId}", func(r chi.Router) {
 		r.Patch("/", h.update)
 		r.Delete("/", h.delete)
@@ -149,6 +152,60 @@ func (h *payeeHandlers) merge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// The payee cleanup (#708): apply the groups, read and undo the last one.
+
+func (h *payeeHandlers) cleanup(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var in struct {
+		Groups []payee.CleanupGroup `json:"groups"`
+	}
+	if !decodeJSON(w, r, &in) {
+		return
+	}
+	if len(in.Groups) > 1000 {
+		writeError(w, http.StatusBadRequest, "invalid", "too many groups")
+		return
+	}
+	sum, err := h.svc.Cleanup(r.Context(), wl.ID, in.Groups)
+	if errors.Is(err, payee.ErrBadCleanup) {
+		writeError(w, http.StatusBadRequest, "invalid", "each group needs a name and payees of this wallet, each payee in one group")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not clean the payees up")
+		return
+	}
+	writeJSON(w, http.StatusOK, sum)
+}
+
+func (h *payeeHandlers) lastCleanup(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	sum, err := h.svc.LastCleanup(r.Context(), wl.ID)
+	if errors.Is(err, payee.ErrNoCleanup) {
+		writeJSON(w, http.StatusOK, map[string]any{"cleanup": nil})
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not load the last cleanup")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"cleanup": sum})
+}
+
+func (h *payeeHandlers) undoCleanup(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	switch err := h.svc.UndoCleanup(r.Context(), wl.ID); {
+	case err == nil:
+		w.WriteHeader(http.StatusNoContent)
+	case errors.Is(err, payee.ErrNoCleanup):
+		writeError(w, http.StatusNotFound, "not_found", "no cleanup to undo")
+	case errors.Is(err, payee.ErrUndoConflict):
+		writeError(w, http.StatusConflict, "undo_conflict", "a payee now has one of the names to bring back; rename it first")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", "could not undo the cleanup")
+	}
 }
 
 func (h *payeeHandlers) payeeFromPath(w http.ResponseWriter, r *http.Request) (payee.Payee, bool) {

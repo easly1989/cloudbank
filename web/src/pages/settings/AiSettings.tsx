@@ -29,6 +29,7 @@ import {
   IconPencilBolt,
   IconPigMoney,
   IconTarget,
+  IconUsers,
   IconWand,
   IconZoomExclamation,
   type Icon,
@@ -66,6 +67,7 @@ const FEATURES: { key: AIFeature; icon: Icon }[] = [
   { key: "goals", icon: IconTarget },
   { key: "unusual", icon: IconZoomExclamation },
   { key: "rules", icon: IconWand },
+  { key: "payees", icon: IconUsers },
   { key: "suggest", icon: IconCategory },
   { key: "entry", icon: IconPencilBolt },
   { key: "mail", icon: IconMail },
@@ -82,6 +84,7 @@ const NO_FEATURES: AIFeatures = {
   goals: false,
   unusual: false,
   rules: false,
+  payees: false,
 };
 
 /** The first of next month, UTC, when the count starts again. */

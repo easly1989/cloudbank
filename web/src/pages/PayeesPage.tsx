@@ -1,22 +1,30 @@
 import { Button, Stack, TextInput, UnstyledButton } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import { IconSearch, IconUsers } from "@tabler/icons-react";
+import { notifications } from "@mantine/notifications";
+import { IconSearch, IconSparkles, IconUsers } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
+  AI_SETTINGS_KEY,
   deletePayee,
+  getAISettings,
   getPayeeActivity,
   listCategories,
   listPayees,
   mergePayee,
+  payeeCleanupKey,
+  proposePayeeCleanup,
   updatePayee,
+  type CleanupProposal,
   type Payee,
 } from "../api/client";
+import { useAskPastLimit } from "../components/aiLimit";
 import { useConfirm } from "../components/confirmContext";
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
+import { aiFeatureOn } from "../components/proposalData";
 import { formatMinor, type MoneyFormat } from "../money";
 import { useToday } from "../useToday";
 import { useWallet } from "../wallet/WalletProvider";
@@ -31,6 +39,7 @@ import {
   type PayeeRow,
   type Sort,
 } from "./payees/payeeList";
+import { PayeeCleanupBar, PayeeCleanupBox } from "./payees/PayeeCleanup";
 import classes from "./payees/payees.module.css";
 import { PayeeSheet } from "./payees/PayeeSheet";
 import { PayeePhoneList, PayeeTable } from "./payees/PayeeTable";
@@ -51,7 +60,7 @@ const PLAIN: MoneyFormat = {
  * one click makes its default. A payee opens in the sheet beside the page.
  */
 export function PayeesPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const confirm = useConfirm();
   const qc = useQueryClient();
   const { currentWallet } = useWallet();
@@ -112,6 +121,36 @@ export function PayeesPage() {
       void qc.invalidateQueries({ queryKey: [key, walletId] });
   };
   const onError = (err: unknown) => notifyError(err);
+
+  // The AI's cleanup (#708): names, merges and rules touch these lists too.
+  const aiSettings = useQuery({ queryKey: AI_SETTINGS_KEY, queryFn: getAISettings });
+  const cleanupOn = aiFeatureOn(aiSettings.data, walletId, "payees");
+  const askPastLimit = useAskPastLimit();
+  const [cleanup, setCleanup] = useState<{ groups: CleanupProposal[]; madeOn: string } | null>(
+    null,
+  );
+  const propose = useMutation({
+    mutationFn: () => askPastLimit((ok) => proposePayeeCleanup(walletId, ok)),
+    onSuccess: (res) => {
+      if (!res) return;
+      if (res.groups.length === 0)
+        notifications.show({ message: t("payees.cleanup.none"), autoClose: 2400 });
+      else
+        setCleanup({
+          groups: res.groups,
+          madeOn: new Intl.DateTimeFormat(i18n.language, { day: "numeric", month: "long" }).format(
+            new Date(),
+          ),
+        });
+    },
+    onError,
+  });
+  const cleaned = () => {
+    setCleanup(null);
+    for (const key of ["payees", "payee-activity", "assignments", "templates"])
+      void qc.invalidateQueries({ queryKey: [key, walletId] });
+    void qc.invalidateQueries({ queryKey: payeeCleanupKey(walletId) });
+  };
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Payee | null>(null);
@@ -213,8 +252,39 @@ export function PayeesPage() {
       <PageHeader
         title={t("payees.title")}
         hint={t("payees.hint")}
-        actions={payees.length > 0 ? addButton : undefined}
+        actions={
+          payees.length > 0 ? (
+            <>
+              {cleanupOn && (
+                <Button
+                  variant="light"
+                  leftSection={<IconSparkles size={15} />}
+                  loading={propose.isPending}
+                  disabled={cleanup !== null}
+                  onClick={() => propose.mutate()}
+                >
+                  {t("payees.cleanup.button")}
+                </Button>
+              )}
+              {addButton}
+            </>
+          ) : undefined
+        }
       />
+
+      {cleanup ? (
+        <PayeeCleanupBox
+          walletId={walletId}
+          groups={cleanup.groups}
+          madeOn={cleanup.madeOn}
+          payees={payees}
+          phone={phone}
+          onDone={cleaned}
+          onCancel={() => setCleanup(null)}
+        />
+      ) : (
+        <PayeeCleanupBar walletId={walletId} onUndone={cleaned} />
+      )}
 
       {payees.length === 0 && payeesQuery.isSuccess && (
         <EmptyState

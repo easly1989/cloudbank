@@ -655,6 +655,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/ai/payee-cleanup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask the model for groups of payees to give one clean name
+         * @description Only the payee names are sent, 100 a call. Nothing is changed.
+         */
+        post: operations["proposePayeeCleanup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/ai/parse-entry": {
         parameters: {
             query?: never;
@@ -2207,6 +2229,30 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/payees/cleanup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        /** The wallet's last payee cleanup, the one an undo puts back */
+        get: operations["getLastPayeeCleanup"];
+        put?: never;
+        /**
+         * Give groups of payees one clean name each, merging them (all-or-nothing)
+         * @description A group merges into the payee that already has its name, else its first payee takes the name and the others merge into it: transactions, templates, rules and ignored recurring payments follow. A rule text adds a "payee contains" rule setting the clean payee. The cleanup replaces the wallet's last one, which an undo puts back.
+         */
+        post: operations["cleanUpPayees"];
+        /** Undo the wallet's last payee cleanup */
+        delete: operations["undoPayeeCleanup"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3935,7 +3981,7 @@ export interface components {
         };
         /** @description The AI's jobs, each switched on by itself under the master switch. */
         AIFeatures: {
-            /** @description category suggestions: sends the payee and the amount */
+            /** @description category suggestions: sends the payee and the amount; in Review also the date */
             suggest: boolean;
             /** @description quick entry: sends the sentence typed */
             entry: boolean;
@@ -3955,6 +4001,8 @@ export interface components {
             unusual: boolean;
             /** @description rule proposals: sends each proposed payee's name, its category and how many of its transactions have it; never an amount, a memo or a date */
             rules: boolean;
+            /** @description payee cleanup: sends the payee names only */
+            payees: boolean;
         };
         /** @description The reports that come by themselves besides the monthly one, which comes whenever reports are on. */
         AISchedule: {
@@ -4012,7 +4060,7 @@ export interface components {
             walletId: number | null;
             walletName: string;
             /** @enum {string} */
-            feature: "suggest" | "entry" | "mail" | "reports" | "budgets" | "subscriptions" | "savings" | "goals" | "unusual" | "rules";
+            feature: "suggest" | "entry" | "mail" | "reports" | "budgets" | "subscriptions" | "savings" | "goals" | "unusual" | "rules" | "payees";
             model: string;
             /** @description RFC3339 UTC */
             createdAt: string;
@@ -7534,6 +7582,73 @@ export interface operations {
             };
         };
     };
+    proposePayeeCleanup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The user's yes to calls past this month's limit. */
+                    confirm?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description The groups, the most transactions first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        groups: {
+                            name: string;
+                            /**
+                             * Format: int64
+                             * @description A payee outside the group that already has the name; the group merges into it.
+                             */
+                            targetId?: number;
+                            /** @description The one that keeps its row when there is no target comes first. */
+                            payees: {
+                                /** Format: int64 */
+                                id: number;
+                                name: string;
+                                /** @description All its transactions */
+                                transactions: number;
+                            }[];
+                            /** @description The text a "payee contains" rule would match; empty when none is long enough. */
+                            rule: string;
+                        }[];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description This month's limit is reached (ai_limit); ask the user, then send confirm. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The AI provider request failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     parseEntry: {
         parameters: {
             query?: never;
@@ -10442,6 +10557,111 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    getLastPayeeCleanup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The last cleanup, or null. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        cleanup: {
+                            /** @description clean payees */
+                            payees: number;
+                            /** @description payees renamed or merged */
+                            names: number;
+                            rules: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                        } | null;
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    cleanUpPayees: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    groups: {
+                        name: string;
+                        payeeIds: number[];
+                        rule?: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Applied. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description clean payees */
+                        payees: number;
+                        /** @description payees renamed or merged */
+                        names: number;
+                        rules: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    undoPayeeCleanup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Undone. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            /** @description A payee now has one of the names to bring back (undo_conflict). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     deletePayee: {

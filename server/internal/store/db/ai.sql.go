@@ -213,7 +213,7 @@ func (q *Queries) GetAISend(ctx context.Context, arg GetAISendParams) (GetAISend
 
 const getAISettings = `-- name: GetAISettings :one
 SELECT enabled, base_url, model, api_key, suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion,
-       weekly_on, yearly_on, budgets_on, subscriptions_on, savings_on, goals_on, unusual_on, rules_on
+       weekly_on, yearly_on, budgets_on, subscriptions_on, savings_on, goals_on, unusual_on, rules_on, payees_on
 FROM ai_settings WHERE user_id = ?
 `
 
@@ -236,6 +236,7 @@ type GetAISettingsRow struct {
 	GoalsOn         int64
 	UnusualOn       int64
 	RulesOn         int64
+	PayeesOn        int64
 }
 
 func (q *Queries) GetAISettings(ctx context.Context, userID int64) (GetAISettingsRow, error) {
@@ -260,6 +261,7 @@ func (q *Queries) GetAISettings(ctx context.Context, userID int64) (GetAISetting
 		&i.GoalsOn,
 		&i.UnusualOn,
 		&i.RulesOn,
+		&i.PayeesOn,
 	)
 	return i, err
 }
@@ -978,9 +980,9 @@ const upsertAISettings = `-- name: UpsertAISettings :exec
 INSERT INTO ai_settings (
     user_id, enabled, base_url, model, api_key,
     suggest_on, entry_on, mail_on, reports_on, monthly_limit, motion, weekly_on, yearly_on, budgets_on, subscriptions_on,
-    savings_on, goals_on, unusual_on, rules_on, updated_at
+    savings_on, goals_on, unusual_on, rules_on, payees_on, updated_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 ON CONFLICT (user_id) DO UPDATE SET
     enabled = excluded.enabled, base_url = excluded.base_url,
     model = excluded.model, api_key = excluded.api_key,
@@ -989,7 +991,8 @@ ON CONFLICT (user_id) DO UPDATE SET
     monthly_limit = excluded.monthly_limit, motion = excluded.motion,
     weekly_on = excluded.weekly_on, yearly_on = excluded.yearly_on, budgets_on = excluded.budgets_on,
     subscriptions_on = excluded.subscriptions_on, savings_on = excluded.savings_on,
-    goals_on = excluded.goals_on, unusual_on = excluded.unusual_on, rules_on = excluded.rules_on, updated_at = excluded.updated_at
+    goals_on = excluded.goals_on, unusual_on = excluded.unusual_on, rules_on = excluded.rules_on,
+    payees_on = excluded.payees_on, updated_at = excluded.updated_at
 `
 
 type UpsertAISettingsParams struct {
@@ -1012,6 +1015,7 @@ type UpsertAISettingsParams struct {
 	GoalsOn         int64
 	UnusualOn       int64
 	RulesOn         int64
+	PayeesOn        int64
 }
 
 func (q *Queries) UpsertAISettings(ctx context.Context, arg UpsertAISettingsParams) error {
@@ -1035,6 +1039,7 @@ func (q *Queries) UpsertAISettings(ctx context.Context, arg UpsertAISettingsPara
 		arg.GoalsOn,
 		arg.UnusualOn,
 		arg.RulesOn,
+		arg.PayeesOn,
 	)
 	return err
 }

@@ -2074,6 +2074,10 @@
       "rules": {
         "name": "Proposte di regole",
         "sends": "Invia, per ogni beneficiario che propone, il nome, la sua categoria e quante sue transazioni la hanno. Mai importi, note o date."
+      },
+      "payees": {
+        "name": "Pulizia dei beneficiari",
+        "sends": "Invia solo i nomi dei beneficiari. Mai importi, note o date."
       }
     },
     "wallets": "Su quali portafogli",
@@ -2386,6 +2390,39 @@
       "usage_other": "{{count}} transazioni, l'ultima il {{date}}",
       "seeReports": "Vedilo nei report",
       "usePayment": "Usalo"
+    },
+    "cleanup": {
+      "button": "Pulisci i nomi",
+      "label": "Proposta dell'AI",
+      "basis": "Solo i nomi dei beneficiari · {{date}}",
+      "title": "Nomi puliti per {{names}}, in {{groups}}",
+      "note": "Al tuo fornitore AI sono andati solo i nomi dei beneficiari. Nulla cambia finché non applichi; l'ultima pulizia si può annullare.",
+      "merges": "Si unisce al beneficiario esistente",
+      "renamed": "Rinominato",
+      "become_one": "{{count}} beneficiario diventa uno",
+      "become_other": "{{count}} beneficiari diventano uno",
+      "include": "Includi {{name}}",
+      "name": "Nome pulito",
+      "rule": "Regola per le prossime importazioni: il beneficiario contiene",
+      "ruleText": "Testo della regola",
+      "covers_one": "copre {{count}} di questi nomi",
+      "covers_other": "copre {{count}} di questi nomi",
+      "apply": "Applica {{n}}",
+      "done_one": "{{count}} nome pulito",
+      "done_other": "{{count}} nomi puliti",
+      "none": "L'AI non ha trovato nomi da pulire.",
+      "last": "Pulizia del {{date}}: {{payees}}, {{names}}, {{rules}}.",
+      "payees_one": "{{count}} beneficiario",
+      "payees_other": "{{count}} beneficiari",
+      "names_one": "{{count}} nome",
+      "names_other": "{{count}} nomi",
+      "rules_one": "{{count}} regola",
+      "rules_other": "{{count}} regole",
+      "groups_one": "{{count}} gruppo",
+      "groups_other": "{{count}} gruppi",
+      "undo": "Annulla l'ultima pulizia",
+      "undone": "Pulizia annullata",
+      "undoConflict": "Un beneficiario ha ora uno dei nomi da ripristinare. Rinominalo, poi annulla di nuovo."
     }
   },
   "currencies": {

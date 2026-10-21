@@ -258,7 +258,13 @@ Three lists in **Wallet data** that the rest of the wallet picks from.
   Search by name, or show only the payees without a default category or unused
   in 12 months. A payee opens in a panel beside the page, which offers the same
   suggestions for the category and the payment; **Merge** and **Delete** are in
-  its ⋯ menu.
+  its ⋯ menu. With **Payee cleanup** switched on in Settings → AI, **Clean up
+  names** asks the AI to group the names that are one merchant or person and
+  give each group a clean name: the preview shows each group's names, ticked,
+  its clean name and a "payee contains" rule for the next imports, all
+  editable. **Apply** merges the ticked names into one payee (into the one that
+  already has the clean name, if there is one), with their transactions,
+  templates and rules; the bar that follows undoes the last cleanup.
 - **Currencies.** The currencies this wallet can use, the base first. Each
   shows its rate against the base ("1 $ = 0,8807 €"), where the rate came from
   (the ECB and its date, or **Typed by you**) and how many accounts are kept in
@@ -650,7 +656,7 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | **Notifications** | Which events reach you, in the bell, by push on this device, by email, in Matrix, Telegram, Discord or Slack, through ntfy or Gotify, or through a webhook ([the guide](notifications.md)); the bell itself sits in every page header |
 | **Bank sync** | Bank connections ([Automatic bank sync](bank-sync.md)) |
 | **Bank mails** | The bank's notification mails, read from one folder of a mailbox ([the guide](bank-mails.md)) |
-| **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, budget, subscription, savings, goal and rule proposals, unusual transactions, category suggestions, quick entry, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word. See [the AI guide](ai.md) |
+| **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, budget, subscription, savings, goal and rule proposals, payee cleanup, unusual transactions, category suggestions, quick entry, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word. See [the AI guide](ai.md) |
 | **Import & export** | Imports ([Importing transactions](import.md)), exports, backups and a database check |
 | **People** | Administrators only: the people who can sign in |
 | **About** | The version, the licence and the source code; for administrators, whether a newer CloudBank is out and the switch for the daily check ([Upgrading](backup.md#upgrading)) |
