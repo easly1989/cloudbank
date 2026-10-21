@@ -41,7 +41,7 @@ thumbs say whether it helped.
 | **Goal proposals**: goals behind, or with no date | [Goals](pages.md#goals) |
 | **Rule proposals**: payees you always file under one category, a rule each | [Rules](pages.md#rules) |
 | **Unusual transactions**: a payee far over its usual amount, a large new payee, a charge taken twice | [Review](pages.md#review), the overview and the bell |
-| **Category suggestion** | The entry sheet |
+| **Category suggestion**: one transaction's category, or a payee and a category for many at once | The entry sheet, and [Review](pages.md#review) |
 | **Quick entry**: a sentence, or [text shared](pages.md#adding-from-your-phone) from your phone, turned into the fields | The entry sheet |
 | **Bank mails**: the mails no pattern reads | [Bank mails](bank-mails.md) |
 
@@ -61,7 +61,8 @@ Each job's switch says what it sends:
   many of its transactions have it. Never an amount, a memo or a date.
 - **Unusual transactions**: for each expense flagged, the payee, the date and the
   amount, with the payee's usual amount. Never the memo.
-- **Category suggestion**: the payee and the amount, with your categories.
+- **Category suggestion**: the payee and the amount, with your categories; in
+  Review also the date, for each row it asks about. Never the bank's text.
 - **Quick entry**: the sentence you write, with your categories, payees and tags.
 - **Bank mails**: the mail's text, with card numbers and IBANs hidden first.
 

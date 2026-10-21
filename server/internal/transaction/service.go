@@ -689,6 +689,51 @@ func (s *Service) BulkUpdate(ctx context.Context, walletID int64, ids []int64, f
 	return len(ids), nil
 }
 
+// Categorized is one row of BulkCategorize: its category and, when PayeeID is
+// set, its payee.
+type Categorized struct {
+	ID         int64  `json:"id"`
+	PayeeID    *int64 `json:"payeeId,omitempty"`
+	CategoryID int64  `json:"categoryId"`
+}
+
+// BulkCategorize sets each row's own category, and payee where given, all or
+// nothing: Review's confirmed proposals (#706). Every row, category and payee
+// must belong to walletID.
+func (s *Service) BulkCategorize(ctx context.Context, walletID int64, rows []Categorized) (int, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	qtx := s.q.WithTx(tx)
+	for _, r := range rows {
+		row, err := qtx.GetTransaction(ctx, r.ID)
+		if errors.Is(err, sql.ErrNoRows) || (err == nil && row.WalletID != walletID) {
+			return 0, ErrNotFound
+		}
+		if err != nil {
+			return 0, err
+		}
+		set := map[string]*int64{BulkFieldCategory: &r.CategoryID}
+		if r.PayeeID != nil {
+			set[BulkFieldPayee] = r.PayeeID
+		}
+		for field, value := range set {
+			if err := s.validateTarget(ctx, qtx, walletID, field, *value); err != nil {
+				return 0, err
+			}
+			if err := applyBulkField(ctx, qtx, r.ID, field, value); err != nil {
+				return 0, err
+			}
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return len(rows), nil
+}
+
 // BulkDelete removes several transactions at once (each with its transfer leg and
 // attachments, exactly like Delete). Every id must belong to the wallet, checked
 // up front so a bad id rejects the whole batch before anything is removed.

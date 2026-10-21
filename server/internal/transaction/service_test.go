@@ -354,6 +354,44 @@ func TestBulkUpdateAtomicAcrossWallets(t *testing.T) {
 	}
 }
 
+func TestBulkCategorize(t *testing.T) {
+	s, q, wid, acc := newTestService(t)
+	ctx := context.Background()
+	food, _ := q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: wid, Name: "Food"})
+	sport, _ := q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: wid, Name: "Sport"})
+	gym, _ := q.InsertPayee(ctx, db.InsertPayeeParams{WalletID: wid, Name: "Gym"})
+	shop, _ := q.InsertPayee(ctx, db.InsertPayeeParams{WalletID: wid, Name: "Shop"})
+	a, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-01-15", Amount: -100})
+	b, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-01-16", Amount: -200, PayeeID: &shop.ID})
+
+	// Each row its own category; a payee only where given.
+	n, err := s.BulkCategorize(ctx, wid, []Categorized{
+		{ID: a.ID, PayeeID: &gym.ID, CategoryID: sport.ID},
+		{ID: b.ID, CategoryID: food.ID},
+	})
+	if err != nil || n != 2 {
+		t.Fatalf("n=%d err=%v", n, err)
+	}
+	ga, _ := s.Get(ctx, a.ID)
+	gb, _ := s.Get(ctx, b.ID)
+	if *ga.CategoryID != sport.ID || *ga.PayeeID != gym.ID || *gb.CategoryID != food.ID || *gb.PayeeID != shop.ID {
+		t.Fatalf("a = %v/%v, b = %v/%v", *ga.CategoryID, *ga.PayeeID, *gb.CategoryID, *gb.PayeeID)
+	}
+
+	// A category of another wallet rolls the whole batch back.
+	w2, _ := q.CreateWallet(ctx, db.CreateWalletParams{Title: "Other"})
+	alien, _ := q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: w2.ID, Name: "X"})
+	if _, err := s.BulkCategorize(ctx, wid, []Categorized{
+		{ID: a.ID, CategoryID: food.ID},
+		{ID: b.ID, CategoryID: alien.ID},
+	}); err != ErrNotFound {
+		t.Fatalf("alien category = %v, want ErrNotFound", err)
+	}
+	if ga, _ = s.Get(ctx, a.ID); *ga.CategoryID != sport.ID {
+		t.Fatalf("a.category = %d, want unchanged (rollback)", *ga.CategoryID)
+	}
+}
+
 func TestSetStatus(t *testing.T) {
 	s, _, wid, acc := newTestService(t)
 	ctx := context.Background()

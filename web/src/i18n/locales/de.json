@@ -1023,7 +1023,22 @@
     "reversal": "Zahlung storniert",
     "reversalHint": "{{account}} · zwei Zeilen aus E-Mails, die sich aufheben: Meist bucht die Bank keine der beiden",
     "deleteBoth": "Beide löschen",
-    "confirmDeleteBothTitle": "Beide Zeilen löschen?"
+    "confirmDeleteBothTitle": "Beide Zeilen löschen?",
+    "propose": {
+      "button": "Kategorien vorschlagen",
+      "hint": "Die Vorschläge kommen zuerst aus deinem Verlauf; der Rest geht nur mit Zahlungspartner, Betrag und Datum an deinen KI-Anbieter. Gespeichert wird erst, wenn du bestätigst.",
+      "summary": "{{history}} aus dem Verlauf · {{ai}} von der KI · {{date}}",
+      "selectAll": "Alle auswählen ({{n}})",
+      "confirm": "{{n}} bestätigen",
+      "fromHistory": "Aus dem Verlauf",
+      "ai": "KI",
+      "noPayee": "Kein Zahlungspartner erkannt",
+      "noCategory": "Keine Kategorie vorgeschlagen",
+      "none": "Keine Vorschläge: keine dieser Buchungen nennt einen Zahlungspartner, den du schon hast.",
+      "include": "Einbeziehen: {{memo}}",
+      "done_one": "{{count}} Buchung eingeordnet",
+      "done_other": "{{count}} Buchungen eingeordnet"
+    }
   },
   "banksync": {
     "title": "Bankanbindung",
@@ -2026,7 +2041,7 @@
       },
       "suggest": {
         "name": "Kategorievorschlag",
-        "sends": "Schickt Zahlungspartner und Betrag der Buchung, mit der Liste deiner Kategorien."
+        "sends": "Schickt Zahlungspartner, Betrag und Datum der Buchung, mit der Liste deiner Kategorien. Unter Prüfen die Zahlungspartner mehrerer Buchungen auf einmal."
       },
       "entry": {
         "name": "Schnelleingabe",

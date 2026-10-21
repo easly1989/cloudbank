@@ -1023,7 +1023,22 @@
     "reversal": "Pago anulado",
     "reversalHint": "{{account}} · dos filas de correos que se anulan: el banco no suele registrar ninguna",
     "deleteBoth": "Eliminar ambas",
-    "confirmDeleteBothTitle": "¿Eliminar ambas filas?"
+    "confirmDeleteBothTitle": "¿Eliminar ambas filas?",
+    "propose": {
+      "button": "Proponer categorías",
+      "hint": "Las propuestas salen primero de tu historial; el resto va a tu proveedor de IA solo con el beneficiario, el importe y la fecha. No se guarda nada hasta que confirmes.",
+      "summary": "{{history}} del historial · {{ai}} de la IA · {{date}}",
+      "selectAll": "Seleccionar todos ({{n}})",
+      "confirm": "Confirmar {{n}}",
+      "fromHistory": "Del historial",
+      "ai": "IA",
+      "noPayee": "Ningún beneficiario reconocido",
+      "noCategory": "Ninguna categoría propuesta",
+      "none": "Sin propuestas: ninguno de estos movimientos nombra un beneficiario que ya tengas.",
+      "include": "Incluir: {{memo}}",
+      "done_one": "{{count}} movimiento clasificado",
+      "done_other": "{{count}} movimientos clasificados"
+    }
   },
   "banksync": {
     "title": "Conexión bancaria",
@@ -2026,7 +2041,7 @@
       },
       "suggest": {
         "name": "Sugerencia de categoría",
-        "sends": "Envía el beneficiario y el importe del movimiento, con la lista de tus categorías."
+        "sends": "Envía el beneficiario, el importe y la fecha del movimiento, con la lista de tus categorías. En Revisar, los beneficiarios de varios movimientos a la vez."
       },
       "entry": {
         "name": "Entrada rápida",

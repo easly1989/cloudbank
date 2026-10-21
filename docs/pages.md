@@ -601,8 +601,20 @@ you:
   possible duplicates with **See the pair**, and **Not a duplicate** puts both
   away. Each new one reaches the bell as **Unusual transaction**, opening it in
   the register; turning the switch on looks at the last 30 days without telling.
-- **Needs a category.** Transactions that arrived without a category. Set one
-  and they leave the list.
+- **Needs a category.** Transactions that arrived without a category, each with
+  its payee and category to pick. Set the category and they leave the list.
+
+  With **Category suggestion** switched on in Settings → AI, **Propose
+  categories** fills them in where it can:
+  - the payee is the row's own, or an existing payee whose whole name is in the
+    bank's text; a row with neither gets nothing (**No payee recognised**);
+  - the category comes **From history** when 80% or more of the payee's
+    transactions of the last year, at least three, have one; otherwise the **AI**
+    proposes it, sent only the payee, the amount and the date, one request for
+    each 30 rows.
+
+  Each proposed row has a box and can still be changed; **Confirm** saves the
+  rows ticked, and nothing is saved before.
 - **Possible duplicates.** Pairs that look like the same movement entered twice,
   one from the bank and one by hand.
   - **Keep this** merges the pair into the side you chose.
