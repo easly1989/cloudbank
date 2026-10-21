@@ -262,7 +262,9 @@ look at, and the button opens Review on that account alone ("Show all accounts"
 widens it again).
 
 - **Needs a category** lists imported transactions that still have none — pick one
-  inline.
+  inline, or let **Propose categories** fill payee and category in from your
+  history and the AI, then confirm them together
+  ([Review](pages.md#review)).
 - **Possible duplicates** finds pairs that look like the same movement (same
   account and amount, close dates) that reconciliation didn't catch — for example a
   manual entry whose date was well off. The two are compared field by field —

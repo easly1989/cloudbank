@@ -7,6 +7,14 @@ FROM transactions
 WHERE wallet_id = ? AND import_ref <> '' AND category_id IS NULL AND is_split = 0
 ORDER BY date DESC, id DESC;
 
+-- name: ListPayeeCategoryCounts :many
+-- How many of the wallet's transactions since a day each payee has in each
+-- category, split ones left out: the history Review's proposals (#706) read.
+SELECT payee_id, category_id, COUNT(*) AS n
+FROM transactions
+WHERE wallet_id = ? AND date >= ? AND payee_id IS NOT NULL AND category_id IS NOT NULL AND is_split = 0
+GROUP BY payee_id, category_id;
+
 -- name: InsertDuplicateDismissal :exec
 INSERT INTO duplicate_dismissals (wallet_id, txn_a_id, txn_b_id)
 VALUES (?, ?, ?)

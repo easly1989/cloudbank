@@ -23,6 +23,7 @@ func (h *transactionHandlers) walletRoutes(r chi.Router) {
 	r.Post("/transactions/bulk", h.bulk)
 	r.Post("/transactions/bulk-delete", h.bulkDelete)
 	r.Post("/transactions/bulk-tags", h.bulkTags)
+	r.Post("/transactions/bulk-categorize", h.bulkCategorize)
 	r.Get("/transactions/review", h.review)
 	r.Post("/transactions/duplicates/dismiss", h.dismissDuplicate)
 	r.Post("/transactions/duplicates/dismiss-all", h.dismissAllDuplicates)
@@ -164,6 +165,29 @@ func (h *transactionHandlers) bulkTags(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found", "transaction not found")
 	default:
 		writeError(w, http.StatusInternalServerError, "internal", "could not update tags")
+	}
+}
+
+func (h *transactionHandlers) bulkCategorize(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	var body struct {
+		Rows []transaction.Categorized `json:"rows"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if len(body.Rows) == 0 || len(body.Rows) > 500 {
+		writeError(w, http.StatusBadRequest, "invalid", "rows takes 1 to 500 transactions")
+		return
+	}
+	n, err := h.svc.BulkCategorize(r.Context(), wl.ID, body.Rows)
+	switch {
+	case err == nil:
+		writeJSON(w, http.StatusOK, map[string]int{"updated": n})
+	case errors.Is(err, transaction.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "transaction, category or payee not found")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", "could not apply the categories")
 	}
 }
 

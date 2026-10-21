@@ -105,6 +105,20 @@ export const suggestCategory = (
     body,
   );
 
+export interface CategoryProposal {
+  id: number;
+  payeeId: number;
+  /** Absent when the model proposed none for the payee. */
+  categoryId?: number;
+  source: "history" | "ai";
+}
+
+/** Review's proposals (#706): only the payee, the amount and the date go to the model. */
+export const proposeCategories = (walletId: number, confirm = false) =>
+  api.post<{ proposals: CategoryProposal[] }>(`/api/v1/wallets/${walletId}/ai/propose-categories`, {
+    confirm,
+  });
+
 export interface ParsedEntry {
   amount: string;
   direction: "expense" | "income";

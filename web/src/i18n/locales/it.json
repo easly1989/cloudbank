@@ -1023,7 +1023,22 @@
     "reversal": "Pagamento stornato",
     "reversalHint": "{{account}} · due righe dalla mail che si annullano: di solito la banca non registra nessuna delle due",
     "deleteBoth": "Elimina tutte e due",
-    "confirmDeleteBothTitle": "Eliminare tutte e due le righe?"
+    "confirmDeleteBothTitle": "Eliminare tutte e due le righe?",
+    "propose": {
+      "button": "Proponi categorie",
+      "hint": "Le proposte vengono prima dal tuo storico; il resto va al tuo provider AI solo con beneficiario, importo e data. Non si salva nulla finché non confermi.",
+      "summary": "{{history}} dallo storico · {{ai}} dall'AI · {{date}}",
+      "selectAll": "Seleziona tutte ({{n}})",
+      "confirm": "Conferma {{n}}",
+      "fromHistory": "Dallo storico",
+      "ai": "AI",
+      "noPayee": "Nessun beneficiario riconosciuto",
+      "noCategory": "Nessuna categoria proposta",
+      "none": "Nessuna proposta: nessuna di queste transazioni nomina un beneficiario che hai già.",
+      "include": "Includi: {{memo}}",
+      "done_one": "{{count}} transazione sistemata",
+      "done_other": "{{count}} transazioni sistemate"
+    }
   },
   "banksync": {
     "title": "Sync bancario",
@@ -2026,7 +2041,7 @@
       },
       "suggest": {
         "name": "Suggerimento della categoria",
-        "sends": "Invia il beneficiario e l'importo della transazione, con l'elenco delle tue categorie."
+        "sends": "Invia beneficiario, importo e data della transazione, con l'elenco delle tue categorie. In Revisione, i beneficiari di più transazioni insieme."
       },
       "entry": {
         "name": "Inserimento rapido",

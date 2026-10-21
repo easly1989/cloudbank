@@ -217,6 +217,49 @@ func (q *Queries) ListImportedUncategorized(ctx context.Context, walletID int64)
 	return items, nil
 }
 
+const listPayeeCategoryCounts = `-- name: ListPayeeCategoryCounts :many
+SELECT payee_id, category_id, COUNT(*) AS n
+FROM transactions
+WHERE wallet_id = ? AND date >= ? AND payee_id IS NOT NULL AND category_id IS NOT NULL AND is_split = 0
+GROUP BY payee_id, category_id
+`
+
+type ListPayeeCategoryCountsParams struct {
+	WalletID int64
+	Date     string
+}
+
+type ListPayeeCategoryCountsRow struct {
+	PayeeID    sql.NullInt64
+	CategoryID sql.NullInt64
+	N          int64
+}
+
+// How many of the wallet's transactions since a day each payee has in each
+// category, split ones left out: the history Review's proposals (#706) read.
+func (q *Queries) ListPayeeCategoryCounts(ctx context.Context, arg ListPayeeCategoryCountsParams) ([]ListPayeeCategoryCountsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPayeeCategoryCounts, arg.WalletID, arg.Date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPayeeCategoryCountsRow{}
+	for rows.Next() {
+		var i ListPayeeCategoryCountsRow
+		if err := rows.Scan(&i.PayeeID, &i.CategoryID, &i.N); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTransactionsByIDs = `-- name: ListTransactionsByIDs :many
 SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id, origin, created_by FROM transactions
 WHERE wallet_id = ?1 AND id IN (/*SLICE:ids*/?)

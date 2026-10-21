@@ -237,6 +237,35 @@ func TestTransactionBulkDelete(t *testing.T) {
 	}
 }
 
+func TestTransactionBulkCategorize(t *testing.T) {
+	c := newTestAPI(t)
+	wid, acc := makeAccount(t, c)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	txns := base + "/transactions"
+	id := func(path string, body map[string]any) int64 {
+		t.Helper()
+		return int64(decodeTxn(t, c.do(http.MethodPost, path, body, true))["id"].(float64))
+	}
+	a := id(txns, map[string]any{"accountId": acc, "date": "2026-03-01", "amount": -100})
+	cat := id(base+"/categories", map[string]any{"name": "Food"})
+	payee := id(base+"/payees", map[string]any{"name": "Shop"})
+
+	resp := c.do(http.MethodPost, txns+"/bulk-categorize", map[string]any{"rows": []map[string]any{{"id": a, "payeeId": payee, "categoryId": cat}}}, true)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("bulk-categorize = %d, want 200", resp.StatusCode)
+	}
+	got := decodeTxn(t, c.do(http.MethodGet, txns+"/"+strconv.FormatInt(a, 10), nil, false))
+	if got["categoryId"] != float64(cat) || got["payeeId"] != float64(payee) {
+		t.Fatalf("after = %v/%v, want %d/%d", got["categoryId"], got["payeeId"], cat, payee)
+	}
+	bad := c.do(http.MethodPost, txns+"/bulk-categorize", map[string]any{"rows": []any{}}, true)
+	bad.Body.Close()
+	if bad.StatusCode != http.StatusBadRequest {
+		t.Fatalf("empty rows = %d, want 400", bad.StatusCode)
+	}
+}
+
 func TestTransactionBulkTags(t *testing.T) {
 	c := newTestAPI(t)
 	wid, acc := makeAccount(t, c)

@@ -88,24 +88,9 @@ func featureOn(cfg db.GetAISettingsRow, feature string) bool {
 // what goes out to the log, which is also what the limit counts; and only then
 // asks. A call that fails at the provider still counts: it was sent.
 func (s *Service) Ask(ctx context.Context, c Call) (Answer, error) {
-	cfg, err := s.load(ctx, c.UserID)
+	cfg, err := s.allowed(ctx, c.UserID, c.WalletID, c.Feature)
 	if err != nil {
 		return Answer{}, err
-	}
-	if !ready(cfg) {
-		return Answer{}, ErrNotConfigured
-	}
-	if !featureOn(cfg, c.Feature) {
-		return Answer{}, ErrFeatureOff
-	}
-	if c.WalletID != 0 {
-		off, err := s.rq.AIWalletOff(ctx, db.AIWalletOffParams{UserID: c.UserID, WalletID: c.WalletID})
-		if err != nil {
-			return Answer{}, err
-		}
-		if off > 0 {
-			return Answer{}, ErrFeatureOff
-		}
 	}
 	used, err := s.rq.CountAISendsSince(ctx, db.CountAISendsSinceParams{UserID: c.UserID, CreatedAt: s.monthStart()})
 	if err != nil {
@@ -142,6 +127,31 @@ func (s *Service) Ask(ctx context.Context, c Call) (Answer, error) {
 		return Answer{}, err
 	}
 	return Answer{Text: text, Model: cfg.Model}, nil
+}
+
+// allowed loads the user's settings when the AI, the job and the wallet (0 for
+// none) are all switched on; ErrNotConfigured or ErrFeatureOff otherwise.
+func (s *Service) allowed(ctx context.Context, userID, walletID int64, feature string) (db.GetAISettingsRow, error) {
+	cfg, err := s.load(ctx, userID)
+	if err != nil {
+		return cfg, err
+	}
+	if !ready(cfg) {
+		return cfg, ErrNotConfigured
+	}
+	if !featureOn(cfg, feature) {
+		return cfg, ErrFeatureOff
+	}
+	if walletID != 0 {
+		off, err := s.rq.AIWalletOff(ctx, db.AIWalletOffParams{UserID: userID, WalletID: walletID})
+		if err != nil {
+			return cfg, err
+		}
+		if off > 0 {
+			return cfg, ErrFeatureOff
+		}
+	}
+	return cfg, nil
 }
 
 // Send is one entry of the log of what was sent.
