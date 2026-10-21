@@ -59,6 +59,7 @@ import { StatusPicker } from "./StatusPicker";
 import {
   type Account,
   type Category,
+  type ParsedEntry,
   type Payee,
   type Split,
   type Template,
@@ -80,6 +81,7 @@ import {
   suggestAssignment,
   suggestCategory,
   updateTransaction,
+  uploadAttachment,
 } from "../api/client";
 import { minorToInput, parseMinor } from "../money";
 import { sameName } from "../sameName";
@@ -89,6 +91,7 @@ import { AttachmentsField } from "./AttachmentsField";
 import { ENTRY_SHEET } from "./entrySheetTheme";
 import { todayCivil } from "../civilDate";
 import { ErrorMessage } from "./ErrorMessage";
+import { ReceiptScan } from "./ReceiptScan";
 import { SharedText } from "./SharedText";
 import { useCreateFromSheet } from "./useCreateFromSheet";
 
@@ -206,6 +209,7 @@ export function TransactionForm({
   const aiReady = !!(aiSettings.data?.enabled && aiSettings.data?.hasKey);
   const aiSuggest = aiReady && !!aiSettings.data?.features.suggest;
   const aiEntry = aiReady && !!aiSettings.data?.features.entry;
+  const aiReceipts = aiReady && !!aiSettings.data?.features.receipts;
   const askPastLimit = useAskPastLimit();
   const payeeName = useMemo(
     () => payeesQuery.data?.find((p) => String(p.id) === payeeId)?.name ?? "",
@@ -240,33 +244,36 @@ export function TransactionForm({
   const [sharedText, setSharedText] = useState("");
   const [toParse, setToParse] = useState<{ text: string } | null>(null);
   const parsedRef = useRef<{ text: string } | null>(null);
+  // The fields the AI read from a sentence or a receipt; false when it read none.
+  const applyEntry = (e: ParsedEntry | null, noneMessage: string) => {
+    if (!e || (!e.amount && !e.payeeName && !e.memo)) {
+      notifications.show({ position: toastAt, color: "gray", message: noneMessage });
+      return false;
+    }
+    // The model writes "23.5": shown in the account's own format, "23,50".
+    if (e.amount) {
+      const minor = parseMinor(e.amount, fd, ".");
+      setAmount(minor === null ? e.amount : minorToInput(minor, fd, dc));
+    }
+    setDirection(e.direction);
+    if (e.date) setDate(e.date);
+    if (e.memo) setMemo(e.memo);
+    if (e.categoryId != null) setCategoryId(String(e.categoryId));
+    if (e.payeeId != null) setPayeeId(String(e.payeeId));
+    if (e.tags && e.tags.length > 0) setTags(e.tags);
+    return true;
+  };
+  // A receipt's photo (#707), shrunk; attached on Save only when asked.
+  const [receipt, setReceipt] = useState<Blob | null>(null);
+  const [attachReceipt, setAttachReceipt] = useState(false);
+  const attachFailed = useRef<unknown>(null);
   const parse = useMutation({
     mutationFn: (text: string) =>
       askPastLimit((confirm) => parseEntry(walletId, text.trim(), confirm)),
     onSuccess: (res) => {
       if (!res) return; // the user kept to this month's limit
-      const e = res.entry;
-      if (!e) {
-        notifications.show({
-          position: toastAt,
-          color: "gray",
-          message: t("ai.noParse"),
-        });
-        return;
-      }
-      // The model writes "23.5": shown in the account's own format, "23,50".
-      if (e.amount) {
-        const minor = parseMinor(e.amount, fd, ".");
-        setAmount(minor === null ? e.amount : minorToInput(minor, fd, dc));
-      }
-      setDirection(e.direction);
-      if (e.date) setDate(e.date);
-      if (e.memo) setMemo(e.memo);
-      if (e.categoryId != null) setCategoryId(String(e.categoryId));
-      if (e.payeeId != null) setPayeeId(String(e.payeeId));
-      if (e.tags && e.tags.length > 0) setTags(e.tags);
       // Shared text stays in the field, so the reader can see what was read.
-      if (!sharedText) setQuickText("");
+      if (applyEntry(res.entry, t("ai.noParse")) && !sharedText) setQuickText("");
     },
     onError: (err: unknown) =>
       notifications.show({
@@ -358,6 +365,8 @@ export function TransactionForm({
       setSharedText(fresh && shared ? shared : "");
       setToParse(fresh && shared ? { text: shared } : null);
       setQuickText(fresh && shared ? shared : "");
+      setReceipt(null);
+      setAttachReceipt(false);
     }
   }
   // With the AI's quick entry on, shared text is read at once: the fields fill
@@ -385,7 +394,7 @@ export function TransactionForm({
   const duplicates = (dupQuery.data ?? []).filter((d) => d.id !== editing?.id);
 
   const save = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const body: TransactionInput = {
         accountId: current.id,
         date,
@@ -406,12 +415,31 @@ export function TransactionForm({
           : [],
       };
       if (!editing && templateId !== null) body.templateId = templateId;
-      return editing
-        ? updateTransaction(walletId, editing.id, body)
-        : createTransaction(walletId, body);
+      if (editing) return updateTransaction(walletId, editing.id, body);
+      const saved = await createTransaction(walletId, body);
+      // The transaction stands even if its photo does not attach: say so, not fail.
+      attachFailed.current = null;
+      if (receipt && attachReceipt) {
+        await uploadAttachment(
+          walletId,
+          saved.id,
+          new File([receipt], "receipt.jpg", { type: receipt.type }),
+        ).catch((err: unknown) => (attachFailed.current = err));
+      }
+      return saved;
     },
     onSuccess: (saved) => {
       onSaved(saved?.id);
+      setReceipt(null);
+      setAttachReceipt(false);
+      if (attachFailed.current) {
+        notifications.show({
+          position: toastAt,
+          color: "red",
+          title: t("ai.receipt.attachFailed"),
+          message: <ErrorMessage error={attachFailed.current} />,
+        });
+      }
       if (!editing) rememberEntryDate(date);
       // A row saved to another account does not appear in this register, so
       // say where it went rather than let it look lost.
@@ -889,6 +917,24 @@ export function TransactionForm({
                   >
                     <IconSparkles size={16} />
                   </ActionIcon>
+                }
+              />
+            )}
+
+            {aiReceipts && !editing && (
+              <ReceiptScan
+                walletId={walletId}
+                photo={receipt}
+                onPhoto={setReceipt}
+                attach={attachReceipt}
+                onAttach={setAttachReceipt}
+                onRead={(e) => applyEntry(e, t("ai.receipt.unreadable"))}
+                onError={(err) =>
+                  notifications.show({
+                    position: toastAt,
+                    color: "red",
+                    message: <ErrorMessage error={err} />,
+                  })
                 }
               />
             )}

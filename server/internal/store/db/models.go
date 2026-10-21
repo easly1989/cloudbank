@@ -110,6 +110,7 @@ type AiSetting struct {
 	PayeesOn        int64
 	ImportOn        int64
 	AskOn           int64
+	ReceiptsOn      int64
 }
 
 type AiUnusual struct {
