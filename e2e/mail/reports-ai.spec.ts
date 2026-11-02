@@ -119,9 +119,11 @@ test("Generate now writes last month's report in the AI box", async ({
     report(page).getByRole("cell", { name: "Income" }),
   ).toBeVisible();
 
-  // The model got the numbers, never the memo.
+  // The model got the numbers, never the memo. The month's totals also count
+  // other specs' rows, so this checks the spec's own expense, one of the
+  // month's largest.
   const sent = await (await page.request.get(`${FAKE}/ai/last`)).text();
-  expect(sent).toContain("2500.00");
+  expect(sent).toContain("640.50 EUR");
   expect(sent).not.toContain(MEMO);
 });
 
