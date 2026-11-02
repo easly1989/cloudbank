@@ -140,13 +140,15 @@ func (s *Service) Ask(ctx context.Context, c Call) (Answer, error) {
 		sent += "\n\n" + c.Image.logLine()
 	}
 	wallet := sql.NullInt64{Int64: c.WalletID, Valid: c.WalletID != 0}
-	cutoff := s.now().UTC().Add(-sendsKept).Format("2006-01-02T15:04:05.000Z")
+	// The log is stamped by the same clock that counts and purges it.
+	now := s.now().UTC()
+	cutoff := now.Add(-sendsKept).Format("2006-01-02T15:04:05.000Z")
 	if err := s.q.PurgeAISends(ctx, db.PurgeAISendsParams{UserID: c.UserID, CreatedAt: cutoff}); err != nil {
 		return Answer{}, err
 	}
 	if _, err := s.q.InsertAISend(ctx, db.InsertAISendParams{
 		UserID: c.UserID, WalletID: wallet, Feature: c.Feature, Model: cfg.Model,
-		Sent: sent,
+		Sent: sent, CreatedAt: now.Format("2006-01-02T15:04:05.000Z"),
 	}); err != nil {
 		return Answer{}, err
 	}
