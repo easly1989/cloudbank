@@ -380,16 +380,17 @@ func (q *Queries) InsertAIReportRun(ctx context.Context, arg InsertAIReportRunPa
 }
 
 const insertAISend = `-- name: InsertAISend :one
-INSERT INTO ai_sends (user_id, wallet_id, feature, model, sent) VALUES (?, ?, ?, ?, ?)
+INSERT INTO ai_sends (user_id, wallet_id, feature, model, sent, created_at) VALUES (?, ?, ?, ?, ?, ?)
 RETURNING id
 `
 
 type InsertAISendParams struct {
-	UserID   int64
-	WalletID sql.NullInt64
-	Feature  string
-	Model    string
-	Sent     string
+	UserID    int64
+	WalletID  sql.NullInt64
+	Feature   string
+	Model     string
+	Sent      string
+	CreatedAt string
 }
 
 func (q *Queries) InsertAISend(ctx context.Context, arg InsertAISendParams) (int64, error) {
@@ -399,6 +400,7 @@ func (q *Queries) InsertAISend(ctx context.Context, arg InsertAISendParams) (int
 		arg.Feature,
 		arg.Model,
 		arg.Sent,
+		arg.CreatedAt,
 	)
 	var id int64
 	err := row.Scan(&id)

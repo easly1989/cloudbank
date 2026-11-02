@@ -120,8 +120,13 @@ func TestAskIsTheOneWayOut(t *testing.T) {
 	if err := suggest("X", false); err != nil {
 		t.Fatal(err)
 	}
-	if sends, _ := svc.Sends(ctx, uid, 50); len(sends) != 1 {
+	sends, _ = svc.Sends(ctx, uid, 50)
+	if len(sends) != 1 {
 		t.Fatalf("log after 90 days = %d entries, want only the new one", len(sends))
+	}
+	// Stamped by the service clock, in the column default's format.
+	if sends[0].CreatedAt != "2027-02-01T00:00:01.000Z" {
+		t.Fatalf("createdAt = %q", sends[0].CreatedAt)
 	}
 }
 

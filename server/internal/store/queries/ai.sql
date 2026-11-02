@@ -37,7 +37,7 @@ SELECT COUNT(*) FROM ai_wallets_off WHERE user_id = ? AND wallet_id = ?;
 SELECT COUNT(*) FROM ai_sends WHERE user_id = ? AND created_at >= ?;
 
 -- name: InsertAISend :one
-INSERT INTO ai_sends (user_id, wallet_id, feature, model, sent) VALUES (?, ?, ?, ?, ?)
+INSERT INTO ai_sends (user_id, wallet_id, feature, model, sent, created_at) VALUES (?, ?, ?, ?, ?, ?)
 RETURNING id;
 
 -- name: PurgeAISends :exec
