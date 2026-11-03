@@ -6,6 +6,27 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
+## [3.13.0] — 2026-11-03
+
+A maintenance release: three dependency updates for security, and two tests
+that began failing in November fixed. Nothing changes in how CloudBank looks or
+works.
+
+### Security
+
+- **go-jose 4.1.6**, used to check single sign-on tokens. It fixes a denial of
+  service when reading an identity provider's RSA keys, and panics on malformed
+  JSON and CBC-HMAC input. RSA keys longer than 4096 bits are now refused;
+  identity providers use 2048 to 4096.
+- **fast-uri 3.1.9** and **serialize-javascript 7.1.4**, both used only to
+  build the app; neither ships inside it.
+
+### Fixed
+
+- **The AI's log of what was sent** is now dated by the same clock that counts
+  the monthly limit and clears entries after 90 days. A test had started
+  failing on every run on 1 November; users saw no difference.
+
 ## [3.12.0] — 2026-10-21
 
 The AI now helps with the chores around the numbers. It proposes rules for
@@ -1227,7 +1248,8 @@ HomeBank feature parity, shipped as a single Docker container.
 - CI (lint, race tests, build, Docker smoke, Playwright e2e) and automated GHCR
   publishing (`:latest` nightly, `:main` stable, `:vX.Y.Z` per release).
 
-[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.12.0...HEAD
+[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.13.0...HEAD
+[3.13.0]: https://github.com/easly1989/cloudbank/compare/v3.12.0...v3.13.0
 [3.12.0]: https://github.com/easly1989/cloudbank/compare/v3.11.0...v3.12.0
 [3.11.0]: https://github.com/easly1989/cloudbank/compare/v3.10.0...v3.11.0
 [3.10.0]: https://github.com/easly1989/cloudbank/compare/v3.9.0...v3.10.0
