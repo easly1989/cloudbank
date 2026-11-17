@@ -27,7 +27,7 @@ make docker     # build the container image
 
 Targeted runs (single Go test, vitest file, `npm run typecheck`, i18n checks, Playwright) and the Windows notes (no `make`; use `tsc -b`, never bare `tsc --noEmit`; no two files differing only in case): [docs/maintainer-notes.md](docs/maintainer-notes.md).
 
-Prerequisites: Go 1.27.3+, Node 22+ (CI and the image use 26), Docker. `golangci-lint` v2.14.0 runs in CI but not in `make lint`. `npm run check:i18n` is a CI gate.
+Prerequisites: Go 1.27.4+, Node 22+ (CI and the image use 26), Docker. `golangci-lint` v2.14.0 runs in CI but not in `make lint`. `npm run check:i18n` is a CI gate.
 
 ## Generated code — never hand-edit
 
