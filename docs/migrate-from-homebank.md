@@ -6,7 +6,7 @@ splits and re-paired transfers), scheduled transactions and templates, assignmen
 rules and budgets. Amounts are converted exactly, so balances match HomeBank to
 the cent.
 
-CloudBank follows HomeBank's current release (5.10.3 at the time of writing); a
+CloudBank follows HomeBank's current release (5.10.4 at the time of writing); a
 scheduled check opens an issue whenever HomeBank publishes a newer one.
 
 ## 1. Find your `.xhb` file

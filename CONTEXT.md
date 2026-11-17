@@ -61,7 +61,7 @@ the HTML export drops.
 - **oidc, auth** — authentication.
 - **backup, integrity, dbconv, exporter, report, vehicle, assetvaluation** — supporting domains.
 
-HomeBank compatibility tracked at **v5.10.3** (`.github/homebank-version`); a scheduled
+HomeBank compatibility tracked at **v5.10.4** (`.github/homebank-version`); a scheduled
 workflow opens an issue when upstream releases a newer version.
 
 ## Frontend structure
