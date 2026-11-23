@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## What this is
 
 CloudBank is a self-hosted personal finance manager — a clean-room web port of the HomeBank
@@ -57,7 +55,6 @@ middleware, which checks membership and puts the `wallet.Wallet` in the request 
 (`walletFromContext`). A non-member gets 404, not 403. **Never add a wallet-scoped endpoint
 outside that subtree**, and never query wallet-scoped data without the wallet from context.
 
-
 **Frontend (`web/`)**: React 19 + Vite + TypeScript, built into `server/internal/webui/dist` (a bare `go run` without a build
 serves a placeholder, which is expected). Other dirs: `e2e/` Playwright, `docs/` guides (`docs/research/`: read before
 re-opening a technical decision), `docs/demo.md` describes the `:demo` build (change both together). Full architecture:
@@ -103,7 +100,7 @@ one-issue -> one-branch -> one-PR workflow. See `docs/agents/issue-tracker.md`.
 
 ### Domain docs
 
-Single-context: `CONTEXT.md` at the repo root and ADRs under `docs/adr/`, both created lazily.
+Single-context: `GLOSSARY.md` at the repo root and ADRs under `docs/adr/`, both created lazily.
 See `docs/agents/domain.md`.
 
 ### Token tools
