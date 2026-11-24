@@ -141,6 +141,9 @@ type Querier interface {
 	// Ties the seeded fuel payments to the demo's car: the HomeBank file the seed
 	// comes from has no vehicles, only the fills' memos (d= the odometer).
 	DemoLinkFills(ctx context.Context, arg DemoLinkFillsParams) (int64, error)
+	// A bank account linked to a provider takes the IBAN the bank gave, only when
+	// it has no number yet (#775).
+	FillAccountNumber(ctx context.Context, arg FillAccountNumberParams) error
 	FindDuplicateTransactions(ctx context.Context, arg FindDuplicateTransactionsParams) ([]Transaction, error)
 	FindMailboxByAddress(ctx context.Context, arg FindMailboxByAddressParams) (Mailbox, error)
 	FindNotificationCode(ctx context.Context, arg FindNotificationCodeParams) (FindNotificationCodeRow, error)

@@ -23,6 +23,7 @@ type accountResponse struct {
 	CurrencyID         int64  `json:"currencyId"`
 	Institution        string `json:"institution"`
 	Number             string `json:"number"`
+	BIC                string `json:"bic"`
 	InitialBalance     int64  `json:"initialBalance"`
 	MinimumBalance     int64  `json:"minimumBalance"`
 	Balance            int64  `json:"balance"`
@@ -52,7 +53,7 @@ type accountResponse struct {
 func toAccountResponse(a account.Account) accountResponse {
 	return accountResponse{
 		ID: a.ID, Name: a.Name, Type: a.Type, CurrencyID: a.CurrencyID,
-		Institution: a.Institution, Number: a.Number,
+		Institution: a.Institution, Number: a.Number, BIC: a.BIC,
 		InitialBalance: a.InitialBalance, MinimumBalance: a.MinimumBalance, Balance: a.Balance,
 		FutureBalance: a.FutureBalance, Value: a.Value,
 		ReconciledBalance: a.ReconciledBalance, LastReconciled: a.LastReconciled,
@@ -96,6 +97,7 @@ type accountInput struct {
 	CurrencyID         int64  `json:"currencyId"`
 	Institution        string `json:"institution"`
 	Number             string `json:"number"`
+	BIC                string `json:"bic"`
 	InitialBalance     int64  `json:"initialBalance"`
 	MinimumBalance     int64  `json:"minimumBalance"`
 	Closed             bool   `json:"closed"`
@@ -111,7 +113,7 @@ type accountInput struct {
 func (in accountInput) toServiceInput() account.Input {
 	return account.Input{
 		Name: in.Name, Type: in.Type, CurrencyID: in.CurrencyID,
-		Institution: in.Institution, Number: in.Number,
+		Institution: in.Institution, Number: in.Number, BIC: in.BIC,
 		InitialBalance: in.InitialBalance, MinimumBalance: in.MinimumBalance,
 		Closed: in.Closed, NoSummary: in.NoSummary, NoBudget: in.NoBudget, NoReport: in.NoReport,
 		GroupName: in.GroupName, Notes: in.Notes, Website: in.Website,
@@ -260,6 +262,10 @@ func (h *accountHandlers) writeAccountError(w http.ResponseWriter, err error) bo
 		return true
 	case errors.Is(err, account.ErrCurrencyNotInWallet):
 		writeError(w, http.StatusBadRequest, "invalid_currency", "currency does not belong to this wallet")
+	case errors.Is(err, account.ErrInvalidIBAN):
+		writeError(w, http.StatusBadRequest, "invalid_iban", "the IBAN is not valid")
+	case errors.Is(err, account.ErrInvalidBIC):
+		writeError(w, http.StatusBadRequest, "invalid_bic", "the BIC is not valid")
 	case errors.Is(err, account.ErrDuplicateName):
 		writeError(w, http.StatusConflict, "duplicate", "an account with that name already exists")
 	default:

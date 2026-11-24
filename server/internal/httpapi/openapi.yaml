@@ -4921,7 +4921,8 @@ components:
           enum: [bank, cash, checking, savings, creditcard, liability, asset, investment]
         currencyId: { type: integer, format: int64 }
         institution: { type: string }
-        number: { type: string }
+        number: { type: string, description: "the account number; on a bank, checking or savings account the IBAN, stored in electronic form (no spaces, upper case) and checked when it starts like one (400 invalid_iban)" }
+        bic: { type: string, description: "BIC/SWIFT of a bank account, 8 or 11 characters, upper case (400 invalid_bic)" }
         initialBalance: { type: integer, format: int64, description: "minor units" }
         minimumBalance: { type: integer, format: int64, description: "minor units" }
         balance: { type: integer, format: int64, description: "today's balance (initial + transactions dated on/before today), minor units" }
@@ -4958,7 +4959,8 @@ components:
           enum: [bank, cash, checking, savings, creditcard, liability, asset, investment]
         currencyId: { type: integer, format: int64, description: "defaults to the wallet base currency" }
         institution: { type: string }
-        number: { type: string }
+        number: { type: string, description: "the account number; on a bank, checking or savings account the IBAN, stored in electronic form (no spaces, upper case) and checked when it starts like one (400 invalid_iban)" }
+        bic: { type: string, description: "BIC/SWIFT of a bank account, 8 or 11 characters, upper case (400 invalid_bic)" }
         initialBalance: { type: integer, format: int64 }
         minimumBalance: { type: integer, format: int64 }
         closed: { type: boolean }

@@ -2224,6 +2224,13 @@
     "minimumBalance": "Solde minimum",
     "institution": "Établissement",
     "number": "Numéro de compte",
+    "iban": "IBAN",
+    "bic": "BIC/SWIFT",
+    "ibanMissing": "Pas encore d'IBAN. Ajoutez-le ici et copiez-le quand vous en avez besoin.",
+    "ibanInvalid": "Les chiffres de contrôle ne correspondent pas : un caractère est peut-être mal saisi.",
+    "bicInvalid": "Un BIC compte 8 ou 11 lettres et chiffres.",
+    "copy": "Copier",
+    "copied": "Copié",
     "defaultPaymentMode": "Moyen de paiement par défaut",
     "types": {
       "bank": "Banque",

@@ -2224,6 +2224,13 @@
     "minimumBalance": "Saldo mínimo",
     "institution": "Instituição",
     "number": "Número da conta",
+    "iban": "IBAN",
+    "bic": "BIC/SWIFT",
+    "ibanMissing": "Ainda sem IBAN. Adicione aqui e copie quando precisar.",
+    "ibanInvalid": "Os dígitos de verificação não batem: procure um caractere digitado errado.",
+    "bicInvalid": "Um BIC tem 8 ou 11 letras e números.",
+    "copy": "Copiar",
+    "copied": "Copiado",
     "defaultPaymentMode": "Forma de pagamento padrão",
     "types": {
       "bank": "Banco",

@@ -324,6 +324,10 @@ func TestEnableBankingAuthSyncDedup(t *testing.T) {
 	if err := svc.Link(ctx, wid, conn.ID, "acc-uid-1", acc); err != nil {
 		t.Fatalf("Link: %v", err)
 	}
+	// The checking account had no number, so it takes the bank's IBAN (#775).
+	if a, err := q.GetAccount(ctx, acc); err != nil || a.Number != "IT60X0542811101000000123456" {
+		t.Fatalf("linked account number = %q (%v), want the IBAN", a.Number, err)
+	}
 
 	res, err := svc.Sync(ctx, wid, conn.ID)
 	if err != nil {

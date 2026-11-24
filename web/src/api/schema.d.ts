@@ -5178,7 +5178,10 @@ export interface components {
             /** Format: int64 */
             currencyId: number;
             institution?: string;
+            /** @description the account number; on a bank, checking or savings account the IBAN, stored in electronic form (no spaces, upper case) and checked when it starts like one (400 invalid_iban) */
             number?: string;
+            /** @description BIC/SWIFT of a bank account, 8 or 11 characters, upper case (400 invalid_bic) */
+            bic?: string;
             /**
              * Format: int64
              * @description minor units
@@ -5242,7 +5245,10 @@ export interface components {
              */
             currencyId?: number;
             institution?: string;
+            /** @description the account number; on a bank, checking or savings account the IBAN, stored in electronic form (no spaces, upper case) and checked when it starts like one (400 invalid_iban) */
             number?: string;
+            /** @description BIC/SWIFT of a bank account, 8 or 11 characters, upper case (400 invalid_bic) */
+            bic?: string;
             /** Format: int64 */
             initialBalance?: number;
             /** Format: int64 */
