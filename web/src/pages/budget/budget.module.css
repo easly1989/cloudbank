@@ -108,23 +108,18 @@
   border-radius: 4px;
 }
 
-/* Under the big bar's tick: "today, 13 October · 42% of the month". */
+/* Under the big bar's tick: "today, 13 October · 42% of the month". It slides
+   back by the same share of its own width as the tick sits along the bar
+   (--at, 0 to 1): centred mid-month, flush with either end at the edges, so a
+   long date never runs past the bar on a phone. */
 .paceLabel {
   position: absolute;
   top: 14px;
-  transform: translateX(-50%);
+  transform: translateX(calc(var(--at, 0.5) * -100%));
   font-size: 12px;
   line-height: 16px;
   color: var(--mantine-color-dimmed);
   white-space: nowrap;
-}
-
-.paceLabel[data-edge="start"] {
-  transform: translateX(-4px);
-}
-
-.paceLabel[data-edge="end"] {
-  transform: translateX(calc(-100% + 4px));
 }
 .planEnd {
   background: var(--mantine-color-body);

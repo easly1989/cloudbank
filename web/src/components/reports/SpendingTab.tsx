@@ -8,6 +8,7 @@ import {
   UnstyledButton,
 } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
+import type { TFunction } from "i18next";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -350,7 +351,7 @@ function RankRow({
 function movers(
   rows: Row[],
   prevGroups: { key: string; label: string; amount: number }[],
-  t: (k: string, o?: Record<string, unknown>) => string,
+  t: TFunction,
   labelOf: (key: string, label: string) => string,
 ): string | undefined {
   const now = new Map(rows.map((r) => [r.key, r]));
