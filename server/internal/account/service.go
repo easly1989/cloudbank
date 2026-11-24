@@ -213,7 +213,7 @@ func (s *Service) Get(ctx context.Context, accountID int64) (Account, error) {
 
 // Create adds an account. The currency must belong to the wallet.
 func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Account, error) {
-	if err := normalizeCodes(&in); err != nil {
+	if err := normalizeCodes(&in, ""); err != nil {
 		return Account{}, err
 	}
 	if err := s.checkCurrency(ctx, walletID, in.CurrencyID); err != nil {
@@ -243,7 +243,11 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Account
 // Update changes an account's editable fields. The currency must belong to the
 // wallet.
 func (s *Service) Update(ctx context.Context, walletID, accountID int64, in Input) (Account, error) {
-	if err := normalizeCodes(&in); err != nil {
+	prev, err := s.q.GetAccount(ctx, accountID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return Account{}, err
+	}
+	if err := normalizeCodes(&in, prev.Number); err != nil {
 		return Account{}, err
 	}
 	if err := s.checkCurrency(ctx, walletID, in.CurrencyID); err != nil {

@@ -22,7 +22,7 @@ func TestValidIBAN(t *testing.T) {
 
 func TestNormalizeCodes(t *testing.T) {
 	in := Input{Type: "checking", Number: " it60 x054 2811 1010 0000 0123 456 ", BIC: " bpmoit22xxx "}
-	if err := normalizeCodes(&in); err != nil {
+	if err := normalizeCodes(&in, ""); err != nil {
 		t.Fatal(err)
 	}
 	if in.Number != "IT60X0542811101000000123456" || in.BIC != "BPMOIT22XXX" {
@@ -36,15 +36,25 @@ func TestNormalizeCodes(t *testing.T) {
 		{Type: "creditcard", Number: "IT00 not an iban"},
 	} {
 		want := in.Number
-		if err := normalizeCodes(&in); err != nil || in.Number != want {
+		if err := normalizeCodes(&in, ""); err != nil || in.Number != want {
 			t.Errorf("%s %q: got %q, %v", in.Type, want, in.Number, err)
 		}
 	}
 
-	if err := normalizeCodes(&Input{Type: "savings", Number: "IT60X0542811101000000123457"}); !errors.Is(err, ErrInvalidIBAN) {
+	if err := normalizeCodes(&Input{Type: "savings", Number: "IT60X0542811101000000123457"}, ""); !errors.Is(err, ErrInvalidIBAN) {
 		t.Errorf("a wrong check digit: got %v, want ErrInvalidIBAN", err)
 	}
-	if err := normalizeCodes(&Input{Type: "bank", BIC: "BPMO"}); !errors.Is(err, ErrInvalidBIC) {
+	if err := normalizeCodes(&Input{Type: "bank", BIC: "BPMO"}, ""); !errors.Is(err, ErrInvalidBIC) {
 		t.Errorf("a short BIC: got %v, want ErrInvalidBIC", err)
+	}
+
+	// An odd number the save leaves as it was never blocks the rest of the
+	// account; a card keeps no BIC.
+	if err := normalizeCodes(&Input{Type: "bank", Number: "AB12-OLD"}, "AB12-OLD"); err != nil {
+		t.Errorf("an unchanged legacy number: %v", err)
+	}
+	card := Input{Type: "creditcard", BIC: "BPMOIT22"}
+	if err := normalizeCodes(&card, ""); err != nil || card.BIC != "" {
+		t.Errorf("a card's BIC = %q (%v), want none", card.BIC, err)
 	}
 }

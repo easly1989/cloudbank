@@ -74,6 +74,8 @@ export function AccountSheet({
   const [institution, setInstitution] = useState("");
   const [number, setNumber] = useState("");
   const [bic, setBic] = useState("");
+  // The number as the account had it: one left as it was is never re-checked.
+  const [savedNumber, setSavedNumber] = useState("");
   const [defaultPaymentMode, setDefaultPaymentMode] = useState("0");
   const [noSummary, setNoSummary] = useState(false);
   const [noBudget, setNoBudget] = useState(false);
@@ -103,6 +105,7 @@ export function AccountSheet({
       // A bank account's IBAN reads in groups of four; the server keeps it compact.
       const n = a?.number ?? "";
       setNumber(a && isBankType(a.type) && validIban(n) ? groupIban(n) : n);
+      setSavedNumber(n);
       setBic(a?.bic ?? "");
       setDefaultPaymentMode(String(a?.defaultPaymentMode ?? 0));
       setNoSummary(a?.noSummary ?? false);
@@ -122,7 +125,11 @@ export function AccountSheet({
   // A bank account keeps its IBAN in the number, and a BIC (#775). Both are
   // optional; one that starts like an IBAN has to be one.
   const bank = isBankType(type);
-  const ibanBad = bank && looksLikeIban(number) && !validIban(number);
+  const ibanBad =
+    bank &&
+    looksLikeIban(number) &&
+    !validIban(number) &&
+    compactCode(number) !== compactCode(savedNumber);
   const bicBad = bank && !validBic(bic);
 
   const save = useMutation({

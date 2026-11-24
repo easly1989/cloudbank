@@ -323,8 +323,8 @@ func (s *Service) Link(ctx context.Context, walletID, connID int64, externalID s
 	// Enable Banking is the provider that reports one.
 	if acc.Number == "" && account.IsBankType(acc.Type) && c.Provider == providerEnableBanking {
 		for _, a := range parseStoredAccounts(c.AccountsJson) {
-			if a.UID == externalID && !a.Card && account.ValidIBAN(a.IBAN) {
-				return s.q.FillAccountNumber(ctx, db.FillAccountNumberParams{Number: a.IBAN, ID: accountID})
+			if iban := account.Compact(a.IBAN); a.UID == externalID && !a.Card && account.ValidIBAN(iban) {
+				return s.q.FillAccountNumber(ctx, db.FillAccountNumberParams{Number: iban, ID: accountID})
 			}
 		}
 	}

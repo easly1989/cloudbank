@@ -126,6 +126,10 @@ func TestBackupRestoreRoundTrip(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	// A bank account's BIC (#775), which HomeBank has no field for.
+	if _, err := st.Write().ExecContext(ctx, "UPDATE accounts SET bic = 'BPMOIT22XXX' WHERE id = ?", accts[0].ID); err != nil {
+		t.Fatal(err)
+	}
 	tag, _ := q.InsertTag(ctx, db.InsertTagParams{WalletID: origID, Name: "rule-tag"})
 	if err := q.AddAssignmentTag(ctx, db.AddAssignmentTagParams{AssignmentID: a0.ID, TagID: tag.ID}); err != nil {
 		t.Fatal(err)
@@ -188,6 +192,11 @@ func TestBackupRestoreRoundTrip(t *testing.T) {
 	ruleTags, _ := q.ListAssignmentTagsForWallet(ctx, newID)
 	if len(ruleTags) != 1 || ruleTags[0].AssignmentID != n0.ID || ruleTags[0].Name != "rule-tag" {
 		t.Fatalf("restored rule tags = %+v", ruleTags)
+	}
+	for _, a := range newAccts {
+		if a.ID == sameAcc && a.Bic != "BPMOIT22XXX" {
+			t.Fatalf("restored BIC = %q, want BPMOIT22XXX", a.Bic)
+		}
 	}
 
 	// Identical per-account balances.

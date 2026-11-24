@@ -25,8 +25,8 @@ var (
 	bicShape      = regexp.MustCompile(`^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$`)
 )
 
-// compact drops spaces and dashes and upper-cases, the IBAN's electronic form.
-func compact(s string) string {
+// Compact drops spaces and dashes and upper-cases: the IBAN's electronic form.
+func Compact(s string) string {
 	return strings.ToUpper(strings.NewReplacer(" ", "", "-", "", " ", "").Replace(strings.TrimSpace(s)))
 }
 
@@ -55,20 +55,26 @@ func ValidIBAN(s string) bool {
 // normalizeCodes cleans a bank account's IBAN and BIC and checks them. An
 // account number that does not start like an IBAN (two letters, two digits)
 // is kept as written: accounts outside SEPA and numbers carried over from
-// HomeBank have other shapes. Both fields may be empty.
-func normalizeCodes(in *Input) error {
-	in.BIC = compact(in.BIC)
+// HomeBank have other shapes. A number the save does not change (prev) is not
+// checked again, so an old one of an odd shape never blocks editing the rest
+// of the account. Both fields may be empty; an account of another type keeps
+// no BIC.
+func normalizeCodes(in *Input, prev string) error {
+	if !IsBankType(in.Type) {
+		in.BIC = ""
+		return nil
+	}
+	in.BIC = Compact(in.BIC)
 	if in.BIC != "" && !bicShape.MatchString(in.BIC) {
 		return ErrInvalidBIC
 	}
-	if !IsBankType(in.Type) {
+	n := Compact(in.Number)
+	if !looksLikeIBAN.MatchString(n) || n == Compact(prev) && !ValidIBAN(n) {
 		return nil
 	}
-	if n := compact(in.Number); looksLikeIBAN.MatchString(n) {
-		if !ValidIBAN(n) {
-			return ErrInvalidIBAN
-		}
-		in.Number = n
+	if !ValidIBAN(n) {
+		return ErrInvalidIBAN
 	}
+	in.Number = n
 	return nil
 }
