@@ -9,7 +9,12 @@ import {
   Tooltip,
   UnstyledButton,
 } from "@mantine/core";
-import { IconLayoutSidebarLeftCollapse, IconLogout, IconSettings } from "@tabler/icons-react";
+import {
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
+  IconLogout,
+  IconSettings,
+} from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -46,7 +51,20 @@ export function SidebarFoot({
   if (railMode) {
     return (
       <Box pt={FOOT.padTop}>
-        <Group justify="center" gap={6}>
+        {/* The toggle stays at the foot when the sidebar is a rail too, right
+            above the gear, so it never moves under the pointer. */}
+        <Stack align="center" gap={6}>
+          <Tooltip label={t("nav.toggleSidebar")} position="right" withinPortal>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="lg"
+              onClick={onToggleCollapse}
+              aria-label={t("nav.toggleSidebar")}
+            >
+              <IconLayoutSidebarLeftExpand size={18} />
+            </ActionIcon>
+          </Tooltip>
           <Tooltip label={gearLabel} position="right" withinPortal>
             <ActionIcon
               component={Link}
@@ -61,7 +79,7 @@ export function SidebarFoot({
               <IconSettings size={18} />
             </ActionIcon>
           </Tooltip>
-        </Group>
+        </Stack>
       </Box>
     );
   }

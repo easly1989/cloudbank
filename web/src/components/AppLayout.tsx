@@ -133,7 +133,7 @@ export function AppLayout() {
               destination reachable from anywhere, so it must not depend on how
               far down a long list of pages the reader has scrolled. */}
         <Stack h="100%" gap={SIDEBAR_BLOCK_GAP} justify="space-between">
-          <SidebarHead railMode={railMode} onToggleCollapse={toggleCollapsed} onNavigate={close} />
+          <SidebarHead railMode={railMode} onNavigate={close} />
           <ScrollArea style={{ flex: 1, minHeight: 0 }} type="scroll">
             <SidebarNav railMode={railMode} onNavigate={close} />
           </ScrollArea>

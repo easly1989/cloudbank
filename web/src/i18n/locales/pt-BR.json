@@ -2646,7 +2646,7 @@
     },
     "tabs": {
       "xhb": "Arquivo do HomeBank",
-      "csv": "Banco / CSV / QIF / OFX",
+      "csv": "Banco / CSV / QIF / OFX / CAMT.053",
       "export": "Exportar CSV"
     }
   },

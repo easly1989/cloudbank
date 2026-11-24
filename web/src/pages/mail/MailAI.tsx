@@ -1,10 +1,12 @@
 import {
   Alert,
   Anchor,
+  Box,
   Button,
   Group,
   SegmentedControl,
   Select,
+  SimpleGrid,
   Stack,
   TagsInput,
   Text,
@@ -12,7 +14,7 @@ import {
 import { notifications } from "@mantine/notifications";
 import { IconAlertTriangle } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -38,11 +40,14 @@ export function MailAI({
   mailbox,
   accounts,
   patterns,
+  beside,
 }: {
   walletId: number;
   mailbox: Mailbox;
   accounts: Account[];
   patterns: MailPattern[];
+  /** The control that shares the mode's row: the mailbox's folder. */
+  beside?: ReactNode;
 }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -81,20 +86,28 @@ export function MailAI({
   const ready = !problems.account && !problems.senders;
 
   return (
-    <Stack gap="sm" data-testid="mail-ai" data-tour="mail-mode">
-      <Select
-        label={t("mail.ai.mode")}
-        description={t("mail.ai.modeHint")}
-        data={MODES.map((m) => ({
-          value: m,
-          label: t(`mail.ai.modes.${m}`),
-          disabled: m !== "patterns" && !mailbox.aiReady,
-        }))}
-        value={draft.mode}
-        allowDeselect={false}
-        maw={360}
-        onChange={(v) => v && chooseMode(v as MailboxAI["mode"])}
-      />
+    <Stack gap="sm" data-testid="mail-ai">
+      {/* The folder and the mode sit side by side: two short choices about the
+          same mailbox, one row instead of two. */}
+      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" maw={736}>
+        {beside}
+        <Box data-tour="mail-mode">
+          <Select
+            label={t("mail.ai.mode")}
+            description={t("mail.ai.modeHint")}
+            // Hints under the fields, so the two fields line up across the row.
+            inputWrapperOrder={["label", "input", "description", "error"]}
+            data={MODES.map((m) => ({
+              value: m,
+              label: t(`mail.ai.modes.${m}`),
+              disabled: m !== "patterns" && !mailbox.aiReady,
+            }))}
+            value={draft.mode}
+            allowDeselect={false}
+            onChange={(v) => v && chooseMode(v as MailboxAI["mode"])}
+          />
+        </Box>
+      </SimpleGrid>
       {!mailbox.aiReady && (
         <Text size="xs" c="dimmed">
           <Trans
