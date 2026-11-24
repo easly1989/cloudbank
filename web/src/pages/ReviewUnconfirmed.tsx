@@ -221,8 +221,9 @@ export function ReviewUnconfirmed({
   // The toast's undo calls the API itself: the card may be gone by then.
   const snooze = useMutation({
     mutationFn: (v: { ids: number[]; until: string }) => snoozeReviewRows(walletId, v.ids, v.until),
+    // Settled, not only succeeded: one PUT of a pair may have gone through.
+    onSettled: onChanged,
     onSuccess: (_, v) => {
-      onChanged();
       const id = `snooze-${v.ids.join("-")}`;
       notifications.show({
         id,
@@ -251,7 +252,7 @@ export function ReviewUnconfirmed({
   });
   const unsnooze = useMutation({
     mutationFn: (ids: number[]) => unsnoozeReviewRows(walletId, ids),
-    onSuccess: onChanged,
+    onSettled: onChanged,
     onError: notifyError,
   });
   const snoozeButton = (ids: number[]) => (

@@ -255,7 +255,7 @@ func TestASnoozedMailRowIsBackOnItsDay(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	for _, bad := range []string{"", "tomorrow", "2026-02-30", today.AddDate(0, 0, -1).Format(dateLayout)} {
+	for _, bad := range []string{"", "tomorrow", "2026-02-30", today.AddDate(0, 0, -2).Format(dateLayout)} {
 		if err := s.Snooze(ctx, wid, row, bad, today); !errors.Is(err, ErrInvalidSnooze) {
 			t.Errorf("snooze until %q: err = %v, want ErrInvalidSnooze", bad, err)
 		}
@@ -291,6 +291,19 @@ func TestASnoozedMailRowIsBackOnItsDay(t *testing.T) {
 	}
 	if len(rows) != 1 || len(pairs) != 1 || len(snoozed) != 0 {
 		t.Fatalf("rows %v pairs %v snoozed %v, want both back", ids(rows), pairs, snoozed)
+	}
+
+	// A client a day behind UTC may pick its "today" (yesterday for the server).
+	if err := s.Snooze(ctx, wid, row, today.AddDate(0, 0, -1).Format(dateLayout), today); err != nil {
+		t.Errorf("snooze until the day before UTC today: %v", err)
+	}
+	// A pair with one half snoozed a week ago and the other for a day is out
+	// for a day, not a week.
+	if err := s.Snooze(ctx, wid, rev, today.AddDate(0, 0, 7).Format(dateLayout), today); err != nil {
+		t.Fatal(err)
+	}
+	if _, pairs, snoozed, err := s.unconfirmed(ctx, wid, today.AddDate(0, 0, 2)); err != nil || len(pairs) != 0 || len(snoozed) != 1 || snoozed[0].Until != until {
+		t.Errorf("pair halves 3 and 7 days: pairs %v snoozed %+v err %v, want the pair out until %s", pairs, snoozed, err, until)
 	}
 
 	// Brought back now.

@@ -114,10 +114,15 @@ func (s *Service) unconfirmed(ctx context.Context, walletID int64, today time.Ti
 		}
 		paired[pay.ID], paired[rev.ID] = true, true
 		// Shown once its older row is past the cutoff; put off while either
-		// row is snoozed.
+		// row is snoozed, until the sooner of their days: a pair is snoozed
+		// as one, so a stale day on one half never outlasts the day just picked.
 		if min(pay.Date, rev.Date) <= cutoff {
 			p, r := reviewTxn(pay), reviewTxn(rev)
-			if day := max(until[pay.ID], until[rev.ID]); day != "" {
+			day := until[pay.ID]
+			if o := until[rev.ID]; day == "" || (o != "" && o < day) {
+				day = o
+			}
+			if day != "" {
 				snoozed = append(snoozed, SnoozedRow{ReviewTxn: p, Until: day, Reversal: &r})
 			} else {
 				reversals = append(reversals, ReversalPair{Payment: p, Reversal: r})
@@ -179,7 +184,10 @@ func (s *Service) rowOf(ctx context.Context, walletID, id int64) (db.Transaction
 // for everyone in the wallet; snoozing it again moves the day. The row is
 // back in the review on that day.
 func (s *Service) Snooze(ctx context.Context, walletID, id int64, until string, today time.Time) error {
-	if d, err := time.Parse(dateLayout, until); err != nil || d.Format(dateLayout) != until || until < today.Format(dateLayout) {
+	// The client picks days on its own civil calendar, up to a day off the UTC
+	// one, so a day back from UTC today is still its "today": accept it.
+	// The row stays hidden only while until > UTC today.
+	if d, err := time.Parse(dateLayout, until); err != nil || d.Format(dateLayout) != until || until < today.AddDate(0, 0, -1).Format(dateLayout) {
 		return ErrInvalidSnooze
 	}
 	row, err := s.rowOf(ctx, walletID, id)

@@ -431,8 +431,8 @@ func TestSnoozeAnUnconfirmedMailRow(t *testing.T) {
 	}
 	snooze := base + "/transactions/" + strconv.FormatInt(rev.Unconfirmed[0].ID, 10) + "/snooze"
 
-	if r := admin.do(http.MethodPut, snooze, map[string]any{"until": day(-1)}, true); r.StatusCode != http.StatusBadRequest {
-		t.Fatalf("snooze until yesterday = %d, want 400", r.StatusCode)
+	if r := admin.do(http.MethodPut, snooze, map[string]any{"until": day(-2)}, true); r.StatusCode != http.StatusBadRequest {
+		t.Fatalf("snooze until two days ago = %d, want 400", r.StatusCode)
 	}
 	admin.do(http.MethodPost, "/api/v1/admin/users", map[string]any{"username": "bob", "password": "bobssecret"}, true).Body.Close()
 	bob := admin.fork()
