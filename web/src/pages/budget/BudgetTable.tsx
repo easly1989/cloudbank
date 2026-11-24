@@ -8,7 +8,7 @@ import {
   IconReceipt,
   IconTrash,
 } from "@tabler/icons-react";
-import type { MouseEvent, ReactNode } from "react";
+import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -105,8 +105,7 @@ export function BudgetBar({
           <i className={classes.pace} style={{ left: `${tick * 100}%` }} />
           <span
             className={classes.paceLabel}
-            data-edge={tick < 0.15 ? "start" : tick > 0.85 ? "end" : undefined}
-            style={{ left: `${tick * 100}%` }}
+            style={{ left: `${tick * 100}%`, "--at": tick } as CSSProperties}
             data-testid="budget-pace-label"
           >
             {t(`budget.pace.label.${pace.kind}`, { date, pace: Math.round(pace.at * 100) })}
