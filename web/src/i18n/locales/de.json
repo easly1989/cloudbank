@@ -2205,6 +2205,10 @@
     "delete": "Haushaltsbuch löschen",
     "billsCategory": "Kategorie für Rechnungen",
     "billsCategoryHint": "Nur wiederkehrende Buchungen dieser Kategorie zählen als Rechnungen: im Kasten „Rechnungen“ der Übersicht und im Hinweis auf überfällige Rechnungen. Lass „Alle Ausgaben“ stehen, um jede wiederkehrende Ausgabe mitzuzählen.",
+    "groupWallet": "Das Haushaltsbuch",
+    "groupWalletHint": "Wie es heißt und wem es gehört, wie in einer HomeBank-Datei.",
+    "groupSchedules": "Wiederkehrende Buchungen",
+    "groupSchedulesHint": "Was CloudBank selbst erfasst und was als Rechnung zählt.",
     "billsCategoryNone": "Alle Ausgaben",
     "label": "Haushaltsbuch"
   },
@@ -3252,7 +3256,12 @@
     "apiDocsHint": "Die API dieser Installation",
     "support": "CloudBank unterstützen",
     "supportHint": "Buy Me a Coffee und die anderen Wege",
-    "homebankHint": "Die Desktop-App, deren Web-Portierung CloudBank ist"
+    "homebankHint": "Die Desktop-App, deren Web-Portierung CloudBank ist",
+    "groupVersion": "Version",
+    "groupVersionHint": "Was auf diesem Server läuft.",
+    "groupLicence": "Lizenz",
+    "groupLinks": "Links",
+    "groupLinksHint": "Wo du nachlesen kannst, wie es geht, und wo Code und API sind."
   },
   "pageError": {
     "title": "Diese Seite funktioniert nicht mehr",

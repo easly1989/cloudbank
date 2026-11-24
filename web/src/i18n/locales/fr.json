@@ -2205,6 +2205,10 @@
     "delete": "Supprimer le classeur",
     "billsCategory": "Catégorie des factures",
     "billsCategoryHint": "Seules les opérations récurrentes de cette catégorie comptent comme factures : dans le bloc « Factures » du tableau de bord et dans le rappel des factures en retard. Laissez « Toutes les sorties » pour les compter toutes.",
+    "groupWallet": "Le classeur",
+    "groupWalletHint": "Son nom et à qui il appartient, comme dans un fichier HomeBank.",
+    "groupSchedules": "Opérations récurrentes",
+    "groupSchedulesHint": "Ce que CloudBank saisit tout seul, et ce qui compte comme facture.",
     "billsCategoryNone": "Toutes les sorties",
     "label": "Classeur"
   },
@@ -3252,7 +3256,12 @@
     "apiDocsHint": "L’API de cette installation",
     "support": "Soutenir CloudBank",
     "supportHint": "Buy Me a Coffee et les autres moyens",
-    "homebankHint": "L’application de bureau dont CloudBank est la version web"
+    "homebankHint": "L’application de bureau dont CloudBank est la version web",
+    "groupVersion": "Version",
+    "groupVersionHint": "Ce qui tourne sur ce serveur.",
+    "groupLicence": "Licence",
+    "groupLinks": "Liens",
+    "groupLinksHint": "Où lire comment l’utiliser, le code et l’API."
   },
   "pageError": {
     "title": "Cette page a cessé de fonctionner",

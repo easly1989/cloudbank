@@ -22,6 +22,7 @@ import { BackupCard } from "./BackupCard";
 import { ImportExport } from "./ImportPage";
 import { IntegrityCard } from "./IntegrityCard";
 import { notifyError } from "../notifyError";
+import { SettingsGroup } from "./settings/SettingsLayout";
 
 export function WalletSettingsPage({
   only = "general",
@@ -87,22 +88,29 @@ export function WalletSettingsPage({
   return (
     <Stack>
       {section === "general" && (
-        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
-          <Card withBorder>
-            <Stack>
+        <Stack gap="xl">
+          <SettingsGroup title={t("wallet.groupWallet")} hint={t("wallet.groupWalletHint")}>
+            <Card withBorder p={0} className="cb-settings-fields">
               <TextInput
+                className="cb-settings-field"
                 label={t("wallet.title")}
                 value={title}
                 disabled={!isOwner}
                 onChange={(e) => setTitle(e.currentTarget.value)}
               />
               <TextInput
+                className="cb-settings-field"
                 label={t("wallet.ownerName")}
                 value={ownerName}
                 disabled={!isOwner}
                 onChange={(e) => setOwnerName(e.currentTarget.value)}
               />
+            </Card>
+          </SettingsGroup>
+          <SettingsGroup title={t("wallet.groupSchedules")} hint={t("wallet.groupSchedulesHint")}>
+            <Card withBorder p={0} className="cb-settings-fields">
               <Select
+                className="cb-settings-field"
                 label={t("wallet.scheduleAhead")}
                 description={t("wallet.scheduleAheadHint")}
                 data={[
@@ -117,6 +125,7 @@ export function WalletSettingsPage({
                 allowDeselect={false}
               />
               <Select
+                className="cb-settings-field"
                 label={t("wallet.billsCategory")}
                 description={t("wallet.billsCategoryHint")}
                 data={categoryOptions}
@@ -125,18 +134,18 @@ export function WalletSettingsPage({
                 disabled={!isOwner}
                 searchable
               />
-              <Group justify="flex-end">
-                <Button
-                  onClick={() => rename.mutate()}
-                  loading={rename.isPending}
-                  disabled={!isOwner || !title.trim()}
-                >
-                  {t("wallet.save")}
-                </Button>
-              </Group>
-            </Stack>
-          </Card>
-        </SimpleGrid>
+            </Card>
+          </SettingsGroup>
+          <Group justify="flex-end">
+            <Button
+              onClick={() => rename.mutate()}
+              loading={rename.isPending}
+              disabled={!isOwner || !title.trim()}
+            >
+              {t("wallet.save")}
+            </Button>
+          </Group>
+        </Stack>
       )}
 
       {section === "import" && <ImportExport />}

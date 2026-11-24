@@ -151,47 +151,55 @@ export function AboutSection() {
     { href: HOMEBANK_URL, label: "HomeBank", hint: t("about.homebankHint") },
   ];
   return (
-    <Stack gap="lg" maw={560}>
-      <Group gap="sm" wrap="nowrap">
-        <Logo size={40} />
-        <div>
-          <Text fw={700} fz="lg">
-            {t("app.name")}
+    <Stack gap="xl">
+      <SettingsGroup title={t("about.groupVersion")} hint={t("about.groupVersionHint")}>
+        <Card withBorder p={0}>
+          <div className="cb-settings-row">
+            <Group gap={10} wrap="nowrap">
+              <Logo size={24} />
+              <Text fz="sm" fw={600}>
+                {t("app.name")}
+              </Text>
+            </Group>
+            <Text ff="monospace" fz="sm" data-testid="about-version">
+              {t("about.version", { version: version ?? "…" })}
+            </Text>
+          </div>
+          {/* Admins only, and never in the demo (#582). */}
+          {!__DEMO__ && user?.isAdmin && <UpdateStatusCard />}
+        </Card>
+      </SettingsGroup>
+      <SettingsGroup title={t("about.groupLicence")}>
+        <Card withBorder>
+          <Text fz="sm">
+            <Trans i18nKey="about.licence" components={{ b: <b /> }} />
           </Text>
-          <Text ff="monospace" fz="sm" c="dimmed" data-testid="about-version">
-            {t("about.version", { version: version ?? "…" })}
-          </Text>
-        </div>
-      </Group>
-      {/* Admins only, and never in the demo (#582). */}
-      {!__DEMO__ && user?.isAdmin && <UpdateStatusCard />}
-      <Text>
-        <Trans i18nKey="about.licence" components={{ b: <b /> }} />
-      </Text>
-      <Card withBorder p={0}>
-        {links.map((l, i) => (
-          <Anchor
-            key={l.href}
-            href={l.href}
-            target="_blank"
-            rel="noreferrer"
-            underline="never"
-            c="inherit"
-            className="cb-about-link"
-            style={
-              i > 0 ? { borderTop: "1px solid var(--mantine-color-default-border)" } : undefined
-            }
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
+        </Card>
+      </SettingsGroup>
+      <SettingsGroup title={t("about.groupLinks")} hint={t("about.groupLinksHint")}>
+        <Card withBorder p={0}>
+          {links.map((l, i) => (
+            <Anchor
+              key={l.href}
+              href={l.href}
+              target="_blank"
+              rel="noreferrer"
+              underline="never"
+              c="inherit"
+              className="cb-about-link"
+              style={
+                i > 0 ? { borderTop: "1px solid var(--mantine-color-default-border)" } : undefined
+              }
+            >
               <Text fw={500}>{l.label}</Text>
-              <Text size="xs" c="dimmed" truncate>
+              <Text fz={13} c="dimmed" truncate>
                 {l.hint}
               </Text>
-            </div>
-            <IconExternalLink size={16} style={{ opacity: 0.6, flexShrink: 0 }} />
-          </Anchor>
-        ))}
-      </Card>
+              <IconExternalLink size={16} style={{ opacity: 0.6, flexShrink: 0 }} />
+            </Anchor>
+          ))}
+        </Card>
+      </SettingsGroup>
     </Stack>
   );
 }

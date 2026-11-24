@@ -791,13 +791,87 @@ body {
   border-top: 1px solid var(--mantine-color-default-border);
 }
 
-/* A link in Settings › About (#513): a whole row, name over address. */
+/* A link in Settings › About (#513): a whole row. On a phone the name sits
+ * over the address; from sm up they are columns of a table. */
 .cb-about-link {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16px;
   align-items: center;
-  gap: 12px;
+  column-gap: 12px;
   min-height: 52px;
   padding: 6px 14px;
+}
+.cb-about-link > svg {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+}
+@media (min-width: 48em) {
+  .cb-about-link {
+    grid-template-columns: 220px minmax(0, 1fr) 16px;
+  }
+  .cb-about-link > svg {
+    grid-row: auto;
+    grid-column: auto;
+  }
+}
+
+/* A row in a settings card, as on Security and Notifications: what it is on
+ * the left, a small control (a button, a switch) on the right. */
+.cb-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding: 14px 16px;
+}
+.cb-settings-row + .cb-settings-row {
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+.cb-settings-row-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The same row for a Mantine field, which keeps its own label and description
+ * (and so their wiring to the input): the card is the container, and the field
+ * goes beside its words once the card is wide enough for both. */
+.cb-settings-fields {
+  container-type: inline-size;
+}
+.cb-settings-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding: 14px 16px;
+}
+/* "~", not "+": a Select leaves its hidden input between two fields. */
+.cb-settings-field ~ .cb-settings-field {
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+.cb-settings-field > .mantine-InputWrapper-label {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+}
+.cb-settings-field > .mantine-InputWrapper-description {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+.cb-settings-field > .mantine-Input-wrapper {
+  margin-top: 12px;
+}
+@container (min-width: 704px) {
+  .cb-settings-field {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    column-gap: 24px;
+    align-items: center;
+  }
+  .cb-settings-field > .mantine-Input-wrapper {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    margin-top: 0;
+  }
+  .cb-settings-field:not(:has(> .mantine-InputWrapper-description)) > .mantine-Input-wrapper {
+    grid-row: 1;
+  }
 }
 
 /* On a touch screen, 44 is the floor (#403, #465). The boards are all drawn at

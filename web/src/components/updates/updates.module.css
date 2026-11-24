@@ -27,20 +27,3 @@
   background: transparent;
   white-space: pre-wrap;
 }
-
-.status {
-  border: 1px solid var(--mantine-color-default-border);
-  border-radius: 8px;
-}
-
-.statusRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-}
-
-.statusRow + .statusRow {
-  border-top: 1px solid var(--mantine-color-default-border);
-}

@@ -2205,6 +2205,10 @@
     "delete": "Eliminar cartera",
     "billsCategory": "Categoría de los recibos",
     "billsCategoryHint": "Solo los movimientos programados de esta categoría cuentan como recibos: en el bloque «Recibos» del panel y en el aviso de recibos vencidos. Deja «Todas las salidas» para contarlos todos.",
+    "groupWallet": "La cartera",
+    "groupWalletHint": "Cómo se llama y de quién es, como en un archivo de HomeBank.",
+    "groupSchedules": "Movimientos programados",
+    "groupSchedulesHint": "Qué registra CloudBank por sí solo, y qué cuenta como recibo.",
     "billsCategoryNone": "Todas las salidas",
     "label": "Cartera"
   },
@@ -3252,7 +3256,12 @@
     "apiDocsHint": "La API de esta instalación",
     "support": "Apoyar CloudBank",
     "supportHint": "Buy Me a Coffee y las demás formas",
-    "homebankHint": "La app de escritorio de la que CloudBank es la versión web"
+    "homebankHint": "La app de escritorio de la que CloudBank es la versión web",
+    "groupVersion": "Versión",
+    "groupVersionHint": "Qué se ejecuta en este servidor.",
+    "groupLicence": "Licencia",
+    "groupLinks": "Enlaces",
+    "groupLinksHint": "Dónde leer cómo se usa, el código y la API."
   },
   "pageError": {
     "title": "Esta página ha dejado de funcionar",

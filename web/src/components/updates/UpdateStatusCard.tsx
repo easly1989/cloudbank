@@ -8,13 +8,12 @@ import { checkForUpdates, setUpdateCheck, type UpdateStatus } from "../../api/cl
 import { sinceNow } from "../../bankSyncNotice";
 import { HowToUpdateModal } from "./HowToUpdateModal";
 import { useUpdateStatus } from "./updateModel";
-import classes from "./updates.module.css";
 import { notifyError } from "../../notifyError";
 
 /**
  * Settings › About, for an admin (#582): whether a newer CloudBank is out,
  * and the switch for the daily check. It is where the state stays once the
- * sidebar card is closed.
+ * sidebar card is closed. Its rows sit in the Version card, below the version.
  */
 export function UpdateStatusCard() {
   const { t, i18n } = useTranslation();
@@ -40,10 +39,10 @@ export function UpdateStatusCard() {
   } else if (st.available) {
     head = (
       <>
-        <div>
+        <div className="cb-settings-row-text">
           <Group gap={8} wrap="nowrap">
             <IconCircleArrowUp size={16} />
-            <Text fw={600}>
+            <Text fz="sm" fw={600}>
               {st.channel === "nightly"
                 ? t("updates.availableNightly")
                 : t("updates.available", { version: st.latest })}
@@ -64,10 +63,12 @@ export function UpdateStatusCard() {
   } else {
     head = (
       <>
-        <div>
+        <div className="cb-settings-row-text">
           <Group gap={8} wrap="nowrap">
             {!st.error && <IconCircleCheck size={16} />}
-            <Text fw={600}>{st.error ? t("updates.noAnswer") : t("updates.upToDate")}</Text>
+            <Text fz="sm" fw={600}>
+              {st.error ? t("updates.noAnswer") : t("updates.upToDate")}
+            </Text>
           </Group>
           {st.error && (
             <Text size="sm" c="dimmed">
@@ -88,12 +89,12 @@ export function UpdateStatusCard() {
   }
 
   return (
-    <div className={classes.status}>
-      <div className={classes.statusRow}>{head}</div>
+    <>
+      <div className="cb-settings-row">{head}</div>
       {st.allowed && st.channel !== "" && (
-        <div className={classes.statusRow}>
-          <div>
-            <Text size="sm" fw={500}>
+        <div className="cb-settings-row">
+          <div className="cb-settings-row-text">
+            <Text size="sm" fw={600}>
               {t("updates.switch")}
             </Text>
             <Text size="sm" c="dimmed">
@@ -112,6 +113,6 @@ export function UpdateStatusCard() {
         </div>
       )}
       {st.available && <HowToUpdateModal status={st} opened={how} onClose={close} />}
-    </div>
+    </>
   );
 }

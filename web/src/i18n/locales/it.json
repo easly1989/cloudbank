@@ -2205,6 +2205,10 @@
     "delete": "Elimina portafoglio",
     "billsCategory": "Categoria bollette",
     "billsCategoryHint": "Solo le programmate di questa categoria contano come bollette: nel riquadro Scadenze del cruscotto e nell’avviso delle bollette scadute. Lascia «Tutte le uscite» per contarle tutte.",
+    "groupWallet": "Il portafoglio",
+    "groupWalletHint": "Come si chiama e di chi è, come in un file di HomeBank.",
+    "groupSchedules": "Transazioni programmate",
+    "groupSchedulesHint": "Cosa registra CloudBank da solo, e cosa conta come bolletta.",
     "billsCategoryNone": "Tutte le uscite",
     "label": "Portafoglio"
   },
@@ -3252,7 +3256,12 @@
     "apiDocsHint": "Le API di questa installazione",
     "support": "Sostieni CloudBank",
     "supportHint": "Buy Me a Coffee e gli altri modi",
-    "homebankHint": "L'app desktop di cui CloudBank è un port web"
+    "homebankHint": "L'app desktop di cui CloudBank è un port web",
+    "groupVersion": "Versione",
+    "groupVersionHint": "Cosa gira su questo server.",
+    "groupLicence": "Licenza",
+    "groupLinks": "Link",
+    "groupLinksHint": "Dove leggere come si usa, il codice e le API."
   },
   "pageError": {
     "title": "Questa pagina si è interrotta",

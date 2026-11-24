@@ -2205,6 +2205,10 @@
     "delete": "Delete wallet",
     "billsCategory": "Bills category",
     "billsCategoryHint": "Only schedules in this category count as bills: in the dashboard's Bills widget and in the overdue bills reminder. Leave All outflows to count every outflow schedule.",
+    "groupWallet": "The wallet",
+    "groupWalletHint": "What it is called and whose it is, as in a HomeBank file.",
+    "groupSchedules": "Scheduled transactions",
+    "groupSchedulesHint": "What CloudBank records by itself, and what counts as a bill.",
     "billsCategoryNone": "All outflows",
     "label": "Wallet"
   },
@@ -3252,7 +3256,12 @@
     "apiDocsHint": "The API of this installation",
     "support": "Support CloudBank",
     "supportHint": "Buy Me a Coffee and the other ways",
-    "homebankHint": "The desktop app CloudBank is a web port of"
+    "homebankHint": "The desktop app CloudBank is a web port of",
+    "groupVersion": "Version",
+    "groupVersionHint": "What runs on this server.",
+    "groupLicence": "Licence",
+    "groupLinks": "Links",
+    "groupLinksHint": "Where to read how to use it, the code and the API."
   },
   "pageError": {
     "title": "This page stopped working",
