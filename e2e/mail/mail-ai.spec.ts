@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 // Bank mails read by the AI (#659), against the pretend AI provider in
 // ../server/cmd/e2e-mail, which also tells what it was sent. It runs after
@@ -22,6 +22,21 @@ async function signIn(page: Page) {
 
 const card = (page: Page) =>
   page.getByTestId("mailbox-card").filter({ hasText: GUEST });
+
+/** Opens a mailbox's latest mails, closed by default, on the given filter. */
+async function showMails(scope: Locator, filter = "All") {
+  const title = scope.getByRole("button", {
+    name: "Latest mails",
+    exact: true,
+  });
+  if ((await title.getAttribute("aria-expanded")) !== "true")
+    await title.click();
+  await scope
+    .getByRole("radiogroup", { name: "Which mails" })
+    .locator("label")
+    .filter({ hasText: new RegExp(`^${filter}`) })
+    .click();
+}
 
 async function deliver(page: Page, authenticated: boolean, shop: string) {
   const res = await page.request.post(`${FAKE}/deliver`, {
@@ -92,6 +107,7 @@ test("with the AI after the patterns, a mail no pattern reads is written by it",
 
   await deliver(page, true, "Edicola Demo");
   await card(page).getByRole("button", { name: "Check now" }).click();
+  await showMails(card(page));
   await expect(
     card(page).getByRole("link", { name: /Edicola Demo/ }),
   ).toBeVisible();
@@ -112,6 +128,7 @@ test("a mail whose sender is not authenticated never reaches the AI", async ({
   await deliver(page, false, "Negozio Falso");
   await page.goto("/settings/mail");
   await card(page).getByRole("button", { name: "Check now" }).click();
+  await showMails(card(page));
   await expect(
     card(page).getByText("Not authenticated", { exact: true }),
   ).toHaveCount(1);

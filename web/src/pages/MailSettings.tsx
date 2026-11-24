@@ -15,6 +15,7 @@ import {
   Menu,
   Modal,
   Paper,
+  SegmentedControl,
   Select,
   SimpleGrid,
   Stack,
@@ -22,12 +23,14 @@ import {
   ThemeIcon,
   Title,
   Tooltip,
+  UnstyledButton,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
   IconAlertTriangle,
   IconBrandWindows,
   IconCheck,
+  IconChevronRight,
   IconCopy,
   IconDots,
   IconExternalLink,
@@ -38,7 +41,7 @@ import {
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -64,6 +67,7 @@ import { useDateFormat } from "../dates";
 import { formatMinor } from "../money";
 import { notifyError } from "../notifyError";
 import { ImapConnect } from "./mail/ImapConnect";
+import { countMails, filterMails, type MailFilter } from "./mail/latestMails";
 import { MailAI } from "./mail/MailAI";
 import { providerForServer } from "./mail/imapProviders";
 import { PatternList } from "./mail/PatternList";
@@ -248,7 +252,6 @@ function MailboxCard({
   const when = useWhen();
   const clock = useClock();
   const [foldersWanted, setFoldersWanted] = useState(false);
-  const [showAll, setShowAll] = useState(false);
   // The pattern editor: a pattern to edit, or the mail a new one starts from.
   const [editor, setEditor] = useState<{ pattern?: MailPattern; mailId?: number } | null>(null);
 
@@ -333,7 +336,6 @@ function MailboxCard({
 
   const folderOptions = Array.from(new Set([mailbox.folder, ...(folders.data?.folders ?? [])]));
   const list = messages.data ?? [];
-  const shown = showAll ? list : list.slice(0, RECENT_SHOWN);
 
   const next = mailbox.nextCheckAt ? clock(mailbox.nextCheckAt) : "";
   const lastMail = mailbox.lastMailAt
@@ -495,56 +497,16 @@ function MailboxCard({
 
         <Divider />
 
-        <Stack gap="md" data-tour="mail-history">
-          <Text fw={600}>{t("mail.recent")}</Text>
-          {list.length === 0 ? (
-            <Text size="sm" c="dimmed">
-              {t("mail.recentEmpty")}
-            </Text>
-          ) : (
-            <Stack gap={0}>
-              {shown.map((m) => (
-                <Group
-                  key={m.id}
-                  gap="xs"
-                  py={8}
-                  wrap="wrap"
-                  style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}
-                >
-                  <Text
-                    size="sm"
-                    c="dimmed"
-                    w={{ base: "100%", sm: 150 }}
-                    style={{ flexShrink: 0 }}
-                  >
-                    {when(m.receivedAt)}
-                  </Text>
-                  <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }} data-cb-sensitive>
-                    {m.subject || m.sender}
-                  </Text>
-                  {/* On a phone the outcome takes its own line, so the subject
-                    keeps the width it needs. */}
-                  <Box w={{ base: "100%", sm: "auto" }} style={{ minWidth: 0 }}>
-                    <MailOutcome
-                      mail={m}
-                      accounts={accounts.data ?? []}
-                      onCreate={() => setEditor({ mailId: m.id })}
-                      onFix={() => {
-                        const p = patterns.data?.find((x) => x.id === m.patternId);
-                        if (p) setEditor({ pattern: p });
-                      }}
-                    />
-                  </Box>
-                </Group>
-              ))}
-              {list.length > RECENT_SHOWN && (
-                <Button variant="subtle" size="xs" mt={4} onClick={() => setShowAll((s) => !s)}>
-                  {showAll ? t("mail.showFewer") : t("mail.showAll", { count: list.length })}
-                </Button>
-              )}
-            </Stack>
-          )}
-        </Stack>
+        <LatestMails
+          mailboxId={mailbox.id}
+          list={list}
+          accounts={accounts.data ?? []}
+          onCreate={(mailId) => setEditor({ mailId })}
+          onFix={(patternId) => {
+            const p = patterns.data?.find((x) => x.id === patternId);
+            if (p) setEditor({ pattern: p });
+          }}
+        />
       </Stack>
       {editor && (
         <PatternSheet
@@ -557,6 +519,208 @@ function MailboxCard({
         />
       )}
     </Card>
+  );
+}
+
+/** Whether a mailbox's latest mails are open: closed at first, and remembered
+ * for this browser session only. */
+function useSessionOpen(key: string): [boolean, (v: boolean) => void] {
+  const [open, setOpen] = useState(() => {
+    try {
+      return sessionStorage.getItem(key) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const set = (v: boolean) => {
+    setOpen(v);
+    try {
+      sessionStorage.setItem(key, v ? "1" : "0");
+    } catch {
+      /* storage unavailable (private mode): this page only */
+    }
+  };
+  return [open, set];
+}
+
+/**
+ * A mailbox's latest mails, closed by default. The title opens them; the badge
+ * counts those read (a transaction exists) and those to review (none does), and
+ * each half opens the list on its own group.
+ */
+function LatestMails({
+  mailboxId,
+  list,
+  accounts,
+  onCreate,
+  onFix,
+}: {
+  mailboxId: number;
+  list: MailSummary[];
+  accounts: Account[];
+  onCreate: (mailId: number) => void;
+  onFix: (patternId: number | null) => void;
+}) {
+  const { t } = useTranslation();
+  const when = useWhen();
+  const bodyId = useId();
+  const [open, setOpen] = useSessionOpen(`cb.mail.latestOpen.${mailboxId}`);
+  // Unset: the mails to review, or all of them when none is.
+  const [filter, setFilter] = useState<MailFilter | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const counts = countMails(list);
+  const current = filter ?? (counts.review ? "review" : "all");
+  const picked = filterMails(list, current);
+  const shown = showAll ? picked : picked.slice(0, RECENT_SHOWN);
+  const pick = (f: MailFilter) => {
+    setFilter(f);
+    setShowAll(false);
+    setOpen(true);
+  };
+  const both = counts.read > 0 && counts.review > 0;
+  const segment = (label: string, n: number) => (
+    <Group gap={6} wrap="nowrap" justify="center">
+      {label}
+      <Text span size="xs" c="dimmed">
+        {n}
+      </Text>
+    </Group>
+  );
+
+  return (
+    <Stack gap="xs" data-tour="mail-history">
+      <Group gap="xs" wrap="wrap" align="center">
+        <UnstyledButton
+          className="cb-disclosure"
+          aria-expanded={open}
+          aria-controls={open ? bodyId : undefined}
+          onClick={() => {
+            setOpen(!open);
+            setFilter(null);
+            setShowAll(false);
+          }}
+        >
+          <IconChevronRight size={16} aria-hidden />
+          <Text fw={600}>{t("mail.recent")}</Text>
+        </UnstyledButton>
+        {counts.all === 0 ? (
+          <Text size="xs" c="dimmed">
+            {t("mail.latest.none")}
+          </Text>
+        ) : (
+          <Group gap={0} wrap="nowrap">
+            {counts.read > 0 && (
+              <Badge
+                component="button"
+                type="button"
+                variant="light"
+                color="teal"
+                size="md"
+                className="cb-split-half mantine-focus-auto"
+                style={{
+                  color: "var(--cb-teal-tint-fg)",
+                  ...(both && { borderTopRightRadius: 0, borderBottomRightRadius: 0 }),
+                }}
+                onClick={() => pick("read")}
+              >
+                {t("mail.latest.read", { count: counts.read })}
+              </Badge>
+            )}
+            {counts.review > 0 && (
+              <Badge
+                component="button"
+                type="button"
+                variant="light"
+                color="yellow"
+                size="md"
+                className="cb-split-half mantine-focus-auto"
+                style={{
+                  color: "var(--cb-attention)",
+                  background: "var(--cb-attention-bg)",
+                  ...(both && { borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }),
+                }}
+                onClick={() => pick("review")}
+              >
+                {t("mail.latest.toReview", { count: counts.review })}
+              </Badge>
+            )}
+          </Group>
+        )}
+      </Group>
+      {open && (
+        <Stack gap="xs" id={bodyId}>
+          {list.length === 0 ? (
+            <Text size="sm" c="dimmed">
+              {t("mail.recentEmpty")}
+            </Text>
+          ) : (
+            <>
+              <SegmentedControl
+                aria-label={t("mail.latest.filterLabel")}
+                value={current}
+                onChange={(v) => {
+                  setFilter(v as MailFilter);
+                  setShowAll(false);
+                }}
+                style={{ alignSelf: "flex-start", maxWidth: "100%" }}
+                data={[
+                  {
+                    value: "review",
+                    label: segment(t("mail.latest.filterReview"), counts.review),
+                  },
+                  { value: "read", label: segment(t("mail.latest.filterRead"), counts.read) },
+                  { value: "all", label: segment(t("mail.latest.filterAll"), counts.all) },
+                ]}
+              />
+              {current === "review" && picked.length === 0 ? (
+                <Text size="sm" c="dimmed" py={8}>
+                  {t("mail.latest.nothingToReview")}
+                </Text>
+              ) : (
+                <Stack gap={0}>
+                  {shown.map((m) => (
+                    <Group
+                      key={m.id}
+                      gap="xs"
+                      py={8}
+                      wrap="wrap"
+                      style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}
+                    >
+                      <Text
+                        size="sm"
+                        c="dimmed"
+                        w={{ base: "100%", sm: 150 }}
+                        style={{ flexShrink: 0 }}
+                      >
+                        {when(m.receivedAt)}
+                      </Text>
+                      <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }} data-cb-sensitive>
+                        {m.subject || m.sender}
+                      </Text>
+                      {/* On a phone the outcome takes its own line, so the subject
+                        keeps the width it needs. */}
+                      <Box w={{ base: "100%", sm: "auto" }} style={{ minWidth: 0 }}>
+                        <MailOutcome
+                          mail={m}
+                          accounts={accounts}
+                          onCreate={() => onCreate(m.id)}
+                          onFix={() => onFix(m.patternId)}
+                        />
+                      </Box>
+                    </Group>
+                  ))}
+                  {picked.length > RECENT_SHOWN && (
+                    <Button variant="subtle" size="xs" mt={4} onClick={() => setShowAll((s) => !s)}>
+                      {showAll ? t("mail.showFewer") : t("mail.showAll", { count: picked.length })}
+                    </Button>
+                  )}
+                </Stack>
+              )}
+            </>
+          )}
+        </Stack>
+      )}
+    </Stack>
   );
 }
 

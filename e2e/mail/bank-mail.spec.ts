@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 // Bank mails (#657) all the way through, with nothing in between mocked: a
 // CloudBank signs in to a pretend Microsoft (mail/../server/cmd/e2e-mail),
@@ -58,6 +58,21 @@ async function select(page: Page, piece: string) {
 }
 
 const history = (page: Page) => page.getByTestId("mailbox-card");
+
+/** Opens a mailbox's latest mails, closed by default, on the given filter. */
+async function showMails(scope: Locator, filter = "All") {
+  const title = scope.getByRole("button", {
+    name: "Latest mails",
+    exact: true,
+  });
+  if ((await title.getAttribute("aria-expanded")) !== "true")
+    await title.click();
+  await scope
+    .getByRole("radiogroup", { name: "Which mails" })
+    .locator("label")
+    .filter({ hasText: new RegExp(`^${filter}`) })
+    .click();
+}
 
 test("a fresh server, with a wallet and an account", async ({ page }) => {
   const setup = await page.request.post("/api/v1/setup", {
@@ -149,6 +164,17 @@ test("the bank's mails arrive, and none is recognised yet", async ({
 
   await page.goto("/settings/mail");
   await history(page).getByRole("button", { name: "Check now" }).click();
+  // The latest mails start closed; the badge counts them, and its half for the
+  // mails to review opens the list on those.
+  const toReview = history(page).getByRole("button", { name: "3 to review" });
+  await expect(toReview).toBeVisible();
+  await expect(
+    history(page).getByText("Not recognised", { exact: true }),
+  ).toHaveCount(0);
+  await toReview.click();
+  await expect(
+    history(page).getByRole("button", { name: "Latest mails", exact: true }),
+  ).toHaveAttribute("aria-expanded", "true");
   await expect(
     history(page).getByText("Not recognised", { exact: true }),
   ).toHaveCount(3);
@@ -203,6 +229,7 @@ test("the first pattern offers the editor's tour, once, and Escape leaves the dr
   const card = page.locator("[data-tour-step]");
 
   await page.goto("/settings/mail");
+  await showMails(history(page));
   await create.click();
   await offer.getByRole("button", { name: /Show me/ }).click();
   await expect(offer).toHaveCount(0);
@@ -235,6 +262,7 @@ test("the first pattern offers the editor's tour, once, and Escape leaves the dr
 
   // Offered once: the next pattern starts without it.
   await page.reload();
+  await showMails(history(page));
   await create.click();
   await expect(page.getByTestId("pattern-sample")).toBeVisible();
   await expect(offer).toHaveCount(0);
@@ -247,6 +275,7 @@ test("a pattern made from one mail writes the transactions of all its kind", asy
 }) => {
   await signIn(page);
   await page.goto("/settings/mail");
+  await showMails(history(page));
   // The newest mail is first: the supermarket.
   await history(page)
     .getByRole("button", { name: "Create a pattern from this mail" })
@@ -304,6 +333,7 @@ test("a pattern for money in is one choice, and the mail's word is not marked", 
 }) => {
   await signIn(page);
   await page.goto("/settings/mail");
+  await showMails(history(page));
   // The transfer is the one mail left that no pattern reads.
   const create = history(page).getByRole("button", {
     name: "Create a pattern from this mail",
@@ -363,6 +393,7 @@ test("a pattern for money in is one choice, and the mail's word is not marked", 
 test("a new mail is heard and written without asking", async ({ page }) => {
   await signIn(page);
   await page.goto("/settings/mail");
+  await showMails(history(page));
   await expect(history(page).getByText("Created", { exact: true })).toHaveCount(
     3,
   );
@@ -370,6 +401,7 @@ test("a new mail is heard and written without asking", async ({ page }) => {
   // The listener hears it over IMAP IDLE; the page refreshes on its own.
   await expect(async () => {
     await page.reload();
+    await showMails(history(page));
     await expect(
       history(page).getByRole("link", { name: /Bar Demo/ }),
     ).toBeVisible({
@@ -391,6 +423,7 @@ test("a mail whose sender is not authenticated writes nothing", async ({
   });
   await page.goto("/settings/mail");
   await history(page).getByRole("button", { name: "Check now" }).click();
+  await showMails(history(page));
   await expect(
     history(page).getByText("Not authenticated", { exact: true }),
   ).toHaveCount(1);
@@ -436,6 +469,11 @@ test("one pattern covers two wordings of a notice, marked in a mail of each", as
   );
   await page.goto("/settings/mail");
   await history(page).getByRole("button", { name: "Check now" }).click();
+  // With the mail the forged sender sent before, 4 are to review.
+  await expect(
+    history(page).getByRole("button", { name: "4 to review" }),
+  ).toBeVisible();
+  await showMails(history(page));
   await expect(
     history(page).getByText("Not recognised", { exact: true }),
   ).toHaveCount(3);
@@ -526,6 +564,7 @@ test("the written transactions are in the register, opened from the mail", async
 }) => {
   await signIn(page);
   await page.goto("/settings/mail");
+  await showMails(history(page));
   await history(page)
     .getByRole("link", { name: /Supermercato Demo 0042/ })
     .click();

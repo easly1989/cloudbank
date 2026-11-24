@@ -280,6 +280,10 @@ body {
   --cb-nav-active-bg: #eaf0fe;
   --cb-track-bg: #f1f4f9;
   --cb-attention-border: #e6c98f;
+  /* The attention colour as a fill, under attention text (4.61:1). */
+  --cb-attention-bg: #fff3bf;
+  /* Text on Mantine's light teal fill: its own teal reads 4.33:1 there; this, 5.26:1. */
+  --cb-teal-tint-fg: #10704e;
   --cb-arrival-tint: #eaf0fe;
 }
 :root[data-mantine-color-scheme="dark"] {
@@ -293,6 +297,9 @@ body {
   --cb-nav-active-bg: #182440;
   --cb-track-bg: #1a212b;
   --cb-attention-border: #5c4726;
+  /* Mantine's dark yellow fill puts the attention text at 4.02:1; this, 5.97:1. */
+  --cb-attention-bg: #3d2e12;
+  --cb-teal-tint-fg: #e6fcf5;
   --cb-arrival-tint: #18243c;
 }
 
@@ -420,6 +427,46 @@ body {
   border: 1px solid var(--cb-attention-border);
   border-radius: 10px;
   padding: 16px 20px;
+}
+
+/* A title that opens what is under it ("Latest mails" on a mailbox card). The
+   negative margin keeps the chevron on the card's content edge, where the other
+   headings start; the hover fill reaches past it. The chevron turns down when
+   open. */
+.cb-disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 4px 8px;
+  margin-inline-start: -8px;
+  border-radius: var(--mantine-radius-default);
+}
+.cb-disclosure:hover {
+  background: var(--mantine-color-default-hover);
+}
+.cb-disclosure > svg {
+  flex-shrink: 0;
+  color: var(--mantine-color-dimmed);
+  transition: transform 150ms ease;
+}
+.cb-disclosure[aria-expanded="true"] > svg {
+  transform: rotate(90deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cb-disclosure > svg {
+    transition: none;
+  }
+}
+/* One half of a two-part count badge that is also a button. */
+.cb-split-half {
+  cursor: pointer;
+}
+.cb-split-half:hover {
+  filter: brightness(0.96);
+}
+[data-mantine-color-scheme="dark"] .cb-split-half:hover {
+  filter: brightness(1.15);
 }
 
 /* A section in the settings rail. It is a plain link rather than a NavLink
@@ -841,7 +888,7 @@ body {
   }
   /* The rest are laid out as text, and are centred on the way up so the words
      do not sit at the top of a taller box. */
-  :root :is(.cb-nav-group-toggle, .cb-title-switch, .cb-attention-action) {
+  :root :is(.cb-nav-group-toggle, .cb-title-switch, .cb-attention-action, .cb-disclosure) {
     display: inline-flex;
     align-items: center;
     min-height: 44px;

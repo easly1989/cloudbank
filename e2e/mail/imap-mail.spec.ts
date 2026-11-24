@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 // A mailbox connected over IMAP with an app password (#658), against the
 // pretend provider in ../server/cmd/e2e-mail, which CloudBank is allowed to
@@ -27,6 +27,21 @@ async function signIn(page: Page) {
 const cards = (page: Page) => page.getByTestId("mailbox-card");
 const guestCard = (page: Page) =>
   cards(page).filter({ hasText: GUEST.address });
+
+/** Opens a mailbox's latest mails, closed by default, on the given filter. */
+async function showMails(scope: Locator, filter = "All") {
+  const title = scope.getByRole("button", {
+    name: "Latest mails",
+    exact: true,
+  });
+  if ((await title.getAttribute("aria-expanded")) !== "true")
+    await title.click();
+  await scope
+    .getByRole("radiogroup", { name: "Which mails" })
+    .locator("label")
+    .filter({ hasText: new RegExp(`^${filter}`) })
+    .click();
+}
 
 /** Opens the connect form and fills it for the pretend provider. */
 async function fillForm(page: Page, password: string, host = SERVER.host) {
@@ -115,6 +130,10 @@ test("the mailbox reads what arrives", async ({ page }) => {
   expect(res.status()).toBe(204);
   await page.goto("/settings/mail");
   await guestCard(page).getByRole("button", { name: "Check now" }).click();
+  await expect(
+    guestCard(page).getByRole("button", { name: "1 to review" }),
+  ).toBeVisible();
+  await showMails(guestCard(page));
   await expect(guestCard(page).getByText("Addebito carta")).toBeVisible();
   await expect(
     guestCard(page).getByText("Not recognised", { exact: true }),

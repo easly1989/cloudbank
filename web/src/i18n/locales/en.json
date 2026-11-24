@@ -1216,6 +1216,18 @@
     "loadingFolders": "Loading the folders…",
     "recent": "Latest mails",
     "recentEmpty": "No mail read yet. The mails that arrive in the folder from now on appear here.",
+    "latest": {
+      "read_one": "{{count}} read",
+      "read_other": "{{count}} read",
+      "toReview_one": "{{count}} to review",
+      "toReview_other": "{{count}} to review",
+      "none": "none yet",
+      "filterLabel": "Which mails",
+      "filterReview": "To review",
+      "filterRead": "Read",
+      "filterAll": "All",
+      "nothingToReview": "Nothing to review: every mail became a transaction or was already in the register."
+    },
     "outcome": {
       "unrecognized": "Not recognised",
       "unverified": "Not authenticated",

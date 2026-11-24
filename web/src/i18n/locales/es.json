@@ -1216,6 +1216,18 @@
     "loadingFolders": "Cargando las carpetas…",
     "recent": "Últimos correos",
     "recentEmpty": "Todavía no se ha leído ningún correo. Aquí aparecen los que lleguen a la carpeta a partir de ahora.",
+    "latest": {
+      "read_one": "{{count}} leído",
+      "read_other": "{{count}} leídos",
+      "toReview_one": "{{count}} por revisar",
+      "toReview_other": "{{count}} por revisar",
+      "none": "ninguno todavía",
+      "filterLabel": "Qué correos",
+      "filterReview": "Por revisar",
+      "filterRead": "Leídos",
+      "filterAll": "Todos",
+      "nothingToReview": "Nada que revisar: cada correo se convirtió en un movimiento o ya estaba en los movimientos."
+    },
     "outcome": {
       "unrecognized": "No reconocido",
       "unverified": "No autenticado",

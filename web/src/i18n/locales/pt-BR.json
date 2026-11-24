@@ -1216,6 +1216,18 @@
     "loadingFolders": "Carregando as pastas…",
     "recent": "Últimos e-mails",
     "recentEmpty": "Nenhum e-mail lido ainda. Os e-mails que chegarem à pasta de agora em diante aparecem aqui.",
+    "latest": {
+      "read_one": "{{count}} lido",
+      "read_other": "{{count}} lidos",
+      "toReview_one": "{{count}} a revisar",
+      "toReview_other": "{{count}} a revisar",
+      "none": "nenhum ainda",
+      "filterLabel": "Quais e-mails",
+      "filterReview": "A revisar",
+      "filterRead": "Lidos",
+      "filterAll": "Todos",
+      "nothingToReview": "Nada a revisar: cada e-mail virou um lançamento ou já estava nos lançamentos."
+    },
     "outcome": {
       "unrecognized": "Não reconhecido",
       "unverified": "Não autenticado",

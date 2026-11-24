@@ -1216,6 +1216,18 @@
     "loadingFolders": "Chargement des dossiers…",
     "recent": "Derniers e-mails",
     "recentEmpty": "Aucun e-mail lu pour l’instant. Les e-mails qui arrivent dans le dossier à partir de maintenant apparaissent ici.",
+    "latest": {
+      "read_one": "{{count}} lu",
+      "read_other": "{{count}} lus",
+      "toReview_one": "{{count}} à vérifier",
+      "toReview_other": "{{count}} à vérifier",
+      "none": "aucun pour l’instant",
+      "filterLabel": "Quels e-mails",
+      "filterReview": "À vérifier",
+      "filterRead": "Lus",
+      "filterAll": "Tous",
+      "nothingToReview": "Rien à vérifier : chaque e-mail est devenu une opération ou était déjà dans les opérations."
+    },
     "outcome": {
       "unrecognized": "Non reconnu",
       "unverified": "Non authentifié",
