@@ -170,10 +170,12 @@ export function AboutSection() {
         </Card>
       </SettingsGroup>
       <SettingsGroup title={t("about.groupLicence")}>
-        <Card withBorder>
-          <Text fz="sm">
-            <Trans i18nKey="about.licence" components={{ b: <b /> }} />
-          </Text>
+        <Card withBorder p={0}>
+          <div className="cb-settings-row">
+            <Text fz="sm">
+              <Trans i18nKey="about.licence" components={{ b: <b /> }} />
+            </Text>
+          </div>
         </Card>
       </SettingsGroup>
       <SettingsGroup title={t("about.groupLinks")} hint={t("about.groupLinksHint")}>
@@ -191,7 +193,9 @@ export function AboutSection() {
                 i > 0 ? { borderTop: "1px solid var(--mantine-color-default-border)" } : undefined
               }
             >
-              <Text fw={500}>{l.label}</Text>
+              <Text fz="sm" fw={600}>
+                {l.label}
+              </Text>
               <Text fz={13} c="dimmed" truncate>
                 {l.hint}
               </Text>
