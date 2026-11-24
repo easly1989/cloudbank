@@ -22,6 +22,7 @@ import { BrowserRouter } from "react-router-dom";
 import { registerSW } from "virtual:pwa-register";
 
 import { App } from "./App";
+import { dropReauthParam } from "./api/core";
 import { reloadOnStaleChunk, startAppUpdate } from "./appUpdate";
 import { ThemedMantineProvider } from "./ThemedMantineProvider";
 import { AuthProvider } from "./auth/AuthProvider";
@@ -35,6 +36,7 @@ const queryClient = makeQueryClient();
 
 // A new build is offered, never swapped in under an open page (#578).
 reloadOnStaleChunk();
+dropReauthParam();
 const appUpdate = "serviceWorker" in navigator ? startAppUpdate(registerSW) : null;
 
 const rootElement = document.getElementById("root");
