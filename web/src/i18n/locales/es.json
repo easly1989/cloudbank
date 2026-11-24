@@ -1014,6 +1014,7 @@
     "confirmDismissAllBody": "Ya no se mostrarán aquí. Los duplicados de verdad se pueden seguir encontrando por importe y fecha.",
     "fromMail": "Del correo",
     "unconfirmed": "Sin confirmar por el banco ({{count}})",
+    "unconfirmedTitle": "Sin confirmar por el banco",
     "unconfirmedHint": "Leídas de un correo, tras 5 días el banco aún no las ha confirmado. A menudo el cargo real es distinto: una gasolinera que bloquea 100 € y cobra 40, un hotel, un pago en otra moneda. <b>Fusionar</b> conserva el importe, la fecha y la referencia del banco, y la nota, la categoría y las etiquetas del correo.",
     "mailAge_one": "del correo, hace {{count}} día",
     "mailAge_other": "del correo, hace {{count}} días",
@@ -1038,7 +1039,9 @@
       "list": "Pospuestas ({{count}})",
       "listHint": "vuelven solas el día elegido",
       "back": "vuelve el {{date}}",
-      "now": "Traer ahora"
+      "now": "Traer ahora",
+      "allSnoozed_one": "Nada que revisar. {{count}} pospuesta, vuelve el {{date}}.",
+      "allSnoozed_other": "Nada que revisar. {{count}} pospuestas, la próxima vuelve el {{date}}."
     },
     "propose": {
       "button": "Proponer categorías",

@@ -1014,6 +1014,7 @@
     "confirmDismissAllBody": "Sie werden hier nicht mehr angezeigt. Echte Duplikate lassen sich weiterhin über Betrag und Datum finden.",
     "fromMail": "Aus der E-Mail",
     "unconfirmed": "Von der Bank nicht bestätigt ({{count}})",
+    "unconfirmedTitle": "Von der Bank nicht bestätigt",
     "unconfirmedHint": "Aus einer E-Mail gelesen, und nach 5 Tagen hat die Bank sie noch nicht bestätigt. Oft ist die echte Belastung anders: eine Tankstelle, die 100 € reserviert und 40 abbucht, ein Hotel, eine Zahlung in Fremdwährung. <b>Zusammenführen</b> behält Betrag, Datum und Referenz der Bank und Notiz, Kategorie und Tags der E-Mail.",
     "mailAge_one": "aus der E-Mail, vor {{count}} Tag",
     "mailAge_other": "aus der E-Mail, vor {{count}} Tagen",
@@ -1038,7 +1039,9 @@
       "list": "Verschoben ({{count}})",
       "listHint": "kommen am gewählten Tag von selbst zurück",
       "back": "zurück am {{date}}",
-      "now": "Jetzt zurückholen"
+      "now": "Jetzt zurückholen",
+      "allSnoozed_one": "Nichts zu prüfen. {{count}} verschoben, sie kommt {{date}} zurück.",
+      "allSnoozed_other": "Nichts zu prüfen. {{count}} verschoben, die nächste kommt {{date}} zurück."
     },
     "propose": {
       "button": "Kategorien vorschlagen",

@@ -1014,6 +1014,7 @@
     "confirmDismissAllBody": "Elles ne seront plus affichées ici. Les vrais doublons se retrouvent toujours par montant et par date.",
     "fromMail": "De l’e-mail",
     "unconfirmed": "Non confirmées par la banque ({{count}})",
+    "unconfirmedTitle": "Non confirmées par la banque",
     "unconfirmedHint": "Lues dans un e-mail, la banque ne les a toujours pas confirmées après 5 jours. Le débit réel est souvent différent : une station-service qui bloque 100 € et en débite 40, un hôtel, un paiement en devise. <b>Fusionner</b> garde le montant, la date et la référence de la banque, et la note, la catégorie et les étiquettes de l’e-mail.",
     "mailAge_one": "de l’e-mail, il y a {{count}} jour",
     "mailAge_other": "de l’e-mail, il y a {{count}} jours",
@@ -1038,7 +1039,9 @@
       "list": "Reportées ({{count}})",
       "listHint": "reviennent d'elles-mêmes le jour choisi",
       "back": "revient le {{date}}",
-      "now": "Ramener maintenant"
+      "now": "Ramener maintenant",
+      "allSnoozed_one": "Rien à vérifier. {{count}} reportée, elle revient le {{date}}.",
+      "allSnoozed_other": "Rien à vérifier. {{count}} reportées, la prochaine revient le {{date}}."
     },
     "propose": {
       "button": "Proposer des catégories",

@@ -1014,6 +1014,7 @@
     "confirmDismissAllBody": "Non verranno più mostrate qui. I veri duplicati restano comunque trovabili per importo e data.",
     "fromMail": "Dalla mail",
     "unconfirmed": "Non confermate dalla banca ({{count}})",
+    "unconfirmedTitle": "Non confermate dalla banca",
     "unconfirmedHint": "Lette da una mail, dopo 5 giorni la banca non le ha ancora confermate. Spesso l'addebito vero è diverso: un distributore che blocca 100 € e ne addebita 40, un albergo, un pagamento in valuta. <b>Unisci</b> tiene importo, data e riferimento della banca, e memo, categoria e tag della mail.",
     "mailAge_one": "dalla mail, {{count}} giorno fa",
     "mailAge_other": "dalla mail, {{count}} giorni fa",
@@ -1038,7 +1039,9 @@
       "list": "Rimandate ({{count}})",
       "listHint": "tornano da sole alla data scelta",
       "back": "torna {{date}}",
-      "now": "Riporta ora"
+      "now": "Riporta ora",
+      "allSnoozed_one": "Niente da rivedere. {{count}} rimandata, torna {{date}}.",
+      "allSnoozed_other": "Niente da rivedere. {{count}} rimandate, la prossima torna {{date}}."
     },
     "propose": {
       "button": "Proponi categorie",

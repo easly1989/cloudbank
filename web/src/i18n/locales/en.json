@@ -1014,6 +1014,7 @@
     "confirmDismissAllBody": "They will not be shown here again. Real duplicates can still be found by amount and date.",
     "fromMail": "From a mail",
     "unconfirmed": "Not confirmed by the bank ({{count}})",
+    "unconfirmedTitle": "Not confirmed by the bank",
     "unconfirmedHint": "Read from a mail, and after 5 days the bank has still not confirmed them. The real charge is often different: a fuel pump that holds €100 and charges €40, a hotel, a payment in another currency. <b>Merge</b> keeps the bank's amount, date and reference, and the mail's memo, category and tags.",
     "mailAge_one": "from a mail, {{count}} day ago",
     "mailAge_other": "from a mail, {{count}} days ago",
@@ -1038,7 +1039,9 @@
       "list": "Snoozed ({{count}})",
       "listHint": "back by themselves on the chosen day",
       "back": "back {{date}}",
-      "now": "Bring back now"
+      "now": "Bring back now",
+      "allSnoozed_one": "Nothing to review. {{count}} snoozed, it comes back {{date}}.",
+      "allSnoozed_other": "Nothing to review. {{count}} snoozed, the next comes back {{date}}."
     },
     "propose": {
       "button": "Propose categories",

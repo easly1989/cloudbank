@@ -23,7 +23,7 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 
 import {
@@ -71,9 +71,11 @@ function inDays(n: number): string {
 function SnoozeMenu({
   onSnooze,
   loading,
+  rowKey,
 }: {
   onSnooze: (until: string) => void;
   loading: boolean;
+  rowKey: number;
 }) {
   const { t } = useTranslation();
   const short = useShortDate();
@@ -112,6 +114,7 @@ function SnoozeMenu({
           leftSection={<IconClock size={14} />}
           rightSection={<IconChevronDown size={12} />}
           loading={loading}
+          data-snooze-row={rowKey}
           style={{ flexShrink: 0 }}
         >
           {t("review.snooze.button")}
@@ -196,12 +199,41 @@ export function ReviewUnconfirmed({
   categoryName: (id?: number | null) => string;
   onChanged: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const confirm = useConfirm();
   const fmtDate = useDateFormat();
   const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
   const short = useShortDate();
-  const [showSnoozed, setShowSnoozed] = useState(false);
+  // The fold's return days carry the year when it is not this one.
+  const withYear = useMemo(() => {
+    const f = new Intl.DateTimeFormat(i18n.language, {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+    return (date: string) =>
+      date.slice(0, 4) === String(new Date().getFullYear())
+        ? short(date)
+        : f.format(new Date(`${date}T00:00:00Z`));
+  }, [i18n.language, short]);
+  const allSnoozed = unconfirmed.length + reversals.length === 0 && snoozed.length > 0;
+  // null: the reader has not touched the fold, so it follows the state.
+  const [foldOpen, setFoldOpen] = useState<boolean | null>(null);
+  const showSnoozed = foldOpen ?? allSnoozed;
+  // After a snooze the row is gone: focus goes to the next row, or the fold.
+  const refocus = useRef<{ gone: number; next: number | null } | null>(null);
+  const rowIds = [...reversals.map((p) => p.payment.id), ...unconfirmed.map((u) => u.id)];
+  const rowsSig = rowIds.join(",");
+  useEffect(() => {
+    const f = refocus.current;
+    if (!f || rowIds.includes(f.gone)) return;
+    refocus.current = null;
+    const q = f.next === null ? "[data-snooze-fold]" : `[data-snooze-row="${f.next}"]`;
+    document.querySelector<HTMLElement>(q)?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowsSig, snoozed.length]);
 
   const merge = useMutation({
     mutationFn: (v: { mailId: number; bankId: number }) =>
@@ -248,7 +280,10 @@ export function ReviewUnconfirmed({
         ),
       });
     },
-    onError: notifyError,
+    onError: (e) => {
+      refocus.current = null;
+      notifyError(e);
+    },
   });
   const unsnooze = useMutation({
     mutationFn: (ids: number[]) => unsnoozeReviewRows(walletId, ids),
@@ -256,7 +291,15 @@ export function ReviewUnconfirmed({
     onError: notifyError,
   });
   const snoozeButton = (ids: number[]) => (
-    <SnoozeMenu loading={snooze.isPending} onSnooze={(until) => snooze.mutate({ ids, until })} />
+    <SnoozeMenu
+      rowKey={ids[0]}
+      loading={snooze.isPending && snooze.variables?.ids[0] === ids[0]}
+      onSnooze={(until) => {
+        const at = rowIds.indexOf(ids[0]);
+        refocus.current = { gone: ids[0], next: rowIds[at + 1] ?? rowIds[at - 1] ?? null };
+        snooze.mutate({ ids, until });
+      }}
+    />
   );
 
   const money = (tx: ReviewTxn) => formatMinor(tx.amount, fmtFor(accountById.get(tx.accountId)));
@@ -267,7 +310,7 @@ export function ReviewUnconfirmed({
       variant="subtle"
       color="red"
       leftSection={<IconTrash size={14} />}
-      loading={remove.isPending}
+      loading={remove.isPending && remove.variables?.[0] === ids[0]}
       style={{ flexShrink: 0 }}
       onClick={async () => {
         const ok = await confirm({
@@ -328,12 +371,26 @@ export function ReviewUnconfirmed({
     <Card withBorder data-testid="review-unconfirmed" data-tour="review-unconfirmed">
       <Stack gap="sm">
         <Stack gap={4}>
-          <Text fw={600}>
-            {t("review.unconfirmed", { count: unconfirmed.length + reversals.length })}
-          </Text>
-          <Text size="sm" c="dimmed" maw={720}>
-            <Trans i18nKey="review.unconfirmedHint" components={{ b: <b /> }} />
-          </Text>
+          {allSnoozed ? (
+            <>
+              <Text fw={600}>{t("review.unconfirmedTitle")}</Text>
+              <Text size="sm" c="dimmed" maw={720}>
+                {t("review.snooze.allSnoozed", {
+                  count: snoozed.length,
+                  date: withYear(snoozed.map((z) => z.until).sort()[0]),
+                })}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text fw={600}>
+                {t("review.unconfirmed", { count: unconfirmed.length + reversals.length })}
+              </Text>
+              <Text size="sm" c="dimmed" maw={720}>
+                <Trans i18nKey="review.unconfirmedHint" components={{ b: <b /> }} />
+              </Text>
+            </>
+          )}
         </Stack>
 
         {reversals.map((p) => {
@@ -375,7 +432,7 @@ export function ReviewUnconfirmed({
                 )}
               </Stack>
               {phone && (
-                <Group gap={4} mt={4}>
+                <Group gap="sm" mt={4}>
                   {snoozeButton([p.payment.id, p.reversal.id])}
                   {removeBoth}
                 </Group>
@@ -456,7 +513,7 @@ export function ReviewUnconfirmed({
                         variant="light"
                         leftSection={<IconGitMerge size={13} />}
                         style={{ flexShrink: 0 }}
-                        loading={merge.isPending}
+                        loading={merge.isPending && merge.variables?.bankId === b.id}
                         onClick={() => merge.mutate({ mailId: u.id, bankId: b.id })}
                       >
                         {t("review.merge")}
@@ -470,7 +527,7 @@ export function ReviewUnconfirmed({
                 </Text>
               )}
               {phone && (
-                <Group gap={4} mt={4}>
+                <Group gap="sm" mt={4}>
                   {snoozeButton([u.id])}
                   {removeOne}
                 </Group>
@@ -482,7 +539,8 @@ export function ReviewUnconfirmed({
         {snoozed.length > 0 && (
           <Box pt="sm" style={{ borderTop: RULE }} data-testid="review-snoozed">
             <UnstyledButton
-              onClick={() => setShowSnoozed((v) => !v)}
+              onClick={() => setFoldOpen(!showSnoozed)}
+              data-snooze-fold
               aria-expanded={showSnoozed}
               style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }}
             >
@@ -517,12 +575,12 @@ export function ReviewUnconfirmed({
                       variant="light"
                       leftSection={<IconRestore size={13} />}
                       style={{ flexShrink: 0 }}
-                      loading={unsnooze.isPending}
+                      loading={unsnooze.isPending && unsnooze.variables?.[0] === z.id}
                       onClick={() => unsnooze.mutate(z.reversal ? [z.id, z.reversal.id] : [z.id])}
                     >
                       {t("review.snooze.now")}
                     </Button>,
-                    t("review.snooze.back", { date: short(z.until) }),
+                    t("review.snooze.back", { date: withYear(z.until) }),
                   ),
                 )}
               </Stack>

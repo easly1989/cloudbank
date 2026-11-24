@@ -1014,6 +1014,7 @@
     "confirmDismissAllBody": "Eles não vão mais aparecer aqui. Duplicatas reais ainda podem ser encontradas por valor e data.",
     "fromMail": "Do e-mail",
     "unconfirmed": "Não confirmadas pelo banco ({{count}})",
+    "unconfirmedTitle": "Não confirmadas pelo banco",
     "unconfirmedHint": "Lidas de um e-mail, depois de 5 dias o banco ainda não as confirmou. Muitas vezes a cobrança real é diferente: um posto que bloqueia R$ 100 e cobra 40, um hotel, um pagamento em outra moeda. <b>Mesclar</b> mantém o valor, a data e a referência do banco, e a nota, a categoria e as tags do e-mail.",
     "mailAge_one": "do e-mail, há {{count}} dia",
     "mailAge_other": "do e-mail, há {{count}} dias",
@@ -1038,7 +1039,9 @@
       "list": "Adiadas ({{count}})",
       "listHint": "voltam sozinhas no dia escolhido",
       "back": "volta em {{date}}",
-      "now": "Trazer agora"
+      "now": "Trazer agora",
+      "allSnoozed_one": "Nada para revisar. {{count}} adiada, volta em {{date}}.",
+      "allSnoozed_other": "Nada para revisar. {{count}} adiadas, a próxima volta em {{date}}."
     },
     "propose": {
       "button": "Propor categorias",
