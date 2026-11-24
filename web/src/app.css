@@ -897,6 +897,17 @@ body {
     display: flex;
     width: 100%;
   }
+  /* A count badge's half keeps its 20px look; an invisible strip above and
+     below makes the press target 44px. */
+  .cb-split-half {
+    position: relative;
+    overflow: visible;
+  }
+  .cb-split-half::after {
+    content: "";
+    position: absolute;
+    inset: -12px 0;
+  }
   .cb-search-row {
     padding-block: 10px;
     min-height: 44px;

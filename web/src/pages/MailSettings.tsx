@@ -565,7 +565,8 @@ function LatestMails({
   const when = useWhen();
   const bodyId = useId();
   const [open, setOpen] = useSessionOpen(`cb.mail.latestOpen.${mailboxId}`);
-  // Unset: the mails to review, or all of them when none is.
+  // Unset (open since an earlier visit): the mails to review, or all of them
+  // when none is.
   const [filter, setFilter] = useState<MailFilter | null>(null);
   const [showAll, setShowAll] = useState(false);
   const counts = countMails(list);
@@ -595,8 +596,10 @@ function LatestMails({
           aria-expanded={open}
           aria-controls={open ? bodyId : undefined}
           onClick={() => {
+            // Opened by the title: the mails to review, or all when none is,
+            // and it stays there while the counts change.
+            setFilter(open ? null : counts.review ? "review" : "all");
             setOpen(!open);
-            setFilter(null);
             setShowAll(false);
           }}
         >
