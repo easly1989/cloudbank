@@ -1,4 +1,4 @@
-import { Button, Card, Divider, FileInput, Group, Stack, Text, Title } from "@mantine/core";
+import { Button, FileInput, Group, Text } from "@mantine/core";
 import { IconDatabaseExport, IconDownload, IconFileExport, IconUpload } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -16,7 +16,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useWallet } from "../wallet/WalletProvider";
 import { notifyError } from "../notifyError";
 
-export function BackupCard() {
+export function BackupRows() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -45,14 +45,19 @@ export function BackupCard() {
     onError,
   });
 
+  // Rows of the Backup card, under the integrity check.
   return (
-    <Card withBorder>
-      <Stack>
-        <Title order={4}>{t("backup.title")}</Title>
-        <Text size="sm" c="dimmed">
-          {t("backup.description")}
-        </Text>
-        <Group>
+    <>
+      <div className="cb-settings-row">
+        <div className="cb-settings-row-text">
+          <Text fz="sm" fw={600}>
+            {t("backup.title")}
+          </Text>
+          <Text fz={13} c="dimmed">
+            {t("backup.description")}
+          </Text>
+        </div>
+        <Group gap="xs">
           <Button
             variant="light"
             leftSection={<IconDownload size={16} />}
@@ -70,13 +75,24 @@ export function BackupCard() {
             {t("backup.downloadXhb")}
           </Button>
         </Group>
+      </div>
 
-        {/* The demo build restores nothing: a restore makes a wallet from a
-            file of any size, past every limit the demo keeps. */}
-        {!__DEMO__ && (
-          <>
-            <Divider label={t("backup.restoreLabel")} labelPosition="left" />
+      {/* The demo build restores nothing: a restore makes a wallet from a
+          file of any size, past every limit the demo keeps. */}
+      {!__DEMO__ && (
+        <div className="cb-settings-row">
+          <div className="cb-settings-row-text">
+            <Text fz="sm" fw={600}>
+              {t("backup.restoreLabel")}
+            </Text>
+            <Text fz={13} c="dimmed">
+              {t("backup.restoreHint")}
+            </Text>
+          </div>
+          <Group gap="xs">
             <FileInput
+              w={240}
+              aria-label={t("backup.restoreLabel")}
               placeholder={t("backup.choosePlaceholder")}
               accept=".json,application/json"
               leftSection={<IconUpload size={16} />}
@@ -84,36 +100,33 @@ export function BackupCard() {
               onChange={setFile}
               clearable
             />
-            <Group justify="space-between">
-              <Text size="xs" c="dimmed">
-                {t("backup.restoreHint")}
-              </Text>
-              <Button disabled={!file} onClick={() => restore.mutate()} loading={restore.isPending}>
-                {t("backup.restore")}
-              </Button>
-            </Group>
-          </>
-        )}
+            <Button disabled={!file} onClick={() => restore.mutate()} loading={restore.isPending}>
+              {t("backup.restore")}
+            </Button>
+          </Group>
+        </div>
+      )}
 
-        {user?.isAdmin && (
-          <>
-            <Divider label={t("backup.adminLabel")} labelPosition="left" />
-            <Group justify="space-between">
-              <Text size="xs" c="dimmed">
-                {t("backup.hotHint")}
-              </Text>
-              <Button
-                variant="default"
-                leftSection={<IconDatabaseExport size={16} />}
-                onClick={() => downloadDb.mutate()}
-                loading={downloadDb.isPending}
-              >
-                {t("backup.hotDownload")}
-              </Button>
-            </Group>
-          </>
-        )}
-      </Stack>
-    </Card>
+      {user?.isAdmin && (
+        <div className="cb-settings-row">
+          <div className="cb-settings-row-text">
+            <Text fz="sm" fw={600}>
+              {t("backup.adminLabel")}
+            </Text>
+            <Text fz={13} c="dimmed">
+              {t("backup.hotHint")}
+            </Text>
+          </div>
+          <Button
+            variant="default"
+            leftSection={<IconDatabaseExport size={16} />}
+            onClick={() => downloadDb.mutate()}
+            loading={downloadDb.isPending}
+          >
+            {t("backup.hotDownload")}
+          </Button>
+        </div>
+      )}
+    </>
   );
 }

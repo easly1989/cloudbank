@@ -2187,9 +2187,10 @@
     "subtitle": "A wallet holds your accounts, categories and transactions — like a HomeBank file.",
     "title": "Wallet name",
     "ownerName": "Owner name",
+    "ownerNamePlaceholder": "Your name",
     "baseCurrency": "Base currency",
     "scheduleAhead": "Pre-register scheduled transactions",
-    "scheduleAheadHint": "Auto-post upcoming scheduled transactions this far in advance (HomeBank style).",
+    "scheduleAheadHint": "Post scheduled transactions this far ahead.",
     "scheduleAheadOff": "Off",
     "scheduleAhead1": "1 month ahead",
     "scheduleAhead2": "2 months ahead",
@@ -2204,7 +2205,7 @@
     "deleteConfirmLabel": "Type \"{{title}}\" to confirm deletion.",
     "delete": "Delete wallet",
     "billsCategory": "Bills category",
-    "billsCategoryHint": "Only schedules in this category count as bills: in the dashboard's Bills widget and in the overdue bills reminder. Leave All outflows to count every outflow schedule.",
+    "billsCategoryHint": "Which schedules count as bills, in the Bills widget and reminders.",
     "groupWallet": "The wallet",
     "groupWalletHint": "What it is called and whose it is, as in a HomeBank file.",
     "groupSchedules": "Scheduled transactions",
@@ -3258,10 +3259,10 @@
     "supportHint": "Buy Me a Coffee and the other ways",
     "homebankHint": "The desktop app CloudBank is a web port of",
     "groupVersion": "Version",
-    "groupVersionHint": "What runs on this server.",
+    "groupVersionHint": "The version this server runs.",
     "groupLicence": "Licence",
     "groupLinks": "Links",
-    "groupLinksHint": "Where to read how to use it, the code and the API."
+    "groupLinksHint": "Guide, source code and API."
   },
   "pageError": {
     "title": "This page stopped working",

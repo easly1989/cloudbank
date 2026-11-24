@@ -2187,9 +2187,10 @@
     "subtitle": "Ein Haushaltsbuch enthält deine Konten, Kategorien und Buchungen – wie eine HomeBank-Datei.",
     "title": "Name des Haushaltsbuchs",
     "ownerName": "Name des Inhabers",
+    "ownerNamePlaceholder": "Dein Name",
     "baseCurrency": "Basiswährung",
     "scheduleAhead": "Wiederkehrende Buchungen im Voraus erfassen",
-    "scheduleAheadHint": "Anstehende wiederkehrende Buchungen so weit im Voraus automatisch erfassen (wie in HomeBank).",
+    "scheduleAheadHint": "Wiederkehrende Buchungen so weit im Voraus erfassen.",
     "scheduleAheadOff": "Aus",
     "scheduleAhead1": "1 Monat im Voraus",
     "scheduleAhead2": "2 Monate im Voraus",
@@ -2204,7 +2205,7 @@
     "deleteConfirmLabel": "Gib „{{title}}“ ein, um das Löschen zu bestätigen.",
     "delete": "Haushaltsbuch löschen",
     "billsCategory": "Kategorie für Rechnungen",
-    "billsCategoryHint": "Nur wiederkehrende Buchungen dieser Kategorie zählen als Rechnungen: im Kasten „Rechnungen“ der Übersicht und im Hinweis auf überfällige Rechnungen. Lass „Alle Ausgaben“ stehen, um jede wiederkehrende Ausgabe mitzuzählen.",
+    "billsCategoryHint": "Welche wiederkehrenden Buchungen als Rechnungen zählen, im Kasten und in Hinweisen.",
     "groupWallet": "Das Haushaltsbuch",
     "groupWalletHint": "Wie es heißt und wem es gehört, wie in einer HomeBank-Datei.",
     "groupSchedules": "Wiederkehrende Buchungen",
@@ -3258,10 +3259,10 @@
     "supportHint": "Buy Me a Coffee und die anderen Wege",
     "homebankHint": "Die Desktop-App, deren Web-Portierung CloudBank ist",
     "groupVersion": "Version",
-    "groupVersionHint": "Was auf diesem Server läuft.",
+    "groupVersionHint": "Die Version auf diesem Server.",
     "groupLicence": "Lizenz",
     "groupLinks": "Links",
-    "groupLinksHint": "Wo du nachlesen kannst, wie es geht, und wo Code und API sind."
+    "groupLinksHint": "Anleitung, Quellcode und API."
   },
   "pageError": {
     "title": "Diese Seite funktioniert nicht mehr",

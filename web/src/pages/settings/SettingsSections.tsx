@@ -196,7 +196,7 @@ export function AboutSection() {
               <Text fz="sm" fw={600}>
                 {l.label}
               </Text>
-              <Text fz={13} c="dimmed" truncate>
+              <Text fz={13} c="dimmed">
                 {l.hint}
               </Text>
               <IconExternalLink size={16} style={{ opacity: 0.6, flexShrink: 0 }} />

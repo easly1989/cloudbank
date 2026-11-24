@@ -822,6 +822,7 @@ body {
  * the left, a small control (a button, a switch) on the right. */
 .cb-settings-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px 24px;
@@ -831,7 +832,7 @@ body {
   border-top: 1px solid var(--mantine-color-default-border);
 }
 .cb-settings-row-text {
-  flex: 1;
+  flex: 1 1 240px;
   min-width: 0;
 }
 

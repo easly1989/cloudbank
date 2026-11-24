@@ -2187,9 +2187,10 @@
     "subtitle": "Un portafoglio contiene conti, categorie e transazioni — come un file di HomeBank.",
     "title": "Nome del portafoglio",
     "ownerName": "Nome del proprietario",
+    "ownerNamePlaceholder": "Il tuo nome",
     "baseCurrency": "Valuta base",
     "scheduleAhead": "Pre-registra transazioni programmate",
-    "scheduleAheadHint": "Registra automaticamente le transazioni programmate con questo anticipo (stile HomeBank).",
+    "scheduleAheadHint": "Registra le programmate con questo anticipo.",
     "scheduleAheadOff": "Disattivato",
     "scheduleAhead1": "1 mese in anticipo",
     "scheduleAhead2": "2 mesi in anticipo",
@@ -2204,7 +2205,7 @@
     "deleteConfirmLabel": "Digita \"{{title}}\" per confermare l'eliminazione.",
     "delete": "Elimina portafoglio",
     "billsCategory": "Categoria bollette",
-    "billsCategoryHint": "Solo le programmate di questa categoria contano come bollette: nel riquadro Scadenze del cruscotto e nell’avviso delle bollette scadute. Lascia «Tutte le uscite» per contarle tutte.",
+    "billsCategoryHint": "Quali programmate contano come bollette, in Scadenze e negli avvisi.",
     "groupWallet": "Il portafoglio",
     "groupWalletHint": "Come si chiama e di chi è, come in un file di HomeBank.",
     "groupSchedules": "Transazioni programmate",
@@ -3258,10 +3259,10 @@
     "supportHint": "Buy Me a Coffee e gli altri modi",
     "homebankHint": "L'app desktop di cui CloudBank è un port web",
     "groupVersion": "Versione",
-    "groupVersionHint": "Cosa gira su questo server.",
+    "groupVersionHint": "La versione in uso su questo server.",
     "groupLicence": "Licenza",
     "groupLinks": "Link",
-    "groupLinksHint": "Dove leggere come si usa, il codice e le API."
+    "groupLinksHint": "Guida, codice sorgente e API."
   },
   "pageError": {
     "title": "Questa pagina si è interrotta",

@@ -1,15 +1,4 @@
-import {
-  Alert,
-  Button,
-  Card,
-  Group,
-  Select,
-  SimpleGrid,
-  Stack,
-  Text,
-  TextInput,
-  Title,
-} from "@mantine/core";
+import { Button, Card, Group, Select, Stack, Text, TextInput } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -18,9 +7,9 @@ import { errorColor } from "../amountTone";
 
 import { deleteWallet, listCategories, updateWallet } from "../api/client";
 import { useWallet } from "../wallet/WalletProvider";
-import { BackupCard } from "./BackupCard";
+import { BackupRows } from "./BackupCard";
 import { ImportExport } from "./ImportPage";
-import { IntegrityCard } from "./IntegrityCard";
+import { IntegrityRow } from "./IntegrityCard";
 import { notifyError } from "../notifyError";
 import { SettingsGroup } from "./settings/SettingsLayout";
 
@@ -101,6 +90,7 @@ export function WalletSettingsPage({
               <TextInput
                 className="cb-settings-field"
                 label={t("wallet.ownerName")}
+                placeholder={t("wallet.ownerNamePlaceholder")}
                 value={ownerName}
                 disabled={!isOwner}
                 onChange={(e) => setOwnerName(e.currentTarget.value)}
@@ -151,39 +141,38 @@ export function WalletSettingsPage({
       {section === "import" && <ImportExport />}
 
       {section === "backup" && (
-        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
-          <IntegrityCard />
-          <BackupCard />
-        </SimpleGrid>
+        <Card withBorder p={0}>
+          <IntegrityRow />
+          <BackupRows />
+        </Card>
       )}
 
       {section === "danger" && isOwner && (
-        <Card withBorder maw={560}>
-          <Stack>
-            <div>
-              <Title order={4} c={errorColor}>
-                {t("wallet.dangerZone")}
-              </Title>
-              <Text size="sm" c="dimmed">
-                {t("wallet.deleteWarning")}
+        <SettingsGroup title={t("wallet.dangerZone")} hint={t("wallet.deleteWarning")}>
+          <Card withBorder p={0} style={{ borderColor: "var(--mantine-color-red-outline)" }}>
+            <div className="cb-settings-row">
+              <Text fz="sm" fw={600} c={errorColor} className="cb-settings-row-text">
+                {t("wallet.deleteConfirmLabel", { title: currentWallet.title })}
               </Text>
+              <Group gap="xs">
+                <TextInput
+                  w={220}
+                  aria-label={t("wallet.deleteConfirmLabel", { title: currentWallet.title })}
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.currentTarget.value)}
+                />
+                <Button
+                  color="red"
+                  onClick={() => remove.mutate()}
+                  loading={remove.isPending}
+                  disabled={!canDelete}
+                >
+                  {t("wallet.delete")}
+                </Button>
+              </Group>
             </div>
-            <Alert color="red" variant="light">
-              {t("wallet.deleteConfirmLabel", { title: currentWallet.title })}
-            </Alert>
-            <TextInput value={confirm} onChange={(e) => setConfirm(e.currentTarget.value)} />
-            <Group justify="flex-end">
-              <Button
-                color="red"
-                onClick={() => remove.mutate()}
-                loading={remove.isPending}
-                disabled={!canDelete}
-              >
-                {t("wallet.delete")}
-              </Button>
-            </Group>
-          </Stack>
-        </Card>
+          </Card>
+        </SettingsGroup>
       )}
     </Stack>
   );

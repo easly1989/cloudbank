@@ -2187,9 +2187,10 @@
     "subtitle": "Una cartera contiene tus cuentas, categorías y movimientos, como un archivo de HomeBank.",
     "title": "Nombre de la cartera",
     "ownerName": "Nombre del titular",
+    "ownerNamePlaceholder": "Tu nombre",
     "baseCurrency": "Moneda principal",
     "scheduleAhead": "Registrar por adelantado los movimientos programados",
-    "scheduleAheadHint": "Registra automáticamente los próximos movimientos programados con esta antelación (como HomeBank).",
+    "scheduleAheadHint": "Registra los programados con esta antelación.",
     "scheduleAheadOff": "Desactivado",
     "scheduleAhead1": "1 mes antes",
     "scheduleAhead2": "2 meses antes",
@@ -2204,7 +2205,7 @@
     "deleteConfirmLabel": "Escribe «{{title}}» para confirmar la eliminación.",
     "delete": "Eliminar cartera",
     "billsCategory": "Categoría de los recibos",
-    "billsCategoryHint": "Solo los movimientos programados de esta categoría cuentan como recibos: en el bloque «Recibos» del panel y en el aviso de recibos vencidos. Deja «Todas las salidas» para contarlos todos.",
+    "billsCategoryHint": "Qué programados cuentan como recibos, en el panel y en los avisos.",
     "groupWallet": "La cartera",
     "groupWalletHint": "Cómo se llama y de quién es, como en un archivo de HomeBank.",
     "groupSchedules": "Movimientos programados",
@@ -3258,10 +3259,10 @@
     "supportHint": "Buy Me a Coffee y las demás formas",
     "homebankHint": "La app de escritorio de la que CloudBank es la versión web",
     "groupVersion": "Versión",
-    "groupVersionHint": "Qué se ejecuta en este servidor.",
+    "groupVersionHint": "La versión que usa este servidor.",
     "groupLicence": "Licencia",
     "groupLinks": "Enlaces",
-    "groupLinksHint": "Dónde leer cómo se usa, el código y la API."
+    "groupLinksHint": "Guía, código fuente y API."
   },
   "pageError": {
     "title": "Esta página ha dejado de funcionar",
