@@ -1,10 +1,5 @@
-import { ActionIcon, Group, Menu, Stack, Text, Tooltip, UnstyledButton } from "@mantine/core";
-import {
-  IconLayoutSidebarLeftExpand,
-  IconPlus,
-  IconSelector,
-  IconWallet,
-} from "@tabler/icons-react";
+import { Group, Menu, Stack, Text, UnstyledButton } from "@mantine/core";
+import { IconPlus, IconSelector, IconWallet } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -33,11 +28,9 @@ import { BRAND, WALLET_CARD } from "./shellTheme";
 // card opens shows them one by one (#579).
 export function SidebarHead({
   railMode,
-  onToggleCollapse,
   onNavigate,
 }: {
   railMode: boolean;
-  onToggleCollapse: () => void;
   onNavigate?: () => void;
 }) {
   const { t } = useTranslation();
@@ -60,16 +53,6 @@ export function SidebarHead({
     return (
       <Stack gap="xs" align="center" mb="xs">
         <Logo size={26} />
-        <Tooltip label={t("nav.toggleSidebar")} position="right" withinPortal>
-          <ActionIcon
-            variant="subtle"
-            color="gray"
-            onClick={onToggleCollapse}
-            aria-label={t("nav.toggleSidebar")}
-          >
-            <IconLayoutSidebarLeftExpand size={20} />
-          </ActionIcon>
-        </Tooltip>
       </Stack>
     );
   }

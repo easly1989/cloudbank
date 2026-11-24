@@ -456,22 +456,6 @@ function MailboxCard({
           )}
         </Group>
 
-        <Select
-          wrapperProps={{ "data-tour": "mail-folder" }}
-          label={t("mail.folder")}
-          description={t("mail.folderHint")}
-          data={folderOptions}
-          value={mailbox.folder}
-          allowDeselect={false}
-          searchable
-          maw={360}
-          onDropdownOpen={() => setFoldersWanted(true)}
-          nothingFoundMessage={folders.isFetching ? t("mail.loadingFolders") : undefined}
-          rightSection={folders.isFetching ? <Loader size="xs" /> : undefined}
-          onChange={(v) => v && v !== mailbox.folder && update.mutate({ folder: v })}
-          disabled={update.isPending}
-        />
-
         <MailAI
           // A change saved elsewhere starts the form again from it.
           key={JSON.stringify(mailbox.ai)}
@@ -479,6 +463,23 @@ function MailboxCard({
           mailbox={mailbox}
           accounts={accounts.data ?? []}
           patterns={patterns.data ?? []}
+          beside={
+            <Select
+              wrapperProps={{ "data-tour": "mail-folder" }}
+              label={t("mail.folder")}
+              description={t("mail.folderHint")}
+              inputWrapperOrder={["label", "input", "description", "error"]}
+              data={folderOptions}
+              value={mailbox.folder}
+              allowDeselect={false}
+              searchable
+              onDropdownOpen={() => setFoldersWanted(true)}
+              nothingFoundMessage={folders.isFetching ? t("mail.loadingFolders") : undefined}
+              rightSection={folders.isFetching ? <Loader size="xs" /> : undefined}
+              onChange={(v) => v && v !== mailbox.folder && update.mutate({ folder: v })}
+              disabled={update.isPending}
+            />
+          }
         />
 
         <Divider />

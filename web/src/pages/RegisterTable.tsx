@@ -250,9 +250,13 @@ export function RegisterTable({
     const scroll = parentRef.current;
     const blank = emptyRef.current;
     if (!scroll && !blank) return;
-    // Footer (36) + Main bottom padding (md=16) + a little breathing room.
-    const BOTTOM_GAP = 56;
     const measure = () => {
+      // Main's bottom padding already holds the footer's height, or none when
+      // the footer is hidden; then a little breathing room. A fixed 36px for the
+      // footer left that much empty under the ledger with the footer off.
+      const main = (scroll ?? blank)!.closest(".mantine-AppShell-main");
+      const pad = main ? parseFloat(getComputedStyle(main).paddingBottom) || 0 : 52;
+      const BOTTOM_GAP = pad + 4;
       // The message that stands in for the ledger ends where the ledger's card
       // would: its body's bottom, plus the card's border.
       if (!scroll) {
