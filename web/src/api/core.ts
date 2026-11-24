@@ -13,6 +13,41 @@ export class ApiError extends Error {
   }
 }
 
+/** The query parameter the service worker lets through to the network. */
+export const REAUTH_PARAM = "reauth";
+const REAUTH_AT = "cb-proxy-reauth";
+
+/**
+ * A sign-in proxy in front of CloudBank (Authelia forward-auth, #774) answers
+ * the API with its own 401 once its session ends. The service worker serves
+ * every page from its cache, so the browser would never visit the proxy's
+ * portal again. Reload the page through the network instead, with a marker
+ * the service worker skips, and let the proxy send it to the portal. At most
+ * once every 30 seconds, so a proxy that keeps refusing shows the error
+ * instead of reloading forever.
+ */
+export function reauthAtProxy(win: Window = window, now = () => Date.now()): boolean {
+  try {
+    const last = Number(win.sessionStorage.getItem(REAUTH_AT) ?? 0);
+    if (now() - last < 30_000) return false;
+    win.sessionStorage.setItem(REAUTH_AT, String(now()));
+  } catch {
+    return false;
+  }
+  const url = new URL(win.location.href);
+  url.searchParams.set(REAUTH_PARAM, String(now()));
+  win.location.assign(url.toString());
+  return true;
+}
+
+/** Back from the proxy: drop the marker from the address bar. */
+export function dropReauthParam(win: Window = window) {
+  const url = new URL(win.location.href);
+  if (!url.searchParams.has(REAUTH_PARAM)) return;
+  url.searchParams.delete(REAUTH_PARAM);
+  win.history.replaceState(win.history.state, "", url.toString());
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     credentials: "same-origin",
@@ -38,6 +73,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // non-JSON error body; keep the fallback
     }
+    // Every 401 CloudBank sends carries a code; one without came from the proxy.
+    if (res.status === 401 && !code) reauthAtProxy();
     throw new ApiError(res.status, message, code);
   }
 

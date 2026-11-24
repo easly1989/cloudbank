@@ -49,7 +49,9 @@ export default defineConfig({
         ],
         navigateFallback: "index.html",
         // API and health checks must reach the network, never the SPA shell.
-        navigateFallbackDenylist: [/^\/api/, /^\/healthz/],
+        // A page reloaded with ?reauth= must reach the network, so a sign-in
+        // proxy in front can send it to its portal (#774, api/core.ts).
+        navigateFallbackDenylist: [/^\/api/, /^\/healthz/, /[?&]reauth=/],
         cleanupOutdatedCaches: true,
         // Add the Web Push handlers to the generated service worker.
         importScripts: ["push-sw.js"],
