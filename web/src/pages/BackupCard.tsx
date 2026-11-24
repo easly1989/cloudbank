@@ -92,7 +92,7 @@ export function BackupRows() {
           <Group gap="xs">
             <FileInput
               w={240}
-              aria-label={t("backup.restoreLabel")}
+              aria-label={t("backup.choosePlaceholder")}
               placeholder={t("backup.choosePlaceholder")}
               accept=".json,application/json"
               leftSection={<IconUpload size={16} />}

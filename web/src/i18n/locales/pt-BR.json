@@ -2205,7 +2205,7 @@
     "deleteConfirmLabel": "Digite “{{title}}” para confirmar a exclusão.",
     "delete": "Excluir carteira",
     "billsCategory": "Categoria das contas",
-    "billsCategoryHint": "Quais agendamentos contam como contas a pagar, no painel e nos avisos.",
+    "billsCategoryHint": "Quais agendamentos contam como contas a pagar, no quadro “Contas” e nos avisos.",
     "groupWallet": "A carteira",
     "groupWalletHint": "Como se chama e de quem é, como em um arquivo do HomeBank.",
     "groupSchedules": "Lançamentos agendados",

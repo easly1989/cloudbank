@@ -2205,7 +2205,7 @@
     "deleteConfirmLabel": "Gib „{{title}}“ ein, um das Löschen zu bestätigen.",
     "delete": "Haushaltsbuch löschen",
     "billsCategory": "Kategorie für Rechnungen",
-    "billsCategoryHint": "Welche wiederkehrenden Buchungen als Rechnungen zählen, im Kasten und in Hinweisen.",
+    "billsCategoryHint": "Welche wiederkehrenden Buchungen als Rechnungen zählen, im Kasten „Rechnungen“ und in Hinweisen.",
     "groupWallet": "Das Haushaltsbuch",
     "groupWalletHint": "Wie es heißt und wem es gehört, wie in einer HomeBank-Datei.",
     "groupSchedules": "Wiederkehrende Buchungen",
