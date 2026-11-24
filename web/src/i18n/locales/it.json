@@ -1024,6 +1024,22 @@
     "reversalHint": "{{account}} · due righe dalla mail che si annullano: di solito la banca non registra nessuna delle due",
     "deleteBoth": "Elimina tutte e due",
     "confirmDeleteBothTitle": "Eliminare tutte e due le righe?",
+    "snooze": {
+      "button": "Rimanda",
+      "menuLabel": "Torna nella lista",
+      "tomorrow": "Domani",
+      "days3": "Fra 3 giorni",
+      "week": "Fra una settimana",
+      "pick": "Scegli una data…",
+      "date": "Torna il",
+      "forWallet": "Vale per tutti nel portafoglio.",
+      "done": "Rimandata a {{date}}: torna qui da sola, per tutti nel portafoglio.",
+      "undo": "Annulla",
+      "list": "Rimandate ({{count}})",
+      "listHint": "tornano da sole alla data scelta",
+      "back": "torna {{date}}",
+      "now": "Riporta ora"
+    },
     "propose": {
       "button": "Proponi categorie",
       "hint": "Le proposte vengono prima dal tuo storico; il resto va al tuo provider AI solo con beneficiario, importo e data. Non si salva nulla finché non confermi.",

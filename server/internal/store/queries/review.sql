@@ -56,6 +56,17 @@ WHERE account_id = sqlc.arg(account_id) AND import_ref <> '' AND import_ref NOT 
   AND date >= sqlc.arg(date_from) AND date <= sqlc.arg(date_to)
 ORDER BY date, id;
 
+-- name: ListReviewSnoozes :many
+-- The wallet's review rows put off until a day after the given one (#775).
+SELECT transaction_id, until FROM review_snoozes WHERE wallet_id = ? AND until > ?;
+
+-- name: UpsertReviewSnooze :exec
+INSERT INTO review_snoozes (transaction_id, wallet_id, until) VALUES (?, ?, ?)
+ON CONFLICT (transaction_id) DO UPDATE SET until = excluded.until;
+
+-- name: DeleteReviewSnooze :exec
+DELETE FROM review_snoozes WHERE transaction_id = ? AND wallet_id = ?;
+
 -- name: MoveMailMessagesToTransaction :exec
 -- The mails that wrote a transaction now point at the one it was merged into.
 UPDATE mail_messages SET transaction_id = sqlc.arg(to_id) WHERE transaction_id = sqlc.arg(from_id);

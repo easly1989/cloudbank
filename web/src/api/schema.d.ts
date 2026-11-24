@@ -2760,6 +2760,30 @@ export interface paths {
         patch: operations["setTransactionStatus"];
         trace?: never;
     };
+    "/api/v1/wallets/{walletId}/transactions/{transactionId}/snooze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                transactionId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put a row read from a bank mail off the review's unconfirmed list until a day (#775)
+         * @description For everyone in the wallet. The row leaves the unconfirmed list, its count and the review reminders, and is listed in the review's `snoozed` until that day, when it is back. Snoozing it again moves the day. A reversal pair stays out while either of its rows is snoozed.
+         */
+        put: operations["snoozeReviewRow"];
+        post?: never;
+        /** Bring a snoozed row back into the review now */
+        delete: operations["unsnoozeReviewRow"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallets/{walletId}/transfers": {
         parameters: {
             query?: never;
@@ -5871,12 +5895,20 @@ export interface components {
             payment: components["schemas"]["ReviewTxn"];
             reversal: components["schemas"]["ReviewTxn"];
         };
+        /** @description An unconfirmed row, or a reversal pair (its payment, with `reversal`), put off until a day. */
+        SnoozedRow: components["schemas"]["ReviewTxn"] & {
+            /** @description YYYY-MM-DD: back in the list on that day */
+            until: string;
+            reversal?: components["schemas"]["ReviewTxn"];
+        };
         /** @description Bank-sync review: imported rows missing a category, suspected duplicate pairs, and rows from bank mails the bank has not booked. */
         ReviewResult: {
             needsCategory: components["schemas"]["ReviewTxn"][];
             duplicates: components["schemas"]["DuplicatePair"][];
             unconfirmed: components["schemas"]["UnconfirmedRow"][];
             reversals: components["schemas"]["ReversalPair"][];
+            /** @description The unconfirmed rows and pairs snoozed past today, the soonest back first. */
+            snoozed: components["schemas"]["SnoozedRow"][];
         };
         /** @description The Bills view: scheduled outflows classified over a date window. */
         BillsSummary: {
@@ -11833,6 +11865,66 @@ export interface operations {
                 content?: never;
             };
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    snoozeReviewRow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                transactionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description YYYY-MM-DD, today (UTC) or later */
+                    until: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Snoozed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `invalid_until`: not a date from today on; `not_mail_row`: not a row read from a mail. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    unsnoozeReviewRow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                transactionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Back in the review */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             404: components["responses"]["NotFound"];
         };
     };

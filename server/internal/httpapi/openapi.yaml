@@ -2859,6 +2859,38 @@ paths:
         "204": { description: Updated. }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/transactions/{transactionId}/snooze:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: transactionId, in: path, required: true, schema: { type: integer, format: int64 } }
+    put:
+      operationId: snoozeReviewRow
+      summary: Put a row read from a bank mail off the review's unconfirmed list until a day (#775)
+      description: >-
+        For everyone in the wallet. The row leaves the unconfirmed list, its count and the review
+        reminders, and is listed in the review's `snoozed` until that day, when it is back. Snoozing
+        it again moves the day. A reversal pair stays out while either of its rows is snoozed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                until: { type: string, description: "YYYY-MM-DD, today (UTC) or later" }
+              required: [until]
+      responses:
+        "204": { description: Snoozed. }
+        "400":
+          description: "`invalid_until`: not a date from today on; `not_mail_row`: not a row read from a mail."
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: unsnoozeReviewRow
+      summary: Bring a snoozed row back into the review now
+      responses:
+        "204": { description: Back in the review, or it was not snoozed. }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/wallets/{walletId}/transfers:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -5419,6 +5451,15 @@ components:
         payment: { $ref: "#/components/schemas/ReviewTxn" }
         reversal: { $ref: "#/components/schemas/ReviewTxn" }
       required: [payment, reversal]
+    SnoozedRow:
+      description: An unconfirmed row, or a reversal pair (its payment, with `reversal`), put off until a day.
+      allOf:
+        - $ref: "#/components/schemas/ReviewTxn"
+        - type: object
+          properties:
+            until: { type: string, description: "YYYY-MM-DD: back in the list on that day" }
+            reversal: { $ref: "#/components/schemas/ReviewTxn" }
+          required: [until]
     ReviewResult:
       type: object
       description: "Bank-sync review: imported rows missing a category, suspected duplicate pairs, and rows from bank mails the bank has not booked."
@@ -5435,7 +5476,11 @@ components:
         reversals:
           type: array
           items: { $ref: "#/components/schemas/ReversalPair" }
-      required: [needsCategory, duplicates, unconfirmed, reversals]
+        snoozed:
+          type: array
+          items: { $ref: "#/components/schemas/SnoozedRow" }
+          description: The unconfirmed rows and pairs snoozed past today, the soonest back first.
+      required: [needsCategory, duplicates, unconfirmed, reversals, snoozed]
     BillsSummary:
       type: object
       description: "The Bills view: scheduled outflows classified over a date window."

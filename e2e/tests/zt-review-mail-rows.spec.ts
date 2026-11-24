@@ -132,10 +132,30 @@ test("rows from mails are marked, then merged or deleted in the review", async (
   await expect(section).toContainText("Not confirmed by the bank (2)");
   await expect(section.getByText("Edicola Demo")).toHaveCount(0);
 
-  // The pump's row merges into the bank's.
+  // Snoozed, the pump's row leaves the list and Undo brings it back; snoozed
+  // again, it waits folded at the foot until brought back now (#775).
   const row = section
     .getByTestId("review-unconfirmed-row")
     .filter({ hasText: "Distributore Demo" });
+  await row.getByRole("button", { name: "Snooze" }).click();
+  await page.getByRole("menuitem", { name: /Tomorrow/ }).click();
+  await expect(section).toContainText("Not confirmed by the bank (1)");
+  await page
+    .getByTestId("review-snoozed-toast")
+    .getByRole("button", { name: "Undo" })
+    .click();
+  await expect(section).toContainText("Not confirmed by the bank (2)");
+  await row.getByRole("button", { name: "Snooze" }).click();
+  await page.getByRole("menuitem", { name: /In a week/ }).click();
+  await section.getByRole("button", { name: /Snoozed \(1\)/ }).click();
+  await section
+    .getByTestId("review-snoozed")
+    .getByRole("button", { name: "Bring back now" })
+    .click();
+  await expect(section).toContainText("Not confirmed by the bank (2)");
+  await expect(section.getByTestId("review-snoozed")).toHaveCount(0);
+
+  // The pump's row merges into the bank's.
   await expect(row).toContainText("POS DISTRIBUTORE DEMO");
   await row.getByRole("button", { name: "Merge" }).click();
   await expect(page.getByText("Merged", { exact: true })).toBeVisible();

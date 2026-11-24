@@ -1024,6 +1024,22 @@
     "reversalHint": "{{account}} · two rows from mails that cancel out: the bank usually books neither",
     "deleteBoth": "Delete both",
     "confirmDeleteBothTitle": "Delete both rows?",
+    "snooze": {
+      "button": "Snooze",
+      "menuLabel": "Back in the list",
+      "tomorrow": "Tomorrow",
+      "days3": "In 3 days",
+      "week": "In a week",
+      "pick": "Pick a date…",
+      "date": "Back on",
+      "forWallet": "For everyone in the wallet.",
+      "done": "Snoozed until {{date}}: it comes back by itself, for everyone in the wallet.",
+      "undo": "Undo",
+      "list": "Snoozed ({{count}})",
+      "listHint": "back by themselves on the chosen day",
+      "back": "back {{date}}",
+      "now": "Bring back now"
+    },
     "propose": {
       "button": "Propose categories",
       "hint": "Proposals come from your history first; the rest go to your AI provider with the payee, the amount and the date only. Nothing is saved until you confirm.",

@@ -1024,6 +1024,22 @@
     "reversalHint": "{{account}} · dos filas de correos que se anulan: el banco no suele registrar ninguna",
     "deleteBoth": "Eliminar ambas",
     "confirmDeleteBothTitle": "¿Eliminar ambas filas?",
+    "snooze": {
+      "button": "Posponer",
+      "menuLabel": "Vuelve a la lista",
+      "tomorrow": "Mañana",
+      "days3": "En 3 días",
+      "week": "En una semana",
+      "pick": "Elegir una fecha…",
+      "date": "Vuelve el",
+      "forWallet": "Vale para todos en la cartera.",
+      "done": "Pospuesta hasta el {{date}}: vuelve sola, para todos en la cartera.",
+      "undo": "Deshacer",
+      "list": "Pospuestas ({{count}})",
+      "listHint": "vuelven solas el día elegido",
+      "back": "vuelve el {{date}}",
+      "now": "Traer ahora"
+    },
     "propose": {
       "button": "Proponer categorías",
       "hint": "Las propuestas salen primero de tu historial; el resto va a tu proveedor de IA solo con el beneficiario, el importe y la fecha. No se guarda nada hasta que confirmes.",

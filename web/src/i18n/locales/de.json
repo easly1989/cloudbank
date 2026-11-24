@@ -1024,6 +1024,22 @@
     "reversalHint": "{{account}} · zwei Zeilen aus E-Mails, die sich aufheben: Meist bucht die Bank keine der beiden",
     "deleteBoth": "Beide löschen",
     "confirmDeleteBothTitle": "Beide Zeilen löschen?",
+    "snooze": {
+      "button": "Verschieben",
+      "menuLabel": "Zurück in der Liste",
+      "tomorrow": "Morgen",
+      "days3": "In 3 Tagen",
+      "week": "In einer Woche",
+      "pick": "Datum wählen…",
+      "date": "Zurück am",
+      "forWallet": "Gilt für alle im Haushaltsbuch.",
+      "done": "Verschoben auf {{date}}: kommt von selbst zurück, für alle im Haushaltsbuch.",
+      "undo": "Rückgängig",
+      "list": "Verschoben ({{count}})",
+      "listHint": "kommen am gewählten Tag von selbst zurück",
+      "back": "zurück am {{date}}",
+      "now": "Jetzt zurückholen"
+    },
     "propose": {
       "button": "Kategorien vorschlagen",
       "hint": "Die Vorschläge kommen zuerst aus deinem Verlauf; der Rest geht nur mit Zahlungspartner, Betrag und Datum an deinen KI-Anbieter. Gespeichert wird erst, wenn du bestätigst.",

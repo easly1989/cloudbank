@@ -646,6 +646,10 @@ you:
   the real charge differs: a petrol station that holds 100 and takes 40, a
   hotel, a payment in another currency. **Merge** them into the bank's row, or
   delete them.
+  - **Snooze** puts a row, or a reversed payment's pair, off until tomorrow, in
+    3 days, in a week or a day you pick, for everyone in the wallet. It leaves
+    the list and the reminders until then, and comes back by itself. The
+    snoozed ones wait folded at the foot of the card, with **Bring back now**.
 
 Review has no place in the sidebar. You reach it from the **to review** button in
 an account's register, and from the dashboard's list of what wants your

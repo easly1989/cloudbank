@@ -1,30 +1,49 @@
-import { Box, Button, Card, Group, Stack, Text } from "@mantine/core";
+import {
+  Box,
+  Button,
+  Card,
+  Group,
+  Menu,
+  Stack,
+  Text,
+  TextInput,
+  UnstyledButton,
+} from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
   IconArrowBackUp,
   IconBuildingBank,
+  IconCalendar,
+  IconChevronDown,
+  IconClock,
   IconGitMerge,
   IconMail,
+  IconRestore,
   IconTrash,
 } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 
 import {
   type Account,
   type ReversalPair,
   type ReviewTxn,
+  type SnoozedRow,
   type UnconfirmedRow,
   bulkDeleteTransactions,
   mergeMailTransaction,
+  snoozeReviewRows,
+  unsnoozeReviewRows,
 } from "../api/client";
 import { amountColor } from "../amountTone";
+import { toCivilDate } from "../civilDate";
 import { useConfirm } from "../components/confirmContext";
 import { useDateFormat } from "../dates";
 import { formatMinor, type MoneyFormat } from "../money";
 import { notifyError } from "../notifyError";
+import { useShortDate } from "./schedules/labels";
 
 const RULE = "1px solid var(--mantine-color-default-border)";
 const DASHED = "1px dashed var(--mantine-color-default-border)";
@@ -39,15 +58,130 @@ function daysSince(date: string): number {
   );
 }
 
+/** The civil date n days from today, in the reader's calendar. */
+function inDays(n: number): string {
+  const now = new Date();
+  return toCivilDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() + n));
+}
+
+/**
+ * "Snooze": the row leaves the list until a day, for everyone in the wallet
+ * (#775). Tomorrow, in 3 days, in a week, or a day picked by hand.
+ */
+function SnoozeMenu({
+  onSnooze,
+  loading,
+}: {
+  onSnooze: (until: string) => void;
+  loading: boolean;
+}) {
+  const { t } = useTranslation();
+  const short = useShortDate();
+  const [opened, setOpened] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [date, setDate] = useState("");
+  const tomorrow = inDays(1);
+  const pick = (until: string) => {
+    setOpened(false);
+    onSnooze(until);
+  };
+  const presets = [
+    { n: 1, label: t("review.snooze.tomorrow") },
+    { n: 3, label: t("review.snooze.days3") },
+    { n: 7, label: t("review.snooze.week") },
+  ];
+  return (
+    <Menu
+      opened={opened}
+      onChange={(o) => {
+        setOpened(o);
+        if (!o) {
+          setPicking(false);
+          setDate("");
+        }
+      }}
+      position="bottom-end"
+      width={288}
+      withinPortal
+    >
+      <Menu.Target>
+        <Button
+          size="xs"
+          variant="subtle"
+          color="gray"
+          leftSection={<IconClock size={14} />}
+          rightSection={<IconChevronDown size={12} />}
+          loading={loading}
+          style={{ flexShrink: 0 }}
+        >
+          {t("review.snooze.button")}
+        </Button>
+      </Menu.Target>
+      <Menu.Dropdown>
+        {picking ? (
+          <Stack gap="xs" p={8}>
+            <TextInput
+              type="date"
+              size="xs"
+              label={t("review.snooze.date")}
+              min={tomorrow}
+              value={date}
+              onChange={(e) => setDate(e.currentTarget.value)}
+              data-autofocus
+            />
+            <Button size="xs" disabled={!date || date < tomorrow} onClick={() => pick(date)}>
+              {t("review.snooze.button")}
+            </Button>
+            <Text size="xs" c="dimmed">
+              {t("review.snooze.forWallet")}
+            </Text>
+          </Stack>
+        ) : (
+          <>
+            <Menu.Label>{t("review.snooze.menuLabel")}</Menu.Label>
+            {presets.map(({ n, label }) => (
+              <Menu.Item
+                key={n}
+                onClick={() => pick(inDays(n))}
+                rightSection={
+                  <Text size="xs" c="dimmed">
+                    {short(inDays(n))}
+                  </Text>
+                }
+              >
+                {label}
+              </Menu.Item>
+            ))}
+            <Menu.Item
+              closeMenuOnClick={false}
+              leftSection={<IconCalendar size={15} />}
+              onClick={() => setPicking(true)}
+            >
+              {t("review.snooze.pick")}
+            </Menu.Item>
+            <Menu.Divider />
+            <Text size="xs" c="dimmed" px={12} pt={4} pb={6}>
+              {t("review.snooze.forWallet")}
+            </Text>
+          </>
+        )}
+      </Menu.Dropdown>
+    </Menu>
+  );
+}
+
 /**
  * The rows read from bank mails that the bank has not booked after 5 days
  * (#660): each with the bank rows near it to merge with, or to delete; and a
  * refused card's payment and reversal, which cancel out, to delete together.
+ * Either can be snoozed until a day (#775): the snoozed ones are folded at the
+ * foot, each with its day and a way back now.
  */
 export function ReviewUnconfirmed({
   walletId,
   unconfirmed,
   reversals,
+  snoozed,
   accountById,
   fmtFor,
   categoryName,
@@ -56,6 +190,7 @@ export function ReviewUnconfirmed({
   walletId: number;
   unconfirmed: UnconfirmedRow[];
   reversals: ReversalPair[];
+  snoozed: SnoozedRow[];
   accountById: Map<number, Account>;
   fmtFor: (acc?: Account) => MoneyFormat;
   categoryName: (id?: number | null) => string;
@@ -65,6 +200,8 @@ export function ReviewUnconfirmed({
   const confirm = useConfirm();
   const fmtDate = useDateFormat();
   const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
+  const short = useShortDate();
+  const [showSnoozed, setShowSnoozed] = useState(false);
 
   const merge = useMutation({
     mutationFn: (v: { mailId: number; bankId: number }) =>
@@ -80,6 +217,46 @@ export function ReviewUnconfirmed({
     onSuccess: onChanged,
     onError: notifyError,
   });
+
+  // The toast's undo calls the API itself: the card may be gone by then.
+  const snooze = useMutation({
+    mutationFn: (v: { ids: number[]; until: string }) => snoozeReviewRows(walletId, v.ids, v.until),
+    onSuccess: (_, v) => {
+      onChanged();
+      const id = `snooze-${v.ids.join("-")}`;
+      notifications.show({
+        id,
+        autoClose: 7000,
+        message: (
+          <Group gap="sm" wrap="nowrap" data-testid="review-snoozed-toast">
+            <Text size="sm" style={{ flex: 1, minWidth: 0 }}>
+              {t("review.snooze.done", { date: short(v.until) })}
+            </Text>
+            <Button
+              size="compact-sm"
+              variant="subtle"
+              color="gray"
+              onClick={() => {
+                notifications.hide(id);
+                unsnoozeReviewRows(walletId, v.ids).then(onChanged, notifyError);
+              }}
+            >
+              {t("review.snooze.undo")}
+            </Button>
+          </Group>
+        ),
+      });
+    },
+    onError: notifyError,
+  });
+  const unsnooze = useMutation({
+    mutationFn: (ids: number[]) => unsnoozeReviewRows(walletId, ids),
+    onSuccess: onChanged,
+    onError: notifyError,
+  });
+  const snoozeButton = (ids: number[]) => (
+    <SnoozeMenu loading={snooze.isPending} onSnooze={(until) => snooze.mutate({ ids, until })} />
+  );
 
   const money = (tx: ReviewTxn) => formatMinor(tx.amount, fmtFor(accountById.get(tx.accountId)));
 
@@ -106,7 +283,7 @@ export function ReviewUnconfirmed({
   );
 
   // One line of a nested list: a bank row to merge with, or a side of a pair.
-  const line = (tx: ReviewTxn, icon: ReactNode, action?: ReactNode) => (
+  const line = (tx: ReviewTxn, icon: ReactNode, action?: ReactNode, lead?: string) => (
     <Group
       key={tx.id}
       gap={phone ? "4px 12px" : "sm"}
@@ -115,15 +292,15 @@ export function ReviewUnconfirmed({
       style={{ borderTop: DASHED }}
     >
       {icon}
-      <Text size="xs" ff="monospace" style={{ flexShrink: 0 }}>
-        {fmtDate(tx.date)}
+      <Text size="xs" ff="monospace" c={lead ? "dimmed" : undefined} style={{ flexShrink: 0 }}>
+        {lead ?? fmtDate(tx.date)}
       </Text>
       <Text
         size="xs"
         truncate={!phone}
         style={
           phone
-            ? { flexBasis: "100%", order: 5, paddingLeft: 26, overflowWrap: "anywhere" }
+            ? { flexBasis: "100%", order: 5, paddingLeft: icon ? 26 : 0, overflowWrap: "anywhere" }
             : { flex: 1, minWidth: 0 }
         }
         data-cb-sensitive={!!tx.memo || undefined}
@@ -184,14 +361,24 @@ export function ReviewUnconfirmed({
                     {t("review.reversalHint", { account: acc?.name ?? "" })}
                   </Text>
                 </Box>
-                {!phone && removeBoth}
+                {!phone && (
+                  <Group gap={4} wrap="nowrap">
+                    {snoozeButton([p.payment.id, p.reversal.id])}
+                    {removeBoth}
+                  </Group>
+                )}
               </Group>
               <Stack gap={0} mt={8} ml={21}>
                 {[p.payment, p.reversal].map((tx) =>
                   line(tx, <IconMail size={14} style={iconStyle} />),
                 )}
               </Stack>
-              {phone && <Box mt={4}>{removeBoth}</Box>}
+              {phone && (
+                <Group gap={4} mt={4}>
+                  {snoozeButton([p.payment.id, p.reversal.id])}
+                  {removeBoth}
+                </Group>
+              )}
             </Box>
           );
         })}
@@ -248,7 +435,10 @@ export function ReviewUnconfirmed({
               ) : (
                 <Group justify="space-between" align="flex-start" wrap="nowrap" gap="md">
                   {head}
-                  {removeOne}
+                  <Group gap={4} wrap="nowrap">
+                    {snoozeButton([u.id])}
+                    {removeOne}
+                  </Group>
                 </Group>
               )}
               {u.bankRows.length > 0 ? (
@@ -278,10 +468,66 @@ export function ReviewUnconfirmed({
                   {t("review.noBankRows")}
                 </Text>
               )}
-              {phone && <Box mt={4}>{removeOne}</Box>}
+              {phone && (
+                <Group gap={4} mt={4}>
+                  {snoozeButton([u.id])}
+                  {removeOne}
+                </Group>
+              )}
             </Box>
           );
         })}
+
+        {snoozed.length > 0 && (
+          <Box pt="sm" style={{ borderTop: RULE }} data-testid="review-snoozed">
+            <UnstyledButton
+              onClick={() => setShowSnoozed((v) => !v)}
+              aria-expanded={showSnoozed}
+              style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }}
+            >
+              <IconClock size={15} style={iconStyle} />
+              <Text size="sm" fw={600}>
+                {t("review.snooze.list", { count: snoozed.length })}
+              </Text>
+              {!phone && (
+                <Text size="xs" c="dimmed">
+                  {t("review.snooze.listHint")}
+                </Text>
+              )}
+              <IconChevronDown
+                size={16}
+                style={{
+                  marginLeft: "auto",
+                  opacity: 0.6,
+                  transform: showSnoozed ? "rotate(180deg)" : undefined,
+                }}
+              />
+            </UnstyledButton>
+            {showSnoozed && (
+              <Stack gap={0} mt={8} ml={21}>
+                {snoozed.map((z) =>
+                  line(
+                    z.reversal
+                      ? { ...z, memo: `${t("review.reversal")} · ${z.memo || t("review.noMemo")}` }
+                      : z,
+                    null,
+                    <Button
+                      size="compact-xs"
+                      variant="light"
+                      leftSection={<IconRestore size={13} />}
+                      style={{ flexShrink: 0 }}
+                      loading={unsnooze.isPending}
+                      onClick={() => unsnooze.mutate(z.reversal ? [z.id, z.reversal.id] : [z.id])}
+                    >
+                      {t("review.snooze.now")}
+                    </Button>,
+                    t("review.snooze.back", { date: short(z.until) }),
+                  ),
+                )}
+              </Stack>
+            )}
+          </Box>
+        )}
       </Stack>
     </Card>
   );

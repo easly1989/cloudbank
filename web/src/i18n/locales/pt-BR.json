@@ -1024,6 +1024,22 @@
     "reversalHint": "{{account}} · duas linhas de e-mails que se anulam: o banco costuma não registrar nenhuma",
     "deleteBoth": "Excluir as duas",
     "confirmDeleteBothTitle": "Excluir as duas linhas?",
+    "snooze": {
+      "button": "Adiar",
+      "menuLabel": "Volta para a lista",
+      "tomorrow": "Amanhã",
+      "days3": "Em 3 dias",
+      "week": "Em uma semana",
+      "pick": "Escolher uma data…",
+      "date": "Volta em",
+      "forWallet": "Vale para todos na carteira.",
+      "done": "Adiada até {{date}}: volta sozinha, para todos na carteira.",
+      "undo": "Desfazer",
+      "list": "Adiadas ({{count}})",
+      "listHint": "voltam sozinhas no dia escolhido",
+      "back": "volta em {{date}}",
+      "now": "Trazer agora"
+    },
     "propose": {
       "button": "Propor categorias",
       "hint": "As propostas vêm primeiro do seu histórico; o resto vai para o seu provedor de IA só com o beneficiário, o valor e a data. Nada é salvo até você confirmar.",

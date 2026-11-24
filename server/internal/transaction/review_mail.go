@@ -33,6 +33,13 @@ const (
 // bank row of the same account.
 var ErrNotMailPair = errors.New("transaction: not a mail row and a bank row of one account")
 
+// ErrNotMailRow means a snooze was asked of a row not read from a bank mail.
+var ErrNotMailRow = errors.New("transaction: not a row read from a mail")
+
+// ErrInvalidSnooze means a snooze day that is not a YYYY-MM-DD date, or is
+// before today.
+var ErrInvalidSnooze = errors.New("transaction: snooze until a date from today on")
+
 // UnconfirmedRow is a mail row the bank has not booked after
 // unconfirmedAfterDays, with the bank rows near it it may be merged with,
 // nearest amount first.
@@ -48,18 +55,39 @@ type ReversalPair struct {
 	Reversal ReviewTxn `json:"reversal"`
 }
 
+// SnoozedRow is an unconfirmed row, or a reversal pair, that someone in the
+// wallet put off until a day (#775): it leaves the list, its count and the
+// reminders until then. A pair is its payment, with its reversal alongside.
+type SnoozedRow struct {
+	ReviewTxn
+	Until    string     `json:"until"`
+	Reversal *ReviewTxn `json:"reversal,omitempty"`
+}
+
 // unconfirmed lists the wallet's mail rows the bank has not booked after
 // unconfirmedAfterDays, pairing the ones that cancel out. Pairs are sought
 // among every unbooked mail row, so a payment whose reversal came a few days
-// later is never offered alone, to be deleted without it.
-func (s *Service) unconfirmed(ctx context.Context, walletID int64, today time.Time) ([]UnconfirmedRow, []ReversalPair, error) {
+// later is never offered alone, to be deleted without it. The rows and pairs
+// snoozed past today are set apart, the soonest back first.
+func (s *Service) unconfirmed(ctx context.Context, walletID int64, today time.Time) ([]UnconfirmedRow, []ReversalPair, []SnoozedRow, error) {
 	cutoff := today.AddDate(0, 0, -unconfirmedAfterDays).Format(dateLayout)
 	rows, err := s.rq.ListUnconfirmedMailRows(ctx, db.ListUnconfirmedMailRowsParams{
 		WalletID: walletID, Date: today.Format(dateLayout),
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
+	snoozes, err := s.rq.ListReviewSnoozes(ctx, db.ListReviewSnoozesParams{
+		WalletID: walletID, Until: today.Format(dateLayout),
+	})
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	until := make(map[int64]string, len(snoozes))
+	for _, z := range snoozes {
+		until[z.TransactionID] = z.Until
+	}
+	snoozed := []SnoozedRow{}
 	paired := map[int64]bool{}
 	reversals := []ReversalPair{}
 	for i, a := range rows {
@@ -85,15 +113,25 @@ func (s *Service) unconfirmed(ctx context.Context, walletID int64, today time.Ti
 			pay, rev = rev, pay
 		}
 		paired[pay.ID], paired[rev.ID] = true, true
-		// Shown once its older row is past the cutoff.
+		// Shown once its older row is past the cutoff; put off while either
+		// row is snoozed.
 		if min(pay.Date, rev.Date) <= cutoff {
-			reversals = append(reversals, ReversalPair{Payment: reviewTxn(pay), Reversal: reviewTxn(rev)})
+			p, r := reviewTxn(pay), reviewTxn(rev)
+			if day := max(until[pay.ID], until[rev.ID]); day != "" {
+				snoozed = append(snoozed, SnoozedRow{ReviewTxn: p, Until: day, Reversal: &r})
+			} else {
+				reversals = append(reversals, ReversalPair{Payment: p, Reversal: r})
+			}
 		}
 	}
 
 	out := []UnconfirmedRow{}
 	for _, r := range rows {
 		if paired[r.ID] || r.Date > cutoff {
+			continue
+		}
+		if day := until[r.ID]; day != "" {
+			snoozed = append(snoozed, SnoozedRow{ReviewTxn: reviewTxn(r), Until: day})
 			continue
 		}
 		u := UnconfirmedRow{ReviewTxn: reviewTxn(r), BankRows: []ReviewTxn{}}
@@ -108,7 +146,7 @@ func (s *Service) unconfirmed(ctx context.Context, walletID int64, today time.Ti
 			DateTo:    d.AddDate(0, 0, bankRowWindowDays).Format(dateLayout),
 		})
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		// The nearest amount first (a held 100 is often charged 40, but a hotel's
 		// 180 is not the pump's 40), then the nearest date.
@@ -124,7 +162,42 @@ func (s *Service) unconfirmed(ctx context.Context, walletID int64, today time.Ti
 		}
 		out = append(out, u)
 	}
-	return out, reversals, nil
+	sort.SliceStable(snoozed, func(i, j int) bool { return snoozed[i].Until < snoozed[j].Until })
+	return out, reversals, snoozed, nil
+}
+
+// rowOf returns a transaction of the wallet, or ErrNotFound.
+func (s *Service) rowOf(ctx context.Context, walletID, id int64) (db.Transaction, error) {
+	row, err := s.rq.GetTransaction(ctx, id)
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && row.WalletID != walletID) {
+		return db.Transaction{}, ErrNotFound
+	}
+	return row, err
+}
+
+// Snooze puts a mail row of the review off until a day from today on (#775),
+// for everyone in the wallet; snoozing it again moves the day. The row is
+// back in the review on that day.
+func (s *Service) Snooze(ctx context.Context, walletID, id int64, until string, today time.Time) error {
+	if d, err := time.Parse(dateLayout, until); err != nil || d.Format(dateLayout) != until || until < today.Format(dateLayout) {
+		return ErrInvalidSnooze
+	}
+	row, err := s.rowOf(ctx, walletID, id)
+	if err != nil {
+		return err
+	}
+	if !strings.HasPrefix(row.ImportRef, MailRefPrefix) {
+		return ErrNotMailRow
+	}
+	return s.q.UpsertReviewSnooze(ctx, db.UpsertReviewSnoozeParams{TransactionID: id, WalletID: walletID, Until: until})
+}
+
+// Unsnooze brings a snoozed row back into the review now.
+func (s *Service) Unsnooze(ctx context.Context, walletID, id int64) error {
+	if _, err := s.rowOf(ctx, walletID, id); err != nil {
+		return err
+	}
+	return s.q.DeleteReviewSnooze(ctx, db.DeleteReviewSnoozeParams{TransactionID: id, WalletID: walletID})
 }
 
 // MergeMail folds an unconfirmed mail row into the bank row that booked it

@@ -394,3 +394,69 @@ func TestUnconfirmedMailRowsInTheReview(t *testing.T) {
 		t.Fatalf("merged = %+v, want the bank's amount with the mail's memo", got)
 	}
 }
+
+// A row from a mail is snoozed for the wallet and brought back through its own
+// routes; another wallet's row, or a non-member, gets 404 (#775).
+func TestSnoozeAnUnconfirmedMailRow(t *testing.T) {
+	admin := newTestAPI(t)
+	wid, acc := makeAccount(t, admin)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	day := func(n int) string { return time.Now().UTC().AddDate(0, 0, n).Format("2006-01-02") }
+	admin.do(http.MethodPost, base+"/import/commit", map[string]any{
+		"accountId": acc, "rows": []map[string]any{
+			{"date": day(-7), "amount": -10000, "memo": "Distributore Demo", "importRef": "mail:1"},
+		},
+	}, true).Body.Close()
+
+	type review struct {
+		Unconfirmed []struct{ ID int64 } `json:"unconfirmed"`
+		Snoozed     []struct {
+			ID    int64  `json:"id"`
+			Until string `json:"until"`
+		} `json:"snoozed"`
+	}
+	get := func() review {
+		t.Helper()
+		var rev review
+		r := admin.do(http.MethodGet, base+"/transactions/review", nil, false)
+		if err := json.NewDecoder(r.Body).Decode(&rev); err != nil {
+			t.Fatal(err)
+		}
+		r.Body.Close()
+		return rev
+	}
+	rev := get()
+	if len(rev.Unconfirmed) != 1 {
+		t.Fatalf("review = %+v, want one unconfirmed row", rev)
+	}
+	snooze := base + "/transactions/" + strconv.FormatInt(rev.Unconfirmed[0].ID, 10) + "/snooze"
+
+	if r := admin.do(http.MethodPut, snooze, map[string]any{"until": day(-1)}, true); r.StatusCode != http.StatusBadRequest {
+		t.Fatalf("snooze until yesterday = %d, want 400", r.StatusCode)
+	}
+	admin.do(http.MethodPost, "/api/v1/admin/users", map[string]any{"username": "bob", "password": "bobssecret"}, true).Body.Close()
+	bob := admin.fork()
+	bob.do(http.MethodPost, "/api/v1/auth/login", map[string]any{"username": "bob", "password": "bobssecret"}, true).Body.Close()
+	if r := bob.do(http.MethodPut, snooze, map[string]any{"until": day(3)}, true); r.StatusCode != http.StatusNotFound {
+		t.Fatalf("bob snooze = %d, want 404", r.StatusCode)
+	}
+	// A member of another wallet naming this wallet's row through their own.
+	other := createWalletWithBase(t, admin, "EUR")
+	cross := "/api/v1/wallets/" + strconv.FormatInt(other, 10) + "/transactions/" + strconv.FormatInt(rev.Unconfirmed[0].ID, 10) + "/snooze"
+	if r := admin.do(http.MethodPut, cross, map[string]any{"until": day(3)}, true); r.StatusCode != http.StatusNotFound {
+		t.Fatalf("snooze through another wallet = %d, want 404", r.StatusCode)
+	}
+
+	if r := admin.do(http.MethodPut, snooze, map[string]any{"until": day(3)}, true); r.StatusCode != http.StatusNoContent {
+		t.Fatalf("snooze = %d, want 204", r.StatusCode)
+	}
+	if rev := get(); len(rev.Unconfirmed) != 0 || len(rev.Snoozed) != 1 || rev.Snoozed[0].Until != day(3) {
+		t.Fatalf("review = %+v, want the row snoozed until %s", rev, day(3))
+	}
+	if r := admin.do(http.MethodDelete, snooze, nil, true); r.StatusCode != http.StatusNoContent {
+		t.Fatalf("unsnooze = %d, want 204", r.StatusCode)
+	}
+	if rev := get(); len(rev.Unconfirmed) != 1 || len(rev.Snoozed) != 0 {
+		t.Fatalf("review = %+v, want the row back", rev)
+	}
+}

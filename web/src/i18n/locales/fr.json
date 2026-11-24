@@ -1024,6 +1024,22 @@
     "reversalHint": "{{account}} · deux lignes d’e-mails qui s’annulent : d’habitude la banque n’enregistre ni l’une ni l’autre",
     "deleteBoth": "Supprimer les deux",
     "confirmDeleteBothTitle": "Supprimer les deux lignes ?",
+    "snooze": {
+      "button": "Reporter",
+      "menuLabel": "De retour dans la liste",
+      "tomorrow": "Demain",
+      "days3": "Dans 3 jours",
+      "week": "Dans une semaine",
+      "pick": "Choisir une date…",
+      "date": "De retour le",
+      "forWallet": "Valable pour tous dans le classeur.",
+      "done": "Reportée au {{date}} : elle revient d'elle-même, pour tous dans le classeur.",
+      "undo": "Annuler",
+      "list": "Reportées ({{count}})",
+      "listHint": "reviennent d'elles-mêmes le jour choisi",
+      "back": "revient le {{date}}",
+      "now": "Ramener maintenant"
+    },
     "propose": {
       "button": "Proposer des catégories",
       "hint": "Les propositions viennent d’abord de votre historique ; le reste part chez votre fournisseur d’IA avec le tiers, le montant et la date seulement. Rien n’est enregistré avant votre confirmation.",
