@@ -177,7 +177,7 @@ export function AboutSection() {
         </Card>
       </SettingsGroup>
       <SettingsGroup title={t("about.groupLinks")} hint={t("about.groupLinksHint")}>
-        <Card withBorder p={0}>
+        <Card withBorder p={0} className="cb-about-links">
           {links.map((l, i) => (
             <Anchor
               key={l.href}

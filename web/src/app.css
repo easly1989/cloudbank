@@ -791,8 +791,11 @@ body {
   border-top: 1px solid var(--mantine-color-default-border);
 }
 
-/* A link in Settings › About (#513): a whole row. On a phone the name sits
- * over the address; from sm up they are columns of a table. */
+/* A link in Settings › About (#513): a whole row. In a narrow card the name
+ * sits over the address; in a wide one they are columns of a table. */
+.cb-about-links {
+  container-type: inline-size;
+}
 .cb-about-link {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 16px;
@@ -805,7 +808,7 @@ body {
   grid-row: 1 / span 2;
   grid-column: 2;
 }
-@media (min-width: 48em) {
+@container (min-width: 640px) {
   .cb-about-link {
     grid-template-columns: 220px minmax(0, 1fr) 16px;
   }
