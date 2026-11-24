@@ -46,6 +46,45 @@ export function normalizeColumnOrder(saved: readonly string[] | undefined): Colu
 }
 
 /**
+ * The text columns, the ones that can take the register's free width. A date
+ * or an amount has a natural width, and stretching it only moves the figures
+ * away from their neighbours.
+ */
+export const GROW_COLUMNS: readonly string[] = ["payee", "category", "note"];
+
+/**
+ * The grid track of each visible column, and which of them takes the free width.
+ *
+ * Payee grows unless the user picked another text column (`chosen`, one per
+ * user, every account). A choice counts only while its column is visible and
+ * has no dragged width; otherwise Payee grows, as it always has. A chosen
+ * column grows from the width it has when fixed, and Payee then holds at its
+ * floor. A dragged width always wins, so a dragged Payee is fixed and nothing
+ * grows, as before. `defaults` is ROW_COLUMNS, passed in to keep this file free
+ * of the theme.
+ */
+export function columnTracks(
+  visible: readonly string[],
+  chosen: string | undefined,
+  widths: Record<string, number>,
+  defaults: Record<string, string>,
+): { grow: string | null; tracks: string[] } {
+  const picked =
+    chosen && GROW_COLUMNS.includes(chosen) && visible.includes(chosen) && !widths[chosen]
+      ? chosen
+      : "payee";
+  const grow = visible.includes(picked) && !widths[picked] ? picked : null;
+  const floor = (track: string | undefined) => /(\d+)px/.exec(track ?? "")?.[1] ?? "100";
+  const tracks = visible.map((id) => {
+    if (widths[id]) return `${widths[id]}px`;
+    if (id === grow) return `minmax(${floor(defaults[id])}px, 1fr)`;
+    if (id === "payee") return `${floor(defaults.payee)}px`;
+    return defaults[id] ?? "minmax(100px, 1fr)";
+  });
+  return { grow, tracks };
+}
+
+/**
  * Move one column one place left or right.
  *
  * Moving past either end is a no-op rather than a wrap: someone clicking "up"

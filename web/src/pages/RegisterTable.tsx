@@ -19,6 +19,7 @@ import {
   IconChevronDown,
   IconChevronUp,
   IconArrowsExchange,
+  IconArrowsHorizontal,
   IconCircleCheck,
   IconClock,
   IconCopy,
@@ -65,7 +66,13 @@ import { todayCivil } from "../civilDate";
 import { formatMinor, type MoneyFormat } from "../money";
 import { notifyError } from "../notifyError";
 import { stopRowEdit } from "../rowEdit";
-import { ALL_COLUMNS, moveColumn, normalizeColumnOrder } from "./registerColumns";
+import {
+  ALL_COLUMNS,
+  columnTracks,
+  GROW_COLUMNS,
+  moveColumn,
+  normalizeColumnOrder,
+} from "./registerColumns";
 import {
   BAND_INSET,
   BAND_PADDING,
@@ -304,6 +311,11 @@ export function RegisterTable({
   // Width being dragged right now: local, so a drag is not a PATCH per pixel.
   const [dragWidths, setDragWidths] = useState<Record<string, number> | null>(null);
   const widths = dragWidths ?? savedWidths ?? {};
+  // The text column that takes the free width, if the user picked one. It hands
+  // the width back to Payee when it is hidden or dragged, and the panel says so
+  // once, since the change was a side effect of something else.
+  const growChoice = user?.preferences?.registerGrowColumn;
+  const [growNotice, setGrowNotice] = useState<{ key: string; id: string } | null>(null);
 
   const persistPrefs = useMutation({
     mutationFn: (patch: Partial<Preferences>) => savePreferences(qc, patch),
@@ -321,8 +333,10 @@ export function RegisterTable({
     }
     const next = { ...(savedWidths ?? {}), [id]: width };
     setDragWidths(next);
+    const dropGrow = id === growChoice;
+    if (dropGrow) setGrowNotice({ key: "register.growDragged", id });
     persistPrefs.mutate(
-      { registerColumnWidths: next },
+      { registerColumnWidths: next, ...(dropGrow ? { registerGrowColumn: undefined } : {}) },
       {
         onError: notifyError,
         onSettled: () => setDragWidths(null),
@@ -336,11 +350,6 @@ export function RegisterTable({
     const next = sort?.id !== id ? { id, desc: false } : sort.desc ? null : { id, desc: true };
     persistPrefs.mutate({ registerSort: next ?? undefined });
   };
-
-  const persistColumns = useMutation({
-    mutationFn: (next: VisibilityState) =>
-      savePreferences(qc, { registerColumns: next as Record<string, boolean> }),
-  });
 
   // Newest-first display; each row keeps its chronological running balance.
   // A chosen sort replaces that order, but never recomputes the balances: see
@@ -493,7 +502,14 @@ export function RegisterTable({
     state: { columnVisibility, columnOrder },
     onColumnVisibilityChange: (updater) => {
       const next = typeof updater === "function" ? updater(columnVisibility) : updater;
-      persistColumns.mutate(next);
+      const dropGrow = growChoice != null && next[growChoice] === false;
+      if (dropGrow) setGrowNotice({ key: "register.growHidden", id: growChoice });
+      else if (growNotice?.key === "register.growHidden" && next[growNotice.id])
+        setGrowNotice({ key: "register.growShownAgain", id: growNotice.id });
+      persistPrefs.mutate({
+        registerColumns: next as Record<string, boolean>,
+        ...(dropGrow ? { registerGrowColumn: undefined } : {}),
+      });
     },
     getCoreRowModel: getCoreRowModel(),
   });
@@ -501,13 +517,31 @@ export function RegisterTable({
 
   // Build the grid template from the currently visible columns (checkbox +
   // visible data columns + actions), so hidden columns reclaim their space.
-  const tracks = [
-    ROW_SELECT_WIDTH,
-    ...table
-      .getVisibleLeafColumns()
-      .map((c) => (widths[c.id] ? `${widths[c.id]}px` : (COL_WIDTH[c.id] ?? "minmax(100px, 1fr)"))),
-    ROW_ACTIONS_WIDTH,
-  ];
+  const layout = columnTracks(
+    table.getVisibleLeafColumns().map((c) => c.id),
+    growChoice,
+    widths,
+    COL_WIDTH,
+  );
+  const tracks = [ROW_SELECT_WIDTH, ...layout.tracks, ROW_ACTIONS_WIDTH];
+
+  // Pick the column that takes the free width. Picking one drops the width it
+  // was dragged to, or it would stay fixed; pressing the lit one again hands
+  // the width back to Payee.
+  const chooseGrow = (id: string) => {
+    const pressed = layout.grow === id;
+    if (pressed && id === "payee") return;
+    setGrowNotice(null);
+    const patch: Partial<Preferences> = {
+      registerGrowColumn: pressed || id === "payee" ? undefined : (id as "category" | "note"),
+    };
+    if (!pressed && savedWidths?.[id]) {
+      const rest = { ...savedWidths };
+      delete rest[id];
+      patch.registerColumnWidths = rest;
+    }
+    persistPrefs.mutate(patch, { onError: notifyError });
+  };
   const gridTemplate = tracks.join(" ");
 
   // The narrowest a row can be drawn without a column being squeezed out of
@@ -707,48 +741,83 @@ export function RegisterTable({
               onChange={() => toggleable && table.getColumn(id)?.toggleVisibility()}
               label={t(COL_LABEL[id])}
             />
-            <Group gap={2} wrap="nowrap">
-              {/* Named for the column they move: seven buttons all called "Move
+            <Group gap={8} wrap="nowrap">
+              {GROW_COLUMNS.includes(id) ? (
+                <ActionIcon
+                  variant={layout.grow === id ? "light" : "subtle"}
+                  size={24}
+                  color={layout.grow === id ? undefined : "gray"}
+                  disabled={!columnVisibility[id]}
+                  aria-pressed={layout.grow === id}
+                  aria-label={t("register.growColumn", { name: t(COL_LABEL[id]) })}
+                  title={t("register.growColumn", { name: t(COL_LABEL[id]) })}
+                  onClick={() => chooseGrow(id)}
+                >
+                  <IconArrowsHorizontal size={14} />
+                </ActionIcon>
+              ) : (
+                <Box w={24} />
+              )}
+              <Group gap={2} wrap="nowrap">
+                {/* Named for the column they move: seven buttons all called "Move
                   this column left" tell a screen reader nothing. 24px, not 22,
                   because they stack two pixels apart and 22 is under WCAG 2.5.8's
                   floor with no room around it. */}
-              <ActionIcon
-                variant="subtle"
-                size={24}
-                color="gray"
-                disabled={i === 0}
-                aria-label={t("register.moveColumnLeft", { name: t(COL_LABEL[id]) })}
-                onClick={() =>
-                  persistPrefs.mutate({ registerColumnOrder: moveColumn(columnOrder, id, -1) })
-                }
-              >
-                <IconChevronUp size={14} />
-              </ActionIcon>
-              <ActionIcon
-                variant="subtle"
-                size={24}
-                color="gray"
-                disabled={i === columnOrder.length - 1}
-                aria-label={t("register.moveColumnRight", { name: t(COL_LABEL[id]) })}
-                onClick={() =>
-                  persistPrefs.mutate({ registerColumnOrder: moveColumn(columnOrder, id, 1) })
-                }
-              >
-                <IconChevronDown size={14} />
-              </ActionIcon>
+                <ActionIcon
+                  variant="subtle"
+                  size={24}
+                  color="gray"
+                  disabled={i === 0}
+                  aria-label={t("register.moveColumnLeft", { name: t(COL_LABEL[id]) })}
+                  onClick={() =>
+                    persistPrefs.mutate({ registerColumnOrder: moveColumn(columnOrder, id, -1) })
+                  }
+                >
+                  <IconChevronUp size={14} />
+                </ActionIcon>
+                <ActionIcon
+                  variant="subtle"
+                  size={24}
+                  color="gray"
+                  disabled={i === columnOrder.length - 1}
+                  aria-label={t("register.moveColumnRight", { name: t(COL_LABEL[id]) })}
+                  onClick={() =>
+                    persistPrefs.mutate({ registerColumnOrder: moveColumn(columnOrder, id, 1) })
+                  }
+                >
+                  <IconChevronDown size={14} />
+                </ActionIcon>
+              </Group>
             </Group>
           </Group>
         );
       })}
+      <Text fz="xs" c="dimmed" mt={6}>
+        <IconArrowsHorizontal
+          size={12}
+          style={{ display: "inline", verticalAlign: -2, marginRight: 4 }}
+        />
+        {t("register.growHint")}
+      </Text>
+      {growNotice && (
+        <Text fz="xs" c={attentionColor} role="status">
+          {t(growNotice.key, {
+            name: t(COL_LABEL[growNotice.id]),
+            payee: t(COL_LABEL.payee),
+          })}
+        </Text>
+      )}
       <Group className="cb-panel-actions" justify="flex-end" mt="xs" gap="xs">
         <Button
           variant="default"
-          onClick={() =>
+          onClick={() => {
+            setGrowNotice(null);
             persistPrefs.mutate({
               registerColumnOrder: [...ALL_COLUMNS],
               registerColumns: Object.fromEntries(TOGGLEABLE.map((c) => [c.id, c.def])),
-            })
-          }
+              registerGrowColumn: undefined,
+            });
+          }}
         >
           {t("register.columnsReset")}
         </Button>

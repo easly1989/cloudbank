@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { ALL_COLUMNS, moveColumn, normalizeColumnOrder } from "./registerColumns";
+import { ALL_COLUMNS, columnTracks, moveColumn, normalizeColumnOrder } from "./registerColumns";
+import { ROW_COLUMNS } from "./registerTheme";
 
 describe("normalizeColumnOrder", () => {
   it("ships with every column when nothing was saved", () => {
@@ -64,5 +65,43 @@ describe("moveColumn", () => {
     for (const step of [1, 1, -1, 1, -1, -1] as const) order = moveColumn(order, "status", step);
     expect(new Set(order)).toEqual(new Set(ALL_COLUMNS));
     expect(order).toHaveLength(ALL_COLUMNS.length);
+  });
+});
+
+describe("columnTracks", () => {
+  const shown = ["date", "payee", "category", "note", "amount"];
+  const tracks = (visible: string[], chosen?: string, widths: Record<string, number> = {}) =>
+    columnTracks(visible, chosen, widths, ROW_COLUMNS);
+
+  it("lets Payee grow when nothing was chosen, exactly as before", () => {
+    expect(tracks(shown)).toEqual({
+      grow: "payee",
+      tracks: ["112px", "minmax(120px, 1fr)", "156px", "240px", "124px"],
+    });
+  });
+
+  it("grows the chosen column from its fixed width and holds Payee at its floor", () => {
+    expect(tracks(shown, "note")).toEqual({
+      grow: "note",
+      tracks: ["112px", "120px", "156px", "minmax(240px, 1fr)", "124px"],
+    });
+  });
+
+  it("falls back to Payee when the chosen column is hidden or was dragged", () => {
+    expect(tracks(["date", "payee", "amount"], "note").grow).toBe("payee");
+    expect(tracks(shown, "note", { note: 300 })).toEqual({
+      grow: "payee",
+      tracks: ["112px", "minmax(120px, 1fr)", "156px", "300px", "124px"],
+    });
+  });
+
+  it("grows nothing when Payee is hidden or dragged and nothing else was chosen", () => {
+    expect(tracks(["date", "note", "amount"]).grow).toBeNull();
+    expect(tracks(shown, undefined, { payee: 200 }).tracks[1]).toBe("200px");
+    expect(tracks(shown, undefined, { payee: 200 }).grow).toBeNull();
+  });
+
+  it("ignores a choice that is not a text column", () => {
+    expect(tracks(shown, "amount").grow).toBe("payee");
   });
 });

@@ -12,6 +12,11 @@ export interface Preferences {
   registerColumnOrder?: string[];
   /** Register column widths in pixels, keyed by column id. Absent = the default width. */
   registerColumnWidths?: Record<string, number>;
+  /**
+   * The register's text column that takes the free width, in every account.
+   * Absent = Payee, the one that always has; see registerColumns.columnTracks.
+   */
+  registerGrowColumn?: "category" | "note";
   /** Which register column is sorted, and how. Absent = the ledger’s own chronological order. */
   registerSort?: { id: string; desc: boolean };
   /**
