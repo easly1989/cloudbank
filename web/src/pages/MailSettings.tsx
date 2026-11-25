@@ -522,25 +522,25 @@ function MailboxCard({
   );
 }
 
-/** Whether a mailbox's latest mails are open: closed at first, and remembered
- * for this browser session only. */
-function useSessionOpen(key: string): [boolean, (v: boolean) => void] {
-  const [open, setOpen] = useState(() => {
+/** A value remembered for this browser session only (null: none kept). */
+function useSessionValue(key: string): [string | null, (v: string | null) => void] {
+  const [value, setValue] = useState<string | null>(() => {
     try {
-      return sessionStorage.getItem(key) === "1";
+      return sessionStorage.getItem(key);
     } catch {
-      return false;
+      return null;
     }
   });
-  const set = (v: boolean) => {
-    setOpen(v);
+  const set = (v: string | null) => {
+    setValue(v);
     try {
-      sessionStorage.setItem(key, v ? "1" : "0");
+      if (v === null) sessionStorage.removeItem(key);
+      else sessionStorage.setItem(key, v);
     } catch {
       /* storage unavailable (private mode): this page only */
     }
   };
-  return [open, set];
+  return [value, set];
 }
 
 /**
@@ -564,13 +564,24 @@ function LatestMails({
   const { t } = useTranslation();
   const when = useWhen();
   const bodyId = useId();
-  const [open, setOpen] = useSessionOpen(`cb.mail.latestOpen.${mailboxId}`);
-  // Unset (open since an earlier visit): the mails to review, or all of them
-  // when none is.
-  const [filter, setFilter] = useState<MailFilter | null>(null);
+  // Closed at first; open state and filter are kept for this browser session.
+  const [openRaw, setOpenRaw] = useSessionValue(`cb.mail.latestOpen.${mailboxId}`);
+  const open = openRaw === "1";
+  const setOpen = (v: boolean) => setOpenRaw(v ? "1" : "0");
+  const [filterRaw, setFilter] = useSessionValue(`cb.mail.latestFilter.${mailboxId}`);
   const [showAll, setShowAll] = useState(false);
   const counts = countMails(list);
-  const current = filter ?? (counts.review ? "review" : "all");
+  // Unset, or its group now empty: the mails to review, or all of them when
+  // none is.
+  const filter = filterRaw === "review" || filterRaw === "read" ? filterRaw : null;
+  const current: MailFilter =
+    filter && counts[filter] > 0
+      ? filter
+      : filterRaw === "all"
+        ? "all"
+        : counts.review
+          ? "review"
+          : "all";
   const picked = filterMails(list, current);
   const shown = showAll ? picked : picked.slice(0, RECENT_SHOWN);
   const pick = (f: MailFilter) => {
@@ -620,6 +631,9 @@ function LatestMails({
                 color="teal"
                 size="md"
                 className="cb-split-half mantine-focus-auto"
+                aria-expanded={open}
+                aria-controls={open ? bodyId : undefined}
+                aria-label={t("mail.latest.openRead", { count: counts.read })}
                 style={{
                   color: "var(--cb-teal-tint-fg)",
                   ...(both && { borderTopRightRadius: 0, borderBottomRightRadius: 0 }),
@@ -637,6 +651,9 @@ function LatestMails({
                 color="yellow"
                 size="md"
                 className="cb-split-half mantine-focus-auto"
+                aria-expanded={open}
+                aria-controls={open ? bodyId : undefined}
+                aria-label={t("mail.latest.openReview", { count: counts.review })}
                 style={{
                   color: "var(--cb-attention)",
                   background: "var(--cb-attention-bg)",

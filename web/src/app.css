@@ -897,8 +897,10 @@ body {
     display: flex;
     width: 100%;
   }
-  /* A count badge's half keeps its 20px look; an invisible strip above and
-     below makes the press target 44px. */
+  /* A count badge's half keeps its look; an invisible strip above and below
+     takes the press target to 44px (22px badge + 2 x 11px). The badges sit
+     12px from the disclosure button when they wrap under it, so the strip
+     never overlaps it. */
   .cb-split-half {
     position: relative;
     overflow: visible;
@@ -906,7 +908,10 @@ body {
   .cb-split-half::after {
     content: "";
     position: absolute;
-    inset: -12px 0;
+    inset: -11px 0;
+  }
+  [data-tour="mail-history"] > .mantine-Group-root {
+    row-gap: 12px;
   }
   .cb-search-row {
     padding-block: 10px;
