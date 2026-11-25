@@ -1,6 +1,6 @@
 import { Button, Group, Text, ThemeIcon } from "@mantine/core";
 import { IconRefresh } from "@tabler/icons-react";
-import { useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { AppUpdate } from "../appUpdate";
@@ -19,10 +19,27 @@ export function UpdateNotice({ update }: { update: AppUpdate | null }) {
     update?.visible ?? hidden,
     hidden,
   );
+  const ref = useRef<HTMLDivElement>(null);
+  const shown = !!update && visible;
+  // The room the notice takes at the bottom of the screen (its height plus the
+  // gap under it), so the page and the ledger can scroll their last lines clear.
+  useEffect(() => {
+    const el = ref.current;
+    if (!shown || !el || typeof ResizeObserver === "undefined") return;
+    const root = document.documentElement.style;
+    const ro = new ResizeObserver(() => {
+      root.setProperty("--cb-update-room", `${el.offsetHeight + 36}px`);
+    });
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.removeProperty("--cb-update-room");
+    };
+  }, [shown]);
   if (!update || !visible) return null;
 
   return (
-    <div className={classes.notice} role="status" aria-label={t("appUpdate.title")}>
+    <div ref={ref} className={classes.notice} role="status" aria-label={t("appUpdate.title")}>
       <ThemeIcon variant="light" radius="xl" size={28} className={classes.icon}>
         <IconRefresh size={16} />
       </ThemeIcon>

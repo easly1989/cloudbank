@@ -40,7 +40,7 @@ export function DemoChrome() {
       <Box className="cb-demo-banner" role="note" data-demo-banner>
         <Group gap="xs" wrap="wrap" justify="space-between">
           <Text fz="sm" style={{ flex: "1 1 20rem", minWidth: 0 }}>
-            <Text span fw={600} mr="xs">
+            <Text span fw={600} mr="xs" className="cb-demo-banner-label">
               {t("demo.bannerLabel")}
             </Text>
             {t("demo.banner")}
