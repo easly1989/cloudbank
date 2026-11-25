@@ -317,12 +317,12 @@ export function RegisterTable({
   const growChoice = user?.preferences?.registerGrowColumn;
   const [growNotice, setGrowNotice] = useState<{ key: string; id: string } | null>(null);
 
-  // Settling here, not in a per-call onSettled: react-query runs that one only
-  // for the latest mutate, so a visibility toggle or a Move during a drag save
-  // would have left the dragged widths on screen for good.
   // The notice belongs to the open Columns panel: closing (or opening) it clears it.
   useEffect(() => setGrowNotice(null), [panels.columns]);
 
+  // Settling here, not in a per-call onSettled: react-query runs that one only
+  // for the latest mutate, so a visibility toggle or a Move during a drag save
+  // would have left the dragged widths on screen for good.
   const persistPrefs = useMutation({
     mutationFn: (patch: Partial<Preferences>) => savePreferences(qc, patch),
     onSettled: () => setDragWidths(null),
