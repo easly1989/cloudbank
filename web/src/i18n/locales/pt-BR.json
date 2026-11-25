@@ -1276,7 +1276,7 @@
     "patterns": {
       "title": "Padrões",
       "new": "Novo padrão",
-      "empty": "Ainda não há padrões. Comece por um e-mail do banco abaixo: Criar um padrão a partir deste e-mail.",
+      "empty": "Ainda não há padrões. Crie um a partir de um e-mail do banco em Últimos e-mails.",
       "noMails": "Um padrão nasce de um e-mail real do banco: espere chegar um na pasta.",
       "drag": "Arraste para mudar a ordem: vence o primeiro padrão que lê o e-mail",
       "edit": "Editar",

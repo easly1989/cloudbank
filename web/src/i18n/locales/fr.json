@@ -1276,7 +1276,7 @@
     "patterns": {
       "title": "Motifs",
       "new": "Nouveau motif",
-      "empty": "Pas encore de motif. Partez d’un e-mail de la banque ci-dessous : Créer un motif à partir de cet e-mail.",
+      "empty": "Pas encore de motif. Créez-en un à partir d’un e-mail de la banque dans Derniers e-mails.",
       "noMails": "Un motif naît d’un vrai e-mail de la banque : attendez qu’il en arrive un dans le dossier.",
       "drag": "Faites glisser pour changer l’ordre : le premier motif qui lit l’e-mail l’emporte",
       "edit": "Modifier",

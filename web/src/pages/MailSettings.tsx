@@ -590,14 +590,6 @@ function LatestMails({
     setOpen(true);
   };
   const both = counts.read > 0 && counts.review > 0;
-  const segment = (label: string, n: number) => (
-    <Group gap={6} wrap="nowrap" justify="center">
-      {label}
-      <Text span size="xs" c="dimmed">
-        {n}
-      </Text>
-    </Group>
-  );
 
   return (
     <Stack gap="xs" data-tour="mail-history">
@@ -684,12 +676,9 @@ function LatestMails({
                 }}
                 style={{ alignSelf: "flex-start", maxWidth: "100%" }}
                 data={[
-                  {
-                    value: "review",
-                    label: segment(t("mail.latest.filterReview"), counts.review),
-                  },
-                  { value: "read", label: segment(t("mail.latest.filterRead"), counts.read) },
-                  { value: "all", label: segment(t("mail.latest.filterAll"), counts.all) },
+                  { value: "review", label: t("mail.latest.filterReview") },
+                  { value: "read", label: t("mail.latest.filterRead") },
+                  { value: "all", label: t("mail.latest.filterAll") },
                 ]}
               />
               {current === "review" && picked.length === 0 ? (

@@ -1276,7 +1276,7 @@
     "patterns": {
       "title": "Patrones",
       "new": "Nuevo patrón",
-      "empty": "Todavía no hay patrones. Empieza con un correo del banco de abajo: Crear un patrón con este correo.",
+      "empty": "Todavía no hay patrones. Crea uno con un correo del banco en Últimos correos.",
       "noMails": "Un patrón nace de un correo real del banco: espera a que llegue uno a la carpeta.",
       "drag": "Arrastra para cambiar el orden: gana el primer patrón que lee el correo",
       "edit": "Editar",

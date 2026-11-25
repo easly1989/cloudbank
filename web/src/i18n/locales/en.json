@@ -1276,7 +1276,7 @@
     "patterns": {
       "title": "Patterns",
       "new": "New pattern",
-      "empty": "No patterns yet. Start from a bank mail below: Create a pattern from this mail.",
+      "empty": "No patterns yet. Make one from a bank mail in Latest mails.",
       "noMails": "A pattern starts from a real bank mail: wait for one to arrive in the folder.",
       "drag": "Drag to change the order: the first pattern that reads a mail wins",
       "edit": "Edit",

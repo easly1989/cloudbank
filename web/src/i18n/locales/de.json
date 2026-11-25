@@ -1276,7 +1276,7 @@
     "patterns": {
       "title": "Muster",
       "new": "Neues Muster",
-      "empty": "Noch keine Muster. Fang mit einer Bank-E-Mail unten an: Muster aus dieser E-Mail erstellen.",
+      "empty": "Noch keine Muster. Erstelle eines aus einer Bank-E-Mail unter Neueste E-Mails.",
       "noMails": "Ein Muster entsteht aus einer echten Bank-E-Mail: Warte, bis eine im Ordner ankommt.",
       "drag": "Zum Umsortieren ziehen: Das erste Muster, das die E-Mail liest, gewinnt",
       "edit": "Bearbeiten",

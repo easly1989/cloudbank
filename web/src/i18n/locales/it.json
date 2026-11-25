@@ -1276,7 +1276,7 @@
     "patterns": {
       "title": "Schemi",
       "new": "Nuovo schema",
-      "empty": "Ancora nessuno schema. Parti da una mail della banca qui sotto: Crea uno schema da questa mail.",
+      "empty": "Ancora nessuno schema. Creane uno da una mail della banca in Ultime mail.",
       "noMails": "Uno schema nasce da una mail vera della banca: aspetta che ne arrivi una nella cartella.",
       "drag": "Trascina per cambiare l'ordine: vince il primo schema che legge la mail",
       "edit": "Modifica",
