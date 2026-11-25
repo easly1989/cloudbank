@@ -2187,9 +2187,10 @@
     "subtitle": "Uma carteira guarda as suas contas, categorias e lançamentos — como um arquivo do HomeBank.",
     "title": "Nome da carteira",
     "ownerName": "Nome do titular",
+    "ownerNamePlaceholder": "Seu nome",
     "baseCurrency": "Moeda base",
     "scheduleAhead": "Registrar os agendamentos com antecedência",
-    "scheduleAheadHint": "Lançar automaticamente os próximos agendamentos com esta antecedência (como no HomeBank).",
+    "scheduleAheadHint": "Lançar os agendamentos com esta antecedência.",
     "scheduleAheadOff": "Desativado",
     "scheduleAhead1": "1 mês antes",
     "scheduleAhead2": "2 meses antes",
@@ -2204,7 +2205,11 @@
     "deleteConfirmLabel": "Digite “{{title}}” para confirmar a exclusão.",
     "delete": "Excluir carteira",
     "billsCategory": "Categoria das contas",
-    "billsCategoryHint": "Só os agendamentos desta categoria contam como contas: no quadro “Contas” do painel e no aviso de contas vencidas. Deixe “Todas as saídas” para contar todos.",
+    "billsCategoryHint": "Quais agendamentos contam como contas a pagar, no quadro “Contas” e nos avisos.",
+    "groupWallet": "A carteira",
+    "groupWalletHint": "Como se chama e de quem é, como em um arquivo do HomeBank.",
+    "groupSchedules": "Lançamentos agendados",
+    "groupSchedulesHint": "O que o CloudBank registra sozinho, e o que vale como conta a pagar.",
     "billsCategoryNone": "Todas as saídas",
     "label": "Carteira"
   },
@@ -3252,7 +3257,12 @@
     "apiDocsHint": "A API desta instalação",
     "support": "Apoie o CloudBank",
     "supportHint": "Buy Me a Coffee e as outras formas",
-    "homebankHint": "O app de desktop do qual o CloudBank é uma versão web"
+    "homebankHint": "O app de desktop do qual o CloudBank é uma versão web",
+    "groupVersion": "Versão",
+    "groupVersionHint": "A versão instalada neste servidor.",
+    "groupLicence": "Licença",
+    "groupLinks": "Links",
+    "groupLinksHint": "Guia, código-fonte e API."
   },
   "pageError": {
     "title": "Esta página parou de funcionar",
