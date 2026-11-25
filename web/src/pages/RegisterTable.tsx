@@ -532,6 +532,8 @@ export function RegisterTable({
     const pressed = layout.grow === id;
     if (pressed && id === "payee") return;
     setGrowNotice(null);
+    // A drag whose save has not settled would keep the width this drops.
+    setDragWidths(null);
     const patch: Partial<Preferences> = {
       registerGrowColumn: pressed || id === "payee" ? undefined : (id as "category" | "note"),
     };
