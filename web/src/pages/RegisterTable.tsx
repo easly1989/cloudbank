@@ -317,9 +317,22 @@ export function RegisterTable({
   const growChoice = user?.preferences?.registerGrowColumn;
   const [growNotice, setGrowNotice] = useState<{ key: string; id: string } | null>(null);
 
+  // Settling here, not in a per-call onSettled: react-query runs that one only
+  // for the latest mutate, so a visibility toggle or a Move during a drag save
+  // would have left the dragged widths on screen for good.
+  // The notice belongs to the open Columns panel: closing (or opening) it clears it.
+  useEffect(() => setGrowNotice(null), [panels.columns]);
+
   const persistPrefs = useMutation({
     mutationFn: (patch: Partial<Preferences>) => savePreferences(qc, patch),
+    onSettled: () => setDragWidths(null),
   });
+
+  // When the chosen column loses the free width, the notice names what really
+  // takes it: Payee, or nobody if Payee is hidden or dragged too.
+  const visibleIds = columnOrder.filter((id) => columnVisibility[id] !== false);
+  const growFallback = (visible: string[], w: Record<string, number>) =>
+    columnTracks(visible, undefined, w, COL_WIDTH).grow;
 
   // The drag reports the width it ended on: the handler it calls was made
   // when the drag began, so reading dragWidths there would see the empty
@@ -334,13 +347,14 @@ export function RegisterTable({
     const next = { ...(savedWidths ?? {}), [id]: width };
     setDragWidths(next);
     const dropGrow = id === growChoice;
-    if (dropGrow) setGrowNotice({ key: "register.growDragged", id });
+    if (dropGrow)
+      setGrowNotice({
+        key: growFallback(visibleIds, next) ? "register.growDragged" : "register.growDraggedNone",
+        id,
+      });
     persistPrefs.mutate(
       { registerColumnWidths: next, ...(dropGrow ? { registerGrowColumn: undefined } : {}) },
-      {
-        onError: notifyError,
-        onSettled: () => setDragWidths(null),
-      },
+      { onError: notifyError },
     );
   };
 
@@ -503,8 +517,17 @@ export function RegisterTable({
     onColumnVisibilityChange: (updater) => {
       const next = typeof updater === "function" ? updater(columnVisibility) : updater;
       const dropGrow = growChoice != null && next[growChoice] === false;
-      if (dropGrow) setGrowNotice({ key: "register.growHidden", id: growChoice });
-      else if (growNotice?.key === "register.growHidden" && next[growNotice.id])
+      if (dropGrow)
+        setGrowNotice({
+          key: growFallback(
+            visibleIds.filter((id) => id !== growChoice),
+            widths,
+          )
+            ? "register.growHidden"
+            : "register.growHiddenNone",
+          id: growChoice,
+        });
+      else if (growNotice?.key.startsWith("register.growHidden") && next[growNotice.id])
         setGrowNotice({ key: "register.growShownAgain", id: growNotice.id });
       persistPrefs.mutate({
         registerColumns: next as Record<string, boolean>,
@@ -801,14 +824,14 @@ export function RegisterTable({
         />
         {t("register.growHint")}
       </Text>
-      {growNotice && (
-        <Text fz="xs" c={attentionColor} role="status">
-          {t(growNotice.key, {
+      {/* Always mounted, so a screen reader is watching it when the text lands. */}
+      <Text fz="xs" c={attentionColor} role="status">
+        {growNotice &&
+          t(growNotice.key, {
             name: t(COL_LABEL[growNotice.id]),
             payee: t(COL_LABEL.payee),
           })}
-        </Text>
-      )}
+      </Text>
       <Group className="cb-panel-actions" justify="flex-end" mt="xs" gap="xs">
         <Button
           variant="default"

@@ -1549,6 +1549,8 @@
     "growHint": "A coluna ativada ocupa a largura livre, em todas as contas.",
     "growHidden": "{{name}} oculta: {{payee}} volta a ocupar a largura livre. Mostrá-la de novo não a alarga.",
     "growDragged": "{{name}} arrastada: agora é fixa, e {{payee}} volta a ocupar a largura livre.",
+    "growHiddenNone": "{{name}} oculta: agora nenhuma coluna ocupa a largura livre. Mostrá-la de novo não a alarga.",
+    "growDraggedNone": "{{name}} arrastada: agora é fixa, e nenhuma coluna ocupa a largura livre.",
     "growShownAgain": "{{name}} está visível de novo, mas fixa: ative ↔ outra vez para alargá-la.",
     "newEntry": "Novo lançamento — comece a digitar ou pressione N",
     "needsCategory": "Precisa de categoria",

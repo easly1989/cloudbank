@@ -1549,6 +1549,8 @@
     "growHint": "La columna activada ocupa el ancho libre, en todas las cuentas.",
     "growHidden": "{{name}} oculta: {{payee}} vuelve a ocupar el ancho libre. Volver a mostrarla no la ensancha.",
     "growDragged": "{{name}} arrastrada: ahora es fija, y {{payee}} vuelve a ocupar el ancho libre.",
+    "growHiddenNone": "{{name}} oculta: ahora ninguna columna ocupa el ancho libre. Volver a mostrarla no la ensancha.",
+    "growDraggedNone": "{{name}} arrastrada: ahora es fija, y ninguna columna ocupa el ancho libre.",
     "growShownAgain": "{{name}} vuelve a estar visible, pero fija: activa ↔ de nuevo para ensancharla.",
     "newEntry": "Nuevo movimiento: empieza a escribir o pulsa N",
     "needsCategory": "Sin categoría",

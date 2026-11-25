@@ -1549,6 +1549,8 @@
     "growHint": "La colonne activée prend la largeur libre, dans tous les comptes.",
     "growHidden": "{{name}} masquée : {{payee}} reprend la largeur libre. La réafficher ne l’élargit pas.",
     "growDragged": "{{name}} redimensionnée : elle est fixe, et {{payee}} reprend la largeur libre.",
+    "growHiddenNone": "{{name}} masquée : plus aucune colonne ne prend la largeur libre. La réafficher ne l’élargit pas.",
+    "growDraggedNone": "{{name}} redimensionnée : elle est fixe, et aucune colonne ne prend la largeur libre.",
     "growShownAgain": "{{name}} est de nouveau visible, mais fixe : réactivez ↔ pour l’élargir.",
     "newEntry": "Nouvelle saisie — commencez à taper, ou appuyez sur N",
     "needsCategory": "Sans catégorie",

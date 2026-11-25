@@ -1549,6 +1549,8 @@
     "growHint": "La colonna accesa prende lo spazio libero, in tutti i conti.",
     "growHidden": "{{name}} nascosta: si allarga di nuovo {{payee}}. Rimostrarla non la riallarga.",
     "growDragged": "{{name}} trascinata: ora è fissa, si allarga di nuovo {{payee}}.",
+    "growHiddenNone": "{{name}} nascosta: ora nessuna colonna prende la larghezza libera. Rimostrarla non la riallarga.",
+    "growDraggedNone": "{{name}} trascinata: ora è fissa, e nessuna colonna prende la larghezza libera.",
     "growShownAgain": "{{name}} di nuovo visibile, ma fissa: riaccendi ↔ per allargarla.",
     "newEntry": "Nuova riga — scrivi, oppure premi N",
     "needsCategory": "Serve una categoria",

@@ -1549,6 +1549,8 @@
     "growHint": "The column turned on takes the free width, in every account.",
     "growHidden": "{{name}} hidden: {{payee}} takes the free width again. Showing it does not widen it.",
     "growDragged": "{{name}} dragged: it is fixed now, and {{payee}} takes the free width again.",
+    "growHiddenNone": "{{name}} hidden: no column takes the free width now. Showing it does not widen it.",
+    "growDraggedNone": "{{name}} dragged: it is fixed now, and no column takes the free width.",
     "growShownAgain": "{{name}} is visible again, but fixed: turn ↔ back on to widen it.",
     "newEntry": "New entry — start typing, or press N",
     "needsCategory": "Needs a category",
