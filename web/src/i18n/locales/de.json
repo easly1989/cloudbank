@@ -1543,7 +1543,7 @@
     "import": "Importieren",
     "moreActions": "Weitere Aktionen",
     "search": "Buchungen durchsuchen",
-    "columnsHint": "Deine Auswahl, gespeichert.",
+    "columnsHint": "Nur für dich, und beim nächsten Mal wieder da",
     "columnsReset": "Zurücksetzen",
     "growColumn": "{{name}} nimmt die freie Breite ein",
     "growNeedsShown": "Blende {{name}} zuerst ein, damit sie die freie Breite einnimmt",

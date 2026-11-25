@@ -1543,7 +1543,7 @@
     "import": "Importer",
     "moreActions": "Plus d’actions",
     "search": "Chercher dans les opérations",
-    "columnsHint": "Les vôtres, et mémorisées.",
+    "columnsHint": "Rien que pour vous, et gardées pour la prochaine fois",
     "columnsReset": "Réinitialiser",
     "growColumn": "{{name}} prend la largeur libre",
     "growNeedsShown": "Affichez d’abord {{name}} pour qu’elle prenne la largeur libre",

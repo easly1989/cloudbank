@@ -345,6 +345,13 @@ body {
   outline-offset: -2px;
 }
 
+/* The Columns panel's ↔ toggle: a lit one is filled with the primary colour, so
+   a primary focus ring beside it read as a second lit toggle. The ring takes
+   the text colour instead. */
+.cb-grow-toggle:focus-visible {
+  outline-color: var(--mantine-color-text);
+}
+
 /* The register's select column as one press target (see RegisterTable). It
    fills its grid track top to bottom and leaves the checkbox where it was. */
 .cb-row-select {

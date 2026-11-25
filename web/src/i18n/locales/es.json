@@ -1543,7 +1543,7 @@
     "import": "Importar",
     "moreActions": "Más acciones",
     "search": "Buscar en los movimientos",
-    "columnsHint": "Las tuyas, y recordadas.",
+    "columnsHint": "Solo para ti, y se guardan para la próxima vez",
     "columnsReset": "Restablecer",
     "growColumn": "{{name}} ocupa el ancho libre",
     "growNeedsShown": "Muestra primero {{name}} para que ocupe el ancho libre",

@@ -379,6 +379,8 @@ export function RegisterTable({
   );
   const allSelected = display.length > 0 && display.every((r) => selected.has(r.id));
 
+  // The note has its own column when shown, so the payee stops repeating it.
+  const noteShown = !!columnVisibility.note;
   const columns = useMemo<Column[]>(() => {
     const col = createColumnHelper<RegisterRow>();
     // Heterogeneous column value types don't widen to the loose ColumnDef the
@@ -429,7 +431,7 @@ export function RegisterTable({
                 </Tooltip>
               ) : undefined
             }
-            sub={leadSub("payee", row.original, t)}
+            sub={leadSub("payee", row.original, t, noteShown)}
           />
         ),
       }),
@@ -508,7 +510,7 @@ export function RegisterTable({
       }),
     ];
     return defs as unknown as Column[];
-  }, [t, fmt, fmtDate, accountName, onToggleStatus, todayStr]);
+  }, [t, fmt, fmtDate, accountName, onToggleStatus, todayStr, noteShown]);
 
   const table = useReactTable({
     data: display,
@@ -776,7 +778,8 @@ export function RegisterTable({
                   color={layout.grow === id ? undefined : "gray"}
                   c={layout.grow === id ? undefined : "dimmed"}
                   disabled={!columnVisibility[id]}
-                  style={!columnVisibility[id] ? { background: "none", opacity: 0.4 } : undefined}
+                  className="cb-grow-toggle"
+                  style={!columnVisibility[id] ? { background: "none", opacity: 0.3 } : undefined}
                   aria-pressed={layout.grow === id}
                   aria-label={t(
                     columnVisibility[id] ? "register.growColumn" : "register.growNeedsShown",
@@ -1431,7 +1434,7 @@ interface Sub {
 /**
  * What goes under the lead line, if anything.
  *
- * The memo when the payee leads, and — when there is nothing else to say and
+ * The memo when the payee leads (unless the Note column shows it), and — when there is nothing else to say and
  * the transaction is missing its category — the fact that it needs one. Saying
  * it here rather than leaving the category cell blank is what turns an empty
  * cell into something the reader can act on.
@@ -1440,8 +1443,9 @@ function leadSub(
   column: "payee" | "note",
   row: RegisterRow,
   t: (k: string) => string,
+  noteShown = false,
 ): Sub | undefined {
-  if (column === "payee" && row.memo) return { text: row.memo };
+  if (column === "payee" && row.memo && !noteShown) return { text: row.memo };
   if (row.transferId == null && !row.isSplit && !row.categoryName)
     return { text: t("register.needsCategory"), attention: true };
   return undefined;

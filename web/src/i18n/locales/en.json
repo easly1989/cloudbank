@@ -1543,7 +1543,7 @@
     "import": "Import",
     "moreActions": "More actions",
     "search": "Search the register",
-    "columnsHint": "Yours, and remembered.",
+    "columnsHint": "Only for you, and kept for next time",
     "columnsReset": "Reset",
     "growColumn": "{{name}} takes the free width",
     "growNeedsShown": "Show {{name}} first to let it take the free width",

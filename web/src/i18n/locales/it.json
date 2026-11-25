@@ -1543,7 +1543,7 @@
     "import": "Importa",
     "moreActions": "Altre azioni",
     "search": "Cerca nel registro",
-    "columnsHint": "Tue, e ricordate.",
+    "columnsHint": "Solo per te, e restano per la prossima volta",
     "columnsReset": "Ripristina",
     "growColumn": "{{name}} si allarga",
     "growNeedsShown": "Mostra prima {{name}} per farla allargare",
