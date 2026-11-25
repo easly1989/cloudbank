@@ -1216,6 +1216,22 @@
     "loadingFolders": "Cargando las carpetas…",
     "recent": "Últimos correos",
     "recentEmpty": "Todavía no se ha leído ningún correo. Aquí aparecen los que lleguen a la carpeta a partir de ahora.",
+    "latest": {
+      "read_one": "{{count}} leído",
+      "read_other": "{{count}} leídos",
+      "toReview_one": "{{count}} por revisar",
+      "toReview_other": "{{count}} por revisar",
+      "openRead_one": "Mostrar correos: {{count}} leído",
+      "openRead_other": "Mostrar correos: {{count}} leídos",
+      "openReview_one": "Mostrar correos: {{count}} por revisar",
+      "openReview_other": "Mostrar correos: {{count}} por revisar",
+      "none": "ninguno todavía",
+      "filterLabel": "Qué correos",
+      "filterReview": "Por revisar",
+      "filterRead": "Leídos",
+      "filterAll": "Todos",
+      "nothingToReview": "Nada que revisar: cada correo se convirtió en un movimiento o ya estaba en los movimientos."
+    },
     "outcome": {
       "unrecognized": "No reconocido",
       "unverified": "No autenticado",
@@ -1260,7 +1276,7 @@
     "patterns": {
       "title": "Patrones",
       "new": "Nuevo patrón",
-      "empty": "Todavía no hay patrones. Empieza con un correo del banco de abajo: Crear un patrón con este correo.",
+      "empty": "Todavía no hay patrones. Crea uno con un correo del banco en Últimos correos.",
       "noMails": "Un patrón nace de un correo real del banco: espera a que llegue uno a la carpeta.",
       "drag": "Arrastra para cambiar el orden: gana el primer patrón que lee el correo",
       "edit": "Editar",

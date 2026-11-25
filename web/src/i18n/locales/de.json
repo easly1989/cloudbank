@@ -1216,6 +1216,22 @@
     "loadingFolders": "Ordner werden geladen…",
     "recent": "Neueste E-Mails",
     "recentEmpty": "Noch keine E-Mail gelesen. Hier erscheinen die E-Mails, die ab jetzt im Ordner ankommen.",
+    "latest": {
+      "read_one": "{{count}} gelesen",
+      "read_other": "{{count}} gelesen",
+      "toReview_one": "{{count}} zu prüfen",
+      "toReview_other": "{{count}} zu prüfen",
+      "openRead_one": "Mails anzeigen: {{count}} gelesen",
+      "openRead_other": "Mails anzeigen: {{count}} gelesen",
+      "openReview_one": "Mails anzeigen: {{count}} zu prüfen",
+      "openReview_other": "Mails anzeigen: {{count}} zu prüfen",
+      "none": "noch keine",
+      "filterLabel": "Welche E-Mails",
+      "filterReview": "Zu prüfen",
+      "filterRead": "Gelesen",
+      "filterAll": "Alle",
+      "nothingToReview": "Nichts zu prüfen: Jede E-Mail wurde zu einer Buchung oder war schon in den Buchungen."
+    },
     "outcome": {
       "unrecognized": "Nicht erkannt",
       "unverified": "Nicht authentifiziert",
@@ -1260,7 +1276,7 @@
     "patterns": {
       "title": "Muster",
       "new": "Neues Muster",
-      "empty": "Noch keine Muster. Fang mit einer Bank-E-Mail unten an: Muster aus dieser E-Mail erstellen.",
+      "empty": "Noch keine Muster. Erstelle eines aus einer Bank-E-Mail unter Neueste E-Mails.",
       "noMails": "Ein Muster entsteht aus einer echten Bank-E-Mail: Warte, bis eine im Ordner ankommt.",
       "drag": "Zum Umsortieren ziehen: Das erste Muster, das die E-Mail liest, gewinnt",
       "edit": "Bearbeiten",

@@ -1216,6 +1216,22 @@
     "loadingFolders": "Loading the folders…",
     "recent": "Latest mails",
     "recentEmpty": "No mail read yet. The mails that arrive in the folder from now on appear here.",
+    "latest": {
+      "read_one": "{{count}} read",
+      "read_other": "{{count}} read",
+      "toReview_one": "{{count}} to review",
+      "toReview_other": "{{count}} to review",
+      "openRead_one": "Show mails: {{count}} read",
+      "openRead_other": "Show mails: {{count}} read",
+      "openReview_one": "Show mails: {{count}} to review",
+      "openReview_other": "Show mails: {{count}} to review",
+      "none": "none yet",
+      "filterLabel": "Which mails",
+      "filterReview": "To review",
+      "filterRead": "Read",
+      "filterAll": "All",
+      "nothingToReview": "Nothing to review: every mail became a transaction or was already in the register."
+    },
     "outcome": {
       "unrecognized": "Not recognised",
       "unverified": "Not authenticated",
@@ -1260,7 +1276,7 @@
     "patterns": {
       "title": "Patterns",
       "new": "New pattern",
-      "empty": "No patterns yet. Start from a bank mail below: Create a pattern from this mail.",
+      "empty": "No patterns yet. Make one from a bank mail in Latest mails.",
       "noMails": "A pattern starts from a real bank mail: wait for one to arrive in the folder.",
       "drag": "Drag to change the order: the first pattern that reads a mail wins",
       "edit": "Edit",

@@ -1216,6 +1216,22 @@
     "loadingFolders": "Carregando as pastas…",
     "recent": "Últimos e-mails",
     "recentEmpty": "Nenhum e-mail lido ainda. Os e-mails que chegarem à pasta de agora em diante aparecem aqui.",
+    "latest": {
+      "read_one": "{{count}} lido",
+      "read_other": "{{count}} lidos",
+      "toReview_one": "{{count}} a revisar",
+      "toReview_other": "{{count}} a revisar",
+      "openRead_one": "Mostrar e-mails: {{count}} lido",
+      "openRead_other": "Mostrar e-mails: {{count}} lidos",
+      "openReview_one": "Mostrar e-mails: {{count}} a revisar",
+      "openReview_other": "Mostrar e-mails: {{count}} a revisar",
+      "none": "nenhum ainda",
+      "filterLabel": "Quais e-mails",
+      "filterReview": "A revisar",
+      "filterRead": "Lidos",
+      "filterAll": "Todos",
+      "nothingToReview": "Nada a revisar: cada e-mail virou um lançamento ou já estava nos lançamentos."
+    },
     "outcome": {
       "unrecognized": "Não reconhecido",
       "unverified": "Não autenticado",
@@ -1260,7 +1276,7 @@
     "patterns": {
       "title": "Padrões",
       "new": "Novo padrão",
-      "empty": "Ainda não há padrões. Comece por um e-mail do banco abaixo: Criar um padrão a partir deste e-mail.",
+      "empty": "Ainda não há padrões. Crie um a partir de um e-mail do banco em Últimos e-mails.",
       "noMails": "Um padrão nasce de um e-mail real do banco: espere chegar um na pasta.",
       "drag": "Arraste para mudar a ordem: vence o primeiro padrão que lê o e-mail",
       "edit": "Editar",

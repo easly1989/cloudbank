@@ -136,7 +136,11 @@ by selecting text in it.
 
 ### Making a pattern
 
-Under **Latest mails**, a mail no pattern reads shows **Not recognised**, with
+**Latest mails** starts closed. Its badge counts the mails **read** (they became
+a transaction, or it was already in the register) and those **to review** (no
+pattern read them, the sender was not authenticated, or the pattern failed);
+click the title to open the list, or a half of the badge to open it on those
+mails. A mail no pattern reads shows **Not recognised**, with
 **Create a pattern from this mail**. The first time, the editor offers a short
 tour of its parts at its top; the **?** in its header plays it again.
 

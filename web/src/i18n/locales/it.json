@@ -1216,6 +1216,22 @@
     "loadingFolders": "Carico le cartelle…",
     "recent": "Ultime mail",
     "recentEmpty": "Nessuna mail letta finora. Qui compaiono le mail che arrivano nella cartella da adesso in poi.",
+    "latest": {
+      "read_one": "{{count}} letta",
+      "read_other": "{{count}} lette",
+      "toReview_one": "{{count}} da rivedere",
+      "toReview_other": "{{count}} da rivedere",
+      "openRead_one": "Mostra le mail: {{count}} letta",
+      "openRead_other": "Mostra le mail: {{count}} lette",
+      "openReview_one": "Mostra le mail: {{count}} da rivedere",
+      "openReview_other": "Mostra le mail: {{count}} da rivedere",
+      "none": "nessuna finora",
+      "filterLabel": "Quali mail",
+      "filterReview": "Da rivedere",
+      "filterRead": "Lette",
+      "filterAll": "Tutte",
+      "nothingToReview": "Niente da rivedere: ogni mail è diventata una transazione o era già nel registro."
+    },
     "outcome": {
       "unrecognized": "Non riconosciuta",
       "unverified": "Non autenticata",
@@ -1260,7 +1276,7 @@
     "patterns": {
       "title": "Schemi",
       "new": "Nuovo schema",
-      "empty": "Ancora nessuno schema. Parti da una mail della banca qui sotto: Crea uno schema da questa mail.",
+      "empty": "Ancora nessuno schema. Creane uno da una mail della banca in Ultime mail.",
       "noMails": "Uno schema nasce da una mail vera della banca: aspetta che ne arrivi una nella cartella.",
       "drag": "Trascina per cambiare l'ordine: vince il primo schema che legge la mail",
       "edit": "Modifica",
