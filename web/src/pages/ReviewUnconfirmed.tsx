@@ -548,11 +548,6 @@ export function ReviewUnconfirmed({
               <Text size="sm" fw={600}>
                 {t("review.snooze.list", { count: snoozed.length })}
               </Text>
-              {!phone && (
-                <Text size="xs" c="dimmed">
-                  {t("review.snooze.listHint")}
-                </Text>
-              )}
               <IconChevronDown
                 size={16}
                 style={{
