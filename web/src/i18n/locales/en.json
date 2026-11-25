@@ -1546,6 +1546,7 @@
     "columnsHint": "Yours, and remembered.",
     "columnsReset": "Reset",
     "growColumn": "{{name}} takes the free width",
+    "growNeedsShown": "Show {{name}} first to let it take the free width",
     "growHint": "The column turned on takes the free width, in every account.",
     "growHidden": "{{name}} hidden: {{payee}} takes the free width again. Showing it does not widen it.",
     "growDragged": "{{name}} dragged: it is fixed now, and {{payee}} takes the free width again.",

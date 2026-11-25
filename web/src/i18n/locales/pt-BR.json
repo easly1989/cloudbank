@@ -1546,6 +1546,7 @@
     "columnsHint": "Suas, e lembradas.",
     "columnsReset": "Redefinir",
     "growColumn": "{{name}} ocupa a largura livre",
+    "growNeedsShown": "Mostre {{name}} primeiro para que ocupe a largura livre",
     "growHint": "A coluna ativada ocupa a largura livre, em todas as contas.",
     "growHidden": "{{name}} oculta: {{payee}} volta a ocupar a largura livre. Mostrá-la de novo não a alarga.",
     "growDragged": "{{name}} arrastada: agora é fixa, e {{payee}} volta a ocupar a largura livre.",

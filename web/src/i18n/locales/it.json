@@ -1546,6 +1546,7 @@
     "columnsHint": "Tue, e ricordate.",
     "columnsReset": "Ripristina",
     "growColumn": "{{name}} si allarga",
+    "growNeedsShown": "Mostra prima {{name}} per farla allargare",
     "growHint": "La colonna accesa prende lo spazio libero, in tutti i conti.",
     "growHidden": "{{name}} nascosta: si allarga di nuovo {{payee}}. Rimostrarla non la riallarga.",
     "growDragged": "{{name}} trascinata: ora è fissa, si allarga di nuovo {{payee}}.",

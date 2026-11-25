@@ -1546,6 +1546,7 @@
     "columnsHint": "Las tuyas, y recordadas.",
     "columnsReset": "Restablecer",
     "growColumn": "{{name}} ocupa el ancho libre",
+    "growNeedsShown": "Muestra primero {{name}} para que ocupe el ancho libre",
     "growHint": "La columna activada ocupa el ancho libre, en todas las cuentas.",
     "growHidden": "{{name}} oculta: {{payee}} vuelve a ocupar el ancho libre. Volver a mostrarla no la ensancha.",
     "growDragged": "{{name}} arrastrada: ahora es fija, y {{payee}} vuelve a ocupar el ancho libre.",

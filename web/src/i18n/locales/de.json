@@ -1546,6 +1546,7 @@
     "columnsHint": "Deine Auswahl, gespeichert.",
     "columnsReset": "Zurücksetzen",
     "growColumn": "{{name}} nimmt die freie Breite ein",
+    "growNeedsShown": "Blende {{name}} zuerst ein, damit sie die freie Breite einnimmt",
     "growHint": "Die eingeschaltete Spalte nimmt die freie Breite ein, in allen Konten.",
     "growHidden": "{{name}} ausgeblendet: {{payee}} nimmt wieder die freie Breite ein. Einblenden macht sie nicht wieder breit.",
     "growDragged": "{{name}} gezogen: Die Spalte ist jetzt fest, {{payee}} nimmt wieder die freie Breite ein.",

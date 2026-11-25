@@ -1546,6 +1546,7 @@
     "columnsHint": "Les vôtres, et mémorisées.",
     "columnsReset": "Réinitialiser",
     "growColumn": "{{name}} prend la largeur libre",
+    "growNeedsShown": "Affichez d’abord {{name}} pour qu’elle prenne la largeur libre",
     "growHint": "La colonne activée prend la largeur libre, dans tous les comptes.",
     "growHidden": "{{name}} masquée : {{payee}} reprend la largeur libre. La réafficher ne l’élargit pas.",
     "growDragged": "{{name}} redimensionnée : elle est fixe, et {{payee}} reprend la largeur libre.",

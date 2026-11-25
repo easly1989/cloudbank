@@ -768,14 +768,24 @@ export function RegisterTable({
             />
             <Group gap={8} wrap="nowrap">
               {GROW_COLUMNS.includes(id) ? (
+                // On, filled like the Columns button itself: a light tint on the
+                // dark panel measured 1.2:1 and read as off. Off, a dimmed icon.
                 <ActionIcon
-                  variant={layout.grow === id ? "light" : "subtle"}
+                  variant={layout.grow === id ? "filled" : "subtle"}
                   size={24}
                   color={layout.grow === id ? undefined : "gray"}
+                  c={layout.grow === id ? undefined : "dimmed"}
                   disabled={!columnVisibility[id]}
+                  style={!columnVisibility[id] ? { background: "none", opacity: 0.4 } : undefined}
                   aria-pressed={layout.grow === id}
-                  aria-label={t("register.growColumn", { name: t(COL_LABEL[id]) })}
-                  title={t("register.growColumn", { name: t(COL_LABEL[id]) })}
+                  aria-label={t(
+                    columnVisibility[id] ? "register.growColumn" : "register.growNeedsShown",
+                    { name: t(COL_LABEL[id]) },
+                  )}
+                  title={t(
+                    columnVisibility[id] ? "register.growColumn" : "register.growNeedsShown",
+                    { name: t(COL_LABEL[id]) },
+                  )}
                   onClick={() => chooseGrow(id)}
                 >
                   <IconArrowsHorizontal size={14} />
@@ -825,7 +835,7 @@ export function RegisterTable({
         {t("register.growHint")}
       </Text>
       {/* Always mounted, so a screen reader is watching it when the text lands. */}
-      <Text fz="xs" c={attentionColor} role="status">
+      <Text fz="xs" c="dimmed" role="status">
         {growNotice &&
           t(growNotice.key, {
             name: t(COL_LABEL[growNotice.id]),
