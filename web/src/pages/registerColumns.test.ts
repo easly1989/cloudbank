@@ -1,7 +1,33 @@
 import { describe, expect, it } from "vitest";
 
-import { ALL_COLUMNS, columnTracks, moveColumn, normalizeColumnOrder } from "./registerColumns";
+import {
+  ALL_COLUMNS,
+  columnTracks,
+  moveColumn,
+  normalizeColumnOrder,
+  pinnedColumns,
+} from "./registerColumns";
 import { ROW_COLUMNS } from "./registerTheme";
+
+describe("pinnedColumns", () => {
+  it("pins amount and balance when they end the row", () => {
+    expect(pinnedColumns(["date", "payee", "note", "amount", "runningBalance"])).toEqual([
+      "amount",
+      "runningBalance",
+    ]);
+  });
+
+  it("leaves an amount moved into the middle to scroll", () => {
+    expect(pinnedColumns(["date", "amount", "payee", "runningBalance"])).toEqual([
+      "runningBalance",
+    ]);
+    expect(pinnedColumns(["amount", "runningBalance", "date", "payee"])).toEqual([]);
+  });
+
+  it("pins the amount alone when the balance is hidden", () => {
+    expect(pinnedColumns(["date", "payee", "amount"])).toEqual(["amount"]);
+  });
+});
 
 describe("normalizeColumnOrder", () => {
   it("ships with every column when nothing was saved", () => {

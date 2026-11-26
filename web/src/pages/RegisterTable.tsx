@@ -72,6 +72,7 @@ import {
   GROW_COLUMNS,
   moveColumn,
   normalizeColumnOrder,
+  pinnedColumns,
 } from "./registerColumns";
 import {
   BAND_INSET,
@@ -542,13 +543,12 @@ export function RegisterTable({
 
   // Build the grid template from the currently visible columns (checkbox +
   // visible data columns + actions), so hidden columns reclaim their space.
-  const layout = columnTracks(
-    table.getVisibleLeafColumns().map((c) => c.id),
-    growChoice,
-    widths,
-    COL_WIDTH,
-  );
+  const visibleCols = table.getVisibleLeafColumns().map((c) => c.id);
+  const layout = columnTracks(visibleCols, growChoice, widths, COL_WIDTH);
   const tracks = [ROW_SELECT_WIDTH, ...layout.tracks, ROW_ACTIONS_WIDTH];
+  // The cells that stay at the card's right edge when the row scrolls sideways
+  // (app.css, .cb-pin), with the actions after them.
+  const pinned = new Set(pinnedColumns(visibleCols));
 
   // Pick the column that takes the free width. Picking one drops the width it
   // was dragged to, or it would stay fixed; pressing the lit one again hands
@@ -583,6 +583,22 @@ export function RegisterTable({
     tracks.reduce((sum, track) => sum + trackFloor(track), 0) +
     ROW_GAP * (tracks.length - 1) +
     BAND_INSET * 2;
+
+  // Whether the pinned cells stay at the card's right edge (app.css, .cb-pin):
+  // only while the row is wider than the card, so a card that fits draws and
+  // antialiases its text exactly as it did, and only on a card of 576px or
+  // more, below which the pinned cells (374px) would leave nothing to scroll.
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [pinning, setPinning] = useState(false);
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    const check = () => setPinning(card.clientWidth >= 576 && card.scrollWidth > card.clientWidth);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(card);
+    return () => ro.disconnect();
+  }, [minRowWidth, isEmpty]);
 
   // Whether a row's lead column carries a second line, which decides its height.
   const baseRowHeight = useCallback(
@@ -907,10 +923,20 @@ export function RegisterTable({
         </Center>
       ) : (
         <Box
+          ref={cardRef}
+          className={pinning ? "cb-pinning" : undefined}
           style={{
             overflowX: "auto",
             flex: 1,
             minWidth: 0,
+            // How far the pinned cells travel, and how wide they are with their
+            // gaps and the row's inset (app.css, .cb-pin).
+            ["--cb-row-min" as string]: `${minRowWidth}px`,
+            ["--cb-pin-width" as string]: `${
+              tracks
+                .slice(-1 - pinned.size)
+                .reduce((sum, track) => sum + trackFloor(track) + ROW_GAP, 0) + BAND_INSET
+            }px`,
             // The width a reconciled line's text keeps to (see markLine).
             containerType: "inline-size",
             // The ledger is a card, and every band below sits inside it.
@@ -924,12 +950,21 @@ export function RegisterTable({
               a fact about these rows and not a page-level announcement. */}
             {notice}
             <Box
+              // A heading Tab lands on under the pinned cells is on screen as
+              // far as the browser can tell, so it would stay hidden: scroll it
+              // clear of them (scroll-margin, app.css).
+              onFocus={(e) => {
+                if (pinning && e.target.matches(".cb-sort:focus-visible"))
+                  e.target.scrollIntoView({ block: "nearest", inline: "nearest" });
+              }}
               style={{
                 display: "grid",
                 gridTemplateColumns: gridTemplate,
                 gap: ROW_GAP,
                 padding: `${BAND_PADDING.header}px ${BAND_INSET}px`,
                 background: "var(--cb-band-header)",
+                ["--cb-pin-bg" as string]: "var(--cb-band-header)",
+                ["--cb-pin-pad" as string]: `${BAND_PADDING.header}px`,
                 fontWeight: ROW_TYPE.header.fw,
                 fontSize: ROW_TYPE.header.fz,
                 borderBottom: "1px solid var(--cb-ledger-border)",
@@ -955,6 +990,7 @@ export function RegisterTable({
                 <ColumnHeader
                   key={h.id}
                   id={h.id}
+                  pinned={pinned.has(h.id)}
                   sort={sort}
                   onSort={toggleSort}
                   onResize={(width) => setDragWidths({ ...(savedWidths ?? {}), [h.id]: width })}
@@ -963,6 +999,9 @@ export function RegisterTable({
                   {flexRender(h.column.columnDef.header, h.getContext())}
                 </ColumnHeader>
               ))}
+              {/* The actions track has no heading, but pinned it still has to
+                cover the headings that scroll under it. */}
+              <span className="cb-pin" />
             </Box>
             {/* The way in is the first line of the ledger, where the next
               transaction will actually land — not a form above it. "N" is
@@ -1032,12 +1071,23 @@ export function RegisterTable({
                   const after = markAfter && vi.index === tableRows.length - 1 ? markAfter : null;
                   // A line above the row pushes it down; one after it sits below.
                   const rowTop = vi.start + (above ? DIVIDER_HEIGHT : 0);
+                  const tint = selected.has(r.id)
+                    ? "var(--mantine-color-blue-light)"
+                    : landed
+                      ? "var(--cb-arrival-tint)"
+                      : onCursor
+                        ? "var(--mantine-color-default-hover)"
+                        : undefined;
                   return (
                     <Fragment key={row.id}>
                       {above && markLine(above, vi.start)}
                       {after && markLine(after, rowTop + baseRowHeight(vi.index))}
                       <div
-                        className={r.id === arrivedId ? "cb-row-arrived" : undefined}
+                        className={
+                          [r.id === arrivedId && "cb-row-arrived", landed && "cb-row-landed"]
+                            .filter(Boolean)
+                            .join(" ") || undefined
+                        }
                         onClick={() => setCursorId(r.id)}
                         onDoubleClick={() => onEdit(r)}
                         onContextMenu={(e) => {
@@ -1064,16 +1114,9 @@ export function RegisterTable({
                             r.date > todayStr
                               ? "3px solid var(--mantine-color-blue-5)"
                               : "3px solid transparent",
-                          background: selected.has(r.id)
-                            ? "var(--mantine-color-blue-light)"
-                            : landed
-                              ? "var(--cb-arrival-tint)"
-                              : onCursor
-                                ? "var(--mantine-color-default-hover)"
-                                : undefined,
-                          boxShadow: landed
-                            ? "inset 0 0 0 1px var(--mantine-primary-color-filled)"
-                            : undefined,
+                          background: tint,
+                          // The pinned cells lay the same tint over the card.
+                          ["--cb-row-tint" as string]: tint,
                           borderBottom: "1px solid var(--cb-ledger-border)",
                         }}
                       >
@@ -1128,6 +1171,7 @@ export function RegisterTable({
                         {row.getVisibleCells().map((cell) => (
                           <Box
                             key={cell.id}
+                            className={pinned.has(cell.column.id) ? "cb-pin" : undefined}
                             style={{ minWidth: 0 }}
                             data-cb-sensitive={SENSITIVE_COLUMNS.has(cell.column.id) || undefined}
                           >
@@ -1140,6 +1184,7 @@ export function RegisterTable({
                           as a template is the rarest of the three and was already
                           in the row's menu, so that is where it lives now. */}
                         <Group
+                          className="cb-pin"
                           gap={ROW_ACTION.gap}
                           justify="flex-end"
                           wrap="nowrap"
@@ -1314,6 +1359,7 @@ export function RegisterTable({
  */
 function ColumnHeader({
   id,
+  pinned,
   sort,
   onSort,
   onResize,
@@ -1321,6 +1367,7 @@ function ColumnHeader({
   children,
 }: {
   id: string;
+  pinned: boolean;
   sort: RegisterSort | null;
   onSort: (id: string) => void;
   onResize: (width: number) => void;
@@ -1353,7 +1400,11 @@ function ColumnHeader({
   };
 
   return (
-    <Box ref={ref} style={{ position: "relative", minWidth: 0 }}>
+    <Box
+      ref={ref}
+      className={pinned ? "cb-pin" : undefined}
+      style={{ position: "relative", minWidth: 0 }}
+    >
       {sortable ? (
         <UnstyledButton
           className="cb-sort"

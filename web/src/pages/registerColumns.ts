@@ -85,6 +85,19 @@ export function columnTracks(
 }
 
 /**
+ * The columns that stay at the ledger's right edge when the row is wider than
+ * the card: the run of amount and running balance that ends the visible order.
+ * The row's actions come after every column and always stay with them. An
+ * amount moved into the middle is not pinned; it scrolls like its neighbours.
+ */
+export function pinnedColumns(visible: readonly string[]): string[] {
+  let start = visible.length;
+  while (start > 0 && (visible[start - 1] === "amount" || visible[start - 1] === "runningBalance"))
+    start--;
+  return visible.slice(start);
+}
+
+/**
  * Move one column one place left or right.
  *
  * Moving past either end is a no-op rather than a wrap: someone clicking "up"

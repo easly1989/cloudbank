@@ -361,6 +361,108 @@ body {
   cursor: pointer;
 }
 
+/* The amount, running balance and actions at the card's right edge (#782).
+ * When a row is wider than the card (RegisterTable sets .cb-pinning on the
+ * card), those cells stay put and the columns before them scroll under. The
+ * card's sideways scroll moves them, as a scroll timeline: sticky cannot, since
+ * a row's own scroll box is the ledger, which only scrolls up and down.
+ *
+ * A pinned cell lays the row's own tint (--cb-row-tint: selection, cursor) over
+ * the card, so it is opaque in every state. Its outset shadows cover the 12px
+ * gap on its left (ROW_GAP) and, after the actions, the row's 18px inset. */
+.cb-pinning {
+  scroll-timeline: --cb-row-x x;
+  --cb-pin-shade: rgba(18, 22, 29, 0.16);
+}
+:root[data-mantine-color-scheme="dark"] .cb-pinning {
+  --cb-pin-shade: rgba(0, 0, 0, 0.8);
+}
+@supports (animation-timeline: scroll()) {
+  .cb-pinning .cb-pin {
+    position: relative;
+    align-self: stretch;
+    /* Longhands: the minifier spells a shorthand's duration as 0s, which on
+       a scroll timeline ends the animation before it starts. */
+    animation-name: cb-pin-shift, cb-pin-paint;
+    animation-duration: auto;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: --cb-row-x;
+  }
+  .cb-pinning .cb-ledger .cb-pin:not(.mantine-Group-root) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .cb-pinning .cb-pin:last-child {
+    --cb-pin-end: 18px;
+  }
+  /* A heading reached with Tab scrolls clear of the pinned cells (the header's
+     onFocus in RegisterTable). */
+  .cb-pinning :not(.cb-pin) > .cb-sort {
+    scroll-margin-inline-end: var(--cb-pin-width);
+  }
+  /* The shade on the block's left edge, while there is something under it,
+     over the band's whole height (--cb-pin-pad: the header's padding). */
+  .cb-pinning :not(.cb-pin) + .cb-pin::before {
+    content: "";
+    position: absolute;
+    top: calc(-1 * var(--cb-pin-pad, 0px));
+    bottom: calc(-1 * var(--cb-pin-pad, 0px));
+    right: calc(100% + 12px);
+    width: 10px;
+    pointer-events: none;
+    background: linear-gradient(to right, transparent, var(--cb-pin-shade));
+    opacity: 0;
+    animation-name: cb-pin-shade;
+    animation-duration: auto;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: --cb-row-x;
+  }
+}
+@keyframes cb-pin-shift {
+  from {
+    transform: translateX(calc(100cqw - var(--cb-row-min)));
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes cb-pin-paint {
+  from,
+  to {
+    background:
+      linear-gradient(var(--cb-row-tint, transparent), var(--cb-row-tint, transparent)),
+      var(--cb-pin-bg, var(--cb-ledger-surface));
+    box-shadow:
+      -12px 0 var(--cb-row-tint, transparent),
+      -12px 0 var(--cb-pin-bg, var(--cb-ledger-surface)),
+      var(--cb-pin-end, 0px) 0 var(--cb-row-tint, transparent),
+      var(--cb-pin-end, 0px) 0 var(--cb-pin-bg, var(--cb-ledger-surface));
+  }
+}
+@keyframes cb-pin-shade {
+  0%,
+  99% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* A row the register has just put the cursor on is ringed. The ring is drawn
+   over the row's cells, so the pinned ones do not hide it. */
+.cb-row-landed::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px var(--mantine-primary-color-filled);
+}
+
 /* The group toggle is the label's 11px line plus its 6px of padding: 23px tall,
    with a nav link directly under it, which is one pixel short of WCAG 2.5.8's
    24px floor and has no spare room around it to pass on spacing instead. The
