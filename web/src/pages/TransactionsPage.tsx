@@ -423,7 +423,7 @@ export function TransactionsPage() {
   });
   // Undo puts back the last merge only, so an older toast's Undo goes.
   const mergeToast = useRef("");
-  const merged = (token: string, keptId: number) => {
+  const merged = (token: string, keptId: number, kept: string) => {
     setMerging([]);
     clearSelection();
     refreshMerged();
@@ -446,7 +446,7 @@ export function TransactionsPage() {
       closeButtonProps: { "aria-label": t("common.close") },
       message: (
         <Group justify="space-between" wrap="nowrap" gap="sm">
-          <Text fz="sm">{t("merge.done")}</Text>
+          <Text fz="sm">{t("merge.done", { row: kept })}</Text>
           <Button
             size="compact-sm"
             variant="subtle"
@@ -790,7 +790,11 @@ export function TransactionsPage() {
                 onClear={clearSelection}
                 onMerge={canMerge ? () => setMerging(selectedRows) : undefined}
                 mergeLabel={t(selectedRows.length === 1 ? "merge.with" : "merge.action")}
-                mergeWhy={mergeWhy ? t(`merge.why.${mergeWhy}`) : undefined}
+                mergeWhy={
+                  mergeWhy
+                    ? t(mergeWhy === "accounts" ? "merge.why.accounts" : "merge.why.kind")
+                    : undefined
+                }
               />
             ) : undefined
           }
@@ -971,6 +975,7 @@ function BulkBar({
 }) {
   const { t } = useTranslation();
   const whyId = useId();
+  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
   return (
     // The foot of the ledger, not a card floating above it: what is selected
     // and what it comes to, then what can be done about it.
@@ -1001,10 +1006,17 @@ function BulkBar({
           {mergeWhy}
         </Text>
       )}
-      {/* 40px buttons 16 apart, as the register board's selection bar. They
-          wrap on a phone: the bar is as wide as the card, and a button past
-          its edge could not be scrolled to. */}
-      <Group gap={16} ml="auto" wrap="wrap">
+      {/* 40px buttons 16 apart, as the register board's selection bar. On a
+          phone they sit two by two: the bar is as wide as the card, and a
+          button past its edge could not be scrolled to. */}
+      <Group
+        gap={16}
+        ml="auto"
+        wrap="wrap"
+        style={
+          phone ? { display: "grid", gridTemplateColumns: "1fr 1fr", width: "100%" } : undefined
+        }
+      >
         {onMerge && (
           // Unavailable, it stays focusable and says why beside it, rather
           // than in a tooltip that keyboard, touch and screen readers miss.

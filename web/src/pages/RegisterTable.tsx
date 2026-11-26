@@ -83,6 +83,7 @@ import {
   CATEGORY_DOT,
   ROW_ACTION,
   ROW_ACTIONS_WIDTH,
+  STATUS_COLORS,
   ROW_COLUMNS,
   DIVIDER_HEIGHT,
   ROW_GAP,
@@ -104,8 +105,8 @@ import { amountColor, attentionColor, negativeOnlyColor } from "../amountTone";
 // A row is 45 tall, and 59 when its lead column carries a second line — both
 // measured off the tile. The virtualiser is told which, per row, so a ledger of
 // payees-with-memos scrolls as smoothly as one without.
-const ROW_HEIGHT = 45;
-const ROW_HEIGHT_WITH_SUB = 59;
+export const ROW_HEIGHT = 45;
+export const ROW_HEIGHT_WITH_SUB = 59;
 // Per-column grid widths (fixed so virtualized rows stay aligned). Status is
 // wide enough for the longest label ("Non riconciliato") plus the lock glyph.
 // Column widths come from the tile, not from taste: see registerTheme.ts and
@@ -147,8 +148,6 @@ const COL_LABEL: Record<string, string> = {
   status: "transactions.status",
   runningBalance: "register.balance",
 };
-// Status badge colours indexed by status value (none..void).
-const STATUS_COLORS = ["gray", "blue", "teal", "orange", "red"];
 const STATUS_RECONCILED = 2;
 
 export interface RegisterTableProps {
@@ -1534,7 +1533,7 @@ function ColumnHeader({
  * as a second line. Turn Payee off and Memo leads, at full size, which is the
  * rule the tile states and the reason this is a component rather than a `Text`.
  */
-function LeadCell({ lead, sub, icon }: { lead?: string; sub?: Sub; icon?: ReactNode }) {
+export function LeadCell({ lead, sub, icon }: { lead?: string; sub?: Sub; icon?: ReactNode }) {
   return (
     <Stack gap={2} style={{ minWidth: 0 }}>
       <Group gap={4} wrap="nowrap" style={{ minWidth: 0 }}>
@@ -1587,7 +1586,7 @@ function leadSub(
  * An uncategorised row gets a hollow dot and the attention colour: it is the
  * one state in this column worth noticing, and a blank cell does not say it.
  */
-function CategoryCell({ name, uncategorised }: { name: string; uncategorised: boolean }) {
+export function CategoryCell({ name, uncategorised }: { name: string; uncategorised: boolean }) {
   return (
     <Group gap={7} wrap="nowrap" style={{ minWidth: 0 }}>
       <Box

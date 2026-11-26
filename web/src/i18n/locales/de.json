@@ -1650,7 +1650,8 @@
     }
   },
   "bulk": {
-    "title": "{{count}} ausgewählt",
+    "title_one": "{{count}} ausgewählt",
+    "title_other": "{{count}} ausgewählt",
     "selectedTotal": "Summe",
     "selectedIn": "ein",
     "selectedOut": "aus",
@@ -3643,7 +3644,7 @@
     "action": "Zusammenführen",
     "with": "Zusammenführen mit…",
     "title": "2 Zeilen zusammenführen",
-    "lead": "Nur eine bleibt, auf {{account}}. Wähle für jedes Feld, aus welcher Zeile es kommt.",
+    "lead": "Eine Zeile bleibt, auf {{account}}",
     "origin": {
       "bank": "Bank",
       "mail": "Bank-E-Mail",
@@ -3652,27 +3653,24 @@
     "added": "hinzugefügt am {{date}}",
     "same": "gleich",
     "result": "Ergebnis",
-    "keepsRef": "Sie behält die Importreferenz der Bank, die Synchronisierung importiert sie also nicht erneut.",
-    "amountsDiffer": "Die Beträge sind verschieden",
-    "amountsDifferBody": "({{a}} und {{b}}). Prüfe, welchen du behältst.",
-    "done": "Zu einer Zeile zusammengeführt",
-    "undone": "Beide Zeilen sind zurück",
+    "keepsRef": "Sie bleibt mit der Bank verknüpft: die Synchronisierung importiert sie nicht erneut",
+    "amountsDiffer": "Unterschiedliche Beträge: {{a}} und {{b}}",
+    "done": "Zeilen zusammengeführt: {{row}}",
+    "undone": "Zusammenführen rückgängig gemacht",
     "undoConflict": "Die zusammengeführte Zeile hat sich seitdem geändert, das Zusammenführen lässt sich nicht rückgängig machen.",
     "why": {
-      "transfer": "Eine Umbuchung lässt sich nicht zusammenführen: Sie besteht aus zwei Zeilen, eine pro Konto.",
-      "split": "Eine Splitbuchung lässt sich nicht zusammenführen: Ihr Betrag ist die Summe ihrer Zeilen.",
-      "accounts": "Zeilen verschiedener Konten lassen sich nicht zusammenführen.",
-      "kind": "Eine Umbuchung oder eine Splitbuchung lässt sich nicht zusammenführen."
+      "accounts": "Zeilen verschiedener Konten lassen sich nicht zusammenführen",
+      "kind": "Umbuchungen und Splitbuchungen lassen sich nicht zusammenführen"
     },
     "pickLikely": "Gleicher Betrag, innerhalb von 3 Tagen",
-    "pickNone": "Keine andere Zeile dieses Kontos hat innerhalb von 3 Tagen den gleichen Betrag.",
+    "pickNone": "Keine andere Zeile dieses Kontos hat innerhalb von 3 Tagen den gleichen Betrag",
     "pickOther": "Eine andere Zeile dieses Kontos",
-    "next": "Weiter",
-    "rule": "Datum, Betrag und Status kommen aus der Zeile der Bank, falls es eine gibt.",
+    "next": "Vergleichen",
     "undoMerge": "Zusammenführen rückgängig",
     "undoStale": "Ein späteres Zusammenführen hat dieses ersetzt, und nur das letzte lässt sich rückgängig machen.",
     "gone": "Eine der Zeilen gibt es nicht mehr. Das Konto zeigt sie jetzt, wie sie ist.",
     "loadFailed": "Die beiden Zeilen konnten nicht geladen werden.",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "pickOtherPlaceholder": "Nach Datum, Empfänger oder Betrag suchen"
   }
 }

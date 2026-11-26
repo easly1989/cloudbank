@@ -1650,7 +1650,8 @@
     }
   },
   "bulk": {
-    "title": "{{count}} seleccionado(s)",
+    "title_one": "{{count}} seleccionada",
+    "title_other": "{{count}} seleccionadas",
     "selectedTotal": "Total",
     "selectedIn": "entradas",
     "selectedOut": "salidas",
@@ -3643,7 +3644,7 @@
     "action": "Fusionar",
     "with": "Fusionar con…",
     "title": "Fusionar 2 filas",
-    "lead": "Solo queda una, en {{account}}. Elige de qué fila sale cada campo.",
+    "lead": "Queda una fila, en {{account}}",
     "origin": {
       "bank": "Banco",
       "mail": "Correo del banco",
@@ -3652,27 +3653,24 @@
     "added": "añadida el {{date}}",
     "same": "iguales",
     "result": "Resultado",
-    "keepsRef": "Conserva la referencia de importación del banco, así la sincronización no la vuelve a importar.",
-    "amountsDiffer": "Los importes son distintos",
-    "amountsDifferBody": "({{a}} y {{b}}). Comprueba cuál conservar.",
-    "done": "Fusionadas en una fila",
-    "undone": "Las dos filas han vuelto",
+    "keepsRef": "Sigue vinculada al banco: la sincronización no la vuelve a importar",
+    "amountsDiffer": "Importes distintos: {{a}} y {{b}}",
+    "done": "Filas fusionadas: {{row}}",
+    "undone": "Fusión deshecha",
     "undoConflict": "La fila fusionada ha cambiado desde entonces, así que no se puede deshacer la fusión.",
     "why": {
-      "transfer": "Una transferencia no se puede fusionar: son dos filas, una en cada cuenta.",
-      "split": "Una transacción dividida no se puede fusionar: su importe es la suma de sus líneas.",
-      "accounts": "No se pueden fusionar filas de cuentas distintas.",
-      "kind": "Una transferencia o una transacción dividida no se pueden fusionar."
+      "accounts": "No se pueden fusionar filas de cuentas distintas",
+      "kind": "No se fusionan transferencias ni filas divididas"
     },
     "pickLikely": "Mismo importe, en 3 días",
-    "pickNone": "Ninguna otra fila de esta cuenta tiene el mismo importe en 3 días.",
+    "pickNone": "Ninguna otra fila de esta cuenta tiene el mismo importe en 3 días",
     "pickOther": "Otra fila de esta cuenta",
-    "next": "Siguiente",
-    "rule": "La fecha, el importe y el estado salen de la fila del banco, si la hay.",
+    "next": "Comparar",
     "undoMerge": "Deshacer fusión",
     "undoStale": "Una fusión posterior ha ocupado el lugar de esta, y solo se puede deshacer la última.",
     "gone": "Una de las filas ya no está. El registro ahora la muestra tal como es.",
     "loadFailed": "No se pudieron cargar las dos filas.",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "pickOtherPlaceholder": "Buscar por fecha, beneficiario o importe"
   }
 }

@@ -1650,7 +1650,8 @@
     }
   },
   "bulk": {
-    "title": "{{count}} selezionate",
+    "title_one": "{{count}} selezionata",
+    "title_other": "{{count}} selezionate",
     "selectedTotal": "Totale",
     "selectedIn": "entrate",
     "selectedOut": "uscite",
@@ -3643,7 +3644,7 @@
     "action": "Unisci",
     "with": "Unisci con…",
     "title": "Unisci 2 righe",
-    "lead": "Ne resta una sola, sul conto {{account}}. Scegli da quale riga prendere ogni campo.",
+    "lead": "Resta una riga sul conto {{account}}",
     "origin": {
       "bank": "Banca",
       "mail": "Mail della banca",
@@ -3652,27 +3653,24 @@
     "added": "aggiunta il {{date}}",
     "same": "uguali",
     "result": "Risultato",
-    "keepsRef": "Tiene il riferimento dell'import della banca: la sincronizzazione non la reimporta.",
-    "amountsDiffer": "Gli importi sono diversi",
-    "amountsDifferBody": "({{a}} e {{b}}). Controlla quale tenere.",
-    "done": "Unite in una riga",
-    "undone": "Le due righe sono tornate",
+    "keepsRef": "Resta collegata alla banca: la sincronizzazione non la importa di nuovo",
+    "amountsDiffer": "Importi diversi: {{a}} e {{b}}",
+    "done": "Righe unite: {{row}}",
+    "undone": "Unione annullata",
     "undoConflict": "La riga unita è cambiata nel frattempo: l'unione non si può annullare.",
     "why": {
-      "transfer": "Un trasferimento non si può unire: sono due righe, una per conto.",
-      "split": "Una transazione divisa non si può unire: il suo importo è la somma delle sue righe.",
-      "accounts": "Righe di conti diversi non si possono unire.",
-      "kind": "Un trasferimento o una transazione divisa non si possono unire."
+      "accounts": "Righe di conti diversi non si possono unire",
+      "kind": "Non si uniscono giroconti e righe divise"
     },
     "pickLikely": "Stesso importo, entro 3 giorni",
-    "pickNone": "Nessun'altra riga di questo conto ha lo stesso importo entro 3 giorni.",
+    "pickNone": "Nessun'altra riga di questo conto ha lo stesso importo entro 3 giorni",
     "pickOther": "Un'altra riga di questo conto",
-    "next": "Avanti",
-    "rule": "Data, importo e stato vengono dalla riga della banca, se c'è.",
+    "next": "Confronta",
     "undoMerge": "Annulla unione",
     "undoStale": "Un'unione successiva ha preso il posto di questa, e si può annullare solo l'ultima.",
     "gone": "Una delle righe non c'è più. Il registro ora la mostra com'è.",
     "loadFailed": "Non è stato possibile caricare le due righe.",
-    "retry": "Riprova"
+    "retry": "Riprova",
+    "pickOtherPlaceholder": "Cerca per data, beneficiario o importo"
   }
 }

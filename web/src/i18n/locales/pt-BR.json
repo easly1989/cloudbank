@@ -1650,7 +1650,8 @@
     }
   },
   "bulk": {
-    "title": "{{count}} selecionado(s)",
+    "title_one": "{{count}} selecionada",
+    "title_other": "{{count}} selecionadas",
     "selectedTotal": "Total",
     "selectedIn": "entradas",
     "selectedOut": "saídas",
@@ -3643,7 +3644,7 @@
     "action": "Mesclar",
     "with": "Mesclar com…",
     "title": "Mesclar 2 linhas",
-    "lead": "Só uma fica, em {{account}}. Escolha de qual linha vem cada campo.",
+    "lead": "Fica uma linha, em {{account}}",
     "origin": {
       "bank": "Banco",
       "mail": "E-mail do banco",
@@ -3652,27 +3653,24 @@
     "added": "adicionada em {{date}}",
     "same": "iguais",
     "result": "Resultado",
-    "keepsRef": "Mantém a referência de importação do banco, então a sincronização não a importa de novo.",
-    "amountsDiffer": "Os valores são diferentes",
-    "amountsDifferBody": "({{a}} e {{b}}). Confira qual manter.",
-    "done": "Mescladas em uma linha",
-    "undone": "As duas linhas voltaram",
+    "keepsRef": "Continua vinculada ao banco: a sincronização não a importa de novo",
+    "amountsDiffer": "Valores diferentes: {{a}} e {{b}}",
+    "done": "Linhas mescladas: {{row}}",
+    "undone": "Mesclagem desfeita",
     "undoConflict": "A linha mesclada mudou desde então, então a mesclagem não pode ser desfeita.",
     "why": {
-      "transfer": "Uma transferência não pode ser mesclada: são duas linhas, uma em cada conta.",
-      "split": "Uma transação dividida não pode ser mesclada: o valor é a soma das suas linhas.",
-      "accounts": "Linhas de contas diferentes não podem ser mescladas.",
-      "kind": "Uma transferência ou uma transação dividida não pode ser mesclada."
+      "accounts": "Linhas de contas diferentes não podem ser mescladas",
+      "kind": "Transferências e linhas divididas não podem ser mescladas"
     },
     "pickLikely": "Mesmo valor, em até 3 dias",
-    "pickNone": "Nenhuma outra linha desta conta tem o mesmo valor em até 3 dias.",
+    "pickNone": "Nenhuma outra linha desta conta tem o mesmo valor em até 3 dias",
     "pickOther": "Outra linha desta conta",
-    "next": "Próximo",
-    "rule": "Data, valor e status vêm da linha do banco, se houver uma.",
+    "next": "Comparar",
     "undoMerge": "Desfazer mesclagem",
     "undoStale": "Uma mesclagem posterior tomou o lugar desta, e só a última pode ser desfeita.",
     "gone": "Uma das linhas não existe mais. O registro agora a mostra como está.",
     "loadFailed": "Não foi possível carregar as duas linhas.",
-    "retry": "Tentar de novo"
+    "retry": "Tentar de novo",
+    "pickOtherPlaceholder": "Buscar por data, favorecido ou valor"
   }
 }

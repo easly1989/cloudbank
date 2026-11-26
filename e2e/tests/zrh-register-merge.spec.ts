@@ -137,7 +137,7 @@ test("two rows merge into one, field by field, and Undo brings both back", async
     "Humble Choice",
   );
   await dialog.getByRole("button", { name: "Merge", exact: true }).click();
-  await expect(page.getByText("Merged into one row")).toBeVisible();
+  await expect(page.getByText(/^Rows merged: /)).toBeVisible();
 
   const merged = await rows(page, s);
   expect(merged).toHaveLength(1);
@@ -160,7 +160,7 @@ test("two rows merge into one, field by field, and Undo brings both back", async
   expect(kept.importRef).toBe(s.ref);
 
   await page.getByRole("button", { name: "Undo merge" }).click();
-  await expect(page.getByText("Both rows are back")).toBeVisible();
+  await expect(page.getByText("Merge undone")).toBeVisible();
   const back = await rows(page, s);
   expect(back.map(({ id, date, memo }) => ({ id, date, memo }))).toEqual(
     before.map(({ id, date, memo }) => ({ id, date, memo })),

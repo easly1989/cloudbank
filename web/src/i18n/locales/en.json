@@ -1650,7 +1650,8 @@
     }
   },
   "bulk": {
-    "title": "{{count}} selected",
+    "title_one": "{{count}} selected",
+    "title_other": "{{count}} selected",
     "selectedTotal": "Total",
     "selectedIn": "in",
     "selectedOut": "out",
@@ -3643,7 +3644,7 @@
     "action": "Merge",
     "with": "Merge with…",
     "title": "Merge 2 rows",
-    "lead": "Only one stays, on {{account}}. Choose which row each field comes from.",
+    "lead": "One row stays, on {{account}}",
     "origin": {
       "bank": "Bank",
       "mail": "Bank mail",
@@ -3652,27 +3653,24 @@
     "added": "added {{date}}",
     "same": "same",
     "result": "Result",
-    "keepsRef": "It keeps the bank's import reference, so sync does not import it again.",
-    "amountsDiffer": "The amounts differ",
-    "amountsDifferBody": "({{a}} and {{b}}). Check which one to keep.",
-    "done": "Merged into one row",
-    "undone": "Both rows are back",
+    "keepsRef": "It stays linked to the bank: sync does not import it again",
+    "amountsDiffer": "Different amounts: {{a}} and {{b}}",
+    "done": "Rows merged: {{row}}",
+    "undone": "Merge undone",
     "undoConflict": "The merged row has changed since, so the merge cannot be undone.",
     "why": {
-      "transfer": "A transfer cannot be merged: it is two rows, one on each account.",
-      "split": "A split cannot be merged: its amount is the sum of its lines.",
-      "accounts": "Rows on different accounts cannot be merged.",
-      "kind": "A transfer or a split cannot be merged."
+      "accounts": "Rows on different accounts cannot be merged",
+      "kind": "Transfers and split rows cannot be merged"
     },
     "pickLikely": "Same amount, within 3 days",
-    "pickNone": "No other row of this account has the same amount within 3 days.",
+    "pickNone": "No other row of this account has the same amount within 3 days",
     "pickOther": "Another row of this account",
-    "next": "Next",
-    "rule": "Date, amount and status come from the bank's row, if there is one.",
+    "next": "Compare",
     "undoMerge": "Undo merge",
     "undoStale": "A later merge replaced this one, and only the last merge can be undone.",
     "gone": "One of the rows is no longer there. The register now shows it as it is.",
     "loadFailed": "The two rows could not be loaded.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "pickOtherPlaceholder": "Search by date, payee or amount"
   }
 }

@@ -1,4 +1,5 @@
 import {
+  Badge,
   Box,
   Button,
   Center,
@@ -11,7 +12,7 @@ import {
   Text,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import { IconAlertTriangle } from "@tabler/icons-react";
+import { IconLock } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
@@ -27,6 +28,8 @@ import { amountColor } from "../amountTone";
 import { useDateFormat } from "../dates";
 import { formatMinor, type MoneyFormat } from "../money";
 import { notifyError } from "../notifyError";
+import { CategoryCell, LeadCell, ROW_HEIGHT, ROW_HEIGHT_WITH_SUB } from "./RegisterTable";
+import { BAND_INSET, ROW_COLUMNS, ROW_GAP, ROW_TYPE, STATUS_COLORS } from "./registerTheme";
 import {
   MERGE_FIELDS,
   bankFirst,
@@ -47,6 +50,23 @@ const MERGE_REFUSED: Record<string, string> = {
   not_mergeable: "merge.why.kind",
   not_found: "merge.gone",
 };
+
+// Inside the dialog: the modal's radius less its padding is below zero, so the
+// smallest radius the theme has.
+const INNER_RADIUS = "var(--mantine-radius-sm)";
+// The columns a register row shows by default, less the running balance the
+// merged row does not have yet.
+const PREVIEW_COLUMNS = ["date", "payee", "category", "status", "amount"]
+  .map((c) => ROW_COLUMNS[c])
+  .join(" ");
+
+/** One tab stop per radiogroup: the checked card, else the first. */
+const rovingTab = (checked: boolean, anyChecked: boolean, first: boolean) =>
+  checked || (!anyChecked && first) ? 0 : -1;
+
+/** An unchecked indicator's ring in the dimmed colour, 3:1 on light and dark. */
+const ringStyle = (checked: boolean) =>
+  checked ? undefined : { borderColor: "var(--mantine-color-dimmed)" };
 
 const FIELD_LABEL: Record<MergeField, string> = {
   date: "transactions.date",
@@ -79,8 +99,8 @@ export function MergeRowsModal({
   fmt: MoneyFormat;
   accountName: string;
   onClose: () => void;
-  /** The merge's undo token, and the row that stayed. */
-  onMerged: (token: string, keptId: number) => void;
+  /** The merge's undo token, the row that stayed and a line naming it. */
+  onMerged: (token: string, keptId: number, kept: string) => void;
 }) {
   const { t } = useTranslation();
   const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
@@ -93,7 +113,6 @@ export function MergeRowsModal({
       size={760}
       fullScreen={phone}
       title={pair ? t("merge.title") : t("merge.with")}
-      styles={{ title: { fontSize: 18, fontWeight: 600 } }}
     >
       {pair ? (
         <MergeChoices
@@ -127,14 +146,14 @@ function Foot({ phone, children }: { phone: boolean; children: ReactNode }) {
   return (
     <Group
       justify="flex-end"
-      gap="sm"
-      mt={18}
+      gap={12}
+      mt={24}
       style={
         phone
           ? {
               position: "sticky",
               bottom: 0,
-              margin: `18px calc(-1 * ${PAD}) calc(-1 * ${PAD})`,
+              margin: `24px calc(-1 * ${PAD}) calc(-1 * ${PAD})`,
               padding: `12px ${PAD}`,
               background: "var(--mantine-color-body)",
               borderTop: "1px solid var(--mantine-color-default-border)",
@@ -189,11 +208,11 @@ function PickOther({
   const picked = chosen ? byId.get(Number(chosen)) : undefined;
 
   return (
-    <Stack gap="sm">
+    <Stack gap={12}>
       <Text fz={14} c="dimmed">
         {describe(row)}
       </Text>
-      <Text fz={13} fw={600}>
+      <Text fz={13} fw={500}>
         {t("merge.pickLikely")}
       </Text>
       {likely.isLoading ? (
@@ -203,27 +222,33 @@ function PickOther({
           {t("merge.pickNone")}
         </Text>
       ) : (
-        <Stack gap={6}>
-          {candidates.map((r) => (
-            <Radio.Card
-              key={r.id}
-              name="merge-partner"
-              checked={chosen === String(r.id)}
-              onClick={() => setChosen(String(r.id))}
-              p="8px 10px"
-              radius="md"
-              bg={chosen === String(r.id) ? "var(--mantine-primary-color-light)" : undefined}
-            >
-              <Group gap={8} wrap="nowrap" align="flex-start">
-                <Radio.Indicator size="xs" mt={3} />
-                <Text fz={14}>{describe(r)}</Text>
-              </Group>
-            </Radio.Card>
-          ))}
+        <Stack gap={8} role="radiogroup" aria-label={t("merge.pickLikely")}>
+          {candidates.map((r, i) => {
+            const checked = chosen === String(r.id);
+            const anyChecked = candidates.some((c) => chosen === String(c.id));
+            return (
+              <Radio.Card
+                key={r.id}
+                name="merge-partner"
+                checked={checked}
+                tabIndex={rovingTab(checked, anyChecked, i === 0)}
+                onClick={() => setChosen(String(r.id))}
+                p="8px 12px"
+                radius={INNER_RADIUS}
+                bg={checked ? "var(--mantine-primary-color-light)" : undefined}
+              >
+                <Group gap={8} wrap="nowrap" align="center">
+                  <Radio.Indicator size="xs" style={ringStyle(checked)} />
+                  <Text fz={14}>{describe(r)}</Text>
+                </Group>
+              </Radio.Card>
+            );
+          })}
         </Stack>
       )}
       <Select
         label={t("merge.pickOther")}
+        placeholder={t("merge.pickOtherPlaceholder")}
         data={options}
         value={chosen}
         onChange={setChosen}
@@ -260,8 +285,8 @@ function MergeChoices({
   accountName: string;
   phone: boolean;
   onClose: () => void;
-  /** The merge's undo token, and the row that stayed. */
-  onMerged: (token: string, keptId: number) => void;
+  /** The merge's undo token, the row that stayed and a line naming it. */
+  onMerged: (token: string, keptId: number, kept: string) => void;
 }) {
   const { t } = useTranslation();
   const fmtDate = useDateFormat();
@@ -287,7 +312,14 @@ function MergeChoices({
 
   const merge = useMutation({
     mutationFn: () => mergeRows(walletId, pair![0].id, pair![1].id, takeFromOther(pair!, picks!)),
-    onSuccess: (res) => onMerged(res.token, pair![0].id),
+    onSuccess: (res) => {
+      const kept = mergedRow(pair!, picks!);
+      onMerged(
+        res.token,
+        kept.id,
+        `${fmtDate(kept.date)} · ${kept.payeeName || kept.memo || "—"} · ${formatMinor(kept.amount, fmt)}`,
+      );
+    },
     onError: (err) => {
       const why = err instanceof ApiError ? MERGE_REFUSED[err.code ?? ""] : undefined;
       if (why) notifications.show({ color: "red", message: t(why) });
@@ -297,6 +329,11 @@ function MergeChoices({
       void whole.refetch();
     },
   });
+
+  // A figure never breaks before its currency sign.
+  function unbroken(figure: string) {
+    return figure.replace(/ /g, "\u00a0");
+  }
 
   if (whole.isError) {
     return (
@@ -331,7 +368,7 @@ function MergeChoices({
       case "status":
         return t(`status.${r.status}`);
       case "amount":
-        return formatMinor(r.amount, fmt);
+        return unbroken(formatMinor(r.amount, fmt));
     }
   };
   const origin = (r: MergeRow) =>
@@ -339,55 +376,47 @@ function MergeChoices({
   const result = mergedRow(pair, picks);
   const amountsDiffer = pair[0].amount !== pair[1].amount;
 
+  // The amounts, each figure whole and in the attention colour, inside the
+  // one sentence that names them.
+  const amountsLine = () => {
+    const [before, mid, after] = t("merge.amountsDiffer", { a: "%%A%%", b: "%%B%%" }).split(
+      /%%[AB]%%/,
+    );
+    const figure = (minor: number) => (
+      <Text span inherit c="var(--cb-attention)" fw={500} style={{ whiteSpace: "nowrap" }}>
+        {unbroken(formatMinor(minor, fmt))}
+      </Text>
+    );
+    return (
+      <Text fz={13} c="dimmed" mt={12} data-testid="merge-amounts-differ" data-cb-sensitive>
+        {before}
+        {figure(pair[0].amount)}
+        {mid}
+        {figure(pair[1].amount)}
+        {after}
+      </Text>
+    );
+  };
+  const uncategorised = !result.categoryName;
+
   return (
     <Stack gap={0}>
-      <Text fz={14} c="dimmed">
+      <Text fz={14} c="dimmed" mb={16}>
         {t("merge.lead", { account: accountName })}
       </Text>
-      <Text fz={13} c="dimmed" mb={16}>
-        {t("merge.rule")}
-      </Text>
-      {amountsDiffer && (
-        // A strip, not an alert box: amber from the attention tokens.
-        <Group
-          gap={10}
-          wrap="nowrap"
-          align="flex-start"
-          mb={14}
-          p="10px 12px"
-          role="status"
-          data-testid="merge-amounts-differ"
-          style={{
-            background: "var(--cb-attention-bg)",
-            border: "1px solid var(--cb-attention-border)",
-            borderRadius: "var(--mantine-radius-md)",
-          }}
-        >
-          <IconAlertTriangle size={18} color="var(--cb-attention)" style={{ flexShrink: 0 }} />
-          <Text fz={14}>
-            <Text span fw={700} inherit c="var(--cb-attention)">
-              {t("merge.amountsDiffer")}
-            </Text>{" "}
-            {t("merge.amountsDifferBody", {
-              a: formatMinor(pair[0].amount, fmt),
-              b: formatMinor(pair[1].amount, fmt),
-            })}
-          </Text>
-        </Group>
-      )}
       <Box
         style={{
           display: "grid",
           gridTemplateColumns: phone
             ? "minmax(0, 1fr) minmax(0, 1fr)"
-            : "110px minmax(0, 1fr) minmax(0, 1fr)",
-          gap: "6px 10px",
+            : "112px minmax(0, 1fr) minmax(0, 1fr)",
+          gap: "8px 12px",
         }}
       >
         {!phone && <div />}
         {pair.map((r, i) => (
-          <Box key={r.id} pb={2} px={2}>
-            <Text fz={13} fw={600}>
+          <Box key={r.id}>
+            <Text fz={13} fw={500}>
               {i + 1} · {t(`merge.origin.${origin(r)}`)}
             </Text>
             <Text fz={12} c="dimmed">
@@ -398,12 +427,10 @@ function MergeChoices({
         {MERGE_FIELDS.map((f) => {
           const same = sameField(pair, f);
           const label = t(FIELD_LABEL[f]);
-          const mono = f === "date" || f === "amount";
           const value = (r: MergeRow, dim = false) => (
             <Text
               fz={14}
               lh={1.35}
-              ff={mono ? "monospace" : undefined}
               c={dim ? "dimmed" : f === "amount" ? amountColor(r.amount) : undefined}
               style={{ overflowWrap: "anywhere" }}
               data-cb-sensitive={f === "amount" || undefined}
@@ -418,14 +445,14 @@ function MergeChoices({
                 c="dimmed"
                 style={{
                   alignSelf: "center",
-                  ...(phone ? { gridColumn: "1 / -1", marginTop: 6 } : {}),
+                  ...(phone ? { gridColumn: "1 / -1", marginTop: 8 } : {}),
                 }}
               >
                 {label}
               </Text>
               {same ? (
                 // The same in both rows: nothing to choose.
-                <Group gap={6} px={10} py={8} style={{ gridColumn: "span 2" }}>
+                <Group gap={8} px={12} py={8} style={{ gridColumn: "span 2" }}>
                   {value(pair[0], true)}
                   <Text fz={13} c="dimmed">
                     · {t("merge.same")}
@@ -439,7 +466,7 @@ function MergeChoices({
                     gridColumn: "span 2",
                     display: "grid",
                     gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
-                    gap: 10,
+                    gap: 12,
                   }}
                 >
                   {pair.map((r, i) => {
@@ -450,14 +477,22 @@ function MergeChoices({
                         name={`merge-${f}`}
                         value={String(i)}
                         checked={checked}
+                        tabIndex={rovingTab(checked, true, i === 0)}
                         aria-label={`${i + 1} · ${label}: ${text(r, f)}`}
                         onClick={() => setChosen((c) => ({ ...c, [f]: i as Side }))}
-                        p="8px 10px"
-                        radius="md"
+                        p="8px 12px"
+                        radius={INNER_RADIUS}
                         bg={checked ? "var(--mantine-primary-color-light)" : undefined}
                       >
-                        <Group gap={8} wrap="nowrap" align="flex-start">
-                          <Radio.Indicator size="xs" mt={3} />
+                        <Group gap={8} wrap="nowrap" align="center">
+                          <Radio.Indicator size="xs" style={ringStyle(checked)} />
+                          {/* On a phone the column heads scroll away: the card
+                              says which row it is. */}
+                          {phone && (
+                            <Text fz={12} c="dimmed" aria-hidden>
+                              {i + 1}
+                            </Text>
+                          )}
                           {value(r)}
                         </Group>
                       </Radio.Card>
@@ -469,6 +504,7 @@ function MergeChoices({
           );
         })}
       </Box>
+      {amountsDiffer && amountsLine()}
 
       <Box
         mt={16}
@@ -476,48 +512,63 @@ function MergeChoices({
         style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}
         data-testid="merge-result"
       >
-        <Text fz={12} fw={600} c="dimmed">
+        <Text fz={12} fw={500} c="dimmed" mb={8}>
           {t("merge.result")}
         </Text>
+        {/* The row as the register will draw it: its columns, type and height. */}
         <Box
-          mt={6}
-          p="10px 12px"
           style={{
-            display: "grid",
-            gridTemplateColumns: phone ? "minmax(0, 1fr) auto" : "96px minmax(0, 1fr) 140px 100px",
-            gap: 12,
-            alignItems: "start",
-            border: "1px solid var(--mantine-color-default-border)",
-            borderRadius: "var(--mantine-radius-md)",
-            background: "var(--cb-band-divider)",
+            overflowX: "auto",
+            background: "var(--cb-ledger-surface)",
+            border: "1px solid var(--cb-ledger-border)",
+            borderRadius: INNER_RADIUS,
           }}
         >
-          <Text fz={14} ff="monospace">
-            {fmtDate(result.date)}
-          </Text>
-          <Box style={phone ? { gridColumn: "1 / -1", gridRow: 2 } : undefined}>
-            <Text fz={14}>{result.payeeName || "—"}</Text>
-            <Text fz={12} c="dimmed" style={{ overflowWrap: "anywhere" }}>
-              {result.memo}
-            </Text>
-          </Box>
-          <Box style={phone ? { gridColumn: "1 / -1", gridRow: 3 } : undefined}>
-            <Text fz={14}>{result.categoryName || t("filters.uncategorised")}</Text>
-            <Text fz={12} c="dimmed">
-              {t(`status.${result.status}`)}
-              {result.tags.length > 0 && ` · ${result.tags.join(", ")}`}
-            </Text>
-          </Box>
-          <Text
-            fz={14}
-            ff="monospace"
-            ta="right"
-            c={amountColor(result.amount)}
-            data-cb-sensitive
-            style={phone ? { gridColumn: 2, gridRow: 1 } : undefined}
+          <Box
+            style={{
+              display: "grid",
+              gridTemplateColumns: PREVIEW_COLUMNS,
+              gap: ROW_GAP,
+              alignItems: "center",
+              padding: `0 ${BAND_INSET}px`,
+              height: result.memo || uncategorised ? ROW_HEIGHT_WITH_SUB : ROW_HEIGHT,
+              minWidth: "max-content",
+            }}
           >
-            {formatMinor(result.amount, fmt)}
-          </Text>
+            <Text fz={ROW_TYPE.date.fz} style={{ whiteSpace: "nowrap" }}>
+              {fmtDate(result.date)}
+            </Text>
+            <LeadCell
+              lead={result.payeeName}
+              sub={
+                // As the register's: the memo, else that it needs a category.
+                result.memo
+                  ? { text: result.memo }
+                  : uncategorised
+                    ? { text: t("register.needsCategory"), attention: true }
+                    : undefined
+              }
+            />
+            <CategoryCell
+              name={result.categoryName ?? t("filters.uncategorised")}
+              uncategorised={uncategorised}
+            />
+            <Group gap={4} wrap="nowrap">
+              <Badge variant="light" tt="none" color={STATUS_COLORS[result.status] ?? "gray"}>
+                {t(`status.${result.status}`)}
+              </Badge>
+              {result.status === 2 && <IconLock size={12} opacity={0.5} />}
+            </Group>
+            <Text
+              size="sm"
+              ta="right"
+              c={amountColor(result.amount)}
+              data-cb-sensitive
+              style={{ whiteSpace: "nowrap" }}
+            >
+              {formatMinor(result.amount, fmt)}
+            </Text>
+          </Box>
         </Box>
         {origin(pair[0]) === "bank" && (
           <Text fz={12} c="dimmed" mt={8}>

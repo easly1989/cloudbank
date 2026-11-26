@@ -85,3 +85,6 @@ export const CATEGORY_DOT = 9;
 
 /** Height of the "reconciled up to here" divider row. */
 export const DIVIDER_HEIGHT = 29;
+
+/** Status badge colours indexed by status value (none..void). */
+export const STATUS_COLORS = ["gray", "blue", "teal", "orange", "red"];
