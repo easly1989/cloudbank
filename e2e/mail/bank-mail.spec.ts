@@ -28,6 +28,18 @@ async function deliver(page: Page, mail: ReturnType<typeof card>) {
   expect(res.status()).toBe(204);
 }
 
+/** The wallet and the one mailbox this spec works on. */
+async function walletId(page: Page): Promise<number> {
+  const wallets = await (await page.request.get("/api/v1/wallets")).json();
+  return wallets[0].id;
+}
+async function mailboxId(page: Page): Promise<number> {
+  const mail = await (
+    await page.request.get(`/api/v1/wallets/${await walletId(page)}/mail`)
+  ).json();
+  return mail.mailboxes[0].id;
+}
+
 async function signIn(page: Page) {
   const res = await page.request.post("/api/v1/auth/login", {
     headers: H,
@@ -58,6 +70,17 @@ async function select(page: Page, piece: string) {
 }
 
 const history = (page: Page) => page.getByTestId("mailbox-card");
+
+/** Opens one of a mailbox's sources (#794), closed by default. */
+async function openSource(scope: Locator, name = "INBOX") {
+  const band = scope
+    .getByTestId(/^mail-source-\d+$/)
+    .filter({ has: scope.page().getByRole("button", { name, exact: true }) });
+  const title = band.getByRole("button", { name, exact: true });
+  if ((await title.getAttribute("aria-expanded")) !== "true")
+    await title.click();
+  return band;
+}
 
 /** Opens a mailbox's latest mails, closed by default, on the given filter. */
 async function showMails(scope: Locator, filter = "All") {
@@ -140,8 +163,9 @@ test("signing in to Microsoft connects the mailbox", async ({
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(history(page).getByText(ADDRESS)).toBeVisible();
 
-  // Only the bank's folder is read.
-  await history(page).getByLabel("Folder").click();
+  // A new mailbox has one source on its inbox; only the bank's folder is read.
+  const source = await openSource(history(page));
+  await source.getByLabel("Folder").click();
   await page.getByRole("option", { name: "Banca", exact: true }).click();
   await expect(
     page.getByText("From now on CloudBank reads Banca."),
@@ -549,6 +573,7 @@ test("one pattern covers two wordings of a notice, marked in a mail of each", as
   ).toBeVisible();
 
   // It reopens on both example mails.
+  await openSource(history(page));
   await page
     .getByRole("button", { name: /Actions for Pagamento con carta/ })
     .last()
@@ -581,6 +606,68 @@ test("the written transactions are in the register, opened from the mail", async
   await expect(grid.getByText("Negozio Falso")).toHaveCount(0);
 });
 
+test("a second source on the same folder: the mail goes to the first that reads it", async ({
+  page,
+}) => {
+  // #794: up to 5 sources per mailbox, each a name and a folder; a mail two
+  // sources could read goes to the first in the order.
+  await signIn(page);
+  await page.goto("/settings/mail");
+  const box = history(page);
+  await box.getByRole("button", { name: "New source" }).click();
+  const draft = box.getByTestId("mail-source-new");
+  await draft.getByLabel("Name").fill("Cards");
+  await draft.getByLabel("Folder").click();
+  await page.getByRole("option", { name: "Banca", exact: true }).click();
+  await draft.getByRole("button", { name: "Add source" }).click();
+  await expect(box.getByText("2 of 5")).toBeVisible();
+  // The new source opens; it has no pattern, so the first source still reads
+  // the bank's card mails, and the mail says which source read it.
+  await expect(
+    box.getByRole("button", { name: "Cards", exact: true }),
+  ).toHaveAttribute("aria-expanded", "true");
+  await deliver(page, card("3,10", "Edicola Demo"));
+  await box.getByRole("button", { name: "Check now" }).first().click();
+  await showMails(box);
+  const row = box
+    .getByTestId("mail-row")
+    .filter({ has: page.getByRole("link", { name: /Edicola Demo/ }) });
+  await expect(row).toContainText("INBOX");
+
+  // Cards moves up: it is first now.
+  await box.getByRole("button", { name: "Actions for Cards" }).click();
+  await page.getByRole("menuitem", { name: "Move up" }).click();
+  await expect(box.getByTestId(/^mail-source-\d+$/).first()).toContainText(
+    "Cards",
+  );
+
+  // Three more make five, and a sixth is refused with the reason beside it.
+  for (const name of ["Two", "Three", "Four"]) {
+    const res = await page.request.post(
+      `/api/v1/wallets/${await walletId(page)}/mail/mailboxes/${await mailboxId(page)}/sources`,
+      { headers: H, data: { name, folder: "INBOX" } },
+    );
+    expect(res.status()).toBe(201);
+  }
+  await page.reload();
+  const add = box.getByRole("button", { name: "New source" });
+  await expect(add).toHaveAttribute("aria-disabled", "true");
+  await expect(box.getByText("At most 5 sources per mailbox")).toBeVisible();
+
+  // Deleting a source keeps the mails it read.
+  for (const name of ["Two", "Three", "Four", "Cards"]) {
+    await box.getByRole("button", { name: `Actions for ${name}` }).click();
+    await page.getByRole("menuitem", { name: "Delete source" }).click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Delete source" })
+      .click();
+    await expect(box.getByRole("button", { name, exact: true })).toHaveCount(0);
+  }
+  await showMails(box);
+  await expect(box.getByRole("link", { name: /Edicola Demo/ })).toBeVisible();
+});
+
 test("the page's tour points at every part of a connected mailbox", async ({
   page,
 }) => {
@@ -590,13 +677,13 @@ test("the page's tour points at every part of a connected mailbox", async ({
   const card = page.locator("[data-tour-step]");
   // No step left out for want of its element, none centred for want of size.
   await expect(card).toHaveAttribute("data-tour-skipped", "0");
-  for (let i = 1; i <= 6; i++) {
-    await expect(card.getByText(`${i} / 6`)).toBeVisible();
+  for (let i = 1; i <= 4; i++) {
+    await expect(card.getByText(`${i} / 4`)).toBeVisible();
     await expect(card, `step ${i}`).not.toHaveAttribute(
       "data-tour-centred",
       /.*/,
     );
-    await card.getByRole("button", { name: i < 6 ? "Next" : "Done" }).click();
+    await card.getByRole("button", { name: i < 4 ? "Next" : "Done" }).click();
   }
   await expect(card).toHaveCount(0);
 });

@@ -633,6 +633,7 @@ function LatestMails({
                   {shown.map((m) => (
                     <Group
                       key={m.id}
+                      data-testid="mail-row"
                       gap="xs"
                       py={8}
                       wrap="wrap"
