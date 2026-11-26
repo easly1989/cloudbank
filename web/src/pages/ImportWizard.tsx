@@ -21,7 +21,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconAlertTriangle, IconFileImport } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -52,6 +52,7 @@ import { useAskPastLimit } from "../components/aiLimit";
 import { aiFeatureOn } from "../components/proposalData";
 import { formatMinor } from "../money";
 import { notifyError } from "../notifyError";
+import { rowClick, rowMouseDown } from "../rowSelect";
 import { useWallet } from "../wallet/WalletProvider";
 import { ErrorMessage } from "../components/ErrorMessage";
 import { CsvProposalBox, ImportColumns, RememberedBar } from "./ImportColumns";
@@ -131,6 +132,10 @@ export function ImportWizard() {
   const [remembered, setRemembered] = useState<CSVMapping | null>(null);
   const [remember, setRemember] = useState(true);
   const [rows, setRows] = useState<CSVPreviewRow[]>([]);
+  // The row last picked by a Ctrl/Shift click, by position (rows have no id).
+  const rowAnchor = useRef<number | null>(null);
+  // An errored row cannot be imported, and one already imported is left alone.
+  const pickable = (r: CSVPreviewRow) => !r.error && r.match !== "imported";
   const [applyRules, setApplyRules] = useState(false);
   const [created, setCreated] = useState(0);
   const [updated, setUpdated] = useState(0);
@@ -298,6 +303,7 @@ export function ImportWizard() {
     }
     const res = await preview.mutateAsync({ withMapping: false, rules: applyRules });
     setRows(res.rows);
+    rowAnchor.current = null; // rows are told apart by position
     setPhase("review");
   };
 
@@ -305,6 +311,7 @@ export function ImportWizard() {
     setError(null);
     const res = await preview.mutateAsync({ withMapping: showMapping, rules });
     setRows(res.rows);
+    rowAnchor.current = null; // rows are told apart by position
     setPhase("review");
   };
 
@@ -561,6 +568,27 @@ export function ImportWizard() {
                     <Table.Tr
                       key={i}
                       c={r.error ? "red" : r.match === "imported" ? "dimmed" : undefined}
+                      onMouseDown={rowMouseDown}
+                      onClick={(e) => {
+                        const sel = rowClick(
+                          e,
+                          rows.map((_, n) => n),
+                          i,
+                          rowAnchor,
+                          null,
+                          (n) => pickable(rows[n]),
+                        );
+                        if (!sel) return;
+                        if (sel.mode === "toggle") toggleRow(i, !r.include);
+                        else
+                          setRows((rs) =>
+                            rs.map((x, idx) =>
+                              idx >= sel.from && idx <= sel.to && pickable(x)
+                                ? { ...x, include: true }
+                                : x,
+                            ),
+                          );
+                      }}
                     >
                       <Table.Td>
                         <Checkbox
