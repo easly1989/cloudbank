@@ -15,8 +15,12 @@ import {
   type ReviewTxn,
   bulkCategorizeTransactions,
   bulkEditTransactions,
+  createPayee,
+  type Payee,
 } from "../api/client";
 import aiClasses from "../components/AiBox.module.css";
+import { CreatableSelect } from "../components/CreatableSelect";
+import { useCreateFromSheet } from "../components/useCreateFromSheet";
 import { useAskPastLimit } from "../components/aiLimit";
 import { aiFeatureOn } from "../components/proposalData";
 import { useDateFormat } from "../dates";
@@ -24,6 +28,7 @@ import { formatMinor, type MoneyFormat } from "../money";
 import { notifyError } from "../notifyError";
 import { sensitive } from "../privacy";
 import { rowClick, rowMouseDown } from "../rowSelect";
+import { sameName } from "../sameName";
 
 // Review's rows that need a category (#486), and the bulk categorisation of
 // #706: "Propose categories" fills a payee and a category in where it can,
@@ -97,6 +102,17 @@ export function ReviewNeedsCategory({
   const shown = needs.filter((r) => drafts?.has(r.id));
   const picked = shown.filter((r) => drafts?.get(r.id)?.picked && drafts.get(r.id)?.categoryId);
   const proposing = shown.length > 0;
+
+  // A payee typed here that does not exist yet is created, as in the entry
+  // sheet (#792).
+  const createFromSheet = useCreateFromSheet(walletId, undefined);
+  const payeeNames = payeeOptions.map((o) => o.label);
+  const addPayee = (name: string) =>
+    createFromSheet<Payee>(
+      "payees",
+      () => createPayee(walletId, { name }),
+      (list) => list.find((p) => sameName(p.name, name)),
+    );
 
   const rowAnchor = useRef<number | null>(null); // a transaction id
   const edit = (id: number, patch: Partial<Draft>) =>
@@ -239,17 +255,19 @@ export function ReviewNeedsCategory({
             const payee = d ? d.payeeId : (tx.payeeId ?? null);
             const pickers = (
               <>
-                <Select
+                <CreatableSelect
                   placeholder={t("transactions.payee")}
                   aria-label={t("transactions.payee")}
                   data={payeeOptions}
+                  names={payeeNames}
+                  createLabel={(name) => t("transactions.addPayee", { name })}
+                  onCreate={addPayee}
                   value={payee ? String(payee) : null}
                   onChange={(v) => {
                     if (!v) return;
                     if (d) edit(tx.id, { payeeId: Number(v) });
                     else save.mutate({ id: tx.id, field: "payee", value: Number(v) });
                   }}
-                  searchable
                   {...sensitive}
                 />
                 <Select
