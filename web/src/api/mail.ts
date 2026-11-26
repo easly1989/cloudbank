@@ -79,7 +79,7 @@ export interface IMAPSettings {
 
 /**
  * What the IMAP connect form sends. A mailboxId gives that mailbox new
- * settings (a new app password) and keeps its folder and history.
+ * settings (a new app password) and keeps its sources and history.
  */
 export interface IMAPMailboxInput extends Omit<IMAPSettings, "username"> {
   mailboxId?: number;
