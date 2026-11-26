@@ -1,10 +1,10 @@
 -- name: InsertAccount :one
 INSERT INTO accounts (
-    wallet_id, name, type, currency_id, institution, number,
+    wallet_id, name, type, currency_id, institution, number, bic,
     initial_balance, minimum_balance, closed, no_summary, no_budget, no_report,
     position, group_name, notes, website, default_payment_mode
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetAccount :one
@@ -40,7 +40,7 @@ SELECT COALESCE(MAX(position), 0) + 1 FROM accounts WHERE wallet_id = ?;
 
 -- name: UpdateAccount :exec
 UPDATE accounts SET
-    name = ?, type = ?, currency_id = ?, institution = ?, number = ?,
+    name = ?, type = ?, currency_id = ?, institution = ?, number = ?, bic = ?,
     initial_balance = ?, minimum_balance = ?, closed = ?,
     no_summary = ?, no_budget = ?, no_report = ?, group_name = ?, notes = ?, website = ?,
     default_payment_mode = ?
@@ -51,3 +51,8 @@ UPDATE accounts SET position = ?, group_name = ? WHERE id = ?;
 
 -- name: DeleteAccount :exec
 DELETE FROM accounts WHERE id = ?;
+
+-- name: FillAccountNumber :exec
+-- A bank account linked to a provider takes the IBAN the bank gave, only when
+-- it has no number yet (#775).
+UPDATE accounts SET number = ? WHERE id = ? AND number = '';

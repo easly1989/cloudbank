@@ -33,6 +33,7 @@ const acc = (over: Partial<Account>): Account => ({
   currencyId: EUR.id,
   institution: "",
   number: "",
+  bic: "",
   initialBalance: 0,
   minimumBalance: 0,
   balance: 0,

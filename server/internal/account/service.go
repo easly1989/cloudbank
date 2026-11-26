@@ -46,7 +46,8 @@ type Account struct {
 	Type           string
 	CurrencyID     int64
 	Institution    string
-	Number         string
+	Number         string // the IBAN, on a bank account
+	BIC            string
 	InitialBalance int64
 	MinimumBalance int64
 	Balance        int64 // today's balance: initial_balance + sum(transactions dated on/before today)
@@ -85,6 +86,7 @@ type Input struct {
 	CurrencyID         int64
 	Institution        string
 	Number             string
+	BIC                string
 	InitialBalance     int64
 	MinimumBalance     int64
 	Closed             bool
@@ -156,7 +158,7 @@ func (s *Service) List(ctx context.Context, walletID int64) ([]Account, error) {
 		d := deltaByAccount[r.ID]
 		acc := Account{
 			ID: r.ID, WalletID: r.WalletID, Name: r.Name, Type: r.Type, CurrencyID: r.CurrencyID,
-			Institution: r.Institution, Number: r.Number,
+			Institution: r.Institution, Number: r.Number, BIC: r.Bic,
 			InitialBalance: r.InitialBalance, MinimumBalance: r.MinimumBalance,
 			Balance: r.InitialBalance + d.TodayDelta, FutureBalance: r.InitialBalance + d.FutureDelta,
 			ReconciledBalance: r.InitialBalance + d.BankDelta, LastReconciled: d.LastReconciled,
@@ -197,7 +199,7 @@ func (s *Service) Get(ctx context.Context, accountID int64) (Account, error) {
 	}
 	return Account{
 		ID: a.ID, WalletID: a.WalletID, Name: a.Name, Type: a.Type, CurrencyID: a.CurrencyID,
-		Institution: a.Institution, Number: a.Number,
+		Institution: a.Institution, Number: a.Number, BIC: a.Bic,
 		InitialBalance: a.InitialBalance, MinimumBalance: a.MinimumBalance,
 		Balance: a.InitialBalance + d.TodayDelta, FutureBalance: a.InitialBalance + d.FutureDelta,
 		ReconciledBalance: a.InitialBalance + d.BankDelta, LastReconciled: d.LastReconciled,
@@ -211,6 +213,9 @@ func (s *Service) Get(ctx context.Context, accountID int64) (Account, error) {
 
 // Create adds an account. The currency must belong to the wallet.
 func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Account, error) {
+	if err := normalizeCodes(&in, ""); err != nil {
+		return Account{}, err
+	}
 	if err := s.checkCurrency(ctx, walletID, in.CurrencyID); err != nil {
 		return Account{}, err
 	}
@@ -220,7 +225,7 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Account
 	}
 	a, err := s.q.InsertAccount(ctx, db.InsertAccountParams{
 		WalletID: walletID, Name: in.Name, Type: in.Type, CurrencyID: in.CurrencyID,
-		Institution: in.Institution, Number: in.Number,
+		Institution: in.Institution, Number: in.Number, Bic: in.BIC,
 		InitialBalance: in.InitialBalance, MinimumBalance: in.MinimumBalance,
 		Closed: dbconv.B2i(in.Closed), NoSummary: dbconv.B2i(in.NoSummary), NoBudget: dbconv.B2i(in.NoBudget), NoReport: dbconv.B2i(in.NoReport),
 		Position: pos, GroupName: in.GroupName, Notes: in.Notes, Website: in.Website,
@@ -238,12 +243,19 @@ func (s *Service) Create(ctx context.Context, walletID int64, in Input) (Account
 // Update changes an account's editable fields. The currency must belong to the
 // wallet.
 func (s *Service) Update(ctx context.Context, walletID, accountID int64, in Input) (Account, error) {
+	prev, err := s.q.GetAccount(ctx, accountID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return Account{}, err
+	}
+	if err := normalizeCodes(&in, prev.Number); err != nil {
+		return Account{}, err
+	}
 	if err := s.checkCurrency(ctx, walletID, in.CurrencyID); err != nil {
 		return Account{}, err
 	}
 	if err := s.q.UpdateAccount(ctx, db.UpdateAccountParams{
 		Name: in.Name, Type: in.Type, CurrencyID: in.CurrencyID,
-		Institution: in.Institution, Number: in.Number,
+		Institution: in.Institution, Number: in.Number, Bic: in.BIC,
 		InitialBalance: in.InitialBalance, MinimumBalance: in.MinimumBalance,
 		Closed: dbconv.B2i(in.Closed), NoSummary: dbconv.B2i(in.NoSummary), NoBudget: dbconv.B2i(in.NoBudget), NoReport: dbconv.B2i(in.NoReport),
 		GroupName: in.GroupName, Notes: in.Notes, Website: in.Website, DefaultPaymentMode: in.DefaultPaymentMode, ID: accountID,

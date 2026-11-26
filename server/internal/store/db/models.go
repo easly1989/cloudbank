@@ -36,6 +36,7 @@ type Account struct {
 	Website            string
 	CreatedAt          string
 	DefaultPaymentMode int64
+	Bic                string
 }
 
 type AiProposal struct {

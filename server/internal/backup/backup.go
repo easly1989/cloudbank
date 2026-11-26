@@ -98,6 +98,7 @@ type Account struct {
 	CurrencyID     int64  `json:"currencyId"`
 	Institution    string `json:"institution"`
 	Number         string `json:"number"`
+	BIC            string `json:"bic,omitempty"`
 	InitialBalance int64  `json:"initialBalance"`
 	MinimumBalance int64  `json:"minimumBalance"`
 	Closed         bool   `json:"closed"`
@@ -319,7 +320,7 @@ func (s *Service) Export(ctx context.Context, walletID int64) (*Document, error)
 	for _, a := range accts {
 		ad := Account{
 			ID: a.ID, Name: a.Name, Type: a.Type, CurrencyID: a.CurrencyID,
-			Institution: a.Institution, Number: a.Number, InitialBalance: a.InitialBalance,
+			Institution: a.Institution, Number: a.Number, BIC: a.Bic, InitialBalance: a.InitialBalance,
 			MinimumBalance: a.MinimumBalance, Closed: a.Closed != 0, NoSummary: a.NoSummary != 0,
 			NoBudget: a.NoBudget != 0, NoReport: a.NoReport != 0, Position: a.Position,
 			GroupName: a.GroupName, Notes: a.Notes, Website: a.Website,
@@ -595,7 +596,7 @@ func (s *Service) Restore(ctx context.Context, userID int64, doc *Document) (int
 	for _, a := range doc.Accounts {
 		row, err := q.InsertAccount(ctx, db.InsertAccountParams{
 			WalletID: w.ID, Name: a.Name, Type: a.Type, CurrencyID: curMap[a.CurrencyID],
-			Institution: a.Institution, Number: a.Number, InitialBalance: a.InitialBalance,
+			Institution: a.Institution, Number: a.Number, Bic: a.BIC, InitialBalance: a.InitialBalance,
 			MinimumBalance: a.MinimumBalance, Closed: dbconv.B2i(a.Closed), NoSummary: dbconv.B2i(a.NoSummary),
 			NoBudget: dbconv.B2i(a.NoBudget), NoReport: dbconv.B2i(a.NoReport), Position: a.Position,
 			GroupName: a.GroupName, Notes: a.Notes, Website: a.Website,

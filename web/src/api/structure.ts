@@ -108,7 +108,10 @@ export interface Account {
   type: AccountType;
   currencyId: number;
   institution: string;
+  /** The account number; on a bank account, the IBAN (#775). */
   number: string;
+  /** BIC/SWIFT of a bank account (#775). */
+  bic: string;
   initialBalance: number;
   minimumBalance: number;
   /** Today's balance: initial + transactions dated on/before today. */
@@ -146,6 +149,7 @@ export interface AccountInput {
   currencyId?: number;
   institution?: string;
   number?: string;
+  bic?: string;
   initialBalance?: number;
   minimumBalance?: number;
   closed?: boolean;

@@ -3,12 +3,14 @@ import {
   Anchor,
   Button,
   Checkbox,
+  CopyButton,
   Group,
   Menu,
   Select,
   TextInput,
+  Tooltip,
 } from "@mantine/core";
-import { IconDots } from "@tabler/icons-react";
+import { IconCheck, IconCopy, IconDots } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -26,10 +28,12 @@ import { SideSheet } from "../../components/SideSheet";
 import { ENTRY_SHEET } from "../../components/entrySheetTheme";
 import { formatMinor, minorToInput } from "../../money";
 import { PAYMENT_MODES } from "../../transactionEnums";
+import { sensitive } from "../../privacy";
 import { useAmountParser } from "../../useAmountParser";
 import { accountFormat, ACCOUNT_TYPES, hasValuations } from "./accountList";
 import type { AccountActions } from "./AccountTable";
 import classes from "./accounts.module.css";
+import { compactCode, groupIban, isBankType, looksLikeIban, validBic, validIban } from "./iban";
 import { notifyError } from "../../notifyError";
 import { WrapText } from "../../components/WrapText";
 
@@ -70,6 +74,9 @@ export function AccountSheet({
   const [minimum, setMinimum] = useState("");
   const [institution, setInstitution] = useState("");
   const [number, setNumber] = useState("");
+  const [bic, setBic] = useState("");
+  // The number as the account had it: one left as it was is never re-checked.
+  const [savedNumber, setSavedNumber] = useState("");
   const [defaultPaymentMode, setDefaultPaymentMode] = useState("0");
   const [noSummary, setNoSummary] = useState(false);
   const [noBudget, setNoBudget] = useState(false);
@@ -96,7 +103,11 @@ export function AccountSheet({
       setInitial(field(a?.initialBalance));
       setMinimum(field(a?.minimumBalance));
       setInstitution(a?.institution ?? "");
-      setNumber(a?.number ?? "");
+      // A bank account's IBAN reads in groups of four; the server keeps it compact.
+      const n = a?.number ?? "";
+      setNumber(a && isBankType(a.type) && validIban(n) ? groupIban(n) : n);
+      setSavedNumber(n);
+      setBic(a?.bic ?? "");
       setDefaultPaymentMode(String(a?.defaultPaymentMode ?? 0));
       setNoSummary(a?.noSummary ?? false);
       setNoBudget(a?.noBudget ?? false);
@@ -112,6 +123,16 @@ export function AccountSheet({
   const fd = selected?.fracDigits ?? 2;
   const dc = selected?.decimalChar ?? ".";
 
+  // A bank account keeps its IBAN in the number, and a BIC (#775). Both are
+  // optional; one that starts like an IBAN has to be one.
+  const bank = isBankType(type);
+  const ibanBad =
+    bank &&
+    looksLikeIban(number) &&
+    !validIban(number) &&
+    compactCode(number) !== compactCode(savedNumber);
+  const bicBad = bank && !validBic(bic);
+
   const save = useMutation({
     mutationFn: () => {
       // A save replaces the whole account, so every field is sent — the group
@@ -122,6 +143,7 @@ export function AccountSheet({
         currencyId: currencyId ? Number(currencyId) : undefined,
         institution,
         number,
+        bic: bank ? bic : "",
         initialBalance: parseAmount(initial, fd, dc) ?? 0,
         minimumBalance: parseAmount(minimum, fd, dc) ?? 0,
         closed,
@@ -193,7 +215,11 @@ export function AccountSheet({
           <Button variant="default" onClick={onClose}>
             {t("accounts.cancel")}
           </Button>
-          <Button onClick={() => save.mutate()} loading={save.isPending} disabled={!name.trim()}>
+          <Button
+            onClick={() => save.mutate()}
+            loading={save.isPending}
+            disabled={!name.trim() || ibanBad || bicBad}
+          >
             {t("accounts.save")}
           </Button>
         </>
@@ -242,12 +268,56 @@ export function AccountSheet({
           value={institution}
           onChange={(e) => setInstitution(e.currentTarget.value)}
         />
+        {bank ? (
+          <TextInput
+            label={t("accounts.bic")}
+            value={bic}
+            onChange={(e) => setBic(e.currentTarget.value)}
+            onBlur={() => setBic((v) => compactCode(v))}
+            error={bicBad ? t("accounts.bicInvalid") : undefined}
+            autoComplete="off"
+            {...sensitive}
+          />
+        ) : (
+          <TextInput
+            label={t("accounts.number")}
+            value={number}
+            onChange={(e) => setNumber(e.currentTarget.value)}
+            {...sensitive}
+          />
+        )}
+      </Group>
+      {bank && (
         <TextInput
-          label={t("accounts.number")}
+          label={t("accounts.iban")}
           value={number}
           onChange={(e) => setNumber(e.currentTarget.value)}
+          // Printed in groups of four once it is a real IBAN; saved without spaces.
+          onBlur={() => validIban(number) && setNumber(groupIban(number))}
+          error={ibanBad ? t("accounts.ibanInvalid") : undefined}
+          description={number.trim() === "" ? t("accounts.ibanMissing") : undefined}
+          autoComplete="off"
+          {...sensitive}
+          rightSection={
+            number.trim() !== "" && !ibanBad ? (
+              <CopyButton value={compactCode(number)}>
+                {({ copied, copy }) => (
+                  <Tooltip label={copied ? t("accounts.copied") : t("accounts.copy")} withinPortal>
+                    <ActionIcon
+                      variant="subtle"
+                      color={copied ? "teal" : "gray"}
+                      onClick={copy}
+                      aria-label={t("accounts.copy")}
+                    >
+                      {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+              </CopyButton>
+            ) : undefined
+          }
         />
-      </Group>
+      )}
       <Select
         label={t("accounts.defaultPaymentMode")}
         data={PAYMENT_MODES.map((m) => ({ value: String(m), label: t(`paymentModes.${m}`) }))}

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/easly1989/cloudbank/server/internal/account"
 	"github.com/easly1989/cloudbank/server/internal/importio"
 	"github.com/easly1989/cloudbank/server/internal/money"
 	"github.com/easly1989/cloudbank/server/internal/provenance"
@@ -302,7 +303,8 @@ func (s *Service) Link(ctx context.Context, walletID, connID int64, externalID s
 	if externalID == "" {
 		return ErrInvalid
 	}
-	if _, err := s.conn(ctx, walletID, connID); err != nil {
+	c, err := s.conn(ctx, walletID, connID)
+	if err != nil {
 		return err
 	}
 	acc, err := s.rq.GetAccount(ctx, accountID)
@@ -312,9 +314,21 @@ func (s *Service) Link(ctx context.Context, walletID, connID int64, externalID s
 	if err != nil {
 		return err
 	}
-	return s.q.UpsertBankLink(ctx, db.UpsertBankLinkParams{
+	if err := s.q.UpsertBankLink(ctx, db.UpsertBankLinkParams{
 		ConnectionID: connID, ExternalID: externalID, AccountID: accountID,
-	})
+	}); err != nil {
+		return err
+	}
+	// A bank account without a number takes the IBAN the bank gave (#775).
+	// Enable Banking is the provider that reports one.
+	if acc.Number == "" && account.IsBankType(acc.Type) && c.Provider == providerEnableBanking {
+		for _, a := range parseStoredAccounts(c.AccountsJson) {
+			if iban := account.Compact(a.IBAN); a.UID == externalID && !a.Card && account.ValidIBAN(iban) {
+				return s.q.FillAccountNumber(ctx, db.FillAccountNumberParams{Number: iban, ID: accountID})
+			}
+		}
+	}
+	return nil
 }
 
 // Unlink removes a link.

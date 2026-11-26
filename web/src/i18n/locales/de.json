@@ -2245,6 +2245,13 @@
     "minimumBalance": "Mindestsaldo",
     "institution": "Kreditinstitut",
     "number": "Kontonummer",
+    "iban": "IBAN",
+    "bic": "BIC/SWIFT",
+    "ibanMissing": "Noch keine IBAN. Trag sie hier ein und kopiere sie, wenn du sie brauchst.",
+    "ibanInvalid": "Die Prüfziffern stimmen nicht: Ist ein Zeichen vertippt?",
+    "bicInvalid": "Eine BIC hat 8 oder 11 Buchstaben und Ziffern.",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
     "defaultPaymentMode": "Standard-Zahlungsart",
     "types": {
       "bank": "Bank",
