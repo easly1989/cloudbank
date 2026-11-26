@@ -1650,7 +1650,8 @@
     }
   },
   "bulk": {
-    "title": "{{count}} ausgewählt",
+    "title_one": "{{count}} ausgewählt",
+    "title_other": "{{count}} ausgewählt",
     "selectedTotal": "Summe",
     "selectedIn": "ein",
     "selectedOut": "aus",
@@ -3638,5 +3639,38 @@
       "payments": "Zahlungen im Jahr",
       "note": "CloudBank hat sie gefunden: ein Betrag mindestens doppelt so hoch wie der Median des Zahlungspartners und 20 darüber, ein neuer Zahlungspartner über 95 % der Ausgaben des Jahres, derselbe Betrag an denselben Zahlungspartner zweimal in 3 Tagen. Das Modell hat nur den Text geschrieben. Modell: {{model}}."
     }
+  },
+  "merge": {
+    "action": "Zusammenführen",
+    "with": "Zusammenführen mit…",
+    "title": "2 Zeilen zusammenführen",
+    "lead": "Eine Zeile bleibt, auf {{account}}",
+    "origin": {
+      "bank": "Bank",
+      "mail": "Bank-E-Mail",
+      "hand": "Von Hand"
+    },
+    "added": "hinzugefügt am {{date}}",
+    "same": "gleich",
+    "result": "Ergebnis",
+    "keepsRef": "Sie bleibt mit der Bank verknüpft: die Synchronisierung importiert sie nicht erneut",
+    "amountsDiffer": "Unterschiedliche Beträge: {{a}} und {{b}}",
+    "done": "Zeilen zusammengeführt: {{row}}",
+    "undone": "Zusammenführen rückgängig gemacht",
+    "undoConflict": "Die zusammengeführte Zeile hat sich seitdem geändert, das Zusammenführen lässt sich nicht rückgängig machen.",
+    "why": {
+      "accounts": "Zeilen verschiedener Konten lassen sich nicht zusammenführen",
+      "kind": "Umbuchungen und Splitbuchungen lassen sich nicht zusammenführen"
+    },
+    "pickLikely": "Gleicher Betrag, innerhalb von 3 Tagen",
+    "pickNone": "Keine andere Zeile dieses Kontos hat innerhalb von 3 Tagen den gleichen Betrag",
+    "pickOther": "Eine andere Zeile dieses Kontos",
+    "next": "Vergleichen",
+    "undoMerge": "Zusammenführen rückgängig",
+    "undoStale": "Ein späteres Zusammenführen hat dieses ersetzt, und nur das letzte lässt sich rückgängig machen.",
+    "gone": "Eine der Zeilen gibt es nicht mehr. Das Konto zeigt sie jetzt, wie sie ist.",
+    "loadFailed": "Die beiden Zeilen konnten nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "pickOtherPlaceholder": "Nach Datum, Empfänger oder Betrag suchen"
   }
 }

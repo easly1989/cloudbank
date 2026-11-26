@@ -1650,7 +1650,8 @@
     }
   },
   "bulk": {
-    "title": "{{count}} sélectionnée(s)",
+    "title_one": "{{count}} sélectionnée",
+    "title_other": "{{count}} sélectionnées",
     "selectedTotal": "Total",
     "selectedIn": "entrées",
     "selectedOut": "sorties",
@@ -3638,5 +3639,38 @@
       "payments": "Paiements sur un an",
       "note": "CloudBank les a trouvées : un montant au moins double de la médiane du tiers et 20 au-dessus, un nouveau tiers au-dessus de 95 % des dépenses de l’année, le même montant au même tiers deux fois en 3 jours. Le modèle n’a écrit que le texte. Modèle : {{model}}."
     }
+  },
+  "merge": {
+    "action": "Fusionner",
+    "with": "Fusionner avec…",
+    "title": "Fusionner 2 lignes",
+    "lead": "Une ligne reste, sur {{account}}",
+    "origin": {
+      "bank": "Banque",
+      "mail": "E-mail de la banque",
+      "hand": "À la main"
+    },
+    "added": "ajoutée le {{date}}",
+    "same": "identiques",
+    "result": "Résultat",
+    "keepsRef": "Elle reste liée à la banque : la synchronisation ne la réimporte pas",
+    "amountsDiffer": "Montants différents : {{a}} et {{b}}",
+    "done": "Lignes fusionnées : {{row}}",
+    "undone": "Fusion annulée",
+    "undoConflict": "La ligne fusionnée a changé depuis : la fusion ne peut pas être annulée.",
+    "why": {
+      "accounts": "Des lignes de comptes différents ne peuvent pas être fusionnées",
+      "kind": "Les virements et les opérations ventilées ne se fusionnent pas"
+    },
+    "pickLikely": "Même montant, à 3 jours près",
+    "pickNone": "Aucune autre ligne de ce compte n'a le même montant à 3 jours près",
+    "pickOther": "Une autre ligne de ce compte",
+    "next": "Comparer",
+    "undoMerge": "Annuler la fusion",
+    "undoStale": "Une fusion plus récente a pris la place de celle-ci, et seule la dernière peut être annulée.",
+    "gone": "L'une des lignes n'existe plus. Le registre la montre maintenant telle qu'elle est.",
+    "loadFailed": "Impossible de charger les deux lignes.",
+    "retry": "Réessayer",
+    "pickOtherPlaceholder": "Rechercher par date, bénéficiaire ou montant"
   }
 }

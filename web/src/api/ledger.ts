@@ -29,6 +29,8 @@ export interface Transaction {
   transferId?: number | null;
   transferAccountId?: number | null;
   attachmentCount?: number;
+  /** The bank's or a mail's ("mail:…") reference of an imported row; single transaction only. */
+  importRef?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -340,8 +342,25 @@ export const dismissAllDuplicatePairs = (walletId: number) =>
     {},
   );
 
+/** The Review's merge: the kept row keeps its fields. */
 export const mergeTransactions = (walletId: number, keepId: number, dropId: number) =>
   api.post<void>(`/api/v1/wallets/${walletId}/transactions/merge`, { keepId, dropId });
+
+/**
+ * The register's merge (#786): the kept row takes the `take` fields from the
+ * dropped one. The token undoes it while it is the wallet's last.
+ */
+export const mergeRows = (walletId: number, keepId: number, dropId: number, take: string[]) =>
+  api.post<{ token: string }>(`/api/v1/wallets/${walletId}/transactions/merge`, {
+    keepId,
+    dropId,
+    take,
+  });
+
+export const undoTransactionMerge = (walletId: number, token: string) =>
+  api.del<void>(
+    `/api/v1/wallets/${walletId}/transactions/merge?token=${encodeURIComponent(token)}`,
+  );
 
 export const mergeMailTransaction = (walletId: number, mailId: number, bankId: number) =>
   api.post<void>(`/api/v1/wallets/${walletId}/transactions/merge-mail`, { mailId, bankId });

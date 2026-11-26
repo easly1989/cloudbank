@@ -11,6 +11,20 @@ import (
 	"strings"
 )
 
+const deleteMergedImportRef = `-- name: DeleteMergedImportRef :exec
+DELETE FROM merged_import_refs WHERE account_id = ? AND import_ref = ?
+`
+
+type DeleteMergedImportRefParams struct {
+	AccountID int64
+	ImportRef string
+}
+
+func (q *Queries) DeleteMergedImportRef(ctx context.Context, arg DeleteMergedImportRefParams) error {
+	_, err := q.db.ExecContext(ctx, deleteMergedImportRef, arg.AccountID, arg.ImportRef)
+	return err
+}
+
 const deleteReviewSnooze = `-- name: DeleteReviewSnooze :exec
 DELETE FROM review_snoozes WHERE transaction_id = ? AND wallet_id = ?
 `
@@ -23,6 +37,48 @@ type DeleteReviewSnoozeParams struct {
 func (q *Queries) DeleteReviewSnooze(ctx context.Context, arg DeleteReviewSnoozeParams) error {
 	_, err := q.db.ExecContext(ctx, deleteReviewSnooze, arg.TransactionID, arg.WalletID)
 	return err
+}
+
+const deleteTransactionMerge = `-- name: DeleteTransactionMerge :exec
+DELETE FROM transaction_merges WHERE wallet_id = ?
+`
+
+func (q *Queries) DeleteTransactionMerge(ctx context.Context, walletID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteTransactionMerge, walletID)
+	return err
+}
+
+const getReviewSnoozeUntil = `-- name: GetReviewSnoozeUntil :one
+SELECT until FROM review_snoozes WHERE transaction_id = ?
+`
+
+func (q *Queries) GetReviewSnoozeUntil(ctx context.Context, transactionID int64) (string, error) {
+	row := q.db.QueryRowContext(ctx, getReviewSnoozeUntil, transactionID)
+	var until string
+	err := row.Scan(&until)
+	return until, err
+}
+
+const getReviewWaitingSince = `-- name: GetReviewWaitingSince :one
+SELECT since FROM review_waiting WHERE transaction_id = ?
+`
+
+func (q *Queries) GetReviewWaitingSince(ctx context.Context, transactionID int64) (string, error) {
+	row := q.db.QueryRowContext(ctx, getReviewWaitingSince, transactionID)
+	var since string
+	err := row.Scan(&since)
+	return since, err
+}
+
+const getTransactionMerge = `-- name: GetTransactionMerge :one
+SELECT wallet_id, undo, created_at FROM transaction_merges WHERE wallet_id = ?
+`
+
+func (q *Queries) GetTransactionMerge(ctx context.Context, walletID int64) (TransactionMerge, error) {
+	row := q.db.QueryRowContext(ctx, getTransactionMerge, walletID)
+	var i TransactionMerge
+	err := row.Scan(&i.WalletID, &i.Undo, &i.CreatedAt)
+	return i, err
 }
 
 const insertDuplicateDismissal = `-- name: InsertDuplicateDismissal :exec
@@ -40,6 +96,25 @@ type InsertDuplicateDismissalParams struct {
 func (q *Queries) InsertDuplicateDismissal(ctx context.Context, arg InsertDuplicateDismissalParams) error {
 	_, err := q.db.ExecContext(ctx, insertDuplicateDismissal, arg.WalletID, arg.TxnAID, arg.TxnBID)
 	return err
+}
+
+const insertMergedImportRef = `-- name: InsertMergedImportRef :execrows
+INSERT INTO merged_import_refs (account_id, import_ref, transaction_id) VALUES (?, ?, ?)
+ON CONFLICT DO NOTHING
+`
+
+type InsertMergedImportRefParams struct {
+	AccountID     int64
+	ImportRef     string
+	TransactionID sql.NullInt64
+}
+
+func (q *Queries) InsertMergedImportRef(ctx context.Context, arg InsertMergedImportRefParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, insertMergedImportRef, arg.AccountID, arg.ImportRef, arg.TransactionID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const listBankRowsNear = `-- name: ListBankRowsNear :many
@@ -178,6 +253,39 @@ func (q *Queries) ListDuplicateDismissals(ctx context.Context, walletID int64) (
 	return items, nil
 }
 
+const listDuplicateDismissalsFor = `-- name: ListDuplicateDismissalsFor :many
+SELECT txn_a_id, txn_b_id FROM duplicate_dismissals
+WHERE txn_a_id = ?1 OR txn_b_id = ?1
+`
+
+type ListDuplicateDismissalsForRow struct {
+	TxnAID int64
+	TxnBID int64
+}
+
+func (q *Queries) ListDuplicateDismissalsFor(ctx context.Context, id int64) ([]ListDuplicateDismissalsForRow, error) {
+	rows, err := q.db.QueryContext(ctx, listDuplicateDismissalsFor, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDuplicateDismissalsForRow{}
+	for rows.Next() {
+		var i ListDuplicateDismissalsForRow
+		if err := rows.Scan(&i.TxnAID, &i.TxnBID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listImportedUncategorized = `-- name: ListImportedUncategorized :many
 SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id, origin, created_by
 FROM transactions
@@ -218,6 +326,70 @@ func (q *Queries) ListImportedUncategorized(ctx context.Context, walletID int64)
 			&i.Origin,
 			&i.CreatedBy,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMailMessageIDsForTransaction = `-- name: ListMailMessageIDsForTransaction :many
+SELECT id FROM mail_messages WHERE transaction_id = ? ORDER BY id
+`
+
+func (q *Queries) ListMailMessageIDsForTransaction(ctx context.Context, transactionID sql.NullInt64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listMailMessageIDsForTransaction, transactionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMergedImportRefs = `-- name: ListMergedImportRefs :many
+SELECT m.import_ref, m.transaction_id, CAST(COALESCE(t.status, 0) AS INTEGER) AS status
+FROM merged_import_refs m
+LEFT JOIN transactions t ON t.id = m.transaction_id
+WHERE m.account_id = ?
+`
+
+type ListMergedImportRefsRow struct {
+	ImportRef     string
+	TransactionID sql.NullInt64
+	Status        int64
+}
+
+// With the row each was merged into and its status, when it is still there.
+func (q *Queries) ListMergedImportRefs(ctx context.Context, accountID int64) ([]ListMergedImportRefsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listMergedImportRefs, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListMergedImportRefsRow{}
+	for rows.Next() {
+		var i ListMergedImportRefsRow
+		if err := rows.Scan(&i.ImportRef, &i.TransactionID, &i.Status); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -433,6 +605,64 @@ func (q *Queries) ListUnconfirmedMailRows(ctx context.Context, arg ListUnconfirm
 	return items, nil
 }
 
+const moveAttachmentsByIDs = `-- name: MoveAttachmentsByIDs :exec
+UPDATE attachments SET transaction_id = ?1
+WHERE transaction_id = ?2 AND id IN (/*SLICE:ids*/?)
+`
+
+type MoveAttachmentsByIDsParams struct {
+	ToID   int64
+	FromID int64
+	Ids    []int64
+}
+
+func (q *Queries) MoveAttachmentsByIDs(ctx context.Context, arg MoveAttachmentsByIDsParams) error {
+	query := moveAttachmentsByIDs
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.ToID)
+	queryParams = append(queryParams, arg.FromID)
+	if len(arg.Ids) > 0 {
+		for _, v := range arg.Ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(arg.Ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
+const moveMailMessagesByIDs = `-- name: MoveMailMessagesByIDs :exec
+UPDATE mail_messages SET transaction_id = ?1
+WHERE transaction_id = ?2 AND id IN (/*SLICE:ids*/?)
+`
+
+type MoveMailMessagesByIDsParams struct {
+	ToID   sql.NullInt64
+	FromID sql.NullInt64
+	Ids    []int64
+}
+
+// Some of the mails that wrote a transaction now point at another one: a
+// merge moves them to the row it keeps, its undo moves them back (#786).
+func (q *Queries) MoveMailMessagesByIDs(ctx context.Context, arg MoveMailMessagesByIDsParams) error {
+	query := moveMailMessagesByIDs
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.ToID)
+	queryParams = append(queryParams, arg.FromID)
+	if len(arg.Ids) > 0 {
+		for _, v := range arg.Ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(arg.Ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
 const moveMailMessagesToTransaction = `-- name: MoveMailMessagesToTransaction :exec
 UPDATE mail_messages SET transaction_id = ?1 WHERE transaction_id = ?2
 `
@@ -445,6 +675,84 @@ type MoveMailMessagesToTransactionParams struct {
 // The mails that wrote a transaction now point at the one it was merged into.
 func (q *Queries) MoveMailMessagesToTransaction(ctx context.Context, arg MoveMailMessagesToTransactionParams) error {
 	_, err := q.db.ExecContext(ctx, moveMailMessagesToTransaction, arg.ToID, arg.FromID)
+	return err
+}
+
+const restoreTransaction = `-- name: RestoreTransaction :exec
+INSERT INTO transactions (
+    id, wallet_id, account_id, date, amount, payment_mode, status, info,
+    payee_id, category_id, memo, is_split, created_at, updated_at,
+    template_id, import_ref, vehicle_id, origin, created_by
+)
+VALUES (
+    ?1, ?2, ?3, ?4, ?5,
+    ?6, ?7, ?8,
+    (SELECT p.id FROM payees p WHERE p.id = ?9),
+    (SELECT c.id FROM categories c WHERE c.id = ?10),
+    ?11, ?12, ?13, ?14,
+    (SELECT tp.id FROM templates tp WHERE tp.id = ?15),
+    ?16,
+    (SELECT v.id FROM vehicles v WHERE v.id = ?17),
+    ?18,
+    (SELECT u.id FROM users u WHERE u.id = ?19)
+)
+ON CONFLICT (id) DO UPDATE SET
+    account_id = excluded.account_id, date = excluded.date, amount = excluded.amount,
+    payment_mode = excluded.payment_mode, status = excluded.status, info = excluded.info,
+    payee_id = excluded.payee_id, category_id = excluded.category_id, memo = excluded.memo,
+    is_split = excluded.is_split, created_at = excluded.created_at, updated_at = excluded.updated_at,
+    template_id = excluded.template_id, import_ref = excluded.import_ref,
+    vehicle_id = excluded.vehicle_id, origin = excluded.origin, created_by = excluded.created_by
+`
+
+type RestoreTransactionParams struct {
+	ID          int64
+	WalletID    int64
+	AccountID   int64
+	Date        string
+	Amount      int64
+	PaymentMode int64
+	Status      int64
+	Info        string
+	PayeeID     sql.NullInt64
+	CategoryID  sql.NullInt64
+	Memo        string
+	IsSplit     int64
+	CreatedAt   string
+	UpdatedAt   string
+	TemplateID  sql.NullInt64
+	ImportRef   string
+	VehicleID   sql.NullInt64
+	Origin      string
+	CreatedBy   sql.NullInt64
+}
+
+// Puts a transaction back exactly as it was, every column, inserting it when
+// it is gone (an undone merge, #786). An upsert, not INSERT OR REPLACE: a
+// replace deletes the row first, and its tags and attachments cascade away.
+// A payee, category, vehicle, template or user deleted since is left out.
+func (q *Queries) RestoreTransaction(ctx context.Context, arg RestoreTransactionParams) error {
+	_, err := q.db.ExecContext(ctx, restoreTransaction,
+		arg.ID,
+		arg.WalletID,
+		arg.AccountID,
+		arg.Date,
+		arg.Amount,
+		arg.PaymentMode,
+		arg.Status,
+		arg.Info,
+		arg.PayeeID,
+		arg.CategoryID,
+		arg.Memo,
+		arg.IsSplit,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+		arg.TemplateID,
+		arg.ImportRef,
+		arg.VehicleID,
+		arg.Origin,
+		arg.CreatedBy,
+	)
 	return err
 }
 
@@ -476,5 +784,21 @@ type UpsertReviewSnoozeParams struct {
 
 func (q *Queries) UpsertReviewSnooze(ctx context.Context, arg UpsertReviewSnoozeParams) error {
 	_, err := q.db.ExecContext(ctx, upsertReviewSnooze, arg.TransactionID, arg.WalletID, arg.Until)
+	return err
+}
+
+const upsertTransactionMerge = `-- name: UpsertTransactionMerge :exec
+INSERT INTO transaction_merges (wallet_id, undo) VALUES (?, ?)
+ON CONFLICT (wallet_id) DO UPDATE SET
+    undo = excluded.undo, created_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+`
+
+type UpsertTransactionMergeParams struct {
+	WalletID int64
+	Undo     string
+}
+
+func (q *Queries) UpsertTransactionMerge(ctx context.Context, arg UpsertTransactionMergeParams) error {
+	_, err := q.db.ExecContext(ctx, upsertTransactionMerge, arg.WalletID, arg.Undo)
 	return err
 }

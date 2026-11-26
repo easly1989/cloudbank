@@ -435,6 +435,12 @@ type Mailbox struct {
 	AiSenders    string
 }
 
+type MergedImportRef struct {
+	AccountID     int64
+	ImportRef     string
+	TransactionID sql.NullInt64
+}
+
 type MfaRecoveryCode struct {
 	ID        int64
 	UserID    int64
@@ -664,6 +670,12 @@ type Transaction struct {
 	VehicleID   sql.NullInt64
 	Origin      string
 	CreatedBy   sql.NullInt64
+}
+
+type TransactionMerge struct {
+	WalletID  int64
+	Undo      string
+	CreatedAt string
 }
 
 type TransactionTag struct {

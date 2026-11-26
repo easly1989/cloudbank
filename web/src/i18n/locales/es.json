@@ -1650,7 +1650,8 @@
     }
   },
   "bulk": {
-    "title": "{{count}} seleccionado(s)",
+    "title_one": "{{count}} seleccionada",
+    "title_other": "{{count}} seleccionadas",
     "selectedTotal": "Total",
     "selectedIn": "entradas",
     "selectedOut": "salidas",
@@ -3638,5 +3639,38 @@
       "payments": "Pagos en un año",
       "note": "CloudBank encontró estos movimientos: un importe de al menos el doble de la mediana del beneficiario y 20 por encima, un beneficiario nuevo por encima del 95% de los gastos del año, el mismo importe al mismo beneficiario dos veces en 3 días. El modelo solo escribió el texto. Modelo: {{model}}."
     }
+  },
+  "merge": {
+    "action": "Fusionar",
+    "with": "Fusionar con…",
+    "title": "Fusionar 2 filas",
+    "lead": "Queda una fila, en {{account}}",
+    "origin": {
+      "bank": "Banco",
+      "mail": "Correo del banco",
+      "hand": "A mano"
+    },
+    "added": "añadida el {{date}}",
+    "same": "iguales",
+    "result": "Resultado",
+    "keepsRef": "Sigue vinculada al banco: la sincronización no la vuelve a importar",
+    "amountsDiffer": "Importes distintos: {{a}} y {{b}}",
+    "done": "Filas fusionadas: {{row}}",
+    "undone": "Fusión deshecha",
+    "undoConflict": "La fila fusionada ha cambiado desde entonces, así que no se puede deshacer la fusión.",
+    "why": {
+      "accounts": "No se pueden fusionar filas de cuentas distintas",
+      "kind": "No se fusionan transferencias ni filas divididas"
+    },
+    "pickLikely": "Mismo importe, en 3 días",
+    "pickNone": "Ninguna otra fila de esta cuenta tiene el mismo importe en 3 días",
+    "pickOther": "Otra fila de esta cuenta",
+    "next": "Comparar",
+    "undoMerge": "Deshacer fusión",
+    "undoStale": "Una fusión posterior ha ocupado el lugar de esta, y solo se puede deshacer la última.",
+    "gone": "Una de las filas ya no está. El registro ahora la muestra tal como es.",
+    "loadFailed": "No se pudieron cargar las dos filas.",
+    "retry": "Reintentar",
+    "pickOtherPlaceholder": "Buscar por fecha, beneficiario o importe"
   }
 }

@@ -1650,7 +1650,8 @@
     }
   },
   "bulk": {
-    "title": "{{count}} selecionado(s)",
+    "title_one": "{{count}} selecionada",
+    "title_other": "{{count}} selecionadas",
     "selectedTotal": "Total",
     "selectedIn": "entradas",
     "selectedOut": "saídas",
@@ -3638,5 +3639,38 @@
       "payments": "Pagamentos em um ano",
       "note": "O CloudBank os encontrou: um valor de pelo menos o dobro da mediana do beneficiário e 20 acima, um beneficiário novo acima de 95% dos gastos do ano, o mesmo valor ao mesmo beneficiário duas vezes em 3 dias. O modelo só escreveu o texto. Modelo: {{model}}."
     }
+  },
+  "merge": {
+    "action": "Mesclar",
+    "with": "Mesclar com…",
+    "title": "Mesclar 2 linhas",
+    "lead": "Fica uma linha, em {{account}}",
+    "origin": {
+      "bank": "Banco",
+      "mail": "E-mail do banco",
+      "hand": "À mão"
+    },
+    "added": "adicionada em {{date}}",
+    "same": "iguais",
+    "result": "Resultado",
+    "keepsRef": "Continua vinculada ao banco: a sincronização não a importa de novo",
+    "amountsDiffer": "Valores diferentes: {{a}} e {{b}}",
+    "done": "Linhas mescladas: {{row}}",
+    "undone": "Mesclagem desfeita",
+    "undoConflict": "A linha mesclada mudou desde então, então a mesclagem não pode ser desfeita.",
+    "why": {
+      "accounts": "Linhas de contas diferentes não podem ser mescladas",
+      "kind": "Transferências e linhas divididas não podem ser mescladas"
+    },
+    "pickLikely": "Mesmo valor, em até 3 dias",
+    "pickNone": "Nenhuma outra linha desta conta tem o mesmo valor em até 3 dias",
+    "pickOther": "Outra linha desta conta",
+    "next": "Comparar",
+    "undoMerge": "Desfazer mesclagem",
+    "undoStale": "Uma mesclagem posterior tomou o lugar desta, e só a última pode ser desfeita.",
+    "gone": "Uma das linhas não existe mais. O registro agora a mostra como está.",
+    "loadFailed": "Não foi possível carregar as duas linhas.",
+    "retry": "Tentar de novo",
+    "pickOtherPlaceholder": "Buscar por data, favorecido ou valor"
   }
 }

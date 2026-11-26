@@ -72,9 +72,12 @@ type Transaction struct {
 	TransferAccountID *int64 `json:"transferAccountId,omitempty"`
 	// AttachmentCount is the number of files attached to the transaction. It is
 	// populated for register rows so the ledger can show a paperclip glyph.
-	AttachmentCount int    `json:"attachmentCount"`
-	CreatedAt       string `json:"createdAt"`
-	UpdatedAt       string `json:"updatedAt"`
+	AttachmentCount int `json:"attachmentCount"`
+	// ImportRef is the bank's (or a mail's, "mail:…") reference of an imported
+	// row; set on a single transaction only. A merge keeps the bank's (#786).
+	ImportRef string `json:"importRef,omitempty"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
 }
 
 // Input carries the editable fields of a transaction. When Splits is non-empty
@@ -341,7 +344,7 @@ func (s *Service) Get(ctx context.Context, id int64) (Transaction, error) {
 		PayeeID: idPtr(row.PayeeID), CategoryID: idPtr(row.CategoryID), VehicleID: idPtr(row.VehicleID),
 		Memo:    row.Memo,
 		IsSplit: row.IsSplit != 0, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
-		Tags: []string{},
+		Tags: []string{}, ImportRef: row.ImportRef,
 	}
 	tags, err := s.rq.ListTransactionTags(ctx, id)
 	if err != nil {

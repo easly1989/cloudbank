@@ -15,6 +15,7 @@ import {
 } from "@mantine/core";
 import {
   IconArrowDown,
+  IconArrowMerge,
   IconArrowUp,
   IconChevronDown,
   IconChevronUp,
@@ -82,6 +83,7 @@ import {
   CATEGORY_DOT,
   ROW_ACTION,
   ROW_ACTIONS_WIDTH,
+  STATUS_COLORS,
   ROW_COLUMNS,
   DIVIDER_HEIGHT,
   ROW_GAP,
@@ -103,8 +105,8 @@ import { amountColor, attentionColor, negativeOnlyColor } from "../amountTone";
 // A row is 45 tall, and 59 when its lead column carries a second line — both
 // measured off the tile. The virtualiser is told which, per row, so a ledger of
 // payees-with-memos scrolls as smoothly as one without.
-const ROW_HEIGHT = 45;
-const ROW_HEIGHT_WITH_SUB = 59;
+export const ROW_HEIGHT = 45;
+export const ROW_HEIGHT_WITH_SUB = 59;
 // Per-column grid widths (fixed so virtualized rows stay aligned). Status is
 // wide enough for the longest label ("Non riconciliato") plus the lock glyph.
 // Column widths come from the tile, not from taste: see registerTheme.ts and
@@ -146,8 +148,6 @@ const COL_LABEL: Record<string, string> = {
   status: "transactions.status",
   runningBalance: "register.balance",
 };
-// Status badge colours indexed by status value (none..void).
-const STATUS_COLORS = ["gray", "blue", "teal", "orange", "red"];
 const STATUS_RECONCILED = 2;
 
 export interface RegisterTableProps {
@@ -162,6 +162,8 @@ export interface RegisterTableProps {
   onDelete: (row: RegisterRow) => void;
   onToggleStatus: (row: RegisterRow, status: number) => void;
   onSaveTemplate: (row: RegisterRow) => void;
+  /** Merge the row with another one of its account (#786). */
+  onMergeWith?: (row: RegisterRow) => void;
   // Bulk actions on the current multi-selection (also on the selection bar);
   // shown in the right-click menu when more than one row is selected.
   onBulkEdit?: () => void;
@@ -219,6 +221,7 @@ export function RegisterTable({
   onDelete,
   onToggleStatus,
   onSaveTemplate,
+  onMergeWith,
   onBulkEdit,
   onBulkDelete,
   fillRef,
@@ -1285,7 +1288,11 @@ export function RegisterTable({
             </div>
             {/* The foot of the card. It stays put while the ledger scrolls, so
               what you have picked and what it comes to never scroll away. */}
-            <div ref={footRef}>{bulkBar}</div>
+            {/* As wide as the card, not the rows: on a phone the rows scroll
+              sideways, and the selection's buttons must not go with them. */}
+            <div ref={footRef} style={{ position: "sticky", left: 0, width: "100cqi" }}>
+              {bulkBar}
+            </div>
           </Box>
 
           {/* Right-click context menu, anchored at the cursor. */}
@@ -1355,6 +1362,14 @@ export function RegisterTable({
                           onClick={run(() => onDuplicate(r))}
                         >
                           {t("transactions.duplicate")}
+                        </Menu.Item>
+                      )}
+                      {onMergeWith && r.transferId == null && !r.isSplit && (
+                        <Menu.Item
+                          leftSection={<IconArrowMerge size={15} />}
+                          onClick={run(() => onMergeWith(r))}
+                        >
+                          {t("merge.with")}
                         </Menu.Item>
                       )}
                       <Menu.Item
@@ -1518,7 +1533,7 @@ function ColumnHeader({
  * as a second line. Turn Payee off and Memo leads, at full size, which is the
  * rule the tile states and the reason this is a component rather than a `Text`.
  */
-function LeadCell({ lead, sub, icon }: { lead?: string; sub?: Sub; icon?: ReactNode }) {
+export function LeadCell({ lead, sub, icon }: { lead?: string; sub?: Sub; icon?: ReactNode }) {
   return (
     <Stack gap={2} style={{ minWidth: 0 }}>
       <Group gap={4} wrap="nowrap" style={{ minWidth: 0 }}>
@@ -1571,7 +1586,7 @@ function leadSub(
  * An uncategorised row gets a hollow dot and the attention colour: it is the
  * one state in this column worth noticing, and a blank cell does not say it.
  */
-function CategoryCell({ name, uncategorised }: { name: string; uncategorised: boolean }) {
+export function CategoryCell({ name, uncategorised }: { name: string; uncategorised: boolean }) {
   return (
     <Group gap={7} wrap="nowrap" style={{ minWidth: 0 }}>
       <Box

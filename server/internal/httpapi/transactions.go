@@ -29,6 +29,7 @@ func (h *transactionHandlers) walletRoutes(r chi.Router) {
 	r.Post("/transactions/duplicates/dismiss", h.dismissDuplicate)
 	r.Post("/transactions/duplicates/dismiss-all", h.dismissAllDuplicates)
 	r.Post("/transactions/merge", h.mergeTransactions)
+	r.Delete("/transactions/merge", h.undoMerge)
 	r.Post("/transactions/merge-mail", h.mergeMail)
 	r.Get("/transactions/register", h.register)
 	r.Get("/transactions/search", h.search)
@@ -243,6 +244,9 @@ func (h *transactionHandlers) mergeTransactions(w http.ResponseWriter, r *http.R
 	var body struct {
 		KeepID int64 `json:"keepId"`
 		DropID int64 `json:"dropId"`
+		// Take, when present, makes it the register's merge (#786): the fields
+		// the kept row takes from the dropped one, undone by DELETE.
+		Take *[]string `json:"take"`
 	}
 	if !decodeJSON(w, r, &body) {
 		return
@@ -251,14 +255,52 @@ func (h *transactionHandlers) mergeTransactions(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusBadRequest, "invalid", "two distinct transaction ids are required")
 		return
 	}
-	err := h.svc.Merge(r.Context(), wl.ID, body.KeepID, body.DropID)
+	var err error
+	token := ""
+	if body.Take != nil {
+		token, err = h.svc.MergeRows(r.Context(), wl.ID, body.KeepID, body.DropID, *body.Take)
+	} else {
+		err = h.svc.Merge(r.Context(), wl.ID, body.KeepID, body.DropID)
+	}
 	switch {
+	case err == nil && token != "":
+		writeJSON(w, http.StatusOK, map[string]string{"token": token})
 	case err == nil:
 		w.WriteHeader(http.StatusNoContent)
 	case errors.Is(err, transaction.ErrNotFound):
 		writeError(w, http.StatusNotFound, "not_found", "transaction not found")
+	case errors.Is(err, transaction.ErrMergeAccounts):
+		writeError(w, http.StatusBadRequest, "different_accounts", "the rows are on different accounts")
+	case errors.Is(err, transaction.ErrMergeKind):
+		writeError(w, http.StatusBadRequest, "not_mergeable", "a transfer or a split cannot be merged")
+	case errors.Is(err, transaction.ErrMergeField):
+		writeError(w, http.StatusBadRequest, "invalid_field", "unknown merge field")
 	default:
 		writeError(w, http.StatusInternalServerError, "internal", "could not merge")
+	}
+}
+
+// undoMerge puts the wallet's last register merge back (#786), the one the
+// token its merge returned names.
+func (h *transactionHandlers) undoMerge(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		writeError(w, http.StatusBadRequest, "invalid", "token is required")
+		return
+	}
+	err := h.svc.UndoMerge(r.Context(), wl.ID, token)
+	switch {
+	case err == nil:
+		w.WriteHeader(http.StatusNoContent)
+	case errors.Is(err, transaction.ErrNoMerge):
+		writeError(w, http.StatusNotFound, "not_found", "no merge to undo")
+	case errors.Is(err, transaction.ErrUndoChanged):
+		writeError(w, http.StatusConflict, "undo_conflict", "the merged row has changed since the merge")
+	case errors.Is(err, transaction.ErrUndoStale):
+		writeError(w, http.StatusConflict, "undo_stale", "a later merge replaced this one")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", "could not undo the merge")
 	}
 }
 
