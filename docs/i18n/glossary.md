@@ -28,6 +28,8 @@ Decided in issue #596. The research behind the choices, with its sources, is
 - **Pattern:** how CloudBank reads one kind of bank mail: which mails it is
   for, the pieces it takes from them and the account they go to. Not a
   template, which fills in a new transaction.
+- **Source:** one folder of a Bank mails mailbox, with its own name, patterns
+  and way of reading mails. A mailbox has one to five.
 
 ## Terms
 
@@ -56,6 +58,7 @@ Decided in issue #596. The research behind the choices, with its sources, is
 | set aside | messo da parte | reservado | mis de côté | zurückgelegt | guardado |
 | transfer | giroconto | transferencia | virement | Umbuchung | transferência |
 | today / future balance | saldo di oggi / futuro | saldo actual / previsto | solde actuel / prévisionnel | Kontostand heute / künftig | saldo atual / previsto |
+| source | sorgente | fuente | source | Quelle | fonte |
 
 **Adjectives agree with the word for transaction**, or with the noun they
 describe when it is another one:
