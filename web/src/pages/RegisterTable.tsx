@@ -66,6 +66,7 @@ import { todayCivil } from "../civilDate";
 import { formatMinor, type MoneyFormat } from "../money";
 import { notifyError } from "../notifyError";
 import { stopRowEdit } from "../rowEdit";
+import { rowClick, rowMouseDown } from "../rowSelect";
 import {
   ALL_COLUMNS,
   columnTracks,
@@ -1128,7 +1129,18 @@ export function RegisterTable({
                             .filter(Boolean)
                             .join(" ") || undefined
                         }
-                        onClick={() => setCursorId(r.id)}
+                        onMouseDown={rowMouseDown}
+                        onClick={(e) => {
+                          const cur = tableRows.findIndex((x) => x.original.id === cursorId);
+                          const sel = rowClick(e, vi.index, selectAnchorRef, cur < 0 ? null : cur);
+                          if (!sel) setCursorId(r.id);
+                          else if (sel.mode === "toggle") onToggleSelect(r.id);
+                          else
+                            onToggleAll(
+                              tableRows.slice(sel.from, sel.to + 1).map((rr) => rr.original.id),
+                              true,
+                            );
+                        }}
                         onDoubleClick={() => onEdit(r)}
                         onContextMenu={(e) => {
                           e.preventDefault();

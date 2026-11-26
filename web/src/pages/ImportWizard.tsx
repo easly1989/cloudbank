@@ -21,7 +21,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconAlertTriangle, IconFileImport } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -52,6 +52,7 @@ import { useAskPastLimit } from "../components/aiLimit";
 import { aiFeatureOn } from "../components/proposalData";
 import { formatMinor } from "../money";
 import { notifyError } from "../notifyError";
+import { rowClick, rowMouseDown } from "../rowSelect";
 import { useWallet } from "../wallet/WalletProvider";
 import { ErrorMessage } from "../components/ErrorMessage";
 import { CsvProposalBox, ImportColumns, RememberedBar } from "./ImportColumns";
@@ -313,6 +314,7 @@ export function ImportWizard() {
     await previewToReview(next);
   };
 
+  const rowAnchor = useRef<number | null>(null);
   const toggleRow = (i: number, include: boolean) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, include } : r)));
   const setRowCategory = (i: number, category: string) =>
@@ -561,6 +563,21 @@ export function ImportWizard() {
                     <Table.Tr
                       key={i}
                       c={r.error ? "red" : r.match === "imported" ? "dimmed" : undefined}
+                      onMouseDown={rowMouseDown}
+                      onClick={(e) => {
+                        const sel = rowClick(e, i, rowAnchor);
+                        if (!sel) return;
+                        if (sel.mode === "toggle") {
+                          if (!r.error) toggleRow(i, !r.include);
+                        } else
+                          setRows((rs) =>
+                            rs.map((x, idx) =>
+                              idx >= sel.from && idx <= sel.to && !x.error
+                                ? { ...x, include: true }
+                                : x,
+                            ),
+                          );
+                      }}
                     >
                       <Table.Td>
                         <Checkbox

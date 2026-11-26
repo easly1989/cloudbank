@@ -3,7 +3,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconHistory, IconSparkles } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -23,6 +23,7 @@ import { useDateFormat } from "../dates";
 import { formatMinor, type MoneyFormat } from "../money";
 import { notifyError } from "../notifyError";
 import { sensitive } from "../privacy";
+import { rowClick, rowMouseDown } from "../rowSelect";
 
 // Review's rows that need a category (#486), and the bulk categorisation of
 // #706: "Propose categories" fills a payee and a category in where it can,
@@ -97,6 +98,7 @@ export function ReviewNeedsCategory({
   const picked = shown.filter((r) => drafts?.get(r.id)?.picked && drafts.get(r.id)?.categoryId);
   const proposing = shown.length > 0;
 
+  const rowAnchor = useRef<number | null>(null);
   const edit = (id: number, patch: Partial<Draft>) =>
     setDrafts((m) => {
       const d = m?.get(id);
@@ -231,7 +233,7 @@ export function ReviewNeedsCategory({
             {t("review.needsCategoryEmpty")}
           </Text>
         ) : (
-          needs.map((tx) => {
+          needs.map((tx, index) => {
             const acc = accountById.get(tx.accountId);
             const d = drafts?.get(tx.id);
             const payee = d ? d.payeeId : (tx.payeeId ?? null);
@@ -270,6 +272,24 @@ export function ReviewNeedsCategory({
               <Box
                 key={tx.id}
                 data-testid="needs-category-row"
+                onMouseDown={proposing ? rowMouseDown : undefined}
+                onClick={
+                  proposing
+                    ? (e) => {
+                        const sel = rowClick(e, index, rowAnchor);
+                        if (!sel) return;
+                        // Only the rows with a proposal have a box.
+                        for (const [i, r] of needs.entries()) {
+                          const rd = drafts?.get(r.id);
+                          if (!rd || rd.categoryId === null) continue;
+                          if (
+                            sel.mode === "toggle" ? i === sel.index : i >= sel.from && i <= sel.to
+                          )
+                            edit(r.id, { picked: sel.mode === "toggle" ? !rd.picked : true });
+                        }
+                      }
+                    : undefined
+                }
                 style={{
                   display: "grid",
                   gridTemplateColumns: phone
