@@ -1356,14 +1356,12 @@ export function RegisterTable({
                       >
                         {t("transactions.edit")}
                       </Menu.Item>
-                      {r.transferId == null && (
-                        <Menu.Item
-                          leftSection={<IconCopy size={15} />}
-                          onClick={run(() => onDuplicate(r))}
-                        >
-                          {t("transactions.duplicate")}
-                        </Menu.Item>
-                      )}
+                      <Menu.Item
+                        leftSection={<IconCopy size={15} />}
+                        onClick={run(() => onDuplicate(r))}
+                      >
+                        {t("transactions.duplicate")}
+                      </Menu.Item>
                       {onMergeWith && r.transferId == null && !r.isSplit && (
                         <Menu.Item
                           leftSection={<IconArrowMerge size={15} />}

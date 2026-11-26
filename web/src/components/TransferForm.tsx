@@ -28,6 +28,7 @@ export function TransferForm({
   walletId,
   accounts,
   editingId,
+  duplicateId = null,
   onSaved,
   templates,
   onTemplateSaved,
@@ -37,6 +38,8 @@ export function TransferForm({
   walletId: number;
   accounts: Account[];
   editingId: number | null;
+  /** A transfer to copy into a new one; ignored while editing. */
+  duplicateId?: number | null;
   onSaved: () => void;
   templates: Template[];
   onTemplateSaved: () => void;
@@ -45,10 +48,11 @@ export function TransferForm({
   const qc = useQueryClient();
   const parseAmount = useAmountParser();
 
+  const sourceId = editingId ?? duplicateId;
   const transferQuery = useQuery({
-    queryKey: ["transfer", walletId, editingId],
-    queryFn: () => getTransfer(walletId, editingId as number),
-    enabled: opened && editingId != null,
+    queryKey: ["transfer", walletId, sourceId],
+    queryFn: () => getTransfer(walletId, sourceId as number),
+    enabled: opened && sourceId != null,
   });
   const loaded = transferQuery.data;
   // Closing drops the fetched transfer, so the next opening waits for a fresh
@@ -75,11 +79,18 @@ export function TransferForm({
   // Editing waits for the transfer itself, which arrives after the drawer does —
   // hence the null key while it is still in flight, and again while closed,
   // which is what makes reopening the same transfer re-seed it.
-  const seedKey = !opened ? null : editingId == null ? "new" : loaded ? `edit:${loaded.id}` : null;
+  // A duplicate seeds from its source the same way, as a new transfer.
+  const seedKey = !opened
+    ? null
+    : sourceId == null
+      ? "new"
+      : loaded
+        ? `${editingId != null ? "edit" : "dup"}:${loaded.id}`
+        : null;
   const [seededFor, setSeededFor] = useState<string | null>(null);
   if (seedKey !== seededFor) {
     setSeededFor(seedKey);
-    if (seedKey !== null && loaded && editingId != null) {
+    if (seedKey !== null && loaded && sourceId != null) {
       const from = accounts.find((a) => a.id === loaded.fromAccountId);
       const to = accounts.find((a) => a.id === loaded.toAccountId);
       setFromId(String(loaded.fromAccountId));
@@ -94,7 +105,8 @@ export function TransferForm({
         to ? minorToInput(loaded.toAmount, to.currencyFracDigits, to.currencyDecimalChar) : "",
       );
       setMemo(loaded.memo);
-      setStatus(String(loaded.status));
+      // A copy starts unreconciled, as a new transfer does.
+      setStatus(editingId != null ? String(loaded.status) : "0");
     } else if (seedKey === "new") {
       setFromId(accounts[0] ? String(accounts[0].id) : null);
       setToId(accounts[1] ? String(accounts[1].id) : null);

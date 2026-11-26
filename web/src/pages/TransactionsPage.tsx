@@ -283,6 +283,7 @@ export function TransactionsPage() {
   };
   const [transferOpened, transferForm] = useDisclosure(false);
   const [editingTransferId, setEditingTransferId] = useState<number | null>(null);
+  const [duplicatingTransferId, setDuplicatingTransferId] = useState<number | null>(null);
 
   // Selection (for multi-edit and reconcile) + reconcile mode.
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -491,6 +492,7 @@ export function TransactionsPage() {
     )
       return;
     if (row.transferId != null) {
+      setDuplicatingTransferId(null);
       setEditingTransferId(row.transferId);
       transferForm.open();
     } else {
@@ -501,9 +503,15 @@ export function TransactionsPage() {
       form.open();
     }
   };
-  // Duplicate: open the entry form pre-filled from the row as a NEW transaction.
+  // Duplicate: open the entry form pre-filled from the row as a NEW
+  // transaction, or the transfer form as a new transfer.
   const duplicateRow = async (row: RegisterRow) => {
-    if (row.transferId != null) return; // transfers aren't duplicated here
+    if (row.transferId != null) {
+      setEditingTransferId(null);
+      setDuplicatingTransferId(row.transferId);
+      transferForm.open();
+      return;
+    }
     const full = await loadWhole(row);
     if (!full) return;
     setEditing(null);
@@ -656,6 +664,7 @@ export function TransactionsPage() {
                     disabled={accounts.length < 2}
                     onClick={() => {
                       setEditingTransferId(null);
+                      setDuplicatingTransferId(null);
                       transferForm.open();
                     }}
                   >
@@ -883,6 +892,7 @@ export function TransactionsPage() {
         walletId={walletId}
         accounts={accounts}
         editingId={editingTransferId}
+        duplicateId={duplicatingTransferId}
         onSaved={invalidate}
         templates={templates.filter((tpl) => tpl.isTransfer)}
         onTemplateSaved={invalidateTemplates}
