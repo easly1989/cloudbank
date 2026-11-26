@@ -397,6 +397,14 @@ body {
   .cb-pinning .cb-pin:last-child {
     --cb-pin-end: 18px;
   }
+  /* Privacy mode blurs what a pinned cell says, not the cell: a blurred cell
+     would let the columns under it show through its edges. */
+  .cb-private .cb-pinning .cb-pin[data-cb-sensitive] {
+    filter: none;
+  }
+  .cb-private .cb-pinning .cb-pin[data-cb-sensitive] > * {
+    filter: blur(max(6px, 0.45em));
+  }
   /* A heading reached with Tab scrolls clear of the pinned cells (the header's
      onFocus in RegisterTable). */
   .cb-pinning :not(.cb-pin) > .cb-sort {
