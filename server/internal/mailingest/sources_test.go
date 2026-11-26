@@ -322,16 +322,27 @@ func TestTheSameMailInTwoFolders(t *testing.T) {
 		t.Fatalf("history = %+v", msgs)
 	}
 
+	// Both copies there before one check: read once, by the source that
+	// claims it.
+	sendMail(t, f, "x0", "2,50", "Edicola Demo", "1234", true)
+	sendMailIn(t, f, "Banca", "x0", "2,50", "Edicola Demo", "1234", true)
+	if res, err := f.svc.Check(ctx, f.wallet, mb.ID); err != nil || res != (CheckResult{New: 1, Created: 1}) {
+		t.Fatalf("one check of both copies = %+v, %v", res, err)
+	}
+	if msgs := f.history(t, mb); len(msgs) != 2 || *msgs[0].SourceID != banca.ID {
+		t.Fatalf("history = %+v", msgs)
+	}
+
 	f.setAI(t, mb, acc, AIModeAI)
 	sendMail(t, f, "x2", "18,00", "Libreria Demo", "1234", true)
 	_, _ = f.svc.Check(ctx, f.wallet, mb.ID)
 	sendMailIn(t, f, "Banca", "x2", "18,00", "Libreria Demo", "1234", true)
 	_, _ = f.svc.Check(ctx, f.wallet, mb.ID)
 	msgs = f.history(t, mb)
-	if len(msgs) != 2 || *msgs[0].SourceID != src(mb) || msgs[0].Outcome != OutcomeUnrecognized || len(fa.calls) != 1 {
+	if len(msgs) != 3 || *msgs[0].SourceID != src(mb) || msgs[0].Outcome != OutcomeUnrecognized || len(fa.calls) != 1 {
 		t.Fatalf("history = %+v, AI asked %d times", msgs, len(fa.calls))
 	}
-	if len(f.transactions(t, acc)) != 1 {
+	if len(f.transactions(t, acc)) != 2 {
 		t.Fatal("a claimed mail was read again by another source")
 	}
 }

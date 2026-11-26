@@ -17,7 +17,7 @@ func (s *Service) Patterns(ctx context.Context, walletID, mailboxID, sourceID in
 	if _, _, err := s.getSource(ctx, walletID, mailboxID, sourceID); err != nil {
 		return nil, err
 	}
-	rows, err := s.q.ListMailPatterns(ctx, nullable(sourceID))
+	rows, err := s.rq.ListMailPatterns(ctx, nullable(sourceID))
 	if err != nil {
 		return nil, err
 	}

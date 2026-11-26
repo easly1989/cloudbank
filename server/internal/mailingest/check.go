@@ -111,13 +111,12 @@ func (s *Service) checkLocked(ctx context.Context, walletID, id, sourceID int64,
 		return nil
 	})
 	s.record(ctx, mb, err)
-	if err != nil {
-		return res, mb, err
-	}
+	read = lastOwner(read)
 	res.New = len(read)
-	// Read once the mail server is let go. A mail stored but not read here
-	// (the process stopped) stays unrecognised, and a pattern saved later can
-	// still be applied to it.
+	// Read once the mail server is let go, also when a later folder failed:
+	// the cursors of the folders before it have moved past these mails. A
+	// mail stored but not read here (the process stopped) stays unrecognised,
+	// and a pattern saved later can still be applied to it.
 	if len(read) > 0 {
 		for _, r := range read {
 			m, err := s.q.GetMailMessage(ctx, db.GetMailMessageParams{ID: r.id, MailboxID: id})
@@ -139,10 +138,30 @@ func (s *Service) checkLocked(ctx context.Context, walletID, id, sourceID int64,
 			return res, mb, err
 		}
 	}
+	if err != nil {
+		return res, mb, err
+	}
 	if sourceID > 0 && folderErr != nil {
 		return res, mb, folderErr
 	}
 	return res, mb, nil
+}
+
+// lastOwner keeps each mail once, with the source it went to last: a mail in
+// two folders of one check, stored unclaimed from the first and taken by a
+// source of the second.
+func lastOwner(read []routed) []routed {
+	at := map[int64]int{}
+	out := read[:0]
+	for _, r := range read {
+		if i, ok := at[r.id]; ok {
+			out[i] = r
+			continue
+		}
+		at[r.id] = len(out)
+		out = append(out, r)
+	}
+	return out
 }
 
 // readFolder fetches what arrived in one folder since the lowest cursor of the

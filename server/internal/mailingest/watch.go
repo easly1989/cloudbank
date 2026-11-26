@@ -114,7 +114,7 @@ func (s *Service) Run(ctx context.Context, logger *slog.Logger) {
 	look := time.NewTicker(s.timing.look)
 	defer look.Stop()
 	for {
-		rows, err := s.q.ListSourcesToWatch(ctx)
+		rows, err := s.rq.ListSourcesToWatch(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
 				return
