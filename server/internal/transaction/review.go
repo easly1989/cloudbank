@@ -323,6 +323,11 @@ func (s *Service) Merge(ctx context.Context, walletID, keepID, dropID int64) err
 		}); err != nil {
 			return err
 		}
+	} else if drop.ImportRef != "" && drop.ImportRef != keep.ImportRef {
+		// Both came from the bank: the dropped ref still counts as imported.
+		if err := s.q.InsertMergedImportRef(ctx, db.InsertMergedImportRefParams{AccountID: drop.AccountID, ImportRef: drop.ImportRef}); err != nil {
+			return err
+		}
 	}
 	return s.Delete(ctx, dropID)
 }

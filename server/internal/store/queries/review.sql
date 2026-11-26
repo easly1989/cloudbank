@@ -114,6 +114,16 @@ ON CONFLICT (id) DO UPDATE SET
     template_id = excluded.template_id, import_ref = excluded.import_ref,
     vehicle_id = excluded.vehicle_id, origin = excluded.origin, created_by = excluded.created_by;
 
+-- name: InsertMergedImportRef :exec
+INSERT INTO merged_import_refs (account_id, import_ref) VALUES (?, ?)
+ON CONFLICT DO NOTHING;
+
+-- name: DeleteMergedImportRef :exec
+DELETE FROM merged_import_refs WHERE account_id = ? AND import_ref = ?;
+
+-- name: ListMergedImportRefs :many
+SELECT import_ref FROM merged_import_refs WHERE account_id = ?;
+
 -- name: UpsertTransactionMerge :exec
 INSERT INTO transaction_merges (wallet_id, undo) VALUES (?, ?)
 ON CONFLICT (wallet_id) DO UPDATE SET

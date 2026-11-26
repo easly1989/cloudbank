@@ -2633,7 +2633,7 @@ export interface paths {
         put?: never;
         /**
          * Merge a duplicate pair — keep one row (inheriting the other's import ref), delete the other
-         * @description With `take`, it is the register's merge (#786), all or nothing: the kept row takes the named fields from the dropped one and keeps its own others, keeps its import ref (or inherits the dropped row's when it has none or only a mail's), and takes the dropped row's attachments and mails; then the dropped row is deleted. Both rows must be on one account, and neither a transfer leg nor a split. The merge replaces the wallet's last one, which DELETE undoes.
+         * @description With `take`, it is the register's merge (#786), all or nothing: the kept row takes the named fields from the dropped one and keeps its own others, keeps its import ref (or inherits the dropped row's when it has none or only a mail's), and takes the dropped row's attachments and mails; then the dropped row is deleted. A ref no row keeps (both rows came from the bank) still counts as imported, so sync does not bring the dropped row back. Both rows must be on one account, and neither a transfer leg nor a split. The merge replaces the wallet's last one, which DELETE undoes.
          */
         post: operations["mergeTransactions"];
         /**

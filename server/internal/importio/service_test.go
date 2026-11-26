@@ -271,3 +271,28 @@ func TestBankSyncMergesIntoATransactionFromAMail(t *testing.T) {
 		t.Fatalf("after the sync the ref is %q, want the bank's", got.ImportRef)
 	}
 }
+
+// A ref a merge took off a row (#786) counts as imported: neither bank sync
+// nor a file import brings the merged-away row back.
+func TestAMergedAwayRefIsNotImportedAgain(t *testing.T) {
+	s, _, _, q, wid, acc := newTestService(t)
+	ctx := context.Background()
+	if _, err := q.InsertTransaction(ctx, db.InsertTransactionParams{
+		WalletID: wid, AccountID: acc, Date: "2026-11-26", Amount: -1299, Status: 2, ImportRef: "eb:kept",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := q.InsertMergedImportRef(ctx, db.InsertMergedImportRefParams{AccountID: acc, ImportRef: "eb:dropped"}); err != nil {
+		t.Fatal(err)
+	}
+	rows := []Row{{Line: 1, Date: "2026-11-29", Amount: -12990000, Memo: "PP*HUMBLEBUNDL", FITID: "eb:dropped", Status: 2}}
+	for _, sync := range []bool{true, false} {
+		pv, err := s.PreviewParsed(ctx, wid, acc, rows, false, sync)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if r := pv.Rows[0]; !r.Duplicate || r.Include {
+			t.Fatalf("sync=%v: row = %+v, want a duplicate left out", sync, r)
+		}
+	}
+}

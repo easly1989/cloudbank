@@ -15,6 +15,7 @@ import {
 } from "@mantine/core";
 import {
   IconArrowDown,
+  IconArrowMerge,
   IconArrowUp,
   IconChevronDown,
   IconChevronUp,
@@ -22,7 +23,6 @@ import {
   IconArrowsHorizontal,
   IconCircleCheck,
   IconClock,
-  IconArrowMerge,
   IconCopy,
   IconDeviceFloppy,
   IconLock,

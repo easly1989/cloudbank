@@ -232,6 +232,15 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 			refSeen[r] = true
 		}
 	}
+	// A ref a merge took off a row (#786) stays imported: its row lives on in
+	// the one it was merged into.
+	merged, err := s.q.ListMergedImportRefs(ctx, accountID)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range merged {
+		refSeen[r] = true
+	}
 	matchedIDs := map[int64]bool{} // existing txns already claimed by an earlier row this batch
 
 	out := make([]PreviewRow, 0, len(rows))

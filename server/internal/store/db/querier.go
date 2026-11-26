@@ -105,6 +105,7 @@ type Querier interface {
 	DeleteHeldNotification(ctx context.Context, id int64) error
 	DeleteMailPattern(ctx context.Context, arg DeleteMailPatternParams) (int64, error)
 	DeleteMailbox(ctx context.Context, arg DeleteMailboxParams) (int64, error)
+	DeleteMergedImportRef(ctx context.Context, arg DeleteMergedImportRefParams) error
 	DeleteNotificationChannel(ctx context.Context, arg DeleteNotificationChannelParams) error
 	DeleteNotificationDelivery(ctx context.Context, id int64) error
 	DeleteOtherUserSessions(ctx context.Context, arg DeleteOtherUserSessionsParams) error
@@ -233,6 +234,7 @@ type Querier interface {
 	InsertMailMessage(ctx context.Context, arg InsertMailMessageParams) ([]int64, error)
 	InsertMailPattern(ctx context.Context, arg InsertMailPatternParams) (MailPattern, error)
 	InsertMailbox(ctx context.Context, arg InsertMailboxParams) (Mailbox, error)
+	InsertMergedImportRef(ctx context.Context, arg InsertMergedImportRefParams) error
 	InsertNotification(ctx context.Context, arg InsertNotificationParams) error
 	InsertNotificationDelivery(ctx context.Context, arg InsertNotificationDeliveryParams) error
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
@@ -346,6 +348,7 @@ type Querier interface {
 	// Every mailbox the listener should keep open: not paused, and not waiting for
 	// a new sign-in, across all wallets.
 	ListMailboxesToWatch(ctx context.Context) ([]Mailbox, error)
+	ListMergedImportRefs(ctx context.Context, accountID int64) ([]string, error)
 	ListNotificationChannels(ctx context.Context, userID int64) ([]NotificationChannel, error)
 	ListNotificationPrefs(ctx context.Context, userID int64) ([]ListNotificationPrefsRow, error)
 	// One person's thresholds on the accounts of one wallet.

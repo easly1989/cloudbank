@@ -11,6 +11,20 @@ import (
 	"strings"
 )
 
+const deleteMergedImportRef = `-- name: DeleteMergedImportRef :exec
+DELETE FROM merged_import_refs WHERE account_id = ? AND import_ref = ?
+`
+
+type DeleteMergedImportRefParams struct {
+	AccountID int64
+	ImportRef string
+}
+
+func (q *Queries) DeleteMergedImportRef(ctx context.Context, arg DeleteMergedImportRefParams) error {
+	_, err := q.db.ExecContext(ctx, deleteMergedImportRef, arg.AccountID, arg.ImportRef)
+	return err
+}
+
 const deleteReviewSnooze = `-- name: DeleteReviewSnooze :exec
 DELETE FROM review_snoozes WHERE transaction_id = ? AND wallet_id = ?
 `
@@ -59,6 +73,21 @@ type InsertDuplicateDismissalParams struct {
 
 func (q *Queries) InsertDuplicateDismissal(ctx context.Context, arg InsertDuplicateDismissalParams) error {
 	_, err := q.db.ExecContext(ctx, insertDuplicateDismissal, arg.WalletID, arg.TxnAID, arg.TxnBID)
+	return err
+}
+
+const insertMergedImportRef = `-- name: InsertMergedImportRef :exec
+INSERT INTO merged_import_refs (account_id, import_ref) VALUES (?, ?)
+ON CONFLICT DO NOTHING
+`
+
+type InsertMergedImportRefParams struct {
+	AccountID int64
+	ImportRef string
+}
+
+func (q *Queries) InsertMergedImportRef(ctx context.Context, arg InsertMergedImportRefParams) error {
+	_, err := q.db.ExecContext(ctx, insertMergedImportRef, arg.AccountID, arg.ImportRef)
 	return err
 }
 
@@ -268,6 +297,33 @@ func (q *Queries) ListMailMessageIDsForTransaction(ctx context.Context, transact
 			return nil, err
 		}
 		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMergedImportRefs = `-- name: ListMergedImportRefs :many
+SELECT import_ref FROM merged_import_refs WHERE account_id = ?
+`
+
+func (q *Queries) ListMergedImportRefs(ctx context.Context, accountID int64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listMergedImportRefs, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var import_ref string
+		if err := rows.Scan(&import_ref); err != nil {
+			return nil, err
+		}
+		items = append(items, import_ref)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

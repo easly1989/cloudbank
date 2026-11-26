@@ -6,3 +6,12 @@ CREATE TABLE transaction_merges (
     undo       TEXT    NOT NULL,
     created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
+
+-- The import refs a merge took off a row (both rows came from the bank, and a
+-- row keeps one ref). Import and bank sync count them as already imported, so
+-- the dropped row does not come back on the next sync.
+CREATE TABLE merged_import_refs (
+    account_id INTEGER NOT NULL REFERENCES accounts (id) ON DELETE CASCADE,
+    import_ref TEXT    NOT NULL,
+    PRIMARY KEY (account_id, import_ref)
+);

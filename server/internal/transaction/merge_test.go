@@ -144,3 +144,31 @@ func TestMergingRowsRefusesWhatItCannotMerge(t *testing.T) {
 		t.Errorf("undo = %v, want ErrNoMerge", err)
 	}
 }
+
+// Both rows from the bank: the kept row has one ref, and the dropped one is
+// recorded so the next sync does not bring the dropped row back; undo forgets it.
+func TestMergingTwoBankRowsKeepsTheDroppedRefImported(t *testing.T) {
+	s, q, _, wid, acc := newMailReviewService(t)
+	ctx := context.Background()
+	a, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-11-26", Amount: -1299, ImportRef: "eb:a"})
+	b, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-11-27", Amount: -1299, ImportRef: "eb:b"})
+	if err := s.MergeRows(ctx, wid, a.ID, b.ID, []string{"date"}); err != nil {
+		t.Fatal(err)
+	}
+	if refs, _ := q.ListMergedImportRefs(ctx, acc); !slices.Equal(refs, []string{"eb:b"}) {
+		t.Fatalf("merged refs = %v, want the dropped row's", refs)
+	}
+	if err := s.UndoMerge(ctx, wid); err != nil {
+		t.Fatal(err)
+	}
+	if refs, _ := q.ListMergedImportRefs(ctx, acc); len(refs) != 0 {
+		t.Fatalf("merged refs after undo = %v, want none", refs)
+	}
+	// The Review's merge records it too.
+	if err := s.Merge(ctx, wid, a.ID, b.ID); err != nil {
+		t.Fatal(err)
+	}
+	if refs, _ := q.ListMergedImportRefs(ctx, acc); !slices.Equal(refs, []string{"eb:b"}) {
+		t.Fatalf("merged refs after the Review's merge = %v", refs)
+	}
+}

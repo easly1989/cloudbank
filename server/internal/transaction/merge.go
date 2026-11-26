@@ -36,6 +36,9 @@ type mergeUndo struct {
 	Drop        mergedRow `json:"drop"`
 	Attachments []int64   `json:"attachments,omitempty"`
 	Mails       []int64   `json:"mails,omitempty"`
+	// LostRefs are the import refs no row keeps after the merge, recorded so
+	// import and sync count them as already imported.
+	LostRefs []string `json:"lostRefs,omitempty"`
 }
 
 type mergedRow struct {
@@ -137,11 +140,21 @@ func (s *Service) MergeRows(ctx context.Context, walletID, keepID, dropID int64,
 		return err
 	}
 	mail := func(ref string) bool { return strings.HasPrefix(ref, MailRefPrefix) }
+	ref := k.ImportRef
 	if d.ImportRef != "" && (k.ImportRef == "" || (mail(k.ImportRef) && !mail(d.ImportRef))) {
+		ref = d.ImportRef
 		if err := qtx.SetTransactionImportRef(ctx, db.SetTransactionImportRefParams{
-			ImportRef: d.ImportRef, ID: keepID, WalletID: walletID,
+			ImportRef: ref, ID: keepID, WalletID: walletID,
 		}); err != nil {
 			return err
+		}
+	}
+	for _, r := range []string{k.ImportRef, d.ImportRef} {
+		if r != "" && r != ref {
+			undo.LostRefs = append(undo.LostRefs, r)
+			if err := qtx.InsertMergedImportRef(ctx, db.InsertMergedImportRefParams{AccountID: k.AccountID, ImportRef: r}); err != nil {
+				return err
+			}
 		}
 	}
 	if err := s.setTags(ctx, qtx, walletID, keepID, tags); err != nil {
@@ -237,6 +250,11 @@ func (s *Service) UndoMerge(ctx context.Context, walletID int64) error {
 		if err := qtx.MoveMailMessagesByIDs(ctx, db.MoveMailMessagesByIDsParams{
 			ToID: sql.NullInt64{Int64: dropID, Valid: true}, FromID: sql.NullInt64{Int64: keepID, Valid: true}, Ids: undo.Mails,
 		}); err != nil {
+			return err
+		}
+	}
+	for _, r := range undo.LostRefs {
+		if err := qtx.DeleteMergedImportRef(ctx, db.DeleteMergedImportRefParams{AccountID: undo.Keep.Row.AccountID, ImportRef: r}); err != nil {
 			return err
 		}
 	}

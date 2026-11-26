@@ -435,6 +435,11 @@ type Mailbox struct {
 	AiSenders    string
 }
 
+type MergedImportRef struct {
+	AccountID int64
+	ImportRef string
+}
+
 type MfaRecoveryCode struct {
 	ID        int64
 	UserID    int64
