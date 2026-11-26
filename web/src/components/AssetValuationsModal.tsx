@@ -16,6 +16,7 @@ import { type MoneyFormat, formatMinor, minorToInput } from "../money";
 import { useAmountParser } from "../useAmountParser";
 import { todayCivil } from "../civilDate";
 import { notifyError } from "../notifyError";
+import { WrapText } from "./WrapText";
 
 // AssetValuationsModal manages an asset account's dated valuation history: the
 // latest one stands in for the account balance in net worth. Add, edit and
@@ -131,11 +132,11 @@ export function AssetValuationsModal({
             value={value}
             onChange={(e) => setValue(e.currentTarget.value)}
           />
-          <TextInput
+          <WrapText
             label={t("valuations.note")}
             style={{ flex: 1, minWidth: 120 }}
             value={note}
-            onChange={(e) => setNote(e.currentTarget.value)}
+            onChange={setNote}
           />
           <Button onClick={() => save.mutate()} loading={save.isPending} disabled={!canSave}>
             {editingId ? t("valuations.save") : t("valuations.add")}

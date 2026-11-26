@@ -94,6 +94,7 @@ import { ErrorMessage } from "./ErrorMessage";
 import { ReceiptScan } from "./ReceiptScan";
 import { SharedText } from "./SharedText";
 import { useCreateFromSheet } from "./useCreateFromSheet";
+import { WrapText } from "./WrapText";
 
 // How a save resolves: close the sheet, or stay open for another entry — with
 // the fields cleared, or kept when "keep the fields" is ticked. Editing always
@@ -670,10 +671,14 @@ export function TransactionForm({
   // adding a tag, the quick-entry line sending its text. Editing has no
   // "another", so there Shift+Enter does nothing.
   const onEnter = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== "Enter" || e.defaultPrevented || e.nativeEvent.isComposing) return;
+    if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     const el = e.target as HTMLElement;
-    if (el.tagName !== "INPUT" || (el as HTMLInputElement).type === "file") return;
+    // A wrapping text field (WrapText) swallows Enter itself, so it has
+    // already prevented the default; any other field that did is left alone.
+    const wrap = el.tagName === "TEXTAREA";
+    if (e.defaultPrevented && !wrap) return;
+    if ((el.tagName !== "INPUT" && !wrap) || (el as HTMLInputElement).type === "file") return;
     if (el.getAttribute("aria-expanded") === "true") return;
     if (el.closest(".mantine-TagsInput-root")) return;
     e.preventDefault();
@@ -711,10 +716,10 @@ export function TransactionForm({
       />
     ),
     memo: (
-      <TextInput
+      <WrapText
         label={t("transactions.memo")}
         value={memo}
-        onChange={(e) => setMemo(e.currentTarget.value)}
+        onChange={setMemo}
         onBlur={() => void runSuggest()}
       />
     ),
@@ -773,13 +778,7 @@ export function TransactionForm({
         clearable
       />
     ),
-    info: (
-      <TextInput
-        label={t("transactions.info")}
-        value={info}
-        onChange={(e) => setInfo(e.currentTarget.value)}
-      />
-    ),
+    info: <WrapText label={t("transactions.info")} value={info} onChange={setInfo} />,
     vehicle:
       vehicleOptions.length > 0 ? (
         <Select

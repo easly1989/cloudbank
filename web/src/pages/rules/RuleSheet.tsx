@@ -35,6 +35,7 @@ import { categoryLabel } from "../payees/payeeList";
 import type { Lookups, RuleActions } from "./RuleTable";
 import classes from "./rules.module.css";
 import { notifyError } from "../../notifyError";
+import { WrapText } from "../../components/WrapText";
 
 const FIELDS: MatchField[] = ["memo", "payee", "both", "tag"];
 const TYPES: MatchType[] = ["contains", "exact", "regex"];
@@ -291,11 +292,11 @@ export function RuleSheet({
           onChange={setPaymentMode}
           clearable
         />
-        <TextInput
+        <WrapText
           label={t("assignments.setInfo")}
           placeholder={t("assignments.setInfoPlaceholder")}
           value={info}
-          onChange={(e) => setInfo(e.currentTarget.value)}
+          onChange={setInfo}
         />
       </Group>
       <TagsInput
