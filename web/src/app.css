@@ -416,9 +416,21 @@ body {
    would let the columns under it show through its edges. */
 .cb-private .cb-pinning .cb-pin[data-cb-sensitive] {
   filter: none;
+  /* It still takes presses, so they do not reach what scrolled under it. */
+  pointer-events: auto;
 }
 .cb-private .cb-pinning .cb-pin[data-cb-sensitive] > * {
   filter: blur(max(6px, 0.45em));
+  pointer-events: none;
+}
+/* The grip of the column before the pinned cells sits in their left strip at
+   the end of the scroll: it comes to the front there, and only there, since
+   elsewhere that column is under them. */
+.cb-pinning :not(.cb-pin):has(+ .cb-pin) > .cb-col-grip {
+  z-index: 1;
+}
+.cb-pinning[data-pin-shade] :not(.cb-pin):has(+ .cb-pin) > .cb-col-grip {
+  z-index: auto;
 }
 /* A heading reached with Tab scrolls clear of the pinned cells (the header's
    onFocus in RegisterTable). */
@@ -448,12 +460,16 @@ body {
     animation-fill-mode: both;
     animation-timeline: --cb-row-x;
   }
-  .cb-pinning :not(.cb-pin) + .cb-pin::before {
+  .cb-pinning :not(.cb-pin) + .cb-pin::before,
+  .cb-pinning :not(.cb-pin):has(+ .cb-pin) > .cb-col-grip {
     animation-name: cb-pin-shade;
     animation-duration: auto;
     animation-timing-function: linear;
     animation-fill-mode: both;
     animation-timeline: --cb-row-x;
+  }
+  .cb-pinning :not(.cb-pin):has(+ .cb-pin) > .cb-col-grip {
+    animation-name: cb-grip-front;
   }
 }
 @supports not (animation-timeline: scroll()) {
@@ -479,6 +495,12 @@ body {
   }
   100% {
     opacity: 0;
+  }
+}
+@keyframes cb-grip-front {
+  0%,
+  99% {
+    z-index: auto;
   }
 }
 @keyframes cb-arrive-pin {

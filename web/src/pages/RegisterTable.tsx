@@ -585,25 +585,36 @@ export function RegisterTable({
     ROW_GAP * (tracks.length - 1) +
     BAND_INSET * 2;
 
+  // The pinned cells' width with their gaps and the row's inset.
+  const pinWidth =
+    tracks.slice(-1 - pinned.size).reduce((sum, track) => sum + trackFloor(track) + ROW_GAP, 0) +
+    BAND_INSET;
+
   // Whether the pinned cells stay at the card's right edge (app.css, .cb-pin):
   // only while the row is wider than the card, so a card that fits draws and
-  // antialiases its text exactly as it did, and only on a card of 576px or
-  // more, below which the pinned cells (374px) would leave nothing to scroll.
+  // antialiases its text exactly as it did, and only while they leave 200px of
+  // the card for the columns that scroll under them.
   const cardRef = useRef<HTMLDivElement>(null);
   const [pinning, setPinning] = useState(false);
   useEffect(() => {
     const card = cardRef.current;
-    if (!card) return;
-    const check = () => setPinning(card.clientWidth >= 576 && card.scrollWidth > card.clientWidth);
+    if (!card) {
+      setPinning(false);
+      return;
+    }
+    const check = () =>
+      setPinning(card.clientWidth - pinWidth >= 200 && card.scrollWidth > card.clientWidth);
     check();
     const ro = new ResizeObserver(check);
     ro.observe(card);
     return () => ro.disconnect();
-  }, [minRowWidth, isEmpty]);
+  }, [minRowWidth, pinWidth, isEmpty]);
 
   // Without scroll timelines (Firefox, Safari before 26) the card's scroll moves the
-  // pinned cells from here instead. Chromium never attaches the listener.
-  useEffect(() => {
+  // pinned cells from here instead. Chromium never attaches the listener. The
+  // widths are read live, and the row's own box is watched, so a column drag
+  // does not rebuild this on every step.
+  useLayoutEffect(() => {
     const card = cardRef.current;
     if (!card || !pinning || CSS.supports?.("animation-timeline: scroll()")) return;
     const move = () => {
@@ -615,13 +626,14 @@ export function RegisterTable({
     card.addEventListener("scroll", move, { passive: true });
     const ro = new ResizeObserver(move);
     ro.observe(card);
+    if (card.firstElementChild) ro.observe(card.firstElementChild);
     return () => {
       card.removeEventListener("scroll", move);
       ro.disconnect();
       card.style.removeProperty("--cb-pin-x");
       card.removeAttribute("data-pin-shade");
     };
-  }, [pinning, minRowWidth]);
+  }, [pinning, isEmpty]);
 
   // Whether a row's lead column carries a second line, which decides its height.
   const baseRowHeight = useCallback(
@@ -955,11 +967,7 @@ export function RegisterTable({
             // How far the pinned cells travel, and how wide they are with their
             // gaps and the row's inset (app.css, .cb-pin).
             ["--cb-row-min" as string]: `${minRowWidth}px`,
-            ["--cb-pin-width" as string]: `${
-              tracks
-                .slice(-1 - pinned.size)
-                .reduce((sum, track) => sum + trackFloor(track) + ROW_GAP, 0) + BAND_INSET
-            }px`,
+            ["--cb-pin-width" as string]: `${pinWidth}px`,
             // The width a reconciled line's text keeps to (see markLine).
             containerType: "inline-size",
             // The ledger is a card, and every band below sits inside it.
