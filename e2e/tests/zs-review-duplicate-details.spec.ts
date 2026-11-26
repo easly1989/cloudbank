@@ -202,3 +202,42 @@ test("opened from the menu, the review offers no way back", async ({
   await expect(page.getByTestId("needs-category-row").first()).toBeVisible();
   await expect(page.getByTestId("review-back")).toHaveCount(0);
 });
+
+test("a payee typed in a row that needs a category is created and set (#792)", async ({
+  page,
+}) => {
+  const memo = `CARD PAYMENT NEW SHOP ${Date.now()}`;
+  const { account } = await seed(page, memo, false);
+  const payee = `New shop ${Date.now()}`;
+  await page.goto("/review");
+
+  const row = page.getByTestId("needs-category-row").filter({ hasText: memo });
+  const picker = row.getByRole("combobox", { name: "Payee" });
+  await picker.fill(payee);
+  await page.getByRole("option", { name: `Add “${payee}”` }).click();
+  await expect(picker).toHaveValue(payee);
+
+  // The payee exists, and the row (no proposal) carries it at once.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        async ({ account, payee }) => {
+          const wid = localStorage.getItem("cb.currentWalletId");
+          const payees = (await (
+            await fetch(`/api/v1/wallets/${wid}/payees`)
+          ).json()) as { id: number; name: string }[];
+          const made = payees.find((p) => p.name === payee);
+          const rows = (
+            await (
+              await fetch(
+                `/api/v1/wallets/${wid}/transactions/register?accountId=${account}`,
+              )
+            ).json()
+          ).rows as { payeeId: number | null }[];
+          return made != null && rows[0]?.payeeId === made.id;
+        },
+        { account, payee },
+      ),
+    )
+    .toBe(true);
+});
