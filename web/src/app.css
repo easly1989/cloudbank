@@ -363,13 +363,17 @@ body {
 
 /* The amount, running balance and actions at the card's right edge (#782).
  * When a row is wider than the card (RegisterTable sets .cb-pinning on the
- * card), those cells stay put and the columns before them scroll under. The
- * card's sideways scroll moves them, as a scroll timeline: sticky cannot, since
- * a row's own scroll box is the ledger, which only scrolls up and down.
+ * card), those cells stay put and the columns before them scroll under. Sticky
+ * cannot do it, since a row's own scroll box is the ledger, which only scrolls
+ * up and down. Where the browser has scroll timelines, the card's sideways
+ * scroll moves the cells; elsewhere (Firefox, Safari before 26) RegisterTable writes how
+ * far into --cb-pin-x and sets data-pin-shade from a scroll listener.
  *
- * A pinned cell lays the row's own tint (--cb-row-tint: selection, cursor) over
- * the card, so it is opaque in every state. Its outset shadows cover the 12px
- * gap on its left (ROW_GAP) and, after the actions, the row's 18px inset. */
+ * A pinned cell's ::after is its surface: the row's own tint (--cb-row-tint:
+ * selection, cursor) over the card, opaque in every state, reaching over the
+ * 12px gap on its left (ROW_GAP) and, after the actions, the row's 18px inset.
+ * It is also what a press on those strips lands on, rather than whatever has
+ * scrolled under them. */
 .cb-pinning {
   scroll-timeline: --cb-row-x x;
   --cb-pin-shade: rgba(18, 22, 29, 0.16);
@@ -377,56 +381,87 @@ body {
 :root[data-mantine-color-scheme="dark"] .cb-pinning {
   --cb-pin-shade: rgba(0, 0, 0, 0.8);
 }
+.cb-pinning .cb-pin {
+  position: relative;
+  isolation: isolate;
+  align-self: stretch;
+}
+.cb-pinning .cb-ledger .cb-pin:not(.mantine-Group-root) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cb-pinning .cb-pin:last-child {
+  --cb-pin-end: 18px;
+}
+.cb-pinning .cb-pin::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: 0;
+  left: -12px;
+  right: calc(-1 * var(--cb-pin-end, 0px));
+  background:
+    linear-gradient(var(--cb-row-tint, transparent), var(--cb-row-tint, transparent)),
+    var(--cb-pin-bg, var(--cb-ledger-surface));
+}
+/* A row just saved holds its arrival tint (.cb-row-arrived) on these too. */
+@media (prefers-reduced-motion: no-preference) {
+  .cb-pinning .cb-row-arrived > .cb-pin::after {
+    animation: cb-arrive-pin 1000ms ease-out;
+  }
+}
+/* Privacy mode blurs what a pinned cell says, not the cell: a blurred cell
+   would let the columns under it show through its edges. */
+.cb-private .cb-pinning .cb-pin[data-cb-sensitive] {
+  filter: none;
+}
+.cb-private .cb-pinning .cb-pin[data-cb-sensitive] > * {
+  filter: blur(max(6px, 0.45em));
+}
+/* A heading reached with Tab scrolls clear of the pinned cells (the header's
+   onFocus in RegisterTable). */
+.cb-pinning :not(.cb-pin) > .cb-sort {
+  scroll-margin-inline-end: var(--cb-pin-width);
+}
+/* The shade on the block's left edge, while there is something under it,
+   over the band's whole height (--cb-pin-pad: the band's padding). */
+.cb-pinning :not(.cb-pin) + .cb-pin::before {
+  content: "";
+  position: absolute;
+  top: calc(-1 * var(--cb-pin-pad, 0px));
+  bottom: calc(-1 * var(--cb-pin-pad, 0px));
+  right: calc(100% + 12px);
+  width: 10px;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--cb-pin-shade));
+  opacity: 0;
+}
 @supports (animation-timeline: scroll()) {
+  /* Longhands: the minifier spells a shorthand's duration as 0s, which on a
+     scroll timeline ends the animation before it starts. */
   .cb-pinning .cb-pin {
-    position: relative;
-    align-self: stretch;
-    /* Longhands: the minifier spells a shorthand's duration as 0s, which on
-       a scroll timeline ends the animation before it starts. */
-    animation-name: cb-pin-shift, cb-pin-paint;
+    animation-name: cb-pin-shift;
     animation-duration: auto;
     animation-timing-function: linear;
     animation-fill-mode: both;
     animation-timeline: --cb-row-x;
   }
-  .cb-pinning .cb-ledger .cb-pin:not(.mantine-Group-root) {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-  .cb-pinning .cb-pin:last-child {
-    --cb-pin-end: 18px;
-  }
-  /* Privacy mode blurs what a pinned cell says, not the cell: a blurred cell
-     would let the columns under it show through its edges. */
-  .cb-private .cb-pinning .cb-pin[data-cb-sensitive] {
-    filter: none;
-  }
-  .cb-private .cb-pinning .cb-pin[data-cb-sensitive] > * {
-    filter: blur(max(6px, 0.45em));
-  }
-  /* A heading reached with Tab scrolls clear of the pinned cells (the header's
-     onFocus in RegisterTable). */
-  .cb-pinning :not(.cb-pin) > .cb-sort {
-    scroll-margin-inline-end: var(--cb-pin-width);
-  }
-  /* The shade on the block's left edge, while there is something under it,
-     over the band's whole height (--cb-pin-pad: the header's padding). */
   .cb-pinning :not(.cb-pin) + .cb-pin::before {
-    content: "";
-    position: absolute;
-    top: calc(-1 * var(--cb-pin-pad, 0px));
-    bottom: calc(-1 * var(--cb-pin-pad, 0px));
-    right: calc(100% + 12px);
-    width: 10px;
-    pointer-events: none;
-    background: linear-gradient(to right, transparent, var(--cb-pin-shade));
-    opacity: 0;
     animation-name: cb-pin-shade;
     animation-duration: auto;
     animation-timing-function: linear;
     animation-fill-mode: both;
     animation-timeline: --cb-row-x;
+  }
+}
+@supports not (animation-timeline: scroll()) {
+  .cb-pinning .cb-pin {
+    transform: translateX(var(--cb-pin-x, 0px));
+  }
+  .cb-pinning[data-pin-shade] :not(.cb-pin) + .cb-pin::before {
+    opacity: 1;
   }
 }
 @keyframes cb-pin-shift {
@@ -437,19 +472,6 @@ body {
     transform: none;
   }
 }
-@keyframes cb-pin-paint {
-  from,
-  to {
-    background:
-      linear-gradient(var(--cb-row-tint, transparent), var(--cb-row-tint, transparent)),
-      var(--cb-pin-bg, var(--cb-ledger-surface));
-    box-shadow:
-      -12px 0 var(--cb-row-tint, transparent),
-      -12px 0 var(--cb-pin-bg, var(--cb-ledger-surface)),
-      var(--cb-pin-end, 0px) 0 var(--cb-row-tint, transparent),
-      var(--cb-pin-end, 0px) 0 var(--cb-pin-bg, var(--cb-ledger-surface));
-  }
-}
 @keyframes cb-pin-shade {
   0%,
   99% {
@@ -457,6 +479,14 @@ body {
   }
   100% {
     opacity: 0;
+  }
+}
+@keyframes cb-arrive-pin {
+  0%,
+  55% {
+    background-image:
+      linear-gradient(var(--cb-arrival-tint), var(--cb-arrival-tint)),
+      linear-gradient(var(--cb-row-tint, transparent), var(--cb-row-tint, transparent));
   }
 }
 

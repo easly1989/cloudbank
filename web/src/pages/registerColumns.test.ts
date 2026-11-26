@@ -6,8 +6,23 @@ import {
   moveColumn,
   normalizeColumnOrder,
   pinnedColumns,
+  pinShift,
 } from "./registerColumns";
 import { ROW_COLUMNS } from "./registerTheme";
+
+describe("pinShift", () => {
+  // A 1114px row in a 981px card: 133px of it to scroll.
+  it("moves the pinned cells by what is still to the right of the card", () => {
+    expect(pinShift(0, 1114, 981)).toEqual({ x: -133, shaded: true });
+    expect(pinShift(67, 1114, 981)).toEqual({ x: -66, shaded: true });
+  });
+
+  it("leaves them in place, unshaded, at the far right", () => {
+    expect(pinShift(133, 1114, 981)).toEqual({ x: 0, shaded: false });
+    // A fractional scroll position a hair short of the end.
+    expect(pinShift(132.6, 1114, 981)).toEqual({ x: 0, shaded: false });
+  });
+});
 
 describe("pinnedColumns", () => {
   it("pins amount and balance when they end the row", () => {

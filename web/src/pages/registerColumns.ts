@@ -98,6 +98,20 @@ export function pinnedColumns(visible: readonly string[]): string[] {
 }
 
 /**
+ * Where the pinned cells sit when the browser has no scroll timelines: moved
+ * left by however much of the row is still to the right of the card, so they
+ * end at its right edge, and shaded while anything is under them.
+ */
+export function pinShift(
+  scrollLeft: number,
+  scrollWidth: number,
+  clientWidth: number,
+): { x: number; shaded: boolean } {
+  const x = Math.min(0, Math.round(scrollLeft - (scrollWidth - clientWidth))) || 0;
+  return { x, shaded: x < -1 };
+}
+
+/**
  * Move one column one place left or right.
  *
  * Moving past either end is a no-op rather than a wrap: someone clicking "up"

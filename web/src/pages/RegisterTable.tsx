@@ -73,6 +73,7 @@ import {
   moveColumn,
   normalizeColumnOrder,
   pinnedColumns,
+  pinShift,
 } from "./registerColumns";
 import {
   BAND_INSET,
@@ -600,6 +601,28 @@ export function RegisterTable({
     return () => ro.disconnect();
   }, [minRowWidth, isEmpty]);
 
+  // Without scroll timelines (Firefox, Safari before 26) the card's scroll moves the
+  // pinned cells from here instead. Chromium never attaches the listener.
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card || !pinning || CSS.supports?.("animation-timeline: scroll()")) return;
+    const move = () => {
+      const { x, shaded } = pinShift(card.scrollLeft, card.scrollWidth, card.clientWidth);
+      card.style.setProperty("--cb-pin-x", `${x}px`);
+      card.toggleAttribute("data-pin-shade", shaded);
+    };
+    move();
+    card.addEventListener("scroll", move, { passive: true });
+    const ro = new ResizeObserver(move);
+    ro.observe(card);
+    return () => {
+      card.removeEventListener("scroll", move);
+      ro.disconnect();
+      card.style.removeProperty("--cb-pin-x");
+      card.removeAttribute("data-pin-shade");
+    };
+  }, [pinning, minRowWidth]);
+
   // Whether a row's lead column carries a second line, which decides its height.
   const baseRowHeight = useCallback(
     (index: number) => {
@@ -1019,6 +1042,8 @@ export function RegisterTable({
                   gap: ROW_GAP,
                   padding: `${BAND_PADDING.newEntry}px ${BAND_INSET}px`,
                   background: "var(--cb-band-new)",
+                  ["--cb-pin-bg" as string]: "var(--cb-band-new)",
+                  ["--cb-pin-pad" as string]: `${BAND_PADDING.newEntry}px`,
                   borderBottom: "1px solid var(--cb-ledger-border)",
                   textAlign: "left",
                 }}
@@ -1034,13 +1059,20 @@ export function RegisterTable({
                   fz={ROW_TYPE.newEntry.fz}
                   c="dimmed"
                   truncate
-                  style={{ gridColumn: "span 2" }}
+                  // Two columns, or one when only one is left before the
+                  // pinned ones.
+                  style={{
+                    gridColumn: `span ${Math.max(1, Math.min(2, tracks.length - pinned.size - 3))}`,
+                  }}
                 >
                   {t("register.newEntry")}
                 </Text>
-                <span />
-                <span />
-                <Group justify="flex-end">
+                {/* The key sits in the actions track and stays pinned with it,
+                  over an empty cell for the pinned columns before it. */}
+                {pinned.size > 0 && (
+                  <span className="cb-pin" style={{ gridColumn: `${-2 - pinned.size} / -2` }} />
+                )}
+                <Group className="cb-pin" justify="flex-end" style={{ gridColumn: "-2 / -1" }}>
                   <Kbd size="xs">N</Kbd>
                 </Group>
               </UnstyledButton>
