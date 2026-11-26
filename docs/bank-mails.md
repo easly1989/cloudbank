@@ -198,7 +198,7 @@ the waiting mails it reads** writes the mails that already arrived.
 The transactions are written as **Cleared**. In the history, each mail a
 pattern read links to its transaction in the register.
 
-![A mailbox with a pattern, and the transactions its mails became](img/mail-mailbox.png)
+![A mailbox with three sources, the first open on its patterns, and the transactions its mails became](img/mail-mailbox.png)
 
 ### An example
 
