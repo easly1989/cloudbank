@@ -3656,17 +3656,23 @@
     "amountsDiffer": "Die Beträge sind verschieden",
     "amountsDifferBody": "({{a}} und {{b}}). Prüfe, welchen du behältst.",
     "done": "Zu einer Zeile zusammengeführt",
-    "undo": "Rückgängig",
     "undone": "Beide Zeilen sind zurück",
     "undoConflict": "Die zusammengeführte Zeile hat sich seitdem geändert, das Zusammenführen lässt sich nicht rückgängig machen.",
     "why": {
       "transfer": "Eine Umbuchung lässt sich nicht zusammenführen: Sie besteht aus zwei Zeilen, eine pro Konto.",
       "split": "Eine Splitbuchung lässt sich nicht zusammenführen: Ihr Betrag ist die Summe ihrer Zeilen.",
-      "accounts": "Zeilen verschiedener Konten lassen sich nicht zusammenführen."
+      "accounts": "Zeilen verschiedener Konten lassen sich nicht zusammenführen.",
+      "kind": "Eine Umbuchung oder eine Splitbuchung lässt sich nicht zusammenführen."
     },
     "pickLikely": "Gleicher Betrag, innerhalb von 3 Tagen",
     "pickNone": "Keine andere Zeile dieses Kontos hat innerhalb von 3 Tagen den gleichen Betrag.",
     "pickOther": "Eine andere Zeile dieses Kontos",
-    "next": "Weiter"
+    "next": "Weiter",
+    "rule": "Datum, Betrag und Status kommen aus der Zeile der Bank, falls es eine gibt.",
+    "undoMerge": "Zusammenführen rückgängig",
+    "undoStale": "Ein späteres Zusammenführen hat dieses ersetzt, und nur das letzte lässt sich rückgängig machen.",
+    "gone": "Eine der Zeilen gibt es nicht mehr. Das Konto zeigt sie jetzt, wie sie ist.",
+    "loadFailed": "Die beiden Zeilen konnten nicht geladen werden.",
+    "retry": "Erneut versuchen"
   }
 }

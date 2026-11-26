@@ -1,5 +1,4 @@
 import {
-  Alert,
   Box,
   Button,
   Center,
@@ -13,14 +12,16 @@ import {
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { IconAlertTriangle } from "@tabler/icons-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { notifications } from "@mantine/notifications";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ApiError,
   type RegisterRow,
   findDuplicateTransactions,
   getTransaction,
-  mergeTransactions,
+  mergeRows,
 } from "../api/client";
 import { amountColor } from "../amountTone";
 import { useDateFormat } from "../dates";
@@ -39,6 +40,13 @@ import {
   type Picks,
   type Side,
 } from "./mergeRows";
+
+// Why the server refused a merge, by its code: the rows changed meanwhile.
+const MERGE_REFUSED: Record<string, string> = {
+  different_accounts: "merge.why.accounts",
+  not_mergeable: "merge.why.kind",
+  not_found: "merge.gone",
+};
 
 const FIELD_LABEL: Record<MergeField, string> = {
   date: "transactions.date",
@@ -71,7 +79,8 @@ export function MergeRowsModal({
   fmt: MoneyFormat;
   accountName: string;
   onClose: () => void;
-  onMerged: () => void;
+  /** The merge's undo token, and the row that stayed. */
+  onMerged: (token: string, keptId: number) => void;
 }) {
   const { t } = useTranslation();
   const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
@@ -251,10 +260,12 @@ function MergeChoices({
   accountName: string;
   phone: boolean;
   onClose: () => void;
-  onMerged: () => void;
+  /** The merge's undo token, and the row that stayed. */
+  onMerged: (token: string, keptId: number) => void;
 }) {
   const { t } = useTranslation();
   const fmtDate = useDateFormat();
+  const qc = useQueryClient();
   // The register leaves out tags and the import ref: each row is read whole,
   // keeping the register's names for its payee and category.
   const whole = useQuery({
@@ -275,12 +286,28 @@ function MergeChoices({
   const picks: Picks | null = pair ? { ...defaultPicks(pair), ...chosen } : null;
 
   const merge = useMutation({
-    mutationFn: () =>
-      mergeTransactions(walletId, pair![0].id, pair![1].id, takeFromOther(pair!, picks!)),
-    onSuccess: onMerged,
-    onError: (err) => notifyError(err),
+    mutationFn: () => mergeRows(walletId, pair![0].id, pair![1].id, takeFromOther(pair!, picks!)),
+    onSuccess: (res) => onMerged(res.token, pair![0].id),
+    onError: (err) => {
+      const why = err instanceof ApiError ? MERGE_REFUSED[err.code ?? ""] : undefined;
+      if (why) notifications.show({ color: "red", message: t(why) });
+      else notifyError(err);
+      // Something changed under the dialog: show the rows as they are now.
+      void qc.invalidateQueries({ queryKey: ["register", walletId] });
+      void whole.refetch();
+    },
   });
 
+  if (whole.isError) {
+    return (
+      <Stack align="center" gap="sm" py="lg">
+        <Text fz={14}>{t("merge.loadFailed")}</Text>
+        <Button variant="default" onClick={() => void whole.refetch()}>
+          {t("merge.retry")}
+        </Button>
+      </Stack>
+    );
+  }
   if (!pair || !picks) {
     return (
       <Center h={160}>
@@ -314,20 +341,31 @@ function MergeChoices({
 
   return (
     <Stack gap={0}>
-      <Text fz={14} c="dimmed" mb={16}>
+      <Text fz={14} c="dimmed">
         {t("merge.lead", { account: accountName })}
       </Text>
+      <Text fz={13} c="dimmed" mb={16}>
+        {t("merge.rule")}
+      </Text>
       {amountsDiffer && (
-        <Alert
-          color="orange"
-          variant="light"
+        // A strip, not an alert box: amber from the attention tokens.
+        <Group
+          gap={10}
+          wrap="nowrap"
+          align="flex-start"
           mb={14}
           p="10px 12px"
-          icon={<IconAlertTriangle size={18} />}
+          role="status"
           data-testid="merge-amounts-differ"
+          style={{
+            background: "var(--cb-attention-bg)",
+            border: "1px solid var(--cb-attention-border)",
+            borderRadius: "var(--mantine-radius-md)",
+          }}
         >
+          <IconAlertTriangle size={18} color="var(--cb-attention)" style={{ flexShrink: 0 }} />
           <Text fz={14}>
-            <Text span fw={600} inherit>
+            <Text span fw={700} inherit c="var(--cb-attention)">
               {t("merge.amountsDiffer")}
             </Text>{" "}
             {t("merge.amountsDifferBody", {
@@ -335,7 +373,7 @@ function MergeChoices({
               b: formatMinor(pair[1].amount, fmt),
             })}
           </Text>
-        </Alert>
+        </Group>
       )}
       <Box
         style={{
@@ -360,6 +398,19 @@ function MergeChoices({
         {MERGE_FIELDS.map((f) => {
           const same = sameField(pair, f);
           const label = t(FIELD_LABEL[f]);
+          const mono = f === "date" || f === "amount";
+          const value = (r: MergeRow, dim = false) => (
+            <Text
+              fz={14}
+              lh={1.35}
+              ff={mono ? "monospace" : undefined}
+              c={dim ? "dimmed" : f === "amount" ? amountColor(r.amount) : undefined}
+              style={{ overflowWrap: "anywhere" }}
+              data-cb-sensitive={f === "amount" || undefined}
+            >
+              {text(r, f)}
+            </Text>
+          );
           return (
             <Fragment key={f}>
               <Text
@@ -372,57 +423,48 @@ function MergeChoices({
               >
                 {label}
               </Text>
-              {pair.map((r, i) => {
-                const checked = !same && picks[f] === i;
-                const mono = f === "date" || f === "amount";
-                return (
-                  <Radio.Card
-                    key={r.id}
-                    name={`merge-${f}`}
-                    checked={checked}
-                    disabled={same}
-                    aria-label={`${label}: ${text(r, f)}`}
-                    onClick={() => !same && setChosen((c) => ({ ...c, [f]: i as Side }))}
-                    p="8px 10px"
-                    radius="md"
-                    bg={
-                      checked
-                        ? "var(--mantine-primary-color-light)"
-                        : same
-                          ? "transparent"
-                          : undefined
-                    }
-                    style={{
-                      cursor: same ? "default" : undefined,
-                      borderStyle: same ? "dashed" : undefined,
-                    }}
-                  >
-                    <Group gap={8} wrap="nowrap" align="flex-start">
-                      <Radio.Indicator
-                        size="xs"
-                        mt={3}
-                        style={same ? { visibility: "hidden" } : undefined}
-                      />
-                      <Text
-                        fz={14}
-                        lh={1.35}
-                        ff={mono ? "monospace" : undefined}
-                        c={same ? "dimmed" : f === "amount" ? amountColor(r.amount) : undefined}
-                        style={{ overflowWrap: "anywhere" }}
-                        data-cb-sensitive={f === "amount" || undefined}
+              {same ? (
+                // The same in both rows: nothing to choose.
+                <Group gap={6} px={10} py={8} style={{ gridColumn: "span 2" }}>
+                  {value(pair[0], true)}
+                  <Text fz={13} c="dimmed">
+                    · {t("merge.same")}
+                  </Text>
+                </Group>
+              ) : (
+                <Box
+                  role="radiogroup"
+                  aria-label={label}
+                  style={{
+                    gridColumn: "span 2",
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+                    gap: 10,
+                  }}
+                >
+                  {pair.map((r, i) => {
+                    const checked = picks[f] === i;
+                    return (
+                      <Radio.Card
+                        key={r.id}
+                        name={`merge-${f}`}
+                        value={String(i)}
+                        checked={checked}
+                        aria-label={`${i + 1} · ${label}: ${text(r, f)}`}
+                        onClick={() => setChosen((c) => ({ ...c, [f]: i as Side }))}
+                        p="8px 10px"
+                        radius="md"
+                        bg={checked ? "var(--mantine-primary-color-light)" : undefined}
                       >
-                        {text(r, f)}
-                        {same && i === 1 && (
-                          <Text span c="dimmed" inherit ff="var(--mantine-font-family)">
-                            {" · "}
-                            {t("merge.same")}
-                          </Text>
-                        )}
-                      </Text>
-                    </Group>
-                  </Radio.Card>
-                );
-              })}
+                        <Group gap={8} wrap="nowrap" align="flex-start">
+                          <Radio.Indicator size="xs" mt={3} />
+                          {value(r)}
+                        </Group>
+                      </Radio.Card>
+                    );
+                  })}
+                </Box>
+              )}
             </Fragment>
           );
         })}

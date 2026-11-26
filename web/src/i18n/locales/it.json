@@ -3656,17 +3656,23 @@
     "amountsDiffer": "Gli importi sono diversi",
     "amountsDifferBody": "({{a}} e {{b}}). Controlla quale tenere.",
     "done": "Unite in una riga",
-    "undo": "Annulla",
     "undone": "Le due righe sono tornate",
     "undoConflict": "La riga unita è cambiata nel frattempo: l'unione non si può annullare.",
     "why": {
       "transfer": "Un trasferimento non si può unire: sono due righe, una per conto.",
       "split": "Una transazione divisa non si può unire: il suo importo è la somma delle sue righe.",
-      "accounts": "Righe di conti diversi non si possono unire."
+      "accounts": "Righe di conti diversi non si possono unire.",
+      "kind": "Un trasferimento o una transazione divisa non si possono unire."
     },
     "pickLikely": "Stesso importo, entro 3 giorni",
     "pickNone": "Nessun'altra riga di questo conto ha lo stesso importo entro 3 giorni.",
     "pickOther": "Un'altra riga di questo conto",
-    "next": "Avanti"
+    "next": "Avanti",
+    "rule": "Data, importo e stato vengono dalla riga della banca, se c'è.",
+    "undoMerge": "Annulla unione",
+    "undoStale": "Un'unione successiva ha preso il posto di questa, e si può annullare solo l'ultima.",
+    "gone": "Una delle righe non c'è più. Il registro ora la mostra com'è.",
+    "loadFailed": "Non è stato possibile caricare le due righe.",
+    "retry": "Riprova"
   }
 }

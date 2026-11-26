@@ -128,10 +128,10 @@ test("two rows merge into one, field by field, and Undo brings both back", async
   // The bank's row is column 1; its date stays, the hand row's words come in.
   const dialog = page.getByRole("dialog", { name: "Merge 2 rows" });
   await expect(
-    dialog.getByRole("radio", { name: "Memo: Humble Choice" }),
+    dialog.getByRole("radio", { name: "2 · Memo: Humble Choice" }),
   ).toBeChecked();
   await expect(
-    dialog.getByRole("radio", { name: "Date: 2026-11-26" }),
+    dialog.getByRole("radio", { name: "1 · Date: 2026-11-26" }),
   ).toBeChecked();
   await expect(dialog.getByTestId("merge-result")).toContainText(
     "Humble Choice",
@@ -159,7 +159,7 @@ test("two rows merge into one, field by field, and Undo brings both back", async
   );
   expect(kept.importRef).toBe(s.ref);
 
-  await page.getByRole("button", { name: "Undo" }).click();
+  await page.getByRole("button", { name: "Undo merge" }).click();
   await expect(page.getByText("Both rows are back")).toBeVisible();
   const back = await rows(page, s);
   expect(back.map(({ id, date, memo }) => ({ id, date, memo }))).toEqual(

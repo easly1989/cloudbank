@@ -3656,17 +3656,23 @@
     "amountsDiffer": "Los importes son distintos",
     "amountsDifferBody": "({{a}} y {{b}}). Comprueba cuál conservar.",
     "done": "Fusionadas en una fila",
-    "undo": "Deshacer",
     "undone": "Las dos filas han vuelto",
     "undoConflict": "La fila fusionada ha cambiado desde entonces, así que no se puede deshacer la fusión.",
     "why": {
       "transfer": "Una transferencia no se puede fusionar: son dos filas, una en cada cuenta.",
       "split": "Una transacción dividida no se puede fusionar: su importe es la suma de sus líneas.",
-      "accounts": "No se pueden fusionar filas de cuentas distintas."
+      "accounts": "No se pueden fusionar filas de cuentas distintas.",
+      "kind": "Una transferencia o una transacción dividida no se pueden fusionar."
     },
     "pickLikely": "Mismo importe, en 3 días",
     "pickNone": "Ninguna otra fila de esta cuenta tiene el mismo importe en 3 días.",
     "pickOther": "Otra fila de esta cuenta",
-    "next": "Siguiente"
+    "next": "Siguiente",
+    "rule": "La fecha, el importe y el estado salen de la fila del banco, si la hay.",
+    "undoMerge": "Deshacer fusión",
+    "undoStale": "Una fusión posterior ha ocupado el lugar de esta, y solo se puede deshacer la última.",
+    "gone": "Una de las filas ya no está. El registro ahora la muestra tal como es.",
+    "loadFailed": "No se pudieron cargar las dos filas.",
+    "retry": "Reintentar"
   }
 }

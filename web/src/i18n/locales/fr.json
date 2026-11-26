@@ -3656,17 +3656,23 @@
     "amountsDiffer": "Les montants sont différents",
     "amountsDifferBody": "({{a}} et {{b}}). Vérifiez lequel garder.",
     "done": "Fusionnées en une ligne",
-    "undo": "Annuler",
     "undone": "Les deux lignes sont revenues",
     "undoConflict": "La ligne fusionnée a changé depuis : la fusion ne peut pas être annulée.",
     "why": {
       "transfer": "Un virement ne peut pas être fusionné : ce sont deux lignes, une sur chaque compte.",
       "split": "Une opération ventilée ne peut pas être fusionnée : son montant est la somme de ses lignes.",
-      "accounts": "Des lignes de comptes différents ne peuvent pas être fusionnées."
+      "accounts": "Des lignes de comptes différents ne peuvent pas être fusionnées.",
+      "kind": "Un virement ou une opération ventilée ne peut pas être fusionné."
     },
     "pickLikely": "Même montant, à 3 jours près",
     "pickNone": "Aucune autre ligne de ce compte n'a le même montant à 3 jours près.",
     "pickOther": "Une autre ligne de ce compte",
-    "next": "Suivant"
+    "next": "Suivant",
+    "rule": "La date, le montant et le statut viennent de la ligne de la banque, s'il y en a une.",
+    "undoMerge": "Annuler la fusion",
+    "undoStale": "Une fusion plus récente a pris la place de celle-ci, et seule la dernière peut être annulée.",
+    "gone": "L'une des lignes n'existe plus. Le registre la montre maintenant telle qu'elle est.",
+    "loadFailed": "Impossible de charger les deux lignes.",
+    "retry": "Réessayer"
   }
 }
