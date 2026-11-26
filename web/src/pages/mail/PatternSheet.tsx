@@ -98,6 +98,7 @@ interface Pick {
 export function PatternSheet({
   walletId,
   mailboxId,
+  sourceId,
   pattern,
   startMailId,
   mails,
@@ -105,6 +106,8 @@ export function PatternSheet({
 }: {
   walletId: number;
   mailboxId: number;
+  /** The source the pattern belongs to (#794). */
+  sourceId: number;
   /** The pattern to edit; none for a new one. */
   pattern?: MailPattern;
   /** The mail a new pattern starts from. */
@@ -117,6 +120,7 @@ export function PatternSheet({
   const qc = useQueryClient();
   const fmtDate = useDateFormat();
   const saved = useMemo(() => (pattern ? readEditorState(pattern.editor) : null), [pattern]);
+  const source = { mailboxId, sourceId };
 
   // The editor's tour is offered once, the first time a pattern is made, and
   // being offered counts as seen, as a page's tour does (#678).
@@ -292,8 +296,8 @@ export function PatternSheet({
   const testBody = { ...input, editor: "" };
   const [debounced] = useDebouncedValue(JSON.stringify(testBody), 400);
   const test = useQuery({
-    queryKey: ["mailPatternTest", walletId, mailboxId, debounced],
-    queryFn: () => testMailPattern(walletId, mailboxId, JSON.parse(debounced) as MailPatternInput),
+    queryKey: ["mailPatternTest", walletId, mailboxId, sourceId, debounced],
+    queryFn: () => testMailPattern(walletId, source, JSON.parse(debounced) as MailPatternInput),
     enabled: ready && debounced === JSON.stringify(testBody),
     retry: false,
     placeholderData: (prev) => prev,
@@ -371,11 +375,11 @@ export function PatternSheet({
   const save = useMutation({
     mutationFn: async () => {
       const p = pattern
-        ? await updateMailPattern(walletId, mailboxId, pattern.id, input)
-        : await createMailPattern(walletId, mailboxId, input);
+        ? await updateMailPattern(walletId, source, pattern.id, input)
+        : await createMailPattern(walletId, source, input);
       const waiting = tried?.retry ?? 0;
       const applied =
-        applyWaiting && waiting > 0 ? await applyMailPattern(walletId, mailboxId, p.id) : null;
+        applyWaiting && waiting > 0 ? await applyMailPattern(walletId, source, p.id) : null;
       return { p, applied };
     },
     onSuccess: ({ applied }) => {

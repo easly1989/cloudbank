@@ -180,7 +180,21 @@ var (
 	// ErrTLS means the connection could not be encrypted: a certificate that
 	// is not valid for the host, or a server without STARTTLS.
 	ErrTLS = errors.New("mailingest: cannot encrypt the connection to the mail server")
+	// ErrFolder means the mail server would not open a folder: it was deleted
+	// or renamed. That is the trouble of the sources reading it, not of the
+	// mailbox, whose login worked.
+	ErrFolder = errors.New("mailingest: cannot open the folder")
 )
+
+// folderError is a failed SELECT or EXAMINE: ErrFolder when the server
+// answered it, a plain error when the connection failed under it.
+func folderError(folder string, err error) error {
+	var ie *imap.Error
+	if errors.As(err, &ie) {
+		return fmt.Errorf("%w %q: %w", ErrFolder, folder, err)
+	}
+	return fmt.Errorf("mailingest: cannot open folder %q: %w", folder, err)
+}
 
 // LoginError is a refused login, with the mail server's own words.
 type LoginError struct {
@@ -214,7 +228,7 @@ func (s *Session) CanIdle() bool {
 // Examine opens folder read-only and leaves it open, for listening to it.
 func (s *Session) Examine(folder string) error {
 	if _, err := s.c.Select(folder, &imap.SelectOptions{ReadOnly: true}).Wait(); err != nil {
-		return fmt.Errorf("mailingest: cannot open folder %q: %w", folder, err)
+		return folderError(folder, err)
 	}
 	return nil
 }
@@ -252,7 +266,7 @@ func (s *Session) Folders() ([]string, error) {
 func (s *Session) End(folder string) (Cursor, error) {
 	sd, err := s.c.Select(folder, &imap.SelectOptions{ReadOnly: true}).Wait()
 	if err != nil {
-		return Cursor{}, fmt.Errorf("mailingest: cannot open folder %q: %w", folder, err)
+		return Cursor{}, folderError(folder, err)
 	}
 	return endOf(sd), nil
 }
@@ -273,7 +287,7 @@ func endOf(sd *imap.SelectData) Cursor {
 func (s *Session) Since(folder string, cur Cursor, limit int) ([]Fetched, Cursor, error) {
 	sd, err := s.c.Select(folder, &imap.SelectOptions{ReadOnly: true}).Wait()
 	if err != nil {
-		return nil, cur, fmt.Errorf("mailingest: cannot open folder %q: %w", folder, err)
+		return nil, cur, folderError(folder, err)
 	}
 	end := endOf(sd)
 	if sd.UIDValidity != cur.UIDValidity {

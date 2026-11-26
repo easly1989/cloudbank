@@ -1076,34 +1076,8 @@ export interface paths {
         delete: operations["removeMailbox"];
         options?: never;
         head?: never;
-        /**
-         * Choose the folder to read, or pause the mailbox
-         * @description A new folder is read from its current end, like a new mailbox.
-         */
+        /** Pause or resume the mailbox, every source with it */
         patch: operations["updateMailbox"];
-        trace?: never;
-    };
-    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/ai": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                walletId: number;
-                mailboxId: number;
-            };
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Choose how the mailbox's mails are read, with the patterns, the AI or both
-         * @description A mode with the AI uses the AI settings of whoever connected the mailbox, and needs them complete. Only authenticated mails from the listed senders (addresses, or domains with their subdomains) are ever sent to the AI provider, with card numbers, IBANs and other long numbers hidden first. The AI reads the amount, the date, the direction and a description, which fills the chosen field; the account is always the one given here. An AI answer that is not a usable payment leaves the mail unrecognised.
-         */
-        put: operations["updateMailboxAI"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/folders": {
@@ -1139,8 +1113,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Read the mails that arrived in the folder since the last check
-         * @description Read-only: the folder is opened with EXAMINE and bodies are fetched with BODY.PEEK, so nothing is marked read or moved. Only mails that arrived after the mailbox was connected (or its folder chosen) are ever read. Each new mail is read with the mailbox's patterns; the first that reads it makes a Cleared transaction through the import pipeline.
+         * Read the mails that arrived in every source's folder since the last check
+         * @description Read-only: each folder is opened with EXAMINE and bodies are fetched with BODY.PEEK, so nothing is marked read or moved. Only mails that arrived after a source was added (or its folder chosen) are ever read. Each new mail goes to the first source, in the mailbox's order, whose patterns or AI senders would read it (or to the first source on its folder when none would), and that source reads it; what it reads becomes a Cleared transaction through the import pipeline.
          */
         post: operations["checkMailbox"];
         delete?: never;
@@ -1190,7 +1164,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/patterns": {
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources": {
         parameters: {
             query?: never;
             header?: never;
@@ -1200,7 +1174,127 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** The mailbox's patterns, in the order they are tried */
+        get?: never;
+        put?: never;
+        /**
+         * Add a source, read from its folder's current end
+         * @description A mailbox has at most 5 sources, each listening on its own connection. The name is the user's, unique in the mailbox without case; the folder must exist. A new source starts in patterns-only mode with no patterns.
+         */
+        post: operations["createMailSource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put the sources in a new order, naming each once
+         * @description A mail two sources would read goes to the first in this order.
+         */
+        put: operations["reorderMailSources"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+                sourceId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a source and its patterns (its mails stay in the history) */
+        delete: operations["deleteMailSource"];
+        options?: never;
+        head?: never;
+        /**
+         * Rename a source or choose its folder
+         * @description A new folder is read from its current end, like a new source.
+         */
+        patch: operations["updateMailSource"];
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}/ai": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+                sourceId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Choose how a source's mails are read, with the patterns, the AI or both
+         * @description A mode with the AI uses the AI settings of whoever connected the mailbox, and needs them complete. Only authenticated mails from the listed senders (addresses, or domains with their subdomains) are ever sent to the AI provider, with card numbers, IBANs and other long numbers hidden first. The AI reads the amount, the date, the direction and a description, which fills the chosen field; the account is always the one given here. An AI answer that is not a usable payment leaves the mail unrecognised.
+         */
+        put: operations["updateMailSourceAI"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+                sourceId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read the mails that arrived in the source's folder since the last check
+         * @description The same as checking the mailbox, for this source's folder only.
+         */
+        post: operations["checkMailSource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}/patterns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+                sourceId: number;
+            };
+            cookie?: never;
+        };
+        /** The source's patterns, in the order they are tried */
         get: operations["listMailPatterns"];
         put?: never;
         /**
@@ -1214,13 +1308,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/patterns/order": {
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}/patterns/order": {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 walletId: number;
                 mailboxId: number;
+                sourceId: number;
             };
             cookie?: never;
         };
@@ -1234,13 +1329,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/patterns/test": {
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}/patterns/test": {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 walletId: number;
                 mailboxId: number;
+                sourceId: number;
             };
             cookie?: never;
         };
@@ -1257,13 +1353,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/patterns/{patternId}": {
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}/patterns/{patternId}": {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 walletId: number;
                 mailboxId: number;
+                sourceId: number;
                 patternId: number;
             };
             cookie?: never;
@@ -1279,20 +1376,21 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/patterns/{patternId}/apply": {
+    "/api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}/patterns/{patternId}/apply": {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 walletId: number;
                 mailboxId: number;
+                sourceId: number;
                 patternId: number;
             };
             cookie?: never;
         };
         get?: never;
         put?: never;
-        /** Read with a saved pattern the mails no pattern read so far */
+        /** Read with a saved pattern the mails of the source's folder no source read so far */
         post: operations["applyMailPattern"];
         delete?: never;
         options?: never;
@@ -4511,9 +4609,11 @@ export interface components {
             /** @enum {string} */
             provider: "microsoft" | "imap";
             address: string;
-            folder: string;
             paused: boolean;
-            /** @enum {string} */
+            /**
+             * @description the connection and the login; a folder's trouble is its source's status
+             * @enum {string}
+             */
             status: "ok" | "error" | "reauth";
             statusDetail: string;
             /** @description last check, RFC3339 UTC */
@@ -4523,19 +4623,43 @@ export interface components {
             createdAt: string;
             /** @description where an IMAP mailbox's server is; null for Microsoft */
             imap: components["schemas"]["IMAPSettings"] | null;
-            ai: components["schemas"]["MailboxAI"];
             /** @description whether whoever connected the mailbox has AI set up, so a mode with the AI can be chosen */
             aiReady: boolean;
+            /** @description in the order a mail is offered to them; at least one, at most 5 */
+            sources: components["schemas"]["MailSource"][];
+        };
+        MailSourceInput: {
+            name: string;
+            folder: string;
+        };
+        /** @description One folder of a mailbox, read with its own patterns and AI settings (#794). */
+        MailSource: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            mailboxId: number;
+            position: number;
+            name: string;
+            folder: string;
+            ai: components["schemas"]["MailSourceAI"];
             /**
-             * @description How the server is reading the mailbox right now: idle (the mail server announces new mail), polling (asked on a timer, for a server without IDLE), retry (the connection was lost and is about to be tried again), or empty when nothing is listening.
+             * @description error: the folder cannot be read (gone or renamed)
+             * @enum {string}
+             */
+            status: "ok" | "error";
+            statusDetail: string;
+            /** @description last check of its folder, RFC3339 UTC */
+            lastCheckAt: string | null;
+            /**
+             * @description How the server is reading the source's folder right now: idle (the mail server announces new mail), polling (asked on a timer, for a server without IDLE), retry (the connection was lost and is about to be tried again), or empty when nothing is listening.
              * @enum {string}
              */
             mode: "idle" | "polling" | "retry" | "";
             /** @description the next full check, or the next attempt while retrying; RFC3339 UTC */
             nextCheckAt: string | null;
         };
-        /** @description How a mailbox uses the AI (#659). */
-        MailboxAI: {
+        /** @description How a source uses the AI (#659). */
+        MailSourceAI: {
             /**
              * @description patterns only; the patterns, then the AI for what none read; the AI, then the patterns for what it did not take for a payment; the AI only
              * @enum {string}
@@ -4636,6 +4760,13 @@ export interface components {
             payee: string | null;
             /** @description the AI, not a pattern, read the mail (#659) */
             byAi: boolean;
+            /**
+             * Format: int64
+             * @description the source that read it; null once that source is removed
+             */
+            sourceId: number | null;
+            /** @description that source's name */
+            sourceName: string | null;
         };
         MailDetail: components["schemas"]["MailSummary"] & {
             body: string;
@@ -4694,6 +4825,8 @@ export interface components {
             id: number;
             /** Format: int64 */
             mailboxId: number;
+            /** Format: int64 */
+            sourceId: number;
             position: number;
             name: string;
             /** @description the From address it is for, without case */
@@ -8614,7 +8747,6 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    folder?: string;
                     paused?: boolean;
                 };
             };
@@ -8631,42 +8763,6 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
-        };
-    };
-    updateMailboxAI: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                walletId: number;
-                mailboxId: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MailboxAI"];
-            };
-        };
-        responses: {
-            /** @description The mailbox. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Mailbox"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            404: components["responses"]["NotFound"];
-            /** @description ai_not_configured: a mode with the AI was chosen, and whoever connected the mailbox has no AI set up. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
         };
     };
     listMailboxFolders: {
@@ -8796,6 +8892,233 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    createMailSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MailSourceInput"];
+            };
+        };
+        responses: {
+            /** @description The source. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailSource"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description source_limit: the mailbox has 5 sources already; source_name_taken: another source has the name; reauth: sign in again. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The mail server failed or refused the login. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reorderMailSources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: number[];
+                };
+            };
+        };
+        responses: {
+            /** @description The mailbox. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Mailbox"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteMailSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+                sourceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            /** @description last_source: a mailbox keeps at least one source. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateMailSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+                sourceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    folder?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The source. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailSource"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description source_name_taken: another source has the name; reauth: sign in again. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The mail server failed or refused the login. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateMailSourceAI: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+                sourceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MailSourceAI"];
+            };
+        };
+        responses: {
+            /** @description The source. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailSource"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description ai_not_configured: a mode with the AI was chosen, and whoever connected the mailbox has no AI set up. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    checkMailSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+                mailboxId: number;
+                sourceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description What the check read. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailCheckResult"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description reauth: sign in again. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The mail server failed or refused the login. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     listMailPatterns: {
         parameters: {
             query?: never;
@@ -8803,6 +9126,7 @@ export interface operations {
             path: {
                 walletId: number;
                 mailboxId: number;
+                sourceId: number;
             };
             cookie?: never;
         };
@@ -8827,6 +9151,7 @@ export interface operations {
             path: {
                 walletId: number;
                 mailboxId: number;
+                sourceId: number;
             };
             cookie?: never;
         };
@@ -8856,6 +9181,7 @@ export interface operations {
             path: {
                 walletId: number;
                 mailboxId: number;
+                sourceId: number;
             };
             cookie?: never;
         };
@@ -8887,6 +9213,7 @@ export interface operations {
             path: {
                 walletId: number;
                 mailboxId: number;
+                sourceId: number;
             };
             cookie?: never;
         };
@@ -8916,6 +9243,7 @@ export interface operations {
             path: {
                 walletId: number;
                 mailboxId: number;
+                sourceId: number;
                 patternId: number;
             };
             cookie?: never;
@@ -8946,6 +9274,7 @@ export interface operations {
             path: {
                 walletId: number;
                 mailboxId: number;
+                sourceId: number;
                 patternId: number;
             };
             cookie?: never;
@@ -8969,6 +9298,7 @@ export interface operations {
             path: {
                 walletId: number;
                 mailboxId: number;
+                sourceId: number;
                 patternId: number;
             };
             cookie?: never;

@@ -1,8 +1,8 @@
 # Bank mails
 
 Most banks send a mail for every card payment, often within a minute of it.
-CloudBank can read those notices from one folder of your mailbox and write each
-one as a transaction, so the register is up to date long before the bank books
+CloudBank can read those notices from the folders of your mailbox you choose and
+write each one as a transaction, so the register is up to date long before the bank books
 the movement or bank sync brings it. When the bank's own row arrives, through
 [bank sync](bank-sync.md), it is merged into the one the mail wrote instead of
 being added twice.
@@ -23,18 +23,18 @@ It lives in **Settings → Bank mails**, and each mailbox belongs to a wallet. T
 - **The server needs `CB_SECRET_KEY`.** The mailbox credential (a Microsoft
   sign-in or an app password) is stored encrypted, and without the key the
   section says so and connects nothing. See [Configuration](../README.md#configuration).
-- **Only new mails are read.** CloudBank starts at the end of the folder you
+- **Only new mails are read.** CloudBank starts at the end of each folder you
   choose: mails already there are never fetched. Once you have connected, wait
   for the next payment, or have the bank send a test notice if it can.
-- **Read only.** CloudBank reads one folder and never sends, moves, deletes or
-  marks anything as read. It keeps the newest 50 mails of each mailbox, to make
+- **Read only.** CloudBank reads only the folders you choose and never sends,
+  moves, deletes or marks anything as read. It keeps the newest 50 mails of each mailbox, to make
   patterns from and to show their history. Disconnecting forgets the credential
   and those mails; the mailbox itself is untouched.
 
 ## A mailbox only for the bank
 
 The access a mail provider gives covers **the whole mailbox**, not one folder:
-no provider lets it be narrowed. CloudBank reads only the folder you choose, but
+no provider lets it be narrowed. CloudBank reads only the folders you choose, but
 whoever stole that access could read everything. The safest setup is a mailbox
 that receives nothing but the bank's notices. Two ways to get one:
 
@@ -59,7 +59,8 @@ that receives nothing but the bank's notices. Two ways to get one:
 
 If you would rather use your everyday mailbox, choose a folder and let a rule in
 your mail client move the bank's notices into it. CloudBank reads that folder
-alone.
+alone. With more than one bank, a folder for each works too: each becomes a
+[source](#sources-the-folders-and-when-mails-are-read) of the mailbox.
 
 ## Connecting a mailbox
 
@@ -112,17 +113,39 @@ before saving anything, so a wrong password is caught right away. The password i
 stored encrypted and never shown again. When you change it at the provider, give
 CloudBank the new one from the mailbox's menu.
 
-### The folder, and when mails are read
+### Sources: the folders, and when mails are read
 
-Choose the **Folder** to read; only mails that arrive in it from then on are
-read. Most mailboxes are then **Listening**: the server tells CloudBank the
-moment a mail arrives, and a full check every 15 minutes catches anything
-missed. A server that cannot announce new mail is checked every 5 minutes
-instead. **Check now** reads at once.
+A mailbox reads its mails through its **sources**. A source is a folder with a
+name you choose, its own [patterns](#patterns-teaching-cloudbank-a-banks-mail),
+and its own way of reading mails, with the patterns, the
+[AI](#reading-mails-with-the-ai) or both. A new mailbox starts with one source
+on its inbox, named *INBOX*. A mailbox can have up to 5 sources, each listed as
+a band that opens to its settings. Open one to rename it or choose its
+**Folder**; only mails that arrive in that folder from then on are read.
+**New source** adds another.
+
+- **The order matters.** Two sources may read the same folder, for example one
+  bank's card notices and another bank's transfers. A mail goes to the first
+  source, in the bands' order, whose patterns (or AI senders) would read it.
+  When none would, it goes to the first source on its folder, as **Not
+  recognised**. Change the order with **Move up** and **Move down** in a band's
+  **⋯** menu.
+- **One mail is read once.** Gmail shows labels as folders, so the same mail
+  can sit in two of them. CloudBank reads it once, through the source that finds
+  it first.
+- **Deleting a source** deletes its patterns. The mails it read stay in
+  **Latest mails**. A mailbox keeps at least one source.
+
+Each source keeps its own connection. Most are then **Listening**: the server
+tells CloudBank the moment a mail arrives, and a full check every 15 minutes
+catches anything missed. A server that cannot announce new mail is checked
+every 5 minutes instead. **Check now** reads every source at once; a band's
+**⋯** menu checks just that one.
 
 If a mailbox stops working (a refused password, an expired Microsoft sign-in),
 the mailbox turns red, and the person who connected it is told in the bell, and
-by push where it is on (**Settings › Notifications**).
+by push where it is on (**Settings › Notifications**). A folder that is gone or
+renamed marks only its own source, in red, until you choose another.
 
 Once a mailbox is connected, the page offers a short tour of its parts; the
 **?** beside the section title plays it again.
@@ -175,7 +198,7 @@ the waiting mails it reads** writes the mails that already arrived.
 The transactions are written as **Cleared**. In the history, each mail a
 pattern read links to its transaction in the register.
 
-![A mailbox with a pattern, and the transactions its mails became](img/mail-mailbox.png)
+![A mailbox with three sources, the first open on its patterns, and the transactions its mails became](img/mail-mailbox.png)
 
 ### An example
 
@@ -195,6 +218,7 @@ the card: it changes nothing in the transaction.
 
 ### Several patterns, and their order
 
+Each source has its own patterns, in the source's band.
 **The first pattern that reads a mail wins.** Drag the patterns in the list to
 change their order: put a narrow one (a subject that contains *Bonifico*) above
 a broad one (any mail from the same sender).
@@ -261,7 +285,7 @@ not sign its mails, or for a forward that breaks the signature.
 ## Reading mails with the AI
 
 If you have set up an AI provider in **Settings → AI** and switched on **Bank
-mails** there, a mailbox can have its mails read by it. **How mails are read** offers four modes:
+mails** there, a source can have its mails read by it. Its **How mails are read** offers four modes:
 
 - **Patterns only**: the default.
 - **Patterns first, then the AI**: the AI reads only the mails no pattern reads.
@@ -326,8 +350,8 @@ The register's **to review** button counts these too.
 
 ## Troubleshooting
 
-- **Nothing arrives.** Check the folder: only mails that arrive in it after you
-  connected are read. A rule that files the bank's mails elsewhere, or a spam
+- **Nothing arrives.** Check each source's folder: only mails that arrive in it
+  after you chose it are read. A rule that files the bank's mails elsewhere, or a spam
   filter, keeps them out of sight.
 - **Not recognised.** No pattern reads the mail. Make one from it, or open the
   pattern that should have read it and compare: the test line says how many of

@@ -385,6 +385,8 @@ type MailMessage struct {
 	PatternID     sql.NullInt64
 	TransactionID sql.NullInt64
 	ByAi          int64
+	SourceID      sql.NullInt64
+	Folder        string
 }
 
 type MailPattern struct {
@@ -406,6 +408,25 @@ type MailPattern struct {
 	RequireAuth int64
 	Editor      string
 	CreatedAt   string
+	SourceID    sql.NullInt64
+}
+
+type MailSource struct {
+	ID           int64
+	MailboxID    int64
+	Position     int64
+	Name         string
+	Folder       string
+	UidValidity  int64
+	LastUid      int64
+	AiMode       string
+	AiAccountID  sql.NullInt64
+	AiField      string
+	AiSenders    string
+	Status       string
+	StatusDetail string
+	LastCheckAt  sql.NullString
+	CreatedAt    string
 }
 
 type Mailbox struct {

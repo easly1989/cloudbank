@@ -39,9 +39,15 @@ func (f *fixture) ledger(t *testing.T) (main, card int64) {
 	return a.ID, c.ID
 }
 
-// sendMail drops a card-payment notice in the folder. auth adds the receiving
+// sendMail drops a card-payment notice in the inbox. auth adds the receiving
 // server's verdict that the sender's domain signed it.
 func sendMail(t *testing.T, f *fixture, id, amount, shop, card string, auth bool) {
+	t.Helper()
+	sendMailIn(t, f, "INBOX", id, amount, shop, card, auth)
+}
+
+// sendMailIn is sendMail to another folder.
+func sendMailIn(t *testing.T, f *fixture, folder, id, amount, shop, card string, auth bool) {
 	t.Helper()
 	var h strings.Builder
 	if auth {
@@ -51,7 +57,7 @@ func sendMail(t *testing.T, f *fixture, id, amount, shop, card string, auth bool
 	fmt.Fprintf(&h, "Subject: Pagamento con carta\r\nMessage-ID: <%s@banca.example>\r\n", id)
 	h.WriteString("Date: Thu, 15 Oct 2026 23:56:00 +0200\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n")
 	fmt.Fprintf(&h, "Gentile cliente, hai pagato %s EUR presso %s con la carta *%s.\r\n", amount, shop, card)
-	if _, err := f.user.Append("INBOX", bytes.NewReader([]byte(h.String())), &imap.AppendOptions{}); err != nil {
+	if _, err := f.user.Append(folder, bytes.NewReader([]byte(h.String())), &imap.AppendOptions{}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -81,7 +87,7 @@ func TestAMailAPatternReadsBecomesAClearedTransaction(t *testing.T) {
 	mb := f.connect(t)
 	p := cardPattern(acc)
 	p.Cards = []CardAccount{{Digits: "9876", AccountID: cardAcc}}
-	saved, err := f.svc.CreatePattern(ctx, f.wallet, mb.ID, p)
+	saved, err := f.svc.CreatePattern(ctx, f.wallet, mb.ID, src(mb), p)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +144,7 @@ func TestTheSameMailMakesOneTransaction(t *testing.T) {
 	ctx := context.Background()
 	acc, _ := f.ledger(t)
 	mb := f.connect(t)
-	saved, err := f.svc.CreatePattern(ctx, f.wallet, mb.ID, cardPattern(acc))
+	saved, err := f.svc.CreatePattern(ctx, f.wallet, mb.ID, src(mb), cardPattern(acc))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +161,7 @@ func TestTheSameMailMakesOneTransaction(t *testing.T) {
 	// account already has its transaction.
 	msgs, _ := f.svc.Messages(ctx, f.wallet, mb.ID)
 	_ = f.q.SetMailMessageOutcome(ctx, db.SetMailMessageOutcomeParams{Outcome: OutcomeUnrecognized, ID: msgs[0].ID})
-	res, err := f.svc.ApplyPattern(ctx, f.wallet, mb.ID, saved.ID)
+	res, err := f.svc.ApplyPattern(ctx, f.wallet, mb.ID, src(mb), saved.ID)
 	if err != nil || res != (ApplyResult{Duplicate: 1}) {
 		t.Fatalf("apply = %+v, %v", res, err)
 	}
@@ -184,7 +190,7 @@ func TestAnUnauthenticatedMailWritesNothing(t *testing.T) {
 		return nil
 	})
 	mb := f.connect(t)
-	saved, _ := f.svc.CreatePattern(ctx, f.wallet, mb.ID, cardPattern(acc))
+	saved, _ := f.svc.CreatePattern(ctx, f.wallet, mb.ID, src(mb), cardPattern(acc))
 
 	sendMail(t, f, "forged", "500,00", "Truffa Demo", "1234", false)
 	res, err := f.svc.Check(ctx, f.wallet, mb.ID)
@@ -205,10 +211,10 @@ func TestAnUnauthenticatedMailWritesNothing(t *testing.T) {
 	// Turned off under Advanced, the pattern reads it after all.
 	p := cardPattern(acc)
 	p.RequireAuth = false
-	if _, err := f.svc.UpdatePattern(ctx, f.wallet, mb.ID, saved.ID, p); err != nil {
+	if _, err := f.svc.UpdatePattern(ctx, f.wallet, mb.ID, src(mb), saved.ID, p); err != nil {
 		t.Fatal(err)
 	}
-	if res, _ := f.svc.ApplyPattern(ctx, f.wallet, mb.ID, saved.ID); res.Created != 1 {
+	if res, _ := f.svc.ApplyPattern(ctx, f.wallet, mb.ID, src(mb), saved.ID); res.Created != 1 {
 		t.Fatalf("apply = %+v", res)
 	}
 }
@@ -222,30 +228,30 @@ func TestAPatternIsCheckedBeforeItIsSaved(t *testing.T) {
 
 	bad := cardPattern(acc)
 	bad.Body = `hai pagato (?P<amount>[\d.,+) EUR`
-	_, err := f.svc.CreatePattern(ctx, f.wallet, mb.ID, bad)
+	_, err := f.svc.CreatePattern(ctx, f.wallet, mb.ID, src(mb), bad)
 	if !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "the expression is not valid: missing closing ]") {
 		t.Fatalf("invalid expression: %v", err)
 	}
-	if _, err := f.svc.TestPattern(ctx, f.wallet, mb.ID, bad); !errors.Is(err, ErrInvalid) {
+	if _, err := f.svc.TestPattern(ctx, f.wallet, mb.ID, src(mb), bad); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("testing an invalid expression: %v", err)
 	}
 
 	// An account of another wallet is refused, for the pattern and a card.
 	otherCur, _ := f.q.InsertCurrency(ctx, db.InsertCurrencyParams{WalletID: f.other, IsoCode: "EUR", Name: "Euro", Symbol: "€", FracDigits: 2, IsBase: 1, Rate: 1})
 	foreign, _ := f.q.InsertAccount(ctx, db.InsertAccountParams{WalletID: f.other, Name: "Altro", Type: "bank", CurrencyID: otherCur.ID})
-	if _, err := f.svc.CreatePattern(ctx, f.wallet, mb.ID, cardPattern(foreign.ID)); !errors.Is(err, ErrInvalid) {
+	if _, err := f.svc.CreatePattern(ctx, f.wallet, mb.ID, src(mb), cardPattern(foreign.ID)); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("another wallet's account: %v", err)
 	}
 	p := cardPattern(acc)
 	p.Cards = []CardAccount{{Digits: "1234", AccountID: foreign.ID}}
-	if _, err := f.svc.CreatePattern(ctx, f.wallet, mb.ID, p); !errors.Is(err, ErrInvalid) {
+	if _, err := f.svc.CreatePattern(ctx, f.wallet, mb.ID, src(mb), p); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("another wallet's card account: %v", err)
 	}
 	// And so is another wallet's mailbox.
-	if _, err := f.svc.CreatePattern(ctx, f.other, mb.ID, cardPattern(acc)); !errors.Is(err, ErrNotFound) {
+	if _, err := f.svc.CreatePattern(ctx, f.other, mb.ID, src(mb), cardPattern(acc)); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("another wallet's mailbox: %v", err)
 	}
-	if list, _ := f.svc.Patterns(ctx, f.wallet, mb.ID); len(list) != 0 {
+	if list, _ := f.svc.Patterns(ctx, f.wallet, mb.ID, src(mb)); len(list) != 0 {
 		t.Fatalf("saved %+v", list)
 	}
 }
@@ -264,7 +270,7 @@ func TestTryAPatternThenApplyItToTheWaitingMails(t *testing.T) {
 		t.Fatalf("check = %+v", res)
 	}
 
-	tried, err := f.svc.TestPattern(ctx, f.wallet, mb.ID, cardPattern(acc))
+	tried, err := f.svc.TestPattern(ctx, f.wallet, mb.ID, src(mb), cardPattern(acc))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,15 +290,15 @@ func TestTryAPatternThenApplyItToTheWaitingMails(t *testing.T) {
 		t.Fatal("trying a pattern wrote a transaction")
 	}
 
-	saved, _ := f.svc.CreatePattern(ctx, f.wallet, mb.ID, cardPattern(acc))
-	res, err := f.svc.ApplyPattern(ctx, f.wallet, mb.ID, saved.ID)
+	saved, _ := f.svc.CreatePattern(ctx, f.wallet, mb.ID, src(mb), cardPattern(acc))
+	res, err := f.svc.ApplyPattern(ctx, f.wallet, mb.ID, src(mb), saved.ID)
 	if err != nil || res != (ApplyResult{Created: 2}) {
 		t.Fatalf("apply = %+v, %v", res, err)
 	}
 	if got := f.transactions(t, acc); len(got) != 2 {
 		t.Fatalf("account has %d transactions", len(got))
 	}
-	if again, _ := f.svc.TestPattern(ctx, f.wallet, mb.ID, cardPattern(acc)); again.Retry != 0 {
+	if again, _ := f.svc.TestPattern(ctx, f.wallet, mb.ID, src(mb), cardPattern(acc)); again.Retry != 0 {
 		t.Fatalf("after applying: %+v", again)
 	}
 }
@@ -308,7 +314,7 @@ func TestAFailedMailIsReadAgainAfterTheFix(t *testing.T) {
 	p := cardPattern(acc)
 	p.Body = `hai pagato (?P<amount>[\d.,]+) EUR presso (?P<date>.+?) con`
 	p.DateFormat = "DD/MM"
-	saved, err := f.svc.CreatePattern(ctx, f.wallet, mb.ID, p)
+	saved, err := f.svc.CreatePattern(ctx, f.wallet, mb.ID, src(mb), p)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -318,10 +324,10 @@ func TestAFailedMailIsReadAgainAfterTheFix(t *testing.T) {
 	if msgs[0].Outcome != OutcomeFailed || !strings.Contains(msgs[0].Detail, "does not fit the format") {
 		t.Fatalf("history = %+v", msgs[0])
 	}
-	if _, err := f.svc.UpdatePattern(ctx, f.wallet, mb.ID, saved.ID, cardPattern(acc)); err != nil {
+	if _, err := f.svc.UpdatePattern(ctx, f.wallet, mb.ID, src(mb), saved.ID, cardPattern(acc)); err != nil {
 		t.Fatal(err)
 	}
-	if res, _ := f.svc.ApplyPattern(ctx, f.wallet, mb.ID, saved.ID); res.Created != 1 {
+	if res, _ := f.svc.ApplyPattern(ctx, f.wallet, mb.ID, src(mb), saved.ID); res.Created != 1 {
 		t.Fatalf("apply = %+v", res)
 	}
 }
@@ -332,8 +338,8 @@ func TestTheFirstPatternInTheListWins(t *testing.T) {
 	ctx := context.Background()
 	acc, cardAcc := f.ledger(t)
 	mb := f.connect(t)
-	first, _ := f.svc.CreatePattern(ctx, f.wallet, mb.ID, cardPattern(acc))
-	second, _ := f.svc.CreatePattern(ctx, f.wallet, mb.ID, cardPattern(cardAcc))
+	first, _ := f.svc.CreatePattern(ctx, f.wallet, mb.ID, src(mb), cardPattern(acc))
+	second, _ := f.svc.CreatePattern(ctx, f.wallet, mb.ID, src(mb), cardPattern(cardAcc))
 	if second.Position != 1 {
 		t.Fatalf("second position = %d", second.Position)
 	}
@@ -343,7 +349,7 @@ func TestTheFirstPatternInTheListWins(t *testing.T) {
 		t.Fatal("the first pattern did not win")
 	}
 
-	list, err := f.svc.ReorderPatterns(ctx, f.wallet, mb.ID, []int64{second.ID, first.ID})
+	list, err := f.svc.ReorderPatterns(ctx, f.wallet, mb.ID, src(mb), []int64{second.ID, first.ID})
 	if err != nil || list[0].ID != second.ID {
 		t.Fatalf("reorder = %+v, %v", list, err)
 	}
@@ -352,13 +358,13 @@ func TestTheFirstPatternInTheListWins(t *testing.T) {
 	if len(f.transactions(t, cardAcc)) != 1 {
 		t.Fatal("after reordering, the new first pattern did not win")
 	}
-	if _, err := f.svc.ReorderPatterns(ctx, f.wallet, mb.ID, []int64{second.ID}); !errors.Is(err, ErrInvalid) {
+	if _, err := f.svc.ReorderPatterns(ctx, f.wallet, mb.ID, src(mb), []int64{second.ID}); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("an order missing a pattern: %v", err)
 	}
-	if err := f.svc.DeletePattern(ctx, f.wallet, mb.ID, first.ID); err != nil {
+	if err := f.svc.DeletePattern(ctx, f.wallet, mb.ID, src(mb), first.ID); err != nil {
 		t.Fatal(err)
 	}
-	if err := f.svc.DeletePattern(ctx, f.other, mb.ID, second.ID); !errors.Is(err, ErrNotFound) {
+	if err := f.svc.DeletePattern(ctx, f.other, mb.ID, src(mb), second.ID); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("delete from another wallet: %v", err)
 	}
 }

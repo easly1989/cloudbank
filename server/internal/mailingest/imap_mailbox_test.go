@@ -38,7 +38,7 @@ func TestIMAPMailboxConnectsAndReadsWhatArrivesAfter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if mb.Provider != ProviderIMAP || mb.Address != testUser || mb.Folder != "INBOX" || mb.Status != StatusOK {
+	if mb.Provider != ProviderIMAP || mb.Address != testUser || len(mb.Sources) != 1 || mb.Sources[0].Folder != "INBOX" || mb.Status != StatusOK {
 		t.Fatalf("mailbox = %+v", mb)
 	}
 	if mb.IMAP == nil || *mb.IMAP != (IMAPSettings{Host: in.Host, Port: in.Port, Security: SecurityTLS, Username: testUser}) {
@@ -161,10 +161,11 @@ func TestIMAPNewPasswordKeepsTheMailbox(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.svc.Update(ctx, f.wallet, mb.ID, ptr("Banca"), nil); err != nil {
+	if _, err := f.svc.UpdateSource(ctx, f.wallet, mb.ID, src(mb), nil, ptr("Banca")); err != nil {
 		t.Fatal(err)
 	}
 	before, _ := f.q.GetMailbox(ctx, db.GetMailboxParams{ID: mb.ID, WalletID: f.wallet})
+	cursor, _ := f.q.GetMailSource(ctx, db.GetMailSourceParams{ID: src(mb), MailboxID: mb.ID})
 
 	again := IMAPInput{MailboxID: mb.ID, Password: "wrong", Host: in.Host, Port: in.Port, Security: SecurityStartTLS}
 	if _, err := f.svc.ConnectIMAP(ctx, f.wallet, f.uid, again); err == nil {
@@ -180,7 +181,8 @@ func TestIMAPNewPasswordKeepsTheMailbox(t *testing.T) {
 		t.Fatal(err)
 	}
 	after, _ := f.q.GetMailbox(ctx, db.GetMailboxParams{ID: mb.ID, WalletID: f.wallet})
-	if got.ID != mb.ID || got.Folder != "Banca" || after.LastUid != before.LastUid || after.UidValidity != before.UidValidity {
+	cursorAfter, _ := f.q.GetMailSource(ctx, db.GetMailSourceParams{ID: src(mb), MailboxID: mb.ID})
+	if got.ID != mb.ID || got.Sources[0].Folder != "Banca" || cursorAfter.LastUid != cursor.LastUid || cursorAfter.UidValidity != cursor.UidValidity {
 		t.Fatalf("mailbox after = %+v", got)
 	}
 	if after.ImapSecurity != SecurityStartTLS || after.Secret == before.Secret {
@@ -231,7 +233,7 @@ func TestIMAPRefusedPasswordStopsTheMailbox(t *testing.T) {
 	if list[0].Status != StatusReauth || !strings.Contains(list[0].StatusDetail, "password") {
 		t.Fatalf("mailbox = %+v", list[0])
 	}
-	watch, _ := f.q.ListMailboxesToWatch(ctx)
+	watch, _ := f.q.ListSourcesToWatch(ctx)
 	if len(watch) != 0 {
 		t.Fatal("the listener would keep trying the refused password")
 	}

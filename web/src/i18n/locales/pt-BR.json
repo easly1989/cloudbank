@@ -1194,14 +1194,14 @@
   },
   "mail": {
     "title": "E-mails do banco",
-    "hint": "Lê os avisos de pagamento do seu banco em uma pasta da sua caixa de e-mail.",
+    "hint": "Lê os avisos de pagamento do seu banco nas pastas da sua caixa de e-mail que você escolher.",
     "connectTitle": "Conectar uma caixa de e-mail",
     "microsoftHint": "Outlook.com, Hotmail, Live. Você entra na Microsoft e permite apenas a leitura dos e-mails: o CloudBank nunca vê sua senha.",
     "microsoftConnect": "Entrar com a Microsoft",
     "imapTitle": "Outra caixa de e-mail",
     "imapHint": "Gmail, Libero, Virgilio, iCloud, Yahoo, Fastmail, Aruba: com uma senha de app, nunca a da sua conta.",
     "imapConnect": "Conectar por IMAP",
-    "warning": "Quem obtiver este acesso pode ler <b>toda</b> a caixa, não só a pasta que você escolher: nenhum provedor permite limitá-lo. O CloudBank lê uma só pasta e não altera nada, mas para o máximo isolamento use uma caixa que receba apenas os e-mails do seu banco. Se achar que o acesso foi roubado, revogue-o na sua conta.",
+    "warning": "Quem obtiver este acesso pode ler <b>toda</b> a caixa, não só as pastas que você escolher: nenhum provedor permite limitá-lo. O CloudBank lê só essas pastas e não altera nada, mas para o máximo isolamento use uma caixa que receba apenas os e-mails do seu banco. Se achar que o acesso foi roubado, revogue-o na sua conta.",
     "unavailable": "Para ler os e-mails do banco, o servidor precisa de CB_SECRET_KEY, para que a credencial da caixa fique guardada criptografada. Peça a quem administra este CloudBank que a configure.",
     "today": "hoje {{time}}",
     "yesterday": "ontem {{time}}",
@@ -1464,6 +1464,31 @@
       "save": "Salvar",
       "saved": "O modo de ler os e-mails foi salvo.",
       "readByAI": "Lido pela IA"
+    },
+    "sources": {
+      "title": "Fontes",
+      "count": "{{count}} de {{max}}",
+      "limit": "No máximo {{max}} fontes por caixa",
+      "new": "Nova fonte",
+      "orderHint": "Um e-mail que mais de uma fonte poderia ler vai para a primeira nesta ordem.",
+      "name": "Nome",
+      "namePlaceholder": "ex.: Cartões",
+      "add": "Adicionar fonte",
+      "actions": "Ações de {{name}}",
+      "moveUp": "Mover para cima",
+      "moveDown": "Mover para baixo",
+      "delete": "Excluir fonte",
+      "deleteTitle": "Excluir {{name}}?",
+      "deleteBody": "Os padrões dela são excluídos. Os e-mails que ela leu ficam em Últimos e-mails.",
+      "lastSource": "Uma caixa mantém pelo menos uma fonte.",
+      "statusError": "Não foi possível ler a pasta: {{detail}}",
+      "folderGone": "Pasta não encontrada",
+      "toFix_one": "{{count}} fonte de {{total}} precisa de atenção",
+      "toFix_other": "{{count}} fontes de {{total}} precisam de atenção",
+      "live_one": "{{count}} fonte ouvindo",
+      "live_other": "{{count}} fontes ouvindo",
+      "readBy": "A fonte que o leu",
+      "removed": "Fonte excluída"
     }
   },
   "search": {
@@ -3218,17 +3243,9 @@
         "title": "Sua caixa de e-mail",
         "body": "O CloudBank fica conectado e lê cada e-mail novo assim que chega. Verificar agora lê na hora; para pausar ou desconectar, abra Mais."
       },
-      "folder": {
-        "title": "Uma pasta",
-        "body": "Só são lidos os e-mails que chegam a esta pasta daqui em diante. O mais seguro é uma pasta que recebe apenas os e-mails do banco."
-      },
-      "mode": {
-        "title": "Como os e-mails são lidos",
-        "body": "Um padrão lê um tipo de e-mail e não o envia a lugar nenhum. A IA pode ler os que nenhum padrão lê, depois de configurada em Configurações › IA."
-      },
-      "patterns": {
-        "title": "Padrões",
-        "body": "Cada um transforma um tipo de e-mail do banco em um lançamento na conta que você escolheu. Vence o primeiro padrão que lê um e-mail: arraste para mudar a ordem."
+      "sources": {
+        "title": "Fontes",
+        "body": "Cada fonte lê uma pasta, com os próprios padrões ou com a IA. Abra uma para escolher a pasta e como os e-mails são lidos. Um e-mail que duas fontes poderiam ler vai para a primeira: mude a ordem pelo ⋯."
       },
       "history": {
         "title": "Últimos e-mails",

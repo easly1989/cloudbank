@@ -23,6 +23,17 @@ async function signIn(page: Page) {
 const card = (page: Page) =>
   page.getByTestId("mailbox-card").filter({ hasText: GUEST });
 
+/** Opens one of a mailbox's sources (#794), closed by default. */
+async function openSource(scope: Locator, name = "INBOX") {
+  const band = scope
+    .getByTestId(/^mail-source-\d+$/)
+    .filter({ has: scope.page().getByRole("button", { name, exact: true }) });
+  const title = band.getByRole("button", { name, exact: true });
+  if ((await title.getAttribute("aria-expanded")) !== "true")
+    await title.click();
+  return band;
+}
+
 /** Opens a mailbox's latest mails, closed by default, on the given filter. */
 async function showMails(scope: Locator, filter = "All") {
   const title = scope.getByRole("button", {
@@ -59,6 +70,7 @@ test("without AI set up, only the patterns can read the mails", async ({
 }) => {
   await signIn(page);
   await page.goto("/settings/mail");
+  await openSource(card(page));
   await expect(
     card(page).getByRole("link", { name: "Settings › AI" }),
   ).toBeVisible();
@@ -90,6 +102,7 @@ test("with the AI after the patterns, a mail no pattern reads is written by it",
   expect(ai.ok()).toBe(true);
 
   await page.goto("/settings/mail");
+  await openSource(card(page));
   await card(page)
     .getByLabel("How mails are read", { exact: true })
     .first()

@@ -1194,14 +1194,14 @@
   },
   "mail": {
     "title": "Correos del banco",
-    "hint": "Lee los avisos de pago de tu banco en una carpeta de tu buzón.",
+    "hint": "Lee los avisos de pago de tu banco en las carpetas de tu buzón que elijas.",
     "connectTitle": "Conectar un buzón",
     "microsoftHint": "Outlook.com, Hotmail, Live. Inicias sesión en Microsoft y solo permites leer el correo: CloudBank nunca ve tu contraseña.",
     "microsoftConnect": "Iniciar sesión con Microsoft",
     "imapTitle": "Otro buzón",
     "imapHint": "Gmail, Libero, Virgilio, iCloud, Yahoo, Fastmail, Aruba: con una contraseña de aplicación, nunca la de tu cuenta.",
     "imapConnect": "Conectar por IMAP",
-    "warning": "Quien obtenga este acceso puede leer <b>todo</b> el buzón, no solo la carpeta que elijas: ningún proveedor permite limitarlo. CloudBank lee una sola carpeta y no modifica nada, pero para el máximo aislamiento usa un buzón que solo reciba los correos de tu banco. Si crees que te han robado el acceso, revócalo desde tu cuenta.",
+    "warning": "Quien obtenga este acceso puede leer <b>todo</b> el buzón, no solo las carpetas que elijas: ningún proveedor permite limitarlo. CloudBank lee solo esas carpetas y no modifica nada, pero para el máximo aislamiento usa un buzón que solo reciba los correos de tu banco. Si crees que te han robado el acceso, revócalo desde tu cuenta.",
     "unavailable": "Para leer los correos del banco, el servidor necesita CB_SECRET_KEY, de modo que la credencial del buzón se guarde cifrada. Pide a quien administra este CloudBank que la configure.",
     "today": "hoy {{time}}",
     "yesterday": "ayer {{time}}",
@@ -1464,6 +1464,31 @@
       "save": "Guardar",
       "saved": "Se ha guardado cómo se leen los correos.",
       "readByAI": "Leído por la IA"
+    },
+    "sources": {
+      "title": "Fuentes",
+      "count": "{{count}} de {{max}}",
+      "limit": "Como máximo {{max}} fuentes por buzón",
+      "new": "Nueva fuente",
+      "orderHint": "Un correo que varias fuentes podrían leer va a la primera en este orden.",
+      "name": "Nombre",
+      "namePlaceholder": "p. ej. Tarjetas",
+      "add": "Añadir fuente",
+      "actions": "Acciones de {{name}}",
+      "moveUp": "Subir",
+      "moveDown": "Bajar",
+      "delete": "Eliminar fuente",
+      "deleteTitle": "¿Eliminar {{name}}?",
+      "deleteBody": "Se eliminan sus patrones. Los correos que leyó se quedan en Últimos correos.",
+      "lastSource": "Un buzón conserva al menos una fuente.",
+      "statusError": "No se pudo leer la carpeta: {{detail}}",
+      "folderGone": "Carpeta no encontrada",
+      "toFix_one": "{{count}} fuente de {{total}} necesita atención",
+      "toFix_other": "{{count}} fuentes de {{total}} necesitan atención",
+      "live_one": "{{count}} fuente escuchando",
+      "live_other": "{{count}} fuentes escuchando",
+      "readBy": "La fuente que lo leyó",
+      "removed": "Fuente eliminada"
     }
   },
   "search": {
@@ -3218,17 +3243,9 @@
         "title": "Tu buzón",
         "body": "CloudBank sigue conectado y lee cada correo nuevo en cuanto llega. Comprobar ahora lo lee al momento; para pausarlo o desconectarlo, abre Más."
       },
-      "folder": {
-        "title": "Una carpeta",
-        "body": "Solo se leen los correos que llegan a esta carpeta a partir de ahora. Lo más seguro es una carpeta que reciba solo los correos del banco."
-      },
-      "mode": {
-        "title": "Cómo se leen los correos",
-        "body": "Un patrón lee un tipo de correo y no lo envía a ningún sitio. La IA puede leer los que ningún patrón lee, si la configuras en Ajustes › IA."
-      },
-      "patterns": {
-        "title": "Patrones",
-        "body": "Cada uno convierte un tipo de correo del banco en un movimiento en la cuenta que elegiste. Gana el primer patrón que lee un correo: arrástralos para cambiar el orden."
+      "sources": {
+        "title": "Fuentes",
+        "body": "Cada fuente lee una carpeta, con sus propios patrones o con la IA. Abre una para elegir su carpeta y cómo se leen sus correos. Un correo que dos fuentes podrían leer va a la primera: cambia el orden desde ⋯."
       },
       "history": {
         "title": "Últimos correos",

@@ -104,6 +104,7 @@ type Querier interface {
 	DeleteGoal(ctx context.Context, id int64) error
 	DeleteHeldNotification(ctx context.Context, id int64) error
 	DeleteMailPattern(ctx context.Context, arg DeleteMailPatternParams) (int64, error)
+	DeleteMailSource(ctx context.Context, arg DeleteMailSourceParams) (int64, error)
 	DeleteMailbox(ctx context.Context, arg DeleteMailboxParams) (int64, error)
 	DeleteMergedImportRef(ctx context.Context, arg DeleteMergedImportRefParams) error
 	DeleteNotificationChannel(ctx context.Context, arg DeleteNotificationChannelParams) error
@@ -174,9 +175,11 @@ type Querier interface {
 	GetGoal(ctx context.Context, id int64) (Goal, error)
 	GetInstanceSetting(ctx context.Context, key string) (string, error)
 	GetMailMessage(ctx context.Context, arg GetMailMessageParams) (MailMessage, error)
+	GetMailMessageByMessageID(ctx context.Context, arg GetMailMessageByMessageIDParams) (MailMessage, error)
 	// One mail with the account of the transaction it made, for the history.
 	GetMailMessageView(ctx context.Context, arg GetMailMessageViewParams) (GetMailMessageViewRow, error)
 	GetMailPattern(ctx context.Context, arg GetMailPatternParams) (MailPattern, error)
+	GetMailSource(ctx context.Context, arg GetMailSourceParams) (MailSource, error)
 	GetMailbox(ctx context.Context, arg GetMailboxParams) (Mailbox, error)
 	GetNotificationChannel(ctx context.Context, arg GetNotificationChannelParams) (NotificationChannel, error)
 	GetNotificationSettings(ctx context.Context, userID int64) (NotificationSetting, error)
@@ -229,12 +232,12 @@ type Querier interface {
 	InsertEBankingConnection(ctx context.Context, arg InsertEBankingConnectionParams) (BankConnection, error)
 	InsertGoal(ctx context.Context, arg InsertGoalParams) (Goal, error)
 	InsertHeldNotification(ctx context.Context, arg InsertHeldNotificationParams) error
-	// Starts with its cursor at the inbox's end, read during the login that
-	// proved the settings work.
 	InsertIMAPMailbox(ctx context.Context, arg InsertIMAPMailboxParams) (Mailbox, error)
 	// Returns the new row's id, or nothing when the mail was already there.
 	InsertMailMessage(ctx context.Context, arg InsertMailMessageParams) ([]int64, error)
 	InsertMailPattern(ctx context.Context, arg InsertMailPatternParams) (MailPattern, error)
+	// Added at the end of the mailbox's list, its cursor at the folder's end.
+	InsertMailSource(ctx context.Context, arg InsertMailSourceParams) (MailSource, error)
 	InsertMailbox(ctx context.Context, arg InsertMailboxParams) (Mailbox, error)
 	InsertMergedImportRef(ctx context.Context, arg InsertMergedImportRefParams) (int64, error)
 	InsertNotification(ctx context.Context, arg InsertNotificationParams) error
@@ -341,16 +344,16 @@ type Querier interface {
 	ListLowThresholds(ctx context.Context, today string) ([]ListLowThresholdsRow, error)
 	ListMailMessageIDsForTransaction(ctx context.Context, transactionID sql.NullInt64) ([]int64, error)
 	ListMailMessages(ctx context.Context, arg ListMailMessagesParams) ([]ListMailMessagesRow, error)
-	// The latest mails of one sender, for trying a pattern before saving it.
+	// The latest mails of one sender in one folder, for trying a pattern before
+	// saving it.
 	ListMailMessagesFrom(ctx context.Context, arg ListMailMessagesFromParams) ([]MailMessage, error)
-	// The mails that made no transaction, oldest first, for a pattern saved or
-	// corrected after them: none read them, or one did and failed.
-	ListMailMessagesToRetry(ctx context.Context, mailboxID int64) ([]MailMessage, error)
-	ListMailPatterns(ctx context.Context, mailboxID int64) ([]MailPattern, error)
+	// The mails of one folder that made no transaction, oldest first, for a
+	// pattern saved or corrected after them: none read them, or one did and
+	// failed.
+	ListMailMessagesToRetry(ctx context.Context, arg ListMailMessagesToRetryParams) ([]MailMessage, error)
+	ListMailPatterns(ctx context.Context, sourceID sql.NullInt64) ([]MailPattern, error)
+	ListMailSources(ctx context.Context, mailboxID int64) ([]MailSource, error)
 	ListMailboxesForWallet(ctx context.Context, walletID int64) ([]Mailbox, error)
-	// Every mailbox the listener should keep open: not paused, and not waiting for
-	// a new sign-in, across all wallets.
-	ListMailboxesToWatch(ctx context.Context) ([]Mailbox, error)
 	// With the row each was merged into and its status, when it is still there.
 	ListMergedImportRefs(ctx context.Context, accountID int64) ([]ListMergedImportRefsRow, error)
 	ListNotificationChannels(ctx context.Context, userID int64) ([]NotificationChannel, error)
@@ -395,6 +398,9 @@ type Querier interface {
 	// occurrences: the cadence, and the template's name, amount and account.
 	ListSchedulesForCalendar(ctx context.Context, walletID int64) ([]ListSchedulesForCalendarRow, error)
 	ListSchedulesForWallet(ctx context.Context, walletID int64) ([]ListSchedulesForWalletRow, error)
+	// Every source the listener should keep open, with its mailbox: not paused,
+	// and not waiting for a new sign-in, across all wallets.
+	ListSourcesToWatch(ctx context.Context) ([]ListSourcesToWatchRow, error)
 	ListSplits(ctx context.Context, transactionID int64) ([]Split, error)
 	// What the payees of the wallet's schedules were paid in a date range, the
 	// transactions the schedules registered included; transfers, reminders and
@@ -449,6 +455,8 @@ type Querier interface {
 	MonthlyIncomeExpense(ctx context.Context, arg MonthlyIncomeExpenseParams) ([]MonthlyIncomeExpenseRow, error)
 	MoveAssignmentsToPayee(ctx context.Context, arg MoveAssignmentsToPayeeParams) error
 	MoveAttachmentsByIDs(ctx context.Context, arg MoveAttachmentsByIDsParams) error
+	// A mail stored unclaimed from one folder, claimed by a source of another.
+	MoveMailMessage(ctx context.Context, arg MoveMailMessageParams) error
 	// Some of the mails that wrote a transaction now point at another one: a
 	// merge moves them to the row it keeps, its undo moves them back (#786).
 	MoveMailMessagesByIDs(ctx context.Context, arg MoveMailMessagesByIDsParams) error
@@ -495,6 +503,7 @@ type Querier interface {
 	ReassignTransactionCategory(ctx context.Context, arg ReassignTransactionCategoryParams) error
 	ReassignTransactionPayee(ctx context.Context, arg ReassignTransactionPayeeParams) error
 	RecordBankSyncOutcome(ctx context.Context, arg RecordBankSyncOutcomeParams) error
+	RecordMailSourceCheck(ctx context.Context, arg RecordMailSourceCheckParams) error
 	RecordMailboxCheck(ctx context.Context, arg RecordMailboxCheckParams) error
 	RefreshEBankingConnectionSession(ctx context.Context, arg RefreshEBankingConnectionSessionParams) (BankConnection, error)
 	RememberDevice(ctx context.Context, arg RememberDeviceParams) (int64, error)
@@ -541,12 +550,16 @@ type Querier interface {
 	SetLowBelow(ctx context.Context, arg SetLowBelowParams) error
 	SetMailMessageOutcome(ctx context.Context, arg SetMailMessageOutcomeParams) error
 	SetMailPatternPosition(ctx context.Context, arg SetMailPatternPositionParams) error
-	SetMailboxAI(ctx context.Context, arg SetMailboxAIParams) error
+	SetMailSourceAI(ctx context.Context, arg SetMailSourceAIParams) error
+	SetMailSourceCursor(ctx context.Context, arg SetMailSourceCursorParams) error
+	// A new folder is read from its end, and whatever was wrong with the old one
+	// is over.
+	SetMailSourceFolder(ctx context.Context, arg SetMailSourceFolderParams) error
+	SetMailSourceName(ctx context.Context, arg SetMailSourceNameParams) error
+	SetMailSourcePosition(ctx context.Context, arg SetMailSourcePositionParams) error
 	// Changes the flag only when it differs, so the caller learns from the row
 	// count whether this is the moment it changed.
 	SetMailboxAlerted(ctx context.Context, arg SetMailboxAlertedParams) (int64, error)
-	SetMailboxCursor(ctx context.Context, arg SetMailboxCursorParams) error
-	SetMailboxFolder(ctx context.Context, arg SetMailboxFolderParams) error
 	// New settings for an IMAP mailbox, after a login with them worked.
 	SetMailboxIMAP(ctx context.Context, arg SetMailboxIMAPParams) error
 	SetMailboxPaused(ctx context.Context, arg SetMailboxPausedParams) error

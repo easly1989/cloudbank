@@ -124,6 +124,9 @@ func (f *fixture) connect(t *testing.T) Mailbox {
 	return Mailbox{}
 }
 
+// src is a mailbox's first source, the one every mailbox starts with.
+func src(mb Mailbox) int64 { return mb.Sources[0].ID }
+
 func TestUnavailableWithoutSecretKey(t *testing.T) {
 	f := newFixture(t)
 	if f.svc.Available() {
@@ -141,7 +144,7 @@ func TestConnectReadsOnlyMailsAfterTheConnection(t *testing.T) {
 	appendMail(t, f.user, "INBOX", 1) // already there: the past
 
 	mb := f.connect(t)
-	if mb.Address != testUser || mb.Folder != "INBOX" || mb.Status != StatusOK {
+	if mb.Address != testUser || len(mb.Sources) != 1 || mb.Sources[0].Folder != "INBOX" || mb.Sources[0].Name != "INBOX" || mb.Status != StatusOK {
 		t.Fatalf("mailbox = %+v", mb)
 	}
 	row, _ := f.q.GetMailbox(ctx, db.GetMailboxParams{ID: mb.ID, WalletID: f.wallet})
@@ -277,7 +280,7 @@ func TestChangingFolderStartsAtItsEnd(t *testing.T) {
 		t.Fatalf("folders %v, %v", folders, err)
 	}
 	name := "Banca"
-	if _, err := f.svc.Update(ctx, f.wallet, mb.ID, &name, nil); err != nil {
+	if _, err := f.svc.UpdateSource(ctx, f.wallet, mb.ID, src(mb), nil, &name); err != nil {
 		t.Fatal(err)
 	}
 	if res, _ := f.svc.Check(ctx, f.wallet, mb.ID); res.New != 0 {
@@ -289,11 +292,11 @@ func TestChangingFolderStartsAtItsEnd(t *testing.T) {
 		t.Fatal("did not read the new mail of the chosen folder")
 	}
 	missing := "Nope"
-	if _, err := f.svc.Update(ctx, f.wallet, mb.ID, &missing, nil); !errors.Is(err, ErrInvalid) {
+	if _, err := f.svc.UpdateSource(ctx, f.wallet, mb.ID, src(mb), nil, &missing); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("missing folder: %v", err)
 	}
 	paused := true
-	got, err := f.svc.Update(ctx, f.wallet, mb.ID, nil, &paused)
+	got, err := f.svc.Update(ctx, f.wallet, mb.ID, &paused)
 	if err != nil || !got.Paused {
 		t.Fatalf("pause: %+v %v", got, err)
 	}

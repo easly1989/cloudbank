@@ -1194,14 +1194,14 @@
   },
   "mail": {
     "title": "Bank-E-Mails",
-    "hint": "Liest die Zahlungsbenachrichtigungen deiner Bank aus einem Ordner deines Postfachs.",
+    "hint": "Liest die Zahlungsbenachrichtigungen deiner Bank aus den Ordnern deines Postfachs, die du wählst.",
     "connectTitle": "Postfach verbinden",
     "microsoftHint": "Outlook.com, Hotmail, Live. Du meldest dich bei Microsoft an und erlaubst nur das Lesen der E-Mails: CloudBank sieht dein Passwort nie.",
     "microsoftConnect": "Mit Microsoft anmelden",
     "imapTitle": "Anderes Postfach",
     "imapHint": "Gmail, Libero, Virgilio, iCloud, Yahoo, Fastmail, Aruba: mit einem App-Passwort, nie mit dem deines Kontos.",
     "imapConnect": "Per IMAP verbinden",
-    "warning": "Wer diesen Zugang erhält, kann das <b>ganze</b> Postfach lesen, nicht nur den gewählten Ordner: Kein Anbieter erlaubt, ihn einzuschränken. CloudBank liest nur einen Ordner und ändert nichts, aber für die stärkste Abschottung nimm ein Postfach, das nur die E-Mails deiner Bank empfängt. Wenn du glaubst, dass der Zugang gestohlen wurde, widerrufe ihn in deinem Konto.",
+    "warning": "Wer diesen Zugang erhält, kann das <b>ganze</b> Postfach lesen, nicht nur die gewählten Ordner: Kein Anbieter erlaubt, ihn einzuschränken. CloudBank liest nur diese Ordner und ändert nichts, aber für die stärkste Abschottung nimm ein Postfach, das nur die E-Mails deiner Bank empfängt. Wenn du glaubst, dass der Zugang gestohlen wurde, widerrufe ihn in deinem Konto.",
     "unavailable": "Zum Lesen der Bank-E-Mails braucht der Server CB_SECRET_KEY, damit die Zugangsdaten des Postfachs verschlüsselt gespeichert werden. Bitte die Person, die dieses CloudBank betreibt, ihn zu setzen.",
     "today": "heute {{time}}",
     "yesterday": "gestern {{time}}",
@@ -1464,6 +1464,31 @@
       "save": "Speichern",
       "saved": "Wie E-Mails gelesen werden, ist gespeichert.",
       "readByAI": "Von der KI gelesen"
+    },
+    "sources": {
+      "title": "Quellen",
+      "count": "{{count}} von {{max}}",
+      "limit": "Höchstens {{max}} Quellen pro Postfach",
+      "new": "Neue Quelle",
+      "orderHint": "Eine E-Mail, die mehrere Quellen lesen könnten, geht an die erste in dieser Reihenfolge.",
+      "name": "Name",
+      "namePlaceholder": "z. B. Karten",
+      "add": "Quelle hinzufügen",
+      "actions": "Aktionen für {{name}}",
+      "moveUp": "Nach oben",
+      "moveDown": "Nach unten",
+      "delete": "Quelle löschen",
+      "deleteTitle": "{{name}} löschen?",
+      "deleteBody": "Ihre Muster werden gelöscht. Die E-Mails, die sie gelesen hat, bleiben unter Neueste E-Mails.",
+      "lastSource": "Ein Postfach behält mindestens eine Quelle.",
+      "statusError": "Der Ordner konnte nicht gelesen werden: {{detail}}",
+      "folderGone": "Ordner nicht gefunden",
+      "toFix_one": "{{count}} von {{total}} Quellen braucht Aufmerksamkeit",
+      "toFix_other": "{{count}} von {{total}} Quellen brauchen Aufmerksamkeit",
+      "live_one": "{{count}} Quelle hört zu",
+      "live_other": "{{count}} Quellen hören zu",
+      "readBy": "Die Quelle, die sie gelesen hat",
+      "removed": "Gelöschte Quelle"
     }
   },
   "search": {
@@ -3218,17 +3243,9 @@
         "title": "Dein Postfach",
         "body": "CloudBank bleibt verbunden und liest jede neue E-Mail, sobald sie ankommt. Jetzt prüfen liest sofort; pausieren oder trennen kannst du es unter Mehr."
       },
-      "folder": {
-        "title": "Ein Ordner",
-        "body": "Gelesen werden nur die E-Mails, die ab jetzt in diesem Ordner ankommen. Am sichersten ist ein Ordner, der nur die E-Mails der Bank bekommt."
-      },
-      "mode": {
-        "title": "Wie E-Mails gelesen werden",
-        "body": "Ein Muster liest eine Art E-Mail und schickt sie nirgendwohin. Die KI kann die E-Mails lesen, die kein Muster liest, sobald sie unter Einstellungen › KI eingerichtet ist."
-      },
-      "patterns": {
-        "title": "Muster",
-        "body": "Jedes macht aus einer Art Bank-E-Mail eine Buchung auf dem gewählten Konto. Das erste Muster, das eine E-Mail liest, gewinnt: Zieh sie, um die Reihenfolge zu ändern."
+      "sources": {
+        "title": "Quellen",
+        "body": "Jede Quelle liest einen Ordner, mit eigenen Mustern oder mit der KI. Öffne eine, um ihren Ordner und die Leseart zu wählen. Eine E-Mail, die zwei Quellen lesen könnten, geht an die erste: Ändere die Reihenfolge über ⋯."
       },
       "history": {
         "title": "Neueste E-Mails",

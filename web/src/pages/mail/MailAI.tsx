@@ -6,7 +6,6 @@ import {
   Group,
   SegmentedControl,
   Select,
-  SimpleGrid,
   Stack,
   TagsInput,
   Text,
@@ -20,43 +19,46 @@ import { Link } from "react-router-dom";
 
 import {
   type Account,
-  type Mailbox,
-  type MailboxAI,
   type MailPattern,
-  updateMailboxAI,
+  type MailSource,
+  type MailSourceAI,
+  updateMailSourceAI,
 } from "../../api/client";
 import { notifyError } from "../../notifyError";
 
-const MODES: MailboxAI["mode"][] = ["patterns", "patterns_ai", "ai_patterns", "ai"];
+const MODES: MailSourceAI["mode"][] = ["patterns", "patterns_ai", "ai_patterns", "ai"];
 
 /**
- * How a mailbox's mails are read (#659): with its patterns, with the AI of
- * whoever connected it, or both in the order chosen. A mode with the AI says
- * what leaves the server, and asks where what it reads goes and which senders
- * it may read.
+ * How a source's mails are read (#659, #794): with its patterns, with the AI
+ * of whoever connected the mailbox, or both in the order chosen. A mode with
+ * the AI says what leaves the server, and asks where what it reads goes and
+ * which senders it may read.
  */
 export function MailAI({
   walletId,
-  mailbox,
+  source,
+  aiReady,
   accounts,
   patterns,
-  beside,
+  before,
 }: {
   walletId: number;
-  mailbox: Mailbox;
+  source: MailSource;
+  /** Whoever connected the mailbox has the AI set up. */
+  aiReady: boolean;
   accounts: Account[];
   patterns: MailPattern[];
-  /** The control that shares the mode's row: the mailbox's folder. */
-  beside?: ReactNode;
+  /** The fields above the mode: the source's name and folder. */
+  before?: ReactNode;
 }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const saved = mailbox.ai;
-  const [draft, setDraft] = useState<MailboxAI>(saved);
+  const saved = source.ai;
+  const [draft, setDraft] = useState<MailSourceAI>(saved);
   const withAI = draft.mode !== "patterns";
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
 
-  const chooseMode = (mode: MailboxAI["mode"]) =>
+  const chooseMode = (mode: MailSourceAI["mode"]) =>
     setDraft((d) => ({
       ...d,
       mode,
@@ -68,9 +70,10 @@ export function MailAI({
     }));
 
   const save = useMutation({
-    mutationFn: () => updateMailboxAI(walletId, mailbox.id, draft),
-    onSuccess: (mb) => {
-      setDraft(mb.ai);
+    mutationFn: () =>
+      updateMailSourceAI(walletId, { mailboxId: source.mailboxId, sourceId: source.id }, draft),
+    onSuccess: (src) => {
+      setDraft(src.ai);
       notifications.show({ color: "teal", message: t("mail.ai.saved") });
       void qc.invalidateQueries({ queryKey: ["mail", walletId] });
     },
@@ -87,10 +90,10 @@ export function MailAI({
 
   return (
     <Stack gap="sm" data-testid="mail-ai">
-      {/* The folder and the mode sit side by side: two short choices about the
-          same mailbox, one row instead of two. */}
-      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" maw={736}>
-        {beside}
+      {/* One column: on a wide screen the source's settings share the band
+          with its patterns, beside them. */}
+      <Stack gap="sm" maw={420}>
+        {before}
         <Box data-tour="mail-mode">
           <Select
             label={t("mail.ai.mode")}
@@ -100,15 +103,15 @@ export function MailAI({
             data={MODES.map((m) => ({
               value: m,
               label: t(`mail.ai.modes.${m}`),
-              disabled: m !== "patterns" && !mailbox.aiReady,
+              disabled: m !== "patterns" && !aiReady,
             }))}
             value={draft.mode}
             allowDeselect={false}
-            onChange={(v) => v && chooseMode(v as MailboxAI["mode"])}
+            onChange={(v) => v && chooseMode(v as MailSourceAI["mode"])}
           />
         </Box>
-      </SimpleGrid>
-      {!mailbox.aiReady && (
+      </Stack>
+      {!aiReady && (
         <Text size="xs" c="dimmed">
           <Trans
             i18nKey="mail.ai.needAI"
@@ -141,7 +144,7 @@ export function MailAI({
               </Text>
               <SegmentedControl
                 value={draft.field}
-                onChange={(v) => setDraft((d) => ({ ...d, field: v as MailboxAI["field"] }))}
+                onChange={(v) => setDraft((d) => ({ ...d, field: v as MailSourceAI["field"] }))}
                 data={[
                   { value: "memo", label: t("mail.field.memo") },
                   { value: "payee", label: t("mail.field.payee") },

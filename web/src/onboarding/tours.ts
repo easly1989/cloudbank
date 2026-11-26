@@ -89,9 +89,9 @@ export const TOURS = {
   // nothing, and its ? shows only the last step, how to connect one.
   mail: [
     step("mail", "mailbox", "mail-mailbox"),
-    step("mail", "folder", "mail-folder"),
-    step("mail", "mode", "mail-mode"),
-    step("mail", "patterns", "mail-patterns"),
+    // Each source's folder, mode and patterns sit inside its band, closed at
+    // first (#794): the tour points at the bands.
+    step("mail", "sources", "mail-sources"),
     step("mail", "history", "mail-history"),
     step("mail", "connect", "mail-connect"),
   ],

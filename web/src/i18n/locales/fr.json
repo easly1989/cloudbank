@@ -1194,14 +1194,14 @@
   },
   "mail": {
     "title": "E-mails de la banque",
-    "hint": "Lit les avis de paiement de votre banque dans un dossier de votre boîte mail.",
+    "hint": "Lit les avis de paiement de votre banque dans les dossiers de votre boîte mail que vous choisissez.",
     "connectTitle": "Connecter une boîte mail",
     "microsoftHint": "Outlook.com, Hotmail, Live. Vous vous connectez à Microsoft et n’autorisez que la lecture du courrier : CloudBank ne voit jamais votre mot de passe.",
     "microsoftConnect": "Se connecter avec Microsoft",
     "imapTitle": "Autre boîte mail",
     "imapHint": "Gmail, Libero, Virgilio, iCloud, Yahoo, Fastmail, Aruba : avec un mot de passe d’application, jamais celui de votre compte.",
     "imapConnect": "Connecter en IMAP",
-    "warning": "Quiconque obtient cet accès peut lire <b>toute</b> la boîte, pas seulement le dossier choisi : aucun fournisseur ne permet de le restreindre. CloudBank lit un seul dossier et ne modifie rien, mais pour une isolation maximale, utilisez une boîte qui ne reçoit que les e-mails de votre banque. Si vous pensez que l’accès a été volé, révoquez-le depuis votre compte.",
+    "warning": "Quiconque obtient cet accès peut lire <b>toute</b> la boîte, pas seulement les dossiers choisis : aucun fournisseur ne permet de le restreindre. CloudBank lit seulement ces dossiers et ne modifie rien, mais pour une isolation maximale, utilisez une boîte qui ne reçoit que les e-mails de votre banque. Si vous pensez que l’accès a été volé, révoquez-le depuis votre compte.",
     "unavailable": "Pour lire les e-mails de la banque, le serveur a besoin de CB_SECRET_KEY, afin que l’identifiant de la boîte soit stocké chiffré. Demandez à la personne qui gère ce CloudBank de la définir.",
     "today": "aujourd’hui {{time}}",
     "yesterday": "hier {{time}}",
@@ -1464,6 +1464,31 @@
       "save": "Enregistrer",
       "saved": "La lecture des e-mails est enregistrée.",
       "readByAI": "Lu par l’IA"
+    },
+    "sources": {
+      "title": "Sources",
+      "count": "{{count}} sur {{max}}",
+      "limit": "Au plus {{max}} sources par boîte",
+      "new": "Nouvelle source",
+      "orderHint": "Un e-mail que plusieurs sources pourraient lire va à la première dans cet ordre.",
+      "name": "Nom",
+      "namePlaceholder": "p. ex. Cartes",
+      "add": "Ajouter la source",
+      "actions": "Actions pour {{name}}",
+      "moveUp": "Monter",
+      "moveDown": "Descendre",
+      "delete": "Supprimer la source",
+      "deleteTitle": "Supprimer {{name}} ?",
+      "deleteBody": "Ses motifs sont supprimés. Les e-mails qu’elle a lus restent dans Derniers e-mails.",
+      "lastSource": "Une boîte garde au moins une source.",
+      "statusError": "Le dossier n’a pas pu être lu : {{detail}}",
+      "folderGone": "Dossier introuvable",
+      "toFix_one": "{{count}} source sur {{total}} à vérifier",
+      "toFix_other": "{{count}} sources sur {{total}} à vérifier",
+      "live_one": "{{count}} source à l’écoute",
+      "live_other": "{{count}} sources à l’écoute",
+      "readBy": "La source qui l’a lu",
+      "removed": "Source supprimée"
     }
   },
   "search": {
@@ -3218,17 +3243,9 @@
         "title": "Votre boîte mail",
         "body": "CloudBank reste connecté et lit chaque nouvel e-mail dès son arrivée. Vérifier maintenant le lit tout de suite ; pour la mettre en pause ou la déconnecter, ouvrez Plus."
       },
-      "folder": {
-        "title": "Un dossier",
-        "body": "Seuls les e-mails qui arrivent dans ce dossier à partir de maintenant sont lus. Le plus sûr est un dossier qui ne reçoit que les e-mails de la banque."
-      },
-      "mode": {
-        "title": "Lecture des e-mails",
-        "body": "Un motif lit un type d’e-mail et ne l’envoie nulle part. L’IA peut lire ceux qu’aucun motif ne lit, une fois configurée dans Paramètres › IA."
-      },
-      "patterns": {
-        "title": "Motifs",
-        "body": "Chacun transforme un type d’e-mail de la banque en opération sur le compte choisi. Le premier motif qui lit un e-mail l’emporte : faites-les glisser pour changer l’ordre."
+      "sources": {
+        "title": "Sources",
+        "body": "Chaque source lit un dossier, avec ses propres motifs ou avec l’IA. Ouvrez-en une pour choisir son dossier et la façon de lire ses e-mails. Un e-mail que deux sources pourraient lire va à la première : changez l’ordre depuis ⋯."
       },
       "history": {
         "title": "Derniers e-mails",

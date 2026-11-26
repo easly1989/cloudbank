@@ -56,15 +56,15 @@ func aiFixture(t *testing.T) (*fixture, *fakeAI, Mailbox, int64) {
 	mb := f.connect(t)
 	p := cardPattern(acc)
 	p.Body = `hai pagato (?P<amount>[\d.,]+) EUR presso (?P<memo>Bar Demo|Libreria Demo) con`
-	if _, err := f.svc.CreatePattern(context.Background(), f.wallet, mb.ID, p); err != nil {
+	if _, err := f.svc.CreatePattern(context.Background(), f.wallet, mb.ID, src(mb), p); err != nil {
 		t.Fatal(err)
 	}
 	return f, fa, mb, acc
 }
 
-func (f *fixture) setAI(t *testing.T, mb Mailbox, acc int64, mode string) Mailbox {
+func (f *fixture) setAI(t *testing.T, mb Mailbox, acc int64, mode string) Source {
 	t.Helper()
-	got, err := f.svc.UpdateAI(context.Background(), f.wallet, mb.ID, MailboxAI{
+	got, err := f.svc.UpdateSourceAI(context.Background(), f.wallet, mb.ID, src(mb), SourceAI{
 		Mode: mode, AccountID: &acc, Field: AIFieldMemo, Senders: []string{"banca.example"},
 	})
 	if err != nil {
@@ -141,7 +141,7 @@ func TestTheFourOrdersOfPatternsAndAI(t *testing.T) {
 func TestAITransactionsGoToTheChosenAccountAndField(t *testing.T) {
 	f, _, mb, acc := aiFixture(t)
 	ctx := context.Background()
-	if _, err := f.svc.UpdateAI(ctx, f.wallet, mb.ID, MailboxAI{
+	if _, err := f.svc.UpdateSourceAI(ctx, f.wallet, mb.ID, src(mb), SourceAI{
 		Mode: AIModeAI, AccountID: &acc, Field: AIFieldPayee, Senders: []string{"avvisi@banca.example"},
 	}); err != nil {
 		t.Fatal(err)
@@ -165,7 +165,7 @@ func TestAITransactionsGoToTheChosenAccountAndField(t *testing.T) {
 func TestTheAIGetsOnlyAuthenticatedMailsOfTheListedSenders(t *testing.T) {
 	f, fa, mb, acc := aiFixture(t)
 	ctx := context.Background()
-	if _, err := f.svc.UpdateAI(ctx, f.wallet, mb.ID, MailboxAI{
+	if _, err := f.svc.UpdateSourceAI(ctx, f.wallet, mb.ID, src(mb), SourceAI{
 		Mode: AIModeAI, AccountID: &acc, Field: AIFieldMemo, Senders: []string{"altrabanca.example"},
 	}); err != nil {
 		t.Fatal(err)
@@ -227,7 +227,7 @@ func TestAIModesAreChecked(t *testing.T) {
 	f, fa, mb, acc := aiFixture(t)
 	ctx := context.Background()
 	other := int64(9999)
-	for name, in := range map[string]MailboxAI{
+	for name, in := range map[string]SourceAI{
 		"unknown mode":    {Mode: "magic", AccountID: &acc, Field: AIFieldMemo, Senders: []string{"banca.example"}},
 		"no account":      {Mode: AIModeAI, Field: AIFieldMemo, Senders: []string{"banca.example"}},
 		"foreign account": {Mode: AIModeAI, AccountID: &other, Field: AIFieldMemo, Senders: []string{"banca.example"}},
@@ -235,26 +235,29 @@ func TestAIModesAreChecked(t *testing.T) {
 		"no senders":      {Mode: AIModeAI, AccountID: &acc, Field: AIFieldMemo, Senders: []string{" "}},
 		"bad sender":      {Mode: AIModeAI, AccountID: &acc, Field: AIFieldMemo, Senders: []string{"not a sender"}},
 	} {
-		if _, err := f.svc.UpdateAI(ctx, f.wallet, mb.ID, in); !errors.Is(err, ErrInvalid) {
+		if _, err := f.svc.UpdateSourceAI(ctx, f.wallet, mb.ID, src(mb), in); !errors.Is(err, ErrInvalid) {
 			t.Errorf("%s: err = %v, want ErrInvalid", name, err)
 		}
 	}
 
 	got := f.setAI(t, mb, acc, AIModePatternsAI)
-	if got.AI.Mode != AIModePatternsAI || *got.AI.AccountID != acc || got.AI.Senders[0] != "banca.example" || !got.AIReady {
-		t.Fatalf("mailbox = %+v", got)
+	if got.AI.Mode != AIModePatternsAI || *got.AI.AccountID != acc || got.AI.Senders[0] != "banca.example" {
+		t.Fatalf("source = %+v", got)
+	}
+	if list, _ := f.svc.ListMailboxes(ctx, f.wallet); !list[0].AIReady || list[0].Sources[0].AI.Mode != AIModePatternsAI {
+		t.Fatalf("mailbox = %+v", list[0])
 	}
 	// Without AI configured, only "patterns" can be chosen.
 	fa.configured = false
-	if _, err := f.svc.UpdateAI(ctx, f.wallet, mb.ID, MailboxAI{
+	if _, err := f.svc.UpdateSourceAI(ctx, f.wallet, mb.ID, src(mb), SourceAI{
 		Mode: AIModeAI, AccountID: &acc, Field: AIFieldMemo, Senders: []string{"banca.example"},
 	}); !errors.Is(err, ErrAINotConfigured) {
 		t.Fatalf("err = %v, want ErrAINotConfigured", err)
 	}
-	if _, err := f.svc.UpdateAI(ctx, f.wallet, mb.ID, MailboxAI{Mode: AIModePatterns}); err != nil {
+	if _, err := f.svc.UpdateSourceAI(ctx, f.wallet, mb.ID, src(mb), SourceAI{Mode: AIModePatterns}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.svc.UpdateAI(ctx, f.other, mb.ID, MailboxAI{Mode: AIModePatterns}); !errors.Is(err, ErrNotFound) {
+	if _, err := f.svc.UpdateSourceAI(ctx, f.other, mb.ID, src(mb), SourceAI{Mode: AIModePatterns}); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("from another wallet: %v", err)
 	}
 }

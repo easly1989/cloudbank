@@ -1149,13 +1149,12 @@ paths:
       - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
     patch:
       operationId: updateMailbox
-      summary: Choose the folder to read, or pause the mailbox
-      description: A new folder is read from its current end, like a new mailbox.
+      summary: Pause or resume the mailbox, every source with it
       requestBody:
         required: true
         content:
           application/json:
-            schema: { type: object, properties: { folder: { type: string }, paused: { type: boolean } } }
+            schema: { type: object, properties: { paused: { type: boolean } } }
       responses:
         "200": { description: The mailbox., content: { application/json: { schema: { $ref: "#/components/schemas/Mailbox" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -1166,31 +1165,6 @@ paths:
       responses:
         "204": { description: Removed. }
         "404": { $ref: "#/components/responses/NotFound" }
-  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/ai:
-    parameters:
-      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
-      - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
-    put:
-      operationId: updateMailboxAI
-      summary: Choose how the mailbox's mails are read, with the patterns, the AI or both
-      description: >-
-        A mode with the AI uses the AI settings of whoever connected the mailbox, and
-        needs them complete. Only authenticated mails from the listed senders (addresses,
-        or domains with their subdomains) are ever sent to the AI provider, with card
-        numbers, IBANs and other long numbers hidden first. The AI reads the amount, the
-        date, the direction and a description, which fills the chosen field; the account
-        is always the one given here. An AI answer that is not a usable payment leaves the
-        mail unrecognised.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/MailboxAI" }
-      responses:
-        "200": { description: The mailbox., content: { application/json: { schema: { $ref: "#/components/schemas/Mailbox" } } } }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "409": { description: "ai_not_configured: a mode with the AI was chosen, and whoever connected the mailbox has no AI set up." }
   /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/folders:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -1209,13 +1183,15 @@ paths:
       - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
     post:
       operationId: checkMailbox
-      summary: Read the mails that arrived in the folder since the last check
+      summary: Read the mails that arrived in every source's folder since the last check
       description: >-
-        Read-only: the folder is opened with EXAMINE and bodies are fetched with
+        Read-only: each folder is opened with EXAMINE and bodies are fetched with
         BODY.PEEK, so nothing is marked read or moved. Only mails that arrived after
-        the mailbox was connected (or its folder chosen) are ever read. Each new
-        mail is read with the mailbox's patterns; the first that reads it makes
-        a Cleared transaction through the import pipeline.
+        a source was added (or its folder chosen) are ever read. Each new mail goes
+        to the first source, in the mailbox's order, whose patterns or AI senders
+        would read it (or to the first source on its folder when none would), and
+        that source reads it; what it reads becomes a Cleared transaction through
+        the import pipeline.
       responses:
         "200": { description: What the check read., content: { application/json: { schema: { $ref: "#/components/schemas/MailCheckResult" } } } }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -1242,13 +1218,114 @@ paths:
       responses:
         "200": { description: The mail., content: { application/json: { schema: { $ref: "#/components/schemas/MailDetail" } } } }
         "404": { $ref: "#/components/responses/NotFound" }
-  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/patterns:
+  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
       - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: createMailSource
+      summary: Add a source, read from its folder's current end
+      description: >-
+        A mailbox has at most 5 sources, each listening on its own connection.
+        The name is the user's, unique in the mailbox without case; the folder
+        must exist. A new source starts in patterns-only mode with no patterns.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/MailSourceInput" } } }
+      responses:
+        "201": { description: The source., content: { application/json: { schema: { $ref: "#/components/schemas/MailSource" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "source_limit: the mailbox has 5 sources already; source_name_taken: another source has the name; reauth: sign in again." }
+        "502": { description: The mail server failed or refused the login. }
+  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/order:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
+    put:
+      operationId: reorderMailSources
+      summary: Put the sources in a new order, naming each once
+      description: A mail two sources would read goes to the first in this order.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, properties: { ids: { type: array, items: { type: integer, format: int64 } } }, required: [ids] } } }
+      responses:
+        "200": { description: The mailbox., content: { application/json: { schema: { $ref: "#/components/schemas/Mailbox" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: sourceId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: updateMailSource
+      summary: Rename a source or choose its folder
+      description: A new folder is read from its current end, like a new source.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, properties: { name: { type: string, maxLength: 60 }, folder: { type: string } } } } }
+      responses:
+        "200": { description: The source., content: { application/json: { schema: { $ref: "#/components/schemas/MailSource" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "source_name_taken: another source has the name; reauth: sign in again." }
+        "502": { description: The mail server failed or refused the login. }
+    delete:
+      operationId: deleteMailSource
+      summary: Remove a source and its patterns (its mails stay in the history)
+      responses:
+        "204": { description: Removed. }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "last_source: a mailbox keeps at least one source." }
+  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}/ai:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: sourceId, in: path, required: true, schema: { type: integer, format: int64 } }
+    put:
+      operationId: updateMailSourceAI
+      summary: Choose how a source's mails are read, with the patterns, the AI or both
+      description: >-
+        A mode with the AI uses the AI settings of whoever connected the mailbox, and
+        needs them complete. Only authenticated mails from the listed senders (addresses,
+        or domains with their subdomains) are ever sent to the AI provider, with card
+        numbers, IBANs and other long numbers hidden first. The AI reads the amount, the
+        date, the direction and a description, which fills the chosen field; the account
+        is always the one given here. An AI answer that is not a usable payment leaves the
+        mail unrecognised.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MailSourceAI" }
+      responses:
+        "200": { description: The source., content: { application/json: { schema: { $ref: "#/components/schemas/MailSource" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "ai_not_configured: a mode with the AI was chosen, and whoever connected the mailbox has no AI set up." }
+  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}/check:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: sourceId, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      operationId: checkMailSource
+      summary: Read the mails that arrived in the source's folder since the last check
+      description: The same as checking the mailbox, for this source's folder only.
+      responses:
+        "200": { description: What the check read., content: { application/json: { schema: { $ref: "#/components/schemas/MailCheckResult" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "reauth: sign in again." }
+        "502": { description: The mail server failed or refused the login. }
+  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}/patterns:
+    parameters:
+      - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: sourceId, in: path, required: true, schema: { type: integer, format: int64 } }
     get:
       operationId: listMailPatterns
-      summary: The mailbox's patterns, in the order they are tried
+      summary: The source's patterns, in the order they are tried
       responses:
         "200": { description: The patterns., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/MailPattern" } } } } }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -1269,10 +1346,11 @@ paths:
         "201": { description: The saved pattern., content: { application/json: { schema: { $ref: "#/components/schemas/MailPattern" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
-  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/patterns/order:
+  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}/patterns/order:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
       - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: sourceId, in: path, required: true, schema: { type: integer, format: int64 } }
     put:
       operationId: reorderMailPatterns
       summary: Put the patterns in a new order, naming each once
@@ -1283,10 +1361,11 @@ paths:
         "200": { description: The patterns in their new order., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/MailPattern" } } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
-  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/patterns/test:
+  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}/patterns/test:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
       - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: sourceId, in: path, required: true, schema: { type: integer, format: int64 } }
     post:
       operationId: testMailPattern
       summary: Try a pattern, saved or not, on the sender's latest mails
@@ -1300,10 +1379,11 @@ paths:
         "200": { description: What the pattern makes of the mails., content: { application/json: { schema: { $ref: "#/components/schemas/MailPatternTest" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
-  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/patterns/{patternId}:
+  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}/patterns/{patternId}:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
       - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: sourceId, in: path, required: true, schema: { type: integer, format: int64 } }
       - { name: patternId, in: path, required: true, schema: { type: integer, format: int64 } }
     put:
       operationId: updateMailPattern
@@ -1321,14 +1401,15 @@ paths:
       responses:
         "204": { description: Removed. }
         "404": { $ref: "#/components/responses/NotFound" }
-  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/patterns/{patternId}/apply:
+  /api/v1/wallets/{walletId}/mail/mailboxes/{mailboxId}/sources/{sourceId}/patterns/{patternId}/apply:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
       - { name: mailboxId, in: path, required: true, schema: { type: integer, format: int64 } }
+      - { name: sourceId, in: path, required: true, schema: { type: integer, format: int64 } }
       - { name: patternId, in: path, required: true, schema: { type: integer, format: int64 } }
     post:
       operationId: applyMailPattern
-      summary: Read with a saved pattern the mails no pattern read so far
+      summary: Read with a saved pattern the mails of the source's folder no source read so far
       responses:
         "200": { description: What it made., content: { application/json: { schema: { $ref: "#/components/schemas/MailApplyResult" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -4389,9 +4470,8 @@ components:
         id: { type: integer, format: int64 }
         provider: { type: string, enum: [microsoft, imap] }
         address: { type: string }
-        folder: { type: string }
         paused: { type: boolean }
-        status: { type: string, enum: [ok, error, reauth] }
+        status: { type: string, enum: [ok, error, reauth], description: "the connection and the login; a folder's trouble is its source's status" }
         statusDetail: { type: string }
         lastCheckAt: { type: string, nullable: true, description: "last check, RFC3339 UTC" }
         lastMailAt: { type: string, nullable: true, description: "arrival of the newest mail read, RFC3339 UTC" }
@@ -4400,21 +4480,41 @@ components:
           allOf: [{ $ref: "#/components/schemas/IMAPSettings" }]
           nullable: true
           description: "where an IMAP mailbox's server is; null for Microsoft"
-        ai: { $ref: "#/components/schemas/MailboxAI" }
         aiReady: { type: boolean, description: "whether whoever connected the mailbox has AI set up, so a mode with the AI can be chosen" }
+        sources: { type: array, items: { $ref: "#/components/schemas/MailSource" }, description: "in the order a mail is offered to them; at least one, at most 5" }
+      required: [id, provider, address, paused, status, statusDetail, lastCheckAt, lastMailAt, createdAt, imap, aiReady, sources]
+    MailSourceInput:
+      type: object
+      properties:
+        name: { type: string, maxLength: 60 }
+        folder: { type: string }
+      required: [name, folder]
+    MailSource:
+      type: object
+      description: One folder of a mailbox, read with its own patterns and AI settings (#794).
+      properties:
+        id: { type: integer, format: int64 }
+        mailboxId: { type: integer, format: int64 }
+        position: { type: integer }
+        name: { type: string }
+        folder: { type: string }
+        ai: { $ref: "#/components/schemas/MailSourceAI" }
+        status: { type: string, enum: [ok, error], description: "error: the folder cannot be read (gone or renamed)" }
+        statusDetail: { type: string }
+        lastCheckAt: { type: string, nullable: true, description: "last check of its folder, RFC3339 UTC" }
         mode:
           type: string
           enum: ["idle", "polling", "retry", ""]
           description: >-
-            How the server is reading the mailbox right now: idle (the mail
+            How the server is reading the source's folder right now: idle (the mail
             server announces new mail), polling (asked on a timer, for a server
             without IDLE), retry (the connection was lost and is about to be
             tried again), or empty when nothing is listening.
         nextCheckAt: { type: string, nullable: true, description: "the next full check, or the next attempt while retrying; RFC3339 UTC" }
-      required: [id, provider, address, folder, paused, status, statusDetail, lastCheckAt, lastMailAt, createdAt, imap, ai, aiReady, mode, nextCheckAt]
-    MailboxAI:
+      required: [id, mailboxId, position, name, folder, ai, status, statusDetail, lastCheckAt, mode, nextCheckAt]
+    MailSourceAI:
       type: object
-      description: How a mailbox uses the AI (#659).
+      description: How a source uses the AI (#659).
       properties:
         mode:
           type: string
@@ -4483,7 +4583,9 @@ components:
         memo: { type: string, nullable: true, description: "that transaction's memo" }
         payee: { type: string, nullable: true, description: "that transaction's payee" }
         byAi: { type: boolean, description: "the AI, not a pattern, read the mail (#659)" }
-      required: [id, sender, subject, receivedAt, outcome, detail, authenticated, patternId, transactionId, accountId, amount, memo, payee, byAi]
+        sourceId: { type: integer, format: int64, nullable: true, description: "the source that read it; null once that source is removed" }
+        sourceName: { type: string, nullable: true, description: "that source's name" }
+      required: [id, sender, subject, receivedAt, outcome, detail, authenticated, patternId, transactionId, accountId, amount, memo, payee, byAi, sourceId, sourceName]
     MailDetail:
       allOf:
         - { $ref: "#/components/schemas/MailSummary" }
@@ -4528,6 +4630,7 @@ components:
       properties:
         id: { type: integer, format: int64 }
         mailboxId: { type: integer, format: int64 }
+        sourceId: { type: integer, format: int64 }
         position: { type: integer }
         name: { type: string }
         sender: { type: string, description: "the From address it is for, without case" }
@@ -4543,7 +4646,7 @@ components:
         dateFormat: { type: string, description: "how the date group is written, e.g. DD.MM or DD/MM/YYYY; without a date group, the mail's own day" }
         requireAuth: { type: boolean, description: "read only mails whose sender's domain the receiving server vouched for (DMARC or DKIM)" }
         editor: { type: string, description: "the editor's own state, opaque to the server" }
-      required: [id, mailboxId, position, name, sender, subjectMode, subject, body, accountId, cards, direction, inWords, paymentMode, applyRules, dateFormat, requireAuth, editor]
+      required: [id, mailboxId, sourceId, position, name, sender, subjectMode, subject, body, accountId, cards, direction, inWords, paymentMode, applyRules, dateFormat, requireAuth, editor]
     MailExtracted:
       type: object
       description: The transaction a mail becomes, before assignment rules.
