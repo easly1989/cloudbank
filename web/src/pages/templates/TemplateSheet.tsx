@@ -32,6 +32,7 @@ import { useAmountParser } from "../../useAmountParser";
 import { categoryLabel } from "../payees/payeeList";
 import classes from "./templates.module.css";
 import { notifyError } from "../../notifyError";
+import { WrapText } from "../../components/WrapText";
 
 /**
  * A template kept for quick entry, in the sheet beside the page (#560): new,
@@ -290,11 +291,7 @@ export function TemplateSheet({
           </Group>
         </>
       )}
-      <TextInput
-        label={t("transactions.memo")}
-        value={memo}
-        onChange={(e) => setMemo(e.currentTarget.value)}
-      />
+      <WrapText label={t("transactions.memo")} value={memo} onChange={setMemo} />
       {!complex && (
         <>
           <TagsInput
@@ -304,11 +301,7 @@ export function TemplateSheet({
             value={tags}
             onChange={setTags}
           />
-          <TextInput
-            label={t("transactions.info")}
-            value={info}
-            onChange={(e) => setInfo(e.currentTarget.value)}
-          />
+          <WrapText label={t("transactions.info")} value={info} onChange={setInfo} />
         </>
       )}
       <span className={classes.note}>

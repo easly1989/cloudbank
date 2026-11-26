@@ -31,6 +31,7 @@ import { accountFormat, ACCOUNT_TYPES, hasValuations } from "./accountList";
 import type { AccountActions } from "./AccountTable";
 import classes from "./accounts.module.css";
 import { notifyError } from "../../notifyError";
+import { WrapText } from "../../components/WrapText";
 
 /**
  * An account in the sheet beside the page (#564): new, or opened from its ⋯.
@@ -270,11 +271,7 @@ export function AccountSheet({
         checked={noReport}
         onChange={(e) => setNoReport(e.currentTarget.checked)}
       />
-      <TextInput
-        label={t("accounts.notes")}
-        value={notes}
-        onChange={(e) => setNotes(e.currentTarget.value)}
-      />
+      <WrapText label={t("accounts.notes")} value={notes} onChange={setNotes} />
       <Checkbox
         label={t("accounts.closedHint")}
         checked={closed}

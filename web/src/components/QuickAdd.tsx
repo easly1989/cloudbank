@@ -17,6 +17,7 @@ import { STATUSES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import classes from "../tagPills.module.css";
 import { todayCivil } from "../civilDate";
+import { WrapText } from "./WrapText";
 
 // QuickAdd is a one-line transaction entry: pick a payee (its default category
 // and payment mode are applied automatically), type an amount, and add without
@@ -177,11 +178,11 @@ export function QuickAdd({
           searchable
           style={{ flex: "1 1 120px", minWidth: 100 }}
         />
-        <TextInput
+        <WrapText
           placeholder={t("transactions.memo")}
           aria-label={t("transactions.memo")}
           value={memo}
-          onChange={(e) => setMemo(e.currentTarget.value)}
+          onChange={setMemo}
           style={{ flex: "1 1 140px", minWidth: 110 }}
         />
         <TagsInput

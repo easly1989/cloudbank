@@ -21,6 +21,7 @@ import { type GoalLine, monthIndex } from "./goalList";
 import { type GoalActions, type Money, useMonthName } from "./goalWords";
 import classes from "./goals.module.css";
 import { notifyError } from "../../notifyError";
+import { WrapText } from "../../components/WrapText";
 
 /**
  * A new goal's starting values, from one of the empty page's examples; on a
@@ -246,11 +247,7 @@ export function GoalSheet({
           {t("goals.sheet.keptInNote")}
         </Text>
       </div>
-      <TextInput
-        label={t("goals.sheet.note")}
-        value={note}
-        onChange={(e) => setNote(e.currentTarget.value)}
-      />
+      <WrapText label={t("goals.sheet.note")} value={note} onChange={setNote} />
 
       {goal && (
         <>

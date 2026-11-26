@@ -48,6 +48,7 @@ import { PAYMENT_MODES } from "../../transactionEnums";
 import { useAmountParser } from "../../useAmountParser";
 import { notifyError } from "../../notifyError";
 import { sameName } from "../../sameName";
+import { WrapText } from "../../components/WrapText";
 
 const UNITS: ScheduleUnit[] = ["day", "week", "month", "year"];
 const WEEKEND_MODES = [0, 1, 2, 3];
@@ -556,11 +557,7 @@ export function ScheduleSheet({
             searchable
             clearable
           />
-          <TextInput
-            label={t("transactions.memo")}
-            value={memo}
-            onChange={(e) => setMemo(e.currentTarget.value)}
-          />
+          <WrapText label={t("transactions.memo")} value={memo} onChange={setMemo} />
           <Select
             label={t("transactions.paymentMode")}
             data={PAYMENT_MODES.map((m) => ({ value: String(m), label: t(`paymentModes.${m}`) }))}

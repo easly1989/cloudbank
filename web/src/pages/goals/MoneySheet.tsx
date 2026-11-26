@@ -12,6 +12,7 @@ import { type GoalLine, monthIndex } from "./goalList";
 import { type Money, useMonthName } from "./goalWords";
 import classes from "./goals.module.css";
 import { notifyError } from "../../notifyError";
+import { WrapText } from "../../components/WrapText";
 
 export type Direction = "in" | "out";
 
@@ -201,11 +202,7 @@ export function MoneySheet({
           value={date}
           onChange={(e) => setDate(e.currentTarget.value)}
         />
-        <TextInput
-          label={t("goals.money.note")}
-          value={note}
-          onChange={(e) => setNote(e.currentTarget.value)}
-        />
+        <WrapText label={t("goals.money.note")} value={note} onChange={setNote} />
       </div>
       {reaches ? (
         <>

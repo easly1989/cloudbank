@@ -20,6 +20,7 @@ import { STATUSES } from "../transactionEnums";
 import { useAmountParser } from "../useAmountParser";
 import { todayCivil } from "../civilDate";
 import { notifyError } from "../notifyError";
+import { WrapText } from "./WrapText";
 
 export function TransferForm({
   opened,
@@ -254,11 +255,7 @@ export function TransferForm({
             onChange={(v) => v && setStatus(v)}
             allowDeselect={false}
           />
-          <TextInput
-            label={t("transactions.memo")}
-            value={memo}
-            onChange={(e) => setMemo(e.currentTarget.value)}
-          />
+          <WrapText label={t("transactions.memo")} value={memo} onChange={setMemo} />
         </Group>
         <Group justify="space-between">
           <Button
