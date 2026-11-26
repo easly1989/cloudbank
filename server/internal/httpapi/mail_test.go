@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/easly1989/cloudbank/server/internal/secrets"
@@ -326,6 +327,7 @@ func TestMailSourcesLimitsAndIsolation(t *testing.T) {
 		{http.MethodPost, fullBase, map[string]any{"name": "Sesta", "folder": "INBOX"}, http.StatusConflict, "source_limit"},
 		{http.MethodPost, oneBase, map[string]any{"name": " FONTE 1 ", "folder": "Banca"}, http.StatusConflict, "source_name_taken"},
 		{http.MethodPost, oneBase, map[string]any{"name": " ", "folder": "Banca"}, http.StatusBadRequest, "invalid"},
+		{http.MethodPatch, oneBase + "/" + strconv.FormatInt(one.sources[0], 10), map[string]any{"name": strings.Repeat("è", 61)}, http.StatusBadRequest, "invalid"},
 		{http.MethodPatch, fullBase + "/" + strconv.FormatInt(full.sources[1], 10), map[string]any{"name": "fonte 1"}, http.StatusConflict, "source_name_taken"},
 		{http.MethodDelete, oneBase + "/" + strconv.FormatInt(one.sources[0], 10), nil, http.StatusConflict, "last_source"},
 		{http.MethodPut, oneBase + "/order", map[string]any{"ids": []int64{full.sources[0]}}, http.StatusBadRequest, "invalid"},

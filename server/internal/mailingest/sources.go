@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
@@ -44,12 +45,18 @@ func (s *Service) reloadSource(ctx context.Context, mailboxID, sourceID int64) (
 	return s.sourceView(src), nil
 }
 
-// sourceName checks a source's name: trimmed, not empty, and no other source
+// maxSourceName is the longest name a source takes, as the page's field.
+const maxSourceName = 60
+
+// sourceName checks a source's name: trimmed, not empty, at most maxSourceName characters, and no other source
 // of the mailbox (but self) has it, whatever the case.
 func sourceName(name string, sources []db.MailSource, self int64) (string, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return "", fmt.Errorf("%w: the name is required", ErrInvalid)
+	}
+	if utf8.RuneCountInString(name) > maxSourceName {
+		return "", fmt.Errorf("%w: the name is longer than %d characters", ErrInvalid, maxSourceName)
 	}
 	for _, o := range sources {
 		if o.ID != self && strings.EqualFold(o.Name, name) {

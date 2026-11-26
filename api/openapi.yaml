@@ -1264,7 +1264,7 @@ paths:
       description: A new folder is read from its current end, like a new source.
       requestBody:
         required: true
-        content: { application/json: { schema: { type: object, properties: { name: { type: string }, folder: { type: string } } } } }
+        content: { application/json: { schema: { type: object, properties: { name: { type: string, maxLength: 60 }, folder: { type: string } } } } }
       responses:
         "200": { description: The source., content: { application/json: { schema: { $ref: "#/components/schemas/MailSource" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -4486,7 +4486,7 @@ components:
     MailSourceInput:
       type: object
       properties:
-        name: { type: string }
+        name: { type: string, maxLength: 60 }
         folder: { type: string }
       required: [name, folder]
     MailSource:

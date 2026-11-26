@@ -328,6 +328,12 @@ function SourceBand({
   const ref = { mailboxId: mailbox.id, sourceId: source.id };
   const status = useSourceStatus(mailbox)(source);
   const [name, setName] = useState(source.name);
+  // A rename saved elsewhere (another tab) shows here too.
+  const [savedName, setSavedName] = useState(source.name);
+  if (savedName !== source.name) {
+    setSavedName(source.name);
+    setName(source.name);
+  }
   const refresh = () => void qc.invalidateQueries({ queryKey: ["mail", walletId] });
 
   // The patterns load with the band, not before: a closed band does not need them.
@@ -386,7 +392,8 @@ function SourceBand({
   const saveName = () => {
     const v = name.trim();
     if (!v) setName(source.name);
-    else if (v !== source.name) update.mutate({ name: v });
+    // Enter saves, and the blur after it must not save again.
+    else if (v !== source.name && !update.isPending) update.mutate({ name: v });
   };
 
   const mode = t(`mail.ai.modes.${source.ai.mode}`);

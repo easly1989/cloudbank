@@ -90,6 +90,9 @@ func (s *Service) checkLocked(ctx context.Context, walletID, id, sourceID int64,
 		for _, folder := range folders {
 			group := byFolder[folder]
 			got, last, err := s.readFolder(ctx, sess, mb, folder, group, patterns)
+			// What was stored before an error is read too: a refetch would find
+			// it stored already and leave it unread.
+			read = append(read, got...)
 			for _, src := range group {
 				s.recordSource(ctx, src, err)
 			}
@@ -100,7 +103,6 @@ func (s *Service) checkLocked(ctx context.Context, walletID, id, sourceID int64,
 			if err != nil {
 				return err
 			}
-			read = append(read, got...)
 			if last > newest {
 				newest = last
 			}
@@ -215,7 +217,7 @@ func (s *Service) readFolder(ctx context.Context, sess *Session, mb db.Mailbox, 
 		in := mailInput{From: m.From, Subject: m.Subject, Body: m.Body, Date: received, Authenticated: m.Authenticated}
 		owner, claimed, err := s.firstClaimer(ctx, eligible, patterns, in, frac)
 		if err != nil {
-			return nil, "", err
+			return out, "", err
 		}
 		ids, err := s.q.InsertMailMessage(ctx, db.InsertMailMessageParams{
 			MailboxID: mb.ID, SourceID: sql.NullInt64{Int64: owner.ID, Valid: true}, Folder: folder,
@@ -223,7 +225,7 @@ func (s *Service) readFolder(ctx context.Context, sess *Session, mb db.Mailbox, 
 			ReceivedAt: received.Format(time.RFC3339), Body: m.Body, Authenticated: flag(m.Authenticated),
 		})
 		if err != nil {
-			return nil, "", err
+			return out, "", err
 		}
 		if len(ids) > 0 {
 			out = append(out, routed{id: ids[0], src: owner})
@@ -235,7 +237,7 @@ func (s *Service) readFolder(ctx context.Context, sess *Session, mb db.Mailbox, 
 		}
 		moved, err := s.secondChance(ctx, mb, m.MessageID, folder, f.UID, owner, patterns, frac)
 		if err != nil {
-			return nil, "", err
+			return out, "", err
 		}
 		if moved > 0 {
 			out = append(out, routed{id: moved, src: owner})
@@ -246,7 +248,7 @@ func (s *Service) readFolder(ctx context.Context, sess *Session, mb db.Mailbox, 
 			if err := s.q.SetMailSourceCursor(ctx, db.SetMailSourceCursorParams{
 				UidValidity: int64(next.UIDValidity), LastUid: int64(next.LastUID), ID: src.ID,
 			}); err != nil {
-				return nil, "", err
+				return out, "", err
 			}
 		}
 	}
