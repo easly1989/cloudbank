@@ -124,6 +124,7 @@ type Querier interface {
 	DeleteTemplate(ctx context.Context, id int64) error
 	DeleteTemplateSplits(ctx context.Context, templateID int64) error
 	DeleteTransaction(ctx context.Context, id int64) error
+	DeleteTransactionMerge(ctx context.Context, walletID int64) error
 	DeleteTransactionTags(ctx context.Context, transactionID int64) error
 	DeleteTransfer(ctx context.Context, id int64) error
 	DeleteUserSessions(ctx context.Context, userID int64) error
@@ -190,6 +191,7 @@ type Querier interface {
 	GetTagByName(ctx context.Context, arg GetTagByNameParams) (Tag, error)
 	GetTemplate(ctx context.Context, id int64) (Template, error)
 	GetTransaction(ctx context.Context, id int64) (Transaction, error)
+	GetTransactionMerge(ctx context.Context, walletID int64) (TransactionMerge, error)
 	GetTransfer(ctx context.Context, id int64) (Transfer, error)
 	GetTransferByTransaction(ctx context.Context, arg GetTransferByTransactionParams) (Transfer, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
@@ -332,6 +334,7 @@ type Querier interface {
 	// Every low-balance threshold of a person still a member of the account's
 	// wallet, with the account's balance parts.
 	ListLowThresholds(ctx context.Context, today string) ([]ListLowThresholdsRow, error)
+	ListMailMessageIDsForTransaction(ctx context.Context, transactionID sql.NullInt64) ([]int64, error)
 	ListMailMessages(ctx context.Context, arg ListMailMessagesParams) ([]ListMailMessagesRow, error)
 	// The latest mails of one sender, for trying a pattern before saving it.
 	ListMailMessagesFrom(ctx context.Context, arg ListMailMessagesFromParams) ([]MailMessage, error)
@@ -438,6 +441,10 @@ type Querier interface {
 	// currency for base conversion. Drives the dashboard income/expense chart.
 	MonthlyIncomeExpense(ctx context.Context, arg MonthlyIncomeExpenseParams) ([]MonthlyIncomeExpenseRow, error)
 	MoveAssignmentsToPayee(ctx context.Context, arg MoveAssignmentsToPayeeParams) error
+	MoveAttachmentsByIDs(ctx context.Context, arg MoveAttachmentsByIDsParams) error
+	// Some of the mails that wrote a transaction now point at another one: a
+	// merge moves them to the row it keeps, its undo moves them back (#786).
+	MoveMailMessagesByIDs(ctx context.Context, arg MoveMailMessagesByIDsParams) error
 	// The mails that wrote a transaction now point at the one it was merged into.
 	MoveMailMessagesToTransaction(ctx context.Context, arg MoveMailMessagesToTransactionParams) error
 	MoveTemplatesToPayee(ctx context.Context, arg MoveTemplatesToPayeeParams) error
@@ -494,6 +501,11 @@ type Querier interface {
 	// A feed whose user is still an active member of its wallet, with the wallet's
 	// title for the calendar's name.
 	ResolveCalendarFeed(ctx context.Context, id int64) (ResolveCalendarFeedRow, error)
+	// Puts a transaction back exactly as it was, every column, inserting it when
+	// it is gone (an undone merge, #786). An upsert, not INSERT OR REPLACE: a
+	// replace deletes the row first, and its tags and attachments cascade away.
+	// A payee, category, vehicle, template or user deleted since is left out.
+	RestoreTransaction(ctx context.Context, arg RestoreTransactionParams) error
 	// Rates are what one unit is worth in the base; a new base divides them all by
 	// its own old rate, so they read against it (#558).
 	ScaleWalletRates(ctx context.Context, arg ScaleWalletRatesParams) error
@@ -601,6 +613,7 @@ type Querier interface {
 	UpsertPluggyConfig(ctx context.Context, arg UpsertPluggyConfigParams) error
 	UpsertPushSubscription(ctx context.Context, arg UpsertPushSubscriptionParams) error
 	UpsertReviewSnooze(ctx context.Context, arg UpsertReviewSnoozeParams) error
+	UpsertTransactionMerge(ctx context.Context, arg UpsertTransactionMergeParams) error
 	// The code was right: the channel sends from now on. A Telegram chat linked
 	// through the shared bot gets its target here.
 	VerifyNotificationChannel(ctx context.Context, arg VerifyNotificationChannelParams) error

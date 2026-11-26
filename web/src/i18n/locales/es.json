@@ -3638,5 +3638,35 @@
       "payments": "Pagos en un año",
       "note": "CloudBank encontró estos movimientos: un importe de al menos el doble de la mediana del beneficiario y 20 por encima, un beneficiario nuevo por encima del 95% de los gastos del año, el mismo importe al mismo beneficiario dos veces en 3 días. El modelo solo escribió el texto. Modelo: {{model}}."
     }
+  },
+  "merge": {
+    "action": "Fusionar",
+    "with": "Fusionar con…",
+    "title": "Fusionar 2 filas",
+    "lead": "Solo queda una, en {{account}}. Elige de qué fila sale cada campo.",
+    "origin": {
+      "bank": "Banco",
+      "mail": "Correo del banco",
+      "hand": "A mano"
+    },
+    "added": "añadida el {{date}}",
+    "same": "iguales",
+    "result": "Resultado",
+    "keepsRef": "Conserva la referencia de importación del banco, así la sincronización no la vuelve a importar.",
+    "amountsDiffer": "Los importes son distintos",
+    "amountsDifferBody": "({{a}} y {{b}}). Comprueba cuál conservar.",
+    "done": "Fusionadas en una fila",
+    "undo": "Deshacer",
+    "undone": "Las dos filas han vuelto",
+    "undoConflict": "La fila fusionada ha cambiado desde entonces, así que no se puede deshacer la fusión.",
+    "why": {
+      "transfer": "Una transferencia no se puede fusionar: son dos filas, una en cada cuenta.",
+      "split": "Una transacción dividida no se puede fusionar: su importe es la suma de sus líneas.",
+      "accounts": "No se pueden fusionar filas de cuentas distintas."
+    },
+    "pickLikely": "Mismo importe, en 3 días",
+    "pickNone": "Ninguna otra fila de esta cuenta tiene el mismo importe en 3 días.",
+    "pickOther": "Otra fila de esta cuenta",
+    "next": "Siguiente"
   }
 }

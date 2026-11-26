@@ -3638,5 +3638,35 @@
       "payments": "Payments in a year",
       "note": "CloudBank found these: an amount at least twice the payee's median and 20 above it, a new payee above 95% of the year's expenses, the same amount to the same payee twice within 3 days. The model only wrote the text. Model: {{model}}."
     }
+  },
+  "merge": {
+    "action": "Merge",
+    "with": "Merge with…",
+    "title": "Merge 2 rows",
+    "lead": "Only one stays, on {{account}}. Choose which row each field comes from.",
+    "origin": {
+      "bank": "Bank",
+      "mail": "Bank mail",
+      "hand": "By hand"
+    },
+    "added": "added {{date}}",
+    "same": "same",
+    "result": "Result",
+    "keepsRef": "It keeps the bank's import reference, so sync does not import it again.",
+    "amountsDiffer": "The amounts differ",
+    "amountsDifferBody": "({{a}} and {{b}}). Check which one to keep.",
+    "done": "Merged into one row",
+    "undo": "Undo",
+    "undone": "Both rows are back",
+    "undoConflict": "The merged row has changed since, so the merge cannot be undone.",
+    "why": {
+      "transfer": "A transfer cannot be merged: it is two rows, one on each account.",
+      "split": "A split cannot be merged: its amount is the sum of its lines.",
+      "accounts": "Rows on different accounts cannot be merged."
+    },
+    "pickLikely": "Same amount, within 3 days",
+    "pickNone": "No other row of this account has the same amount within 3 days.",
+    "pickOther": "Another row of this account",
+    "next": "Next"
   }
 }

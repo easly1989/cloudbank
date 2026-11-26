@@ -2717,6 +2717,12 @@ paths:
     post:
       operationId: mergeTransactions
       summary: Merge a duplicate pair — keep one row (inheriting the other's import ref), delete the other
+      description: >-
+        With `take`, it is the register's merge (#786), all or nothing: the kept row takes the named
+        fields from the dropped one and keeps its own others, keeps its import ref (or inherits the
+        dropped row's when it has none or only a mail's), and takes the dropped row's attachments and
+        mails; then the dropped row is deleted. Both rows must be on one account, and neither a
+        transfer leg nor a split. The merge replaces the wallet's last one, which DELETE undoes.
       requestBody:
         required: true
         content:
@@ -2726,11 +2732,29 @@ paths:
               properties:
                 keepId: { type: integer, format: int64 }
                 dropId: { type: integer, format: int64 }
+                take:
+                  type: array
+                  description: The fields the kept row takes from the dropped one.
+                  items: { type: string, enum: [date, amount, status, payee, category, memo, tags] }
               required: [keepId, dropId]
       responses:
         "204": { description: Merged. }
-        "400": { $ref: "#/components/responses/BadRequest" }
+        "400":
+          description: "`different_accounts`, `not_mergeable` (a transfer leg or a split), `invalid_field`, or invalid ids."
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
         "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: undoTransactionMerge
+      summary: Undo the wallet's last register merge
+      description: >-
+        Both rows come back exactly as they were, import refs and timestamps included, with their
+        tags; the attachments and mails that moved return to the dropped row.
+      responses:
+        "204": { description: Undone. }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: "`undo_conflict`: the kept row is gone, or is a transfer leg now."
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
   /api/v1/wallets/{walletId}/transactions/merge-mail:
     parameters:
       - { name: walletId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -5145,6 +5169,7 @@ components:
         transferId: { type: integer, format: int64, description: "set when the transaction is one leg of an internal transfer" }
         transferAccountId: { type: integer, format: int64, description: "the counterpart leg's account" }
         attachmentCount: { type: integer, description: "number of files attached (populated on register rows)" }
+        importRef: { type: string, description: "the bank's or a mail's (mail:…) reference of an imported row; on a single transaction only" }
         createdAt: { type: string }
         updatedAt: { type: string }
       required: [id, accountId, date, amount, paymentMode, status, info, memo, isSplit, tags]

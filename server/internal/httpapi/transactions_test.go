@@ -460,3 +460,66 @@ func TestSnoozeAnUnconfirmedMailRow(t *testing.T) {
 		t.Fatalf("review = %+v, want the row back", rev)
 	}
 }
+
+// Two register rows merge into one, field by field, and the merge is undone
+// (#786); only the wallet's members can do either.
+func TestMergingRegisterRowsAndUndo(t *testing.T) {
+	admin := newTestAPI(t)
+	wid, acc := makeAccount(t, admin)
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10)
+	admin.do(http.MethodPost, base+"/import/commit", map[string]any{
+		"accountId": acc, "rows": []map[string]any{{"date": "2026-11-26", "amount": -1299, "memo": "PP*HUMBLEBUNDL", "importRef": "eb:h"}},
+	}, true).Body.Close()
+	hand := decodeTxn(t, admin.do(http.MethodPost, base+"/transactions", map[string]any{
+		"accountId": acc, "date": "2026-11-29", "amount": -1299, "memo": "Humble Choice", "tags": []string{"games"},
+	}, true))
+	var reg struct {
+		Rows []struct {
+			ID   int64  `json:"id"`
+			Memo string `json:"memo"`
+		} `json:"rows"`
+	}
+	r := admin.do(http.MethodGet, base+"/transactions/register?accountId="+strconv.FormatInt(acc, 10), nil, false)
+	if err := json.NewDecoder(r.Body).Decode(&reg); err != nil {
+		t.Fatal(err)
+	}
+	r.Body.Close()
+	var bank int64
+	for _, row := range reg.Rows {
+		if row.Memo == "PP*HUMBLEBUNDL" {
+			bank = row.ID
+		}
+	}
+	handID := int64(hand["id"].(float64))
+	merge := map[string]any{"keepId": bank, "dropId": handID, "take": []string{"memo", "tags"}}
+
+	admin.do(http.MethodPost, "/api/v1/admin/users", map[string]any{"username": "bob", "password": "bobssecret"}, true).Body.Close()
+	bob := admin.fork()
+	bob.do(http.MethodPost, "/api/v1/auth/login", map[string]any{"username": "bob", "password": "bobssecret"}, true).Body.Close()
+	if r := bob.do(http.MethodPost, base+"/transactions/merge", merge, true); r.StatusCode != http.StatusNotFound {
+		t.Fatalf("bob merge = %d, want 404", r.StatusCode)
+	}
+	if r := admin.do(http.MethodPost, base+"/transactions/merge", map[string]any{"keepId": bank, "dropId": handID, "take": []string{"info"}}, true); r.StatusCode != http.StatusBadRequest {
+		t.Fatalf("merge an unknown field = %d, want 400", r.StatusCode)
+	}
+	if r := admin.do(http.MethodPost, base+"/transactions/merge", merge, true); r.StatusCode != http.StatusNoContent {
+		t.Fatalf("merge = %d, want 204", r.StatusCode)
+	}
+	got := decodeTxn(t, admin.do(http.MethodGet, base+"/transactions/"+strconv.FormatInt(bank, 10), nil, false))
+	if got["memo"] != "Humble Choice" || got["importRef"] != "eb:h" || got["date"] != "2026-11-26" {
+		t.Fatalf("merged = %+v, want the hand memo on the bank row", got)
+	}
+	if r := bob.do(http.MethodDelete, base+"/transactions/merge", nil, true); r.StatusCode != http.StatusNotFound {
+		t.Fatalf("bob undo = %d, want 404", r.StatusCode)
+	}
+	if r := admin.do(http.MethodDelete, base+"/transactions/merge", nil, true); r.StatusCode != http.StatusNoContent {
+		t.Fatalf("undo = %d, want 204", r.StatusCode)
+	}
+	back := decodeTxn(t, admin.do(http.MethodGet, base+"/transactions/"+strconv.FormatInt(handID, 10), nil, false))
+	if back["memo"] != "Humble Choice" {
+		t.Fatalf("restored = %+v", back)
+	}
+	if r := admin.do(http.MethodDelete, base+"/transactions/merge", nil, true); r.StatusCode != http.StatusNotFound {
+		t.Fatalf("second undo = %d, want 404", r.StatusCode)
+	}
+}

@@ -22,6 +22,7 @@ import {
   IconArrowsHorizontal,
   IconCircleCheck,
   IconClock,
+  IconArrowMerge,
   IconCopy,
   IconDeviceFloppy,
   IconLock,
@@ -162,6 +163,8 @@ export interface RegisterTableProps {
   onDelete: (row: RegisterRow) => void;
   onToggleStatus: (row: RegisterRow, status: number) => void;
   onSaveTemplate: (row: RegisterRow) => void;
+  /** Merge the row with another one of its account (#786). */
+  onMergeWith?: (row: RegisterRow) => void;
   // Bulk actions on the current multi-selection (also on the selection bar);
   // shown in the right-click menu when more than one row is selected.
   onBulkEdit?: () => void;
@@ -219,6 +222,7 @@ export function RegisterTable({
   onDelete,
   onToggleStatus,
   onSaveTemplate,
+  onMergeWith,
   onBulkEdit,
   onBulkDelete,
   fillRef,
@@ -1285,7 +1289,11 @@ export function RegisterTable({
             </div>
             {/* The foot of the card. It stays put while the ledger scrolls, so
               what you have picked and what it comes to never scroll away. */}
-            <div ref={footRef}>{bulkBar}</div>
+            {/* As wide as the card, not the rows: on a phone the rows scroll
+              sideways, and the selection's buttons must not go with them. */}
+            <div ref={footRef} style={{ position: "sticky", left: 0, width: "100cqi" }}>
+              {bulkBar}
+            </div>
           </Box>
 
           {/* Right-click context menu, anchored at the cursor. */}
@@ -1355,6 +1363,14 @@ export function RegisterTable({
                           onClick={run(() => onDuplicate(r))}
                         >
                           {t("transactions.duplicate")}
+                        </Menu.Item>
+                      )}
+                      {onMergeWith && r.transferId == null && !r.isSplit && (
+                        <Menu.Item
+                          leftSection={<IconArrowMerge size={15} />}
+                          onClick={run(() => onMergeWith(r))}
+                        >
+                          {t("merge.with")}
                         </Menu.Item>
                       )}
                       <Menu.Item

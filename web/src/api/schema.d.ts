@@ -2631,9 +2631,16 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Merge a duplicate pair — keep one row (inheriting the other's import ref), delete the other */
+        /**
+         * Merge a duplicate pair — keep one row (inheriting the other's import ref), delete the other
+         * @description With `take`, it is the register's merge (#786), all or nothing: the kept row takes the named fields from the dropped one and keeps its own others, keeps its import ref (or inherits the dropped row's when it has none or only a mail's), and takes the dropped row's attachments and mails; then the dropped row is deleted. Both rows must be on one account, and neither a transfer leg nor a split. The merge replaces the wallet's last one, which DELETE undoes.
+         */
         post: operations["mergeTransactions"];
-        delete?: never;
+        /**
+         * Undo the wallet's last register merge
+         * @description Both rows come back exactly as they were, import refs and timestamps included, with their tags; the attachments and mails that moved return to the dropped row.
+         */
+        delete: operations["undoTransactionMerge"];
         options?: never;
         head?: never;
         patch?: never;
@@ -5497,6 +5504,8 @@ export interface components {
             transferAccountId?: number;
             /** @description number of files attached (populated on register rows) */
             attachmentCount?: number;
+            /** @description the bank's or a mail's (mail:…) reference of an imported row; on a single transaction only */
+            importRef?: string;
             createdAt?: string;
             updatedAt?: string;
         };
@@ -11613,6 +11622,8 @@ export interface operations {
                     keepId: number;
                     /** Format: int64 */
                     dropId: number;
+                    /** @description The fields the kept row takes from the dropped one. */
+                    take?: ("date" | "amount" | "status" | "payee" | "category" | "memo" | "tags")[];
                 };
             };
         };
@@ -11624,8 +11635,46 @@ export interface operations {
                 };
                 content?: never;
             };
-            400: components["responses"]["BadRequest"];
+            /** @description `different_accounts`, `not_mergeable` (a transfer leg or a split), `invalid_field`, or invalid ids. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             404: components["responses"]["NotFound"];
+        };
+    };
+    undoTransactionMerge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Undone. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            /** @description `undo_conflict`: the kept row is gone, or is a transfer leg now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     mergeMailTransaction: {

@@ -50,6 +50,8 @@ import {
   listTags,
   listTemplates,
   setTransactionStatus,
+  undoTransactionMerge,
+  ApiError,
 } from "../api/client";
 import { formatMinor, type MoneyFormat } from "../money";
 import { useAmountParser } from "../useAmountParser";
@@ -64,6 +66,8 @@ import { RegisterGoalsFigure } from "./goals/RegisterGoalsFigure";
 import { RegisterBankRow } from "./RegisterBankRow";
 import { RegisterFilters } from "./RegisterFilters";
 import { RegisterTable } from "./RegisterTable";
+import { MergeRowsModal } from "./MergeRowsModal";
+import { mergeBlock } from "./mergeRows";
 import { clearedFacets, registerChips } from "./registerChips";
 import { noPanels, type PanelId, type RegisterPanels } from "./registerPanels";
 import { RegisterToolbar } from "./RegisterToolbar";
@@ -317,6 +321,9 @@ export function TransactionsPage() {
       return next;
     });
   const clearSelection = () => setSelected(new Set());
+  // The rows being merged (#786): the two selected, or the one whose menu
+  // said "Merge with…".
+  const [merging, setMerging] = useState<RegisterRow[]>([]);
 
   // Sum of the selected register rows (net, plus inflow/outflow split) so the
   // bulk bar can show a subtotal of the current selection (HomeBank-style).
@@ -392,6 +399,54 @@ export function TransactionsPage() {
     },
     onError,
   });
+  const selectedRows = rows.filter((r) => selected.has(r.id));
+  const mergeWhy = selectedRows.length === 2 ? mergeBlock(selectedRows) : null;
+  const refreshMerged = () => {
+    invalidate();
+    for (const key of ["review", "dashboard"])
+      void qc.invalidateQueries({ queryKey: [key, walletId] });
+  };
+  const undoMerge = useMutation({
+    mutationFn: () => undoTransactionMerge(walletId),
+    onSuccess: () => {
+      refreshMerged();
+      notifications.show({ color: "green", message: t("merge.undone") });
+    },
+    onError: (err) =>
+      err instanceof ApiError && err.status === 409
+        ? notifications.show({ color: "red", message: t("merge.undoConflict") })
+        : notifyError(err),
+  });
+  // Undo puts back the last merge only, so an older toast's Undo goes.
+  const mergeToast = useRef("");
+  const merged = () => {
+    setMerging([]);
+    clearSelection();
+    refreshMerged();
+    notifications.hide(mergeToast.current);
+    const id = (mergeToast.current = `merge-${Date.now()}`);
+    notifications.show({
+      id,
+      color: "green",
+      autoClose: 10000,
+      message: (
+        <Group justify="space-between" wrap="nowrap" gap="sm">
+          <Text fz="sm">{t("merge.done")}</Text>
+          <Button
+            size="compact-sm"
+            variant="subtle"
+            onClick={() => {
+              notifications.hide(id);
+              undoMerge.mutate();
+            }}
+          >
+            {t("merge.undo")}
+          </Button>
+        </Group>
+      ),
+    });
+  };
+
   const deleteSelected = async () => {
     const ids = [...selected];
     if (ids.length === 0) return;
@@ -696,6 +751,7 @@ export function TransactionsPage() {
           onDelete={deleteRow}
           onToggleStatus={(row, status) => toggleStatus.mutate({ id: row.id, status })}
           onSaveTemplate={templateFromRow}
+          onMergeWith={(row) => setMerging([row])}
           onBulkEdit={() => setBulkEditOpen(true)}
           onBulkDelete={deleteSelected}
           panels={panels}
@@ -717,6 +773,8 @@ export function TransactionsPage() {
                 onEdit={() => setBulkEditOpen(true)}
                 onDelete={deleteSelected}
                 onClear={clearSelection}
+                onMerge={selectedRows.length === 2 ? () => setMerging(selectedRows) : undefined}
+                mergeWhy={mergeWhy ? t(`merge.why.${mergeWhy}`) : undefined}
               />
             ) : undefined
           }
@@ -749,6 +807,19 @@ export function TransactionsPage() {
             </Stack>
           }
           fillRef={topRef}
+        />
+      )}
+
+      {account && merging.length > 0 && (
+        <MergeRowsModal
+          key={merging.map((r) => r.id).join()}
+          walletId={walletId}
+          rows={merging}
+          ledger={rows}
+          fmt={fmt}
+          accountName={account.name}
+          onClose={() => setMerging([])}
+          onMerged={merged}
         />
       )}
 
@@ -860,6 +931,8 @@ function BulkBar({
   onEdit,
   onDelete,
   onClear,
+  onMerge,
+  mergeWhy,
 }: {
   count: number;
   total: number;
@@ -867,6 +940,10 @@ function BulkBar({
   onEdit: () => void;
   onDelete: () => void;
   onClear: () => void;
+  /** Two rows are picked: they can be merged into one (#786). */
+  onMerge?: () => void;
+  /** Why the two cannot be merged, when they cannot. */
+  mergeWhy?: string;
 }) {
   const { t } = useTranslation();
   return (
@@ -894,8 +971,20 @@ function BulkBar({
       >
         {formatMinor(total, fmt)}
       </Text>
-      {/* 40px buttons 16 apart, as the register board's selection bar. */}
-      <Group gap={16} ml="auto" wrap="nowrap">
+      {/* 40px buttons 16 apart, as the register board's selection bar. They
+          wrap on a phone: the bar is as wide as the card, and a button past
+          its edge could not be scrolled to. */}
+      <Group gap={16} ml="auto" wrap="wrap">
+        {onMerge && (
+          <Tooltip label={mergeWhy} disabled={!mergeWhy} multiline w={260} withArrow>
+            {/* A disabled button gets no pointer events: the span carries the tooltip. */}
+            <span>
+              <Button disabled={!!mergeWhy} onClick={onMerge}>
+                {t("merge.action")}
+              </Button>
+            </span>
+          </Tooltip>
+        )}
         <Button variant="default" onClick={onEdit}>
           {t("bulk.edit")}
         </Button>

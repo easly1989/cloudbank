@@ -29,6 +29,8 @@ export interface Transaction {
   transferId?: number | null;
   transferAccountId?: number | null;
   attachmentCount?: number;
+  /** The bank's or a mail's ("mail:…") reference of an imported row; single transaction only. */
+  importRef?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -340,8 +342,19 @@ export const dismissAllDuplicatePairs = (walletId: number) =>
     {},
   );
 
-export const mergeTransactions = (walletId: number, keepId: number, dropId: number) =>
-  api.post<void>(`/api/v1/wallets/${walletId}/transactions/merge`, { keepId, dropId });
+/**
+ * With `take`, the register's merge (#786): the kept row takes those fields from
+ * the dropped one, and the wallet's last merge can be undone.
+ */
+export const mergeTransactions = (
+  walletId: number,
+  keepId: number,
+  dropId: number,
+  take?: string[],
+) => api.post<void>(`/api/v1/wallets/${walletId}/transactions/merge`, { keepId, dropId, take });
+
+export const undoTransactionMerge = (walletId: number) =>
+  api.del<void>(`/api/v1/wallets/${walletId}/transactions/merge`);
 
 export const mergeMailTransaction = (walletId: number, mailId: number, bankId: number) =>
   api.post<void>(`/api/v1/wallets/${walletId}/transactions/merge-mail`, { mailId, bankId });

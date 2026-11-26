@@ -666,6 +666,12 @@ type Transaction struct {
 	CreatedBy   sql.NullInt64
 }
 
+type TransactionMerge struct {
+	WalletID  int64
+	Undo      string
+	CreatedAt string
+}
+
 type TransactionTag struct {
 	TransactionID int64
 	TagID         int64

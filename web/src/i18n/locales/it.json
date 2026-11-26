@@ -3638,5 +3638,35 @@
       "payments": "Pagamenti in un anno",
       "note": "Le transazioni le ha trovate CloudBank: un importo almeno doppio della mediana del beneficiario e 20 sopra, un beneficiario nuovo sopra il 95% delle uscite dell'anno, lo stesso importo allo stesso beneficiario due volte in 3 giorni. Il modello ha scritto solo il testo. Modello: {{model}}."
     }
+  },
+  "merge": {
+    "action": "Unisci",
+    "with": "Unisci con…",
+    "title": "Unisci 2 righe",
+    "lead": "Ne resta una sola, sul conto {{account}}. Scegli da quale riga prendere ogni campo.",
+    "origin": {
+      "bank": "Banca",
+      "mail": "Mail della banca",
+      "hand": "A mano"
+    },
+    "added": "aggiunta il {{date}}",
+    "same": "uguali",
+    "result": "Risultato",
+    "keepsRef": "Tiene il riferimento dell'import della banca: la sincronizzazione non la reimporta.",
+    "amountsDiffer": "Gli importi sono diversi",
+    "amountsDifferBody": "({{a}} e {{b}}). Controlla quale tenere.",
+    "done": "Unite in una riga",
+    "undo": "Annulla",
+    "undone": "Le due righe sono tornate",
+    "undoConflict": "La riga unita è cambiata nel frattempo: l'unione non si può annullare.",
+    "why": {
+      "transfer": "Un trasferimento non si può unire: sono due righe, una per conto.",
+      "split": "Una transazione divisa non si può unire: il suo importo è la somma delle sue righe.",
+      "accounts": "Righe di conti diversi non si possono unire."
+    },
+    "pickLikely": "Stesso importo, entro 3 giorni",
+    "pickNone": "Nessun'altra riga di questo conto ha lo stesso importo entro 3 giorni.",
+    "pickOther": "Un'altra riga di questo conto",
+    "next": "Avanti"
   }
 }

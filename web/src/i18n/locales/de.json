@@ -3638,5 +3638,35 @@
       "payments": "Zahlungen im Jahr",
       "note": "CloudBank hat sie gefunden: ein Betrag mindestens doppelt so hoch wie der Median des Zahlungspartners und 20 darüber, ein neuer Zahlungspartner über 95 % der Ausgaben des Jahres, derselbe Betrag an denselben Zahlungspartner zweimal in 3 Tagen. Das Modell hat nur den Text geschrieben. Modell: {{model}}."
     }
+  },
+  "merge": {
+    "action": "Zusammenführen",
+    "with": "Zusammenführen mit…",
+    "title": "2 Zeilen zusammenführen",
+    "lead": "Nur eine bleibt, auf {{account}}. Wähle für jedes Feld, aus welcher Zeile es kommt.",
+    "origin": {
+      "bank": "Bank",
+      "mail": "Bank-E-Mail",
+      "hand": "Von Hand"
+    },
+    "added": "hinzugefügt am {{date}}",
+    "same": "gleich",
+    "result": "Ergebnis",
+    "keepsRef": "Sie behält die Importreferenz der Bank, die Synchronisierung importiert sie also nicht erneut.",
+    "amountsDiffer": "Die Beträge sind verschieden",
+    "amountsDifferBody": "({{a}} und {{b}}). Prüfe, welchen du behältst.",
+    "done": "Zu einer Zeile zusammengeführt",
+    "undo": "Rückgängig",
+    "undone": "Beide Zeilen sind zurück",
+    "undoConflict": "Die zusammengeführte Zeile hat sich seitdem geändert, das Zusammenführen lässt sich nicht rückgängig machen.",
+    "why": {
+      "transfer": "Eine Umbuchung lässt sich nicht zusammenführen: Sie besteht aus zwei Zeilen, eine pro Konto.",
+      "split": "Eine Splitbuchung lässt sich nicht zusammenführen: Ihr Betrag ist die Summe ihrer Zeilen.",
+      "accounts": "Zeilen verschiedener Konten lassen sich nicht zusammenführen."
+    },
+    "pickLikely": "Gleicher Betrag, innerhalb von 3 Tagen",
+    "pickNone": "Keine andere Zeile dieses Kontos hat innerhalb von 3 Tagen den gleichen Betrag.",
+    "pickOther": "Eine andere Zeile dieses Kontos",
+    "next": "Weiter"
   }
 }

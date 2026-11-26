@@ -3638,5 +3638,35 @@
       "payments": "Paiements sur un an",
       "note": "CloudBank les a trouvées : un montant au moins double de la médiane du tiers et 20 au-dessus, un nouveau tiers au-dessus de 95 % des dépenses de l’année, le même montant au même tiers deux fois en 3 jours. Le modèle n’a écrit que le texte. Modèle : {{model}}."
     }
+  },
+  "merge": {
+    "action": "Fusionner",
+    "with": "Fusionner avec…",
+    "title": "Fusionner 2 lignes",
+    "lead": "Une seule reste, sur {{account}}. Choisissez de quelle ligne vient chaque champ.",
+    "origin": {
+      "bank": "Banque",
+      "mail": "E-mail de la banque",
+      "hand": "À la main"
+    },
+    "added": "ajoutée le {{date}}",
+    "same": "identiques",
+    "result": "Résultat",
+    "keepsRef": "Elle garde la référence d'import de la banque : la synchronisation ne la réimporte pas.",
+    "amountsDiffer": "Les montants sont différents",
+    "amountsDifferBody": "({{a}} et {{b}}). Vérifiez lequel garder.",
+    "done": "Fusionnées en une ligne",
+    "undo": "Annuler",
+    "undone": "Les deux lignes sont revenues",
+    "undoConflict": "La ligne fusionnée a changé depuis : la fusion ne peut pas être annulée.",
+    "why": {
+      "transfer": "Un virement ne peut pas être fusionné : ce sont deux lignes, une sur chaque compte.",
+      "split": "Une opération ventilée ne peut pas être fusionnée : son montant est la somme de ses lignes.",
+      "accounts": "Des lignes de comptes différents ne peuvent pas être fusionnées."
+    },
+    "pickLikely": "Même montant, à 3 jours près",
+    "pickNone": "Aucune autre ligne de ce compte n'a le même montant à 3 jours près.",
+    "pickOther": "Une autre ligne de ce compte",
+    "next": "Suivant"
   }
 }

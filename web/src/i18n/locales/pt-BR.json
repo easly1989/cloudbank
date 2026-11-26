@@ -3638,5 +3638,35 @@
       "payments": "Pagamentos em um ano",
       "note": "O CloudBank os encontrou: um valor de pelo menos o dobro da mediana do beneficiário e 20 acima, um beneficiário novo acima de 95% dos gastos do ano, o mesmo valor ao mesmo beneficiário duas vezes em 3 dias. O modelo só escreveu o texto. Modelo: {{model}}."
     }
+  },
+  "merge": {
+    "action": "Mesclar",
+    "with": "Mesclar com…",
+    "title": "Mesclar 2 linhas",
+    "lead": "Só uma fica, em {{account}}. Escolha de qual linha vem cada campo.",
+    "origin": {
+      "bank": "Banco",
+      "mail": "E-mail do banco",
+      "hand": "À mão"
+    },
+    "added": "adicionada em {{date}}",
+    "same": "iguais",
+    "result": "Resultado",
+    "keepsRef": "Mantém a referência de importação do banco, então a sincronização não a importa de novo.",
+    "amountsDiffer": "Os valores são diferentes",
+    "amountsDifferBody": "({{a}} e {{b}}). Confira qual manter.",
+    "done": "Mescladas em uma linha",
+    "undo": "Desfazer",
+    "undone": "As duas linhas voltaram",
+    "undoConflict": "A linha mesclada mudou desde então, então a mesclagem não pode ser desfeita.",
+    "why": {
+      "transfer": "Uma transferência não pode ser mesclada: são duas linhas, uma em cada conta.",
+      "split": "Uma transação dividida não pode ser mesclada: o valor é a soma das suas linhas.",
+      "accounts": "Linhas de contas diferentes não podem ser mescladas."
+    },
+    "pickLikely": "Mesmo valor, em até 3 dias",
+    "pickNone": "Nenhuma outra linha desta conta tem o mesmo valor em até 3 dias.",
+    "pickOther": "Outra linha desta conta",
+    "next": "Próximo"
   }
 }
