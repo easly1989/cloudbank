@@ -317,7 +317,8 @@ function MergeChoices({
       onMerged(
         res.token,
         kept.id,
-        `${fmtDate(kept.date)} · ${kept.payeeName || kept.memo || "—"} · ${formatMinor(kept.amount, fmt)}`,
+        // Date and amount never break inside: non-breaking hyphens and spaces.
+        `${fmtDate(kept.date).replace(/-/g, "\u2011")} · ${kept.payeeName || kept.memo || "—"} · ${formatMinor(kept.amount, fmt).replace(/ /g, "\u00a0").replace(/^-/, "-\u2060")}`,
       );
     },
     onError: (err) => {

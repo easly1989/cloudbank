@@ -450,6 +450,8 @@ export function TransactionsPage() {
           <Button
             size="compact-sm"
             variant="subtle"
+            // The message wraps; the action keeps its whole label.
+            style={{ flexShrink: 0 }}
             onClick={() => {
               notifications.hide(id);
               undoMerge.mutate(token);
