@@ -233,13 +233,16 @@ func (s *Service) processRows(ctx context.Context, walletID, accountID int64, fr
 		}
 	}
 	// A ref a merge took off a row (#786) stays imported: its row lives on in
-	// the one it was merged into.
+	// the one it was merged into, which the bank's booked row settles.
 	merged, err := s.q.ListMergedImportRefs(ctx, accountID)
 	if err != nil {
 		return nil, err
 	}
-	for _, r := range merged {
-		refSeen[r] = true
+	for _, m := range merged {
+		refSeen[m.ImportRef] = true
+		if _, ok := refMeta[m.ImportRef]; !ok && reconcileExisting && m.TransactionID.Valid {
+			refMeta[m.ImportRef] = refInfo{ID: m.TransactionID.Int64, Status: int(m.Status)}
+		}
 	}
 	matchedIDs := map[int64]bool{} // existing txns already claimed by an earlier row this batch
 
@@ -550,6 +553,17 @@ func (s *Service) Commit(ctx context.Context, walletID, accountID int64, rows []
 			status := r.Status
 			if status < 0 || status > 2 {
 				status = 0
+			}
+			// The ref the row loses still counts as imported (a merged row
+			// settled through the ref of the row merged into it, #786).
+			if _, err := tx.ExecContext(ctx,
+				`INSERT INTO merged_import_refs (account_id, import_ref, transaction_id)
+				 SELECT account_id, import_ref, id FROM transactions
+				 WHERE id = ? AND wallet_id = ? AND import_ref NOT IN ('', ?)
+				 ON CONFLICT DO NOTHING`,
+				r.UpdateID, walletID, r.ImportRef,
+			); err != nil {
+				return CommitResult{}, err
 			}
 			if _, err := tx.ExecContext(ctx,
 				`UPDATE transactions SET date=?, memo=?, info=?, payment_mode=?, status=?, import_ref=? WHERE id=? AND wallet_id=?`,

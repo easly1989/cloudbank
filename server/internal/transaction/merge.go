@@ -2,7 +2,9 @@ package transaction
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"slices"
@@ -24,6 +26,8 @@ var (
 	ErrMergeField  = errors.New("transaction: unknown merge field")
 	ErrNoMerge     = errors.New("transaction: no merge to undo")
 	ErrUndoChanged = errors.New("transaction: the merged rows changed since")
+	// ErrUndoStale means the merge asked about is no longer the wallet's last.
+	ErrUndoStale = errors.New("transaction: a later merge replaced this one")
 )
 
 // MergeFields are the fields a merge can take from the dropped row.
@@ -32,13 +36,23 @@ var MergeFields = []string{"date", "amount", "status", "payee", "category", "mem
 // mergeUndo is what undoing a merge needs: both rows as they were, every
 // column, and the attachments and mails that moved from the dropped one.
 type mergeUndo struct {
-	Keep        mergedRow `json:"keep"`
-	Drop        mergedRow `json:"drop"`
+	// Token names this merge: an undo for another one is refused.
+	Token string    `json:"token"`
+	Keep  mergedRow `json:"keep"`
+	Drop  mergedRow `json:"drop"`
+	// Merged is the kept row as the merge left it: undo is refused once it
+	// has changed, rather than overwrite the change.
+	Merged      mergedRow `json:"merged"`
 	Attachments []int64   `json:"attachments,omitempty"`
 	Mails       []int64   `json:"mails,omitempty"`
-	// LostRefs are the import refs no row keeps after the merge, recorded so
-	// import and sync count them as already imported.
+	// LostRefs are the import refs no row keeps after the merge, recorded by
+	// this merge so import and sync count them as already imported.
 	LostRefs []string `json:"lostRefs,omitempty"`
+	// What went with the dropped row: its snooze and waiting time on Review,
+	// and the pairs marked "not a duplicate".
+	Snooze     string                             `json:"snooze,omitempty"`
+	Waiting    string                             `json:"waiting,omitempty"`
+	Dismissals []db.ListDuplicateDismissalsForRow `json:"dismissals,omitempty"`
 }
 
 type mergedRow struct {
@@ -51,7 +65,17 @@ type mergedRow struct {
 // or inherits the dropped row's when it has none or only a mail's, so sync
 // does not import the movement again. Both rows must be the wallet's, on one
 // account, and neither a transfer leg nor a split.
-func (s *Service) MergeRows(ctx context.Context, walletID, keepID, dropID int64, take []string) error {
+// It returns the token that undoes it.
+func (s *Service) MergeRows(ctx context.Context, walletID, keepID, dropID int64, take []string) (string, error) {
+	b := make([]byte, 12)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	token := hex.EncodeToString(b)
+	return token, s.mergeRows(ctx, walletID, keepID, dropID, take, token)
+}
+
+func (s *Service) mergeRows(ctx context.Context, walletID, keepID, dropID int64, take []string, token string) error {
 	from := map[string]bool{}
 	for _, f := range take {
 		if !slices.Contains(MergeFields, f) {
@@ -97,15 +121,23 @@ func (s *Service) MergeRows(ctx context.Context, walletID, keepID, dropID int64,
 	if keep.Row.AccountID != drop.Row.AccountID {
 		return ErrMergeAccounts
 	}
-	undo := mergeUndo{Keep: keep, Drop: drop}
-	atts, err := qtx.ListAttachmentsForTransaction(ctx, dropID)
-	if err != nil {
+	undo := mergeUndo{Token: token, Keep: keep, Drop: drop}
+	if undo.Attachments, undo.Mails, err = moveLinks(ctx, qtx, keepID, dropID); err != nil {
 		return err
 	}
-	for _, a := range atts {
-		undo.Attachments = append(undo.Attachments, a.ID)
+	optional := func(v string, err error) (string, error) {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", nil
+		}
+		return v, err
 	}
-	if undo.Mails, err = qtx.ListMailMessageIDsForTransaction(ctx, sql.NullInt64{Int64: dropID, Valid: true}); err != nil {
+	if undo.Snooze, err = optional(qtx.GetReviewSnoozeUntil(ctx, dropID)); err != nil {
+		return err
+	}
+	if undo.Waiting, err = optional(qtx.GetReviewWaitingSince(ctx, dropID)); err != nil {
+		return err
+	}
+	if undo.Dismissals, err = qtx.ListDuplicateDismissalsFor(ctx, dropID); err != nil {
 		return err
 	}
 
@@ -150,31 +182,31 @@ func (s *Service) MergeRows(ctx context.Context, walletID, keepID, dropID int64,
 		}
 	}
 	for _, r := range []string{k.ImportRef, d.ImportRef} {
-		if r != "" && r != ref {
+		if r == "" || r == ref {
+			continue
+		}
+		n, err := qtx.InsertMergedImportRef(ctx, db.InsertMergedImportRefParams{
+			AccountID: k.AccountID, ImportRef: r, TransactionID: sql.NullInt64{Int64: keepID, Valid: true},
+		})
+		if err != nil {
+			return err
+		}
+		if n > 0 { // a ref an earlier merge recorded stays that merge's
 			undo.LostRefs = append(undo.LostRefs, r)
-			if err := qtx.InsertMergedImportRef(ctx, db.InsertMergedImportRefParams{AccountID: k.AccountID, ImportRef: r}); err != nil {
-				return err
-			}
 		}
 	}
 	if err := s.setTags(ctx, qtx, walletID, keepID, tags); err != nil {
 		return err
 	}
-	if len(undo.Attachments) > 0 {
-		if err := qtx.MoveAttachmentsByIDs(ctx, db.MoveAttachmentsByIDsParams{ToID: keepID, FromID: dropID, Ids: undo.Attachments}); err != nil {
-			return err
-		}
-	}
-	if len(undo.Mails) > 0 {
-		if err := qtx.MoveMailMessagesByIDs(ctx, db.MoveMailMessagesByIDsParams{
-			ToID: sql.NullInt64{Int64: keepID, Valid: true}, FromID: sql.NullInt64{Int64: dropID, Valid: true}, Ids: undo.Mails,
-		}); err != nil {
-			return err
-		}
-	}
 	// Not s.Delete: it runs outside this transaction and removes the files of
 	// the attachments, which have just moved to the kept row.
 	if err := qtx.DeleteTransaction(ctx, dropID); err != nil {
+		return err
+	}
+	if undo.Merged.Row, err = qtx.GetTransaction(ctx, keepID); err != nil {
+		return err
+	}
+	if undo.Merged.Tags, err = qtx.ListTransactionTags(ctx, keepID); err != nil {
 		return err
 	}
 	raw, err := json.Marshal(undo)
@@ -187,10 +219,39 @@ func (s *Service) MergeRows(ctx context.Context, walletID, keepID, dropID int64,
 	return tx.Commit()
 }
 
-// UndoMerge puts the wallet's last merge back: both rows exactly as they were,
-// import refs and timestamps included, with their tags, and the attachments
-// and mails that moved return to the dropped row.
-func (s *Service) UndoMerge(ctx context.Context, walletID int64) error {
+// moveLinks moves the attachments and mails of a row about to be dropped to
+// the row it merges into, and returns their ids.
+func moveLinks(ctx context.Context, qtx *db.Queries, keepID, dropID int64) (atts, mails []int64, err error) {
+	rows, err := qtx.ListAttachmentsForTransaction(ctx, dropID)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, a := range rows {
+		atts = append(atts, a.ID)
+	}
+	if mails, err = qtx.ListMailMessageIDsForTransaction(ctx, sql.NullInt64{Int64: dropID, Valid: true}); err != nil {
+		return nil, nil, err
+	}
+	if len(atts) > 0 {
+		if err := qtx.MoveAttachmentsByIDs(ctx, db.MoveAttachmentsByIDsParams{ToID: keepID, FromID: dropID, Ids: atts}); err != nil {
+			return nil, nil, err
+		}
+	}
+	if len(mails) > 0 {
+		if err := qtx.MoveMailMessagesByIDs(ctx, db.MoveMailMessagesByIDsParams{
+			ToID: sql.NullInt64{Int64: keepID, Valid: true}, FromID: sql.NullInt64{Int64: dropID, Valid: true}, Ids: mails,
+		}); err != nil {
+			return nil, nil, err
+		}
+	}
+	return atts, mails, nil
+}
+
+// UndoMerge puts back the wallet's last merge, the one token names: both rows
+// exactly as they were, import refs and timestamps included, with their tags,
+// and the attachments and mails that moved return to the dropped row. It is
+// refused once the kept row has changed since the merge.
+func (s *Service) UndoMerge(ctx context.Context, walletID int64, token string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -208,14 +269,25 @@ func (s *Service) UndoMerge(ctx context.Context, walletID int64) error {
 	if err := json.Unmarshal([]byte(m.Undo), &undo); err != nil {
 		return err
 	}
+	if undo.Token != token {
+		return ErrUndoStale
+	}
 	keepID, dropID := undo.Keep.Row.ID, undo.Drop.Row.ID
-	// The kept row must still be there, as a plain row, and the dropped one
-	// still gone.
-	if _, err := qtx.GetTransaction(ctx, keepID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return ErrUndoChanged
-		}
+	// The kept row must still be there as the merge left it, and the dropped
+	// one still gone.
+	cur, err := qtx.GetTransaction(ctx, keepID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrUndoChanged
+	}
+	if err != nil {
 		return err
+	}
+	tags, err := qtx.ListTransactionTags(ctx, keepID)
+	if err != nil {
+		return err
+	}
+	if cur != undo.Merged.Row || !slices.Equal(tags, undo.Merged.Tags) {
+		return ErrUndoChanged
 	}
 	if _, err := qtx.GetTransaction(ctx, dropID); !errors.Is(err, sql.ErrNoRows) {
 		if err == nil {
@@ -233,10 +305,6 @@ func (s *Service) UndoMerge(ctx context.Context, walletID int64) error {
 		if err := qtx.RestoreTransaction(ctx, db.RestoreTransactionParams(r.Row)); err != nil {
 			return err
 		}
-		// Neither was a split; the kept row may have become one since.
-		if err := qtx.DeleteSplits(ctx, r.Row.ID); err != nil {
-			return err
-		}
 		if err := s.setTags(ctx, qtx, walletID, r.Row.ID, r.Tags); err != nil {
 			return err
 		}
@@ -250,6 +318,31 @@ func (s *Service) UndoMerge(ctx context.Context, walletID int64) error {
 		if err := qtx.MoveMailMessagesByIDs(ctx, db.MoveMailMessagesByIDsParams{
 			ToID: sql.NullInt64{Int64: dropID, Valid: true}, FromID: sql.NullInt64{Int64: keepID, Valid: true}, Ids: undo.Mails,
 		}); err != nil {
+			return err
+		}
+	}
+	if undo.Snooze != "" {
+		if err := qtx.UpsertReviewSnooze(ctx, db.UpsertReviewSnoozeParams{TransactionID: dropID, WalletID: walletID, Until: undo.Snooze}); err != nil {
+			return err
+		}
+	}
+	if undo.Waiting != "" {
+		if err := qtx.InsertReviewWaiting(ctx, db.InsertReviewWaitingParams{TransactionID: dropID, WalletID: walletID, Since: undo.Waiting}); err != nil {
+			return err
+		}
+	}
+	for _, p := range undo.Dismissals {
+		// The other row of the pair may have gone since.
+		other := p.TxnAID
+		if other == dropID {
+			other = p.TxnBID
+		}
+		if _, err := qtx.GetTransaction(ctx, other); errors.Is(err, sql.ErrNoRows) {
+			continue
+		} else if err != nil {
+			return err
+		}
+		if err := qtx.InsertDuplicateDismissal(ctx, db.InsertDuplicateDismissalParams{WalletID: walletID, TxnAID: p.TxnAID, TxnBID: p.TxnBID}); err != nil {
 			return err
 		}
 	}

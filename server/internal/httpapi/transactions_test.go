@@ -502,24 +502,33 @@ func TestMergingRegisterRowsAndUndo(t *testing.T) {
 	if r := admin.do(http.MethodPost, base+"/transactions/merge", map[string]any{"keepId": bank, "dropId": handID, "take": []string{"info"}}, true); r.StatusCode != http.StatusBadRequest {
 		t.Fatalf("merge an unknown field = %d, want 400", r.StatusCode)
 	}
-	if r := admin.do(http.MethodPost, base+"/transactions/merge", merge, true); r.StatusCode != http.StatusNoContent {
-		t.Fatalf("merge = %d, want 204", r.StatusCode)
+	r = admin.do(http.MethodPost, base+"/transactions/merge", merge, true)
+	var merged struct {
+		Token string `json:"token"`
 	}
+	if err := json.NewDecoder(r.Body).Decode(&merged); err != nil || r.StatusCode != http.StatusOK || merged.Token == "" {
+		t.Fatalf("merge = %d %+v, want 200 with a token", r.StatusCode, merged)
+	}
+	r.Body.Close()
+	undo := base + "/transactions/merge?token=" + merged.Token
 	got := decodeTxn(t, admin.do(http.MethodGet, base+"/transactions/"+strconv.FormatInt(bank, 10), nil, false))
 	if got["memo"] != "Humble Choice" || got["importRef"] != "eb:h" || got["date"] != "2026-11-26" {
 		t.Fatalf("merged = %+v, want the hand memo on the bank row", got)
 	}
-	if r := bob.do(http.MethodDelete, base+"/transactions/merge", nil, true); r.StatusCode != http.StatusNotFound {
+	if r := bob.do(http.MethodDelete, undo, nil, true); r.StatusCode != http.StatusNotFound {
 		t.Fatalf("bob undo = %d, want 404", r.StatusCode)
 	}
-	if r := admin.do(http.MethodDelete, base+"/transactions/merge", nil, true); r.StatusCode != http.StatusNoContent {
+	if r := admin.do(http.MethodDelete, base+"/transactions/merge?token=other", nil, true); r.StatusCode != http.StatusConflict {
+		t.Fatalf("undo with another token = %d, want 409", r.StatusCode)
+	}
+	if r := admin.do(http.MethodDelete, undo, nil, true); r.StatusCode != http.StatusNoContent {
 		t.Fatalf("undo = %d, want 204", r.StatusCode)
 	}
 	back := decodeTxn(t, admin.do(http.MethodGet, base+"/transactions/"+strconv.FormatInt(handID, 10), nil, false))
 	if back["memo"] != "Humble Choice" {
 		t.Fatalf("restored = %+v", back)
 	}
-	if r := admin.do(http.MethodDelete, base+"/transactions/merge", nil, true); r.StatusCode != http.StatusNotFound {
+	if r := admin.do(http.MethodDelete, undo, nil, true); r.StatusCode != http.StatusNotFound {
 		t.Fatalf("second undo = %d, want 404", r.StatusCode)
 	}
 }

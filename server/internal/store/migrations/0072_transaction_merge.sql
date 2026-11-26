@@ -9,9 +9,11 @@ CREATE TABLE transaction_merges (
 
 -- The import refs a merge took off a row (both rows came from the bank, and a
 -- row keeps one ref). Import and bank sync count them as already imported, so
--- the dropped row does not come back on the next sync.
+-- the dropped row does not come back on the next sync, and settle the row
+-- they were merged into when the bank books it.
 CREATE TABLE merged_import_refs (
-    account_id INTEGER NOT NULL REFERENCES accounts (id) ON DELETE CASCADE,
-    import_ref TEXT    NOT NULL,
+    account_id     INTEGER NOT NULL REFERENCES accounts (id) ON DELETE CASCADE,
+    import_ref     TEXT    NOT NULL,
+    transaction_id INTEGER REFERENCES transactions (id) ON DELETE SET NULL,
     PRIMARY KEY (account_id, import_ref)
 );

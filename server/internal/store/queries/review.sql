@@ -114,15 +114,29 @@ ON CONFLICT (id) DO UPDATE SET
     template_id = excluded.template_id, import_ref = excluded.import_ref,
     vehicle_id = excluded.vehicle_id, origin = excluded.origin, created_by = excluded.created_by;
 
--- name: InsertMergedImportRef :exec
-INSERT INTO merged_import_refs (account_id, import_ref) VALUES (?, ?)
+-- name: InsertMergedImportRef :execrows
+INSERT INTO merged_import_refs (account_id, import_ref, transaction_id) VALUES (?, ?, ?)
 ON CONFLICT DO NOTHING;
 
 -- name: DeleteMergedImportRef :exec
 DELETE FROM merged_import_refs WHERE account_id = ? AND import_ref = ?;
 
 -- name: ListMergedImportRefs :many
-SELECT import_ref FROM merged_import_refs WHERE account_id = ?;
+-- With the row each was merged into and its status, when it is still there.
+SELECT m.import_ref, m.transaction_id, CAST(COALESCE(t.status, 0) AS INTEGER) AS status
+FROM merged_import_refs m
+LEFT JOIN transactions t ON t.id = m.transaction_id
+WHERE m.account_id = ?;
+
+-- name: GetReviewSnoozeUntil :one
+SELECT until FROM review_snoozes WHERE transaction_id = ?;
+
+-- name: GetReviewWaitingSince :one
+SELECT since FROM review_waiting WHERE transaction_id = ?;
+
+-- name: ListDuplicateDismissalsFor :many
+SELECT txn_a_id, txn_b_id FROM duplicate_dismissals
+WHERE txn_a_id = sqlc.arg(id) OR txn_b_id = sqlc.arg(id);
 
 -- name: UpsertTransactionMerge :exec
 INSERT INTO transaction_merges (wallet_id, undo) VALUES (?, ?)

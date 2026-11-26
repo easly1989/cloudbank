@@ -183,6 +183,8 @@ type Querier interface {
 	GetPayee(ctx context.Context, id int64) (Payee, error)
 	GetPayeeCleanup(ctx context.Context, walletID int64) (PayeeCleanup, error)
 	GetPluggyConfig(ctx context.Context, walletID int64) (BankPluggyConfig, error)
+	GetReviewSnoozeUntil(ctx context.Context, transactionID int64) (string, error)
+	GetReviewWaitingSince(ctx context.Context, transactionID int64) (string, error)
 	GetSchedule(ctx context.Context, id int64) (Schedule, error)
 	// One schedule in the list's shape: its template's name, amount and payee,
 	// and how many of the transactions it registered have no payee (#723).
@@ -234,7 +236,7 @@ type Querier interface {
 	InsertMailMessage(ctx context.Context, arg InsertMailMessageParams) ([]int64, error)
 	InsertMailPattern(ctx context.Context, arg InsertMailPatternParams) (MailPattern, error)
 	InsertMailbox(ctx context.Context, arg InsertMailboxParams) (Mailbox, error)
-	InsertMergedImportRef(ctx context.Context, arg InsertMergedImportRefParams) error
+	InsertMergedImportRef(ctx context.Context, arg InsertMergedImportRefParams) (int64, error)
 	InsertNotification(ctx context.Context, arg InsertNotificationParams) error
 	InsertNotificationDelivery(ctx context.Context, arg InsertNotificationDeliveryParams) error
 	InsertPayee(ctx context.Context, arg InsertPayeeParams) (Payee, error)
@@ -318,6 +320,7 @@ type Querier interface {
 	// holds all four columns, so this reads no table rows (#541).
 	ListDuplicateCandidates(ctx context.Context, walletID int64) ([]ListDuplicateCandidatesRow, error)
 	ListDuplicateDismissals(ctx context.Context, walletID int64) ([]ListDuplicateDismissalsRow, error)
+	ListDuplicateDismissalsFor(ctx context.Context, id int64) ([]ListDuplicateDismissalsForRow, error)
 	ListExchangeRates(ctx context.Context, currencyID int64) ([]ExchangeRate, error)
 	ListGoalsForWallet(ctx context.Context, walletID int64) ([]ListGoalsForWalletRow, error)
 	ListHeldNotifications(ctx context.Context, userID int64) ([]NotificationHeld, error)
@@ -348,7 +351,8 @@ type Querier interface {
 	// Every mailbox the listener should keep open: not paused, and not waiting for
 	// a new sign-in, across all wallets.
 	ListMailboxesToWatch(ctx context.Context) ([]Mailbox, error)
-	ListMergedImportRefs(ctx context.Context, accountID int64) ([]string, error)
+	// With the row each was merged into and its status, when it is still there.
+	ListMergedImportRefs(ctx context.Context, accountID int64) ([]ListMergedImportRefsRow, error)
 	ListNotificationChannels(ctx context.Context, userID int64) ([]NotificationChannel, error)
 	ListNotificationPrefs(ctx context.Context, userID int64) ([]ListNotificationPrefsRow, error)
 	// One person's thresholds on the accounts of one wallet.

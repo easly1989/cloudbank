@@ -48,6 +48,28 @@ func (q *Queries) DeleteTransactionMerge(ctx context.Context, walletID int64) er
 	return err
 }
 
+const getReviewSnoozeUntil = `-- name: GetReviewSnoozeUntil :one
+SELECT until FROM review_snoozes WHERE transaction_id = ?
+`
+
+func (q *Queries) GetReviewSnoozeUntil(ctx context.Context, transactionID int64) (string, error) {
+	row := q.db.QueryRowContext(ctx, getReviewSnoozeUntil, transactionID)
+	var until string
+	err := row.Scan(&until)
+	return until, err
+}
+
+const getReviewWaitingSince = `-- name: GetReviewWaitingSince :one
+SELECT since FROM review_waiting WHERE transaction_id = ?
+`
+
+func (q *Queries) GetReviewWaitingSince(ctx context.Context, transactionID int64) (string, error) {
+	row := q.db.QueryRowContext(ctx, getReviewWaitingSince, transactionID)
+	var since string
+	err := row.Scan(&since)
+	return since, err
+}
+
 const getTransactionMerge = `-- name: GetTransactionMerge :one
 SELECT wallet_id, undo, created_at FROM transaction_merges WHERE wallet_id = ?
 `
@@ -76,19 +98,23 @@ func (q *Queries) InsertDuplicateDismissal(ctx context.Context, arg InsertDuplic
 	return err
 }
 
-const insertMergedImportRef = `-- name: InsertMergedImportRef :exec
-INSERT INTO merged_import_refs (account_id, import_ref) VALUES (?, ?)
+const insertMergedImportRef = `-- name: InsertMergedImportRef :execrows
+INSERT INTO merged_import_refs (account_id, import_ref, transaction_id) VALUES (?, ?, ?)
 ON CONFLICT DO NOTHING
 `
 
 type InsertMergedImportRefParams struct {
-	AccountID int64
-	ImportRef string
+	AccountID     int64
+	ImportRef     string
+	TransactionID sql.NullInt64
 }
 
-func (q *Queries) InsertMergedImportRef(ctx context.Context, arg InsertMergedImportRefParams) error {
-	_, err := q.db.ExecContext(ctx, insertMergedImportRef, arg.AccountID, arg.ImportRef)
-	return err
+func (q *Queries) InsertMergedImportRef(ctx context.Context, arg InsertMergedImportRefParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, insertMergedImportRef, arg.AccountID, arg.ImportRef, arg.TransactionID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const listBankRowsNear = `-- name: ListBankRowsNear :many
@@ -227,6 +253,39 @@ func (q *Queries) ListDuplicateDismissals(ctx context.Context, walletID int64) (
 	return items, nil
 }
 
+const listDuplicateDismissalsFor = `-- name: ListDuplicateDismissalsFor :many
+SELECT txn_a_id, txn_b_id FROM duplicate_dismissals
+WHERE txn_a_id = ?1 OR txn_b_id = ?1
+`
+
+type ListDuplicateDismissalsForRow struct {
+	TxnAID int64
+	TxnBID int64
+}
+
+func (q *Queries) ListDuplicateDismissalsFor(ctx context.Context, id int64) ([]ListDuplicateDismissalsForRow, error) {
+	rows, err := q.db.QueryContext(ctx, listDuplicateDismissalsFor, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDuplicateDismissalsForRow{}
+	for rows.Next() {
+		var i ListDuplicateDismissalsForRow
+		if err := rows.Scan(&i.TxnAID, &i.TxnBID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listImportedUncategorized = `-- name: ListImportedUncategorized :many
 SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id, origin, created_by
 FROM transactions
@@ -308,22 +367,32 @@ func (q *Queries) ListMailMessageIDsForTransaction(ctx context.Context, transact
 }
 
 const listMergedImportRefs = `-- name: ListMergedImportRefs :many
-SELECT import_ref FROM merged_import_refs WHERE account_id = ?
+SELECT m.import_ref, m.transaction_id, CAST(COALESCE(t.status, 0) AS INTEGER) AS status
+FROM merged_import_refs m
+LEFT JOIN transactions t ON t.id = m.transaction_id
+WHERE m.account_id = ?
 `
 
-func (q *Queries) ListMergedImportRefs(ctx context.Context, accountID int64) ([]string, error) {
+type ListMergedImportRefsRow struct {
+	ImportRef     string
+	TransactionID sql.NullInt64
+	Status        int64
+}
+
+// With the row each was merged into and its status, when it is still there.
+func (q *Queries) ListMergedImportRefs(ctx context.Context, accountID int64) ([]ListMergedImportRefsRow, error) {
 	rows, err := q.db.QueryContext(ctx, listMergedImportRefs, accountID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []string{}
+	items := []ListMergedImportRefsRow{}
 	for rows.Next() {
-		var import_ref string
-		if err := rows.Scan(&import_ref); err != nil {
+		var i ListMergedImportRefsRow
+		if err := rows.Scan(&i.ImportRef, &i.TransactionID, &i.Status); err != nil {
 			return nil, err
 		}
-		items = append(items, import_ref)
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

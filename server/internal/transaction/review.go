@@ -317,17 +317,38 @@ func (s *Service) Merge(ctx context.Context, walletID, keepID, dropID int64) err
 	if err != nil {
 		return err
 	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	qtx := s.q.WithTx(tx)
 	if keep.ImportRef == "" && drop.ImportRef != "" {
-		if err := s.q.SetTransactionImportRef(ctx, db.SetTransactionImportRefParams{
+		if err := qtx.SetTransactionImportRef(ctx, db.SetTransactionImportRefParams{
 			ImportRef: drop.ImportRef, ID: keepID, WalletID: walletID,
 		}); err != nil {
 			return err
 		}
 	} else if drop.ImportRef != "" && drop.ImportRef != keep.ImportRef {
 		// Both came from the bank: the dropped ref still counts as imported.
-		if err := s.q.InsertMergedImportRef(ctx, db.InsertMergedImportRefParams{AccountID: drop.AccountID, ImportRef: drop.ImportRef}); err != nil {
+		if _, err := qtx.InsertMergedImportRef(ctx, db.InsertMergedImportRefParams{
+			AccountID: drop.AccountID, ImportRef: drop.ImportRef, TransactionID: sql.NullInt64{Int64: keepID, Valid: true},
+		}); err != nil {
 			return err
 		}
+	}
+	// The dropped row's attachments and mails go to the kept row, so the
+	// delete below does not remove their files.
+	if _, _, err := moveLinks(ctx, qtx, keepID, dropID); err != nil {
+		return err
+	}
+	// The register's last merge can no longer be undone: it would put back
+	// rows as they were before this one.
+	if err := qtx.DeleteTransactionMerge(ctx, walletID); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
 	}
 	return s.Delete(ctx, dropID)
 }

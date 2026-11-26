@@ -436,8 +436,9 @@ type Mailbox struct {
 }
 
 type MergedImportRef struct {
-	AccountID int64
-	ImportRef string
+	AccountID     int64
+	ImportRef     string
+	TransactionID sql.NullInt64
 }
 
 type MfaRecoveryCode struct {

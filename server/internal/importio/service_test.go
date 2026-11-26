@@ -2,6 +2,7 @@ package importio
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 	"testing"
 
@@ -282,7 +283,7 @@ func TestAMergedAwayRefIsNotImportedAgain(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := q.InsertMergedImportRef(ctx, db.InsertMergedImportRefParams{AccountID: acc, ImportRef: "eb:dropped"}); err != nil {
+	if _, err := q.InsertMergedImportRef(ctx, db.InsertMergedImportRefParams{AccountID: acc, ImportRef: "eb:dropped"}); err != nil {
 		t.Fatal(err)
 	}
 	rows := []Row{{Line: 1, Date: "2026-11-29", Amount: -12990000, Memo: "PP*HUMBLEBUNDL", FITID: "eb:dropped", Status: 2}}
@@ -294,5 +295,45 @@ func TestAMergedAwayRefIsNotImportedAgain(t *testing.T) {
 		if r := pv.Rows[0]; !r.Duplicate || r.Include {
 			t.Fatalf("sync=%v: row = %+v, want a duplicate left out", sync, r)
 		}
+	}
+}
+
+// A pending row merged into another (#786): when the bank books it, its ref
+// settles the row it was merged into, and the ref that row loses still counts
+// as imported.
+func TestABookedRowSettlesTheRowItsPendingFormWasMergedInto(t *testing.T) {
+	s, _, _, q, wid, acc := newTestService(t)
+	ctx := context.Background()
+	kept, err := q.InsertTransaction(ctx, db.InsertTransactionParams{
+		WalletID: wid, AccountID: acc, Date: "2026-11-26", Amount: -1299, Status: 1, ImportRef: "eb:kept",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := q.InsertMergedImportRef(ctx, db.InsertMergedImportRefParams{
+		AccountID: acc, ImportRef: "eb:pending", TransactionID: sql.NullInt64{Int64: kept.ID, Valid: true},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	booked := []Row{{Line: 1, Date: "2026-11-27", Amount: -12990000, Memo: "PP*HUMBLEBUNDL", FITID: "eb:pending", Status: 2}}
+	pv, err := s.PreviewParsed(ctx, wid, acc, booked, false, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := pv.Rows[0]
+	if r.Match != "update" || r.MatchID != kept.ID {
+		t.Fatalf("booked row = %+v, want an update of the kept row %d", r, kept.ID)
+	}
+	if _, err := s.Commit(ctx, wid, acc, []CommitRow{{
+		Date: r.Date, Amount: r.Amount, Memo: r.Memo, Status: r.Status, ImportRef: r.ImportRef, UpdateID: r.MatchID,
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := q.GetTransaction(ctx, kept.ID); got.Status != 2 {
+		t.Fatalf("kept row status = %d, want reconciled", got.Status)
+	}
+	again := []Row{{Line: 1, Date: "2026-11-26", Amount: -12990000, FITID: "eb:kept", Status: 2}}
+	if pv, _ = s.PreviewParsed(ctx, wid, acc, again, false, true); !pv.Rows[0].Duplicate {
+		t.Fatalf("the kept row's own ref = %+v, want it still imported", pv.Rows[0])
 	}
 }

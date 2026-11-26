@@ -59,9 +59,34 @@ func links(t *testing.T, raw *sql.DB) (att, mail int64) {
 	return att, mail
 }
 
+// refsOf is the account's merged-away refs.
+func refsOf(t *testing.T, q *db.Queries, acc int64) []string {
+	t.Helper()
+	rows, err := q.ListMergedImportRefs(context.Background(), acc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := []string{}
+	for _, r := range rows {
+		out = append(out, r.ImportRef)
+	}
+	return out
+}
+
 func TestMergingRowsTakesTheChosenFieldsAndUndoPutsBothBack(t *testing.T) {
 	s, q, raw, wid, _, bank, hand := mergePair(t)
 	ctx := context.Background()
+	// What goes with the hand row when it is deleted: its Review snooze and
+	// waiting time, and a pair marked "not a duplicate".
+	if err := q.UpsertReviewSnooze(ctx, db.UpsertReviewSnoozeParams{TransactionID: hand, WalletID: wid, Until: "2026-12-01"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := q.InsertReviewWaiting(ctx, db.InsertReviewWaitingParams{TransactionID: hand, WalletID: wid, Since: "2026-11-20T10:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DismissDuplicate(ctx, wid, bank, hand); err != nil {
+		t.Fatal(err)
+	}
 	before := map[int64]db.Transaction{}
 	tagsBefore := map[int64][]string{}
 	for _, id := range []int64{bank, hand} {
@@ -70,7 +95,8 @@ func TestMergingRowsTakesTheChosenFieldsAndUndoPutsBothBack(t *testing.T) {
 	}
 
 	// Date, amount and status stay the bank's; the rest comes from the hand row.
-	if err := s.MergeRows(ctx, wid, bank, hand, []string{"payee", "category", "memo", "tags"}); err != nil {
+	token, err := s.MergeRows(ctx, wid, bank, hand, []string{"payee", "category", "memo", "tags"})
+	if err != nil {
 		t.Fatal(err)
 	}
 	got, err := s.Get(ctx, bank)
@@ -90,7 +116,10 @@ func TestMergingRowsTakesTheChosenFieldsAndUndoPutsBothBack(t *testing.T) {
 		t.Errorf("receipt on %d, mail on %d, want both on the kept row %d", att, mail, bank)
 	}
 
-	if err := s.UndoMerge(ctx, wid); err != nil {
+	if err := s.UndoMerge(ctx, wid, "another"); !errors.Is(err, ErrUndoStale) {
+		t.Errorf("undo with another merge's token = %v, want ErrUndoStale", err)
+	}
+	if err := s.UndoMerge(ctx, wid, token); err != nil {
 		t.Fatal(err)
 	}
 	for _, id := range []int64{bank, hand} {
@@ -109,66 +138,136 @@ func TestMergingRowsTakesTheChosenFieldsAndUndoPutsBothBack(t *testing.T) {
 	if att, mail := links(t, raw); att != hand || mail != hand {
 		t.Errorf("receipt on %d, mail on %d, want both back on %d", att, mail, hand)
 	}
-	if err := s.UndoMerge(ctx, wid); !errors.Is(err, ErrNoMerge) {
+	if until, _ := q.GetReviewSnoozeUntil(ctx, hand); until != "2026-12-01" {
+		t.Errorf("snooze = %q, want it back", until)
+	}
+	if since, _ := q.GetReviewWaitingSince(ctx, hand); since != "2026-11-20T10:00:00Z" {
+		t.Errorf("waiting since = %q, want it back", since)
+	}
+	if d, _ := q.ListDuplicateDismissalsFor(ctx, hand); len(d) != 1 {
+		t.Errorf("dismissals = %v, want the pair back", d)
+	}
+	if err := s.UndoMerge(ctx, wid, token); !errors.Is(err, ErrNoMerge) {
 		t.Errorf("a second undo = %v, want ErrNoMerge", err)
+	}
+}
+
+// Undo never overwrites what changed on the kept row after the merge.
+func TestUndoIsRefusedOnceTheKeptRowChanged(t *testing.T) {
+	for name, change := range map[string]func(s *Service, wid, id int64) error{
+		"status": func(s *Service, _, id int64) error { return s.SetStatus(context.Background(), id, StatusReconciled) },
+		"tags": func(s *Service, wid, id int64) error {
+			_, err := s.BulkSetTags(context.Background(), wid, []int64{id}, []string{"late"}, false)
+			return err
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			s, _, _, wid, _, bank, hand := mergePair(t)
+			token, err := s.MergeRows(context.Background(), wid, bank, hand, []string{"memo"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := change(s, wid, bank); err != nil {
+				t.Fatal(err)
+			}
+			if err := s.UndoMerge(context.Background(), wid, token); !errors.Is(err, ErrUndoChanged) {
+				t.Fatalf("undo = %v, want ErrUndoChanged", err)
+			}
+		})
+	}
+}
+
+// The Review's merge moves the dropped row's attachments instead of deleting
+// their files, and ends the chance to undo the register's last merge.
+func TestReviewMergeMovesAttachmentsAndEndsTheRegisterUndo(t *testing.T) {
+	s, q, raw, wid, acc, bank, hand := mergePair(t)
+	ctx := context.Background()
+	x, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-11-01", Amount: -500})
+	y, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-11-02", Amount: -500})
+	token, err := s.MergeRows(ctx, wid, x.ID, y.ID, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Merge(ctx, wid, bank, hand); err != nil {
+		t.Fatal(err)
+	}
+	if att, mail := links(t, raw); att != bank || mail != bank {
+		t.Errorf("receipt on %d, mail on %d, want both on the kept row %d", att, mail, bank)
+	}
+	// The purger finds no attachment left on the dropped row to remove.
+	if atts, _ := q.ListAttachmentsForTransaction(ctx, bank); len(atts) != 1 {
+		t.Errorf("attachments of the kept row = %v, want the receipt", atts)
+	}
+	if err := s.UndoMerge(ctx, wid, token); !errors.Is(err, ErrNoMerge) {
+		t.Errorf("undo after a Review merge = %v, want ErrNoMerge", err)
 	}
 }
 
 func TestMergingRowsRefusesWhatItCannotMerge(t *testing.T) {
 	s, q, raw, wid, acc, bank, hand := mergePair(t)
 	ctx := context.Background()
-	if err := s.MergeRows(ctx, wid, bank, hand, []string{"info"}); !errors.Is(err, ErrMergeField) {
+	if _, err := s.MergeRows(ctx, wid, bank, hand, []string{"info"}); !errors.Is(err, ErrMergeField) {
 		t.Errorf("unknown field = %v", err)
 	}
 	other, _ := q.InsertAccount(ctx, db.InsertAccountParams{WalletID: wid, Name: "Card", Type: "card", CurrencyID: 1, Position: 2})
 	elsewhere, _ := s.Create(ctx, wid, Input{AccountID: other.ID, Date: "2026-11-26", Amount: -1299})
-	if err := s.MergeRows(ctx, wid, bank, elsewhere.ID, nil); !errors.Is(err, ErrMergeAccounts) {
+	if _, err := s.MergeRows(ctx, wid, bank, elsewhere.ID, nil); !errors.Is(err, ErrMergeAccounts) {
 		t.Errorf("different accounts = %v", err)
 	}
 	split, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-11-26", Amount: -1299, Splits: []Split{{Amount: -1299}}})
-	if err := s.MergeRows(ctx, wid, bank, split.ID, nil); !errors.Is(err, ErrMergeKind) {
+	if _, err := s.MergeRows(ctx, wid, bank, split.ID, nil); !errors.Is(err, ErrMergeKind) {
 		t.Errorf("split = %v", err)
 	}
 	leg, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-11-26", Amount: -1299})
 	if _, err := raw.ExecContext(ctx, `INSERT INTO transfers (txn_from_id, txn_to_id) VALUES (?, ?)`, leg.ID, elsewhere.ID); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.MergeRows(ctx, wid, leg.ID, hand, nil); !errors.Is(err, ErrMergeKind) {
+	if _, err := s.MergeRows(ctx, wid, leg.ID, hand, nil); !errors.Is(err, ErrMergeKind) {
 		t.Errorf("transfer = %v", err)
 	}
-	if err := s.MergeRows(ctx, wid+1, bank, hand, nil); !errors.Is(err, ErrNotFound) {
+	if _, err := s.MergeRows(ctx, wid+1, bank, hand, nil); !errors.Is(err, ErrNotFound) {
 		t.Errorf("another wallet = %v", err)
 	}
 	// Nothing was merged, so nothing is there to undo.
-	if err := s.UndoMerge(ctx, wid); !errors.Is(err, ErrNoMerge) {
+	if err := s.UndoMerge(ctx, wid, "x"); !errors.Is(err, ErrNoMerge) {
 		t.Errorf("undo = %v, want ErrNoMerge", err)
 	}
 }
 
 // Both rows from the bank: the kept row has one ref, and the dropped one is
-// recorded so the next sync does not bring the dropped row back; undo forgets it.
+// recorded so the next sync does not bring the dropped row back; undo forgets
+// only what its merge recorded.
 func TestMergingTwoBankRowsKeepsTheDroppedRefImported(t *testing.T) {
 	s, q, _, wid, acc := newMailReviewService(t)
 	ctx := context.Background()
 	a, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-11-26", Amount: -1299, ImportRef: "eb:a"})
 	b, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-11-27", Amount: -1299, ImportRef: "eb:b"})
-	if err := s.MergeRows(ctx, wid, a.ID, b.ID, []string{"date"}); err != nil {
+	token, err := s.MergeRows(ctx, wid, a.ID, b.ID, []string{"date"})
+	if err != nil {
 		t.Fatal(err)
 	}
-	if refs, _ := q.ListMergedImportRefs(ctx, acc); !slices.Equal(refs, []string{"eb:b"}) {
+	if refs := refsOf(t, q, acc); !slices.Equal(refs, []string{"eb:b"}) {
 		t.Fatalf("merged refs = %v, want the dropped row's", refs)
 	}
-	if err := s.UndoMerge(ctx, wid); err != nil {
+	if err := s.UndoMerge(ctx, wid, token); err != nil {
 		t.Fatal(err)
 	}
-	if refs, _ := q.ListMergedImportRefs(ctx, acc); len(refs) != 0 {
+	if refs := refsOf(t, q, acc); len(refs) != 0 {
 		t.Fatalf("merged refs after undo = %v, want none", refs)
 	}
-	// The Review's merge records it too.
+	// The Review's merge records it too, and it is that merge's: undoing a
+	// later merge that drops a row with the same ref leaves it.
 	if err := s.Merge(ctx, wid, a.ID, b.ID); err != nil {
 		t.Fatal(err)
 	}
-	if refs, _ := q.ListMergedImportRefs(ctx, acc); !slices.Equal(refs, []string{"eb:b"}) {
-		t.Fatalf("merged refs after the Review's merge = %v", refs)
+	c, _ := s.Create(ctx, wid, Input{AccountID: acc, Date: "2026-11-28", Amount: -1299, ImportRef: "eb:b"})
+	if token, err = s.MergeRows(ctx, wid, a.ID, c.ID, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UndoMerge(ctx, wid, token); err != nil {
+		t.Fatal(err)
+	}
+	if refs := refsOf(t, q, acc); !slices.Equal(refs, []string{"eb:b"}) {
+		t.Fatalf("merged refs = %v, want the Review merge's kept", refs)
 	}
 }

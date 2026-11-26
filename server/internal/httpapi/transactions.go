@@ -256,12 +256,15 @@ func (h *transactionHandlers) mergeTransactions(w http.ResponseWriter, r *http.R
 		return
 	}
 	var err error
+	token := ""
 	if body.Take != nil {
-		err = h.svc.MergeRows(r.Context(), wl.ID, body.KeepID, body.DropID, *body.Take)
+		token, err = h.svc.MergeRows(r.Context(), wl.ID, body.KeepID, body.DropID, *body.Take)
 	} else {
 		err = h.svc.Merge(r.Context(), wl.ID, body.KeepID, body.DropID)
 	}
 	switch {
+	case err == nil && token != "":
+		writeJSON(w, http.StatusOK, map[string]string{"token": token})
 	case err == nil:
 		w.WriteHeader(http.StatusNoContent)
 	case errors.Is(err, transaction.ErrNotFound):
@@ -277,17 +280,25 @@ func (h *transactionHandlers) mergeTransactions(w http.ResponseWriter, r *http.R
 	}
 }
 
-// undoMerge puts the wallet's last register merge back (#786).
+// undoMerge puts the wallet's last register merge back (#786), the one the
+// token its merge returned names.
 func (h *transactionHandlers) undoMerge(w http.ResponseWriter, r *http.Request) {
 	wl, _ := walletFromContext(r.Context())
-	err := h.svc.UndoMerge(r.Context(), wl.ID)
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		writeError(w, http.StatusBadRequest, "invalid", "token is required")
+		return
+	}
+	err := h.svc.UndoMerge(r.Context(), wl.ID, token)
 	switch {
 	case err == nil:
 		w.WriteHeader(http.StatusNoContent)
 	case errors.Is(err, transaction.ErrNoMerge):
 		writeError(w, http.StatusNotFound, "not_found", "no merge to undo")
 	case errors.Is(err, transaction.ErrUndoChanged):
-		writeError(w, http.StatusConflict, "undo_conflict", "the merged rows changed since")
+		writeError(w, http.StatusConflict, "undo_conflict", "the merged row has changed since the merge")
+	case errors.Is(err, transaction.ErrUndoStale):
+		writeError(w, http.StatusConflict, "undo_stale", "a later merge replaced this one")
 	default:
 		writeError(w, http.StatusInternalServerError, "internal", "could not undo the merge")
 	}
