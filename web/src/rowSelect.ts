@@ -23,37 +23,52 @@ export function rowMouseDown(e: ReactMouseEvent<HTMLElement>) {
   if (multi(e) && ownClick(e)) e.preventDefault();
 }
 
-// The pure part: what a modified click on `index` selects. `fallback` is the
-// anchor when none was set yet (the cursor row). Updates the anchor.
-export function selectionFor(
+// The pure part: what a modified click on `index` selects. The anchor is a row
+// id, found again in `ids` at click time, so a sort, a filter or a deleted row
+// cannot leave it pointing at the wrong place. When it is gone, `fallback` (the
+// cursor row) stands in, then the clicked row. `can` rules out rows that
+// cannot be selected: they neither select nor become the anchor.
+export function selectionFor<K>(
   mods: { shift: boolean; toggle: boolean },
+  ids: K[],
   index: number,
-  anchor: MutableRefObject<number | null>,
-  fallback: number | null = null,
+  anchor: MutableRefObject<K | null>,
+  fallback: K | null = null,
+  can: (index: number) => boolean = () => true,
 ): RowSelection | null {
+  if (!can(index) || !(mods.toggle || mods.shift)) return null;
   if (mods.toggle) {
-    anchor.current = index;
+    anchor.current = ids[index];
     return { mode: "toggle", index };
   }
-  if (!mods.shift) return null;
-  const from = anchor.current ?? fallback ?? index;
-  anchor.current = from;
+  let from = anchor.current == null ? -1 : ids.indexOf(anchor.current);
+  if (from < 0) from = fallback == null ? -1 : ids.indexOf(fallback);
+  if (from < 0) from = index;
+  anchor.current = ids[from];
   return { mode: "range", from: Math.min(from, index), to: Math.max(from, index) };
 }
 
 // A click on a row: the selection it makes, or null when it is a plain click
-// (or a click on a control) and the caller does what it always did.
-export function rowClick(
+// (or a click on a control) and the caller does what it always did. The second
+// click of a double-click selects nothing: the double-click opens the row.
+export function rowClick<K>(
   e: ReactMouseEvent<HTMLElement>,
+  ids: K[],
   index: number,
-  anchor: MutableRefObject<number | null>,
-  fallback: number | null = null,
+  anchor: MutableRefObject<K | null>,
+  fallback: K | null = null,
+  can?: (index: number) => boolean,
 ): RowSelection | null {
-  if (!ownClick(e)) return null;
+  if (!ownClick(e) || e.detail > 1) return null;
   return selectionFor(
     { shift: e.shiftKey, toggle: e.ctrlKey || e.metaKey },
+    ids,
     index,
     anchor,
     fallback,
+    can,
   );
 }
+
+// A double-click with a modifier held is part of a selection, not an edit.
+export const isMultiClick = multi;

@@ -98,7 +98,7 @@ export function ReviewNeedsCategory({
   const picked = shown.filter((r) => drafts?.get(r.id)?.picked && drafts.get(r.id)?.categoryId);
   const proposing = shown.length > 0;
 
-  const rowAnchor = useRef<number | null>(null);
+  const rowAnchor = useRef<number | null>(null); // a transaction id
   const edit = (id: number, patch: Partial<Draft>) =>
     setDrafts((m) => {
       const d = m?.get(id);
@@ -276,12 +276,23 @@ export function ReviewNeedsCategory({
                 onClick={
                   proposing
                     ? (e) => {
-                        const sel = rowClick(e, index, rowAnchor);
-                        if (!sel) return;
                         // Only the rows with a proposal have a box.
-                        for (const [i, r] of needs.entries()) {
+                        const boxed = (r: ReviewTxn) => {
                           const rd = drafts?.get(r.id);
-                          if (!rd || rd.categoryId === null) continue;
+                          return rd && rd.categoryId !== null ? rd : null;
+                        };
+                        const sel = rowClick(
+                          e,
+                          needs.map((r) => r.id),
+                          index,
+                          rowAnchor,
+                          null,
+                          (n) => boxed(needs[n]) !== null,
+                        );
+                        if (!sel) return;
+                        for (const [i, r] of needs.entries()) {
+                          const rd = boxed(r);
+                          if (!rd) continue;
                           if (
                             sel.mode === "toggle" ? i === sel.index : i >= sel.from && i <= sel.to
                           )

@@ -66,7 +66,7 @@ import { todayCivil } from "../civilDate";
 import { formatMinor, type MoneyFormat } from "../money";
 import { notifyError } from "../notifyError";
 import { stopRowEdit } from "../rowEdit";
-import { rowClick, rowMouseDown } from "../rowSelect";
+import { isMultiClick, rowClick, rowMouseDown } from "../rowSelect";
 import {
   ALL_COLUMNS,
   columnTracks,
@@ -244,8 +244,8 @@ export function RegisterTable({
   const [cursorId, setCursorId] = useState<number | null>(null);
   // Right-click context menu, anchored at the cursor position.
   const [menu, setMenu] = useState<{ x: number; y: number; row: RegisterRow } | null>(null);
-  // Anchor row index for shift+click range selection (the last row toggled
-  // without shift).
+  // Anchor row id for shift+click range selection (the last row toggled
+  // without shift), found again by id so a sort or filter cannot move it.
   const selectAnchorRef = useRef<number | null>(null);
 
   // Fill mode: size the scroll body so its bottom sits just above the footer,
@@ -1131,8 +1131,13 @@ export function RegisterTable({
                         }
                         onMouseDown={rowMouseDown}
                         onClick={(e) => {
-                          const cur = tableRows.findIndex((x) => x.original.id === cursorId);
-                          const sel = rowClick(e, vi.index, selectAnchorRef, cur < 0 ? null : cur);
+                          const sel = rowClick(
+                            e,
+                            tableRows.map((x) => x.original.id),
+                            vi.index,
+                            selectAnchorRef,
+                            cursorId,
+                          );
                           if (!sel) setCursorId(r.id);
                           else if (sel.mode === "toggle") onToggleSelect(r.id);
                           else
@@ -1141,7 +1146,7 @@ export function RegisterTable({
                               true,
                             );
                         }}
-                        onDoubleClick={() => onEdit(r)}
+                        onDoubleClick={(e) => !isMultiClick(e) && onEdit(r)}
                         onContextMenu={(e) => {
                           e.preventDefault();
                           setCursorId(r.id);
@@ -1206,16 +1211,22 @@ export function RegisterTable({
                               e.stopPropagation();
                               // Shift+click selects the contiguous range from the anchor
                               // row to this one (preventDefault stops the plain toggle).
-                              if (e.shiftKey && selectAnchorRef.current != null) {
+                              const anchorAt =
+                                selectAnchorRef.current == null
+                                  ? -1
+                                  : tableRows.findIndex(
+                                      (x) => x.original.id === selectAnchorRef.current,
+                                    );
+                              if (e.shiftKey && anchorAt >= 0) {
                                 e.preventDefault();
-                                const from = Math.min(selectAnchorRef.current, vi.index);
-                                const to = Math.max(selectAnchorRef.current, vi.index);
+                                const from = Math.min(anchorAt, vi.index);
+                                const to = Math.max(anchorAt, vi.index);
                                 onToggleAll(
                                   tableRows.slice(from, to + 1).map((rr) => rr.original.id),
                                   true,
                                 );
                               } else {
-                                selectAnchorRef.current = vi.index;
+                                selectAnchorRef.current = r.id;
                               }
                             }}
                           />

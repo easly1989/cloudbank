@@ -132,6 +132,10 @@ export function ImportWizard() {
   const [remembered, setRemembered] = useState<CSVMapping | null>(null);
   const [remember, setRemember] = useState(true);
   const [rows, setRows] = useState<CSVPreviewRow[]>([]);
+  // The row last picked by a Ctrl/Shift click, by position (rows have no id).
+  const rowAnchor = useRef<number | null>(null);
+  // An errored row cannot be imported, and one already imported is left alone.
+  const pickable = (r: CSVPreviewRow) => !r.error && r.match !== "imported";
   const [applyRules, setApplyRules] = useState(false);
   const [created, setCreated] = useState(0);
   const [updated, setUpdated] = useState(0);
@@ -299,6 +303,7 @@ export function ImportWizard() {
     }
     const res = await preview.mutateAsync({ withMapping: false, rules: applyRules });
     setRows(res.rows);
+    rowAnchor.current = null; // rows are told apart by position
     setPhase("review");
   };
 
@@ -306,6 +311,7 @@ export function ImportWizard() {
     setError(null);
     const res = await preview.mutateAsync({ withMapping: showMapping, rules });
     setRows(res.rows);
+    rowAnchor.current = null; // rows are told apart by position
     setPhase("review");
   };
 
@@ -314,7 +320,6 @@ export function ImportWizard() {
     await previewToReview(next);
   };
 
-  const rowAnchor = useRef<number | null>(null);
   const toggleRow = (i: number, include: boolean) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, include } : r)));
   const setRowCategory = (i: number, category: string) =>
@@ -565,14 +570,20 @@ export function ImportWizard() {
                       c={r.error ? "red" : r.match === "imported" ? "dimmed" : undefined}
                       onMouseDown={rowMouseDown}
                       onClick={(e) => {
-                        const sel = rowClick(e, i, rowAnchor);
+                        const sel = rowClick(
+                          e,
+                          rows.map((_, n) => n),
+                          i,
+                          rowAnchor,
+                          null,
+                          (n) => pickable(rows[n]),
+                        );
                         if (!sel) return;
-                        if (sel.mode === "toggle") {
-                          if (!r.error) toggleRow(i, !r.include);
-                        } else
+                        if (sel.mode === "toggle") toggleRow(i, !r.include);
+                        else
                           setRows((rs) =>
                             rs.map((x, idx) =>
-                              idx >= sel.from && idx <= sel.to && !x.error
+                              idx >= sel.from && idx <= sel.to && pickable(x)
                                 ? { ...x, include: true }
                                 : x,
                             ),
