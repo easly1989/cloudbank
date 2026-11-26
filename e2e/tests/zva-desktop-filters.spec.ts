@@ -113,11 +113,15 @@ test("desktop filters: chips in the panel, a red ×, no empty ledger", async ({
   await test.step("the columns open under the filters, both at once", async () => {
     await toolbar.getByRole("button", { name: "Columns" }).click();
     const filtersTitle = await box(page.getByText("Date range"));
-    const columnsHint = await box(page.getByText("Yours, and remembered."));
+    const columnsHint = await box(
+      page.getByText("Only for you, and kept for next time"),
+    );
     expect(columnsHint.y).toBeGreaterThan(filtersTitle.y);
     await expect(page.getByRole("button", { name: "Reset" })).toBeVisible();
     await toolbar.getByRole("button", { name: "Columns" }).click();
-    await expect(page.getByText("Yours, and remembered.")).toHaveCount(0);
+    await expect(
+      page.getByText("Only for you, and kept for next time"),
+    ).toHaveCount(0);
   });
 
   await test.step("filters that hide every row replace the ledger with the message", async () => {

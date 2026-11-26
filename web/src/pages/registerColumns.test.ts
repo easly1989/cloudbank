@@ -1,6 +1,48 @@
 import { describe, expect, it } from "vitest";
 
-import { ALL_COLUMNS, moveColumn, normalizeColumnOrder } from "./registerColumns";
+import {
+  ALL_COLUMNS,
+  columnTracks,
+  moveColumn,
+  normalizeColumnOrder,
+  pinnedColumns,
+  pinShift,
+} from "./registerColumns";
+import { ROW_COLUMNS } from "./registerTheme";
+
+describe("pinShift", () => {
+  // A 1114px row in a 981px card: 133px of it to scroll.
+  it("moves the pinned cells by what is still to the right of the card", () => {
+    expect(pinShift(0, 1114, 981)).toEqual({ x: -133, shaded: true });
+    expect(pinShift(67, 1114, 981)).toEqual({ x: -66, shaded: true });
+  });
+
+  it("leaves them in place, unshaded, at the far right", () => {
+    expect(pinShift(133, 1114, 981)).toEqual({ x: 0, shaded: false });
+    // A fractional scroll position a hair short of the end.
+    expect(pinShift(132.6, 1114, 981)).toEqual({ x: 0, shaded: false });
+  });
+});
+
+describe("pinnedColumns", () => {
+  it("pins amount and balance when they end the row", () => {
+    expect(pinnedColumns(["date", "payee", "note", "amount", "runningBalance"])).toEqual([
+      "amount",
+      "runningBalance",
+    ]);
+  });
+
+  it("leaves an amount moved into the middle to scroll", () => {
+    expect(pinnedColumns(["date", "amount", "payee", "runningBalance"])).toEqual([
+      "runningBalance",
+    ]);
+    expect(pinnedColumns(["amount", "runningBalance", "date", "payee"])).toEqual([]);
+  });
+
+  it("pins the amount alone when the balance is hidden", () => {
+    expect(pinnedColumns(["date", "payee", "amount"])).toEqual(["amount"]);
+  });
+});
 
 describe("normalizeColumnOrder", () => {
   it("ships with every column when nothing was saved", () => {
@@ -64,5 +106,43 @@ describe("moveColumn", () => {
     for (const step of [1, 1, -1, 1, -1, -1] as const) order = moveColumn(order, "status", step);
     expect(new Set(order)).toEqual(new Set(ALL_COLUMNS));
     expect(order).toHaveLength(ALL_COLUMNS.length);
+  });
+});
+
+describe("columnTracks", () => {
+  const shown = ["date", "payee", "category", "note", "amount"];
+  const tracks = (visible: string[], chosen?: string, widths: Record<string, number> = {}) =>
+    columnTracks(visible, chosen, widths, ROW_COLUMNS);
+
+  it("lets Payee grow when nothing was chosen, exactly as before", () => {
+    expect(tracks(shown)).toEqual({
+      grow: "payee",
+      tracks: ["112px", "minmax(120px, 1fr)", "156px", "240px", "124px"],
+    });
+  });
+
+  it("grows the chosen column from its fixed width and holds Payee at its floor", () => {
+    expect(tracks(shown, "note")).toEqual({
+      grow: "note",
+      tracks: ["112px", "120px", "156px", "minmax(240px, 1fr)", "124px"],
+    });
+  });
+
+  it("falls back to Payee when the chosen column is hidden or was dragged", () => {
+    expect(tracks(["date", "payee", "amount"], "note").grow).toBe("payee");
+    expect(tracks(shown, "note", { note: 300 })).toEqual({
+      grow: "payee",
+      tracks: ["112px", "minmax(120px, 1fr)", "156px", "300px", "124px"],
+    });
+  });
+
+  it("grows nothing when Payee is hidden or dragged and nothing else was chosen", () => {
+    expect(tracks(["date", "note", "amount"]).grow).toBeNull();
+    expect(tracks(shown, undefined, { payee: 200 }).tracks[1]).toBe("200px");
+    expect(tracks(shown, undefined, { payee: 200 }).grow).toBeNull();
+  });
+
+  it("ignores a choice that is not a text column", () => {
+    expect(tracks(shown, "amount").grow).toBe("payee");
   });
 });

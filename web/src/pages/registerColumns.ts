@@ -46,6 +46,72 @@ export function normalizeColumnOrder(saved: readonly string[] | undefined): Colu
 }
 
 /**
+ * The text columns, the ones that can take the register's free width. A date
+ * or an amount has a natural width, and stretching it only moves the figures
+ * away from their neighbours.
+ */
+export const GROW_COLUMNS: readonly string[] = ["payee", "category", "note"];
+
+/**
+ * The grid track of each visible column, and which of them takes the free width.
+ *
+ * Payee grows unless the user picked another text column (`chosen`, one per
+ * user, every account). A choice counts only while its column is visible and
+ * has no dragged width; otherwise Payee grows, as it always has. A chosen
+ * column grows from the width it has when fixed, and Payee then holds at its
+ * floor. A dragged width always wins, so a dragged Payee is fixed and nothing
+ * grows, as before. `defaults` is ROW_COLUMNS, passed in to keep this file free
+ * of the theme.
+ */
+export function columnTracks(
+  visible: readonly string[],
+  chosen: string | undefined,
+  widths: Record<string, number>,
+  defaults: Record<string, string>,
+): { grow: string | null; tracks: string[] } {
+  const picked =
+    chosen && GROW_COLUMNS.includes(chosen) && visible.includes(chosen) && !widths[chosen]
+      ? chosen
+      : "payee";
+  const grow = visible.includes(picked) && !widths[picked] ? picked : null;
+  const floor = (track: string | undefined) => /(\d+)px/.exec(track ?? "")?.[1] ?? "100";
+  const tracks = visible.map((id) => {
+    if (widths[id]) return `${widths[id]}px`;
+    if (id === grow) return `minmax(${floor(defaults[id])}px, 1fr)`;
+    if (id === "payee") return `${floor(defaults.payee)}px`;
+    return defaults[id] ?? "minmax(100px, 1fr)";
+  });
+  return { grow, tracks };
+}
+
+/**
+ * The columns that stay at the ledger's right edge when the row is wider than
+ * the card: the run of amount and running balance that ends the visible order.
+ * The row's actions come after every column and always stay with them. An
+ * amount moved into the middle is not pinned; it scrolls like its neighbours.
+ */
+export function pinnedColumns(visible: readonly string[]): string[] {
+  let start = visible.length;
+  while (start > 0 && (visible[start - 1] === "amount" || visible[start - 1] === "runningBalance"))
+    start--;
+  return visible.slice(start);
+}
+
+/**
+ * Where the pinned cells sit when the browser has no scroll timelines: moved
+ * left by however much of the row is still to the right of the card, so they
+ * end at its right edge, and shaded while anything is under them.
+ */
+export function pinShift(
+  scrollLeft: number,
+  scrollWidth: number,
+  clientWidth: number,
+): { x: number; shaded: boolean } {
+  const x = Math.min(0, Math.round(scrollLeft - (scrollWidth - clientWidth))) || 0;
+  return { x, shaded: x < -1 };
+}
+
+/**
  * Move one column one place left or right.
  *
  * Moving past either end is a no-op rather than a wrap: someone clicking "up"

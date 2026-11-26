@@ -352,6 +352,13 @@ body {
   outline-offset: -2px;
 }
 
+/* The Columns panel's ↔ toggle: a lit one is filled with the primary colour, so
+   a primary focus ring beside it read as a second lit toggle. The ring takes
+   the text colour instead. */
+.cb-grow-toggle:focus-visible {
+  outline-color: var(--mantine-color-text);
+}
+
 /* The register's select column as one press target (see RegisterTable). It
    fills its grid track top to bottom and leaves the checkbox where it was. */
 .cb-row-select {
@@ -359,6 +366,168 @@ body {
   display: flex;
   align-items: center;
   cursor: pointer;
+}
+
+/* The amount, running balance and actions at the card's right edge (#782).
+ * When a row is wider than the card (RegisterTable sets .cb-pinning on the
+ * card), those cells stay put and the columns before them scroll under. Sticky
+ * cannot do it, since a row's own scroll box is the ledger, which only scrolls
+ * up and down. Where the browser has scroll timelines, the card's sideways
+ * scroll moves the cells; elsewhere (Firefox, Safari before 26) RegisterTable writes how
+ * far into --cb-pin-x and sets data-pin-shade from a scroll listener.
+ *
+ * A pinned cell's ::after is its surface: the row's own tint (--cb-row-tint:
+ * selection, cursor) over the card, opaque in every state, reaching over the
+ * 12px gap on its left (ROW_GAP) and, after the actions, the row's 18px inset.
+ * It is also what a press on those strips lands on, rather than whatever has
+ * scrolled under them. */
+.cb-pinning {
+  scroll-timeline: --cb-row-x x;
+  --cb-pin-shade: rgba(18, 22, 29, 0.16);
+}
+:root[data-mantine-color-scheme="dark"] .cb-pinning {
+  --cb-pin-shade: rgba(0, 0, 0, 0.8);
+}
+.cb-pinning .cb-pin {
+  position: relative;
+  isolation: isolate;
+  align-self: stretch;
+}
+.cb-pinning .cb-ledger .cb-pin:not(.mantine-Group-root) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cb-pinning .cb-pin:last-child {
+  --cb-pin-end: 18px;
+}
+.cb-pinning .cb-pin::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: 0;
+  left: -12px;
+  right: calc(-1 * var(--cb-pin-end, 0px));
+  background:
+    linear-gradient(var(--cb-row-tint, transparent), var(--cb-row-tint, transparent)),
+    var(--cb-pin-bg, var(--cb-ledger-surface));
+}
+/* A row just saved holds its arrival tint (.cb-row-arrived) on these too. */
+@media (prefers-reduced-motion: no-preference) {
+  .cb-pinning .cb-row-arrived > .cb-pin::after {
+    animation: cb-arrive-pin 1000ms ease-out;
+  }
+}
+/* Privacy mode blurs what a pinned cell says, not the cell: a blurred cell
+   would let the columns under it show through its edges. */
+.cb-private .cb-pinning .cb-pin[data-cb-sensitive] {
+  filter: none;
+  /* It still takes presses, so they do not reach what scrolled under it. */
+  pointer-events: auto;
+}
+.cb-private .cb-pinning .cb-pin[data-cb-sensitive] > * {
+  filter: blur(max(6px, 0.45em));
+  pointer-events: none;
+}
+/* The grip of the column before the pinned cells sits in their left strip at
+   the end of the scroll: it comes to the front there, and only there, since
+   elsewhere that column is under them. */
+.cb-pinning :not(.cb-pin):has(+ .cb-pin) > .cb-col-grip {
+  z-index: 1;
+}
+.cb-pinning[data-pin-shade] :not(.cb-pin):has(+ .cb-pin) > .cb-col-grip {
+  z-index: auto;
+}
+/* A heading reached with Tab scrolls clear of the pinned cells (the header's
+   onFocus in RegisterTable). */
+.cb-pinning :not(.cb-pin) > .cb-sort {
+  scroll-margin-inline-end: var(--cb-pin-width);
+}
+/* The shade on the block's left edge, while there is something under it,
+   over the band's whole height (--cb-pin-pad: the band's padding). */
+.cb-pinning :not(.cb-pin) + .cb-pin::before {
+  content: "";
+  position: absolute;
+  top: calc(-1 * var(--cb-pin-pad, 0px));
+  bottom: calc(-1 * var(--cb-pin-pad, 0px));
+  right: calc(100% + 12px);
+  width: 10px;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--cb-pin-shade));
+  opacity: 0;
+}
+@supports (animation-timeline: scroll()) {
+  /* Longhands: the minifier spells a shorthand's duration as 0s, which on a
+     scroll timeline ends the animation before it starts. */
+  .cb-pinning .cb-pin {
+    animation-name: cb-pin-shift;
+    animation-duration: auto;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: --cb-row-x;
+  }
+  .cb-pinning :not(.cb-pin) + .cb-pin::before,
+  .cb-pinning :not(.cb-pin):has(+ .cb-pin) > .cb-col-grip {
+    animation-name: cb-pin-shade;
+    animation-duration: auto;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: --cb-row-x;
+  }
+  .cb-pinning :not(.cb-pin):has(+ .cb-pin) > .cb-col-grip {
+    animation-name: cb-grip-front;
+  }
+}
+@supports not (animation-timeline: scroll()) {
+  .cb-pinning .cb-pin {
+    transform: translateX(var(--cb-pin-x, 0px));
+  }
+  .cb-pinning[data-pin-shade] :not(.cb-pin) + .cb-pin::before {
+    opacity: 1;
+  }
+}
+@keyframes cb-pin-shift {
+  from {
+    transform: translateX(calc(100cqw - var(--cb-row-min)));
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes cb-pin-shade {
+  0%,
+  99% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cb-grip-front {
+  0%,
+  99% {
+    z-index: auto;
+  }
+}
+@keyframes cb-arrive-pin {
+  0%,
+  55% {
+    background-image:
+      linear-gradient(var(--cb-arrival-tint), var(--cb-arrival-tint)),
+      linear-gradient(var(--cb-row-tint, transparent), var(--cb-row-tint, transparent));
+  }
+}
+
+/* A row the register has just put the cursor on is ringed. The ring is drawn
+   over the row's cells, so the pinned ones do not hide it. */
+.cb-row-landed::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px var(--mantine-primary-color-filled);
 }
 
 /* The group toggle is the label's 11px line plus its 6px of padding: 23px tall,
@@ -1023,18 +1192,19 @@ body {
  *
  * The tint is painted as a gradient rather than a background colour: the row
  * sets its own background inline for selection and cursor, and an inline style
- * wins over a class. */
+ * wins over a class. The drop is `translate`, not `transform`, which holds the
+ * row's place in the virtual list: animating that put the row at the top. */
 @keyframes cb-arrive {
   0% {
-    transform: translateY(-6px);
+    translate: 0 -6px;
     background-image: linear-gradient(var(--cb-arrival-tint), var(--cb-arrival-tint));
   }
   55% {
-    transform: translateY(0);
+    translate: 0 0;
     background-image: linear-gradient(var(--cb-arrival-tint), var(--cb-arrival-tint));
   }
   100% {
-    transform: translateY(0);
+    translate: 0 0;
     background-image: none;
   }
 }
@@ -1047,21 +1217,37 @@ body {
   }
 }
 
-/* The demo build's band (#420): the data is made up and goes away. Yellow as the
-   notes on the design's canvas are, so it reads as a note about the page and not
-   as part of it. */
+/* The demo build's band (#420): the data is made up and goes away. A neutral
+   band with a hairline, so the page keeps one accent; only the "Demo" label
+   keeps the yellow of the notes on the design's canvas. */
 .cb-demo-banner {
-  background: var(--mantine-color-yellow-light);
+  background: var(--mantine-color-default);
+  border: 1px solid var(--cb-shell-card-border);
   border-radius: var(--mantine-radius-md);
   padding: 10px 16px;
   margin-bottom: var(--mantine-spacing-md);
 }
+.cb-demo-banner-label {
+  background: var(--mantine-color-yellow-light);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
 
-/* On the dark band the accent blue falls to 3:1; the band's own text colour,
-   underlined, still reads as a link. */
-[data-mantine-color-scheme="dark"] .cb-demo-banner-link {
+/* The band's text colour, underlined, reads as a link in both schemes; the
+   accent blue fell to 3:1 on the old dark band. */
+.cb-demo-banner-link {
   color: var(--mantine-color-text);
   text-decoration: underline;
+}
+
+/* While the "new version" notice is up it covers the bottom left of the
+   screen; the page and the ledger get that much room at the end, so their
+   last lines scroll clear of it. UpdateNotice sets the variable. */
+body {
+  padding-bottom: var(--cb-update-room, 0px);
+}
+.cb-ledger {
+  padding-bottom: var(--cb-update-room, 0px);
 }
 
 /* The report link under a broken page's message (#518) is text, not a button,

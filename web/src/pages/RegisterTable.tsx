@@ -19,6 +19,7 @@ import {
   IconChevronDown,
   IconChevronUp,
   IconArrowsExchange,
+  IconArrowsHorizontal,
   IconCircleCheck,
   IconClock,
   IconCopy,
@@ -65,7 +66,15 @@ import { todayCivil } from "../civilDate";
 import { formatMinor, type MoneyFormat } from "../money";
 import { notifyError } from "../notifyError";
 import { stopRowEdit } from "../rowEdit";
-import { ALL_COLUMNS, moveColumn, normalizeColumnOrder } from "./registerColumns";
+import {
+  ALL_COLUMNS,
+  columnTracks,
+  GROW_COLUMNS,
+  moveColumn,
+  normalizeColumnOrder,
+  pinnedColumns,
+  pinShift,
+} from "./registerColumns";
 import {
   BAND_INSET,
   BAND_PADDING,
@@ -304,10 +313,28 @@ export function RegisterTable({
   // Width being dragged right now: local, so a drag is not a PATCH per pixel.
   const [dragWidths, setDragWidths] = useState<Record<string, number> | null>(null);
   const widths = dragWidths ?? savedWidths ?? {};
+  // The text column that takes the free width, if the user picked one. It hands
+  // the width back to Payee when it is hidden or dragged, and the panel says so
+  // once, since the change was a side effect of something else.
+  const growChoice = user?.preferences?.registerGrowColumn;
+  const [growNotice, setGrowNotice] = useState<{ key: string; id: string } | null>(null);
 
+  // The notice belongs to the open Columns panel: closing (or opening) it clears it.
+  useEffect(() => setGrowNotice(null), [panels.columns]);
+
+  // Settling here, not in a per-call onSettled: react-query runs that one only
+  // for the latest mutate, so a visibility toggle or a Move during a drag save
+  // would have left the dragged widths on screen for good.
   const persistPrefs = useMutation({
     mutationFn: (patch: Partial<Preferences>) => savePreferences(qc, patch),
+    onSettled: () => setDragWidths(null),
   });
+
+  // When the chosen column loses the free width, the notice names what really
+  // takes it: Payee, or nobody if Payee is hidden or dragged too.
+  const visibleIds = columnOrder.filter((id) => columnVisibility[id] !== false);
+  const growFallback = (visible: string[], w: Record<string, number>) =>
+    columnTracks(visible, undefined, w, COL_WIDTH).grow;
 
   // The drag reports the width it ended on: the handler it calls was made
   // when the drag began, so reading dragWidths there would see the empty
@@ -321,12 +348,15 @@ export function RegisterTable({
     }
     const next = { ...(savedWidths ?? {}), [id]: width };
     setDragWidths(next);
+    const dropGrow = id === growChoice;
+    if (dropGrow)
+      setGrowNotice({
+        key: growFallback(visibleIds, next) ? "register.growDragged" : "register.growDraggedNone",
+        id,
+      });
     persistPrefs.mutate(
-      { registerColumnWidths: next },
-      {
-        onError: notifyError,
-        onSettled: () => setDragWidths(null),
-      },
+      { registerColumnWidths: next, ...(dropGrow ? { registerGrowColumn: undefined } : {}) },
+      { onError: notifyError },
     );
   };
 
@@ -336,11 +366,6 @@ export function RegisterTable({
     const next = sort?.id !== id ? { id, desc: false } : sort.desc ? null : { id, desc: true };
     persistPrefs.mutate({ registerSort: next ?? undefined });
   };
-
-  const persistColumns = useMutation({
-    mutationFn: (next: VisibilityState) =>
-      savePreferences(qc, { registerColumns: next as Record<string, boolean> }),
-  });
 
   // Newest-first display; each row keeps its chronological running balance.
   // A chosen sort replaces that order, but never recomputes the balances: see
@@ -356,6 +381,8 @@ export function RegisterTable({
   );
   const allSelected = display.length > 0 && display.every((r) => selected.has(r.id));
 
+  // The note has its own column when shown, so the payee stops repeating it.
+  const noteShown = !!columnVisibility.note;
   const columns = useMemo<Column[]>(() => {
     const col = createColumnHelper<RegisterRow>();
     // Heterogeneous column value types don't widen to the loose ColumnDef the
@@ -406,7 +433,7 @@ export function RegisterTable({
                 </Tooltip>
               ) : undefined
             }
-            sub={leadSub("payee", row.original, t)}
+            sub={leadSub("payee", row.original, t, noteShown)}
           />
         ),
       }),
@@ -485,7 +512,7 @@ export function RegisterTable({
       }),
     ];
     return defs as unknown as Column[];
-  }, [t, fmt, fmtDate, accountName, onToggleStatus, todayStr]);
+  }, [t, fmt, fmtDate, accountName, onToggleStatus, todayStr, noteShown]);
 
   const table = useReactTable({
     data: display,
@@ -493,7 +520,23 @@ export function RegisterTable({
     state: { columnVisibility, columnOrder },
     onColumnVisibilityChange: (updater) => {
       const next = typeof updater === "function" ? updater(columnVisibility) : updater;
-      persistColumns.mutate(next);
+      const dropGrow = growChoice != null && next[growChoice] === false;
+      if (dropGrow)
+        setGrowNotice({
+          key: growFallback(
+            visibleIds.filter((id) => id !== growChoice),
+            widths,
+          )
+            ? "register.growHidden"
+            : "register.growHiddenNone",
+          id: growChoice,
+        });
+      else if (growNotice?.key.startsWith("register.growHidden") && next[growNotice.id])
+        setGrowNotice({ key: "register.growShownAgain", id: growNotice.id });
+      persistPrefs.mutate({
+        registerColumns: next as Record<string, boolean>,
+        ...(dropGrow ? { registerGrowColumn: undefined } : {}),
+      });
     },
     getCoreRowModel: getCoreRowModel(),
   });
@@ -501,13 +544,32 @@ export function RegisterTable({
 
   // Build the grid template from the currently visible columns (checkbox +
   // visible data columns + actions), so hidden columns reclaim their space.
-  const tracks = [
-    ROW_SELECT_WIDTH,
-    ...table
-      .getVisibleLeafColumns()
-      .map((c) => (widths[c.id] ? `${widths[c.id]}px` : (COL_WIDTH[c.id] ?? "minmax(100px, 1fr)"))),
-    ROW_ACTIONS_WIDTH,
-  ];
+  const visibleCols = table.getVisibleLeafColumns().map((c) => c.id);
+  const layout = columnTracks(visibleCols, growChoice, widths, COL_WIDTH);
+  const tracks = [ROW_SELECT_WIDTH, ...layout.tracks, ROW_ACTIONS_WIDTH];
+  // The cells that stay at the card's right edge when the row scrolls sideways
+  // (app.css, .cb-pin), with the actions after them.
+  const pinned = new Set(pinnedColumns(visibleCols));
+
+  // Pick the column that takes the free width. Picking one drops the width it
+  // was dragged to, or it would stay fixed; pressing the lit one again hands
+  // the width back to Payee.
+  const chooseGrow = (id: string) => {
+    const pressed = layout.grow === id;
+    if (pressed && id === "payee") return;
+    setGrowNotice(null);
+    // A drag whose save has not settled would keep the width this drops.
+    setDragWidths(null);
+    const patch: Partial<Preferences> = {
+      registerGrowColumn: pressed || id === "payee" ? undefined : (id as "category" | "note"),
+    };
+    if (!pressed && savedWidths?.[id]) {
+      const rest = { ...savedWidths };
+      delete rest[id];
+      patch.registerColumnWidths = rest;
+    }
+    persistPrefs.mutate(patch, { onError: notifyError });
+  };
   const gridTemplate = tracks.join(" ");
 
   // The narrowest a row can be drawn without a column being squeezed out of
@@ -522,6 +584,56 @@ export function RegisterTable({
     tracks.reduce((sum, track) => sum + trackFloor(track), 0) +
     ROW_GAP * (tracks.length - 1) +
     BAND_INSET * 2;
+
+  // The pinned cells' width with their gaps and the row's inset.
+  const pinWidth =
+    tracks.slice(-1 - pinned.size).reduce((sum, track) => sum + trackFloor(track) + ROW_GAP, 0) +
+    BAND_INSET;
+
+  // Whether the pinned cells stay at the card's right edge (app.css, .cb-pin):
+  // only while the row is wider than the card, so a card that fits draws and
+  // antialiases its text exactly as it did, and only while they leave 200px of
+  // the card for the columns that scroll under them.
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [pinning, setPinning] = useState(false);
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) {
+      setPinning(false);
+      return;
+    }
+    const check = () =>
+      setPinning(card.clientWidth - pinWidth >= 200 && card.scrollWidth > card.clientWidth);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(card);
+    return () => ro.disconnect();
+  }, [minRowWidth, pinWidth, isEmpty]);
+
+  // Without scroll timelines (Firefox, Safari before 26) the card's scroll moves the
+  // pinned cells from here instead. Chromium never attaches the listener. The
+  // widths are read live, and the row's own box is watched, so a column drag
+  // does not rebuild this on every step.
+  useLayoutEffect(() => {
+    const card = cardRef.current;
+    if (!card || !pinning || CSS.supports?.("animation-timeline: scroll()")) return;
+    const move = () => {
+      const { x, shaded } = pinShift(card.scrollLeft, card.scrollWidth, card.clientWidth);
+      card.style.setProperty("--cb-pin-x", `${x}px`);
+      card.toggleAttribute("data-pin-shade", shaded);
+    };
+    move();
+    card.addEventListener("scroll", move, { passive: true });
+    const ro = new ResizeObserver(move);
+    ro.observe(card);
+    if (card.firstElementChild) ro.observe(card.firstElementChild);
+    return () => {
+      card.removeEventListener("scroll", move);
+      ro.disconnect();
+      card.style.removeProperty("--cb-pin-x");
+      card.removeAttribute("data-pin-shade");
+    };
+  }, [pinning, isEmpty]);
 
   // Whether a row's lead column carries a second line, which decides its height.
   const baseRowHeight = useCallback(
@@ -707,48 +819,94 @@ export function RegisterTable({
               onChange={() => toggleable && table.getColumn(id)?.toggleVisibility()}
               label={t(COL_LABEL[id])}
             />
-            <Group gap={2} wrap="nowrap">
-              {/* Named for the column they move: seven buttons all called "Move
+            <Group gap={8} wrap="nowrap">
+              {GROW_COLUMNS.includes(id) ? (
+                // On, filled like the Columns button itself: a light tint on the
+                // dark panel measured 1.2:1 and read as off. Off, a dimmed icon.
+                <ActionIcon
+                  variant={layout.grow === id ? "filled" : "subtle"}
+                  size={24}
+                  color={layout.grow === id ? undefined : "gray"}
+                  c={layout.grow === id ? undefined : "dimmed"}
+                  disabled={!columnVisibility[id]}
+                  className="cb-grow-toggle"
+                  style={!columnVisibility[id] ? { background: "none", opacity: 0.3 } : undefined}
+                  aria-pressed={layout.grow === id}
+                  aria-label={t(
+                    columnVisibility[id] ? "register.growColumn" : "register.growNeedsShown",
+                    { name: t(COL_LABEL[id]) },
+                  )}
+                  title={t(
+                    columnVisibility[id] ? "register.growColumn" : "register.growNeedsShown",
+                    { name: t(COL_LABEL[id]) },
+                  )}
+                  onClick={() => chooseGrow(id)}
+                >
+                  <IconArrowsHorizontal size={14} />
+                </ActionIcon>
+              ) : (
+                <Box w={24} />
+              )}
+              <Group gap={2} wrap="nowrap">
+                {/* Named for the column they move: seven buttons all called "Move
                   this column left" tell a screen reader nothing. 24px, not 22,
                   because they stack two pixels apart and 22 is under WCAG 2.5.8's
                   floor with no room around it. */}
-              <ActionIcon
-                variant="subtle"
-                size={24}
-                color="gray"
-                disabled={i === 0}
-                aria-label={t("register.moveColumnLeft", { name: t(COL_LABEL[id]) })}
-                onClick={() =>
-                  persistPrefs.mutate({ registerColumnOrder: moveColumn(columnOrder, id, -1) })
-                }
-              >
-                <IconChevronUp size={14} />
-              </ActionIcon>
-              <ActionIcon
-                variant="subtle"
-                size={24}
-                color="gray"
-                disabled={i === columnOrder.length - 1}
-                aria-label={t("register.moveColumnRight", { name: t(COL_LABEL[id]) })}
-                onClick={() =>
-                  persistPrefs.mutate({ registerColumnOrder: moveColumn(columnOrder, id, 1) })
-                }
-              >
-                <IconChevronDown size={14} />
-              </ActionIcon>
+                <ActionIcon
+                  variant="subtle"
+                  size={24}
+                  color="gray"
+                  disabled={i === 0}
+                  aria-label={t("register.moveColumnLeft", { name: t(COL_LABEL[id]) })}
+                  onClick={() =>
+                    persistPrefs.mutate({ registerColumnOrder: moveColumn(columnOrder, id, -1) })
+                  }
+                >
+                  <IconChevronUp size={14} />
+                </ActionIcon>
+                <ActionIcon
+                  variant="subtle"
+                  size={24}
+                  color="gray"
+                  disabled={i === columnOrder.length - 1}
+                  aria-label={t("register.moveColumnRight", { name: t(COL_LABEL[id]) })}
+                  onClick={() =>
+                    persistPrefs.mutate({ registerColumnOrder: moveColumn(columnOrder, id, 1) })
+                  }
+                >
+                  <IconChevronDown size={14} />
+                </ActionIcon>
+              </Group>
             </Group>
           </Group>
         );
       })}
+      <Text fz="xs" c="dimmed" mt={6}>
+        <IconArrowsHorizontal
+          size={12}
+          style={{ display: "inline", verticalAlign: -2, marginRight: 4 }}
+        />
+        {t("register.growHint")}
+      </Text>
+      {/* Always mounted, so a screen reader is watching it when the text lands. */}
+      <Text fz="xs" c="dimmed" role="status">
+        {growNotice &&
+          t(growNotice.key, {
+            name: t(COL_LABEL[growNotice.id]),
+            payee: t(COL_LABEL.payee),
+          })}
+      </Text>
       <Group className="cb-panel-actions" justify="flex-end" mt="xs" gap="xs">
         <Button
           variant="default"
-          onClick={() =>
+          onClick={() => {
+            setGrowNotice(null);
             persistPrefs.mutate({
               registerColumnOrder: [...ALL_COLUMNS],
               registerColumns: Object.fromEntries(TOGGLEABLE.map((c) => [c.id, c.def])),
-            })
-          }
+              registerGrowColumn: undefined,
+            });
+          }}
         >
           {t("register.columnsReset")}
         </Button>
@@ -800,10 +958,16 @@ export function RegisterTable({
         </Center>
       ) : (
         <Box
+          ref={cardRef}
+          className={pinning ? "cb-pinning" : undefined}
           style={{
             overflowX: "auto",
             flex: 1,
             minWidth: 0,
+            // How far the pinned cells travel, and how wide they are with their
+            // gaps and the row's inset (app.css, .cb-pin).
+            ["--cb-row-min" as string]: `${minRowWidth}px`,
+            ["--cb-pin-width" as string]: `${pinWidth}px`,
             // The width a reconciled line's text keeps to (see markLine).
             containerType: "inline-size",
             // The ledger is a card, and every band below sits inside it.
@@ -817,12 +981,21 @@ export function RegisterTable({
               a fact about these rows and not a page-level announcement. */}
             {notice}
             <Box
+              // A heading Tab lands on under the pinned cells is on screen as
+              // far as the browser can tell, so it would stay hidden: scroll it
+              // clear of them (scroll-margin, app.css).
+              onFocus={(e) => {
+                if (pinning && e.target.matches(".cb-sort:focus-visible"))
+                  e.target.scrollIntoView({ block: "nearest", inline: "nearest" });
+              }}
               style={{
                 display: "grid",
                 gridTemplateColumns: gridTemplate,
                 gap: ROW_GAP,
                 padding: `${BAND_PADDING.header}px ${BAND_INSET}px`,
                 background: "var(--cb-band-header)",
+                ["--cb-pin-bg" as string]: "var(--cb-band-header)",
+                ["--cb-pin-pad" as string]: `${BAND_PADDING.header}px`,
                 fontWeight: ROW_TYPE.header.fw,
                 fontSize: ROW_TYPE.header.fz,
                 borderBottom: "1px solid var(--cb-ledger-border)",
@@ -848,6 +1021,7 @@ export function RegisterTable({
                 <ColumnHeader
                   key={h.id}
                   id={h.id}
+                  pinned={pinned.has(h.id)}
                   sort={sort}
                   onSort={toggleSort}
                   onResize={(width) => setDragWidths({ ...(savedWidths ?? {}), [h.id]: width })}
@@ -856,6 +1030,9 @@ export function RegisterTable({
                   {flexRender(h.column.columnDef.header, h.getContext())}
                 </ColumnHeader>
               ))}
+              {/* The actions track has no heading, but pinned it still has to
+                cover the headings that scroll under it. */}
+              <span className="cb-pin" />
             </Box>
             {/* The way in is the first line of the ledger, where the next
               transaction will actually land — not a form above it. "N" is
@@ -873,6 +1050,8 @@ export function RegisterTable({
                   gap: ROW_GAP,
                   padding: `${BAND_PADDING.newEntry}px ${BAND_INSET}px`,
                   background: "var(--cb-band-new)",
+                  ["--cb-pin-bg" as string]: "var(--cb-band-new)",
+                  ["--cb-pin-pad" as string]: `${BAND_PADDING.newEntry}px`,
                   borderBottom: "1px solid var(--cb-ledger-border)",
                   textAlign: "left",
                 }}
@@ -888,13 +1067,20 @@ export function RegisterTable({
                   fz={ROW_TYPE.newEntry.fz}
                   c="dimmed"
                   truncate
-                  style={{ gridColumn: "span 2" }}
+                  // Two columns, or one when only one is left before the
+                  // pinned ones.
+                  style={{
+                    gridColumn: `span ${Math.max(1, Math.min(2, tracks.length - pinned.size - 3))}`,
+                  }}
                 >
                   {t("register.newEntry")}
                 </Text>
-                <span />
-                <span />
-                <Group justify="flex-end">
+                {/* The key sits in the actions track and stays pinned with it,
+                  over an empty cell for the pinned columns before it. */}
+                {pinned.size > 0 && (
+                  <span className="cb-pin" style={{ gridColumn: `${-2 - pinned.size} / -2` }} />
+                )}
+                <Group className="cb-pin" justify="flex-end" style={{ gridColumn: "-2 / -1" }}>
                   <Kbd size="xs">N</Kbd>
                 </Group>
               </UnstyledButton>
@@ -925,12 +1111,23 @@ export function RegisterTable({
                   const after = markAfter && vi.index === tableRows.length - 1 ? markAfter : null;
                   // A line above the row pushes it down; one after it sits below.
                   const rowTop = vi.start + (above ? DIVIDER_HEIGHT : 0);
+                  const tint = selected.has(r.id)
+                    ? "var(--mantine-color-blue-light)"
+                    : landed
+                      ? "var(--cb-arrival-tint)"
+                      : onCursor
+                        ? "var(--mantine-color-default-hover)"
+                        : undefined;
                   return (
                     <Fragment key={row.id}>
                       {above && markLine(above, vi.start)}
                       {after && markLine(after, rowTop + baseRowHeight(vi.index))}
                       <div
-                        className={r.id === arrivedId ? "cb-row-arrived" : undefined}
+                        className={
+                          [r.id === arrivedId && "cb-row-arrived", landed && "cb-row-landed"]
+                            .filter(Boolean)
+                            .join(" ") || undefined
+                        }
                         onClick={() => setCursorId(r.id)}
                         onDoubleClick={() => onEdit(r)}
                         onContextMenu={(e) => {
@@ -957,16 +1154,9 @@ export function RegisterTable({
                             r.date > todayStr
                               ? "3px solid var(--mantine-color-blue-5)"
                               : "3px solid transparent",
-                          background: selected.has(r.id)
-                            ? "var(--mantine-color-blue-light)"
-                            : landed
-                              ? "var(--cb-arrival-tint)"
-                              : onCursor
-                                ? "var(--mantine-color-default-hover)"
-                                : undefined,
-                          boxShadow: landed
-                            ? "inset 0 0 0 1px var(--mantine-primary-color-filled)"
-                            : undefined,
+                          background: tint,
+                          // The pinned cells lay the same tint over the card.
+                          ["--cb-row-tint" as string]: tint,
                           borderBottom: "1px solid var(--cb-ledger-border)",
                         }}
                       >
@@ -1021,6 +1211,7 @@ export function RegisterTable({
                         {row.getVisibleCells().map((cell) => (
                           <Box
                             key={cell.id}
+                            className={pinned.has(cell.column.id) ? "cb-pin" : undefined}
                             style={{ minWidth: 0 }}
                             data-cb-sensitive={SENSITIVE_COLUMNS.has(cell.column.id) || undefined}
                           >
@@ -1033,6 +1224,7 @@ export function RegisterTable({
                           as a template is the rarest of the three and was already
                           in the row's menu, so that is where it lives now. */}
                         <Group
+                          className="cb-pin"
                           gap={ROW_ACTION.gap}
                           justify="flex-end"
                           wrap="nowrap"
@@ -1207,6 +1399,7 @@ export function RegisterTable({
  */
 function ColumnHeader({
   id,
+  pinned,
   sort,
   onSort,
   onResize,
@@ -1214,6 +1407,7 @@ function ColumnHeader({
   children,
 }: {
   id: string;
+  pinned: boolean;
   sort: RegisterSort | null;
   onSort: (id: string) => void;
   onResize: (width: number) => void;
@@ -1246,7 +1440,11 @@ function ColumnHeader({
   };
 
   return (
-    <Box ref={ref} style={{ position: "relative", minWidth: 0 }}>
+    <Box
+      ref={ref}
+      className={pinned ? "cb-pin" : undefined}
+      style={{ position: "relative", minWidth: 0 }}
+    >
       {sortable ? (
         <UnstyledButton
           className="cb-sort"
@@ -1327,7 +1525,7 @@ interface Sub {
 /**
  * What goes under the lead line, if anything.
  *
- * The memo when the payee leads, and — when there is nothing else to say and
+ * The memo when the payee leads (unless the Note column shows it), and — when there is nothing else to say and
  * the transaction is missing its category — the fact that it needs one. Saying
  * it here rather than leaving the category cell blank is what turns an empty
  * cell into something the reader can act on.
@@ -1336,8 +1534,9 @@ function leadSub(
   column: "payee" | "note",
   row: RegisterRow,
   t: (k: string) => string,
+  noteShown = false,
 ): Sub | undefined {
-  if (column === "payee" && row.memo) return { text: row.memo };
+  if (column === "payee" && row.memo && !noteShown) return { text: row.memo };
   if (row.transferId == null && !row.isSplit && !row.categoryName)
     return { text: t("register.needsCategory"), attention: true };
   return undefined;
