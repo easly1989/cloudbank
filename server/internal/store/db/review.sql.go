@@ -11,6 +11,20 @@ import (
 	"strings"
 )
 
+const deleteReviewSnooze = `-- name: DeleteReviewSnooze :exec
+DELETE FROM review_snoozes WHERE transaction_id = ? AND wallet_id = ?
+`
+
+type DeleteReviewSnoozeParams struct {
+	TransactionID int64
+	WalletID      int64
+}
+
+func (q *Queries) DeleteReviewSnooze(ctx context.Context, arg DeleteReviewSnoozeParams) error {
+	_, err := q.db.ExecContext(ctx, deleteReviewSnooze, arg.TransactionID, arg.WalletID)
+	return err
+}
+
 const insertDuplicateDismissal = `-- name: InsertDuplicateDismissal :exec
 INSERT INTO duplicate_dismissals (wallet_id, txn_a_id, txn_b_id)
 VALUES (?, ?, ?)
@@ -260,6 +274,44 @@ func (q *Queries) ListPayeeCategoryCounts(ctx context.Context, arg ListPayeeCate
 	return items, nil
 }
 
+const listReviewSnoozes = `-- name: ListReviewSnoozes :many
+SELECT transaction_id, until FROM review_snoozes WHERE wallet_id = ? AND until > ?
+`
+
+type ListReviewSnoozesParams struct {
+	WalletID int64
+	Until    string
+}
+
+type ListReviewSnoozesRow struct {
+	TransactionID int64
+	Until         string
+}
+
+// The wallet's review rows put off until a day after the given one (#775).
+func (q *Queries) ListReviewSnoozes(ctx context.Context, arg ListReviewSnoozesParams) ([]ListReviewSnoozesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listReviewSnoozes, arg.WalletID, arg.Until)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListReviewSnoozesRow{}
+	for rows.Next() {
+		var i ListReviewSnoozesRow
+		if err := rows.Scan(&i.TransactionID, &i.Until); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTransactionsByIDs = `-- name: ListTransactionsByIDs :many
 SELECT id, wallet_id, account_id, date, amount, payment_mode, status, info, payee_id, category_id, memo, is_split, created_at, updated_at, template_id, import_ref, vehicle_id, origin, created_by FROM transactions
 WHERE wallet_id = ?1 AND id IN (/*SLICE:ids*/?)
@@ -408,5 +460,21 @@ type SetTransactionImportRefParams struct {
 
 func (q *Queries) SetTransactionImportRef(ctx context.Context, arg SetTransactionImportRefParams) error {
 	_, err := q.db.ExecContext(ctx, setTransactionImportRef, arg.ImportRef, arg.ID, arg.WalletID)
+	return err
+}
+
+const upsertReviewSnooze = `-- name: UpsertReviewSnooze :exec
+INSERT INTO review_snoozes (transaction_id, wallet_id, until) VALUES (?, ?, ?)
+ON CONFLICT (transaction_id) DO UPDATE SET until = excluded.until
+`
+
+type UpsertReviewSnoozeParams struct {
+	TransactionID int64
+	WalletID      int64
+	Until         string
+}
+
+func (q *Queries) UpsertReviewSnooze(ctx context.Context, arg UpsertReviewSnoozeParams) error {
+	_, err := q.db.ExecContext(ctx, upsertReviewSnooze, arg.TransactionID, arg.WalletID, arg.Until)
 	return err
 }

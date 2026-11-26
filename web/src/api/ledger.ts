@@ -315,11 +315,17 @@ export interface ReversalPair {
   payment: ReviewTxn;
   reversal: ReviewTxn;
 }
+/** An unconfirmed row, or a reversal pair (its payment, with the reversal), put off until a day. */
+export interface SnoozedRow extends ReviewTxn {
+  until: string;
+  reversal?: ReviewTxn;
+}
 export interface ReviewResult {
   needsCategory: ReviewTxn[];
   duplicates: DuplicatePair[];
   unconfirmed: UnconfirmedRow[];
   reversals: ReversalPair[];
+  snoozed: SnoozedRow[];
 }
 
 export const getTransactionReview = (walletId: number) =>
@@ -339,3 +345,17 @@ export const mergeTransactions = (walletId: number, keepId: number, dropId: numb
 
 export const mergeMailTransaction = (walletId: number, mailId: number, bankId: number) =>
   api.post<void>(`/api/v1/wallets/${walletId}/transactions/merge-mail`, { mailId, bankId });
+
+/** Snoozes the review rows, a pair's two together, until a civil date, for the wallet. */
+export const snoozeReviewRows = (walletId: number, ids: number[], until: string) =>
+  Promise.all(
+    ids.map((id) =>
+      api.put<void>(`/api/v1/wallets/${walletId}/transactions/${id}/snooze`, { until }),
+    ),
+  );
+
+/** Brings snoozed review rows back now. */
+export const unsnoozeReviewRows = (walletId: number, ids: number[]) =>
+  Promise.all(
+    ids.map((id) => api.del<void>(`/api/v1/wallets/${walletId}/transactions/${id}/snooze`)),
+  );

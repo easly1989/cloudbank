@@ -114,6 +114,7 @@ type Querier interface {
 	DeletePushSubscription(ctx context.Context, arg DeletePushSubscriptionParams) error
 	DeletePushSubscriptionByEndpoint(ctx context.Context, endpoint string) error
 	DeleteRecoveryCodes(ctx context.Context, userID int64) error
+	DeleteReviewSnooze(ctx context.Context, arg DeleteReviewSnoozeParams) error
 	DeleteReviewWaiting(ctx context.Context, transactionID int64) error
 	DeleteSchedule(ctx context.Context, id int64) error
 	DeleteSession(ctx context.Context, id string) error
@@ -369,6 +370,8 @@ type Querier interface {
 	ListRecurringCandidates(ctx context.Context, arg ListRecurringCandidatesParams) ([]ListRecurringCandidatesRow, error)
 	ListRecurringIgnored(ctx context.Context, walletID int64) ([]ListRecurringIgnoredRow, error)
 	ListRecurringIgnoredForPayee(ctx context.Context, payeeID int64) ([]string, error)
+	// The wallet's review rows put off until a day after the given one (#775).
+	ListReviewSnoozes(ctx context.Context, arg ListReviewSnoozesParams) ([]ListReviewSnoozesRow, error)
 	ListReviewWaiting(ctx context.Context, walletID int64) ([]ListReviewWaitingRow, error)
 	// Every schedule in the wallet with the template fields the Bills view needs:
 	// amount (signed), the target account and its currency (for base conversion),
@@ -597,6 +600,7 @@ type Querier interface {
 	UpsertPayeeCleanup(ctx context.Context, arg UpsertPayeeCleanupParams) error
 	UpsertPluggyConfig(ctx context.Context, arg UpsertPluggyConfigParams) error
 	UpsertPushSubscription(ctx context.Context, arg UpsertPushSubscriptionParams) error
+	UpsertReviewSnooze(ctx context.Context, arg UpsertReviewSnoozeParams) error
 	// The code was right: the channel sends from now on. A Telegram chat linked
 	// through the shared bot gets its target here.
 	VerifyNotificationChannel(ctx context.Context, arg VerifyNotificationChannelParams) error

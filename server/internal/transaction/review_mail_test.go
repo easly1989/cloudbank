@@ -227,3 +227,90 @@ func TestMergeMailNeedsAMailRowAndABankRowOfOneAccount(t *testing.T) {
 		t.Errorf("another wallet's merge: err = %v, want ErrNotFound", err)
 	}
 }
+
+// A snoozed row, or pair, leaves the list and the reminders until its day, is
+// listed apart meanwhile, and is back on that day (#775).
+func TestASnoozedMailRowIsBackOnItsDay(t *testing.T) {
+	s, q, _, wid, acc := newMailReviewService(t)
+	ctx := context.Background()
+	// A category on each, so only the unconfirmed list asks about them.
+	cat, _ := q.InsertCategory(ctx, db.InsertCategoryParams{WalletID: wid, Name: "Fuel"})
+	mk := func(date, ref string, amount int64) int64 {
+		t.Helper()
+		tx, err := s.Create(ctx, wid, Input{AccountID: acc, Date: date, Amount: amount, ImportRef: ref, CategoryID: iptr(cat.ID)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return tx.ID
+	}
+	row := mk(daysAgo(7), "mail:row", -10000)
+	pay := mk(daysAgo(8), "mail:pay", -750)
+	rev := mk(daysAgo(8), "mail:rev", 750)
+	bank := mk(daysAgo(7), "eb:bank", -10000)
+
+	today := time.Now().UTC()
+	until := today.AddDate(0, 0, 3).Format(dateLayout)
+	for _, id := range []int64{row, pay} {
+		if err := s.Snooze(ctx, wid, id, until, today); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, bad := range []string{"", "tomorrow", "2026-02-30", today.AddDate(0, 0, -2).Format(dateLayout)} {
+		if err := s.Snooze(ctx, wid, row, bad, today); !errors.Is(err, ErrInvalidSnooze) {
+			t.Errorf("snooze until %q: err = %v, want ErrInvalidSnooze", bad, err)
+		}
+	}
+	if err := s.Snooze(ctx, wid, bank, until, today); !errors.Is(err, ErrNotMailRow) {
+		t.Errorf("snooze a bank row: err = %v, want ErrNotMailRow", err)
+	}
+	if err := s.Snooze(ctx, wid+1, row, until, today); !errors.Is(err, ErrNotFound) {
+		t.Errorf("snooze from another wallet: err = %v, want ErrNotFound", err)
+	}
+
+	// The day before: out of the list and the reminders, listed apart.
+	rows, pairs, snoozed, err := s.unconfirmed(ctx, wid, today.AddDate(0, 0, 2))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 0 || len(pairs) != 0 || len(snoozed) != 2 {
+		t.Fatalf("rows %v pairs %v snoozed %v, want only the two snoozed", ids(rows), pairs, snoozed)
+	}
+	for _, z := range snoozed {
+		if z.Until != until || (z.ID == pay) != (z.Reversal != nil && z.Reversal.ID == rev) {
+			t.Errorf("snoozed = %+v, want the row and the pair until %s", z, until)
+		}
+	}
+	if waiting, _ := s.Waiting(ctx, wid, today.AddDate(0, 0, 2)); len(waiting) != 0 {
+		t.Errorf("waiting = %v, want none while snoozed", waiting)
+	}
+
+	// On the day: back.
+	rows, pairs, snoozed, err = s.unconfirmed(ctx, wid, today.AddDate(0, 0, 3))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 || len(pairs) != 1 || len(snoozed) != 0 {
+		t.Fatalf("rows %v pairs %v snoozed %v, want both back", ids(rows), pairs, snoozed)
+	}
+
+	// A client a day behind UTC may pick its "today" (yesterday for the server).
+	if err := s.Snooze(ctx, wid, row, today.AddDate(0, 0, -1).Format(dateLayout), today); err != nil {
+		t.Errorf("snooze until the day before UTC today: %v", err)
+	}
+	// A pair with one half snoozed a week ago and the other for a day is out
+	// for a day, not a week.
+	if err := s.Snooze(ctx, wid, rev, today.AddDate(0, 0, 7).Format(dateLayout), today); err != nil {
+		t.Fatal(err)
+	}
+	if _, pairs, snoozed, err := s.unconfirmed(ctx, wid, today.AddDate(0, 0, 2)); err != nil || len(pairs) != 0 || len(snoozed) != 1 || snoozed[0].Until != until {
+		t.Errorf("pair halves 3 and 7 days: pairs %v snoozed %+v err %v, want the pair out until %s", pairs, snoozed, err, until)
+	}
+
+	// Brought back now.
+	if err := s.Unsnooze(ctx, wid, row); err != nil {
+		t.Fatal(err)
+	}
+	if rev, _ := s.Review(ctx, wid); !slices.Equal(ids(rev.Unconfirmed), []int64{row}) || len(rev.Snoozed) != 1 {
+		t.Errorf("after unsnooze: unconfirmed %v snoozed %+v, want the row back and the pair still out", ids(rev.Unconfirmed), rev.Snoozed)
+	}
+}

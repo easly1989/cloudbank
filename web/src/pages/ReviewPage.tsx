@@ -139,6 +139,9 @@ export function ReviewPage() {
   const reversals = (review.data?.reversals ?? []).filter(
     (p) => !onlyAccount || p.payment.accountId === onlyAccount,
   );
+  const snoozed = (review.data?.snoozed ?? []).filter(
+    (r) => !onlyAccount || r.accountId === onlyAccount,
+  );
   // The AI's unusual transactions (#700), on top: they need a look first.
   const unusual = useUnusual(walletId);
   const unusualRows = (unusual?.rows ?? []).filter(
@@ -529,11 +532,13 @@ export function ReviewPage() {
         </Box>
       )}
 
-      {(unconfirmed.length > 0 || reversals.length > 0) && (
+      {/* Kept while only snoozed rows are left: they can be brought back. */}
+      {(unconfirmed.length > 0 || reversals.length > 0 || snoozed.length > 0) && (
         <ReviewUnconfirmed
           walletId={walletId}
           unconfirmed={unconfirmed}
           reversals={reversals}
+          snoozed={snoozed}
           accountById={accountById}
           fmtFor={fmtFor}
           categoryName={categoryName}

@@ -565,6 +565,12 @@ type RecurringIgnored struct {
 	Cadence  string
 }
 
+type ReviewSnooze struct {
+	TransactionID int64
+	WalletID      int64
+	Until         string
+}
+
 type ReviewWaiting struct {
 	TransactionID int64
 	WalletID      int64

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -37,6 +38,8 @@ func (h *transactionHandlers) walletRoutes(r chi.Router) {
 		r.Patch("/", h.update)
 		r.Patch("/status", h.setStatus)
 		r.Delete("/", h.delete)
+		r.Put("/snooze", h.snooze)
+		r.Delete("/snooze", h.unsnooze)
 	})
 }
 
@@ -280,6 +283,47 @@ func (h *transactionHandlers) mergeMail(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, "not_mail_pair", "merge a row from a mail into a bank row of the same account")
 	default:
 		writeError(w, http.StatusInternalServerError, "internal", "could not merge")
+	}
+}
+
+// snooze puts a row of the review's "not confirmed by the bank" list off until
+// a day, for everyone in the wallet (#775).
+func (h *transactionHandlers) snooze(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, _ := strconv.ParseInt(chi.URLParam(r, "transactionId"), 10, 64)
+	var body struct {
+		Until string `json:"until"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	err := h.svc.Snooze(r.Context(), wl.ID, id, body.Until, time.Now().UTC())
+	switch {
+	case err == nil:
+		w.WriteHeader(http.StatusNoContent)
+	case errors.Is(err, transaction.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "transaction not found")
+	case errors.Is(err, transaction.ErrInvalidSnooze):
+		writeError(w, http.StatusBadRequest, "invalid_until", "until must be a YYYY-MM-DD date from today on")
+	case errors.Is(err, transaction.ErrNotMailRow):
+		writeError(w, http.StatusBadRequest, "not_mail_row", "only a row read from a mail can be snoozed")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", "could not snooze")
+	}
+}
+
+// unsnooze brings a snoozed row back into the review now.
+func (h *transactionHandlers) unsnooze(w http.ResponseWriter, r *http.Request) {
+	wl, _ := walletFromContext(r.Context())
+	id, _ := strconv.ParseInt(chi.URLParam(r, "transactionId"), 10, 64)
+	err := h.svc.Unsnooze(r.Context(), wl.ID, id)
+	switch {
+	case err == nil:
+		w.WriteHeader(http.StatusNoContent)
+	case errors.Is(err, transaction.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "transaction not found")
+	default:
+		writeError(w, http.StatusInternalServerError, "internal", "could not bring the row back")
 	}
 }
 

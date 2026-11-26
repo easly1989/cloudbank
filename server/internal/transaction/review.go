@@ -49,12 +49,14 @@ type DuplicatePair struct {
 
 // ReviewResult is the bank-sync review payload: imported rows still missing a
 // category, pairs of suspected duplicates (dismissed pairs excluded), and the
-// rows read from bank mails that the bank has not booked (#660).
+// rows read from bank mails that the bank has not booked (#660), less the ones
+// snoozed for now (#775), which are listed apart.
 type ReviewResult struct {
 	NeedsCategory []ReviewTxn      `json:"needsCategory"`
 	Duplicates    []DuplicatePair  `json:"duplicates"`
 	Unconfirmed   []UnconfirmedRow `json:"unconfirmed"`
 	Reversals     []ReversalPair   `json:"reversals"`
+	Snoozed       []SnoozedRow     `json:"snoozed"`
 }
 
 func reviewTxn(r db.Transaction) ReviewTxn {
@@ -128,7 +130,7 @@ func (s *Service) Review(ctx context.Context, walletID int64) (ReviewResult, err
 	}
 	out.Duplicates = pairs
 
-	if out.Unconfirmed, out.Reversals, err = s.unconfirmed(ctx, walletID, time.Now().UTC()); err != nil {
+	if out.Unconfirmed, out.Reversals, out.Snoozed, err = s.unconfirmed(ctx, walletID, time.Now().UTC()); err != nil {
 		return ReviewResult{}, err
 	}
 	return out, nil
@@ -136,13 +138,14 @@ func (s *Service) Review(ctx context.Context, walletID int64) (ReviewResult, err
 
 // Waiting lists the transactions the review asks about as of today (#692):
 // the imported ones missing a category and the mail rows the bank has not
-// booked. Suspected duplicates are left out: they ask about a pair.
+// booked, less the snoozed ones. Suspected duplicates are left out: they ask
+// about a pair.
 func (s *Service) Waiting(ctx context.Context, walletID int64, today time.Time) ([]int64, error) {
 	uncat, err := s.rq.ListImportedUncategorized(ctx, walletID)
 	if err != nil {
 		return nil, err
 	}
-	rows, pairs, err := s.unconfirmed(ctx, walletID, today)
+	rows, pairs, _, err := s.unconfirmed(ctx, walletID, today)
 	if err != nil {
 		return nil, err
 	}
