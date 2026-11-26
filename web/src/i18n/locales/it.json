@@ -1464,6 +1464,31 @@
       "save": "Salva",
       "saved": "Il modo di leggere le mail è salvato.",
       "readByAI": "Letta dall'AI"
+    },
+    "sources": {
+      "title": "Sorgenti",
+      "count": "{{count}} di {{max}}",
+      "limit": "Al massimo {{max}} sorgenti per casella",
+      "new": "Nuova sorgente",
+      "orderHint": "Una mail che più sorgenti potrebbero leggere va alla prima in quest'ordine.",
+      "name": "Nome",
+      "namePlaceholder": "es. Carte",
+      "add": "Aggiungi sorgente",
+      "actions": "Azioni per {{name}}",
+      "moveUp": "Sposta su",
+      "moveDown": "Sposta giù",
+      "delete": "Elimina sorgente",
+      "deleteTitle": "Eliminare {{name}}?",
+      "deleteBody": "I suoi schemi vengono eliminati. Le mail che ha letto restano in Ultime mail.",
+      "lastSource": "Una casella tiene almeno una sorgente.",
+      "statusError": "Non è stato possibile leggere la cartella: {{detail}}",
+      "folderGone": "Cartella non trovata",
+      "toFix_one": "{{count}} sorgente su {{total}} da sistemare",
+      "toFix_other": "{{count}} sorgenti su {{total}} da sistemare",
+      "live_one": "{{count}} sorgente in ascolto",
+      "live_other": "{{count}} sorgenti in ascolto",
+      "readBy": "La sorgente che l'ha letta",
+      "removed": "Sorgente eliminata"
     }
   },
   "search": {
@@ -3218,17 +3243,9 @@
         "title": "La tua casella",
         "body": "CloudBank resta collegato e legge ogni nuova mail appena arriva. Controlla ora legge subito; per sospenderla o scollegarla c'è Altro."
       },
-      "folder": {
-        "title": "Una cartella",
-        "body": "Vengono lette solo le mail che arrivano in questa cartella da adesso in poi. La più sicura è una cartella che riceve solo le mail della banca."
-      },
-      "mode": {
-        "title": "Come leggere le mail",
-        "body": "Uno schema legge un tipo di mail e non la manda da nessuna parte. L'AI può leggere quelle che nessuno schema riconosce, se la configuri in Impostazioni › AI."
-      },
-      "patterns": {
-        "title": "Schemi",
-        "body": "Ognuno trasforma un tipo di mail della banca in una transazione sul conto che hai scelto. Vince il primo schema che legge una mail: trascinali per cambiare l'ordine."
+      "sources": {
+        "title": "Sorgenti",
+        "body": "Ogni sorgente legge una cartella, con i suoi schemi o con l'AI. Aprila per scegliere la cartella e come leggere le mail. Una mail che due sorgenti potrebbero leggere va alla prima: cambia l'ordine da ⋯."
       },
       "history": {
         "title": "Ultime mail",

@@ -1464,6 +1464,31 @@
       "save": "Save",
       "saved": "How mails are read is saved.",
       "readByAI": "Read by the AI"
+    },
+    "sources": {
+      "title": "Sources",
+      "count": "{{count}} of {{max}}",
+      "limit": "At most {{max}} sources per mailbox",
+      "new": "New source",
+      "orderHint": "A mail more than one source could read goes to the first in this order.",
+      "name": "Name",
+      "namePlaceholder": "e.g. Cards",
+      "add": "Add source",
+      "actions": "Actions for {{name}}",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "delete": "Delete source",
+      "deleteTitle": "Delete {{name}}?",
+      "deleteBody": "Its patterns are deleted. The mails it read stay in Latest mails.",
+      "lastSource": "A mailbox keeps at least one source.",
+      "statusError": "The folder could not be read: {{detail}}",
+      "folderGone": "Folder not found",
+      "toFix_one": "{{count}} source of {{total}} needs attention",
+      "toFix_other": "{{count}} sources of {{total}} need attention",
+      "live_one": "{{count}} source listening",
+      "live_other": "{{count}} sources listening",
+      "readBy": "The source that read it",
+      "removed": "Removed source"
     }
   },
   "search": {
@@ -3218,17 +3243,9 @@
         "title": "Your mailbox",
         "body": "CloudBank stays connected and reads each new mail as it arrives. Check now reads at once; pause or disconnect it under More."
       },
-      "folder": {
-        "title": "One folder",
-        "body": "Only the mails that arrive in this folder from now on are read. A folder your mailbox fills with the bank's mails alone is the safest."
-      },
-      "mode": {
-        "title": "How mails are read",
-        "body": "A pattern reads one kind of mail and sends it nowhere. The AI can read the mails no pattern reads, once it is set up in Settings › AI."
-      },
-      "patterns": {
-        "title": "Patterns",
-        "body": "Each turns one kind of bank mail into a transaction on the account you chose. The first pattern that reads a mail wins: drag to change the order."
+      "sources": {
+        "title": "Sources",
+        "body": "Each source reads one folder, with its own patterns or the AI. Open one to choose its folder and how its mails are read. A mail two sources could read goes to the first: change the order from ⋯."
       },
       "history": {
         "title": "Latest mails",

@@ -16,7 +16,6 @@ import {
   Modal,
   Paper,
   SegmentedControl,
-  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -50,10 +49,10 @@ import {
   checkMailbox,
   getMailOverview,
   listAccounts,
-  listMailboxFolders,
   listMailboxMessages,
   listMailPatterns,
   type Mailbox,
+  type MailCheckResult,
   type MailPattern,
   type MailSummary,
   pollMicrosoftMail,
@@ -63,14 +62,13 @@ import {
 } from "../api/client";
 import { useConfirm } from "../components/confirmContext";
 import { ErrorMessage } from "../components/ErrorMessage";
-import { useDateFormat } from "../dates";
 import { formatMinor } from "../money";
 import { notifyError } from "../notifyError";
 import { ImapConnect } from "./mail/ImapConnect";
+import { MailSources } from "./mail/MailSources";
+import { useWhen } from "./mail/when";
 import { countMails, filterMails, type MailFilter } from "./mail/latestMails";
-import { MailAI } from "./mail/MailAI";
 import { providerForServer } from "./mail/imapProviders";
-import { PatternList } from "./mail/PatternList";
 import { PatternSheet } from "./mail/PatternSheet";
 import { useWallet } from "../wallet/WalletProvider";
 
@@ -206,37 +204,6 @@ function ConnectCard({
   );
 }
 
-/** A local time of day, and "today"/"yesterday" or the date before it. */
-function useWhen() {
-  const { t, i18n } = useTranslation();
-  const fmtDate = useDateFormat();
-  return (iso: string) => {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    const time = new Intl.DateTimeFormat(i18n.language, {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(d);
-    const day = (x: Date) => `${x.getFullYear()}-${x.getMonth()}-${x.getDate()}`;
-    const now = new Date();
-    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-    if (day(d) === day(now)) return t("mail.today", { time });
-    if (day(d) === day(yesterday)) return t("mail.yesterday", { time });
-    const local = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    return `${fmtDate(local)} ${time}`;
-  };
-}
-
-/** A local time of day, for something due in the next minutes. */
-function useClock() {
-  const { i18n } = useTranslation();
-  return (iso: string) => {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return new Intl.DateTimeFormat(i18n.language, { hour: "2-digit", minute: "2-digit" }).format(d);
-  };
-}
-
 function MailboxCard({
   walletId,
   mailbox,
@@ -250,10 +217,13 @@ function MailboxCard({
   const qc = useQueryClient();
   const confirm = useConfirm();
   const when = useWhen();
-  const clock = useClock();
-  const [foldersWanted, setFoldersWanted] = useState(false);
-  // The pattern editor: a pattern to edit, or the mail a new one starts from.
-  const [editor, setEditor] = useState<{ pattern?: MailPattern; mailId?: number } | null>(null);
+  // The pattern editor: the source, and a pattern to edit or the mail a new
+  // one starts from.
+  const [editor, setEditor] = useState<{
+    sourceId: number;
+    pattern?: MailPattern;
+    mailId?: number;
+  } | null>(null);
 
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ["mail", walletId] });
@@ -271,51 +241,32 @@ function MailboxCard({
     queryFn: () => listMailboxMessages(walletId, mailbox.id),
     placeholderData: (prev) => prev,
   });
-  const patterns = useQuery({
-    queryKey: ["mailPatterns", walletId, mailbox.id],
-    queryFn: () => listMailPatterns(walletId, mailbox.id),
-  });
   const accounts = useQuery({
     queryKey: ["accounts", walletId],
     queryFn: () => listAccounts(walletId),
   });
-  // Listing the folders logs in to the mailbox, so it waits until the reader
-  // opens the menu.
-  const folders = useQuery({
-    queryKey: ["mailFolders", walletId, mailbox.id],
-    queryFn: () => listMailboxFolders(walletId, mailbox.id),
-    enabled: foldersWanted,
-    staleTime: 5 * 60_000,
-  });
 
+  const checked = (res: MailCheckResult) =>
+    notifications.show({
+      color: "teal",
+      message:
+        res.new === 0
+          ? t("mail.checkedNone")
+          : res.created > 0
+            ? `${t("mail.checked", { count: res.new })} · ${t("mail.checkedCreated", { count: res.created })}`
+            : t("mail.checked", { count: res.new }),
+    });
   const check = useMutation({
     mutationFn: () => checkMailbox(walletId, mailbox.id),
     onSuccess: (res) => {
-      notifications.show({
-        color: "teal",
-        message:
-          res.new === 0
-            ? t("mail.checkedNone")
-            : res.created > 0
-              ? `${t("mail.checked", { count: res.new })} · ${t("mail.checkedCreated", { count: res.created })}`
-              : t("mail.checked", { count: res.new }),
-      });
+      checked(res);
       refresh();
     },
     onError,
   });
   const update = useMutation({
-    mutationFn: (patch: { folder?: string; paused?: boolean }) =>
-      updateMailbox(walletId, mailbox.id, patch),
-    onSuccess: (mb, patch) => {
-      if (patch.folder) {
-        notifications.show({
-          color: "teal",
-          message: t("mail.folderChanged", { folder: mb.folder }),
-        });
-      }
-      refresh();
-    },
+    mutationFn: (patch: { paused?: boolean }) => updateMailbox(walletId, mailbox.id, patch),
+    onSuccess: refresh,
     onError,
   });
   const remove = useMutation({
@@ -334,13 +285,30 @@ function MailboxCard({
     if (ok) remove.mutate();
   };
 
-  const folderOptions = Array.from(new Set([mailbox.folder, ...(folders.data?.folders ?? [])]));
   const list = messages.data ?? [];
+  const sources = mailbox.sources;
+  // A mail goes back to the source that read it; one whose source is gone, to
+  // the first.
+  const sourceFor = (m?: MailSummary) =>
+    sources.find((s) => s.id === m?.sourceId)?.id ?? sources[0]?.id;
+  const editPatternOf = async (m: MailSummary) => {
+    const sourceId = sourceFor(m);
+    if (sourceId == null || m.patternId == null) return;
+    const ref = { mailboxId: mailbox.id, sourceId };
+    const patterns = await qc.fetchQuery({
+      queryKey: ["mailPatterns", walletId, mailbox.id, sourceId],
+      queryFn: () => listMailPatterns(walletId, ref),
+    });
+    const p = patterns.find((x) => x.id === m.patternId);
+    if (p) setEditor({ sourceId, pattern: p });
+  };
 
-  const next = mailbox.nextCheckAt ? clock(mailbox.nextCheckAt) : "";
+  // The mailbox's own line is about the connection; each source says how its
+  // folder is doing in its band.
   const lastMail = mailbox.lastMailAt
     ? t("mail.lastMail", { when: when(mailbox.lastMailAt) })
     : null;
+  const broken = sources.filter((s) => s.status === "error").length;
   let statusColor = "teal";
   let parts: (string | null)[];
   if (mailbox.status === "reauth") {
@@ -348,23 +316,18 @@ function MailboxCard({
     parts = [mailbox.provider === "imap" ? t("mail.imap.statusReauth") : t("mail.statusReauth")];
   } else if (mailbox.status === "error") {
     statusColor = "red";
-    parts = [
-      t("mail.statusError", { detail: mailbox.statusDetail }),
-      mailbox.mode === "retry" && next ? t("mail.retryAt", { time: next }) : null,
-    ];
-  } else if (mailbox.mode === "idle") {
-    parts = [t("mail.listening"), lastMail, next ? t("mail.nextFull", { time: next }) : null];
-  } else if (mailbox.mode === "polling") {
-    parts = [t("mail.polling"), lastMail, next ? t("mail.nextPoll", { time: next }) : null];
-  } else if (mailbox.mode === "retry") {
-    // The server ended the connection, as servers do now and then.
+    parts = [t("mail.statusError", { detail: mailbox.statusDetail })];
+  } else if (broken > 0) {
     statusColor = "yellow";
-    parts = [t("mail.reconnecting"), next ? t("mail.retryAt", { time: next }) : null];
+    parts = [t("mail.sources.toFix", { count: broken, total: sources.length }), lastMail];
   } else {
+    const live = sources.filter((s) => s.mode !== "").length;
     parts = [
-      mailbox.lastCheckAt
-        ? t("mail.lastCheck", { when: when(mailbox.lastCheckAt) })
-        : t("mail.neverChecked"),
+      live > 0
+        ? t("mail.sources.live", { count: live })
+        : mailbox.lastCheckAt
+          ? t("mail.lastCheck", { when: when(mailbox.lastCheckAt) })
+          : t("mail.neverChecked"),
       lastMail,
     ];
   }
@@ -458,41 +421,16 @@ function MailboxCard({
           )}
         </Group>
 
-        <MailAI
-          // A change saved elsewhere starts the form again from it.
-          key={JSON.stringify(mailbox.ai)}
+        <Divider />
+
+        <MailSources
           walletId={walletId}
           mailbox={mailbox}
           accounts={accounts.data ?? []}
-          patterns={patterns.data ?? []}
-          beside={
-            <Select
-              wrapperProps={{ "data-tour": "mail-folder" }}
-              label={t("mail.folder")}
-              description={t("mail.folderHint")}
-              inputWrapperOrder={["label", "input", "description", "error"]}
-              data={folderOptions}
-              value={mailbox.folder}
-              allowDeselect={false}
-              searchable
-              onDropdownOpen={() => setFoldersWanted(true)}
-              nothingFoundMessage={folders.isFetching ? t("mail.loadingFolders") : undefined}
-              rightSection={folders.isFetching ? <Loader size="xs" /> : undefined}
-              onChange={(v) => v && v !== mailbox.folder && update.mutate({ folder: v })}
-              disabled={update.isPending}
-            />
-          }
-        />
-
-        <Divider />
-
-        <PatternList
-          walletId={walletId}
-          mailboxId={mailbox.id}
-          patterns={patterns.data ?? []}
-          canCreate={list.length > 0}
-          onNew={() => setEditor({})}
-          onEdit={(p) => setEditor({ pattern: p })}
+          hasMails={list.length > 0}
+          onNewPattern={(sourceId) => setEditor({ sourceId })}
+          onEditPattern={(sourceId, pattern) => setEditor({ sourceId, pattern })}
+          onChecked={checked}
         />
 
         <Divider />
@@ -501,17 +439,19 @@ function MailboxCard({
           mailboxId={mailbox.id}
           list={list}
           accounts={accounts.data ?? []}
-          onCreate={(mailId) => setEditor({ mailId })}
-          onFix={(patternId) => {
-            const p = patterns.data?.find((x) => x.id === patternId);
-            if (p) setEditor({ pattern: p });
+          showSource={sources.length > 1}
+          onCreate={(m) => {
+            const sourceId = sourceFor(m);
+            if (sourceId != null) setEditor({ sourceId, mailId: m.id });
           }}
+          onFix={(m) => void editPatternOf(m)}
         />
       </Stack>
       {editor && (
         <PatternSheet
           walletId={walletId}
           mailboxId={mailbox.id}
+          sourceId={editor.sourceId}
           pattern={editor.pattern}
           startMailId={editor.mailId}
           mails={list}
@@ -552,14 +492,17 @@ function LatestMails({
   mailboxId,
   list,
   accounts,
+  showSource,
   onCreate,
   onFix,
 }: {
   mailboxId: number;
   list: MailSummary[];
   accounts: Account[];
-  onCreate: (mailId: number) => void;
-  onFix: (patternId: number | null) => void;
+  /** The mailbox has more than one source: each mail names the one that read it. */
+  showSource: boolean;
+  onCreate: (mail: MailSummary) => void;
+  onFix: (mail: MailSummary) => void;
 }) {
   const { t } = useTranslation();
   const when = useWhen();
@@ -708,14 +651,38 @@ function LatestMails({
                       </Text>
                       {/* On a phone the outcome takes its own line, so the subject
                         keeps the width it needs. */}
-                      <Box w={{ base: "100%", sm: "auto" }} style={{ minWidth: 0 }}>
-                        <MailOutcome
-                          mail={m}
-                          accounts={accounts}
-                          onCreate={() => onCreate(m.id)}
-                          onFix={() => onFix(m.patternId)}
-                        />
-                      </Box>
+                      <Group
+                        gap={6}
+                        wrap="nowrap"
+                        w={{ base: "100%", sm: "auto" }}
+                        style={{ minWidth: 0 }}
+                      >
+                        {showSource && (
+                          <Text
+                            span
+                            size="11px"
+                            c="dimmed"
+                            title={t("mail.sources.readBy")}
+                            style={{
+                              flexShrink: 0,
+                              whiteSpace: "nowrap",
+                              border: "1px solid var(--mantine-color-default-border)",
+                              borderRadius: 4,
+                              padding: "1px 7px",
+                            }}
+                          >
+                            {m.sourceName ?? t("mail.sources.removed")}
+                          </Text>
+                        )}
+                        <Box style={{ minWidth: 0 }}>
+                          <MailOutcome
+                            mail={m}
+                            accounts={accounts}
+                            onCreate={() => onCreate(m)}
+                            onFix={() => onFix(m)}
+                          />
+                        </Box>
+                      </Group>
                     </Group>
                   ))}
                   {picked.length > RECENT_SHOWN && (

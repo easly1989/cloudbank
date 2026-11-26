@@ -16,25 +16,26 @@ import {
   deleteMailPattern,
   listAccounts,
   type MailPattern,
+  type MailSourceRef,
   reorderMailPatterns,
 } from "../../api/client";
 import { useConfirm } from "../../components/confirmContext";
 import { notifyError } from "../../notifyError";
 
 /**
- * A mailbox's patterns, in the order they are tried: the first that reads a
+ * A source's patterns, in the order they are tried: the first that reads a
  * mail wins. Drag by the grip, or Move up / down from ⋯ (#657).
  */
 export function PatternList({
   walletId,
-  mailboxId,
+  source,
   patterns,
   canCreate,
   onNew,
   onEdit,
 }: {
   walletId: number;
-  mailboxId: number;
+  source: MailSourceRef;
   patterns: MailPattern[];
   /** There is a mail to start a pattern from. */
   canCreate: boolean;
@@ -46,7 +47,7 @@ export function PatternList({
   const confirm = useConfirm();
   const [dragId, setDragId] = useState<number | null>(null);
   const [overId, setOverId] = useState<number | null>(null);
-  const key = ["mailPatterns", walletId, mailboxId];
+  const key = ["mailPatterns", walletId, source.mailboxId, source.sourceId];
 
   const accounts = useQuery({
     queryKey: ["accounts", walletId],
@@ -55,7 +56,7 @@ export function PatternList({
   const accountName = (id: number) => accounts.data?.find((a) => a.id === id)?.name ?? "";
 
   const reorder = useMutation({
-    mutationFn: (ids: number[]) => reorderMailPatterns(walletId, mailboxId, ids),
+    mutationFn: (ids: number[]) => reorderMailPatterns(walletId, source, ids),
     onMutate: (ids) => {
       const byId = new Map(patterns.map((p) => [p.id, p]));
       qc.setQueryData(
@@ -70,7 +71,7 @@ export function PatternList({
     },
   });
   const remove = useMutation({
-    mutationFn: (p: MailPattern) => deleteMailPattern(walletId, mailboxId, p.id),
+    mutationFn: (p: MailPattern) => deleteMailPattern(walletId, source, p.id),
     onSuccess: () => void qc.invalidateQueries({ queryKey: key }),
     onError: notifyError,
   });

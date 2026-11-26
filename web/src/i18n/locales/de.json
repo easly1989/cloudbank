@@ -1464,6 +1464,31 @@
       "save": "Speichern",
       "saved": "Wie E-Mails gelesen werden, ist gespeichert.",
       "readByAI": "Von der KI gelesen"
+    },
+    "sources": {
+      "title": "Quellen",
+      "count": "{{count}} von {{max}}",
+      "limit": "Höchstens {{max}} Quellen pro Postfach",
+      "new": "Neue Quelle",
+      "orderHint": "Eine E-Mail, die mehrere Quellen lesen könnten, geht an die erste in dieser Reihenfolge.",
+      "name": "Name",
+      "namePlaceholder": "z. B. Karten",
+      "add": "Quelle hinzufügen",
+      "actions": "Aktionen für {{name}}",
+      "moveUp": "Nach oben",
+      "moveDown": "Nach unten",
+      "delete": "Quelle löschen",
+      "deleteTitle": "{{name}} löschen?",
+      "deleteBody": "Ihre Muster werden gelöscht. Die E-Mails, die sie gelesen hat, bleiben unter Neueste E-Mails.",
+      "lastSource": "Ein Postfach behält mindestens eine Quelle.",
+      "statusError": "Der Ordner konnte nicht gelesen werden: {{detail}}",
+      "folderGone": "Ordner nicht gefunden",
+      "toFix_one": "{{count}} von {{total}} Quellen braucht Aufmerksamkeit",
+      "toFix_other": "{{count}} von {{total}} Quellen brauchen Aufmerksamkeit",
+      "live_one": "{{count}} Quelle hört zu",
+      "live_other": "{{count}} Quellen hören zu",
+      "readBy": "Die Quelle, die sie gelesen hat",
+      "removed": "Gelöschte Quelle"
     }
   },
   "search": {
@@ -3218,17 +3243,9 @@
         "title": "Dein Postfach",
         "body": "CloudBank bleibt verbunden und liest jede neue E-Mail, sobald sie ankommt. Jetzt prüfen liest sofort; pausieren oder trennen kannst du es unter Mehr."
       },
-      "folder": {
-        "title": "Ein Ordner",
-        "body": "Gelesen werden nur die E-Mails, die ab jetzt in diesem Ordner ankommen. Am sichersten ist ein Ordner, der nur die E-Mails der Bank bekommt."
-      },
-      "mode": {
-        "title": "Wie E-Mails gelesen werden",
-        "body": "Ein Muster liest eine Art E-Mail und schickt sie nirgendwohin. Die KI kann die E-Mails lesen, die kein Muster liest, sobald sie unter Einstellungen › KI eingerichtet ist."
-      },
-      "patterns": {
-        "title": "Muster",
-        "body": "Jedes macht aus einer Art Bank-E-Mail eine Buchung auf dem gewählten Konto. Das erste Muster, das eine E-Mail liest, gewinnt: Zieh sie, um die Reihenfolge zu ändern."
+      "sources": {
+        "title": "Quellen",
+        "body": "Jede Quelle liest einen Ordner, mit eigenen Mustern oder mit der KI. Öffne eine, um ihren Ordner und die Leseart zu wählen. Eine E-Mail, die zwei Quellen lesen könnten, geht an die erste: Ändere die Reihenfolge über ⋯."
       },
       "history": {
         "title": "Neueste E-Mails",

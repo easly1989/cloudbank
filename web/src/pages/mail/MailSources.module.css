@@ -1,0 +1,67 @@
+/* A mailbox's sources (#794): bands in one box, as in the mockup's variant C. */
+.box {
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-default);
+  overflow: hidden;
+}
+.band + .band {
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px 0 4px;
+  background: #f6f7f9;
+}
+[data-mantine-color-scheme="dark"] .head {
+  background: #262a30;
+}
+.order {
+  width: 14px;
+  flex-shrink: 0;
+  text-align: right;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--mantine-color-dimmed);
+}
+/* The disclosure takes the free width, so its name truncates first. */
+.head :global(.cb-disclosure) {
+  flex: 1;
+  min-width: 0;
+  margin-inline-start: 0;
+}
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 45%;
+  font-size: 12px;
+  color: var(--mantine-color-dimmed);
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  padding: 16px;
+}
+/* Wide enough: the settings on the left, the patterns on the right. */
+@media (min-width: 64em) {
+  .body {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  }
+}
+/* On a phone the band keeps the name; folder and mode are inside. */
+@media (max-width: 47.99em) {
+  .metaText {
+    display: none;
+  }
+}

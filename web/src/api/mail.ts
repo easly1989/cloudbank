@@ -6,7 +6,6 @@ export interface Mailbox {
   id: number;
   provider: "microsoft" | "imap";
   address: string;
-  folder: string;
   paused: boolean;
   /**
    * "reauth" means the Microsoft sign-in has to be done again, or, for IMAP,
@@ -14,19 +13,41 @@ export interface Mailbox {
    */
   status: "ok" | "error" | "reauth";
   statusDetail: string;
-  /** Last check, RFC3339 UTC. */
+  /** Last check of any source, RFC3339 UTC. */
   lastCheckAt: string | null;
   /** Arrival of the newest mail read, RFC3339 UTC. */
   lastMailAt: string | null;
   createdAt: string;
   /** Where an IMAP mailbox's server is; null for Microsoft. */
   imap: IMAPSettings | null;
-  /** How the mailbox's mails are read, with the patterns, the AI or both (#659). */
-  ai: MailboxAI;
   /** Whether whoever connected the mailbox has AI set up. */
   aiReady: boolean;
+  /** Its sources (#794), in the order a mail is offered to them: 1 to 5. */
+  sources: MailSource[];
+}
+
+/** A mailbox may read at most this many folders, each its own source. */
+export const MAX_MAIL_SOURCES = 5;
+
+/**
+ * One folder of a mailbox (#794), with its own name, patterns and AI settings.
+ * A mail two sources would read goes to the first in the mailbox's order.
+ */
+export interface MailSource {
+  id: number;
+  mailboxId: number;
+  position: number;
+  name: string;
+  folder: string;
+  /** How its mails are read, with the patterns, the AI or both (#659). */
+  ai: MailSourceAI;
+  /** "error": its folder cannot be read (gone or renamed). */
+  status: "ok" | "error";
+  statusDetail: string;
+  /** Last check of its folder, RFC3339 UTC. */
+  lastCheckAt: string | null;
   /**
-   * How the server reads the mailbox now: "idle" (told about new mail),
+   * How the server reads its folder now: "idle" (told about new mail),
    * "polling" (asks on a timer), "retry" (lost the connection, about to try
    * again), or "" when nothing listens.
    */
@@ -36,11 +57,11 @@ export interface Mailbox {
 }
 
 /**
- * How a mailbox uses the AI (#659): the order of patterns and AI, the account
+ * How a source uses the AI (#659): the order of patterns and AI, the account
  * what the AI reads goes to, the field its description fills, and the only
  * senders whose mails are sent to it.
  */
-export interface MailboxAI {
+export interface MailSourceAI {
   mode: "patterns" | "patterns_ai" | "ai_patterns" | "ai";
   accountId: number | null;
   field: "memo" | "payee";
@@ -116,6 +137,9 @@ export interface MailSummary {
   payee: string | null;
   /** The AI, not a pattern, read the mail. */
   byAi: boolean;
+  /** The source that read it, and its name; null once that source is removed. */
+  sourceId: number | null;
+  sourceName: string | null;
 }
 
 /** One mail with its text, for the pattern editor. */
@@ -158,6 +182,7 @@ export interface MailPatternInput {
 export interface MailPattern extends MailPatternInput {
   id: number;
   mailboxId: number;
+  sourceId: number;
   position: number;
 }
 
@@ -218,14 +243,8 @@ export const pollMicrosoftMail = (walletId: number, flowId: string) =>
 export const connectIMAPMail = (walletId: number, input: IMAPMailboxInput) =>
   api.post<Mailbox>(`${base(walletId)}/imap`, input);
 
-export const updateMailboxAI = (walletId: number, id: number, ai: MailboxAI) =>
-  api.put<Mailbox>(`${base(walletId)}/mailboxes/${id}/ai`, ai);
-
-export const updateMailbox = (
-  walletId: number,
-  id: number,
-  patch: { folder?: string; paused?: boolean },
-) => api.patch<Mailbox>(`${base(walletId)}/mailboxes/${id}`, patch);
+export const updateMailbox = (walletId: number, id: number, patch: { paused?: boolean }) =>
+  api.patch<Mailbox>(`${base(walletId)}/mailboxes/${id}`, patch);
 
 export const removeMailbox = (walletId: number, id: number) =>
   api.del<void>(`${base(walletId)}/mailboxes/${id}`);
@@ -242,31 +261,66 @@ export const listMailboxMessages = (walletId: number, id: number) =>
 export const getMailboxMessage = (walletId: number, id: number, messageId: number) =>
   api.get<MailDetail>(`${base(walletId)}/mailboxes/${id}/messages/${messageId}`);
 
-const patterns = (walletId: number, id: number) => `${base(walletId)}/mailboxes/${id}/patterns`;
+/** Where a source lives: its mailbox and its own id. */
+export interface MailSourceRef {
+  mailboxId: number;
+  sourceId: number;
+}
 
-export const listMailPatterns = (walletId: number, id: number) =>
-  api.get<MailPattern[]>(patterns(walletId, id));
+const sources = (walletId: number, mailboxId: number) =>
+  `${base(walletId)}/mailboxes/${mailboxId}/sources`;
+const source = (walletId: number, s: MailSourceRef) =>
+  `${sources(walletId, s.mailboxId)}/${s.sourceId}`;
 
-export const createMailPattern = (walletId: number, id: number, p: MailPatternInput) =>
-  api.post<MailPattern>(patterns(walletId, id), p);
+export const createMailSource = (
+  walletId: number,
+  mailboxId: number,
+  input: { name: string; folder: string },
+) => api.post<MailSource>(sources(walletId, mailboxId), input);
+
+export const updateMailSource = (
+  walletId: number,
+  s: MailSourceRef,
+  patch: { name?: string; folder?: string },
+) => api.patch<MailSource>(source(walletId, s), patch);
+
+export const updateMailSourceAI = (walletId: number, s: MailSourceRef, ai: MailSourceAI) =>
+  api.put<MailSource>(`${source(walletId, s)}/ai`, ai);
+
+export const deleteMailSource = (walletId: number, s: MailSourceRef) =>
+  api.del<void>(source(walletId, s));
+
+export const reorderMailSources = (walletId: number, mailboxId: number, ids: number[]) =>
+  api.put<Mailbox>(`${sources(walletId, mailboxId)}/order`, { ids });
+
+export const checkMailSource = (walletId: number, s: MailSourceRef) =>
+  api.post<MailCheckResult>(`${source(walletId, s)}/check`);
+
+const patterns = (walletId: number, s: MailSourceRef) => `${source(walletId, s)}/patterns`;
+
+export const listMailPatterns = (walletId: number, s: MailSourceRef) =>
+  api.get<MailPattern[]>(patterns(walletId, s));
+
+export const createMailPattern = (walletId: number, s: MailSourceRef, p: MailPatternInput) =>
+  api.post<MailPattern>(patterns(walletId, s), p);
 
 export const updateMailPattern = (
   walletId: number,
-  id: number,
+  s: MailSourceRef,
   patternId: number,
   p: MailPatternInput,
-) => api.put<MailPattern>(`${patterns(walletId, id)}/${patternId}`, p);
+) => api.put<MailPattern>(`${patterns(walletId, s)}/${patternId}`, p);
 
-export const deleteMailPattern = (walletId: number, id: number, patternId: number) =>
-  api.del<void>(`${patterns(walletId, id)}/${patternId}`);
+export const deleteMailPattern = (walletId: number, s: MailSourceRef, patternId: number) =>
+  api.del<void>(`${patterns(walletId, s)}/${patternId}`);
 
-export const reorderMailPatterns = (walletId: number, id: number, ids: number[]) =>
-  api.put<MailPattern[]>(`${patterns(walletId, id)}/order`, { ids });
+export const reorderMailPatterns = (walletId: number, s: MailSourceRef, ids: number[]) =>
+  api.put<MailPattern[]>(`${patterns(walletId, s)}/order`, { ids });
 
 /** Tries a pattern, saved or not, on the sender's latest mails; writes nothing. */
-export const testMailPattern = (walletId: number, id: number, p: MailPatternInput) =>
-  api.post<MailPatternTest>(`${patterns(walletId, id)}/test`, p);
+export const testMailPattern = (walletId: number, s: MailSourceRef, p: MailPatternInput) =>
+  api.post<MailPatternTest>(`${patterns(walletId, s)}/test`, p);
 
-/** Runs a saved pattern over the mails that made no transaction yet. */
-export const applyMailPattern = (walletId: number, id: number, patternId: number) =>
-  api.post<MailApplyResult>(`${patterns(walletId, id)}/${patternId}/apply`);
+/** Runs a saved pattern over the mails of its folder that made no transaction yet. */
+export const applyMailPattern = (walletId: number, s: MailSourceRef, patternId: number) =>
+  api.post<MailApplyResult>(`${patterns(walletId, s)}/${patternId}/apply`);
