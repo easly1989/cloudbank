@@ -1029,18 +1029,19 @@ body {
  *
  * The tint is painted as a gradient rather than a background colour: the row
  * sets its own background inline for selection and cursor, and an inline style
- * wins over a class. */
+ * wins over a class. The drop is `translate`, not `transform`, which holds the
+ * row's place in the virtual list: animating that put the row at the top. */
 @keyframes cb-arrive {
   0% {
-    transform: translateY(-6px);
+    translate: 0 -6px;
     background-image: linear-gradient(var(--cb-arrival-tint), var(--cb-arrival-tint));
   }
   55% {
-    transform: translateY(0);
+    translate: 0 0;
     background-image: linear-gradient(var(--cb-arrival-tint), var(--cb-arrival-tint));
   }
   100% {
-    transform: translateY(0);
+    translate: 0 0;
     background-image: none;
   }
 }
