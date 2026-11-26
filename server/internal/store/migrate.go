@@ -18,7 +18,11 @@ var migrationsFS embed.FS
 //
 // Migrations are forward-only: files are named NNNN_description.sql and, once
 // released, are never edited — a new file is added instead.
-func migrate(db *sql.DB) error {
+func migrate(db *sql.DB) error { return migrateUpTo(db, "") }
+
+// migrateUpTo is migrate stopping after the file named last ("" for all), so
+// a test can put data in an older schema and migrate it on.
+func migrateUpTo(db *sql.DB, last string) error {
 	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
 		version    TEXT PRIMARY KEY,
 		applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
@@ -39,6 +43,9 @@ func migrate(db *sql.DB) error {
 	sort.Strings(names)
 
 	for _, name := range names {
+		if last != "" && name > last {
+			break
+		}
 		applied, err := migrationApplied(db, name)
 		if err != nil {
 			return err
