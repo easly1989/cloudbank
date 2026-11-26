@@ -68,18 +68,23 @@ func TestMailStaysInItsWallet(t *testing.T) {
 		{http.MethodPost, base + "/imap"},
 		{http.MethodGet, base + "/mailboxes/1/folders"},
 		{http.MethodPatch, base + "/mailboxes/1"},
-		{http.MethodPut, base + "/mailboxes/1/ai"},
 		{http.MethodPost, base + "/mailboxes/1/check"},
 		{http.MethodGet, base + "/mailboxes/1/messages"},
 		{http.MethodDelete, base + "/mailboxes/1"},
 		{http.MethodGet, base + "/mailboxes/1/messages/1"},
-		{http.MethodGet, base + "/mailboxes/1/patterns"},
-		{http.MethodPost, base + "/mailboxes/1/patterns"},
-		{http.MethodPut, base + "/mailboxes/1/patterns/order"},
-		{http.MethodPost, base + "/mailboxes/1/patterns/test"},
-		{http.MethodPut, base + "/mailboxes/1/patterns/1"},
-		{http.MethodDelete, base + "/mailboxes/1/patterns/1"},
-		{http.MethodPost, base + "/mailboxes/1/patterns/1/apply"},
+		{http.MethodPost, base + "/mailboxes/1/sources"},
+		{http.MethodPut, base + "/mailboxes/1/sources/order"},
+		{http.MethodPatch, base + "/mailboxes/1/sources/1"},
+		{http.MethodDelete, base + "/mailboxes/1/sources/1"},
+		{http.MethodPut, base + "/mailboxes/1/sources/1/ai"},
+		{http.MethodPost, base + "/mailboxes/1/sources/1/check"},
+		{http.MethodGet, base + "/mailboxes/1/sources/1/patterns"},
+		{http.MethodPost, base + "/mailboxes/1/sources/1/patterns"},
+		{http.MethodPut, base + "/mailboxes/1/sources/1/patterns/order"},
+		{http.MethodPost, base + "/mailboxes/1/sources/1/patterns/test"},
+		{http.MethodPut, base + "/mailboxes/1/sources/1/patterns/1"},
+		{http.MethodDelete, base + "/mailboxes/1/sources/1/patterns/1"},
+		{http.MethodPost, base + "/mailboxes/1/sources/1/patterns/1/apply"},
 	} {
 		resp := bob.do(r.method, r.path, map[string]any{}, true)
 		resp.Body.Close()
@@ -126,14 +131,9 @@ func TestMailPatternsAreCheckedByTheServer(t *testing.T) {
 	_ = json.NewDecoder(resp.Body).Decode(&acc)
 	resp.Body.Close()
 	accID := acc.ID
-	ctx := context.Background()
-	mb, err := db.New(c.st.Write()).InsertMailbox(ctx, db.InsertMailboxParams{
-		WalletID: wid, Provider: "microsoft", Address: "notifiche.demo@example.com", Secret: "x",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	base := "/api/v1/wallets/" + ws + "/mail/mailboxes/" + strconv.FormatInt(mb.ID, 10) + "/patterns"
+	mb := insertMailbox(t, c, wid, "notifiche.demo@example.com", 1)
+	base := "/api/v1/wallets/" + ws + "/mail/mailboxes/" + strconv.FormatInt(mb.id, 10) +
+		"/sources/" + strconv.FormatInt(mb.sources[0], 10) + "/patterns"
 	pattern := func(body string) map[string]any {
 		return map[string]any{"sender": "avvisi@banca.example", "body": body, "accountId": accID}
 	}
@@ -234,13 +234,9 @@ func TestMailAINeedsTheAISetUp(t *testing.T) {
 
 	c := newTestAPI(t)
 	wid := createWalletWithBase(t, c, "EUR")
-	mb, err := db.New(c.st.Write()).InsertMailbox(context.Background(), db.InsertMailboxParams{
-		WalletID: wid, Provider: "microsoft", Address: "notifiche.demo@example.com", Secret: "x",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	path := "/api/v1/wallets/" + strconv.FormatInt(wid, 10) + "/mail/mailboxes/" + strconv.FormatInt(mb.ID, 10) + "/ai"
+	mb := insertMailbox(t, c, wid, "notifiche.demo@example.com", 1)
+	path := "/api/v1/wallets/" + strconv.FormatInt(wid, 10) + "/mail/mailboxes/" + strconv.FormatInt(mb.id, 10) +
+		"/sources/" + strconv.FormatInt(mb.sources[0], 10) + "/ai"
 	resp := c.do(http.MethodPut, path, map[string]any{"mode": "ai", "senders": []string{"banca.example"}}, true)
 	var e struct {
 		Error struct {
@@ -254,14 +250,115 @@ func TestMailAINeedsTheAISetUp(t *testing.T) {
 	}
 	resp = c.do(http.MethodPut, path, map[string]any{"mode": "patterns"}, true)
 	var got struct {
+		ID int64 `json:"id"`
 		AI struct {
 			Mode string `json:"mode"`
 		} `json:"ai"`
-		AIReady bool `json:"aiReady"`
 	}
 	_ = json.NewDecoder(resp.Body).Decode(&got)
 	resp.Body.Close()
-	if resp.StatusCode != http.StatusOK || got.AI.Mode != "patterns" || got.AIReady {
+	if resp.StatusCode != http.StatusOK || got.AI.Mode != "patterns" || got.ID != mb.sources[0] {
 		t.Fatalf("patterns = %d %+v", resp.StatusCode, got)
+	}
+}
+
+// testMailbox is a mailbox put straight in the database, with its sources.
+type testMailbox struct {
+	id      int64
+	sources []int64
+}
+
+func insertMailbox(t *testing.T, c *testClient, wid int64, address string, sources int) testMailbox {
+	t.Helper()
+	ctx := context.Background()
+	q := db.New(c.st.Write())
+	mb, err := q.InsertMailbox(ctx, db.InsertMailboxParams{WalletID: wid, Provider: "microsoft", Address: address, Secret: "x"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := testMailbox{id: mb.ID}
+	for i := 0; i < sources; i++ {
+		s, err := q.InsertMailSource(ctx, db.InsertMailSourceParams{MailboxID: mb.ID, Name: "Fonte " + strconv.Itoa(i+1), Folder: "INBOX"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		out.sources = append(out.sources, s.ID)
+	}
+	return out
+}
+
+func errorCode(t *testing.T, resp *http.Response) string {
+	t.Helper()
+	defer resp.Body.Close()
+	var e struct {
+		Error struct {
+			Code string `json:"code"`
+		} `json:"error"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&e)
+	return e.Error.Code
+}
+
+// A mailbox has 1 to 5 sources with names of their own, and a source is
+// reached only through its own mailbox.
+func TestMailSourcesLimitsAndIsolation(t *testing.T) {
+	k, err := secrets.New("test-secret-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	secrets.Configure(k)
+	t.Cleanup(func() { secrets.Configure(nil) })
+
+	c := newTestAPI(t)
+	wid := createWalletWithBase(t, c, "EUR")
+	base := "/api/v1/wallets/" + strconv.FormatInt(wid, 10) + "/mail/mailboxes/"
+	one := insertMailbox(t, c, wid, "uno.demo@example.com", 1)
+	full := insertMailbox(t, c, wid, "pieno.demo@example.com", 5)
+	oneBase := base + strconv.FormatInt(one.id, 10) + "/sources"
+	fullBase := base + strconv.FormatInt(full.id, 10) + "/sources"
+
+	for _, tc := range []struct {
+		method, path string
+		body         any
+		status       int
+		code         string
+	}{
+		{http.MethodPost, fullBase, map[string]any{"name": "Sesta", "folder": "INBOX"}, http.StatusConflict, "source_limit"},
+		{http.MethodPost, oneBase, map[string]any{"name": " FONTE 1 ", "folder": "Banca"}, http.StatusConflict, "source_name_taken"},
+		{http.MethodPost, oneBase, map[string]any{"name": " ", "folder": "Banca"}, http.StatusBadRequest, "invalid"},
+		{http.MethodPatch, fullBase + "/" + strconv.FormatInt(full.sources[1], 10), map[string]any{"name": "fonte 1"}, http.StatusConflict, "source_name_taken"},
+		{http.MethodDelete, oneBase + "/" + strconv.FormatInt(one.sources[0], 10), nil, http.StatusConflict, "last_source"},
+		{http.MethodPut, oneBase + "/order", map[string]any{"ids": []int64{full.sources[0]}}, http.StatusBadRequest, "invalid"},
+		// Another mailbox's source, through this one.
+		{http.MethodPatch, oneBase + "/" + strconv.FormatInt(full.sources[0], 10), map[string]any{"name": "X"}, http.StatusNotFound, "not_found"},
+		{http.MethodDelete, oneBase + "/" + strconv.FormatInt(full.sources[0], 10), nil, http.StatusNotFound, "not_found"},
+		{http.MethodPut, oneBase + "/" + strconv.FormatInt(full.sources[0], 10) + "/ai", map[string]any{"mode": "patterns"}, http.StatusNotFound, "not_found"},
+		{http.MethodPost, oneBase + "/" + strconv.FormatInt(full.sources[0], 10) + "/check", nil, http.StatusNotFound, "not_found"},
+		{http.MethodGet, oneBase + "/" + strconv.FormatInt(full.sources[0], 10) + "/patterns", nil, http.StatusNotFound, "not_found"},
+	} {
+		resp := c.do(tc.method, tc.path, tc.body, tc.method != http.MethodGet)
+		if code := errorCode(t, resp); resp.StatusCode != tc.status || code != tc.code {
+			t.Errorf("%s %s = %d %q, want %d %q", tc.method, tc.path, resp.StatusCode, code, tc.status, tc.code)
+		}
+	}
+
+	// Removing one of several works, and the rest stay in order.
+	resp := c.do(http.MethodDelete, fullBase+"/"+strconv.FormatInt(full.sources[0], 10), nil, true)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("delete = %d", resp.StatusCode)
+	}
+	order := []int64{full.sources[4], full.sources[3], full.sources[2], full.sources[1]}
+	resp = c.do(http.MethodPut, fullBase+"/order", map[string]any{"ids": order}, true)
+	var mb struct {
+		Sources []struct {
+			ID   int64  `json:"id"`
+			Mode string `json:"mode"`
+		} `json:"sources"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&mb)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK || len(mb.Sources) != 4 || mb.Sources[0].ID != order[0] || mb.Sources[3].ID != order[3] {
+		t.Fatalf("reorder = %d %+v", resp.StatusCode, mb)
 	}
 }
