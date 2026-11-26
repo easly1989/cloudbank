@@ -30,8 +30,8 @@ type IMAPSettings struct {
 
 // IMAPInput is what the connect form sends (#658). Username defaults to the
 // address. A MailboxID above zero gives that IMAP mailbox new settings (a new
-// app password, most often) and keeps its folder and history; Address is then
-// ignored.
+// app password, most often) and keeps its sources and history; Address is
+// then ignored.
 type IMAPInput struct {
 	MailboxID int64  `json:"mailboxId"`
 	Address   string `json:"address"`
@@ -149,16 +149,17 @@ func (s *Service) ConnectIMAP(ctx context.Context, walletID, userID int64, in IM
 			ImapSecurity: in.Security, ImapUsername: in.Username, ID: id,
 		})
 	} else {
-		cur, cerr := sess.End("INBOX")
+		cur, cerr := sess.End(firstSource)
 		if cerr != nil {
 			return Mailbox{}, cerr
 		}
 		var mb db.Mailbox
-		mb, err = s.q.InsertIMAPMailbox(ctx, db.InsertIMAPMailboxParams{
-			WalletID: walletID, CreatedBy: sql.NullInt64{Int64: userID, Valid: userID > 0},
-			Address: in.Address, Secret: s.seal(in.Password), ImapHost: in.Host, ImapPort: int64(in.Port),
-			ImapSecurity: in.Security, ImapUsername: in.Username,
-			UidValidity: int64(cur.UIDValidity), LastUid: int64(cur.LastUID),
+		mb, err = s.insertMailbox(ctx, cur, func(q *db.Queries) (db.Mailbox, error) {
+			return q.InsertIMAPMailbox(ctx, db.InsertIMAPMailboxParams{
+				WalletID: walletID, CreatedBy: sql.NullInt64{Int64: userID, Valid: userID > 0},
+				Address: in.Address, Secret: s.seal(in.Password), ImapHost: in.Host, ImapPort: int64(in.Port),
+				ImapSecurity: in.Security, ImapUsername: in.Username,
+			})
 		})
 		id = mb.ID
 	}

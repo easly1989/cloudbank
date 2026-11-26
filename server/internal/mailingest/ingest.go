@@ -40,7 +40,7 @@ func importRef(messageID string) string {
 // patternOf turns a stored pattern into the API's.
 func patternOf(r db.MailPattern) Pattern {
 	p := Pattern{
-		ID: r.ID, MailboxID: r.MailboxID, Position: int(r.Position), Name: r.Name, Sender: r.Sender,
+		ID: r.ID, MailboxID: r.MailboxID, SourceID: r.SourceID.Int64, Position: int(r.Position), Name: r.Name, Sender: r.Sender,
 		SubjectMode: r.SubjectMode, Subject: r.Subject, Body: r.Body, AccountID: r.AccountID,
 		Direction: r.Direction, InWords: r.InWords, PaymentMode: int(r.PaymentMode),
 		ApplyRules: r.ApplyRules != 0, DateFormat: r.DateFormat, RequireAuth: r.RequireAuth != 0,
@@ -53,10 +53,10 @@ func patternOf(r db.MailPattern) Pattern {
 	return p
 }
 
-// loadPatterns returns a mailbox's patterns in the order they are tried. One
+// loadPatterns returns a source's patterns in the order they are tried. One
 // that no longer compiles is left out, not allowed to stop the others.
-func (s *Service) loadPatterns(ctx context.Context, mailboxID int64) ([]*compiled, error) {
-	rows, err := s.q.ListMailPatterns(ctx, mailboxID)
+func (s *Service) loadPatterns(ctx context.Context, sourceID int64) ([]*compiled, error) {
+	rows, err := s.q.ListMailPatterns(ctx, sql.NullInt64{Int64: sourceID, Valid: true})
 	if err != nil {
 		return nil, err
 	}
@@ -103,10 +103,11 @@ type outcome struct {
 	byAI          bool
 }
 
-// process reads one stored mail with the given patterns only and records what
-// became of it. The caller holds the mailbox's lock.
-func (s *Service) process(ctx context.Context, walletID int64, m db.MailMessage, patterns []*compiled) outcome {
-	return s.save(ctx, m, s.byPatterns(ctx, walletID, m, patterns))
+// process reads one stored mail with the given patterns of a source only and
+// records what became of it, the mail now that source's. The caller holds the
+// mailbox's lock.
+func (s *Service) process(ctx context.Context, walletID, sourceID int64, m db.MailMessage, patterns []*compiled) outcome {
+	return s.save(ctx, m, sourceID, s.byPatterns(ctx, walletID, m, patterns))
 }
 
 // byPatterns reads a mail with the patterns and writes what the first that
@@ -122,13 +123,14 @@ func (s *Service) byPatterns(ctx context.Context, walletID int64, m db.MailMessa
 	return s.insertTx(ctx, walletID, m, ev.tx, ev.pattern.p.ID)
 }
 
-// save records what became of a mail.
-func (s *Service) save(ctx context.Context, m db.MailMessage, out outcome) outcome {
+// save records what became of a mail, and the source that read it.
+func (s *Service) save(ctx context.Context, m db.MailMessage, sourceID int64, out outcome) outcome {
 	err := s.q.SetMailMessageOutcome(ctx, db.SetMailMessageOutcomeParams{
 		Outcome: out.name, Detail: out.detail,
 		PatternID:     sql.NullInt64{Int64: out.patternID, Valid: out.patternID > 0},
 		TransactionID: sql.NullInt64{Int64: out.transactionID, Valid: out.transactionID > 0},
 		ByAi:          flag(out.byAI),
+		SourceID:      sql.NullInt64{Int64: sourceID, Valid: true},
 		ID:            m.ID,
 	})
 	if err != nil {

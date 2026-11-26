@@ -17,6 +17,7 @@ import (
 type Pattern struct {
 	ID        int64  `json:"id"`
 	MailboxID int64  `json:"mailboxId"`
+	SourceID  int64  `json:"sourceId"`
 	Position  int    `json:"position"`
 	Name      string `json:"name"`
 	// Sender is the From address the pattern is for, compared without case.

@@ -12,7 +12,7 @@ import (
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
-// How a mailbox's mails are read (#659): with the patterns only, the patterns
+// How a source's mails are read (#659): with the patterns only, the patterns
 // and then the AI for what none read, the AI and then the patterns for what
 // it did not take for a payment, or the AI only.
 const (
@@ -37,21 +37,21 @@ type AIReader interface {
 	ReadBankMail(ctx context.Context, userID, walletID int64, subject, body, received string) (*ai.MailReading, error)
 }
 
-// SetAI wires the AI. Without it a mailbox reads with its patterns only.
+// SetAI wires the AI. Without it a source reads with its patterns only.
 func (s *Service) SetAI(r AIReader) { s.reader = r }
 
-// MailboxAI is how a mailbox uses the AI. The AI never chooses the account:
+// SourceAI is how a source uses the AI. The AI never chooses the account:
 // what it reads goes to AccountID. Only mails from Senders (addresses or
 // domains) are ever sent to it.
-type MailboxAI struct {
+type SourceAI struct {
 	Mode      string   `json:"mode"`
 	AccountID *int64   `json:"accountId"`
 	Field     string   `json:"field"`
 	Senders   []string `json:"senders"`
 }
 
-func aiOf(m db.Mailbox) MailboxAI {
-	out := MailboxAI{Mode: m.AiMode, Field: m.AiField, Senders: splitSenders(m.AiSenders)}
+func aiOf(m db.MailSource) SourceAI {
+	out := SourceAI{Mode: m.AiMode, Field: m.AiField, Senders: splitSenders(m.AiSenders)}
 	if m.AiAccountID.Valid {
 		out.AccountID = &m.AiAccountID.Int64
 	}
@@ -73,16 +73,16 @@ func (s *Service) aiReady(ctx context.Context, m db.Mailbox) bool {
 	return s.reader != nil && m.CreatedBy.Valid && s.reader.Configured(ctx, m.CreatedBy.Int64)
 }
 
-// UpdateAI sets how a mailbox uses the AI. A mode with the AI needs it set up
-// by whoever connected the mailbox, an account of the wallet and at least one
-// sender.
-func (s *Service) UpdateAI(ctx context.Context, walletID, id int64, in MailboxAI) (Mailbox, error) {
-	lock := s.lockFor(id)
+// UpdateSourceAI sets how a source uses the AI. A mode with the AI needs it
+// set up by whoever connected the mailbox, an account of the wallet and at
+// least one sender.
+func (s *Service) UpdateSourceAI(ctx context.Context, walletID, mailboxID, sourceID int64, in SourceAI) (Source, error) {
+	lock := s.lockFor(mailboxID)
 	lock.Lock()
 	defer lock.Unlock()
-	mb, err := s.get(ctx, walletID, id)
+	mb, src, err := s.getSource(ctx, walletID, mailboxID, sourceID)
 	if err != nil {
-		return Mailbox{}, err
+		return Source{}, err
 	}
 	if in.Field == "" {
 		in.Field = AIFieldMemo
@@ -91,7 +91,7 @@ func (s *Service) UpdateAI(ctx context.Context, walletID, id int64, in MailboxAI
 	for _, raw := range in.Senders {
 		for _, p := range splitSenders(raw) {
 			if strings.ContainsAny(p, " /\\") || !strings.Contains(p, ".") {
-				return Mailbox{}, fmt.Errorf("%w: %q is not an address or a domain", ErrInvalid, p)
+				return Source{}, fmt.Errorf("%w: %q is not an address or a domain", ErrInvalid, p)
 			}
 			senders = append(senders, p)
 		}
@@ -99,7 +99,7 @@ func (s *Service) UpdateAI(ctx context.Context, walletID, id int64, in MailboxAI
 	account := sql.NullInt64{}
 	if in.AccountID != nil {
 		if _, ok := s.fracOf(ctx, walletID)(*in.AccountID); !ok {
-			return Mailbox{}, fmt.Errorf("%w: the account is not in this wallet", ErrInvalid)
+			return Source{}, fmt.Errorf("%w: the account is not in this wallet", ErrInvalid)
 		}
 		account = sql.NullInt64{Int64: *in.AccountID, Valid: true}
 	}
@@ -107,26 +107,26 @@ func (s *Service) UpdateAI(ctx context.Context, walletID, id int64, in MailboxAI
 	case AIModePatterns:
 	case AIModePatternsAI, AIModeAIPatterns, AIModeAI:
 		if !s.aiReady(ctx, mb) {
-			return Mailbox{}, ErrAINotConfigured
+			return Source{}, ErrAINotConfigured
 		}
 		if !account.Valid {
-			return Mailbox{}, fmt.Errorf("%w: choose the account for what the AI reads", ErrInvalid)
+			return Source{}, fmt.Errorf("%w: choose the account for what the AI reads", ErrInvalid)
 		}
 		if len(senders) == 0 {
-			return Mailbox{}, fmt.Errorf("%w: name the bank's senders", ErrInvalid)
+			return Source{}, fmt.Errorf("%w: name the bank's senders", ErrInvalid)
 		}
 	default:
-		return Mailbox{}, fmt.Errorf("%w: unknown mode %q", ErrInvalid, in.Mode)
+		return Source{}, fmt.Errorf("%w: unknown mode %q", ErrInvalid, in.Mode)
 	}
 	if in.Field != AIFieldMemo && in.Field != AIFieldPayee {
-		return Mailbox{}, fmt.Errorf("%w: the AI fills the memo or the payee", ErrInvalid)
+		return Source{}, fmt.Errorf("%w: the AI fills the memo or the payee", ErrInvalid)
 	}
-	if err := s.q.SetMailboxAI(ctx, db.SetMailboxAIParams{
-		AiMode: in.Mode, AiAccountID: account, AiField: in.Field, AiSenders: strings.Join(senders, ","), ID: id,
+	if err := s.q.SetMailSourceAI(ctx, db.SetMailSourceAIParams{
+		AiMode: in.Mode, AiAccountID: account, AiField: in.Field, AiSenders: strings.Join(senders, ","), ID: src.ID,
 	}); err != nil {
-		return Mailbox{}, err
+		return Source{}, err
 	}
-	return s.reload(ctx, walletID, id)
+	return s.reloadSource(ctx, mailboxID, src.ID)
 }
 
 // senderListed reports whether a mail's sender is one of the listed addresses
@@ -147,25 +147,25 @@ func senderListed(listed []string, sender string) bool {
 	return false
 }
 
-// readMail reads one stored mail the way its mailbox is set to, and records
-// what became of it. The caller holds the mailbox's lock.
-func (s *Service) readMail(ctx context.Context, mb db.Mailbox, m db.MailMessage, patterns []*compiled) outcome {
+// readMail reads one stored mail the way the source it went to is set to,
+// and records what became of it. The caller holds the mailbox's lock.
+func (s *Service) readMail(ctx context.Context, mb db.Mailbox, src db.MailSource, m db.MailMessage, patterns []*compiled) outcome {
 	byPatterns := func() outcome { return s.byPatterns(ctx, mb.WalletID, m, patterns) }
-	if mb.AiMode == AIModePatterns || mb.AiMode == "" {
-		return s.save(ctx, m, byPatterns())
+	if src.AiMode == AIModePatterns || src.AiMode == "" {
+		return s.save(ctx, m, src.ID, byPatterns())
 	}
 	// Whether this mail may go to the AI: one of the bank's senders, which the
 	// receiving server vouched for, with somewhere for it to go.
-	listed := senderListed(splitSenders(mb.AiSenders), m.Sender)
-	usable := listed && m.Authenticated != 0 && mb.AiAccountID.Valid && mb.CreatedBy.Valid && s.reader != nil
+	listed := senderListed(splitSenders(src.AiSenders), m.Sender)
+	usable := listed && m.Authenticated != 0 && src.AiAccountID.Valid && mb.CreatedBy.Valid && s.reader != nil
 	byAI := func() outcome {
 		if !usable {
 			return outcome{name: OutcomeUnrecognized}
 		}
-		return s.byAI(ctx, mb, m)
+		return s.byAI(ctx, mb, src, m)
 	}
 	var out outcome
-	switch mb.AiMode {
+	switch src.AiMode {
 	case AIModePatternsAI:
 		if out = byPatterns(); out.name == OutcomeUnrecognized {
 			out = byAI()
@@ -184,13 +184,13 @@ func (s *Service) readMail(ctx context.Context, mb db.Mailbox, m db.MailMessage,
 	if out.name == OutcomeUnrecognized && listed && m.Authenticated == 0 {
 		out.name = OutcomeUnverified
 	}
-	return s.save(ctx, m, out)
+	return s.save(ctx, m, src.ID, out)
 }
 
 // byAI asks the AI what payment the mail reports and writes it. An answer
 // that is not a usable payment leaves the mail unrecognised; a provider that
 // cannot be asked leaves it failed, with the reason.
-func (s *Service) byAI(ctx context.Context, mb db.Mailbox, m db.MailMessage) outcome {
+func (s *Service) byAI(ctx context.Context, mb db.Mailbox, src db.MailSource, m db.MailMessage) outcome {
 	in := inputOf(m)
 	reading, err := s.reader.ReadBankMail(ctx, mb.CreatedBy.Int64, mb.WalletID, m.Subject, m.Body, in.Date.Format("2006-01-02"))
 	switch {
@@ -203,7 +203,7 @@ func (s *Service) byAI(ctx context.Context, mb db.Mailbox, m db.MailMessage) out
 	case reading == nil:
 		return outcome{name: OutcomeUnrecognized}
 	}
-	accountID := mb.AiAccountID.Int64
+	accountID := src.AiAccountID.Int64
 	frac, ok := s.fracOf(ctx, mb.WalletID)(accountID)
 	if !ok {
 		return outcome{name: OutcomeFailed, detail: "the AI's account is not in this wallet", byAI: true}
@@ -219,7 +219,7 @@ func (s *Service) byAI(ctx context.Context, mb db.Mailbox, m db.MailMessage) out
 		AccountID: accountID, Date: aiDate(reading.Date, in.Date), Amount: amount,
 		ApplyRules: true, Tags: []string{},
 	}
-	if mb.AiField == AIFieldPayee {
+	if src.AiField == AIFieldPayee {
 		tx.Payee = reading.Text
 	} else {
 		tx.Memo = reading.Text

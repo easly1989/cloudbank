@@ -80,7 +80,7 @@ func (f *fixture) mode(t *testing.T, id int64) string {
 	}
 	for _, b := range boxes {
 		if b.ID == id {
-			return b.Mode
+			return b.Sources[0].Mode
 		}
 	}
 	return "gone"
@@ -121,7 +121,7 @@ func TestListenerSkipsPausedMailboxes(t *testing.T) {
 	f := newFixtureWith(t, fixtureOpts{})
 	mb := f.connect(t)
 	paused := true
-	if _, err := f.svc.Update(context.Background(), f.wallet, mb.ID, nil, &paused); err != nil {
+	if _, err := f.svc.Update(context.Background(), f.wallet, mb.ID, &paused); err != nil {
 		t.Fatal(err)
 	}
 	f.run(t)
@@ -133,7 +133,7 @@ func TestListenerSkipsPausedMailboxes(t *testing.T) {
 
 	// Resuming wakes the listener at once.
 	paused = false
-	if _, err := f.svc.Update(context.Background(), f.wallet, mb.ID, nil, &paused); err != nil {
+	if _, err := f.svc.Update(context.Background(), f.wallet, mb.ID, &paused); err != nil {
 		t.Fatal(err)
 	}
 	eventually(t, "the mail after resuming", func() bool { return len(f.messages(t, mb.ID)) == 1 })
@@ -208,7 +208,7 @@ func TestListenerGivesUpUntilSignedInAgain(t *testing.T) {
 	f.run(t)
 	eventually(t, "the mailbox to ask for a sign-in", func() bool {
 		boxes, _ := f.svc.ListMailboxes(context.Background(), f.wallet)
-		return len(boxes) == 1 && boxes[0].Status == StatusReauth && boxes[0].Mode == ""
+		return len(boxes) == 1 && boxes[0].Status == StatusReauth && boxes[0].Sources[0].Mode == ""
 	})
 }
 
@@ -219,6 +219,8 @@ type proxy struct {
 	target string
 	isDown bool
 	conns  []net.Conn
+	// dialled counts the connections made through it.
+	dialled int
 }
 
 func (p *proxy) start(t *testing.T, ep Endpoint) Endpoint {
@@ -251,6 +253,7 @@ func (p *proxy) start(t *testing.T, ep Endpoint) Endpoint {
 				continue
 			}
 			p.conns = append(p.conns, c, up)
+			p.dialled++
 			p.mu.Unlock()
 			go func() { _, _ = io.Copy(up, c); _ = up.Close() }()
 			go func() { _, _ = io.Copy(c, up); _ = c.Close() }()

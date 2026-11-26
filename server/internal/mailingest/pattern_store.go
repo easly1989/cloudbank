@@ -12,12 +12,12 @@ import (
 // testMails is how many of a sender's latest mails a pattern is tried on.
 const testMails = 15
 
-// Patterns returns a mailbox's patterns in the order they are tried.
-func (s *Service) Patterns(ctx context.Context, walletID, mailboxID int64) ([]Pattern, error) {
-	if _, err := s.get(ctx, walletID, mailboxID); err != nil {
+// Patterns returns a source's patterns in the order they are tried.
+func (s *Service) Patterns(ctx context.Context, walletID, mailboxID, sourceID int64) ([]Pattern, error) {
+	if _, _, err := s.getSource(ctx, walletID, mailboxID, sourceID); err != nil {
 		return nil, err
 	}
-	rows, err := s.rq.ListMailPatterns(ctx, mailboxID)
+	rows, err := s.q.ListMailPatterns(ctx, nullable(sourceID))
 	if err != nil {
 		return nil, err
 	}
@@ -61,9 +61,9 @@ func cardsJSON(cards []CardAccount) string {
 	return string(b)
 }
 
-// CreatePattern adds a pattern at the end of the mailbox's list.
-func (s *Service) CreatePattern(ctx context.Context, walletID, mailboxID int64, p Pattern) (Pattern, error) {
-	if _, err := s.get(ctx, walletID, mailboxID); err != nil {
+// CreatePattern adds a pattern at the end of the source's list.
+func (s *Service) CreatePattern(ctx context.Context, walletID, mailboxID, sourceID int64, p Pattern) (Pattern, error) {
+	if _, _, err := s.getSource(ctx, walletID, mailboxID, sourceID); err != nil {
 		return Pattern{}, err
 	}
 	c, err := s.validate(ctx, walletID, p)
@@ -72,7 +72,7 @@ func (s *Service) CreatePattern(ctx context.Context, walletID, mailboxID int64, 
 	}
 	p = c.p
 	row, err := s.q.InsertMailPattern(ctx, db.InsertMailPatternParams{
-		MailboxID: mailboxID, Name: p.Name, Sender: p.Sender, SubjectMode: p.SubjectMode, Subject: p.Subject,
+		MailboxID: mailboxID, SourceID: nullable(sourceID), Name: p.Name, Sender: p.Sender, SubjectMode: p.SubjectMode, Subject: p.Subject,
 		Body: p.Body, AccountID: p.AccountID, Cards: cardsJSON(p.Cards), Direction: p.Direction,
 		InWords: p.InWords, PaymentMode: int64(p.PaymentMode), ApplyRules: flag(p.ApplyRules),
 		DateFormat: p.DateFormat, RequireAuth: flag(p.RequireAuth), Editor: p.Editor,
@@ -84,8 +84,8 @@ func (s *Service) CreatePattern(ctx context.Context, walletID, mailboxID int64, 
 }
 
 // UpdatePattern replaces a pattern, keeping its place in the list.
-func (s *Service) UpdatePattern(ctx context.Context, walletID, mailboxID, id int64, p Pattern) (Pattern, error) {
-	if _, err := s.get(ctx, walletID, mailboxID); err != nil {
+func (s *Service) UpdatePattern(ctx context.Context, walletID, mailboxID, sourceID, id int64, p Pattern) (Pattern, error) {
+	if _, _, err := s.getSource(ctx, walletID, mailboxID, sourceID); err != nil {
 		return Pattern{}, err
 	}
 	c, err := s.validate(ctx, walletID, p)
@@ -98,7 +98,7 @@ func (s *Service) UpdatePattern(ctx context.Context, walletID, mailboxID, id int
 		Body: p.Body, AccountID: p.AccountID, Cards: cardsJSON(p.Cards), Direction: p.Direction,
 		InWords: p.InWords, PaymentMode: int64(p.PaymentMode), ApplyRules: flag(p.ApplyRules),
 		DateFormat: p.DateFormat, RequireAuth: flag(p.RequireAuth), Editor: p.Editor,
-		ID: id, MailboxID: mailboxID,
+		ID: id, SourceID: nullable(sourceID),
 	})
 	if err != nil {
 		return Pattern{}, err
@@ -106,7 +106,7 @@ func (s *Service) UpdatePattern(ctx context.Context, walletID, mailboxID, id int
 	if n == 0 {
 		return Pattern{}, ErrNotFound
 	}
-	row, err := s.q.GetMailPattern(ctx, db.GetMailPatternParams{ID: id, MailboxID: mailboxID})
+	row, err := s.q.GetMailPattern(ctx, db.GetMailPatternParams{ID: id, SourceID: nullable(sourceID)})
 	if err != nil {
 		return Pattern{}, err
 	}
@@ -115,11 +115,11 @@ func (s *Service) UpdatePattern(ctx context.Context, walletID, mailboxID, id int
 
 // DeletePattern removes a pattern. The mails it read keep their outcome and
 // their transaction.
-func (s *Service) DeletePattern(ctx context.Context, walletID, mailboxID, id int64) error {
-	if _, err := s.get(ctx, walletID, mailboxID); err != nil {
+func (s *Service) DeletePattern(ctx context.Context, walletID, mailboxID, sourceID, id int64) error {
+	if _, _, err := s.getSource(ctx, walletID, mailboxID, sourceID); err != nil {
 		return err
 	}
-	n, err := s.q.DeleteMailPattern(ctx, db.DeleteMailPatternParams{ID: id, MailboxID: mailboxID})
+	n, err := s.q.DeleteMailPattern(ctx, db.DeleteMailPatternParams{ID: id, SourceID: nullable(sourceID)})
 	if err != nil {
 		return err
 	}
@@ -129,10 +129,10 @@ func (s *Service) DeletePattern(ctx context.Context, walletID, mailboxID, id int
 	return nil
 }
 
-// ReorderPatterns puts the mailbox's patterns in the given order, which must
+// ReorderPatterns puts the source's patterns in the given order, which must
 // name each of them once.
-func (s *Service) ReorderPatterns(ctx context.Context, walletID, mailboxID int64, ids []int64) ([]Pattern, error) {
-	current, err := s.Patterns(ctx, walletID, mailboxID)
+func (s *Service) ReorderPatterns(ctx context.Context, walletID, mailboxID, sourceID int64, ids []int64) ([]Pattern, error) {
+	current, err := s.Patterns(ctx, walletID, mailboxID, sourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -150,11 +150,11 @@ func (s *Service) ReorderPatterns(ctx context.Context, walletID, mailboxID int64
 		delete(known, id)
 	}
 	for i, id := range ids {
-		if err := s.q.SetMailPatternPosition(ctx, db.SetMailPatternPositionParams{Position: int64(i), ID: id, MailboxID: mailboxID}); err != nil {
+		if err := s.q.SetMailPatternPosition(ctx, db.SetMailPatternPositionParams{Position: int64(i), ID: id, SourceID: nullable(sourceID)}); err != nil {
 			return nil, err
 		}
 	}
-	return s.Patterns(ctx, walletID, mailboxID)
+	return s.Patterns(ctx, walletID, mailboxID, sourceID)
 }
 
 // TestMail is what a pattern makes of one mail.
@@ -179,9 +179,12 @@ type TestResult struct {
 	Retry   int        `json:"retry"`
 }
 
-// TestPattern tries a pattern, saved or not, on the mailbox's mails.
-func (s *Service) TestPattern(ctx context.Context, walletID, mailboxID int64, p Pattern) (TestResult, error) {
-	if _, err := s.get(ctx, walletID, mailboxID); err != nil {
+// TestPattern tries a pattern, saved or not, on the mails of the source's
+// folder: the sender's latest, and how many of the waiting ones it would read
+// that no source before it would take.
+func (s *Service) TestPattern(ctx context.Context, walletID, mailboxID, sourceID int64, p Pattern) (TestResult, error) {
+	mb, src, err := s.getSource(ctx, walletID, mailboxID, sourceID)
+	if err != nil {
 		return TestResult{}, err
 	}
 	c, err := s.validate(ctx, walletID, p)
@@ -189,7 +192,7 @@ func (s *Service) TestPattern(ctx context.Context, walletID, mailboxID int64, p 
 		return TestResult{}, err
 	}
 	frac := s.fracOf(ctx, walletID)
-	mails, err := s.rq.ListMailMessagesFrom(ctx, db.ListMailMessagesFromParams{MailboxID: mailboxID, Sender: c.p.Sender, Limit: testMails})
+	mails, err := s.q.ListMailMessagesFrom(ctx, db.ListMailMessagesFromParams{MailboxID: mailboxID, Folder: src.Folder, Sender: c.p.Sender, Limit: testMails})
 	if err != nil {
 		return TestResult{}, err
 	}
@@ -212,16 +215,56 @@ func (s *Service) TestPattern(ctx context.Context, walletID, mailboxID int64, p 
 		res.Mails = append(res.Mails, t)
 	}
 	res.Total = len(mails)
-	retry, err := s.rq.ListMailMessagesToRetry(ctx, mailboxID)
+	waiting, err := s.waiting(ctx, mb, src, []*compiled{c})
 	if err != nil {
 		return TestResult{}, err
 	}
-	for _, m := range retry {
-		if evaluate([]*compiled{c}, inputOf(m), frac).pattern != nil {
-			res.Retry++
+	res.Retry = len(waiting)
+	return res, nil
+}
+
+// waiting returns the mails of the source's folder that made no transaction,
+// that the patterns read, and that no source before this one on the folder
+// claims: those the source would have read had it had the patterns when they
+// arrived.
+func (s *Service) waiting(ctx context.Context, mb db.Mailbox, src db.MailSource, patterns []*compiled) ([]db.MailMessage, error) {
+	retry, err := s.q.ListMailMessagesToRetry(ctx, db.ListMailMessagesToRetryParams{MailboxID: mb.ID, Folder: src.Folder})
+	if err != nil {
+		return nil, err
+	}
+	all, err := s.q.ListMailSources(ctx, mb.ID)
+	if err != nil {
+		return nil, err
+	}
+	var before []db.MailSource
+	for _, o := range all {
+		if o.ID == src.ID {
+			break
+		}
+		if o.Folder == src.Folder {
+			before = append(before, o)
 		}
 	}
-	return res, nil
+	frac := s.fracOf(ctx, mb.WalletID)
+	cache := patternCache{}
+	var out []db.MailMessage
+	for _, m := range retry {
+		in := inputOf(m)
+		if evaluate(patterns, in, frac).pattern == nil {
+			continue
+		}
+		if len(before) > 0 {
+			_, claimed, err := s.firstClaimer(ctx, before, cache, in, frac)
+			if err != nil {
+				return nil, err
+			}
+			if claimed {
+				continue
+			}
+		}
+		out = append(out, m)
+	}
+	return out, nil
 }
 
 // ApplyResult says what applying a pattern to the waiting mails made.
@@ -231,14 +274,20 @@ type ApplyResult struct {
 	Failed    int `json:"failed"`
 }
 
-// ApplyPattern reads with a saved pattern the mails that made no transaction
-// so far, as if it had been there when they arrived: those no pattern read,
-// and those one read but could not write (after the pattern is corrected).
-func (s *Service) ApplyPattern(ctx context.Context, walletID, mailboxID, id int64) (ApplyResult, error) {
-	if _, err := s.get(ctx, walletID, mailboxID); err != nil {
+// ApplyPattern reads with a saved pattern the mails of the source's folder
+// that made no transaction so far, as if it had been there when they arrived:
+// those no pattern read, and those one read but could not write (after the
+// pattern is corrected). A mail a source before this one claims stays its.
+func (s *Service) ApplyPattern(ctx context.Context, walletID, mailboxID, sourceID, id int64) (ApplyResult, error) {
+	// The mailbox's lock: a check reading the same mails waits.
+	lock := s.lockFor(mailboxID)
+	lock.Lock()
+	defer lock.Unlock()
+	mb, src, err := s.getSource(ctx, walletID, mailboxID, sourceID)
+	if err != nil {
 		return ApplyResult{}, err
 	}
-	row, err := s.q.GetMailPattern(ctx, db.GetMailPatternParams{ID: id, MailboxID: mailboxID})
+	row, err := s.q.GetMailPattern(ctx, db.GetMailPatternParams{ID: id, SourceID: nullable(sourceID)})
 	if errors.Is(err, sql.ErrNoRows) {
 		return ApplyResult{}, ErrNotFound
 	}
@@ -249,24 +298,16 @@ func (s *Service) ApplyPattern(ctx context.Context, walletID, mailboxID, id int6
 	if err != nil {
 		return ApplyResult{}, err
 	}
-	// The mailbox's lock: a check reading the same mails waits.
-	lock := s.lockFor(mailboxID)
-	lock.Lock()
-	defer lock.Unlock()
-	retry, err := s.q.ListMailMessagesToRetry(ctx, mailboxID)
+	only := []*compiled{c}
+	// A mail this pattern does not read keeps its outcome: "unverified" from
+	// another pattern stays so.
+	mails, err := s.waiting(ctx, mb, src, only)
 	if err != nil {
 		return ApplyResult{}, err
 	}
-	only := []*compiled{c}
-	frac := s.fracOf(ctx, walletID)
 	var res ApplyResult
-	for _, m := range retry {
-		// A mail this pattern does not read keeps its outcome: "unverified"
-		// from another pattern stays so.
-		if evaluate(only, inputOf(m), frac).pattern == nil {
-			continue
-		}
-		switch s.process(ctx, walletID, m, only).name {
+	for _, m := range mails {
+		switch s.process(ctx, walletID, src.ID, m, only).name {
 		case OutcomeCreated:
 			res.Created++
 		case OutcomeDuplicate:
@@ -277,3 +318,5 @@ func (s *Service) ApplyPattern(ctx context.Context, walletID, mailboxID, id int6
 	}
 	return res, nil
 }
+
+func nullable(id int64) sql.NullInt64 { return sql.NullInt64{Int64: id, Valid: true} }
