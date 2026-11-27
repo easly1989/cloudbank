@@ -44,11 +44,11 @@ const (
 )
 
 var (
-	// ErrReauthRequired: the session is older than passkeyRecent.
+	// ErrReauthRequired means the session is older than passkeyRecent.
 	ErrReauthRequired = errors.New("auth: sign in again to add a passkey")
-	// ErrPasskeyLimit: the user already has MaxPasskeys.
+	// ErrPasskeyLimit means the user already has MaxPasskeys.
 	ErrPasskeyLimit = errors.New("auth: passkey limit reached")
-	// ErrPasskeyRejected: the browser's answer to an add did not verify, or
+	// ErrPasskeyRejected means the browser's answer to an add did not verify, or
 	// its challenge expired.
 	ErrPasskeyRejected = errors.New("auth: passkey not accepted")
 )
