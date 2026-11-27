@@ -16,6 +16,7 @@ import { EntryFieldsCard } from "../../components/EntryFieldsCard";
 import { Logo } from "../../components/Logo";
 import { NavLayoutEditor } from "../../components/NavLayoutEditor";
 import { OidcSettingsGroup } from "../../components/OidcSettingsGroup";
+import { PasskeysCard } from "../../components/PasskeysCard";
 import { PasswordCard } from "../../components/PasswordCard";
 import { TwoFactorCard } from "../../components/TwoFactorCard";
 import { UpdateStatusCard } from "../../components/updates/UpdateStatusCard";
@@ -82,9 +83,13 @@ export function SecuritySection() {
           <AccessCodesCard />
         </SettingsGroup>
       ) : (
-        <SettingsGroup title={t("settings.signIn")} hint={t("settings.signInHint")}>
+        <SettingsGroup
+          title={t("settings.signIn")}
+          hint={config?.passkeys ? t("settings.signInHintPasskeys") : t("settings.signInHint")}
+        >
           {!__DEMO__ && <PasswordCard />}
           <TwoFactorCard />
+          {config?.passkeys && <PasskeysCard />}
         </SettingsGroup>
       )}
       {!__DEMO__ && user?.isAdmin && <OidcSettingsGroup />}

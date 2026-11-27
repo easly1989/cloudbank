@@ -1791,7 +1791,9 @@
     "recoveryLeft_one": "Has iniciado sesión con un código de recuperación. Te queda {{count}}.",
     "recoveryLeft_other": "Has iniciado sesión con un código de recuperación. Te quedan {{count}}.",
     "recoveryNoneLeft": "Has iniciado sesión con tu último código de recuperación. Crea otros en Ajustes › Seguridad.",
-    "tooMany": "Demasiados intentos. Vuelve a intentarlo en unos minutos."
+    "tooMany": "Demasiados intentos. Vuelve a intentarlo en unos minutos.",
+    "passkeySignIn": "Iniciar sesión con una llave de acceso",
+    "passkeyInvalid": "Esta llave de acceso no está registrada en CloudBank. Usa otra llave de acceso o tu usuario y contraseña."
   },
   "twofa": {
     "title": "Autenticación en dos pasos",
@@ -2305,7 +2307,13 @@
     "you": "tú",
     "userCreated": "Usuario creado",
     "passwordReset": "Contraseña restablecida",
-    "emailSso": "Inicia sesión con {{provider}}, reconocido por este correo."
+    "emailSso": "Inicia sesión con {{provider}}, reconocido por este correo.",
+    "passkeys": "Llaves de acceso",
+    "removePasskeys": "Quitar llaves de acceso",
+    "removePasskeysTitle": "¿Quitar las llaves de acceso de {{username}}?",
+    "removePasskeysBody_one": "{{username}} tiene {{count}} llave de acceso. Después entra con la contraseña o con un código de recuperación, y puede añadir otras nuevas.",
+    "removePasskeysBody_other": "{{username}} tiene {{count}} llaves de acceso. Después entra con la contraseña o con un código de recuperación, y puede añadir otras nuevas.",
+    "ownPasskeys": "Tus propias llaves de acceso se gestionan en Ajustes › Seguridad."
   },
   "wallet": {
     "firstTitle": "Crea tu primera cartera",
@@ -2940,7 +2948,8 @@
     "importHint": "Los extractos, y las reglas que los clasifican.",
     "backupHint": "Una copia desde la que restaurar, y una comprobación de que la base de datos está sana.",
     "about": "Acerca de",
-    "aboutHint": "Qué es este CloudBank, y dónde encontrar su código."
+    "aboutHint": "Qué es este CloudBank, y dónde encontrar su código.",
+    "signInHintPasskeys": "La contraseña, un segundo paso además de ella y las llaves de acceso que la sustituyen."
   },
   "apiTokens": {
     "title": "Tokens de API personales",
@@ -3747,5 +3756,37 @@
     "loadFailed": "No se pudieron cargar las dos filas.",
     "retry": "Reintentar",
     "pickOtherPlaceholder": "Buscar por fecha, beneficiario o importe"
+  },
+  "passkeys": {
+    "title": "Llaves de acceso",
+    "count_one": "{{count}} llave de acceso",
+    "count_other": "{{count}} llaves de acceso",
+    "none": "Ninguna",
+    "hint": "Inicia sesión con la huella, la cara o el PIN de tu dispositivo, sin contraseña ni código de 6 dígitos.",
+    "hintSome": "Inicias sesión con la huella, la cara o el PIN de tu dispositivo.",
+    "unsupported": "Este navegador no puede usar llaves de acceso. Abre CloudBank en un navegador reciente (Chrome, Edge, Firefox, Safari), por su nombre y no por la IP.",
+    "manage": "Gestionar",
+    "add": "Añadir",
+    "intro": "Una llave de acceso sustituye a la contraseña y al código de 6 dígitos en esta cuenta. Si pierdes todos tus dispositivos, entras con la contraseña o con un código de recuperación.",
+    "added": "Llave de acceso añadida. Ponle un nombre para reconocerla después.",
+    "name": "Nombre",
+    "nameHint": "Propuesto por el navegador y el sistema; cámbialo como quieras.",
+    "saveName": "Guardar el nombre",
+    "suggestedName": "{{browser}} en {{os}}",
+    "meta": "Añadida el {{added}} · usada el {{used}}",
+    "metaToday": "Añadida el {{added}} · usada hoy",
+    "metaUnused": "Añadida el {{added}} · nunca usada",
+    "renameOne": "Cambiar el nombre de {{name}}",
+    "removeOne": "Quitar {{name}}",
+    "removeTitle": "¿Quitar «{{name}}»?",
+    "removeBody": "Desde ese dispositivo ya no se podrá entrar con la llave de acceso. La llave sigue en el dispositivo, pero ya no sirve: puedes borrarla del gestor de contraseñas.",
+    "remove": "Quitar",
+    "reauthTitle": "Vuelve a iniciar sesión para añadir una llave de acceso",
+    "reauthBody": "Para añadir una hace falta un inicio de sesión de los últimos 10 minutos, así quien encuentre el ordenador abierto no puede crearse una propia. Quitar una llave de acceso siempre se puede.",
+    "reauth": "Volver a iniciar sesión",
+    "of": "{{n}} de {{max}}",
+    "full": "{{max}} de {{max}}: quita una para añadir otra",
+    "addOne": "Añadir llave de acceso",
+    "already": "Este dispositivo ya tiene una llave de acceso para esta cuenta."
   }
 }

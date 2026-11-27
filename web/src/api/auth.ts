@@ -134,6 +134,8 @@ export interface User {
   /** Only on /auth/me: an SSO identity is linked, so the password may be one
    *  the user never chose. */
   signsInWithSso?: boolean;
+  /** Only on the admin's user list: how many passkeys; missing means none. */
+  passkeyCount?: number;
 }
 
 export interface Credentials {
@@ -159,6 +161,8 @@ export interface AuthConfig {
    *  the first SSO sign-in sets it up, and recovery codes stand in for the
    *  provider when it is down. */
   passwordLogin: boolean;
+  /** The login page offers passkeys (#798): never with SSO only or in the demo. */
+  passkeys?: boolean;
 }
 
 export const getAuthConfig = () => api.get<AuthConfig>("/api/v1/auth/config");
@@ -279,6 +283,33 @@ export const getAccessCodes = () => api.get<{ remaining: number }>("/api/v1/auth
 
 /** New codes, shown once; the old ones stop working. */
 export const newAccessCodes = () => api.post<{ codes: string[] }>("/api/v1/auth/me/access-codes");
+
+// --- Passkeys (#798); the WebAuthn side is in ../passkey.ts ---
+
+export interface Passkey {
+  id: number;
+  name: string;
+  createdAt: string;
+  lastUsedAt?: string;
+}
+
+/** At most this many passkeys per user; the server refuses one more. */
+export const MAX_PASSKEYS = 10;
+
+export const beginPasskeyLogin = () => api.post<unknown>("/api/v1/auth/passkeys/login/begin");
+export const finishPasskeyLogin = (credential: unknown) =>
+  api.post<User>("/api/v1/auth/passkeys/login/finish", credential);
+export const listPasskeys = () => api.get<Passkey[]>("/api/v1/auth/me/passkeys");
+/** 403 reauth_required when the sign-in is older than 10 minutes. */
+export const beginPasskeyAdd = () => api.post<unknown>("/api/v1/auth/me/passkeys/begin");
+export const finishPasskeyAdd = (name: string, credential: unknown) =>
+  api.post<Passkey>("/api/v1/auth/me/passkeys/finish", { name, credential });
+export const renamePasskey = (id: number, name: string) =>
+  api.patch<void>(`/api/v1/auth/me/passkeys/${id}`, { name });
+export const deletePasskey = (id: number) => api.del<void>(`/api/v1/auth/me/passkeys/${id}`);
+/** Admin: take every passkey from a user who lost their device. */
+export const deleteUserPasskeys = (id: number) =>
+  api.del<void>(`/api/v1/admin/users/${id}/passkeys`);
 
 /** Change your own password (#530). Every other session is signed out. */
 export const changePassword = (currentPassword: string, newPassword: string) =>

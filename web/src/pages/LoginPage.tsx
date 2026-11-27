@@ -13,8 +13,9 @@ import {
   Title,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconLogin2 } from "@tabler/icons-react";
-import { useState } from "react";
+import { IconKey, IconLogin2 } from "@tabler/icons-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ApiError, isTotpChallenge } from "../api/client";
@@ -22,6 +23,12 @@ import { useAuthConfig, useLogin, useRecoveryLogin } from "../auth/AuthProvider"
 import { ColorSchemeToggle } from "../components/ColorSchemeToggle";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { ErrorMessage } from "../components/ErrorMessage";
+import {
+  conditionalPasskeys,
+  passkeyCancelled,
+  passkeysSupported,
+  signInWithPasskey,
+} from "../passkey";
 
 const SSO_START = "/api/v1/auth/oidc/start";
 
@@ -53,7 +60,11 @@ export function LoginPage() {
           {ssoOnly ? (
             <SsoOnlyForm provider={sso.name} ssoError={ssoError} />
           ) : (
-            <PasswordForm sso={sso} ssoError={ssoError} />
+            <PasswordForm
+              sso={sso}
+              ssoError={ssoError}
+              passkeys={!!authConfig.data?.passkeys && passkeysSupported()}
+            />
           )}
           <Stack gap="xs" align="center">
             <LanguageSwitcher />
@@ -68,12 +79,15 @@ export function LoginPage() {
 function PasswordForm({
   sso,
   ssoError,
+  passkeys,
 }: {
   sso: { enabled: boolean; name: string } | undefined;
   ssoError: string | null;
+  passkeys: boolean;
 }) {
   const { t } = useTranslation();
   const login = useLogin();
+  const passkey = usePasskeySignIn(passkeys);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [totpCode, setTotpCode] = useState("");
@@ -95,13 +109,25 @@ function PasswordForm({
       <ErrorMessage error={login.error} />
     ) : null;
 
+  const passkeyError =
+    passkey.error instanceof ApiError && passkey.error.status === 401 ? (
+      t("login.passkeyInvalid")
+    ) : passkey.error instanceof ApiError && passkey.error.status === 429 ? (
+      t("login.tooMany")
+    ) : passkey.error ? (
+      <ErrorMessage error={passkey.error} />
+    ) : null;
+
   return (
     <>
       {error && <Alert color="red">{error}</Alert>}
+      {!error && passkeyError && <Alert color="red">{passkeyError}</Alert>}
       {ssoError && <Alert color="red">{t("login.ssoFailed")}</Alert>}
       <TextInput
         label={t("login.username")}
         required
+        // "webauthn" lets the browser offer the saved passkeys here (#798).
+        autoComplete={passkeys ? "username webauthn" : "username"}
         value={username}
         onChange={(e) => setUsername(e.currentTarget.value)}
         onKeyDown={(e) => e.key === "Enter" && submit()}
@@ -136,21 +162,85 @@ function PasswordForm({
       >
         {challenged ? t("login.verify") : t("login.submit")}
       </Button>
-      {sso?.enabled && !challenged && (
+      {(passkeys || sso?.enabled) && !challenged && (
         <>
           <Divider label={t("login.or")} labelPosition="center" />
-          <Button
-            variant="default"
-            component="a"
-            href={SSO_START}
-            leftSection={<IconLogin2 size={16} />}
-          >
-            {t("login.ssoSignIn", { provider: sso.name })}
-          </Button>
+          {passkeys && (
+            <Button
+              variant="default"
+              leftSection={<IconKey size={16} />}
+              loading={passkey.pending}
+              onClick={() => void passkey.signIn()}
+            >
+              {t("login.passkeySignIn")}
+            </Button>
+          )}
+          {sso?.enabled && (
+            <Button
+              variant="default"
+              component="a"
+              href={SSO_START}
+              leftSection={<IconLogin2 size={16} />}
+            >
+              {t("login.ssoSignIn", { provider: sso.name })}
+            </Button>
+          )}
         </>
       )}
     </>
   );
+}
+
+// usePasskeySignIn signs in with a passkey (#798): from the button, or from the
+// username field, where the browser offers the saved passkeys while the page
+// waits on a conditional request. One request at a time: the button stops the
+// waiting one, and a new round of waiting starts once it is done.
+function usePasskeySignIn(enabled: boolean) {
+  const qc = useQueryClient();
+  const [error, setError] = useState<unknown>(null);
+  const [pending, setPending] = useState(false);
+  const [round, setRound] = useState(0);
+  const waiting = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (!enabled || pending) return;
+    const ctrl = new AbortController();
+    waiting.current = ctrl;
+    void (async () => {
+      if (!(await conditionalPasskeys()) || ctrl.signal.aborted) return;
+      try {
+        qc.setQueryData(["me"], await signInWithPasskey("conditional", ctrl.signal));
+      } catch (err) {
+        if (ctrl.signal.aborted || passkeyCancelled(err)) return;
+        setError(err);
+        // A passkey CloudBank does not know: offer the others again. Anything
+        // else (the server refusing to start) would only fail again.
+        if (err instanceof ApiError && err.status === 401) setRound((r) => r + 1);
+      }
+    })();
+    // The server keeps a challenge 10 minutes; take a new one before it goes.
+    const renew = setTimeout(() => setRound((r) => r + 1), 9 * 60_000);
+    return () => {
+      clearTimeout(renew);
+      ctrl.abort();
+    };
+  }, [enabled, pending, round, qc]);
+
+  const signIn = async () => {
+    // Stopped here, before the button's request: the browser takes one at a time.
+    waiting.current?.abort();
+    setError(null);
+    setPending(true);
+    try {
+      qc.setQueryData(["me"], await signInWithPasskey());
+    } catch (err) {
+      if (!passkeyCancelled(err)) setError(err);
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return { signIn, pending, error };
 }
 
 // SsoOnlyForm is the sign-in of a server without passwords: the provider's

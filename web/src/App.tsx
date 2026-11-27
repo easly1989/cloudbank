@@ -1,8 +1,9 @@
 import { Center, Loader } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
-import { Suspense, lazy } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Suspense, lazy, useEffect } from "react";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
+import { AFTER_LOGIN } from "./afterLogin";
 import { getSetupStatus } from "./api/client";
 import { useAuth } from "./auth/AuthProvider";
 import { AppLayout } from "./components/AppLayout";
@@ -151,6 +152,13 @@ export function App() {
 
 function AuthenticatedApp() {
   const { wallets, isLoading } = useWallet();
+  const navigate = useNavigate();
+  // Signed in again on a card's request (#798): back to that card.
+  useEffect(() => {
+    const next = sessionStorage.getItem(AFTER_LOGIN);
+    sessionStorage.removeItem(AFTER_LOGIN);
+    if (next?.startsWith("/")) navigate(next, { replace: true });
+  }, [navigate]);
 
   if (isLoading) return <FullScreenLoader />;
 

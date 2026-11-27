@@ -7,30 +7,37 @@ import {
   PasswordInput,
   Stack,
   Table,
+  Text,
   TextInput,
   Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
+import { IconKey } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
   createUser,
+  deleteUserPasskeys,
   listUsers,
   resetUserPassword,
   setUserDisabled,
   type User,
 } from "../../api/client";
 import { useAuth, useAuthConfig } from "../../auth/AuthProvider";
+import { useConfirm } from "../../components/confirmContext";
 import { notifyError } from "../../notifyError";
 
 export function UsersPage() {
   const { t } = useTranslation();
   const { user: current } = useAuth();
   // Signing in through SSO only (#620): no passwords to set or reset.
-  const ssoOnly = useAuthConfig().data?.passwordLogin === false;
+  const config = useAuthConfig().data;
+  const ssoOnly = config?.passwordLogin === false;
+  const passkeys = !!config?.passkeys;
+  const confirm = useConfirm();
   const qc = useQueryClient();
   const usersQuery = useQuery({ queryKey: ["admin", "users"], queryFn: listUsers });
   const invalidate = () => qc.invalidateQueries({ queryKey: ["admin", "users"] });
@@ -41,6 +48,23 @@ export function UsersPage() {
     onSuccess: invalidate,
     onError: notifyError,
   });
+
+  const passkeysMutation = useMutation({
+    mutationFn: deleteUserPasskeys,
+    onSuccess: invalidate,
+    onError: notifyError,
+  });
+  // A user who lost their device (#798): after this they sign in with the
+  // password or a recovery code, and can add passkeys again.
+  const askRemovePasskeys = async (u: User) => {
+    const ok = await confirm({
+      title: t("admin.removePasskeysTitle", { username: u.username }),
+      body: t("admin.removePasskeysBody", { username: u.username, count: u.passkeyCount ?? 0 }),
+      confirmLabel: t("admin.removePasskeys"),
+      danger: true,
+    });
+    if (ok) passkeysMutation.mutate(u.id);
+  };
 
   const [createOpened, createHandlers] = useDisclosure(false);
   const [resetTarget, setResetTarget] = useState<User | null>(null);
@@ -59,6 +83,7 @@ export function UsersPage() {
             <Table.Th>{t("admin.email")}</Table.Th>
             <Table.Th>{t("admin.role")}</Table.Th>
             <Table.Th>{t("admin.status")}</Table.Th>
+            {passkeys && <Table.Th>{t("admin.passkeys")}</Table.Th>}
             <Table.Th>{t("admin.actions")}</Table.Th>
           </Table.Tr>
         </Table.Thead>
@@ -84,11 +109,26 @@ export function UsersPage() {
                   <Badge color="green">{t("admin.active")}</Badge>
                 )}
               </Table.Td>
+              {passkeys && (
+                <Table.Td>
+                  {u.passkeyCount ? t("passkeys.count", { count: u.passkeyCount }) : "—"}
+                </Table.Td>
+              )}
               <Table.Td>
                 <Group gap="xs">
                   {!ssoOnly && (
                     <Button size="xs" variant="default" onClick={() => setResetTarget(u)}>
                       {t("admin.resetPassword")}
+                    </Button>
+                  )}
+                  {passkeys && !!u.passkeyCount && current?.id !== u.id && (
+                    <Button
+                      size="xs"
+                      variant="default"
+                      leftSection={<IconKey size={14} />}
+                      onClick={() => void askRemovePasskeys(u)}
+                    >
+                      {t("admin.removePasskeys")}
                     </Button>
                   )}
                   {current?.id !== u.id && (
@@ -107,6 +147,11 @@ export function UsersPage() {
           ))}
         </Table.Tbody>
       </Table>
+      {passkeys && (
+        <Text size="xs" c="dimmed">
+          {t("admin.ownPasskeys")}
+        </Text>
+      )}
 
       <CreateUserModal
         ssoOnly={ssoOnly}
