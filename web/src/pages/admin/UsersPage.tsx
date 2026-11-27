@@ -9,7 +9,6 @@ import {
   Table,
   Text,
   TextInput,
-  Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -71,8 +70,8 @@ export function UsersPage() {
 
   return (
     <Stack>
-      <Group justify="space-between">
-        <Title order={2}>{t("admin.title")}</Title>
+      {/* Settings › Administration › People names the page (#800). */}
+      <Group justify="flex-end">
         <Button onClick={createHandlers.open}>{t("admin.create")}</Button>
       </Group>
 

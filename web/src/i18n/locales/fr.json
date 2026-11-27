@@ -1783,14 +1783,14 @@
     "ssoUnavailable": "{{provider}} ne répond pas pour le moment.",
     "recoveryPrompt": "Impossible de vous connecter ?",
     "recoveryLink": "Utiliser un code de récupération",
-    "recoveryHint": "Utilisez l’un des codes enregistrés dans Paramètres › Sécurité. Chaque code ne sert qu’une fois.",
+    "recoveryHint": "Utilisez l’un des codes enregistrés dans Paramètres › Compte. Chaque code ne sert qu’une fois.",
     "recoveryCode": "Code de récupération",
     "recoverySubmit": "Se connecter avec le code",
     "recoveryInvalid": "Nom d’utilisateur ou code de récupération incorrect",
     "backToSso": "Se connecter plutôt avec {{provider}}",
     "recoveryLeft_one": "Vous vous êtes connecté avec un code de récupération. Il vous en reste {{count}}.",
     "recoveryLeft_other": "Vous vous êtes connecté avec un code de récupération. Il vous en reste {{count}}.",
-    "recoveryNoneLeft": "Vous vous êtes connecté avec votre dernier code de récupération. Créez-en de nouveaux dans Paramètres › Sécurité.",
+    "recoveryNoneLeft": "Vous vous êtes connecté avec votre dernier code de récupération. Créez-en de nouveaux dans Paramètres › Compte.",
     "tooMany": "Trop de tentatives. Réessayez dans quelques minutes.",
     "passkeySignIn": "Se connecter avec une clé d’accès",
     "passkeyInvalid": "Cette clé d’accès n’est pas enregistrée dans CloudBank. Utilisez une autre clé d’accès, ou votre nom d’utilisateur et votre mot de passe."
@@ -1909,7 +1909,6 @@
     "unread": "Non lue",
     "pushTitle": "Push sur cet appareil",
     "channels": "Canaux",
-    "channelsHint": "Où les notifications vous parviennent. Ouvrez un canal pour le connecter et choisir ses événements.",
     "group": {
       "security": "Sécurité",
       "problems": "Problèmes",
@@ -2135,11 +2134,11 @@
       "inDigest": "Dans le récapitulatif",
       "always": "Toujours aussitôt",
       "atDigest": "À l’heure du récapitulatif",
-      "reviewAfter": "Prévenir après",
       "reviewDays": "Jours d’attente",
       "days_one": "{{count}} jour",
       "days_other": "{{count}} jours"
-    }
+    },
+    "ofTotal": "{{on}} sur {{total}}"
   },
   "ai": {
     "hint": "Un service compatible OpenAI, ou un modèle sur votre propre réseau (Ollama, LM Studio) que seul un administrateur peut configurer. Votre clé reste sur le serveur.",
@@ -2150,8 +2149,6 @@
     "apiKeyPlaceholder": "sk-…",
     "keySet": "Une clé est enregistrée. Tapez-en une nouvelle pour la remplacer.",
     "keyNotSet": "Aucune clé enregistrée pour l’instant.",
-    "save": "Enregistrer",
-    "saved": "Paramètres d’IA enregistrés",
     "suggestCategory": "Suggérer une catégorie",
     "noSuggestion": "Aucune suggestion de catégorie pour cette opération.",
     "quickEntry": "Saisie rapide",
@@ -2287,7 +2284,6 @@
     "ssoReserved": "La première connexion est réservée à l’e-mail de l’administrateur. Connectez-vous avec ce compte."
   },
   "admin": {
-    "title": "Utilisateurs",
     "create": "Ajouter un utilisateur",
     "createTitle": "Créer un utilisateur",
     "username": "Nom d’utilisateur",
@@ -2313,7 +2309,7 @@
     "removePasskeysTitle": "Retirer les clés d’accès de {{username}} ?",
     "removePasskeysBody_one": "{{username}} a {{count}} clé d’accès. Ensuite, la connexion se fait avec le mot de passe ou un code de récupération, et de nouvelles clés peuvent être ajoutées.",
     "removePasskeysBody_other": "{{username}} a {{count}} clés d’accès. Ensuite, la connexion se fait avec le mot de passe ou un code de récupération, et de nouvelles clés peuvent être ajoutées.",
-    "ownPasskeys": "Vos propres clés d’accès se gèrent dans Paramètres › Sécurité."
+    "ownPasskeys": "Vos propres clés d’accès se gèrent dans Paramètres › Compte."
   },
   "wallet": {
     "firstTitle": "Créez votre premier classeur",
@@ -2332,8 +2328,6 @@
     "create": "Créer le classeur",
     "switch": "Changer de classeur",
     "settings": "Paramètres du classeur",
-    "save": "Enregistrer",
-    "saved": "Classeur mis à jour",
     "dangerZone": "Zone dangereuse",
     "deleteWarning": "Supprimer un classeur efface définitivement toutes ses données. C’est irréversible.",
     "deleteConfirmLabel": "Tapez « {{title}} » pour confirmer la suppression.",
@@ -2792,8 +2786,7 @@
     },
     "tabs": {
       "xhb": "Fichier HomeBank",
-      "csv": "Banque / CSV / QIF / OFX / CAMT.053",
-      "export": "Export CSV"
+      "csv": "Banque / CSV / QIF / OFX / CAMT.053"
     }
   },
   "importCsv": {
@@ -2898,13 +2891,9 @@
   },
   "settings": {
     "title": "Paramètres",
-    "general": "Général",
     "wallet": "Classeur",
     "navigation": "Navigation",
     "apiTokens": "Jetons d’API",
-    "section": "Section",
-    "sectionGeneral": "Général",
-    "sectionImport": "Import et export",
     "sectionBackup": "Sauvegarde et intégrité",
     "nav": {
       "hint": "Personnalisez la barre latérale : faites glisser pour réordonner les groupes et les entrées, faites glisser une entrée vers un autre groupe, affichez ou masquez des entrées, renommez ou ajoutez des groupes, et insérez des séparateurs.",
@@ -2928,31 +2917,102 @@
     "people": "Personnes",
     "back": "Retour à CloudBank",
     "appearance": "Apparence",
-    "security": "Sécurité",
-    "data": "Import et export",
-    "generalHint": "L’aspect et le comportement de CloudBank pour vous. Les autres personnes qui utilisent ce serveur gardent les leurs.",
-    "appearanceHint": "Thème, couleur d’accent, et ce que la barre latérale et les opérations vous montrent.",
-    "walletHint": "Les paramètres de ce classeur, et ce qu’il contient.",
-    "securityHint": "Qui peut entrer, et avec quoi.",
-    "dataHint": "Faire entrer et sortir votre argent de CloudBank, et en garder une copie.",
-    "peopleHint": "Gérer qui peut se connecter se fait ici, pas dans le menu principal.",
     "navigationHint": "Les pages que liste la barre latérale, et dans quel ordre.",
     "signIn": "Connexion",
-    "signInHint": "Le mot de passe avec lequel vous vous connectez, et une seconde étape en plus.",
-    "signInHintSso": "Vous vous connectez avec {{provider}}, qui s’occupe des mots de passe et des secondes étapes.",
     "apiTokensHint": "Les jetons permettent à un script ou à une autre application d’agir en votre nom. Révoquez-en un et il cesse aussitôt de fonctionner.",
-    "notificationsHint": "Où CloudBank vous joint quand quelque chose a besoin de vous.",
     "ai": "IA",
-    "aiHint": "Votre propre fournisseur d’IA : ce qu’il fait, sur quels classeurs, et ce qui lui a été envoyé.",
     "bankSyncHint": "Les connexions à vos banques, avec leur état et leur historique.",
     "importHint": "Les relevés, et les règles qui les classent.",
     "backupHint": "Une copie à partir de laquelle restaurer, et une vérification que la base de données est saine.",
     "about": "À propos",
-    "aboutHint": "Ce qu’est ce CloudBank, et où trouver son code.",
-    "signInHintPasskeys": "Le mot de passe, une seconde étape en plus, et les clés d’accès qui le remplacent."
+    "sections": {
+      "home": "Accueil",
+      "account": "Compte",
+      "personalization": "Personnalisation",
+      "connections": "Connexions",
+      "admin": "Administration"
+    },
+    "search": "Rechercher un paramètre",
+    "searchClear": "Effacer la recherche",
+    "searchTitle": "Résultats de la recherche",
+    "searchNone": "Aucun paramètre ne correspond à « {{query}} ».",
+    "related": "Paramètres associés",
+    "roleAdmin": "Administrateur",
+    "roleUser": "Utilisateur",
+    "saved": "Enregistré",
+    "required": "Ne peut pas rester vide",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "download": "Télécharger",
+    "open": "Ouvrir",
+    "dataGroup": "Données",
+    "layoutGroup": "Menu et formulaire d’opération",
+    "connectionsGroup": "Comment arrivent les opérations",
+    "notifRules": "Seuils et horaires",
+    "adminAccess": "Qui se connecte",
+    "adminServer": "Ce serveur",
+    "tokensCount_one": "{{count}} jeton",
+    "tokensCount_other": "{{count}} jetons",
+    "backupNever": "Jamais",
+    "backupToday": "Aujourd’hui",
+    "backupDays_one": "il y a {{count}} jour",
+    "backupDays_other": "il y a {{count}} jours",
+    "home": {
+      "security": "Sécurité",
+      "banks": "Banques",
+      "banksLinked_one": "{{count}} connectée",
+      "banksLinked_other": "{{count}} connectées",
+      "lastSync": "Dernière synchro",
+      "toReview_one": "{{count}} à vérifier",
+      "toReview_other": "{{count}} à vérifier",
+      "mailboxes_one": "{{count}} boîte",
+      "mailboxes_other": "{{count}} boîtes",
+      "data": "Données",
+      "lastBackup": "Dernière sauvegarde",
+      "issues_one": "{{count}} problème",
+      "issues_other": "{{count}} problèmes",
+      "ok": "OK",
+      "licence": "Licence",
+      "updateOut": "Nouvelle version disponible",
+      "upToDate": "À jour",
+      "notChecked": "Non vérifiées",
+      "recommended": "Recommandé",
+      "backupTitle": "Faire une sauvegarde",
+      "backupNever": "Aucune sauvegarde de ce classeur n’a encore été téléchargée d’ici.",
+      "backupOld_one": "La dernière date d’il y a {{count}} jour.",
+      "backupOld_other": "La dernière date d’il y a {{count}} jours.",
+      "mailTitle_one": "{{count}} e-mail de la banque à vérifier",
+      "mailTitle_other": "{{count}} e-mails de la banque à vérifier",
+      "mailHint": "Des e-mails que CloudBank n’a pas pu transformer en opération.",
+      "twoFactorTitle": "Activer l’authentification à deux facteurs",
+      "nothing": "Rien à faire pour l’instant."
+    },
+    "row": {
+      "languageHint": "La langue de l’application et de ses notifications.",
+      "dateHint": "L’affichage des dates dans les registres et les rapports.",
+      "startHint": "La page qui s’ouvre à la connexion.",
+      "themeHint": "Clair, sombre ou comme l’appareil.",
+      "accentHint": "La couleur des boutons, des liens et de la page en cours.",
+      "entryHint": "Les champs que le formulaire montre d’emblée, et ce par quoi commence une nouvelle opération.",
+      "codesHint": "Le moyen d’entrer quand le fournisseur d’authentification unique ne répond pas.",
+      "walletName": "Nom et titulaire",
+      "defaultAccountHint": "Le compte proposé dans chaque nouvelle opération.",
+      "import": "Importer",
+      "export": "Exporter",
+      "exportHint": "Un CSV d’un compte ou de tout le classeur.",
+      "digestHint": "Les évènements regroupés arrivent ensemble, une fois par jour.",
+      "reviewDays": "Rappel des opérations à vérifier",
+      "reviewDaysHint": "Après combien de jours d’attente il vous parvient, sur chaque canal.",
+      "baseUrlHint": "L’adresse du service compatible OpenAI.",
+      "modelHint": "Le modèle auquel vont les requêtes.",
+      "apiKeyHint": "Reste sur le serveur ; elle n’est plus jamais affichée.",
+      "updates": "Mises à jour",
+      "updatesHint": "Si une version plus récente de CloudBank est sortie.",
+      "database": "Sauvegarde complète de la base",
+      "peopleHint": "Qui peut se connecter à ce serveur, et avec quel rôle."
+    }
   },
   "apiTokens": {
-    "title": "Jetons d’API personnels",
     "hint": "Accédez à l’API depuis des scripts et des intégrations sans navigateur, avec un en-tête Authorization: Bearer <token>. Un jeton en lecture ne peut que lire ; un jeton en lecture-écriture peut aussi modifier. Les jetons agissent en votre nom — gardez-les secrets.",
     "create": "Créer un jeton",
     "cancel": "Annuler",
@@ -2994,8 +3054,6 @@
     "noDefaultAccount": "Aucun",
     "smartAmount": "Saisie intelligente des montants",
     "smartAmountHint": "Tapez 12.40 ou 12,40 — les deux sont lus comme des décimales (comme HomeBank)",
-    "save": "Enregistrer",
-    "saved": "Préférences enregistrées",
     "sidebarAccounts": "Soldes des comptes dans la barre latérale",
     "sidebarAccountsHint": "Désactivé par défaut. Choisissez-en jusqu’à {{max}} — cela doit rester un coup d’œil, pas une seconde liste de comptes.",
     "balances": "Soldes sur la vue d’ensemble et au-dessus des opérations",
@@ -3005,7 +3063,7 @@
     "resetTours": "Revoir toutes les visites",
     "toursReset": "Chaque page proposera de nouveau sa visite.",
     "showFooter": "Afficher le pied de page",
-    "showFooterHint": "Désactivé, la version, la licence et les liens restent dans Paramètres › À propos."
+    "showFooterHint": "Désactivé, la version, la licence et les liens restent dans Paramètres › Accueil."
   },
   "tour": {
     "skip": "Passer",
@@ -3060,9 +3118,7 @@
     "restoreHint": "La restauration crée un nouveau classeur ; elle n’écrase jamais celui-ci.",
     "restore": "Restaurer",
     "restored": "Classeur restauré",
-    "adminLabel": "Administrateur",
-    "hotHint": "Instantané complet de la base de données (tous les classeurs et utilisateurs).",
-    "hotDownload": "Télécharger toute la base de données"
+    "hotHint": "Instantané complet de la base de données (tous les classeurs et utilisateurs)."
   },
   "attention": {
     "title_one": "Un point demande votre attention",
@@ -3140,7 +3196,7 @@
     "replay": "Visite de cette page",
     "skipAsk": {
       "title": "Passer aussi les visites des autres pages ?",
-      "body": "Le ? en haut de chaque page remontre sa visite quand vous voulez. Vous pouvez réactiver les propositions dans Paramètres › Général.",
+      "body": "Le ? en haut de chaque page remontre sa visite quand vous voulez. Vous pouvez réactiver les propositions dans Paramètres › Compte.",
       "onlyThis": "Celle-ci seulement",
       "all": "Les passer toutes"
     },
@@ -3385,18 +3441,12 @@
   },
   "about": {
     "guideHint": "Comment utiliser CloudBank, pas à pas",
-    "version": "version {{version}}",
     "licence": "CloudBank est un logiciel libre sous licence <b>AGPL-3.0</b> : vous pouvez lire son code, le modifier et le partager aux mêmes conditions.",
     "source": "Code source",
     "apiDocsHint": "L’API de cette installation",
     "support": "Soutenir CloudBank",
     "supportHint": "Buy Me a Coffee et les autres moyens",
-    "homebankHint": "L’application de bureau dont CloudBank est la version web",
-    "groupVersion": "Version",
-    "groupVersionHint": "La version installée sur ce serveur.",
-    "groupLicence": "Licence",
-    "groupLinks": "Liens",
-    "groupLinksHint": "Guide, code source et API."
+    "homebankHint": "L’application de bureau dont CloudBank est la version web"
   },
   "pageError": {
     "title": "Cette page a cessé de fonctionner",
@@ -3439,7 +3489,7 @@
     "howTitle": "Mettre à jour CloudBank en {{version}}",
     "howIntro": "CloudBank tourne dans Docker : la mise à jour se fait donc sur le serveur. Récupérez la nouvelle image et redémarrez le conteneur. Vos données restent dans leur volume, et CloudBank les met à jour au démarrage.",
     "howBackup": "1. Faites une sauvegarde",
-    "howBackupBody": "Dans <a>Paramètres → Import et export</a>, téléchargez une sauvegarde. Rien ne devrait mal tourner ; c’est au cas où.",
+    "howBackupBody": "Dans <a>Paramètres → Classeur → Sauvegarde et intégrité</a>, téléchargez une sauvegarde. Rien ne devrait mal tourner ; c’est au cas où.",
     "howCompose": "2. Avec Docker Compose, dans le dossier de votre fichier compose",
     "howRun": "Ou avec docker run",
     "howRunAfter": "Puis arrêtez et supprimez l’ancien conteneur, et relancez-le avec les mêmes options.",
@@ -3471,7 +3521,8 @@
     "submit": "Changer le mot de passe",
     "changed": "Mot de passe changé. Les autres appareils devront se reconnecter.",
     "wrongCurrent": "Ce n’est pas votre mot de passe actuel.",
-    "mismatch": "Les deux mots de passe ne correspondent pas."
+    "mismatch": "Les deux mots de passe ne correspondent pas.",
+    "change": "Modifier"
   },
   "errors": {
     "invalid_credentials": "Ces identifiants ne sont pas corrects.",

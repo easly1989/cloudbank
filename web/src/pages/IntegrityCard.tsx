@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { checkIntegrity, fixIntegrity, type IntegrityIssue } from "../api/client";
 import { useWallet } from "../wallet/WalletProvider";
 import { ErrorMessage } from "../components/ErrorMessage";
+import { SettingRow } from "./settings/SettingRow";
 
 export function IntegrityRow() {
   const { t } = useTranslation();
@@ -32,22 +33,20 @@ export function IntegrityRow() {
     onError,
   });
 
-  // One row of the Backup card; what the check finds opens under it.
+  // What the check finds opens under its row.
+  const found = error != null || issues !== null;
   return (
-    <div className="cb-settings-row">
-      <div className="cb-settings-row-text">
-        <Text fz="sm" fw={600}>
-          {t("integrity.title")}
-        </Text>
-        <Text fz={13} c="dimmed">
-          {t("integrity.description")}
-        </Text>
-      </div>
-      <Button variant="light" onClick={() => run.mutate()} loading={run.isPending}>
-        {t("integrity.run")}
-      </Button>
-      {(error != null || issues !== null) && (
-        <Stack gap="sm" style={{ flexBasis: "100%" }}>
+    <SettingRow
+      id="integrity"
+      open={found}
+      control={
+        <Button variant="default" onClick={() => run.mutate()} loading={run.isPending}>
+          {t("integrity.run")}
+        </Button>
+      }
+    >
+      {found && (
+        <Stack gap="sm">
           {error != null && (
             <Alert color="red" icon={<IconAlertTriangle size={16} />}>
               <ErrorMessage error={error} />
@@ -93,6 +92,6 @@ export function IntegrityRow() {
           )}
         </Stack>
       )}
-    </div>
+    </SettingRow>
   );
 }

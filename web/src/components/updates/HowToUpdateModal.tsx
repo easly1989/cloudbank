@@ -61,7 +61,9 @@ export function HowToUpdateModal({
         <Text size="sm" c="dimmed">
           <Trans
             i18nKey="updates.howBackupBody"
-            components={{ a: <Anchor component={Link} to="/settings/data" onClick={onClose} /> }}
+            components={{
+              a: <Anchor component={Link} to="/settings/wallet/backup" onClick={onClose} />,
+            }}
           />
         </Text>
         <Text fw={600} size="sm">

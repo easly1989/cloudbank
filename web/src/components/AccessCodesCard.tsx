@@ -1,5 +1,4 @@
-import { Button, Card, Group, SimpleGrid, Text, Title } from "@mantine/core";
-import { IconLifebuoy } from "@tabler/icons-react";
+import { Button, Group, SimpleGrid, Text } from "@mantine/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { getAccessCodes, newAccessCodes } from "../api/client";
 import { useAuth, useAuthConfig } from "../auth/AuthProvider";
 import { notifyError } from "../notifyError";
+import { SettingRow, SettingState } from "../pages/settings/SettingRow";
 
 /** How many codes a set holds; the server makes ten. */
 const TOTAL = 10;
@@ -53,21 +53,26 @@ export function AccessCodesCard() {
   const none = status.isSuccess && remaining === 0 && !codes;
 
   return (
-    <Card withBorder data-testid="access-codes">
-      <Group gap="xs">
-        <IconLifebuoy size={18} />
-        <Title order={5}>{t("accessCodes.title")}</Title>
-      </Group>
-      <Text size="sm" c="dimmed" maw={560} mt={4}>
-        {t("accessCodes.hint", { provider })}
-        {codes && ` ${t("accessCodes.shownOnce")}`}
-      </Text>
+    <SettingRow
+      id="recovery-codes"
+      testId="access-codes"
+      description={`${t("accessCodes.hint", { provider })}${codes ? ` ${t("accessCodes.shownOnce")}` : ""}`}
+      defaultOpen
+      control={
+        status.isSuccess && (
+          <SettingState tone={none ? "warn" : "ok"}>
+            {none
+              ? t("accessCodes.none")
+              : t("accessCodes.remaining", { count: remaining, total: TOTAL })}
+          </SettingState>
+        )
+      }
+    >
       {codes && (
         <SimpleGrid
           cols={{ base: 1, xs: 2 }}
           spacing="md"
           verticalSpacing={6}
-          mt="md"
           p="sm"
           maw={560}
           style={{
@@ -82,7 +87,7 @@ export function AccessCodesCard() {
           ))}
         </SimpleGrid>
       )}
-      <Group gap="xs" mt="md">
+      <Group gap="xs">
         {codes && <Button onClick={download}>{t("accessCodes.download")}</Button>}
         <Button
           variant={none ? "filled" : "default"}
@@ -92,13 +97,6 @@ export function AccessCodesCard() {
           {none ? t("accessCodes.generate") : t("accessCodes.regenerate")}
         </Button>
       </Group>
-      {status.isSuccess && (
-        <Text fz={13} c="dimmed" mt="sm">
-          {none
-            ? t("accessCodes.none")
-            : t("accessCodes.remaining", { count: remaining, total: TOTAL })}
-        </Text>
-      )}
-    </Card>
+    </SettingRow>
   );
 }

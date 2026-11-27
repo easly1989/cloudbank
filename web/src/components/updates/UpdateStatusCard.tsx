@@ -1,19 +1,19 @@
-import { Anchor, Button, Group, Switch, Text } from "@mantine/core";
+import { Anchor, Button, Switch } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconCircleArrowUp, IconCircleCheck } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import { checkForUpdates, setUpdateCheck, type UpdateStatus } from "../../api/client";
 import { sinceNow } from "../../bankSyncNotice";
+import { SettingRow, SettingState } from "../../pages/settings/SettingRow";
 import { HowToUpdateModal } from "./HowToUpdateModal";
 import { useUpdateStatus } from "./updateModel";
 import { notifyError } from "../../notifyError";
 
 /**
- * Settings › About, for an admin (#582): whether a newer CloudBank is out,
- * and the switch for the daily check. It is where the state stays once the
- * sidebar card is closed. Its rows sit in the Version card, below the version.
+ * Settings › Administration (#582, #800): whether a newer CloudBank is out,
+ * and the switch for the daily check, as two rows. It is where the state stays
+ * once the sidebar card is closed.
  */
 export function UpdateStatusCard() {
   const { t, i18n } = useTranslation();
@@ -29,59 +29,43 @@ export function UpdateStatusCard() {
   const checking = st.enabled && st.allowed && st.channel !== "";
   const when = (iso?: string) => (iso ? sinceNow(iso, i18n.language) : "");
 
-  let head: React.ReactNode;
+  let description: React.ReactNode;
+  let control: React.ReactNode = null;
   if (!st.allowed) {
-    head = <Text size="sm">{t("updates.offByServer")}</Text>;
+    description = t("updates.offByServer");
   } else if (st.channel === "") {
-    head = <Text size="sm">{t("updates.localBuild")}</Text>;
+    description = t("updates.localBuild");
   } else if (!st.enabled) {
-    head = <Text size="sm">{t("updates.offByAdmin")}</Text>;
+    description = t("updates.offByAdmin");
   } else if (st.available) {
-    head = (
+    description = (
       <>
-        <div className="cb-settings-row-text">
-          <Group gap={8} wrap="nowrap">
-            <IconCircleArrowUp size={16} />
-            <Text fz="sm" fw={600}>
-              {st.channel === "nightly"
-                ? t("updates.availableNightly")
-                : t("updates.available", { version: st.latest })}
-            </Text>
-          </Group>
-          <Text size="sm" c="dimmed">
-            {st.published ? `${t("updates.released", { when: when(st.published) })} · ` : ""}
-            <Anchor href={st.releaseUrl} target="_blank" rel="noreferrer" size="sm">
-              {t("updates.whatsNew")}
-            </Anchor>
-          </Text>
-        </div>
-        <Button size="xs" onClick={open}>
-          {t("updates.how")}
-        </Button>
+        {st.published ? `${t("updates.released", { when: when(st.published) })} · ` : ""}
+        <Anchor href={st.releaseUrl} target="_blank" rel="noreferrer" fz={12}>
+          {t("updates.whatsNew")}
+        </Anchor>
+      </>
+    );
+    control = (
+      <>
+        <SettingState tone="warn">
+          {st.channel === "nightly"
+            ? t("updates.availableNightly")
+            : t("updates.available", { version: st.latest })}
+        </SettingState>
+        <Button onClick={open}>{t("updates.how")}</Button>
       </>
     );
   } else {
-    head = (
+    description =
+      st.error ??
+      (checking && st.checkedAt ? t("updates.checked", { when: when(st.checkedAt) }) : "");
+    control = (
       <>
-        <div className="cb-settings-row-text">
-          <Group gap={8} wrap="nowrap">
-            {!st.error && <IconCircleCheck size={16} />}
-            <Text fz="sm" fw={600}>
-              {st.error ? t("updates.noAnswer") : t("updates.upToDate")}
-            </Text>
-          </Group>
-          {st.error && (
-            <Text size="sm" c="dimmed">
-              {st.error}
-            </Text>
-          )}
-        </div>
-        <Button
-          size="xs"
-          variant="default"
-          loading={check.isPending}
-          onClick={() => check.mutate()}
-        >
+        <SettingState tone={st.error ? "error" : "ok"}>
+          {st.error ? t("updates.noAnswer") : t("updates.upToDate")}
+        </SettingState>
+        <Button variant="default" loading={check.isPending} onClick={() => check.mutate()}>
           {t("updates.checkNow")}
         </Button>
       </>
@@ -90,27 +74,19 @@ export function UpdateStatusCard() {
 
   return (
     <>
-      <div className="cb-settings-row">{head}</div>
+      <SettingRow id="updates" description={description} control={control} />
       {st.allowed && st.channel !== "" && (
-        <div className="cb-settings-row">
-          <div className="cb-settings-row-text">
-            <Text size="sm" fw={600}>
-              {t("updates.switch")}
-            </Text>
-            <Text size="sm" c="dimmed">
-              {t("updates.switchHint")}
-              {checking && st.checkedAt
-                ? ` ${t("updates.checked", { when: when(st.checkedAt) })}`
-                : ""}
-            </Text>
-          </div>
-          <Switch
-            checked={st.enabled}
-            disabled={toggle.isPending}
-            onChange={(e) => toggle.mutate(e.currentTarget.checked)}
-            aria-label={t("updates.switch")}
-          />
-        </div>
+        <SettingRow
+          id="update-check"
+          control={
+            <Switch
+              checked={st.enabled}
+              disabled={toggle.isPending}
+              onChange={(e) => toggle.mutate(e.currentTarget.checked)}
+              aria-label={t("updates.switch")}
+            />
+          }
+        />
       )}
       {st.available && <HowToUpdateModal status={st} opened={how} onClose={close} />}
     </>

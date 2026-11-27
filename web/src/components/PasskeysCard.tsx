@@ -1,7 +1,6 @@
 import {
   ActionIcon,
   Alert,
-  Badge,
   Button,
   Card,
   Group,
@@ -9,12 +8,10 @@ import {
   Stack,
   Text,
   TextInput,
-  Title,
 } from "@mantine/core";
 import {
   IconAlertTriangle,
   IconCheck,
-  IconFingerprint,
   IconKey,
   IconLogin2,
   IconPencil,
@@ -22,7 +19,7 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useId, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
@@ -40,15 +37,15 @@ import { useDateFormat } from "../dates";
 import { notifyError } from "../notifyError";
 import { addPasskey, deviceParts, passkeyCancelled, passkeysSupported } from "../passkey";
 import { useConfirm } from "./confirmContext";
+import { SettingRow, SettingState } from "../pages/settings/SettingRow";
 
-// PasskeysCard is the user's passkeys (#798): the row in Settings › Security,
+// PasskeysCard is the user's passkeys (#798): the row in Settings › Account,
 // and the modal that lists, adds, renames and removes them.
 export function PasskeysCard() {
   const { t } = useTranslation();
   const supported = passkeysSupported();
   const list = useQuery({ queryKey: ["passkeys"], queryFn: listPasskeys });
   const count = list.data?.length ?? 0;
-  const titleId = useId();
   // Back from signing in again to add one: the modal opens where it was.
   const [params, setParams] = useSearchParams();
   const [open, setOpen] = useState(params.get("passkeys") === "add");
@@ -61,45 +58,36 @@ export function PasskeysCard() {
   };
 
   return (
-    <Card withBorder data-testid="passkeys">
-      <Group justify="space-between" align="flex-start">
-        <div>
-          <Group gap="xs">
-            <IconFingerprint size={18} aria-hidden />
-            <Title order={5} id={titleId}>
-              {t("passkeys.title")}
-            </Title>
-            {list.isSuccess &&
-              (count > 0 ? (
-                <Badge color="teal" variant="light">
-                  {t("passkeys.count", { count })}
-                </Badge>
-              ) : (
-                <Badge color="gray" variant="light">
-                  {t("passkeys.none")}
-                </Badge>
-              ))}
-          </Group>
-          <Text size="sm" c="dimmed" maw={560} mt={4}>
-            {supported ? t("passkeys.hint") : t("passkeys.unsupported")}
-          </Text>
-        </div>
-        {count > 0 ? (
-          <Button variant="default" aria-describedby={titleId} onClick={() => setOpen(true)}>
-            {t("passkeys.manage")}
-          </Button>
-        ) : (
-          <Button
-            disabled={!supported || !list.isSuccess}
-            aria-describedby={titleId}
-            onClick={() => setOpen(true)}
-          >
-            {t("passkeys.add")}
-          </Button>
-        )}
-      </Group>
+    <>
+      <SettingRow
+        id="passkeys"
+        testId="passkeys"
+        description={supported ? undefined : t("passkeys.unsupported")}
+        control={
+          <>
+            {list.isSuccess && (
+              <SettingState tone={count > 0 ? "ok" : "off"}>
+                {count > 0 ? t("passkeys.count", { count }) : t("passkeys.none")}
+              </SettingState>
+            )}
+            {count > 0 ? (
+              <Button variant="default" onClick={() => setOpen(true)}>
+                {t("passkeys.manage")}
+              </Button>
+            ) : (
+              <Button
+                variant="default"
+                disabled={!supported || !list.isSuccess}
+                onClick={() => setOpen(true)}
+              >
+                {t("passkeys.add")}
+              </Button>
+            )}
+          </>
+        }
+      />
       <PasskeysModal opened={open} onClose={close} passkeys={list.data ?? []} />
-    </Card>
+    </>
   );
 }
 
@@ -188,7 +176,7 @@ function PasskeysModal({
   const signInAgain = () => {
     sessionStorage.setItem(
       AFTER_LOGIN,
-      JSON.stringify({ path: "/settings/security?passkeys=add", at: Date.now() }),
+      JSON.stringify({ path: "/settings/account?passkeys=add", at: Date.now() }),
     );
     logout.mutate();
   };

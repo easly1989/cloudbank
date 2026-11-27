@@ -14,7 +14,6 @@ import {
   IconAlertTriangle,
   IconFileImport,
   IconFileSpreadsheet,
-  IconTableExport,
   IconUpload,
 } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -124,12 +123,13 @@ function XhbImportPanel() {
   );
 }
 
-// ImportExport is the wallet's import/export UI (HomeBank .xhb, CSV/QIF/OFX, CSV
-// export). It's embedded in the wallet's Settings tab (Import is wallet-scoped,
-// so it lives there rather than in the main nav).
-export function ImportExport() {
+// ImportExport is the wallet's import UI (HomeBank .xhb, CSV/QIF/OFX) or its
+// CSV export, each a page under Settings › Wallet (#800): Import is
+// wallet-scoped, so it lives there rather than in the main nav.
+export function ImportExport({ part }: { part: "import" | "export" }) {
   const { t } = useTranslation();
 
+  if (part === "export") return <ExportPanel />;
   return (
     <Tabs defaultValue="xhb">
       <Tabs.List>
@@ -139,9 +139,6 @@ export function ImportExport() {
         <Tabs.Tab value="csv" leftSection={<IconFileSpreadsheet size={16} />}>
           {t("import.tabs.csv")}
         </Tabs.Tab>
-        <Tabs.Tab value="export" leftSection={<IconTableExport size={16} />}>
-          {t("import.tabs.export")}
-        </Tabs.Tab>
       </Tabs.List>
 
       <Tabs.Panel value="xhb" pt="md">
@@ -149,9 +146,6 @@ export function ImportExport() {
       </Tabs.Panel>
       <Tabs.Panel value="csv" pt="md">
         <ImportWizard />
-      </Tabs.Panel>
-      <Tabs.Panel value="export" pt="md">
-        <ExportPanel />
       </Tabs.Panel>
     </Tabs>
   );

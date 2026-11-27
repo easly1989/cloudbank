@@ -1,6 +1,6 @@
-import { Badge, Box, Group, Loader, ScrollArea, Stack, Text, Title } from "@mantine/core";
-import { Suspense } from "react";
-import { IconArrowLeft } from "@tabler/icons-react";
+import { Group, Loader, TextInput, UnstyledButton } from "@mantine/core";
+import { IconArrowLeft, IconChevronDown, IconSearch, IconX } from "@tabler/icons-react";
+import { Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
@@ -12,191 +12,252 @@ import { TourButton } from "../../onboarding/TourButton";
 import { usePageTour } from "../../onboarding/tourContext";
 import type { TourId } from "../../onboarding/tours";
 import { useWallet } from "../../wallet/WalletProvider";
-import { RAIL, SECTION } from "./settingsTheme";
-import { SETTINGS_SECTIONS } from "./sections";
+import { HINT_VALUES, useRowContext } from "./rowContext";
+import { SettingRow, SettingsGroup } from "./SettingRow";
+import {
+  SETTING_ROWS,
+  SETTINGS_SECTIONS,
+  rowHref,
+  searchRows,
+  visibleSections,
+  type SettingsSection,
+} from "./sections";
+import classes from "./Settings.module.css";
 
-// The sections with a tour of their own (#421): General, where the screen as a
-// whole is introduced, Data, where import and export live, the bank sync,
-// which moved here from a page of its own (#504), and the bank mails (#677).
-const SECTION_TOURS: Partial<Record<string, TourId>> = {
-  general: "settings",
-  "bank-sync": "bankSync",
-  mail: "mail",
-  data: "data",
+// The pages with a tour of their own (#421), by their path under /settings/.
+// The screen's own tour sits on Personalisation, the one page that has all
+// three of its targets (the nav, the entry sheet's fields and the way back).
+const PAGE_TOURS: Partial<Record<string, TourId>> = {
+  personalization: "settings",
+  wallet: "data",
+  "connections/bank-sync": "bankSync",
+  "connections/mail": "mail",
 };
 
 /**
- * Settings is its own screen, not a page inside the app.
+ * Settings is its own screen, not a page inside the app (#800, after Windows
+ * 11 Settings): the app's navigation is replaced by the settings nav, with
+ * who you are, a search over every setting and the eight sections, and the
+ * only way back is one link at its top. Settings is somewhere you go, do a
+ * thing and leave.
  *
- * The style tile is explicit about this: the sidebar's list of pages is
- * replaced by a rail of settings sections, and the only way back is one link at
- * the top. The reason is that settings is somewhere you go, do a thing and
- * leave — keeping the app's navigation visible invites you to wander off
- * mid-change, and the horizontal tabs this replaces could hold five sections
- * before they wrapped, which is why half of what belongs here was living
- * somewhere else.
- *
- * Sections are routes, so each one is a link you can send someone.
+ * Sections and their sub-pages are routes, so each one is a link you can send
+ * someone, and `#row` scrolls to a row and marks it.
  */
 export function SettingsLayout() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { currentWallet } = useWallet();
-  const { pathname, key } = useLocation();
-  const sections = SETTINGS_SECTIONS.filter(
-    (s) => (!s.adminOnly || user?.isAdmin) && !(__DEMO__ && s.notInDemo),
-  );
-  // A section's own sub-pages (a notification channel) keep its header.
-  const current = sections.find(
-    (s) => pathname === `/settings/${s.id}` || pathname.startsWith(`/settings/${s.id}/`),
-  );
-  const tour = current ? SECTION_TOURS[current.id] : undefined;
+  const { pathname, hash, key } = useLocation();
+  const ctx = useRowContext();
+  const sections = visibleSections(ctx);
+  const [query, setQuery] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const path = pathname.replace(/^\/settings\/?/, "").replace(/\/$/, "");
+  const current = sections.find((s) => path === s.id || path.startsWith(`${s.id}/`));
+  const sub = current && path !== current.id ? SETTING_ROWS.find((r) => r.to === path) : undefined;
+  const tour = PAGE_TOURS[path];
   usePageTour(tour);
 
+  // A new page closes the phone's menu and the search.
+  const [seenPath, setSeenPath] = useState(pathname);
+  if (pathname !== seenPath) {
+    setSeenPath(pathname);
+    setMenuOpen(false);
+  }
+
+  // `#row`: scroll to the row once its page has drawn it, and mark it.
+  useEffect(() => {
+    if (!hash) return;
+    const id = decodeURIComponent(hash.slice(1));
+    let tries = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    const find = () => {
+      const el = document.getElementById(id);
+      if (!el) {
+        if (++tries < 60) timer = setTimeout(find, 50);
+        return;
+      }
+      el.scrollIntoView({ block: "center" });
+      el.classList.add(classes.flash);
+      timer = setTimeout(() => el.classList.remove(classes.flash), 1600);
+    };
+    find();
+    return () => clearTimeout(timer);
+  }, [pathname, hash, key]);
+
+  const label = (s: SettingsSection) => t(s.labelKey);
+  const title = sub
+    ? t(sub.titleKey)
+    : current?.id === "wallet" && currentWallet
+      ? `${label(current)} · ${currentWallet.title}`
+      : current
+        ? label(current)
+        : "";
+  const searching = query.trim() !== "";
+
   return (
-    <Box className="cb-settings-screen">
-      <Box
-        component="nav"
-        aria-label={t("settings.title")}
-        className="cb-sidebar cb-settings-rail"
-        data-tour="settings-rail"
-        style={{ width: RAIL.width, padding: `${RAIL.padY}px ${RAIL.padX}px` }}
-      >
-        <Stack gap={RAIL.gap}>
-          <Stack gap={RAIL.gap}>
-            {/* One way out, and it says where it goes. A bare arrow would not:
-                this screen has no other landmark to infer "back" from. */}
-            <Text
-              component={Link}
-              to="/"
-              className="cb-settings-back"
-              data-tour="settings-back"
-              c="dimmed"
-              fz={RAIL.back.fz}
-              px={RAIL.back.inset}
-              style={{ display: "flex", alignItems: "center", gap: RAIL.back.gap }}
-            >
-              <IconArrowLeft size={14} />
-              {t("settings.back")}
-            </Text>
-            <Title order={1} fz={RAIL.title.fz} fw={RAIL.title.fw} px={RAIL.title.inset}>
-              {t("settings.title")}
-            </Title>
-          </Stack>
-
-          <Stack gap={2}>
-            {sections.map((s) => (
-              <NavLink
-                key={s.id}
-                to={`/settings/${s.id}`}
-                className="cb-settings-section"
-                style={{
-                  height: RAIL.item.height,
-                  borderRadius: RAIL.item.radius,
-                  padding: `${RAIL.item.padY}px ${RAIL.item.padX}px`,
-                  gap: RAIL.item.gap,
-                  fontSize: RAIL.item.fz,
-                }}
+    <div className={classes.screen}>
+      <nav aria-label={t("settings.title")} className={classes.nav} data-tour="settings-rail">
+        {/* One way out, and it says where it goes. */}
+        <Link to="/" className={classes.back} data-tour="settings-back">
+          <IconArrowLeft size={14} />
+          {t("settings.back")}
+        </Link>
+        <div className={classes.me}>
+          <span className={classes.avatar} aria-hidden>
+            {(user?.username ?? "?").slice(0, 1).toUpperCase()}
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <div className={classes.meName}>{user?.username}</div>
+            <div className={classes.meRole}>
+              {[
+                user?.isAdmin ? t("settings.roleAdmin") : t("settings.roleUser"),
+                currentWallet?.title,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </div>
+          </div>
+        </div>
+        <TextInput
+          className={classes.search}
+          classNames={{ input: classes.searchInput }}
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.currentTarget.value)}
+          onKeyDown={(e) => e.key === "Escape" && setQuery("")}
+          placeholder={t("settings.search")}
+          aria-label={t("settings.search")}
+          rightSection={
+            searching ? (
+              <UnstyledButton
+                aria-label={t("settings.searchClear")}
+                onClick={() => setQuery("")}
+                style={{ display: "flex" }}
               >
-                <s.icon size={16} />
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  {s.id === "wallet" ? (currentWallet?.title ?? t(s.labelKey)) : t(s.labelKey)}
-                </span>
-              </NavLink>
-            ))}
-          </Stack>
-        </Stack>
-      </Box>
+                <IconX size={16} />
+              </UnstyledButton>
+            ) : (
+              <IconSearch size={16} />
+            )
+          }
+        />
+        {/* On a phone the list folds under the section you are in. */}
+        {current && (
+          <UnstyledButton
+            hiddenFrom="sm"
+            className={classes.navItem}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
+            data-current
+            style={{ background: "var(--cb-ledger-surface)" }}
+          >
+            <current.icon size={18} />
+            <span style={{ flex: 1, minWidth: 0, textAlign: "start" }}>{label(current)}</span>
+            <IconChevronDown
+              size={16}
+              className={classes.chevron}
+              data-open={menuOpen || undefined}
+            />
+          </UnstyledButton>
+        )}
+        <div className={classes.sections} data-open={menuOpen || !current || undefined}>
+          {sections.map((s) => (
+            <NavLink
+              key={s.id}
+              to={`/settings/${s.id}`}
+              className={classes.navItem}
+              aria-current={current?.id === s.id ? "page" : undefined}
+              onClick={() => setQuery("")}
+            >
+              <s.icon size={18} />
+              <span style={{ flex: 1, minWidth: 0 }}>{label(s)}</span>
+            </NavLink>
+          ))}
+        </div>
+      </nav>
 
-      <ScrollArea className="cb-settings-body" style={{ flex: 1, minWidth: 0, height: "100vh" }}>
-        <Stack gap={SECTION.gap} p="xl" maw={1100}>
+      <main className={classes.main}>
+        <div className={classes.inner}>
           {__DEMO__ && (
-            <div>
+            <div style={{ marginBottom: 16 }}>
               <DemoChrome />
             </div>
           )}
-          {current && (
-            <Stack gap={6}>
-              <Group justify="space-between" wrap="nowrap" gap="sm">
-                <Title order={2} fz={SECTION.title.fz} fw={SECTION.title.fw}>
-                  {current.id === "wallet"
-                    ? (currentWallet?.title ?? t(current.labelKey))
-                    : t(current.labelKey)}
-                </Title>
-                {/* Settings has its own header, so the bell is added here too
-                    (#685); it is the one page header without the privacy eye. */}
-                <Group gap="xs" wrap="nowrap">
-                  <NotificationBell size={40} />
-                  {tour && <TourButton id={tour} size={40} />}
-                </Group>
-              </Group>
-              <Text c="dimmed" fz={SECTION.hint.fz}>
-                {t(current.hintKey)}
-              </Text>
-            </Stack>
-          )}
-          {/* A section that throws leaves the rail in place (#518). */}
-          <PageErrorBoundary resetKey={key}>
-            <Suspense fallback={<Loader />}>
-              <Outlet />
-            </Suspense>
-          </PageErrorBoundary>
-        </Stack>
-      </ScrollArea>
-    </Box>
-  );
-}
-
-/** A heading inside a section, with the line that says what it is for. */
-export function SettingsGroup({
-  title,
-  hint,
-  badge,
-  action,
-  children,
-}: {
-  title: string;
-  hint?: string;
-  /** A state beside the name, e.g. single sign-on's On or Off. */
-  badge?: React.ReactNode;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  const heading = (
-    <Title order={3} fz={SECTION.heading.fz} fw={SECTION.heading.fw}>
-      {title}
-    </Title>
-  );
-  return (
-    <Stack gap="sm">
-      <Group justify="space-between" align="flex-end" wrap="wrap" gap="sm">
-        <Stack gap={2} style={{ minWidth: 0, flex: "1 1 auto" }}>
-          {badge ? (
-            <Group gap="xs" wrap="wrap">
-              {heading}
-              {badge}
+          <div className={classes.head}>
+            <h1 className={classes.h1}>
+              {searching ? (
+                t("settings.searchTitle")
+              ) : sub && current ? (
+                <>
+                  <Link to={`/settings/${current.id}`} className={classes.crumb}>
+                    {label(current)}
+                  </Link>
+                  <span className={classes.crumb} aria-hidden>
+                    ›
+                  </span>
+                  {title}
+                </>
+              ) : (
+                title
+              )}
+            </h1>
+            {/* Settings has its own header, so the bell is here too (#685). */}
+            <Group gap="xs" wrap="nowrap">
+              <NotificationBell size={40} />
+              {tour && !searching && <TourButton id={tour} size={40} />}
             </Group>
+          </div>
+          {searching ? (
+            <SearchResults query={query} onPick={() => setQuery("")} />
           ) : (
-            heading
+            // A page that throws leaves the nav in place (#518).
+            <PageErrorBoundary resetKey={key}>
+              <Suspense fallback={<Loader />}>
+                <Outlet />
+              </Suspense>
+            </PageErrorBoundary>
           )}
-          {hint && (
-            <Text c="dimmed" fz={SECTION.headingHint.fz}>
-              {hint}
-            </Text>
-          )}
-        </Stack>
-        {action}
-      </Group>
-      {children}
-    </Stack>
+        </div>
+      </main>
+    </div>
   );
 }
 
-/** A count beside a section's name, for the ones that carry one. */
-export function SectionCount({ value }: { value: number }) {
+/** Every row whose name or description matches, by section. */
+function SearchResults({ query, onPick }: { query: string; onPick: () => void }) {
+  const { t } = useTranslation();
+  const ctx = useRowContext();
+  const found = searchRows(query, ctx, (r) => `${t(r.titleKey)} ${t(r.hintKey, HINT_VALUES)}`);
+  if (found.length === 0) {
+    return (
+      <p className={classes.groupHint} style={{ fontSize: 14 }}>
+        {t("settings.searchNone", { query: query.trim() })}
+      </p>
+    );
+  }
   return (
-    <Badge variant="default" size="sm" radius={RAIL.badge.radius}>
-      {value}
-    </Badge>
+    <>
+      {SETTINGS_SECTIONS.map((s) => {
+        const rows = found.filter((r) => r.section === s.id);
+        if (rows.length === 0) return null;
+        return (
+          <SettingsGroup key={s.id} title={t(s.labelKey)}>
+            {rows.map((r) => (
+              <SettingRow
+                key={r.id}
+                icon={r.icon}
+                title={t(r.titleKey)}
+                description={t(r.hintKey, HINT_VALUES)}
+                to={rowHref(r)}
+                onClick={onPick}
+              />
+            ))}
+          </SettingsGroup>
+        );
+      })}
+    </>
   );
 }

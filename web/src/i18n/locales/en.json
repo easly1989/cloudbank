@@ -1783,14 +1783,14 @@
     "ssoUnavailable": "{{provider}} is not answering right now.",
     "recoveryPrompt": "Can't sign in?",
     "recoveryLink": "Use a recovery code",
-    "recoveryHint": "Use one of the codes you saved in Settings › Security. Each code works once.",
+    "recoveryHint": "Use one of the codes you saved in Settings › Account. Each code works once.",
     "recoveryCode": "Recovery code",
     "recoverySubmit": "Sign in with the code",
     "recoveryInvalid": "Invalid username or recovery code",
     "backToSso": "Sign in with {{provider}} instead",
     "recoveryLeft_one": "You signed in with a recovery code. You have {{count}} left.",
     "recoveryLeft_other": "You signed in with a recovery code. You have {{count}} left.",
-    "recoveryNoneLeft": "You signed in with your last recovery code. Make new ones in Settings › Security.",
+    "recoveryNoneLeft": "You signed in with your last recovery code. Make new ones in Settings › Account.",
     "tooMany": "Too many attempts. Try again in a few minutes.",
     "passkeySignIn": "Sign in with a passkey",
     "passkeyInvalid": "This passkey is not registered in CloudBank. Use another passkey, or your username and password."
@@ -1909,7 +1909,6 @@
     "unread": "Unread",
     "pushTitle": "Push on this device",
     "channels": "Channels",
-    "channelsHint": "Where notifications reach you. Open a channel to connect it and choose its events.",
     "group": {
       "security": "Security",
       "problems": "Problems",
@@ -2135,11 +2134,11 @@
       "inDigest": "In the digest",
       "always": "Always at once",
       "atDigest": "At the digest time",
-      "reviewAfter": "Tell me after",
       "reviewDays": "Days of waiting",
       "days_one": "{{count}} day",
       "days_other": "{{count}} days"
-    }
+    },
+    "ofTotal": "{{on}} of {{total}}"
   },
   "ai": {
     "hint": "An OpenAI-compatible service, or a model on your own network (Ollama, LM Studio) that only an administrator can set. Your key stays on the server.",
@@ -2150,8 +2149,6 @@
     "apiKeyPlaceholder": "sk-…",
     "keySet": "A key is stored. Type a new one to replace it.",
     "keyNotSet": "No key stored yet.",
-    "save": "Save",
-    "saved": "AI settings saved",
     "suggestCategory": "Suggest category",
     "noSuggestion": "No category suggestion for this transaction.",
     "quickEntry": "Quick entry",
@@ -2287,7 +2284,6 @@
     "ssoReserved": "The first sign-in is reserved to the administrator's email. Sign in with that account."
   },
   "admin": {
-    "title": "Users",
     "create": "Add user",
     "createTitle": "Create a user",
     "username": "Username",
@@ -2313,7 +2309,7 @@
     "removePasskeysTitle": "Remove {{username}}'s passkeys?",
     "removePasskeysBody_one": "{{username}} has {{count}} passkey. Afterwards they sign in with the password or a recovery code, and can add new ones.",
     "removePasskeysBody_other": "{{username}} has {{count}} passkeys. Afterwards they sign in with the password or a recovery code, and can add new ones.",
-    "ownPasskeys": "You manage your own passkeys in Settings › Security."
+    "ownPasskeys": "You manage your own passkeys in Settings › Account."
   },
   "wallet": {
     "firstTitle": "Create your first wallet",
@@ -2332,8 +2328,6 @@
     "create": "Create wallet",
     "switch": "Switch wallet",
     "settings": "Wallet settings",
-    "save": "Save",
-    "saved": "Wallet updated",
     "dangerZone": "Danger zone",
     "deleteWarning": "Deleting a wallet permanently removes all of its data. This cannot be undone.",
     "deleteConfirmLabel": "Type \"{{title}}\" to confirm deletion.",
@@ -2792,8 +2786,7 @@
     },
     "tabs": {
       "xhb": "HomeBank file",
-      "csv": "Bank / CSV / QIF / OFX / CAMT.053",
-      "export": "CSV export"
+      "csv": "Bank / CSV / QIF / OFX / CAMT.053"
     }
   },
   "importCsv": {
@@ -2898,13 +2891,9 @@
   },
   "settings": {
     "title": "Settings",
-    "general": "General",
     "wallet": "Wallet",
     "navigation": "Navigation",
     "apiTokens": "API tokens",
-    "section": "Section",
-    "sectionGeneral": "General",
-    "sectionImport": "Import & export",
     "sectionBackup": "Backup & integrity",
     "nav": {
       "hint": "Customize the sidebar: drag to reorder groups and items, drag an item to another group, show or hide entries, rename or add groups, and insert separators.",
@@ -2928,31 +2917,102 @@
     "people": "People",
     "back": "Back to CloudBank",
     "appearance": "Appearance",
-    "security": "Security",
-    "data": "Import & export",
-    "generalHint": "How CloudBank looks and behaves for you. Other people using this server keep their own.",
-    "appearanceHint": "Theme, accent, and what the sidebar and the register show you.",
-    "walletHint": "Settings for this wallet, and what is inside it.",
-    "securityHint": "Who can get in, and what they can get in with.",
-    "dataHint": "Getting your money in and out of CloudBank, and keeping a copy.",
-    "peopleHint": "Managing who can sign in belongs here, not in the main menu.",
     "navigationHint": "Which pages the sidebar lists, and in what order.",
     "signIn": "Signing in",
-    "signInHint": "The password you sign in with, and a second step on top of it.",
-    "signInHintSso": "You sign in with {{provider}}, which looks after passwords and second steps.",
     "apiTokensHint": "Tokens let a script or another app act as you. Revoke one and it stops working immediately.",
-    "notificationsHint": "Where CloudBank reaches you when something needs you.",
     "ai": "AI",
-    "aiHint": "Your own AI provider: what it does, on which wallets, and what it was sent.",
     "bankSyncHint": "Connections to your banks, with their own state and history.",
     "importHint": "Statements, and the rules that file them.",
     "backupHint": "A copy you can restore from, and a check that the database is sound.",
     "about": "About",
-    "aboutHint": "What this CloudBank is, and where to find its code.",
-    "signInHintPasskeys": "The password, the second step on top of it, and the passkeys that replace it."
+    "sections": {
+      "home": "Home",
+      "account": "Account",
+      "personalization": "Personalization",
+      "connections": "Connections",
+      "admin": "Administration"
+    },
+    "search": "Find a setting",
+    "searchClear": "Clear the search",
+    "searchTitle": "Search results",
+    "searchNone": "No setting matches “{{query}}”.",
+    "related": "Related settings",
+    "roleAdmin": "Administrator",
+    "roleUser": "User",
+    "saved": "Saved",
+    "required": "This can't be empty",
+    "edit": "Edit",
+    "delete": "Delete",
+    "download": "Download",
+    "open": "Open",
+    "dataGroup": "Data",
+    "layoutGroup": "Menu and transaction sheet",
+    "connectionsGroup": "How transactions come in",
+    "notifRules": "Thresholds and timing",
+    "adminAccess": "Who signs in",
+    "adminServer": "This server",
+    "tokensCount_one": "{{count}} token",
+    "tokensCount_other": "{{count}} tokens",
+    "backupNever": "Never",
+    "backupToday": "Today",
+    "backupDays_one": "{{count}} day ago",
+    "backupDays_other": "{{count}} days ago",
+    "home": {
+      "security": "Security",
+      "banks": "Banks",
+      "banksLinked_one": "{{count}} connected",
+      "banksLinked_other": "{{count}} connected",
+      "lastSync": "Last sync",
+      "toReview_one": "{{count}} to review",
+      "toReview_other": "{{count}} to review",
+      "mailboxes_one": "{{count}} mailbox",
+      "mailboxes_other": "{{count}} mailboxes",
+      "data": "Data",
+      "lastBackup": "Last backup",
+      "issues_one": "{{count}} problem",
+      "issues_other": "{{count}} problems",
+      "ok": "OK",
+      "licence": "Licence",
+      "updateOut": "A new version is out",
+      "upToDate": "Up to date",
+      "notChecked": "Not checked",
+      "recommended": "Recommended",
+      "backupTitle": "Make a backup",
+      "backupNever": "No backup of this wallet has been downloaded from here yet.",
+      "backupOld_one": "The last one is {{count}} day old.",
+      "backupOld_other": "The last one is {{count}} days old.",
+      "mailTitle_one": "{{count}} bank mail to review",
+      "mailTitle_other": "{{count}} bank mails to review",
+      "mailHint": "Mails CloudBank could not turn into a transaction.",
+      "twoFactorTitle": "Turn on two-factor authentication",
+      "nothing": "Nothing needs you right now."
+    },
+    "row": {
+      "languageHint": "The language of the app and of its notifications.",
+      "dateHint": "How dates appear in the registers and reports.",
+      "startHint": "The page that opens when you sign in.",
+      "themeHint": "Light, dark, or as your device is set.",
+      "accentHint": "The colour of buttons, links and the current page.",
+      "entryHint": "Which fields the transaction sheet shows up front, and what a new entry starts with.",
+      "codesHint": "The way in while the single sign-on provider is down.",
+      "walletName": "Name and owner",
+      "defaultAccountHint": "The account offered in every new entry.",
+      "import": "Import",
+      "export": "Export",
+      "exportHint": "A CSV of one account or of the whole wallet.",
+      "digestHint": "The events you collect arrive together, once a day.",
+      "reviewDays": "Reminder of transactions to review",
+      "reviewDaysHint": "After how many days of waiting it reaches you, on every channel.",
+      "baseUrlHint": "The address of the OpenAI-compatible service.",
+      "modelHint": "The model the requests go to.",
+      "apiKeyHint": "Stays on the server; it is never shown again.",
+      "updates": "Updates",
+      "updatesHint": "Whether a newer CloudBank is out.",
+      "database": "Full database backup",
+      "peopleHint": "Who can sign in to this server, and as what."
+    }
   },
   "apiTokens": {
-    "title": "Personal API tokens",
     "hint": "Access the API from scripts and integrations without a browser, using an Authorization: Bearer <token> header. A read token can only read; a read-write token can also make changes. Tokens act as you — keep them secret.",
     "create": "Create token",
     "cancel": "Cancel",
@@ -2994,8 +3054,6 @@
     "noDefaultAccount": "None",
     "smartAmount": "Smart amount entry",
     "smartAmountHint": "Type 12.40 or 12,40 — both are read as decimals (HomeBank style)",
-    "save": "Save",
-    "saved": "Preferences saved",
     "sidebarAccounts": "Account balances in the sidebar",
     "sidebarAccountsHint": "Off by default. Pick up to {{max}} — it should stay a glance, not a second account list.",
     "balances": "Balances on the overview and above the register",
@@ -3005,7 +3063,7 @@
     "resetTours": "Show all tours again",
     "toursReset": "Each page will offer its tour again.",
     "showFooter": "Show the footer",
-    "showFooterHint": "Off, the version, the licence and the links stay in Settings › About."
+    "showFooterHint": "Off, the version, the licence and the links stay in Settings › Home."
   },
   "tour": {
     "skip": "Skip",
@@ -3060,9 +3118,7 @@
     "restoreHint": "Restore creates a new wallet; it never overwrites this one.",
     "restore": "Restore",
     "restored": "Wallet restored",
-    "adminLabel": "Administrator",
-    "hotHint": "Full database snapshot (all wallets and users).",
-    "hotDownload": "Download full database"
+    "hotHint": "Full database snapshot (all wallets and users)."
   },
   "attention": {
     "title_one": "One thing wants your attention",
@@ -3140,7 +3196,7 @@
     "replay": "Tour of this page",
     "skipAsk": {
       "title": "Skip the other pages' tours too?",
-      "body": "The ? at the top of each page still shows its tour whenever you like. You can turn the offers back on in Settings › General.",
+      "body": "The ? at the top of each page still shows its tour whenever you like. You can turn the offers back on in Settings › Account.",
       "onlyThis": "Just this one",
       "all": "Skip them all"
     },
@@ -3385,18 +3441,12 @@
   },
   "about": {
     "guideHint": "How to use CloudBank, step by step",
-    "version": "version {{version}}",
     "licence": "CloudBank is free software under the <b>AGPL-3.0</b> licence: you can read its code, change it and share it on the same terms.",
     "source": "Source code",
     "apiDocsHint": "The API of this installation",
     "support": "Support CloudBank",
     "supportHint": "Buy Me a Coffee and the other ways",
-    "homebankHint": "The desktop app CloudBank is a web port of",
-    "groupVersion": "Version",
-    "groupVersionHint": "The version this server runs.",
-    "groupLicence": "Licence",
-    "groupLinks": "Links",
-    "groupLinksHint": "Guide, source code and API."
+    "homebankHint": "The desktop app CloudBank is a web port of"
   },
   "pageError": {
     "title": "This page stopped working",
@@ -3439,7 +3489,7 @@
     "howTitle": "Update CloudBank to {{version}}",
     "howIntro": "CloudBank runs in Docker, so the update happens on the server: pull the new image and restart the container. Your data stays in its volume, and CloudBank brings it up to date when it starts.",
     "howBackup": "1. Make a backup",
-    "howBackupBody": "In <a>Settings → Import & export</a>, download a backup. Nothing should go wrong; this is in case it does.",
+    "howBackupBody": "In <a>Settings → Wallet → Backup & integrity</a>, download a backup. Nothing should go wrong; this is in case it does.",
     "howCompose": "2. With Docker Compose, in the folder of your compose file",
     "howRun": "Or with docker run",
     "howRunAfter": "Then stop and remove the old container, and start it again with the same options.",
@@ -3471,7 +3521,8 @@
     "submit": "Change password",
     "changed": "Password changed. Other devices will have to sign in again.",
     "wrongCurrent": "This is not your current password.",
-    "mismatch": "The two passwords do not match."
+    "mismatch": "The two passwords do not match.",
+    "change": "Change"
   },
   "errors": {
     "invalid_credentials": "Those sign-in details are not correct.",

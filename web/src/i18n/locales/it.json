@@ -1783,14 +1783,14 @@
     "ssoUnavailable": "{{provider}} non risponde in questo momento.",
     "recoveryPrompt": "Non riesci ad accedere?",
     "recoveryLink": "Usa un codice di recupero",
-    "recoveryHint": "Usa uno dei codici che hai salvato in Impostazioni › Sicurezza. Ogni codice vale una volta.",
+    "recoveryHint": "Usa uno dei codici che hai salvato in Impostazioni › Account. Ogni codice vale una volta.",
     "recoveryCode": "Codice di recupero",
     "recoverySubmit": "Accedi con il codice",
     "recoveryInvalid": "Nome utente o codice di recupero non validi",
     "backToSso": "Torna all'accesso con {{provider}}",
     "recoveryLeft_one": "Sei entrato con un codice di recupero. Te ne resta {{count}}.",
     "recoveryLeft_other": "Sei entrato con un codice di recupero. Te ne restano {{count}}.",
-    "recoveryNoneLeft": "Sei entrato con l'ultimo codice di recupero. Generane di nuovi in Impostazioni › Sicurezza.",
+    "recoveryNoneLeft": "Sei entrato con l'ultimo codice di recupero. Generane di nuovi in Impostazioni › Account.",
     "tooMany": "Troppi tentativi. Riprova tra qualche minuto.",
     "passkeySignIn": "Accedi con una passkey",
     "passkeyInvalid": "Questa passkey non è registrata in CloudBank. Usa un'altra passkey oppure nome utente e password."
@@ -1909,7 +1909,6 @@
     "unread": "Da leggere",
     "pushTitle": "Push su questo dispositivo",
     "channels": "Canali",
-    "channelsHint": "Dove ti raggiungono le notifiche. Apri un canale per collegarlo e scegliere i suoi eventi.",
     "group": {
       "security": "Sicurezza",
       "problems": "Problemi",
@@ -2135,11 +2134,11 @@
       "inDigest": "Nel riepilogo",
       "always": "Sempre subito",
       "atDigest": "All’ora del riepilogo",
-      "reviewAfter": "Avvisa dopo",
       "reviewDays": "Giorni di attesa",
       "days_one": "{{count}} giorno",
       "days_other": "{{count}} giorni"
-    }
+    },
+    "ofTotal": "{{on}} su {{total}}"
   },
   "ai": {
     "hint": "Un servizio compatibile OpenAI, oppure un modello sulla tua rete (Ollama, LM Studio) che può impostare solo un amministratore. La chiave resta sul server.",
@@ -2150,8 +2149,6 @@
     "apiKeyPlaceholder": "sk-…",
     "keySet": "Una chiave è salvata. Digitane una nuova per sostituirla.",
     "keyNotSet": "Nessuna chiave salvata.",
-    "save": "Salva",
-    "saved": "Impostazioni AI salvate",
     "suggestCategory": "Suggerisci categoria",
     "noSuggestion": "Nessun suggerimento di categoria per questa transazione.",
     "quickEntry": "Inserimento rapido",
@@ -2287,7 +2284,6 @@
     "ssoReserved": "Il primo accesso è riservato all'email dell'amministratore. Entra con quell'account."
   },
   "admin": {
-    "title": "Utenti",
     "create": "Aggiungi utente",
     "createTitle": "Crea un utente",
     "username": "Nome utente",
@@ -2313,7 +2309,7 @@
     "removePasskeysTitle": "Rimuovere le passkey di {{username}}?",
     "removePasskeysBody_one": "{{username}} ha {{count}} passkey. Dopo, entra con la password o con un codice di recupero, e può aggiungerne di nuove.",
     "removePasskeysBody_other": "{{username}} ha {{count}} passkey. Dopo, entra con la password o con un codice di recupero, e può aggiungerne di nuove.",
-    "ownPasskeys": "Le tue passkey le gestisci da Impostazioni › Sicurezza."
+    "ownPasskeys": "Le tue passkey le gestisci da Impostazioni › Account."
   },
   "wallet": {
     "firstTitle": "Crea il tuo primo portafoglio",
@@ -2332,8 +2328,6 @@
     "create": "Crea portafoglio",
     "switch": "Cambia portafoglio",
     "settings": "Impostazioni portafoglio",
-    "save": "Salva",
-    "saved": "Portafoglio aggiornato",
     "dangerZone": "Zona pericolosa",
     "deleteWarning": "Eliminare un portafoglio rimuove definitivamente tutti i suoi dati. L'operazione è irreversibile.",
     "deleteConfirmLabel": "Digita \"{{title}}\" per confermare l'eliminazione.",
@@ -2792,8 +2786,7 @@
     },
     "tabs": {
       "xhb": "File HomeBank",
-      "csv": "Banca / CSV / QIF / OFX / CAMT.053",
-      "export": "Esporta CSV"
+      "csv": "Banca / CSV / QIF / OFX / CAMT.053"
     }
   },
   "importCsv": {
@@ -2898,13 +2891,9 @@
   },
   "settings": {
     "title": "Impostazioni",
-    "general": "Generali",
     "wallet": "Portafoglio",
     "navigation": "Navigazione",
     "apiTokens": "Token API",
-    "section": "Sezione",
-    "sectionGeneral": "Generali",
-    "sectionImport": "Importa ed esporta",
     "sectionBackup": "Backup e integrità",
     "nav": {
       "hint": "Personalizza il menu laterale: trascina per riordinare gruppi e voci, trascina una voce in un altro gruppo, mostra o nascondi le voci, rinomina o aggiungi gruppi e inserisci separatori.",
@@ -2928,31 +2917,102 @@
     "people": "Persone",
     "back": "Torna a CloudBank",
     "appearance": "Aspetto",
-    "security": "Sicurezza",
-    "data": "Importa ed esporta",
-    "generalHint": "Come CloudBank si presenta e si comporta per te. Chi altro usa questo server tiene le proprie impostazioni.",
-    "appearanceHint": "Tema, accento, e cosa ti mostrano la barra laterale e il registro.",
-    "walletHint": "Impostazioni di questo portafoglio, e di cosa contiene.",
-    "securityHint": "Chi può entrare, e con cosa.",
-    "dataHint": "Far entrare e uscire il denaro da CloudBank, e tenerne una copia.",
-    "peopleHint": "Gestire chi può accedere sta qui, non nel menù principale.",
     "navigationHint": "Quali pagine elenca la barra laterale, e in che ordine.",
     "signIn": "Accesso",
-    "signInHint": "La password con cui entri, e un secondo passaggio oltre a quella.",
-    "signInHintSso": "Entri con {{provider}}, che si occupa di password e secondi passaggi.",
     "apiTokensHint": "Un token permette a uno script o a un'altra app di agire come te. Revocarlo lo blocca all'istante.",
-    "notificationsHint": "Dove CloudBank ti raggiunge quando qualcosa ti richiede.",
     "ai": "AI",
-    "aiHint": "Il tuo provider AI: cosa fa, su quali portafogli e cosa gli è stato inviato.",
     "bankSyncHint": "Le connessioni alle tue banche, con il loro stato e la loro storia.",
     "importHint": "Gli estratti conto, e le regole che li archiviano.",
     "backupHint": "Una copia da cui ripristinare, e un controllo che il database sia integro.",
     "about": "Informazioni",
-    "aboutHint": "Cos'è questa installazione di CloudBank e dove trovarne il codice.",
-    "signInHintPasskeys": "La password, il secondo passaggio oltre a quella, e le passkey che la sostituiscono."
+    "sections": {
+      "home": "Home",
+      "account": "Account",
+      "personalization": "Personalizzazione",
+      "connections": "Collegamenti",
+      "admin": "Amministrazione"
+    },
+    "search": "Cerca un'impostazione",
+    "searchClear": "Cancella la ricerca",
+    "searchTitle": "Risultati della ricerca",
+    "searchNone": "Nessuna impostazione corrisponde a «{{query}}».",
+    "related": "Impostazioni correlate",
+    "roleAdmin": "Amministratore",
+    "roleUser": "Utente",
+    "saved": "Salvato",
+    "required": "Non può restare vuoto",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "download": "Scarica",
+    "open": "Apri",
+    "dataGroup": "Dati",
+    "layoutGroup": "Menu e scheda transazione",
+    "connectionsGroup": "Come arrivano le transazioni",
+    "notifRules": "Soglie e orari",
+    "adminAccess": "Chi accede",
+    "adminServer": "Questo server",
+    "tokensCount_one": "{{count}} token",
+    "tokensCount_other": "{{count}} token",
+    "backupNever": "Mai",
+    "backupToday": "Oggi",
+    "backupDays_one": "{{count}} giorno fa",
+    "backupDays_other": "{{count}} giorni fa",
+    "home": {
+      "security": "Sicurezza",
+      "banks": "Banche",
+      "banksLinked_one": "{{count}} collegata",
+      "banksLinked_other": "{{count}} collegate",
+      "lastSync": "Ultimo sync",
+      "toReview_one": "{{count}} da rivedere",
+      "toReview_other": "{{count}} da rivedere",
+      "mailboxes_one": "{{count}} casella",
+      "mailboxes_other": "{{count}} caselle",
+      "data": "Dati",
+      "lastBackup": "Ultimo backup",
+      "issues_one": "{{count}} problema",
+      "issues_other": "{{count}} problemi",
+      "ok": "Ok",
+      "licence": "Licenza",
+      "updateOut": "È uscita una nuova versione",
+      "upToDate": "Aggiornato",
+      "notChecked": "Non controllati",
+      "recommended": "Consigliate",
+      "backupTitle": "Fai un backup",
+      "backupNever": "Da qui non hai ancora scaricato un backup di questo portafoglio.",
+      "backupOld_one": "L'ultimo è di {{count}} giorno fa.",
+      "backupOld_other": "L'ultimo è di {{count}} giorni fa.",
+      "mailTitle_one": "{{count}} mail della banca da rivedere",
+      "mailTitle_other": "{{count}} mail della banca da rivedere",
+      "mailHint": "Mail che CloudBank non è riuscito a trasformare in una transazione.",
+      "twoFactorTitle": "Attiva l'autenticazione a due fattori",
+      "nothing": "Per ora non c'è niente da fare."
+    },
+    "row": {
+      "languageHint": "La lingua dell'app e delle notifiche.",
+      "dateHint": "Come compaiono le date nei registri e nei report.",
+      "startHint": "La pagina che si apre quando entri.",
+      "themeHint": "Chiaro, scuro, o come il dispositivo.",
+      "accentHint": "Il colore di pulsanti, link e pagina corrente.",
+      "entryHint": "Quali campi la scheda transazione mostra subito, e da cosa parte una nuova voce.",
+      "codesHint": "Il modo per entrare quando il provider di single sign-on non risponde.",
+      "walletName": "Nome e proprietario",
+      "defaultAccountHint": "Il conto proposto in ogni nuova voce.",
+      "import": "Importa",
+      "export": "Esporta",
+      "exportHint": "Un CSV di un conto o di tutto il portafoglio.",
+      "digestHint": "Gli eventi che raccogli arrivano insieme, una volta al giorno.",
+      "reviewDays": "Promemoria delle transazioni da rivedere",
+      "reviewDaysHint": "Dopo quanti giorni di attesa ti raggiunge, su ogni canale.",
+      "baseUrlHint": "L'indirizzo del servizio compatibile con OpenAI.",
+      "modelHint": "Il modello a cui vanno le richieste.",
+      "apiKeyHint": "Resta sul server; non viene più mostrata.",
+      "updates": "Aggiornamenti",
+      "updatesHint": "Se è uscito un CloudBank più recente.",
+      "database": "Backup completo del database",
+      "peopleHint": "Chi può entrare in questo server, e con quale ruolo."
+    }
   },
   "apiTokens": {
-    "title": "Token API personali",
     "hint": "Accedi all'API da script e integrazioni senza browser, usando l'header Authorization: Bearer <token>. Un token di sola lettura può solo leggere; uno in lettura-scrittura può anche modificare. I token agiscono come te — tienili segreti.",
     "create": "Crea token",
     "cancel": "Annulla",
@@ -2994,8 +3054,6 @@
     "noDefaultAccount": "Nessuno",
     "smartAmount": "Inserimento importi smart",
     "smartAmountHint": "Digita 12.40 o 12,40 — entrambi letti come decimali (stile HomeBank)",
-    "save": "Salva",
-    "saved": "Preferenze salvate",
     "sidebarAccounts": "Saldi dei conti nella barra laterale",
     "sidebarAccountsHint": "Disattivati di default. Scegline al massimo {{max}}: devono restare un colpo d'occhio, non un secondo elenco dei conti.",
     "balances": "Saldi sull'overview e sopra il registro",
@@ -3005,7 +3063,7 @@
     "resetTours": "Mostra di nuovo tutti i tour",
     "toursReset": "Ogni pagina proporrà di nuovo il suo tour.",
     "showFooter": "Mostra il piè di pagina",
-    "showFooterHint": "Spento, versione, licenza e link restano in Impostazioni › Informazioni."
+    "showFooterHint": "Spento, versione, licenza e link restano in Impostazioni › Home."
   },
   "tour": {
     "skip": "Salta",
@@ -3060,9 +3118,7 @@
     "restoreHint": "Il ripristino crea un nuovo portafoglio; non sovrascrive questo.",
     "restore": "Ripristina",
     "restored": "Portafoglio ripristinato",
-    "adminLabel": "Amministratore",
-    "hotHint": "Snapshot completo del database (tutti i portafogli e utenti).",
-    "hotDownload": "Scarica database completo"
+    "hotHint": "Snapshot completo del database (tutti i portafogli e utenti)."
   },
   "attention": {
     "title_one": "Una cosa richiede la tua attenzione",
@@ -3140,7 +3196,7 @@
     "replay": "Tour di questa pagina",
     "skipAsk": {
       "title": "Salto anche i tour delle altre pagine?",
-      "body": "Il ? in cima a ogni pagina li mostra comunque quando vuoi. Puoi riattivare le proposte in Impostazioni › Generali.",
+      "body": "Il ? in cima a ogni pagina li mostra comunque quando vuoi. Puoi riattivare le proposte in Impostazioni › Account.",
       "onlyThis": "Solo questo",
       "all": "Salta tutti"
     },
@@ -3385,18 +3441,12 @@
   },
   "about": {
     "guideHint": "Come si usa CloudBank, passo per passo",
-    "version": "versione {{version}}",
     "licence": "CloudBank è software libero sotto licenza <b>AGPL-3.0</b>: puoi leggerne il codice, modificarlo e ridistribuirlo alle stesse condizioni.",
     "source": "Codice sorgente",
     "apiDocsHint": "Le API di questa installazione",
     "support": "Sostieni CloudBank",
     "supportHint": "Buy Me a Coffee e gli altri modi",
-    "homebankHint": "L'app desktop di cui CloudBank è un port web",
-    "groupVersion": "Versione",
-    "groupVersionHint": "La versione in uso su questo server.",
-    "groupLicence": "Licenza",
-    "groupLinks": "Link",
-    "groupLinksHint": "Guida, codice sorgente e API."
+    "homebankHint": "L'app desktop di cui CloudBank è un port web"
   },
   "pageError": {
     "title": "Questa pagina si è interrotta",
@@ -3439,7 +3489,7 @@
     "howTitle": "Aggiorna CloudBank a {{version}}",
     "howIntro": "CloudBank gira in Docker, quindi l'aggiornamento si fa sul server: scarica la nuova immagine e riavvia il container. I dati restano nel loro volume, e CloudBank li aggiorna da solo all'avvio.",
     "howBackup": "1. Fai un backup",
-    "howBackupBody": "In <a>Impostazioni → Importa ed esporta</a>, scarica un backup. Non dovrebbe andare storto niente; serve nel caso succeda.",
+    "howBackupBody": "In <a>Impostazioni → Portafoglio → Backup e integrità</a>, scarica un backup. Non dovrebbe andare storto niente; serve nel caso succeda.",
     "howCompose": "2. Con Docker Compose, nella cartella del file compose",
     "howRun": "Oppure con docker run",
     "howRunAfter": "Poi ferma e rimuovi il vecchio container, e riavvialo con le stesse opzioni.",
@@ -3471,7 +3521,8 @@
     "submit": "Cambia password",
     "changed": "Password cambiata. Gli altri dispositivi dovranno accedere di nuovo.",
     "wrongCurrent": "Non è la tua password attuale.",
-    "mismatch": "Le due password non coincidono."
+    "mismatch": "Le due password non coincidono.",
+    "change": "Cambia"
   },
   "errors": {
     "invalid_credentials": "I dati di accesso non sono corretti.",
