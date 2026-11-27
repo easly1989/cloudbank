@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -15,6 +16,7 @@ import (
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
 
+	"github.com/easly1989/cloudbank/server/internal/notify"
 	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
@@ -34,6 +36,9 @@ const (
 	ceremonyTTL = 10 * time.Minute
 	// ceremonyCap bounds the challenges held at once: the login one is public.
 	ceremonyCap = 4096
+	// beginsPerMinute bounds the sign-in challenges one address asks for. A
+	// login page asks for one as it opens and one more every 9 minutes.
+	beginsPerMinute = 30
 	// passkeyNameMax is the longest name a passkey keeps, in characters.
 	passkeyNameMax = 60
 )
@@ -169,7 +174,7 @@ func (s *Service) BeginPasskeyAdd(ctx context.Context, userID int64, token strin
 	if err != nil {
 		return nil, err
 	}
-	s.ceremonies.put(addKey(userID), ceremony{data: *data, rp: rp, userID: userID, expires: s.now().Add(ceremonyTTL)}, s.now())
+	s.adds.put(addKey(userID), ceremony{data: *data, rp: rp, userID: userID, expires: s.now().Add(ceremonyTTL)}, s.now())
 	return opts, nil
 }
 
@@ -179,7 +184,7 @@ func (s *Service) FinishPasskeyAdd(ctx context.Context, userID int64, token, nam
 	if err := s.signedInRecently(ctx, token); err != nil {
 		return Passkey{}, err
 	}
-	c, ok := s.ceremonies.take(addKey(userID), s.now())
+	c, ok := s.adds.take(addKey(userID), s.now())
 	if !ok {
 		return Passkey{}, ErrPasskeyRejected
 	}
@@ -221,12 +226,23 @@ func (s *Service) FinishPasskeyAdd(ctx context.Context, userID int64, token, nam
 		}
 		return Passkey{}, err
 	}
+	// A new way in, announced like an API token: whoever stole a fresh
+	// session could add one, and it outlives a password change.
+	s.tell(ctx, userID, notify.KindNewDevice, func(t alertText) (string, string) {
+		return t.passkeyTitle, fmt.Sprintf(t.passkey, row.Name)
+	})
 	return toPasskey(row), nil
 }
 
 // BeginPasskeyLogin starts a sign-in with any passkey made on rp. The key
-// comes back with the browser's answer to FinishPasskeyLogin.
-func (s *Service) BeginPasskeyLogin(rp RelyingParty) (opts *protocol.CredentialAssertion, key string, err error) {
+// comes back with the browser's answer to FinishPasskeyLogin; it is no
+// secret, the signature is over the challenge. ip scopes a rate limit.
+func (s *Service) BeginPasskeyLogin(ip string, rp RelyingParty) (opts *protocol.CredentialAssertion, key string, err error) {
+	limit := "passkey-begin|" + ip
+	if !s.begins.allow(limit) {
+		return nil, "", ErrRateLimited
+	}
+	s.begins.record(limit)
 	wa, err := newRelyingParty(rp)
 	if err != nil {
 		return nil, "", err
@@ -246,15 +262,12 @@ func (s *Service) BeginPasskeyLogin(rp RelyingParty) (opts *protocol.CredentialA
 // FinishPasskeyLogin checks the browser's answer to BeginPasskeyLogin and
 // opens a session for the passkey's owner. Every failure is
 // ErrInvalidCredentials, a disabled account included.
-func (s *Service) FinishPasskeyLogin(ctx context.Context, ip, key string, response []byte, userAgent string) (User, string, error) {
-	limit := "passkey|" + ip
-	if !s.limiter.allow(limit) {
-		return User{}, "", ErrRateLimited
-	}
-	fail := func() (User, string, error) {
-		s.limiter.record(limit)
-		return User{}, "", ErrInvalidCredentials
-	}
+//
+// Failures are not counted: a passkey's signature cannot be guessed, and
+// behind a proxy one count per address would let anyone lock every user out.
+// BeginPasskeyLogin is what is rate limited.
+func (s *Service) FinishPasskeyLogin(ctx context.Context, key string, response []byte, userAgent string) (User, string, error) {
+	fail := func() (User, string, error) { return User{}, "", ErrInvalidCredentials }
 	c, ok := s.ceremonies.take("login:"+key, s.now())
 	if !ok {
 		return fail()
@@ -280,7 +293,9 @@ func (s *Service) FinishPasskeyLogin(ctx context.Context, ip, key string, respon
 		return newPasskeyUser(owner, userHandle, rows)
 	}
 	wu, cred, err := wa.ValidatePasskeyLogin(find, c.data, parsed)
-	if err != nil {
+	// A sign count that went back means a copied authenticator; synced
+	// passkeys count 0 and never trip it.
+	if err != nil || cred.Authenticator.CloneWarning {
 		return fail()
 	}
 	pu := wu.(*passkeyUser)
@@ -300,7 +315,6 @@ func (s *Service) FinishPasskeyLogin(ctx context.Context, ip, key string, respon
 			return User{}, "", err
 		}
 	}
-	s.limiter.reset(limit)
 	token, err := s.openSession(ctx, owner.ID, userAgent)
 	if err != nil {
 		return User{}, "", err
@@ -346,9 +360,14 @@ func (s *Service) DeletePasskey(ctx context.Context, userID, id int64) error {
 }
 
 // DeleteUserPasskeys removes every passkey of a user (admin action) and
-// returns how many there were.
+// returns how many there were. It also signs the user out everywhere: a
+// lost device may already hold a session the passkey opened.
 func (s *Service) DeleteUserPasskeys(ctx context.Context, userID int64) (int64, error) {
-	return s.q.DeleteUserPasskeys(ctx, userID)
+	n, err := s.q.DeleteUserPasskeys(ctx, userID)
+	if err != nil {
+		return 0, err
+	}
+	return n, s.q.DeleteUserSessions(ctx, userID)
 }
 
 // PasskeyCounts returns how many passkeys each user has; users without one
@@ -410,11 +429,15 @@ func (c *ceremonyStore) put(key string, v ceremony, now time.Time) {
 				delete(c.m, k)
 			}
 		}
-		for k := range c.m {
-			if len(c.m) < ceremonyCap {
-				break
+		// Still full: the one closest to expiring goes.
+		for len(c.m) >= ceremonyCap {
+			oldest, at := "", time.Time{}
+			for k, e := range c.m {
+				if oldest == "" || e.expires.Before(at) {
+					oldest, at = k, e.expires
+				}
 			}
-			delete(c.m, k)
+			delete(c.m, oldest)
 		}
 	}
 	c.m[key] = v

@@ -15,6 +15,8 @@ import (
 
 	"github.com/fxamacker/cbor/v2"
 	"github.com/go-webauthn/webauthn/protocol"
+
+	"github.com/easly1989/cloudbank/server/internal/store/db"
 )
 
 // softKey is a software passkey: what a phone or a password manager does when
@@ -136,11 +138,11 @@ func addPasskey(t *testing.T, s *Service, userID int64, token string) *softKey {
 }
 
 func signIn(s *Service, k *softKey, rp RelyingParty) (User, error) {
-	opts, key, err := s.BeginPasskeyLogin(rp)
+	opts, key, err := s.BeginPasskeyLogin("1.2.3.4", rp)
 	if err != nil {
 		return User{}, err
 	}
-	u, _, err := s.FinishPasskeyLogin(context.Background(), "1.2.3.4", key, k.get(opts, rp.ID, rp.Origin), "test")
+	u, _, err := s.FinishPasskeyLogin(context.Background(), key, k.get(opts, rp.ID, rp.Origin), "test")
 	return u, err
 }
 
@@ -169,12 +171,12 @@ func TestPasskeyAddThenSignIn(t *testing.T) {
 	}
 
 	// A challenge answers once.
-	opts, key, _ := s.BeginPasskeyLogin(home)
+	opts, key, _ := s.BeginPasskeyLogin("1.2.3.4", home)
 	answer := k.get(opts, home.ID, home.Origin)
-	if _, _, err := s.FinishPasskeyLogin(ctx, "1.2.3.4", key, answer, ""); err != nil {
+	if _, _, err := s.FinishPasskeyLogin(ctx, key, answer, ""); err != nil {
 		t.Fatalf("first answer: %v", err)
 	}
-	if _, _, err := s.FinishPasskeyLogin(ctx, "1.2.3.4", key, answer, ""); !errors.Is(err, ErrInvalidCredentials) {
+	if _, _, err := s.FinishPasskeyLogin(ctx, key, answer, ""); !errors.Is(err, ErrInvalidCredentials) {
 		t.Fatalf("replayed answer err = %v", err)
 	}
 }
@@ -205,6 +207,10 @@ func TestPasskeySignsInOnlyWhereMadeAndOnlyEnabledUsers(t *testing.T) {
 	if n, err := s.DeleteUserPasskeys(ctx, other.ID); err != nil || n != 1 {
 		t.Fatalf("DeleteUserPasskeys = %d, %v", n, err)
 	}
+	// The admin's removal also signs the user out: a lost device may hold a session.
+	if _, err := s.Authenticate(ctx, tok2); !errors.Is(err, ErrUnauthorized) {
+		t.Fatalf("session after the admin removed the passkeys: %v", err)
+	}
 	if _, err := signIn(s, k, home); !errors.Is(err, ErrInvalidCredentials) {
 		t.Fatalf("removed passkey sign-in err = %v", err)
 	}
@@ -228,6 +234,40 @@ func TestPasskeyAddNeedsRecentSignIn(t *testing.T) {
 	}
 	if _, err := s.BeginPasskeyAdd(ctx, admin.ID, token, home); !errors.Is(err, ErrReauthRequired) {
 		t.Fatalf("BeginPasskeyAdd after 11 min err = %v", err)
+	}
+}
+
+func TestPasskeyLimit(t *testing.T) {
+	s, _ := newTestService(t)
+	ctx := context.Background()
+	admin, token, _ := s.Setup(ctx, "admin", "", "s3cret-pass", "test")
+	for i := range MaxPasskeys {
+		if _, err := s.q.CreatePasskey(ctx, db.CreatePasskeyParams{
+			UserID: admin.ID, CredentialID: []byte{byte(i)}, UserHandle: []byte("h"), RpID: home.ID,
+			Name: "k", Credential: "{}", CreatedAt: "2026-11-27T12:00:00Z",
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := s.BeginPasskeyAdd(ctx, admin.ID, token, home); !errors.Is(err, ErrPasskeyLimit) {
+		t.Fatalf("BeginPasskeyAdd at %d err = %v", MaxPasskeys, err)
+	}
+}
+
+func TestCeremonyStoreDropsTheOldest(t *testing.T) {
+	c := newCeremonyStore()
+	now := time.Date(2026, 11, 27, 12, 0, 0, 0, time.UTC)
+	for i := range ceremonyCap {
+		c.put(string(rune(0x1000+i)), ceremony{expires: now.Add(time.Duration(i+1) * time.Second)}, now)
+	}
+	c.put("new", ceremony{expires: now.Add(time.Hour)}, now)
+	if _, ok := c.take(string(rune(0x1000)), now); ok {
+		t.Fatal("the challenge closest to expiring is still there")
+	}
+	for _, k := range []string{string(rune(0x1001)), "new"} {
+		if _, ok := c.take(k, now); !ok {
+			t.Fatalf("challenge %q was dropped", k)
+		}
 	}
 }
 

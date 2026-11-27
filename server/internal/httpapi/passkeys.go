@@ -3,7 +3,6 @@ package httpapi
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -16,10 +15,6 @@ import (
 
 // Passkeys (#798). Not mounted on a server that signs in through SSO only, nor
 // in the demo build.
-
-// passkeyCookie carries the key of a pending passkey sign-in from begin to
-// finish; the challenge itself stays on the server.
-const passkeyCookie = "cb_passkey"
 
 // passkeyBodyMax bounds a browser's WebAuthn answer.
 const passkeyBodyMax = 64 << 10
@@ -53,21 +48,19 @@ func (h *authHandlers) passkeyRoutes(r chi.Router) {
 // relyingParty reads where the ceremony runs from the Origin header, which the
 // browser sets on these POSTs: a passkey belongs to the host the user is on.
 func relyingParty(w http.ResponseWriter, r *http.Request) (auth.RelyingParty, bool) {
-	u, err := url.Parse(r.Header.Get("Origin"))
-	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Hostname() == "" || net.ParseIP(u.Hostname()) != nil {
+	origin := r.Header.Get("Origin")
+	u, err := url.Parse(origin)
+	bad := len(origin) > 300 || err != nil || (u.Scheme != "https" && u.Scheme != "http") ||
+		u.Hostname() == "" || net.ParseIP(u.Hostname()) != nil || u.Path != "" || u.RawQuery != ""
+	if !bad && u.Port() != "" {
+		_, perr := strconv.ParseUint(u.Port(), 10, 16)
+		bad = perr != nil
+	}
+	if bad {
 		writeError(w, http.StatusBadRequest, "passkey_origin", "passkeys need the address CloudBank is reached at by name, not by IP")
 		return auth.RelyingParty{}, false
 	}
 	return auth.RelyingParty{ID: u.Hostname(), Origin: u.Scheme + "://" + u.Host}, true
-}
-
-func readPasskeyBody(w http.ResponseWriter, r *http.Request) ([]byte, bool) {
-	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, passkeyBodyMax))
-	if err != nil || !json.Valid(body) {
-		writeError(w, http.StatusBadRequest, "invalid_body", "request body is not valid JSON")
-		return nil, false
-	}
-	return body, true
 }
 
 func (h *authHandlers) passkeyLoginBegin(w http.ResponseWriter, r *http.Request) {
@@ -75,36 +68,32 @@ func (h *authHandlers) passkeyLoginBegin(w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return
 	}
-	opts, key, err := h.svc.BeginPasskeyLogin(rp)
+	opts, key, err := h.svc.BeginPasskeyLogin(clientIP(r), rp)
+	if errors.Is(err, auth.ErrRateLimited) {
+		writeError(w, http.StatusTooManyRequests, "rate_limited", "too many attempts, try again later")
+		return
+	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not start the passkey sign-in")
 		return
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name: passkeyCookie, Value: key, Path: "/api/v1/auth/passkeys/login",
-		HttpOnly: true, Secure: h.secure, SameSite: http.SameSiteStrictMode, MaxAge: 600,
-	})
-	writeJSON(w, http.StatusOK, opts)
+	// Each request carries its own challenge's key, so two tabs, or a renewed
+	// wait and a click, never answer each other's challenge. The challenge
+	// stays on the server.
+	writeJSON(w, http.StatusOK, map[string]any{"ceremony": key, "options": opts})
 }
 
 func (h *authHandlers) passkeyLoginFinish(w http.ResponseWriter, r *http.Request) {
-	body, ok := readPasskeyBody(w, r)
-	if !ok {
+	var in struct {
+		Ceremony   string          `json:"ceremony"`
+		Credential json.RawMessage `json:"credential"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, passkeyBodyMax)
+	if !decodeJSON(w, r, &in) {
 		return
 	}
-	key := ""
-	if c, err := r.Cookie(passkeyCookie); err == nil {
-		key = c.Value
-	}
-	http.SetCookie(w, &http.Cookie{
-		Name: passkeyCookie, Path: "/api/v1/auth/passkeys/login",
-		HttpOnly: true, Secure: h.secure, SameSite: http.SameSiteStrictMode, MaxAge: -1,
-	})
-	u, token, err := h.svc.FinishPasskeyLogin(r.Context(), clientIP(r), key, body, r.UserAgent())
+	u, token, err := h.svc.FinishPasskeyLogin(r.Context(), in.Ceremony, in.Credential, r.UserAgent())
 	switch {
-	case errors.Is(err, auth.ErrRateLimited):
-		writeError(w, http.StatusTooManyRequests, "rate_limited", "too many attempts, try again later")
-		return
 	case errors.Is(err, auth.ErrInvalidCredentials):
 		writeError(w, http.StatusUnauthorized, "invalid_credentials", "this passkey does not sign in to CloudBank")
 		return

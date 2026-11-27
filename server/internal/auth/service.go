@@ -119,8 +119,11 @@ type Service struct {
 	firstUser sync.Mutex
 	// notify announces the security events; nil announces nothing.
 	notify Notifier
-	// ceremonies holds the passkey challenges between begin and finish.
+	// ceremonies holds the passkey challenges between begin and finish;
+	// begins bounds how many sign-in challenges one address asks for.
 	ceremonies *ceremonyStore
+	adds       *ceremonyStore
+	begins     *rateLimiter
 }
 
 // NewService builds a Service backed by the given querier.
@@ -131,6 +134,8 @@ func NewService(q *db.Queries) *Service {
 		now:        time.Now,
 		ttl:        sessionTTL,
 		ceremonies: newCeremonyStore(),
+		adds:       newCeremonyStore(),
+		begins:     newRateLimiter(beginsPerMinute, time.Minute),
 	}
 }
 

@@ -80,8 +80,9 @@ unauthenticated.
   can forge. Behind a proxy every visitor shares the proxy's address, so ten
   wrong passwords for one username within 15 minutes block that username for
   everyone until the window passes. Successful sign-ins are never counted.
-  Passkey sign-ins have a count of their own, per address alone: behind a proxy,
-  ten failed ones in 15 minutes stop passkey sign-in for everyone until then.
+  A passkey's signature cannot be guessed, so failed passkey sign-ins are not
+  counted; what is limited is the sign-in challenges, 30 a minute per address,
+  which behind a proxy is 30 a minute for everyone together.
 - **Passkeys belong to the name CloudBank is reached at.** A passkey made at
   `cloudbank.example.com` signs in only there; a new domain needs new passkeys,
   and an address by IP offers none. The browser offers them only in a secure

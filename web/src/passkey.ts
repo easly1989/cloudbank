@@ -84,7 +84,8 @@ export async function signInWithPasskey(
   mediation?: "conditional",
   signal?: AbortSignal,
 ): Promise<User> {
-  const { publicKey: pk } = (await beginPasskeyLogin()) as { publicKey: Json };
+  const { ceremony, options } = await beginPasskeyLogin();
+  const pk = (options as { publicKey: Json }).publicKey;
   const cred = (await navigator.credentials.get({
     mediation,
     signal,
@@ -95,7 +96,7 @@ export async function signInWithPasskey(
     },
   })) as PublicKeyCredential | null;
   if (!cred) throw new DOMException("No passkey", "NotAllowedError");
-  return finishPasskeyLogin(credentialJSON(cred));
+  return finishPasskeyLogin(ceremony, credentialJSON(cred));
 }
 
 /** Makes a passkey on this device and stores it under name. */

@@ -372,32 +372,48 @@ paths:
       summary: Start a sign-in with a passkey (#798)
       description: >-
         Returns the options for navigator.credentials.get, for any passkey made
-        on the host in the Origin header, and sets a short cookie that carries
-        the challenge's key to the finish call. Answers 400 passkey_origin when
-        the page is reached by IP. Not mounted on an SSO-only server or in the demo.
+        on the host in the Origin header, and the key of the challenge, which
+        the finish call sends back. Answers 400 passkey_origin when the page is
+        reached by IP, 429 past 30 a minute from one address. Not mounted on an
+        SSO-only server or in the demo.
       security: []
       responses:
-        "200": { description: The WebAuthn request options (publicKey and mediation)., content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+        "200":
+          description: The challenge's key and the WebAuthn request options.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ceremony: { type: string }
+                  options: { type: object, additionalProperties: true, description: "publicKey (and mediation) for navigator.credentials.get" }
+                required: [ceremony, options]
         "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { description: Too many sign-in challenges from this address. }
   /api/v1/auth/passkeys/login/finish:
     post:
       operationId: finishPasskeyLogin
       summary: Finish a sign-in with a passkey
       description: >-
-        Takes the browser's PublicKeyCredential as JSON and opens a session; no
-        two-factor code is asked, the passkey verified the user. Every failure,
-        a disabled account included, is 401 invalid_credentials.
+        Takes the challenge's key and the browser's PublicKeyCredential as JSON
+        and opens a session; no two-factor code is asked, the passkey verified
+        the user. Every failure, a disabled account included, is 401
+        invalid_credentials; failures are not counted, begin is what is limited.
       security: []
       requestBody:
         required: true
         content:
           application/json:
-            schema: { type: object, additionalProperties: true }
+            schema:
+              type: object
+              properties:
+                ceremony: { type: string }
+                credential: { type: object, additionalProperties: true, description: "the PublicKeyCredential as JSON" }
+              required: [ceremony, credential]
       responses:
         "200": { description: Signed in., content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "429": { description: Too many failed attempts. }
   /api/v1/auth/me/passkeys:
     get:
       operationId: listPasskeys
@@ -2039,7 +2055,7 @@ paths:
     delete:
       operationId: deleteUserPasskeys
       summary: Remove every passkey of a user who lost their device (admin, session only)
-      description: Not mounted on an SSO-only server.
+      description: Also signs the user out of every session. Not mounted on an SSO-only server.
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
       responses:

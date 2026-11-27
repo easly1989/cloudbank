@@ -325,7 +325,7 @@ export interface paths {
         put?: never;
         /**
          * Start a sign-in with a passkey (#798)
-         * @description Returns the options for navigator.credentials.get, for any passkey made on the host in the Origin header, and sets a short cookie that carries the challenge's key to the finish call. Answers 400 passkey_origin when the page is reached by IP. Not mounted on an SSO-only server or in the demo.
+         * @description Returns the options for navigator.credentials.get, for any passkey made on the host in the Origin header, and the key of the challenge, which the finish call sends back. Answers 400 passkey_origin when the page is reached by IP, 429 past 30 a minute from one address. Not mounted on an SSO-only server or in the demo.
          */
         post: operations["beginPasskeyLogin"];
         delete?: never;
@@ -345,7 +345,7 @@ export interface paths {
         put?: never;
         /**
          * Finish a sign-in with a passkey
-         * @description Takes the browser's PublicKeyCredential as JSON and opens a session; no two-factor code is asked, the passkey verified the user. Every failure, a disabled account included, is 401 invalid_credentials.
+         * @description Takes the challenge's key and the browser's PublicKeyCredential as JSON and opens a session; no two-factor code is asked, the passkey verified the user. Every failure, a disabled account included, is 401 invalid_credentials; failures are not counted, begin is what is limited.
          */
         post: operations["finishPasskeyLogin"];
         delete?: never;
@@ -2138,7 +2138,7 @@ export interface paths {
         post?: never;
         /**
          * Remove every passkey of a user who lost their device (admin, session only)
-         * @description Not mounted on an SSO-only server.
+         * @description Also signs the user out of every session. Not mounted on an SSO-only server.
          */
         delete: operations["deleteUserPasskeys"];
         options?: never;
@@ -7514,18 +7514,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The WebAuthn request options (publicKey and mediation). */
+            /** @description The challenge's key and the WebAuthn request options. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        [key: string]: unknown;
+                        ceremony: string;
+                        /** @description publicKey (and mediation) for navigator.credentials.get */
+                        options: {
+                            [key: string]: unknown;
+                        };
                     };
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Too many sign-in challenges from this address. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     finishPasskeyLogin: {
@@ -7538,7 +7549,11 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    [key: string]: unknown;
+                    ceremony: string;
+                    /** @description the PublicKeyCredential as JSON */
+                    credential: {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -7554,13 +7569,6 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description Too many failed attempts. */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
         };
     };
     listPasskeys: {

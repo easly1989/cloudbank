@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Suspense, lazy, useEffect } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
-import { AFTER_LOGIN } from "./afterLogin";
+import { takeAfterLogin } from "./afterLogin";
 import { getSetupStatus } from "./api/client";
 import { useAuth } from "./auth/AuthProvider";
 import { AppLayout } from "./components/AppLayout";
@@ -155,9 +155,8 @@ function AuthenticatedApp() {
   const navigate = useNavigate();
   // Signed in again on a card's request (#798): back to that card.
   useEffect(() => {
-    const next = sessionStorage.getItem(AFTER_LOGIN);
-    sessionStorage.removeItem(AFTER_LOGIN);
-    if (next?.startsWith("/")) navigate(next, { replace: true });
+    const next = takeAfterLogin();
+    if (next) navigate(next, { replace: true });
   }, [navigate]);
 
   if (isLoading) return <FullScreenLoader />;

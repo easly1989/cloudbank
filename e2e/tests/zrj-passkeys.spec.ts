@@ -111,4 +111,7 @@ test("a passkey added in Settings signs in on its own", async ({
     .getByRole("button", { name: "Remove" })
     .click();
   await expect(dialog.getByText("E2E key")).toBeHidden();
+  expect(
+    await (await page.request.get("/api/v1/auth/me/passkeys")).json(),
+  ).toEqual([]);
 });

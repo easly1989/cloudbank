@@ -23,7 +23,7 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
@@ -49,6 +49,7 @@ export function PasskeysCard() {
   const supported = passkeysSupported();
   const list = useQuery({ queryKey: ["passkeys"], queryFn: listPasskeys });
   const count = list.data?.length ?? 0;
+  const titleId = useId();
   // Back from signing in again to add one: the modal opens where it was.
   const [params, setParams] = useSearchParams();
   const [open, setOpen] = useState(params.get("passkeys") === "add");
@@ -66,16 +67,19 @@ export function PasskeysCard() {
         <div>
           <Group gap="xs">
             <IconFingerprint size={18} aria-hidden />
-            <Title order={5}>{t("passkeys.title")}</Title>
-            {count > 0 ? (
-              <Badge color="teal" variant="light">
-                {t("passkeys.count", { count })}
-              </Badge>
-            ) : (
-              <Badge color="gray" variant="light">
-                {t("passkeys.none")}
-              </Badge>
-            )}
+            <Title order={5} id={titleId}>
+              {t("passkeys.title")}
+            </Title>
+            {list.isSuccess &&
+              (count > 0 ? (
+                <Badge color="teal" variant="light">
+                  {t("passkeys.count", { count })}
+                </Badge>
+              ) : (
+                <Badge color="gray" variant="light">
+                  {t("passkeys.none")}
+                </Badge>
+              ))}
           </Group>
           <Text size="sm" c="dimmed" maw={560} mt={4}>
             {!supported
@@ -86,11 +90,15 @@ export function PasskeysCard() {
           </Text>
         </div>
         {count > 0 ? (
-          <Button variant="default" onClick={() => setOpen(true)}>
+          <Button variant="default" aria-describedby={titleId} onClick={() => setOpen(true)}>
             {t("passkeys.manage")}
           </Button>
         ) : (
-          <Button disabled={!supported} onClick={() => setOpen(true)}>
+          <Button
+            disabled={!supported || !list.isSuccess}
+            aria-describedby={titleId}
+            onClick={() => setOpen(true)}
+          >
             {t("passkeys.add")}
           </Button>
         )}
@@ -160,6 +168,17 @@ function PasskeysModal({
     onError: notifyError,
   });
 
+  // saveName renames once: not while a rename is on its way, and an empty or
+  // unchanged name just closes the field.
+  const saveName = (id: number, next: string, was?: string) => {
+    if (rename.isPending) return;
+    if (!next.trim() || next.trim() === was) {
+      setEditing(null);
+      return;
+    }
+    rename.mutate({ id, name: next });
+  };
+
   const askRemove = async (p: Passkey) => {
     const ok = await confirm({
       title: t("passkeys.removeTitle", { name: p.name }),
@@ -172,7 +191,10 @@ function PasskeysModal({
 
   // Signing in again keeps the way back: the app returns here after it.
   const signInAgain = () => {
-    sessionStorage.setItem(AFTER_LOGIN, "/settings/security?passkeys=add");
+    sessionStorage.setItem(
+      AFTER_LOGIN,
+      JSON.stringify({ path: "/settings/security?passkeys=add", at: Date.now() }),
+    );
     logout.mutate();
   };
 
@@ -208,12 +230,13 @@ function PasskeysModal({
               maxLength={60}
               data-autofocus
               onChange={(e) => setName(e.currentTarget.value)}
-              onKeyDown={(e) => e.key === "Enter" && rename.mutate({ id: added.id, name })}
+              onKeyDown={(e) => e.key === "Enter" && saveName(added.id, name)}
             />
             <Group justify="flex-end">
               <Button
                 loading={rename.isPending}
-                onClick={() => rename.mutate({ id: added.id, name })}
+                disabled={!name.trim()}
+                onClick={() => saveName(added.id, name)}
               >
                 {t("passkeys.saveName")}
               </Button>
@@ -251,15 +274,13 @@ function PasskeysModal({
                     autoFocus
                     onChange={(e) => setEditName(e.currentTarget.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") rename.mutate({ id: p.id, name: editName });
+                      if (e.key === "Enter") saveName(p.id, editName, p.name);
                       if (e.key === "Escape") {
                         e.stopPropagation();
                         setEditing(null);
                       }
                     }}
-                    onBlur={() =>
-                      editName !== p.name && rename.mutate({ id: p.id, name: editName })
-                    }
+                    onBlur={() => saveName(p.id, editName, p.name)}
                   />
                 ) : (
                   <div style={{ flex: 1, minWidth: 0 }}>

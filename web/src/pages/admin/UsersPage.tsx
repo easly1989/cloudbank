@@ -76,77 +76,85 @@ export function UsersPage() {
         <Button onClick={createHandlers.open}>{t("admin.create")}</Button>
       </Group>
 
-      <Table striped highlightOnHover>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>{t("admin.username")}</Table.Th>
-            <Table.Th>{t("admin.email")}</Table.Th>
-            <Table.Th>{t("admin.role")}</Table.Th>
-            <Table.Th>{t("admin.status")}</Table.Th>
-            {passkeys && <Table.Th>{t("admin.passkeys")}</Table.Th>}
-            <Table.Th>{t("admin.actions")}</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {usersQuery.data?.map((u) => (
-            <Table.Tr key={u.id}>
-              <Table.Td>
-                {u.username}
-                {current?.id === u.id && (
-                  <Badge ml="xs" size="xs" variant="light">
-                    {t("admin.you")}
-                  </Badge>
-                )}
-              </Table.Td>
-              <Table.Td>{u.email}</Table.Td>
-              <Table.Td>
-                {u.isAdmin ? <Badge color="teal">{t("admin.admin")}</Badge> : "—"}
-              </Table.Td>
-              <Table.Td>
-                {u.disabled ? (
-                  <Badge color="red">{t("admin.disabled")}</Badge>
-                ) : (
-                  <Badge color="green">{t("admin.active")}</Badge>
-                )}
-              </Table.Td>
-              {passkeys && (
-                <Table.Td>
-                  {u.passkeyCount ? t("passkeys.count", { count: u.passkeyCount }) : "—"}
-                </Table.Td>
-              )}
-              <Table.Td>
-                <Group gap="xs">
-                  {!ssoOnly && (
-                    <Button size="xs" variant="default" onClick={() => setResetTarget(u)}>
-                      {t("admin.resetPassword")}
-                    </Button>
-                  )}
-                  {passkeys && !!u.passkeyCount && current?.id !== u.id && (
-                    <Button
-                      size="xs"
-                      variant="default"
-                      leftSection={<IconKey size={14} />}
-                      onClick={() => void askRemovePasskeys(u)}
-                    >
-                      {t("admin.removePasskeys")}
-                    </Button>
-                  )}
-                  {current?.id !== u.id && (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      color={u.disabled ? "green" : "red"}
-                      onClick={() => disableMutation.mutate({ id: u.id, disabled: !u.disabled })}
-                    >
-                      {u.disabled ? t("admin.enable") : t("admin.disable")}
-                    </Button>
-                  )}
-                </Group>
-              </Table.Td>
+      <Table.ScrollContainer minWidth={passkeys ? 820 : 680}>
+        <Table striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>{t("admin.username")}</Table.Th>
+              <Table.Th>{t("admin.email")}</Table.Th>
+              <Table.Th>{t("admin.role")}</Table.Th>
+              <Table.Th>{t("admin.status")}</Table.Th>
+              {passkeys && <Table.Th>{t("admin.passkeys")}</Table.Th>}
+              <Table.Th>{t("admin.actions")}</Table.Th>
             </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
+          </Table.Thead>
+          <Table.Tbody>
+            {usersQuery.data?.map((u) => (
+              <Table.Tr key={u.id}>
+                <Table.Td>
+                  {u.username}
+                  {current?.id === u.id && (
+                    <Badge ml="xs" size="xs" variant="light">
+                      {t("admin.you")}
+                    </Badge>
+                  )}
+                </Table.Td>
+                <Table.Td>{u.email}</Table.Td>
+                <Table.Td>
+                  {u.isAdmin ? <Badge color="teal">{t("admin.admin")}</Badge> : "—"}
+                </Table.Td>
+                <Table.Td>
+                  {u.disabled ? (
+                    <Badge color="red">{t("admin.disabled")}</Badge>
+                  ) : (
+                    <Badge color="green">{t("admin.active")}</Badge>
+                  )}
+                </Table.Td>
+                {passkeys && (
+                  <Table.Td>
+                    {u.passkeyCount ? (
+                      t("passkeys.count", { count: u.passkeyCount })
+                    ) : (
+                      <Text span size="sm" c="dimmed">
+                        {t("passkeys.none")}
+                      </Text>
+                    )}
+                  </Table.Td>
+                )}
+                <Table.Td>
+                  <Group gap="xs">
+                    {!ssoOnly && (
+                      <Button size="xs" variant="default" onClick={() => setResetTarget(u)}>
+                        {t("admin.resetPassword")}
+                      </Button>
+                    )}
+                    {passkeys && !!u.passkeyCount && current?.id !== u.id && (
+                      <Button
+                        size="xs"
+                        variant="default"
+                        leftSection={<IconKey size={14} />}
+                        onClick={() => void askRemovePasskeys(u)}
+                      >
+                        {t("admin.removePasskeys")}
+                      </Button>
+                    )}
+                    {current?.id !== u.id && (
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color={u.disabled ? "green" : "red"}
+                        onClick={() => disableMutation.mutate({ id: u.id, disabled: !u.disabled })}
+                      >
+                        {u.disabled ? t("admin.enable") : t("admin.disable")}
+                      </Button>
+                    )}
+                  </Group>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
       {passkeys && (
         <Text size="xs" c="dimmed">
           {t("admin.ownPasskeys")}

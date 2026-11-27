@@ -296,9 +296,11 @@ export interface Passkey {
 /** At most this many passkeys per user; the server refuses one more. */
 export const MAX_PASSKEYS = 10;
 
-export const beginPasskeyLogin = () => api.post<unknown>("/api/v1/auth/passkeys/login/begin");
-export const finishPasskeyLogin = (credential: unknown) =>
-  api.post<User>("/api/v1/auth/passkeys/login/finish", credential);
+/** The challenge's key comes back with the answer: each request its own. */
+export const beginPasskeyLogin = () =>
+  api.post<{ ceremony: string; options: unknown }>("/api/v1/auth/passkeys/login/begin");
+export const finishPasskeyLogin = (ceremony: string, credential: unknown) =>
+  api.post<User>("/api/v1/auth/passkeys/login/finish", { ceremony, credential });
 export const listPasskeys = () => api.get<Passkey[]>("/api/v1/auth/me/passkeys");
 /** 403 reauth_required when the sign-in is older than 10 minutes. */
 export const beginPasskeyAdd = () => api.post<unknown>("/api/v1/auth/me/passkeys/begin");
