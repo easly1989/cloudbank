@@ -51,6 +51,13 @@ test("an administrator turns SSO on from Settings, without a restart", async ({
   await expect(dialog).toBeHidden();
   await expect(row.getByText(/Provider reachable/)).toBeVisible();
 
+  // Opened again, the form has what was saved, and never the secret.
+  await row.getByRole("button", { name: "Edit" }).click();
+  await expect(dialog.getByLabel("Provider (issuer)")).toHaveValue(ISSUER);
+  await expect(dialog.getByLabel("Client secret")).toHaveValue("");
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(dialog).toBeHidden();
+
   const settings = await (await page.request.get("/api/v1/admin/oidc")).json();
   expect(settings).toMatchObject({
     source: "settings",
