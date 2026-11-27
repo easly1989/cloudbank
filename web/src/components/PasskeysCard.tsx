@@ -9,7 +9,6 @@ import {
   Stack,
   Text,
   TextInput,
-  ThemeIcon,
   Title,
 } from "@mantine/core";
 import {
@@ -82,11 +81,7 @@ export function PasskeysCard() {
               ))}
           </Group>
           <Text size="sm" c="dimmed" maw={560} mt={4}>
-            {!supported
-              ? t("passkeys.unsupported")
-              : count > 0
-                ? t("passkeys.hintSome")
-                : t("passkeys.hint")}
+            {supported ? t("passkeys.hint") : t("passkeys.unsupported")}
           </Text>
         </div>
         {count > 0 ? (
@@ -256,14 +251,12 @@ function PasskeysModal({
                 wrap="nowrap"
                 gap="sm"
                 px="sm"
-                py={10}
+                py="sm"
                 style={
                   i > 0 ? { borderTop: "1px solid var(--mantine-color-default-border)" } : undefined
                 }
               >
-                <ThemeIcon variant="light" size={32} radius="md" aria-hidden>
-                  <IconKey size={16} />
-                </ThemeIcon>
+                <IconKey size={18} color="var(--mantine-color-dimmed)" aria-hidden />
                 {editing === p.id ? (
                   <TextInput
                     flex={1}
@@ -284,7 +277,7 @@ function PasskeysModal({
                   />
                 ) : (
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <Text size="sm" fw={600} truncate>
+                    <Text size="sm" fw={500} truncate>
                       {p.name}
                     </Text>
                     <Text size="xs" c="dimmed">
@@ -306,7 +299,7 @@ function PasskeysModal({
                   </ActionIcon>
                   <ActionIcon
                     variant="subtle"
-                    color="red"
+                    color="gray"
                     aria-label={t("passkeys.removeOne", { name: p.name })}
                     onClick={() => void askRemove(p)}
                   >

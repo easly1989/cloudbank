@@ -3763,7 +3763,6 @@
     "count_other": "{{count}} chaves de acesso",
     "none": "Nenhuma",
     "hint": "Entre com a digital, o rosto ou o PIN do seu dispositivo, sem senha nem código de 6 dígitos.",
-    "hintSome": "Você entra com a digital, o rosto ou o PIN do seu dispositivo.",
     "unsupported": "Este navegador não usa chaves de acesso. Abra o CloudBank em um navegador recente (Chrome, Edge, Firefox, Safari), pelo nome dele e não pelo IP.",
     "manage": "Gerenciar",
     "add": "Adicionar",

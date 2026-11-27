@@ -3763,7 +3763,6 @@
     "count_other": "{{count}} passkey",
     "none": "Nessuna",
     "hint": "Entra con l'impronta, il volto o il PIN del dispositivo, senza password né codice a 6 cifre.",
-    "hintSome": "Entri con l'impronta, il volto o il PIN del dispositivo.",
     "unsupported": "Questo browser non gestisce le passkey. Apri CloudBank da un browser recente (Chrome, Edge, Firefox, Safari), dal suo nome e non dall'IP.",
     "manage": "Gestisci",
     "add": "Aggiungi",

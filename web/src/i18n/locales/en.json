@@ -3763,7 +3763,6 @@
     "count_other": "{{count}} passkeys",
     "none": "None",
     "hint": "Sign in with your device's fingerprint, face or PIN, without a password or 6-digit code.",
-    "hintSome": "You sign in with your device's fingerprint, face or PIN.",
     "unsupported": "This browser cannot use passkeys. Open CloudBank in a recent browser (Chrome, Edge, Firefox, Safari), at its name rather than its IP.",
     "manage": "Manage",
     "add": "Add",

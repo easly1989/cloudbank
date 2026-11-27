@@ -3763,7 +3763,6 @@
     "count_other": "{{count}} llaves de acceso",
     "none": "Ninguna",
     "hint": "Inicia sesión con la huella, la cara o el PIN de tu dispositivo, sin contraseña ni código de 6 dígitos.",
-    "hintSome": "Inicias sesión con la huella, la cara o el PIN de tu dispositivo.",
     "unsupported": "Este navegador no puede usar llaves de acceso. Abre CloudBank en un navegador reciente (Chrome, Edge, Firefox, Safari), por su nombre y no por la IP.",
     "manage": "Gestionar",
     "add": "Añadir",

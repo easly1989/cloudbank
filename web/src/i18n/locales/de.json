@@ -3763,7 +3763,6 @@
     "count_other": "{{count}} Passkeys",
     "none": "Keine",
     "hint": "Melde dich mit Fingerabdruck, Gesicht oder PIN deines Geräts an, ohne Passwort und ohne 6-stelligen Code.",
-    "hintSome": "Du meldest dich mit Fingerabdruck, Gesicht oder PIN deines Geräts an.",
     "unsupported": "Dieser Browser kann keine Passkeys verwenden. Öffne CloudBank in einem aktuellen Browser (Chrome, Edge, Firefox, Safari) über seinen Namen, nicht über die IP.",
     "manage": "Verwalten",
     "add": "Hinzufügen",

@@ -3763,7 +3763,6 @@
     "count_other": "{{count}} clés d’accès",
     "none": "Aucune",
     "hint": "Connectez-vous avec l’empreinte, le visage ou le code PIN de votre appareil, sans mot de passe ni code à 6 chiffres.",
-    "hintSome": "Vous vous connectez avec l’empreinte, le visage ou le code PIN de votre appareil.",
     "unsupported": "Ce navigateur ne gère pas les clés d’accès. Ouvrez CloudBank dans un navigateur récent (Chrome, Edge, Firefox, Safari), par son nom et non par son IP.",
     "manage": "Gérer",
     "add": "Ajouter",
