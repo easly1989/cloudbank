@@ -59,6 +59,7 @@ type Querier interface {
 	CountCurrencyAccounts(ctx context.Context, currencyID int64) (int64, error)
 	CountKnownDevices(ctx context.Context, userID int64) (int64, error)
 	CountNotificationCodeAttempt(ctx context.Context, arg CountNotificationCodeAttemptParams) (int64, error)
+	CountOIDCIdentitiesForIssuer(ctx context.Context, issuer string) (int64, error)
 	CountOIDCIdentitiesForUser(ctx context.Context, userID int64) (int64, error)
 	// How many transactions, of any date and sign, each payee of a wallet has.
 	CountPayeeTransactions(ctx context.Context, walletID int64) ([]CountPayeeTransactionsRow, error)
@@ -109,6 +110,8 @@ type Querier interface {
 	DeleteMergedImportRef(ctx context.Context, arg DeleteMergedImportRefParams) error
 	DeleteNotificationChannel(ctx context.Context, arg DeleteNotificationChannelParams) error
 	DeleteNotificationDelivery(ctx context.Context, id int64) error
+	DeleteOIDCIdentitiesForIssuer(ctx context.Context, issuer string) error
+	DeleteOIDCSettings(ctx context.Context) error
 	DeleteOtherUserSessions(ctx context.Context, arg DeleteOtherUserSessionsParams) error
 	DeletePayee(ctx context.Context, id int64) error
 	DeletePayeeCleanup(ctx context.Context, walletID int64) error
@@ -183,6 +186,7 @@ type Querier interface {
 	GetMailbox(ctx context.Context, arg GetMailboxParams) (Mailbox, error)
 	GetNotificationChannel(ctx context.Context, arg GetNotificationChannelParams) (NotificationChannel, error)
 	GetNotificationSettings(ctx context.Context, userID int64) (NotificationSetting, error)
+	GetOIDCSettings(ctx context.Context) (GetOIDCSettingsRow, error)
 	GetPayee(ctx context.Context, id int64) (Payee, error)
 	GetPayeeCleanup(ctx context.Context, walletID int64) (PayeeCleanup, error)
 	GetPluggyConfig(ctx context.Context, walletID int64) (BankPluggyConfig, error)
@@ -629,6 +633,7 @@ type Querier interface {
 	UpsertExchangeRate(ctx context.Context, arg UpsertExchangeRateParams) error
 	UpsertNotificationChannel(ctx context.Context, arg UpsertNotificationChannelParams) error
 	UpsertNotificationSettings(ctx context.Context, arg UpsertNotificationSettingsParams) error
+	UpsertOIDCSettings(ctx context.Context, arg UpsertOIDCSettingsParams) error
 	UpsertPayeeCleanup(ctx context.Context, arg UpsertPayeeCleanupParams) error
 	UpsertPluggyConfig(ctx context.Context, arg UpsertPluggyConfigParams) error
 	UpsertPushSubscription(ctx context.Context, arg UpsertPushSubscriptionParams) error

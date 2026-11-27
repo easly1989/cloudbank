@@ -116,6 +116,10 @@ type Config struct {
 	// OIDCAdminEmail, when set, reserves that first administrator sign-in to the
 	// SSO identity with this verified email.
 	OIDCAdminEmail string
+	// OIDCFromEnv is true when any CB_OIDC_* variable is set: the variables
+	// then win over the provider saved in Settings (#796), which shows them
+	// read-only.
+	OIDCFromEnv bool
 
 	// Demo tunes the public demo build (the `demo` build tag). A normal build
 	// reads it and never uses it.
@@ -195,6 +199,7 @@ func Load() Config {
 		OIDCAutoProvision: getBoolEnv("CB_OIDC_AUTO_PROVISION", false),
 		SSOOnly:           !getBoolEnv("CB_PASSWORD_LOGIN", true),
 		OIDCAdminEmail:    strings.TrimSpace(getenv("CB_OIDC_ADMIN_EMAIL", "")),
+		OIDCFromEnv:       oidcFromEnv(),
 
 		Demo: Demo{
 			Idle:            getDurationEnv("CB_DEMO_IDLE", 2*time.Hour),
@@ -206,6 +211,23 @@ func Load() Config {
 			MaxBody:         int64(getIntEnv("CB_DEMO_MAX_BODY", 1<<20)),
 		},
 	}
+}
+
+// oidcEnv lists the variables that set the SSO provider.
+var oidcEnv = []string{
+	"CB_OIDC_ISSUER", "CB_OIDC_CLIENT_ID", "CB_OIDC_CLIENT_SECRET", "CB_OIDC_REDIRECT_URL",
+	"CB_OIDC_SCOPES", "CB_OIDC_NAME", "CB_OIDC_AUTO_PROVISION", "CB_OIDC_ADMIN_EMAIL",
+}
+
+// oidcFromEnv reports whether any of them is set, as getenv reads them: an
+// empty value counts as unset.
+func oidcFromEnv() bool {
+	for _, k := range oidcEnv {
+		if getenv(k, "") != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func getenv(key, fallback string) string {

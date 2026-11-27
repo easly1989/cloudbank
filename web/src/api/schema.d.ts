@@ -1833,6 +1833,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/oidc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Single sign-on as set on this server (admin only)
+         * @description The provider sign-ins go through (#796): set by the CB_OIDC_* variables when any is set (source env, read-only), otherwise saved from Settings. The client secret is never returned; hasSecret says whether one is there.
+         */
+        get: operations["getOIDCSettings"];
+        /**
+         * Set the provider (admin only)
+         * @description Reaches the provider's discovery document first and saves nothing when it does not answer (502 provider_unreachable). A save takes effect at once. An empty clientSecret keeps the saved one. Another issuer drops the links of the previous one. 409 set_by_env when the variables set single sign-on, 409 secret_key_missing without CB_SECRET_KEY.
+         */
+        put: operations["saveOIDCSettings"];
+        post?: never;
+        /**
+         * Turn single sign-on off (admin only)
+         * @description Forgets the saved provider, at once. Refused (409 sso_only) on a server that signs in through SSO alone (CB_PASSWORD_LOGIN=false), and 409 set_by_env when the variables set it.
+         */
+        delete: operations["turnOffOIDC"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/backup/restore": {
         parameters: {
             query?: never;
@@ -4212,6 +4240,50 @@ export interface components {
             checkedAt?: string;
             /** @description why the last check had no answer */
             error?: string;
+        };
+        OIDCSettings: {
+            /**
+             * @description env: the CB_OIDC_* variables, read-only
+             * @enum {string}
+             */
+            source: "env" | "settings" | "none";
+            /** @description sign-ins go through a provider now */
+            enabled: boolean;
+            /** @description the live provider answered its discovery document */
+            reachable: boolean;
+            /** @description CB_SECRET_KEY is set, so a client secret can be saved */
+            secretKey: boolean;
+            /** @description CB_PASSWORD_LOGIN=false: single sign-on cannot be turned off */
+            ssoOnly: boolean;
+            /**
+             * Format: int64
+             * @description users linked to this issuer
+             */
+            linkedUsers: number;
+            issuer: string;
+            clientId: string;
+            hasSecret: boolean;
+            redirectUrl: string;
+            scopes: string;
+            /** @description the sign-in button's provider name */
+            name: string;
+            autoProvision: boolean;
+            adminEmail: string;
+        };
+        OIDCSettingsInput: {
+            /** @description an http(s) address, as the provider names itself */
+            issuer: string;
+            clientId: string;
+            /** @description write-only; empty keeps the saved one */
+            clientSecret?: string;
+            /** @description an http(s) address ending in /api/v1/auth/oidc/callback */
+            redirectUrl: string;
+            /** @description space-separated, with openid; empty means openid profile email */
+            scopes?: string;
+            /** @description empty means SSO */
+            name?: string;
+            autoProvision?: boolean;
+            adminEmail?: string;
         };
         /** @description The AI's jobs, each switched on by itself under the master switch. */
         AIFeatures: {
@@ -10116,6 +10188,99 @@ export interface operations {
                 };
             };
             403: components["responses"]["Forbidden"];
+        };
+    };
+    getOIDCSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OIDCSettings"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    saveOIDCSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OIDCSettingsInput"];
+            };
+        };
+        responses: {
+            /** @description The settings after the save. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OIDCSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            /** @description Set by the variables */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The provider does not answer at this issuer. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    turnOffOIDC: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Turned off. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            /** @description Set by the variables */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     restoreBackup: {

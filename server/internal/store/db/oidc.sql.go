@@ -9,6 +9,17 @@ import (
 	"context"
 )
 
+const countOIDCIdentitiesForIssuer = `-- name: CountOIDCIdentitiesForIssuer :one
+SELECT COUNT(*) FROM user_oidc_identities WHERE issuer = ?
+`
+
+func (q *Queries) CountOIDCIdentitiesForIssuer(ctx context.Context, issuer string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countOIDCIdentitiesForIssuer, issuer)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countOIDCIdentitiesForUser = `-- name: CountOIDCIdentitiesForUser :one
 SELECT COUNT(*) FROM user_oidc_identities WHERE user_id = ?
 `
@@ -18,6 +29,56 @@ func (q *Queries) CountOIDCIdentitiesForUser(ctx context.Context, userID int64) 
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const deleteOIDCIdentitiesForIssuer = `-- name: DeleteOIDCIdentitiesForIssuer :exec
+DELETE FROM user_oidc_identities WHERE issuer = ?
+`
+
+func (q *Queries) DeleteOIDCIdentitiesForIssuer(ctx context.Context, issuer string) error {
+	_, err := q.db.ExecContext(ctx, deleteOIDCIdentitiesForIssuer, issuer)
+	return err
+}
+
+const deleteOIDCSettings = `-- name: DeleteOIDCSettings :exec
+DELETE FROM oidc_settings WHERE id = 1
+`
+
+func (q *Queries) DeleteOIDCSettings(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteOIDCSettings)
+	return err
+}
+
+const getOIDCSettings = `-- name: GetOIDCSettings :one
+SELECT issuer, client_id, client_secret, redirect_url, scopes, name, auto_provision, admin_email
+FROM oidc_settings WHERE id = 1
+`
+
+type GetOIDCSettingsRow struct {
+	Issuer        string
+	ClientID      string
+	ClientSecret  string
+	RedirectUrl   string
+	Scopes        string
+	Name          string
+	AutoProvision int64
+	AdminEmail    string
+}
+
+func (q *Queries) GetOIDCSettings(ctx context.Context) (GetOIDCSettingsRow, error) {
+	row := q.db.QueryRowContext(ctx, getOIDCSettings)
+	var i GetOIDCSettingsRow
+	err := row.Scan(
+		&i.Issuer,
+		&i.ClientID,
+		&i.ClientSecret,
+		&i.RedirectUrl,
+		&i.Scopes,
+		&i.Name,
+		&i.AutoProvision,
+		&i.AdminEmail,
+	)
+	return i, err
 }
 
 const getUserIDByOIDCIdentity = `-- name: GetUserIDByOIDCIdentity :one
@@ -50,5 +111,40 @@ type LinkOIDCIdentityParams struct {
 
 func (q *Queries) LinkOIDCIdentity(ctx context.Context, arg LinkOIDCIdentityParams) error {
 	_, err := q.db.ExecContext(ctx, linkOIDCIdentity, arg.UserID, arg.Issuer, arg.Subject)
+	return err
+}
+
+const upsertOIDCSettings = `-- name: UpsertOIDCSettings :exec
+INSERT INTO oidc_settings (id, issuer, client_id, client_secret, redirect_url, scopes, name, auto_provision, admin_email)
+VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (id) DO UPDATE SET
+  issuer = excluded.issuer, client_id = excluded.client_id, client_secret = excluded.client_secret,
+  redirect_url = excluded.redirect_url, scopes = excluded.scopes, name = excluded.name,
+  auto_provision = excluded.auto_provision, admin_email = excluded.admin_email,
+  updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+`
+
+type UpsertOIDCSettingsParams struct {
+	Issuer        string
+	ClientID      string
+	ClientSecret  string
+	RedirectUrl   string
+	Scopes        string
+	Name          string
+	AutoProvision int64
+	AdminEmail    string
+}
+
+func (q *Queries) UpsertOIDCSettings(ctx context.Context, arg UpsertOIDCSettingsParams) error {
+	_, err := q.db.ExecContext(ctx, upsertOIDCSettings,
+		arg.Issuer,
+		arg.ClientID,
+		arg.ClientSecret,
+		arg.RedirectUrl,
+		arg.Scopes,
+		arg.Name,
+		arg.AutoProvision,
+		arg.AdminEmail,
+	)
 	return err
 }

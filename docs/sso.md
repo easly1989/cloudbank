@@ -17,7 +17,38 @@ CloudBank uses the Authorization Code flow with PKCE (S256) and checks the ID
 token's signature, issuer, audience, expiry and nonce. It needs a confidential
 client, so the provider gives it a client secret.
 
-## What to set in CloudBank
+## Two places to set it
+
+An administrator can set the provider in **Settings › Security › Single
+sign-on**, or whoever runs the container can set the `CB_OIDC_*` variables
+below.
+
+**In Settings.** Choose **Configure**. Fill in the provider's issuer, the client
+id and the client secret, and register the redirect URL the form shows (it has
+a copy button) at the provider. Choose **Check and turn on**: CloudBank fetches
+the provider's discovery document first and saves nothing if the provider does
+not answer at that address. Once saved, the sign-in page has the button at
+once, without a restart.
+
+- The client secret is stored encrypted, so Settings can save it only when the
+  server has `CB_SECRET_KEY` (see the README); without it the form says so and
+  single sign-on stays off. The secret is never shown again: leave the field
+  empty to keep the saved one.
+- Changing the issuer drops the links of the people who signed in through the
+  old provider; the form warns first and says how many. Each of them is linked
+  again at their next SSO sign-in if the new provider gives the same verified
+  email (see [Who gets in](#who-gets-in)); the others sign in with their
+  password.
+- **Turn single sign-on off** forgets the provider. An SSO-only server
+  (`CB_PASSWORD_LOGIN=false`) refuses it, since nobody could sign in. SSO only
+  is set by the variable alone; Settings has no switch for it.
+
+**With the variables.** If any `CB_OIDC_*` variable is set, the variables win:
+Settings shows their values read-only, each marked with its variable, and
+never the secret. To manage it from Settings instead, remove them all and
+restart.
+
+## The variables
 
 | Variable | What it is |
 | --- | --- |
@@ -28,7 +59,7 @@ client, so the provider gives it a client secret.
 | `CB_OIDC_NAME` | The label on the button: "Sign in with _name_". Defaults to `SSO`. |
 | `CB_OIDC_SCOPES` | Defaults to `openid profile email`. CloudBank needs `openid` and `email`. |
 | `CB_OIDC_AUTO_PROVISION` | `true` makes an account for anyone the provider lets through. Defaults to `false`. |
-| `CB_PASSWORD_LOGIN` | `false` signs in through SSO only. Defaults to `true`. |
+| `CB_PASSWORD_LOGIN` | `false` signs in through SSO only. Defaults to `true`. It needs a provider, from these variables or saved in Settings, or the server does not start. |
 | `CB_OIDC_ADMIN_EMAIL` | SSO only: reserves the first sign-in, which becomes the administrator, to this email. |
 
 CloudBank must be served over HTTPS for the provider to send people back to
@@ -79,7 +110,7 @@ Restart Authelia. Since 4.39 Authelia keeps the email out of the ID token and
 gives it at its userinfo endpoint; CloudBank reads it there, so no claims
 policy is needed.
 
-**3. Tell CloudBank about it.** In your compose file:
+**3. Tell CloudBank about it**, in Settings as above, or in your compose file:
 
 ```yaml
 services:

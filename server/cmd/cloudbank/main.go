@@ -131,27 +131,49 @@ func run() error {
 	// Writes (including auth and wallets) go through the single write connection.
 	authSvc := auth.NewService(db.New(st.Write()))
 
-	// OIDC/SSO login is optional. Discovery reaches the provider at startup only
-	// to report on it: a provider that does not answer yet is tried again at the
-	// next sign-in, so it never blocks boot.
+	// OIDC/SSO login is optional: the CB_OIDC_* variables set it when any is
+	// set, otherwise the provider saved in Settings (#796) does. Discovery
+	// reaches the provider at startup only to report on it: a provider that
+	// does not answer yet is tried again at the next sign-in, so it never
+	// blocks boot.
+	oidcStore := oidc.NewStore(st.Write())
+	var oidcEnv, oidcActive *oidc.Settings
+	if cfg.OIDCFromEnv {
+		oidcEnv = &oidc.Settings{
+			Config: oidc.Config{
+				Issuer: cfg.OIDCIssuer, ClientID: cfg.OIDCClientID, ClientSecret: cfg.OIDCClientSecret,
+				RedirectURL: cfg.OIDCRedirectURL, Scopes: cfg.OIDCScopes, Name: cfg.OIDCName,
+			},
+			AutoProvision: cfg.OIDCAutoProvision, AdminEmail: cfg.OIDCAdminEmail,
+		}
+		if cfg.OIDCEnabled() {
+			oidcActive = oidcEnv
+		}
+	} else if saved, ok, err := oidcStore.Load(context.Background()); err != nil {
+		return err
+	} else if ok && saved.ClientSecret == "" {
+		logger.Error("oidc: the provider saved in Settings needs the CB_SECRET_KEY it was saved with; single sign-on stays off", "issuer", saved.Issuer)
+	} else if ok {
+		oidcActive = &saved
+	}
 	var oidcSvc *oidc.Service
-	if cfg.OIDCEnabled() {
-		oidcSvc = oidc.New(oidc.Config{
-			Issuer: cfg.OIDCIssuer, ClientID: cfg.OIDCClientID, ClientSecret: cfg.OIDCClientSecret,
-			RedirectURL: cfg.OIDCRedirectURL, Scopes: cfg.OIDCScopes, Name: cfg.OIDCName,
-		})
+	var oidcAutoProvision bool
+	var oidcAdminEmail string
+	if oidcActive != nil {
+		oidcAutoProvision, oidcAdminEmail = oidcActive.AutoProvision, oidcActive.AdminEmail
+		oidcSvc = oidc.New(oidcActive.Config)
 		dctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		if err := oidcSvc.Discover(dctx); err != nil {
-			logger.Error("oidc: provider not reachable yet, retried at the next sign-in", "issuer", cfg.OIDCIssuer, "error", err)
+			logger.Error("oidc: provider not reachable yet, retried at the next sign-in", "issuer", oidcActive.Issuer, "error", err)
 		}
 		cancel()
-		logger.Info("oidc: enabled", "issuer", cfg.OIDCIssuer, "provider", cfg.OIDCName,
-			"auto_provision", cfg.OIDCAutoProvision, "sso_only", cfg.SSOOnly)
+		logger.Info("oidc: enabled", "issuer", oidcActive.Issuer, "provider", oidcActive.Name,
+			"from_env", oidcEnv != nil, "auto_provision", oidcActive.AutoProvision, "sso_only", cfg.SSOOnly)
 	}
 	// Without the password form, SSO is the only way in (#620): refuse to start
 	// rather than serve a login page nobody can get past.
 	if cfg.SSOOnly && oidcSvc == nil {
-		return errors.New("CB_PASSWORD_LOGIN=false needs OIDC: set CB_OIDC_ISSUER, CB_OIDC_CLIENT_ID, CB_OIDC_CLIENT_SECRET and CB_OIDC_REDIRECT_URL")
+		return errors.New("CB_PASSWORD_LOGIN=false needs OIDC: set CB_OIDC_ISSUER, CB_OIDC_CLIENT_ID, CB_OIDC_CLIENT_SECRET and CB_OIDC_REDIRECT_URL, or set single sign-on in Settings first")
 	}
 	walletSvc := wallet.NewService(st.Write())
 	currencySvc := currency.NewServiceWithRead(st.Read(), st.Write())
@@ -295,9 +317,11 @@ func run() error {
 		Updates:           updatesSvc,
 		SecureCookies:     cfg.SecureCookies,
 		OIDC:              oidcSvc,
-		OIDCAutoProvision: cfg.OIDCAutoProvision,
+		OIDCAutoProvision: oidcAutoProvision,
 		SSOOnly:           cfg.SSOOnly,
-		OIDCAdminEmail:    cfg.OIDCAdminEmail,
+		OIDCAdminEmail:    oidcAdminEmail,
+		OIDCSettings:      oidcStore,
+		OIDCEnv:           oidcEnv,
 	}
 	// The demo build switches parts of the server off; any other build leaves
 	// opts as they are.

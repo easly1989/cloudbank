@@ -26,6 +26,8 @@ func applyDemo(ctx context.Context, cfg config.Config, st *store.Store, opts *ht
 	opts.Auth.SetSessionTTL(cfg.Demo.Idle)
 	opts.BankSync.OnlyDemoBank()
 	opts.OIDC = nil
+	opts.OIDCSettings = nil
+	opts.OIDCEnv = nil
 	opts.SSOOnly = false
 	opts.Push = nil
 	opts.AI = nil

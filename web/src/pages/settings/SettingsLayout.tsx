@@ -151,21 +151,34 @@ export function SettingsLayout() {
 export function SettingsGroup({
   title,
   hint,
+  badge,
   action,
   children,
 }: {
   title: string;
   hint?: string;
+  /** A state beside the name, e.g. single sign-on's On or Off. */
+  badge?: React.ReactNode;
   action?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const heading = (
+    <Title order={3} fz={SECTION.heading.fz} fw={SECTION.heading.fw}>
+      {title}
+    </Title>
+  );
   return (
     <Stack gap="sm">
       <Group justify="space-between" align="flex-end" wrap="wrap" gap="sm">
         <Stack gap={2} style={{ minWidth: 0, flex: "1 1 auto" }}>
-          <Title order={3} fz={SECTION.heading.fz} fw={SECTION.heading.fw}>
-            {title}
-          </Title>
+          {badge ? (
+            <Group gap="xs" wrap="wrap">
+              {heading}
+              {badge}
+            </Group>
+          ) : (
+            heading
+          )}
           {hint && (
             <Text c="dimmed" fz={SECTION.headingHint.fz}>
               {hint}

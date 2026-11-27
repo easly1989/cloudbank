@@ -1757,6 +1757,46 @@ paths:
       responses:
         "200": { description: The check., content: { application/json: { schema: { $ref: "#/components/schemas/UpdateStatus" } } } }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/admin/oidc:
+    get:
+      operationId: getOIDCSettings
+      summary: Single sign-on as set on this server (admin only)
+      description: >-
+        The provider sign-ins go through (#796): set by the CB_OIDC_* variables
+        when any is set (source env, read-only), otherwise saved from Settings.
+        The client secret is never returned; hasSecret says whether one is there.
+      responses:
+        "200": { description: The settings., content: { application/json: { schema: { $ref: "#/components/schemas/OIDCSettings" } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      operationId: saveOIDCSettings
+      summary: Set the provider (admin only)
+      description: >-
+        Reaches the provider's discovery document first and saves nothing when it
+        does not answer (502 provider_unreachable). A save takes effect at once.
+        An empty clientSecret keeps the saved one. Another issuer drops the links
+        of the previous one. 409 set_by_env when the variables set single sign-on,
+        409 secret_key_missing without CB_SECRET_KEY.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/OIDCSettingsInput" } } }
+      responses:
+        "200": { description: The settings after the save., content: { application/json: { schema: { $ref: "#/components/schemas/OIDCSettings" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Set by the variables, or no CB_SECRET_KEY., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "502": { description: The provider does not answer at this issuer., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    delete:
+      operationId: turnOffOIDC
+      summary: Turn single sign-on off (admin only)
+      description: >-
+        Forgets the saved provider, at once. Refused (409 sso_only) on a server
+        that signs in through SSO alone (CB_PASSWORD_LOGIN=false), and 409
+        set_by_env when the variables set it.
+      responses:
+        "204": { description: Turned off. }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Set by the variables, or the server signs in through SSO only., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
   /api/v1/backup/restore:
     post:
       operationId: restoreBackup
@@ -4169,6 +4209,36 @@ components:
         checkedAt: { type: string, description: "RFC3339 time of the last check" }
         error: { type: string, description: "why the last check had no answer" }
       required: [enabled, allowed, channel, current, available]
+    OIDCSettings:
+      type: object
+      properties:
+        source: { type: string, enum: [env, settings, none], description: "env: the CB_OIDC_* variables, read-only" }
+        enabled: { type: boolean, description: "sign-ins go through a provider now" }
+        reachable: { type: boolean, description: "the live provider answered its discovery document" }
+        secretKey: { type: boolean, description: "CB_SECRET_KEY is set, so a client secret can be saved" }
+        ssoOnly: { type: boolean, description: "CB_PASSWORD_LOGIN=false: single sign-on cannot be turned off" }
+        linkedUsers: { type: integer, format: int64, description: "users linked to this issuer" }
+        issuer: { type: string }
+        clientId: { type: string }
+        hasSecret: { type: boolean }
+        redirectUrl: { type: string }
+        scopes: { type: string }
+        name: { type: string, description: "the sign-in button's provider name" }
+        autoProvision: { type: boolean }
+        adminEmail: { type: string }
+      required: [source, enabled, reachable, secretKey, ssoOnly, linkedUsers, issuer, clientId, hasSecret, redirectUrl, scopes, name, autoProvision, adminEmail]
+    OIDCSettingsInput:
+      type: object
+      properties:
+        issuer: { type: string, description: "an http(s) address, as the provider names itself" }
+        clientId: { type: string }
+        clientSecret: { type: string, description: "write-only; empty keeps the saved one" }
+        redirectUrl: { type: string, description: "an http(s) address ending in /api/v1/auth/oidc/callback" }
+        scopes: { type: string, description: "space-separated, with openid; empty means openid profile email" }
+        name: { type: string, description: "empty means SSO" }
+        autoProvision: { type: boolean }
+        adminEmail: { type: string }
+      required: [issuer, clientId, redirectUrl]
     AIFeatures:
       type: object
       description: The AI's jobs, each switched on by itself under the master switch.
