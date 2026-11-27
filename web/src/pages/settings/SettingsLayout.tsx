@@ -65,6 +65,7 @@ export function SettingsLayout() {
   if (pathname !== seenPath) {
     setSeenPath(pathname);
     setMenuOpen(false);
+    setQuery("");
   }
 
   // `#row`: scroll to the row once its page has drawn it, and mark it.
@@ -79,7 +80,8 @@ export function SettingsLayout() {
         if (++tries < 60) timer = setTimeout(find, 50);
         return;
       }
-      el.scrollIntoView({ block: "center" });
+      // An opened expander taller than half the screen shows from its top.
+      el.scrollIntoView({ block: el.offsetHeight > window.innerHeight / 2 ? "start" : "center" });
       el.classList.add(classes.flash);
       timer = setTimeout(() => el.classList.remove(classes.flash), 1600);
     };

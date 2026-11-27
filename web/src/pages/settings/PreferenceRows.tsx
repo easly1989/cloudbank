@@ -251,6 +251,7 @@ export function AppearanceRows() {
         id="theme"
         control={
           <SegmentedControl
+            className="cb-choice"
             aria-label={t("preferences.theme")}
             value={user?.theme ?? "auto"}
             onChange={(v) => {
