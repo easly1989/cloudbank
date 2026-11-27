@@ -80,6 +80,12 @@ unauthenticated.
   can forge. Behind a proxy every visitor shares the proxy's address, so ten
   wrong passwords for one username within 15 minutes block that username for
   everyone until the window passes. Successful sign-ins are never counted.
+  Passkey sign-ins have a count of their own, per address alone: behind a proxy,
+  ten failed ones in 15 minutes stop passkey sign-in for everyone until then.
+- **Passkeys belong to the name CloudBank is reached at.** A passkey made at
+  `cloudbank.example.com` signs in only there; a new domain needs new passkeys,
+  and an address by IP offers none. The browser offers them only in a secure
+  context, like the installable app below.
 - **Serving over HTTPS is what makes the installable PWA work.** The web manifest
   and service worker are already inside the image, but browsers only register the
   service worker (offline app shell, opt-in web-push reminders) and offer

@@ -41,7 +41,7 @@ without the same key loses those secrets, and they have to be set up again.
     3.5.1 or earlier lack them.
 - **What it leaves out:**
   - bank connections, which you connect again;
-  - the people, their preferences, two-factor and API tokens.
+  - the people, their preferences, two-factor, passkeys and API tokens.
 - **Restoring:** see [One wallet, from a wallet backup](#one-wallet-from-a-wallet-backup).
   Files up to 256 MiB are accepted. Behind nginx, raise its upload limit first
   ([the reverse-proxy guide](reverse-proxy.md)).
