@@ -30,7 +30,7 @@ test("an administrator turns SSO on from Settings, without a restart", async ({
     data: { title: "Demo", baseCurrency: "EUR" },
   });
 
-  await page.goto("/settings/security");
+  await page.goto("/settings/admin");
   const row = page.getByTestId("sso-settings");
   await expect(row.getByText("No provider")).toBeVisible();
   await row.getByRole("button", { name: "Configure" }).click();
@@ -84,7 +84,7 @@ test("turning it off takes the button away", async ({ page }) => {
     headers: H,
     data: { username: ADMIN.username, password: ADMIN.password },
   });
-  await page.goto("/settings/security");
+  await page.goto("/settings/admin");
   await page
     .getByTestId("sso-settings")
     .getByRole("button", { name: "Edit" })

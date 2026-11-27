@@ -168,27 +168,29 @@ test("a footer turned off is gone from a desktop, and About keeps the source", a
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "Source code" })).toHaveCount(0);
 
-  await page.goto("/settings/about");
+  // About is part of Settings › Home now (#800).
+  await page.goto("/settings/home");
   await expect(page.getByTestId("about-version")).toBeVisible();
-  await expect(page.getByText("AGPL-3.0")).toBeVisible();
+  await expect(page.getByText("AGPL-3.0").first()).toBeVisible();
   await expect(page.getByRole("link", { name: /Source code/ })).toHaveAttribute(
     "href",
     "https://github.com/easly1989/cloudbank",
   );
 });
 
-test("Settings › Appearance turns the footer off", async ({ page }) => {
+test("Settings › Personalization turns the footer off", async ({ page }) => {
   await setUp(page);
-  await page.goto("/settings/appearance");
-  const toggle = page.getByRole("switch", { name: "Show the footer" });
-  await toggle.uncheck();
-  // The Save of the card the switch is in: the page has more than one.
+  await page.goto("/settings/personalization");
+  // The switch saves as it changes (#800): there is no Save.
+  const save = page.waitForResponse(
+    (r) =>
+      r.url().endsWith("/api/v1/auth/me") && r.request().method() === "PATCH",
+  );
+  // A row's switch is named by the row; its track takes the click.
   await page
-    .locator(".mantine-Card-root")
-    .filter({ has: toggle })
-    .getByRole("button", { name: "Save" })
-    .click();
-  await expect(page.getByText("Preferences saved").first()).toBeVisible();
+    .getByRole("switch", { name: "Show the footer" })
+    .uncheck({ force: true });
+  await save;
   await page.goto("/accounts");
   await expect(page.getByRole("link", { name: "Source code" })).toHaveCount(0);
 });

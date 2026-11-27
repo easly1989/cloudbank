@@ -185,13 +185,13 @@ try {
   await page.waitForLoadState("networkidle");
   await shoot(page, "reports");
 
-  // Settings — appearance (theme + accent picker).
-  await page.goto(BASE + "/settings/appearance");
+  // Settings — personalisation (theme + accent picker).
+  await page.goto(BASE + "/settings/personalization");
   await page.waitForLoadState("networkidle");
   await shoot(page, "settings");
 
-  // Settings — data: backup, .xhb export and import.
-  await page.goto(BASE + "/settings/data");
+  // Settings — wallet: backup and .xhb export.
+  await page.goto(BASE + "/settings/wallet/backup");
   await page.waitForLoadState("networkidle");
   await shoot(page, "export");
 

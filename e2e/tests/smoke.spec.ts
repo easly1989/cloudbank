@@ -115,9 +115,9 @@ test("full journey: setup → wallet → account → transaction → import → 
   });
 
   await test.step("import a HomeBank .xhb file", async () => {
-    // Import lives under Settings → "Import & export"
+    // Import lives under Settings → Wallet → Import
     // (it's wallet-scoped, so it's out of the main nav); deep-link straight to it.
-    await page.goto("/settings/data");
+    await page.goto("/settings/wallet/import");
     await page.setInputFiles('input[type="file"]', "fixtures/sample.xhb");
     await page.getByRole("button", { name: "Import", exact: true }).click();
     await expect(page.getByText("Import complete")).toBeVisible();
@@ -155,9 +155,9 @@ test("full journey: setup → wallet → account → transaction → import → 
   });
 
   await test.step("download a wallet backup", async () => {
-    // Backup lives under Settings → "Import & export", below the import tools
-    // section; deep-link straight to it.
-    await page.goto("/settings/data");
+    // Backup lives under Settings → Wallet → Backup & integrity; deep-link
+    // straight to it.
+    await page.goto("/settings/wallet/backup");
     const downloadPromise = page.waitForEvent("download");
     await page.getByRole("button", { name: "Download backup" }).click();
     const download = await downloadPromise;

@@ -63,17 +63,21 @@ test("what the demo switched off is not offered", async ({ page }) => {
     .click();
   await noTourOffers(page);
 
-  await page.goto("/settings/general");
+  await page.goto("/settings/account");
   const rail = page.getByRole("navigation", { name: "Settings" });
-  await expect(rail.getByRole("link", { name: "General" })).toBeVisible();
-  for (const gone of ["Security", "People", "Bank mails", "AI"]) {
+  await expect(rail.getByRole("link", { name: "Account" })).toBeVisible();
+  for (const gone of ["Administration", "AI"]) {
     await expect(
       rail.getByRole("link", { name: gone, exact: true }),
     ).toHaveCount(0);
   }
-  await expect(rail.getByRole("link", { name: "Bank sync" })).toBeVisible();
+  await expect(rail.getByRole("link", { name: "Connections" })).toBeVisible();
+  // Signing in is the demo's own: no password, two-factor or tokens (#800).
+  await expect(page.getByText("Two-factor authentication")).toHaveCount(0);
+  await page.goto("/settings/connections");
+  await expect(page.getByRole("link", { name: /^Bank mails/ })).toHaveCount(0);
 
-  await page.goto("/settings/data");
+  await page.goto("/settings/wallet/backup");
   await expect(
     page.getByRole("button", { name: "Download backup" }),
   ).toBeVisible();
@@ -94,7 +98,7 @@ test("the pretend bank syncs", async ({ page }) => {
     .click();
   await noTourOffers(page);
 
-  await page.goto("/settings/bank-sync");
+  await page.goto("/settings/connections/bank-sync");
   await expect(page.getByText("Pretend bank").first()).toBeVisible();
   await expect(page.getByText("SimpleFIN")).toHaveCount(0);
   await page.getByRole("button", { name: "Sync now" }).first().click();

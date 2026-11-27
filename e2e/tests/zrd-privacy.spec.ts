@@ -210,7 +210,7 @@ test("privacy mode hides every figure, memo and payee, and survives a reload", a
   });
 
   await test.step("Settings has no eye", async () => {
-    await page.goto("/settings/general");
+    await page.goto("/settings/account");
     await page.waitForLoadState("networkidle");
     await expect(page.getByTestId("privacy-toggle")).toHaveCount(0);
   });

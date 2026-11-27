@@ -130,7 +130,7 @@ test("with no mailbox, the page's tour only says how to connect one", async ({
   // #677: the tour's first step is the mailbox, so the page offers nothing
   // yet, and its ? shows the one step that applies.
   await signIn(page);
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await page.locator('[data-tour-replay="mail"]').click();
   const card = page.locator("[data-tour-step]");
   await expect(card).toContainText("Connect a mailbox");
@@ -144,7 +144,7 @@ test("signing in to Microsoft connects the mailbox", async ({
   context,
 }) => {
   await signIn(page);
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await page.getByRole("button", { name: "Sign in with Microsoft" }).click();
   const code = (await page.getByTestId("mail-user-code").textContent())!.trim();
   expect(code).toMatch(/^E2E\d{4}$/);
@@ -186,7 +186,7 @@ test("the bank's mails arrive, and none is recognised yet", async ({
   });
   await deliver(page, card("6,43", "Supermercato Demo 0042"));
 
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await history(page).getByRole("button", { name: "Check now" }).click();
   // The latest mails start closed; the badge counts them, and its half for the
   // mails to review opens the list on those.
@@ -252,7 +252,7 @@ test("the first pattern offers the editor's tour, once, and Escape leaves the dr
   const offer = sheet.locator("[data-tour-offer]");
   const card = page.locator("[data-tour-step]");
 
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await showMails(history(page));
   await create.click();
   await offer.getByRole("button", { name: /Show me/ }).click();
@@ -298,7 +298,7 @@ test("a pattern made from one mail writes the transactions of all its kind", asy
   page,
 }) => {
   await signIn(page);
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await showMails(history(page));
   // The newest mail is first: the supermarket.
   await history(page)
@@ -356,7 +356,7 @@ test("a pattern for money in is one choice, and the mail's word is not marked", 
   page,
 }) => {
   await signIn(page);
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await showMails(history(page));
   // The transfer is the one mail left that no pattern reads.
   const create = history(page).getByRole("button", {
@@ -416,7 +416,7 @@ test("a pattern for money in is one choice, and the mail's word is not marked", 
 
 test("a new mail is heard and written without asking", async ({ page }) => {
   await signIn(page);
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await showMails(history(page));
   await expect(history(page).getByText("Created", { exact: true })).toHaveCount(
     3,
@@ -445,7 +445,7 @@ test("a mail whose sender is not authenticated writes nothing", async ({
     ...card("99,00", "Negozio Falso"),
     authenticated: false,
   });
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await history(page).getByRole("button", { name: "Check now" }).click();
   await showMails(history(page));
   await expect(
@@ -491,7 +491,7 @@ test("one pattern covers two wordings of a notice, marked in a mail of each", as
       "È stato richiesto un pagamento di 12,50 EUR con la carta 1234_*_*_5678 presso Bar Esempio, - ore 08:12",
     ),
   );
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await history(page).getByRole("button", { name: "Check now" }).click();
   // With the mail the forged sender sent before, 4 are to review.
   await expect(
@@ -588,7 +588,7 @@ test("the written transactions are in the register, opened from the mail", async
   page,
 }) => {
   await signIn(page);
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await showMails(history(page));
   await history(page)
     .getByRole("link", { name: /Supermercato Demo 0042/ })
@@ -612,7 +612,7 @@ test("a second source on the same folder: the mail goes to the first that reads 
   // #794: up to 5 sources per mailbox, each a name and a folder; a mail two
   // sources could read goes to the first in the order.
   await signIn(page);
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   const box = history(page);
   await box.getByRole("button", { name: "New source" }).click();
   const draft = box.getByTestId("mail-source-new");
@@ -672,7 +672,7 @@ test("the page's tour points at every part of a connected mailbox", async ({
   page,
 }) => {
   await signIn(page);
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await page.locator('[data-tour-replay="mail"]').click();
   const card = page.locator("[data-tour-step]");
   // No step left out for want of its element, none centred for want of size.

@@ -56,7 +56,8 @@ test("quiet hours hold the mail, not the bell, until they end", async ({
     return [slot(-1), slot(2)];
   });
   const quiet = page.getByRole("switch", { name: "Quiet hours" });
-  await quiet.click();
+  // A row's switch is named by the row; its track takes the click.
+  await quiet.click({ force: true });
   await expect(quiet).toBeChecked();
   await pick(page, "Start of quiet hours", from);
   await pick(page, "End of quiet hours", to);
@@ -77,7 +78,9 @@ test("quiet hours hold the mail, not the bell, until they end", async ({
   await page.goto("/settings/notifications");
   await expect(page.getByText(`quiet ${from}–${to}`)).toBeVisible();
   await page.goto("/settings/notifications/timing");
-  await page.getByRole("switch", { name: "Quiet hours" }).click();
+  await page
+    .getByRole("switch", { name: "Quiet hours" })
+    .click({ force: true });
   await expect(
     page.getByRole("switch", { name: "Quiet hours" }),
   ).not.toBeChecked();

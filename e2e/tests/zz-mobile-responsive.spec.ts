@@ -109,16 +109,22 @@ for (const vp of VIEWPORTS) {
 // went blank (#519) broke on a list the server sent as null, which no test
 // had opened.
 const SETTINGS = [
-  "general",
-  "appearance",
+  "home",
+  "account",
+  "account/tokens",
+  "personalization",
   "wallet",
-  "security",
-  "bank-sync",
-  "mail",
+  "wallet/import",
+  "wallet/export",
+  "wallet/backup",
+  "connections",
+  "connections/bank-sync",
+  "connections/mail",
+  "notifications",
+  "notifications/timing",
   "ai",
-  "data",
-  "people",
-  "about",
+  "admin",
+  "admin/people",
 ].map((s) => `/settings/${s}`);
 
 test.describe("no page breaks", () => {

@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { openEvents } from "./openEvents";
+
 // Telegram, Discord and Slack (#688), against the pretend services in
 // ../server/cmd/e2e-mail. The installation has a shared Telegram bot
 // (CB_TELEGRAM_TOKEN), which learns the chat from the link it is started with
@@ -41,6 +43,7 @@ test("Telegram: the shared bot links the chat that presses Start with the code",
 }) => {
   await signIn(page);
   await page.goto("/settings/notifications/telegram");
+  await openEvents(page);
   const tg = card(page);
   await expect(
     tg.getByText("This installation's bot is @cloudbank_demo_bot."),
@@ -132,6 +135,7 @@ for (const { title, refusal } of [
     const service = title.toLowerCase();
     await signIn(page);
     await page.goto(`/settings/notifications/${service}`);
+    await openEvents(page);
     const c = card(page);
     await c.getByLabel("URL").fill(`${FAKE}/${service}/family-key`);
     await c.getByRole("button", { name: "Save" }).click();

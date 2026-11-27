@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 // The new-version check (#582), as an admin meets it on a local build: the
 // build follows no release channel, so it never goes online, and Settings ›
-// About says so. (A versioned build and its card are covered by the Go and
+// Administration says so. (A versioned build and its card are covered by the Go and
 // unit tests: the e2e image is built as "dev".)
 // Named "zpg-" so it runs after the main journey, whose admin it reuses; it
 // also sets itself up when run alone.
@@ -12,7 +12,7 @@ const H = {
   "X-Requested-With": "XMLHttpRequest",
 };
 
-test("Settings › About tells an admin what the update check does", async ({
+test("Settings › Administration tells an admin what the update check does", async ({
   page,
 }) => {
   await page.goto("/");
@@ -44,7 +44,7 @@ test("Settings › About tells an admin what the update check does", async ({
   expect(status.channel).toBe("");
   expect(status.available).toBe(false);
 
-  await page.goto("/settings/about");
+  await page.goto("/settings/admin");
   await expect(
     page.getByText(/This is a local build, which follows no release channel/),
   ).toBeVisible();

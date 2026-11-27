@@ -57,7 +57,7 @@ test("a passkey added in Settings signs in on its own", async ({
     },
   });
 
-  await page.goto("/settings/security");
+  await page.goto("/settings/account");
   const card = page.getByTestId("passkeys");
   await expect(card.getByText("None")).toBeVisible();
   await card.getByRole("button", { name: "Add" }).click();
@@ -102,7 +102,7 @@ test("a passkey added in Settings signs in on its own", async ({
   await page.evaluate(() => localStorage.removeItem("e2e-passkey-field"));
 
   // It shows as used, and goes when removed.
-  await page.goto("/settings/security");
+  await page.goto("/settings/account");
   await card.getByRole("button", { name: "Manage" }).click();
   await expect(dialog.getByText(/used today/)).toBeVisible();
   await dialog.getByRole("button", { name: "Remove E2E key" }).click();

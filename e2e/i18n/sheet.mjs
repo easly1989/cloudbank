@@ -1,5 +1,5 @@
 // One picture per language (#614): every page on a 390px phone, plus the
-// entry sheet, the sign-in page and Settings › General, side by side. A
+// entry sheet, the sign-in page and Settings › Account, side by side. A
 // reviewer of a translation looks at it once instead of opening the app in
 // that language page by page.
 //
@@ -32,7 +32,7 @@ const languages = process.argv.slice(2).length
 const SHOTS = [
   ...PAGES.map((path) => ({ path, label: path })),
   { path: "/transactions?new=1", label: "entry sheet" },
-  { path: "/settings/general", label: "/settings/general" },
+  { path: "/settings/account", label: "/settings/account" },
   { path: "/login", label: "/login", signedOut: true },
 ];
 

@@ -306,7 +306,7 @@ const CHECKS = [
   ],
   [
     "settings: theme choice",
-    "/settings/appearance",
+    "/settings/personalization",
     null,
     (p) => p.locator(".cb-choice").first(),
     { board: "settings", tag: "button", text: "Auto" },
@@ -317,7 +317,7 @@ const CHECKS = [
   ],
   [
     "settings: accent swatch",
-    "/settings/appearance",
+    "/settings/personalization",
     null,
     role("button", "teal"),
     { board: "settings", tag: "button", size: [22, 22] },

@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { openEvents } from "./openEvents";
+
 // The Matrix channel (#687), against the pretend homeserver in
 // ../server/cmd/e2e-mail. The installation has a shared bot
 // (CB_MATRIX_HOMESERVER, CB_MATRIX_TOKEN), which joins only a room it was
@@ -46,6 +48,7 @@ test("the shared bot joins only a room it was invited to, and its code connects 
 }) => {
   await signIn(page);
   await page.goto("/settings/notifications/matrix");
+  await openEvents(page);
   const matrix = card(page);
   await expect(
     matrix.getByText("Invite @cloudbank:matrix.example to the room."),

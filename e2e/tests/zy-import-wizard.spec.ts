@@ -85,7 +85,7 @@ async function start(
   file: string,
   body: string,
 ) {
-  await page.goto("/settings/data");
+  await page.goto("/settings/wallet/import");
   await page.getByRole("tab", { name: "Bank / CSV / QIF / OFX" }).click();
   const panel = page.getByRole("tabpanel", { name: "Bank / CSV / QIF / OFX" });
   await panel.getByText(format, { exact: true }).click();
