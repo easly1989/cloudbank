@@ -39,6 +39,7 @@ import {
   type OidcSettings,
 } from "../api/client";
 import { notifyError } from "../notifyError";
+import { useConfirm } from "./confirmContext";
 import { SettingsGroup } from "../pages/settings/SettingsLayout";
 import { draftFrom, issuerHost, saveAction, scopesHaveOpenid, type OidcDraft } from "./oidcForm";
 
@@ -142,16 +143,9 @@ function Status({ s }: { s: OidcSettings }) {
 function label(text: string, envVar: string | false) {
   if (!envVar) return text;
   return (
-    <Group component="span" gap={6} wrap="nowrap" style={{ display: "inline-flex" }}>
+    <Group component="span" gap={8} wrap="nowrap" style={{ display: "inline-flex" }}>
       {text}
-      <Text
-        span
-        fz={11}
-        fw={600}
-        c="dimmed"
-        style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
-      >
-        <IconServer size={12} />
+      <Text span fz={12} fw={400} ff="monospace" c="dimmed">
         CB_OIDC_{envVar}
       </Text>
     </Group>
@@ -171,7 +165,7 @@ function OidcForm({ s, onClose }: { s: OidcSettings; onClose: () => void }) {
   const callback = s.redirectUrl || window.location.origin + CALLBACK_PATH;
   const action = saveAction(s, d);
   const set = (patch: Partial<OidcDraft>) => setD((prev) => ({ ...prev, ...patch }));
-  const lock = env ? <IconLock size={14} aria-hidden /> : undefined;
+  const lock = env ? <IconLock size={16} aria-hidden /> : undefined;
 
   const done = (next?: OidcSettings) => {
     if (next) qc.setQueryData(["oidcSettings"], next);
@@ -190,6 +184,18 @@ function OidcForm({ s, onClose }: { s: OidcSettings; onClose: () => void }) {
       } else notifyError(err);
     },
   });
+  const confirm = useConfirm();
+  const askTurnOff = async () => {
+    const body = [t("sso.turnOffBody")];
+    if (s.linkedUsers > 0) body.push(t("sso.turnOffLinked", { count: s.linkedUsers }));
+    const ok = await confirm({
+      title: t("sso.turnOffTitle"),
+      body: body.join(" "),
+      confirmLabel: t("sso.turnOffConfirm"),
+      danger: true,
+    });
+    if (ok) off.mutate();
+  };
   const off = useMutation({
     mutationFn: turnOffOidc,
     onSuccess: () => done(),
@@ -226,7 +232,7 @@ function OidcForm({ s, onClose }: { s: OidcSettings; onClose: () => void }) {
   return (
     <Stack gap="md">
       {env && (
-        <Alert color="blue" icon={<IconServer size={18} />} title={t("sso.envTitle")}>
+        <Alert color="blue" icon={<IconServer size={16} />} title={t("sso.envTitle")}>
           <Trans
             i18nKey="sso.envBody"
             components={{ code: <Text span ff="monospace" fz="sm" /> }}
@@ -234,18 +240,19 @@ function OidcForm({ s, onClose }: { s: OidcSettings; onClose: () => void }) {
         </Alert>
       )}
       {noKey && (
-        <Alert color="yellow" icon={<IconAlertTriangle size={18} />} title={t("sso.noKeyTitle")}>
+        <Alert color="yellow" icon={<IconAlertTriangle size={16} />} title={t("sso.noKeyTitle")}>
           {t("sso.noKeyBody")}
         </Alert>
       )}
       {action.warnLinks && (
-        <Alert color="yellow" icon={<IconAlertTriangle size={18} />} title={t("sso.issuerTitle")}>
+        <Alert color="yellow" icon={<IconAlertTriangle size={16} />} title={t("sso.issuerTitle")}>
           <Trans
             i18nKey="sso.issuerBody"
             count={s.linkedUsers}
             values={{ count: s.linkedUsers, host: issuerHost(s.issuer) }}
             components={{ code: <Text span ff="monospace" fz="sm" /> }}
           />
+          {s.ssoOnly && <> {t("sso.issuerSsoOnly")}</>}
         </Alert>
       )}
       <Grid>
@@ -370,7 +377,7 @@ function OidcForm({ s, onClose }: { s: OidcSettings; onClose: () => void }) {
                 color="red"
                 c="var(--mantine-color-red-text)"
                 loading={off.isPending}
-                onClick={() => off.mutate()}
+                onClick={() => void askTurnOff()}
               >
                 {t("sso.turnOff")}
               </Button>

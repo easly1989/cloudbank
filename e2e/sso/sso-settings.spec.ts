@@ -93,6 +93,12 @@ test("turning it off takes the button away", async ({ page }) => {
     .getByRole("dialog")
     .getByRole("button", { name: "Turn single sign-on off" })
     .click();
+  // It asks first, and says the linked account will need a password.
+  const confirm = page.getByRole("dialog", {
+    name: "Turn single sign-on off?",
+  });
+  await expect(confirm.getByText(/linked accounts? will need/)).toBeVisible();
+  await confirm.getByRole("button", { name: "Turn off" }).click();
   await expect(
     page.getByTestId("sso-settings").getByText("No provider"),
   ).toBeVisible();
