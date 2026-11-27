@@ -102,7 +102,7 @@ func (s *Service) client(ctx context.Context) (*oauth2.Config, *gooidc.IDTokenVe
 var providerClient = &http.Client{
 	Timeout:   15 * time.Second,
 	Transport: limitedTransport{http.DefaultTransport},
-	CheckRedirect: func(req *http.Request, via []*http.Request) error {
+	CheckRedirect: func(_ *http.Request, via []*http.Request) error {
 		if len(via) >= 3 {
 			return errors.New("oidc: too many redirects")
 		}
