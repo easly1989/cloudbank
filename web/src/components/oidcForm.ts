@@ -38,9 +38,14 @@ export function saveAction(s: OidcSettings, d: OidcDraft) {
     s.source !== "env" &&
     d.issuer.trim() !== "" &&
     d.clientId.trim() !== "" &&
-    (d.clientSecret.trim() !== "" || keepsSecret);
+    (d.clientSecret.trim() !== "" || keepsSecret) &&
+    scopesHaveOpenid(d.scopes);
   return { kind, ready, keepsSecret, warnLinks: issuerChanged && s.linkedUsers > 0 };
 }
+
+/** Empty scopes take the server's default, which has openid. */
+export const scopesHaveOpenid = (scopes: string) =>
+  scopes.trim() === "" || scopes.split(/\s+/).includes("openid");
 
 /** The host of an issuer address, for the row and the warning. */
 export function issuerHost(issuer: string): string {

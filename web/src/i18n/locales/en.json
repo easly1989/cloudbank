@@ -1858,6 +1858,7 @@
     "name": "Button name",
     "nameHint": "On the sign-in page: “{{button}}”.",
     "scopes": "Scopes",
+    "scopesOpenid": "The scopes must include openid",
     "autoProvision": "Create an account for whoever signs in for the first time",
     "autoProvisionHint": "Off: only people who already have an account with the same verified email get in.",
     "adminEmail": "Administrator email",

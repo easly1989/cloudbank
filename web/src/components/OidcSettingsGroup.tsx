@@ -28,7 +28,7 @@ import {
   IconServer,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 
 import {
@@ -40,7 +40,7 @@ import {
 } from "../api/client";
 import { notifyError } from "../notifyError";
 import { SettingsGroup } from "../pages/settings/SettingsLayout";
-import { draftFrom, issuerHost, saveAction, type OidcDraft } from "./oidcForm";
+import { draftFrom, issuerHost, saveAction, scopesHaveOpenid, type OidcDraft } from "./oidcForm";
 
 const CALLBACK_PATH = "/api/v1/auth/oidc/callback";
 const mono = { input: { fontFamily: "var(--mantine-font-family-monospace)" } };
@@ -163,6 +163,7 @@ function OidcForm({ s, onClose }: { s: OidcSettings; onClose: () => void }) {
   const qc = useQueryClient();
   const [d, setD] = useState<OidcDraft>(() => draftFrom(s));
   const [issuerFailed, setIssuerFailed] = useState(false);
+  const issuerRef = useRef<HTMLInputElement>(null);
   const env = s.source === "env";
   const noKey = !env && !s.secretKey;
   // A saved address stays: opening Settings from another address (a LAN IP,
@@ -183,8 +184,10 @@ function OidcForm({ s, onClose }: { s: OidcSettings; onClose: () => void }) {
     mutationFn: () => saveOidcSettings({ ...d, redirectUrl: callback }),
     onSuccess: (next) => done(next),
     onError: (err: unknown) => {
-      if (err instanceof ApiError && err.code === "provider_unreachable") setIssuerFailed(true);
-      else notifyError(err);
+      if (err instanceof ApiError && err.code === "provider_unreachable") {
+        setIssuerFailed(true);
+        issuerRef.current?.focus();
+      } else notifyError(err);
     },
   });
   const off = useMutation({
@@ -253,6 +256,7 @@ function OidcForm({ s, onClose }: { s: OidcSettings; onClose: () => void }) {
             description={issuerFailed ? undefined : t("sso.issuerHint")}
             inputWrapperOrder={["label", "input", "description", "error"]}
             error={issuerFailed ? t("sso.issuerFailed") : undefined}
+            ref={issuerRef}
             styles={mono}
             value={d.issuer}
             readOnly={env}
@@ -278,6 +282,7 @@ function OidcForm({ s, onClose }: { s: OidcSettings; onClose: () => void }) {
         <Grid.Col span={12}>
           <TextInput
             label={label(t("sso.callback"), env && "REDIRECT_URL")}
+            variant="filled"
             description={t("sso.callbackHint")}
             inputWrapperOrder={["label", "input", "description"]}
             styles={mono}
@@ -320,6 +325,7 @@ function OidcForm({ s, onClose }: { s: OidcSettings; onClose: () => void }) {
         <Grid.Col span={{ base: 12, sm: 6 }}>
           <TextInput
             label={label(t("sso.scopes"), env && "SCOPES")}
+            error={scopesHaveOpenid(d.scopes) ? undefined : t("sso.scopesOpenid")}
             styles={mono}
             value={d.scopes}
             readOnly={env}
@@ -362,6 +368,7 @@ function OidcForm({ s, onClose }: { s: OidcSettings; onClose: () => void }) {
               <Button
                 variant="subtle"
                 color="red"
+                c="var(--mantine-color-red-text)"
                 loading={off.isPending}
                 onClick={() => off.mutate()}
               >

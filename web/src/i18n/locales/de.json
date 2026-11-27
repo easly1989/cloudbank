@@ -1858,6 +1858,7 @@
     "name": "Name der Schaltfläche",
     "nameHint": "Auf der Anmeldeseite: „{{button}}“.",
     "scopes": "Scopes",
+    "scopesOpenid": "Die Scopes müssen openid enthalten",
     "autoProvision": "Wer sich zum ersten Mal anmeldet, bekommt ein Benutzerkonto",
     "autoProvisionHint": "Aus: Nur wer schon ein Benutzerkonto mit derselben bestätigten E-Mail hat, kommt herein.",
     "adminEmail": "E-Mail des Administrators",

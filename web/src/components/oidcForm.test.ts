@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { OidcSettings } from "../api/client";
-import { draftFrom, issuerHost, saveAction } from "./oidcForm";
+import { draftFrom, issuerHost, saveAction, scopesHaveOpenid } from "./oidcForm";
 
 const on: OidcSettings = {
   source: "settings",
@@ -74,4 +74,11 @@ describe("saveAction", () => {
 it("issuerHost keeps what is not an address", () => {
   expect(issuerHost("https://auth.casa.lan/oidc")).toBe("auth.casa.lan");
   expect(issuerHost("auth")).toBe("auth");
+});
+
+it("scopes need openid, unless left empty for the default", () => {
+  expect(scopesHaveOpenid("")).toBe(true);
+  expect(scopesHaveOpenid("openid  email")).toBe(true);
+  expect(scopesHaveOpenid("profile email")).toBe(false);
+  expect(saveAction(on, { ...draftFrom(on), scopes: "profile" }).ready).toBe(false);
 });

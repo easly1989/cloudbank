@@ -1858,6 +1858,7 @@
     "name": "Nom du bouton",
     "nameHint": "Sur la page de connexion : « {{button}} ».",
     "scopes": "Portées",
+    "scopesOpenid": "Les portées doivent inclure openid",
     "autoProvision": "Créer un compte pour qui se connecte la première fois",
     "autoProvisionHint": "Désactivé : seuls ceux qui ont déjà un compte avec la même adresse e-mail vérifiée entrent.",
     "adminEmail": "E-mail de l’administrateur",

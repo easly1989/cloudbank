@@ -1858,6 +1858,7 @@
     "name": "Nome do botão",
     "nameHint": "Na página de login: “{{button}}”.",
     "scopes": "Escopos",
+    "scopesOpenid": "Os escopos precisam incluir openid",
     "autoProvision": "Criar uma conta para quem entra pela primeira vez",
     "autoProvisionHint": "Desligado: só entra quem já tem uma conta com o mesmo e-mail verificado.",
     "adminEmail": "E-mail do administrador",

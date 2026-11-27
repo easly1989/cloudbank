@@ -1858,6 +1858,7 @@
     "name": "Nombre del botón",
     "nameHint": "En la página de inicio de sesión: «{{button}}».",
     "scopes": "Ámbitos",
+    "scopesOpenid": "Los ámbitos deben incluir openid",
     "autoProvision": "Crear una cuenta a quien entra por primera vez",
     "autoProvisionHint": "Apagado: solo entra quien ya tiene una cuenta con el mismo correo verificado.",
     "adminEmail": "Correo del administrador",
