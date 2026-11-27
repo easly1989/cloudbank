@@ -85,6 +85,8 @@ type userResponse struct {
 	// SignsInWithSSO is set on GET /auth/me only: the password card tells an
 	// SSO user that the password may not be one they know.
 	SignsInWithSSO bool `json:"signsInWithSso,omitempty"`
+	// PasskeyCount is set on GET /admin/users only (#798).
+	PasskeyCount int64 `json:"passkeyCount,omitempty"`
 }
 
 func toUserResponse(u auth.User) userResponse {
@@ -112,6 +114,7 @@ func (h *authHandlers) publicRoutes(r chi.Router) {
 	}
 	r.Post("/setup", h.setup)
 	r.Post("/auth/login", h.login)
+	h.passkeyPublicRoutes(r)
 }
 
 // protectedRoutes registers endpoints that require an authenticated session;
@@ -133,6 +136,7 @@ func (h *authHandlers) protectedRoutes(r chi.Router) {
 	} else {
 		h.twoFactorRoutes(r)
 		r.Post("/auth/me/password", h.changePassword)
+		h.passkeyRoutes(r)
 	}
 
 	r.Group(func(r chi.Router) {
@@ -144,6 +148,7 @@ func (h *authHandlers) protectedRoutes(r chi.Router) {
 			r.Post("/admin/users/{id}/password", passwordLoginOff)
 		} else {
 			r.Post("/admin/users/{id}/password", h.resetPassword)
+			r.Delete("/admin/users/{id}/passkeys", h.deleteUserPasskeys)
 		}
 	})
 }
@@ -316,9 +321,16 @@ func (h *authHandlers) listUsers(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal", "could not list users")
 		return
 	}
+	counts, err := h.svc.PasskeyCounts(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not list users")
+		return
+	}
 	out := make([]userResponse, 0, len(users))
 	for _, u := range users {
-		out = append(out, toUserResponse(u))
+		ur := toUserResponse(u)
+		ur.PasskeyCount = counts[u.ID]
+		out = append(out, ur)
 	}
 	writeJSON(w, http.StatusOK, out)
 }

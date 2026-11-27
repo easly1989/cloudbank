@@ -93,7 +93,7 @@ export interface paths {
         };
         /**
          * Public auth configuration (available login methods)
-         * @description Tells the login and setup pages how to sign in: whether OIDC/SSO login is enabled and its button label, and whether the username/password form is there at all (passwordLogin is false when the server signs in through SSO only, CB_PASSWORD_LOGIN=false).
+         * @description Tells the login and setup pages how to sign in: whether OIDC/SSO login is enabled and its button label, and whether the username/password form is there at all (passwordLogin is false when the server signs in through SSO only, CB_PASSWORD_LOGIN=false). passkeys is true when the login page can offer a passkey (#798): never on an SSO-only server or in the demo.
          */
         get: operations["getAuthConfig"];
         put?: never;
@@ -312,6 +312,123 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/passkeys/login/begin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a sign-in with a passkey (#798)
+         * @description Returns the options for navigator.credentials.get, for any passkey made on the host in the Origin header, and sets a short cookie that carries the challenge's key to the finish call. Answers 400 passkey_origin when the page is reached by IP. Not mounted on an SSO-only server or in the demo.
+         */
+        post: operations["beginPasskeyLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/passkeys/login/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish a sign-in with a passkey
+         * @description Takes the browser's PublicKeyCredential as JSON and opens a session; no two-factor code is asked, the passkey verified the user. Every failure, a disabled account included, is 401 invalid_credentials.
+         */
+        post: operations["finishPasskeyLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me/passkeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your passkeys, oldest first (session only) */
+        get: operations["listPasskeys"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me/passkeys/begin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start adding a passkey (session only)
+         * @description Returns the options for navigator.credentials.create. Needs a sign-in from the last 10 minutes, else 403 reauth_required; 409 passkey_limit at 10 passkeys; 400 passkey_origin when the page is reached by IP.
+         */
+        post: operations["beginPasskeyAdd"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me/passkeys/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Store the passkey the browser created (session only)
+         * @description The same rules as begin, checked again; 400 passkey_rejected when the answer does not verify or its challenge expired.
+         */
+        post: operations["finishPasskeyAdd"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me/passkeys/{passkeyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkeyId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove one of your passkeys (session only; no recent sign-in needed) */
+        delete: operations["deletePasskey"];
+        options?: never;
+        head?: never;
+        /** Rename one of your passkeys (session only) */
+        patch: operations["renamePasskey"];
         trace?: never;
     };
     "/api/v1/push/publickey": {
@@ -2004,6 +2121,26 @@ export interface paths {
          */
         post: operations["resetUserPassword"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{id}/passkeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove every passkey of a user who lost their device (admin, session only)
+         * @description Not mounted on an SSO-only server.
+         */
+        delete: operations["deleteUserPasskeys"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4203,6 +4340,20 @@ export interface components {
             createdAt: string;
             /** @description GET /auth/me only: an SSO identity is linked to this user */
             signsInWithSso?: boolean;
+            /**
+             * Format: int64
+             * @description GET /admin/users only: how many passkeys the user has; missing means none
+             */
+            passkeyCount?: number;
+        };
+        Passkey: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** @description UTC RFC3339 */
+            createdAt: string;
+            /** @description UTC RFC3339; missing until the first sign-in */
+            lastUsedAt?: string;
         };
         UpdateMeRequest: {
             /** @description a language tag; a variant is saved as the language CloudBank speaks (it-CH as it, pt-PT as pt-BR), one it does not speak is refused with 400 invalid_locale */
@@ -6948,6 +7099,7 @@ export interface operations {
                             name: string;
                         };
                         passwordLogin: boolean;
+                        passkeys: boolean;
                     };
                 };
             };
@@ -7351,6 +7503,224 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    beginPasskeyLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The WebAuthn request options (publicKey and mediation). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    finishPasskeyLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Signed in. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Too many failed attempts. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listPasskeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The passkeys. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Passkey"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    beginPasskeyAdd: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The WebAuthn creation options. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description passkey_limit. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    finishPasskeyAdd: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description trimmed; empty becomes Passkey */
+                    name?: string;
+                    /** @description the PublicKeyCredential as JSON */
+                    credential: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Added. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Passkey"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description passkey_limit. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deletePasskey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkeyId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description No such passkey of yours. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    renamePasskey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkeyId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Renamed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description No such passkey of yours. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     getPushPublicKey: {
@@ -10522,6 +10892,29 @@ export interface operations {
         };
         responses: {
             /** @description Password reset. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    deleteUserPasskeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
             204: {
                 headers: {
                     [name: string]: unknown;

@@ -222,6 +222,7 @@ func New(opts Options) http.Handler {
 			// the login page can hide the button when SSO is off.
 			oh := &oidcHandlers{
 				auth: opts.Auth, secure: opts.SecureCookies, ssoOnly: opts.SSOOnly,
+				passkeys: !opts.SSOOnly && dh == nil,
 				settings: opts.OIDCSettings, env: opts.OIDCEnv,
 			}
 			oh.live.Store(&oidcLive{svc: opts.OIDC, policy: auth.OIDCPolicy{

@@ -61,6 +61,8 @@ type Querier interface {
 	CountNotificationCodeAttempt(ctx context.Context, arg CountNotificationCodeAttemptParams) (int64, error)
 	CountOIDCIdentitiesForIssuer(ctx context.Context, issuer string) (int64, error)
 	CountOIDCIdentitiesForUser(ctx context.Context, userID int64) (int64, error)
+	CountPasskeys(ctx context.Context, userID int64) (int64, error)
+	CountPasskeysByUser(ctx context.Context) ([]CountPasskeysByUserRow, error)
 	// How many transactions, of any date and sign, each payee of a wallet has.
 	CountPayeeTransactions(ctx context.Context, walletID int64) ([]CountPayeeTransactionsRow, error)
 	CountPayeesInWallet(ctx context.Context, arg CountPayeesInWalletParams) (int64, error)
@@ -80,6 +82,7 @@ type Querier interface {
 	CountUsersByEmail(ctx context.Context, email string) (int64, error)
 	CountVehiclesInWallet(ctx context.Context, arg CountVehiclesInWalletParams) (int64, error)
 	CountWalletCurrencies(ctx context.Context, walletID int64) (int64, error)
+	CreatePasskey(ctx context.Context, arg CreatePasskeyParams) (Passkey, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateWallet(ctx context.Context, arg CreateWalletParams) (Wallet, error)
@@ -113,6 +116,7 @@ type Querier interface {
 	DeleteOIDCIdentitiesForIssuer(ctx context.Context, issuer string) error
 	DeleteOIDCSettings(ctx context.Context) error
 	DeleteOtherUserSessions(ctx context.Context, arg DeleteOtherUserSessionsParams) error
+	DeletePasskey(ctx context.Context, arg DeletePasskeyParams) (int64, error)
 	DeletePayee(ctx context.Context, id int64) error
 	DeletePayeeCleanup(ctx context.Context, walletID int64) error
 	DeletePluggyConfig(ctx context.Context, walletID int64) error
@@ -132,6 +136,7 @@ type Querier interface {
 	DeleteTransactionMerge(ctx context.Context, walletID int64) error
 	DeleteTransactionTags(ctx context.Context, transactionID int64) error
 	DeleteTransfer(ctx context.Context, id int64) error
+	DeleteUserPasskeys(ctx context.Context, userID int64) (int64, error)
 	DeleteUserSessions(ctx context.Context, userID int64) error
 	DeleteValuation(ctx context.Context, id int64) error
 	DeleteVehicle(ctx context.Context, id int64) error
@@ -187,6 +192,7 @@ type Querier interface {
 	GetNotificationChannel(ctx context.Context, arg GetNotificationChannelParams) (NotificationChannel, error)
 	GetNotificationSettings(ctx context.Context, userID int64) (NotificationSetting, error)
 	GetOIDCSettings(ctx context.Context) (GetOIDCSettingsRow, error)
+	GetPasskeyUserHandle(ctx context.Context, userID int64) ([]byte, error)
 	GetPayee(ctx context.Context, id int64) (Payee, error)
 	GetPayeeCleanup(ctx context.Context, walletID int64) (PayeeCleanup, error)
 	GetPluggyConfig(ctx context.Context, walletID int64) (BankPluggyConfig, error)
@@ -371,6 +377,8 @@ type Querier interface {
 	// The expenses flagged and not handled, flagged since a moment, newest first.
 	// A double whose pair was merged or marked not a duplicate on Review is gone.
 	ListOpenAIUnusual(ctx context.Context, arg ListOpenAIUnusualParams) ([]ListOpenAIUnusualRow, error)
+	ListPasskeys(ctx context.Context, userID int64) ([]Passkey, error)
+	ListPasskeysByHandle(ctx context.Context, arg ListPasskeysByHandleParams) ([]Passkey, error)
 	// How many of the wallet's transactions since a day each payee has in each
 	// category, split ones left out: the history Review's proposals (#706) read.
 	ListPayeeCategoryCounts(ctx context.Context, arg ListPayeeCategoryCountsParams) ([]ListPayeeCategoryCountsRow, error)
@@ -511,6 +519,7 @@ type Querier interface {
 	RecordMailboxCheck(ctx context.Context, arg RecordMailboxCheckParams) error
 	RefreshEBankingConnectionSession(ctx context.Context, arg RefreshEBankingConnectionSessionParams) (BankConnection, error)
 	RememberDevice(ctx context.Context, arg RememberDeviceParams) (int64, error)
+	RenamePasskey(ctx context.Context, arg RenamePasskeyParams) (int64, error)
 	RenameTag(ctx context.Context, arg RenameTagParams) error
 	// An expense put away as fine is flagged again once its amount has changed.
 	ReopenAIUnusual(ctx context.Context, arg ReopenAIUnusualParams) error
@@ -611,6 +620,7 @@ type Querier interface {
 	UpdateEBankingAccounts(ctx context.Context, arg UpdateEBankingAccountsParams) error
 	UpdateGoal(ctx context.Context, arg UpdateGoalParams) error
 	UpdateMailPattern(ctx context.Context, arg UpdateMailPatternParams) (int64, error)
+	UpdatePasskeyUse(ctx context.Context, arg UpdatePasskeyUseParams) error
 	UpdatePayee(ctx context.Context, arg UpdatePayeeParams) error
 	UpdateScheduleConfig(ctx context.Context, arg UpdateScheduleConfigParams) error
 	UpdateTemplate(ctx context.Context, arg UpdateTemplateParams) error

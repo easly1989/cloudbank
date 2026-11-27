@@ -86,7 +86,8 @@ paths:
         Tells the login and setup pages how to sign in: whether OIDC/SSO login is
         enabled and its button label, and whether the username/password form is
         there at all (passwordLogin is false when the server signs in through SSO
-        only, CB_PASSWORD_LOGIN=false).
+        only, CB_PASSWORD_LOGIN=false). passkeys is true when the login page can
+        offer a passkey (#798): never on an SSO-only server or in the demo.
       security: []
       responses:
         "200":
@@ -103,7 +104,8 @@ paths:
                       name: { type: string }
                     required: [enabled, name]
                   passwordLogin: { type: boolean }
-                required: [oidc, passwordLogin]
+                  passkeys: { type: boolean }
+                required: [oidc, passwordLogin, passkeys]
   /api/v1/setup:
     post:
       operationId: postSetup
@@ -364,6 +366,108 @@ paths:
         "204": { description: Disabled. }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/auth/passkeys/login/begin:
+    post:
+      operationId: beginPasskeyLogin
+      summary: Start a sign-in with a passkey (#798)
+      description: >-
+        Returns the options for navigator.credentials.get, for any passkey made
+        on the host in the Origin header, and sets a short cookie that carries
+        the challenge's key to the finish call. Answers 400 passkey_origin when
+        the page is reached by IP. Not mounted on an SSO-only server or in the demo.
+      security: []
+      responses:
+        "200": { description: The WebAuthn request options (publicKey and mediation)., content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/auth/passkeys/login/finish:
+    post:
+      operationId: finishPasskeyLogin
+      summary: Finish a sign-in with a passkey
+      description: >-
+        Takes the browser's PublicKeyCredential as JSON and opens a session; no
+        two-factor code is asked, the passkey verified the user. Every failure,
+        a disabled account included, is 401 invalid_credentials.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        "200": { description: Signed in., content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { description: Too many failed attempts. }
+  /api/v1/auth/me/passkeys:
+    get:
+      operationId: listPasskeys
+      summary: Your passkeys, oldest first (session only)
+      responses:
+        "200": { description: The passkeys., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Passkey" } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/auth/me/passkeys/begin:
+    post:
+      operationId: beginPasskeyAdd
+      summary: Start adding a passkey (session only)
+      description: >-
+        Returns the options for navigator.credentials.create. Needs a sign-in
+        from the last 10 minutes, else 403 reauth_required; 409 passkey_limit at
+        10 passkeys; 400 passkey_origin when the page is reached by IP.
+      responses:
+        "200": { description: The WebAuthn creation options., content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: passkey_limit. }
+  /api/v1/auth/me/passkeys/finish:
+    post:
+      operationId: finishPasskeyAdd
+      summary: Store the passkey the browser created (session only)
+      description: >-
+        The same rules as begin, checked again; 400 passkey_rejected when the
+        answer does not verify or its challenge expired.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 60, description: "trimmed; empty becomes Passkey" }
+                credential: { type: object, additionalProperties: true, description: "the PublicKeyCredential as JSON" }
+              required: [credential]
+      responses:
+        "201": { description: Added., content: { application/json: { schema: { $ref: "#/components/schemas/Passkey" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: passkey_limit. }
+  /api/v1/auth/me/passkeys/{passkeyId}:
+    parameters:
+      - { name: passkeyId, in: path, required: true, schema: { type: integer, format: int64 } }
+    patch:
+      operationId: renamePasskey
+      summary: Rename one of your passkeys (session only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { name: { type: string, maxLength: 60 } }, required: [name] }
+      responses:
+        "204": { description: Renamed. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: No such passkey of yours. }
+    delete:
+      operationId: deletePasskey
+      summary: Remove one of your passkeys (session only; no recent sign-in needed)
+      responses:
+        "204": { description: Removed. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: No such passkey of yours. }
   /api/v1/push/publickey:
     get:
       operationId: getPushPublicKey
@@ -1928,6 +2032,18 @@ paths:
               required: [password]
       responses:
         "204": { description: Password reset. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/admin/users/{id}/passkeys:
+    delete:
+      operationId: deleteUserPasskeys
+      summary: Remove every passkey of a user who lost their device (admin, session only)
+      description: Not mounted on an SSO-only server.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        "204": { description: Removed. }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -4187,7 +4303,16 @@ components:
         twoFactorEnabled: { type: boolean }
         createdAt: { type: string }
         signsInWithSso: { type: boolean, description: "GET /auth/me only: an SSO identity is linked to this user" }
+        passkeyCount: { type: integer, format: int64, description: "GET /admin/users only: how many passkeys the user has; missing means none" }
       required: [id, username, email, isAdmin, locale, theme, disabled, createdAt]
+    Passkey:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        createdAt: { type: string, description: "UTC RFC3339" }
+        lastUsedAt: { type: string, description: "UTC RFC3339; missing until the first sign-in" }
+      required: [id, name, createdAt]
     UpdateMeRequest:
       type: object
       properties:
