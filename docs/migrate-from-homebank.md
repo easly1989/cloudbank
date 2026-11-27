@@ -24,7 +24,7 @@ use **File → Save as…** in HomeBank to write a fresh copy somewhere obvious.
 ## 2. Import it into CloudBank
 
 1. Log in to CloudBank.
-2. Go to **Settings → Import & export**, on the **HomeBank file** tab.
+2. Go to **Settings → Wallet → Import**, on the **HomeBank file** tab.
 3. Choose your `.xhb` file and click **Import**.
 4. CloudBank creates a **new wallet** from the file and shows a summary of how
    many of each entity were imported, plus any warnings. The import is
@@ -54,7 +54,7 @@ latest save — re-export from HomeBank and import again into a fresh wallet.
 
 ## 4. Next steps
 
-- **Connect your bank** in **Settings → Bank sync** ([the bank-sync guide](bank-sync.md)).
+- **Connect your bank** in **Settings → Connections → Bank sync** ([the bank-sync guide](bank-sync.md)).
   A bank row that matches a transaction you already have — the same amount on a
   nearby date — is merged into it rather than added twice, so your history and
   the new rows line up.
@@ -84,8 +84,8 @@ optional rule application: see [Importing transactions](import.md).
 ## Exporting back to HomeBank (`.xhb`)
 
 CloudBank can export a wallet **back to a HomeBank `.xhb` file**, so you're never
-locked in. Go to **Settings → Import & export**, and under **Backup & restore**
-click **Export .xhb**; the downloaded file opens directly in the HomeBank desktop app.
+locked in. Go to **Settings → Wallet → Backup & integrity**, and on the **Backup & restore**
+row click **Export .xhb**; the downloaded file opens directly in the HomeBank desktop app.
 
 The export reverses the import exactly — accounts, payees, categories, tags,
 transactions (with splits and re-paired transfers), schedules, templates,

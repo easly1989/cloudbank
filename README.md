@@ -95,11 +95,11 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 - **Import**: HomeBank `.xhb`, QIF, OFX/QFX, CSV, **ISO 20022 CAMT.053** — with an import assistant ([how to import](docs/import.md)). **Export**: HomeBank `.xhb`, QIF, CSV.
 - **Automatic bank sync** — pull new transactions straight from your bank, run through your assignment rules and **reconciled against what you already have**: a bank row that matches an existing manual or scheduled transaction (amount + nearby date) is **merged** into it instead of duplicated, imported with the right status (booked → reconciled, pending → cleared) and a sensible default payment mode. Three providers, all **bring-your-own-credentials** so CloudBank never sees your bank login: **[SimpleFIN](https://www.simplefin.org/)** (worldwide; a ~$15/year SimpleFIN Bridge subscription) and **[Enable Banking](https://enablebanking.com/)** (EU/EEA + UK via PSD2 — a free sandbox to test, your own production application for real accounts). Plus **[Pluggy](https://pluggy.ai/)** (Latin America — free for personal use via [Meu Pluggy](https://meu.pluggy.ai), where you link the banks and CloudBank just reads them). **Pluggy is experimental and needs real-world testing** — it follows the published API but has not been run against a live Latin American bank by the maintainers, so if you use it, please [open an issue](https://github.com/easly1989/cloudbank/issues/new) with anything that looks wrong, however small. A **personal (restricted)** Enable Banking production app can only sync accounts you **link** to it in its panel — the [bank-sync guide](docs/bank-sync.md) walks through it.
 - **Bank mails** — CloudBank reads your bank's payment notifications from the folders of a mailbox you choose, up to five: Outlook.com, Hotmail or Live by signing in to Microsoft, any other over IMAP with an app password. A **pattern** you make by highlighting a real mail turns each one into a cleared transaction, or the **AI** reads it, with card numbers and IBANs hidden first. Bank sync merges its own row into it rather than duplicating it, and Review asks about the ones the bank never booked. Read-only, listening as mails arrive, and only from senders the mail server authenticated ([the guide](docs/bank-mails.md)).
-- **Review** — lists imported transactions still **needing a category** (set it inline) and finds **possible duplicates** that slipped through, with per-pair **merge**, edit, delete, or **"not a duplicate"** (remembered, so it isn't shown again). An account with something to review says so in its register ("3 to review"), and the button opens Review on that account; a linked account also shows when it last synced, with a **Sync** button. The connections themselves are set up in **Settings → Bank sync**.
+- **Review** — lists imported transactions still **needing a category** (set it inline) and finds **possible duplicates** that slipped through, with per-pair **merge**, edit, delete, or **"not a duplicate"** (remembered, so it isn't shown again). An account with something to review says so in its register ("3 to review"), and the button opens Review on that account; a linked account also shows when it last synced, with a **Sync** button. The connections themselves are set up in **Settings → Connections → Bank sync**.
 - **Multi-currency** with manual and online (ECB / frankfurter.app) exchange rates.
 - **Totals that say what they add up** — the balance beside the wallet and at the head of the dashboard names how many accounts it sums ("4 of 6 accounts" when some are closed or kept out of the totals) and opens them one by one.
 - **Privacy mode** — one eye beside the **?** of every page (or **Shift+H**) blurs amounts, balances, totals, memos and payees across the app, charts included, and leaves dates, categories and account names readable: for showing CloudBank to someone without showing what you earn. It stays on, on that device, until you turn it off.
-- Multi-user (managed by the admin from **Settings → People**; each user changes their own password), responsive UI, English and Italian, plus German, French, Spanish and Brazilian Portuguese in beta.
+- Multi-user (managed by the admin from **Settings → Administration → People**; each user changes their own password), responsive UI, English and Italian, plus German, French, Spanish and Brazilian Portuguese in beta.
 
 ### Make it yours
 
@@ -109,12 +109,12 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 - **Collapsible sidebar** and a **reorderable navigation** — rename or add groups, hide pages, and optionally show up to three **account balances** below it.
 - **Smart amount entry** (HomeBank style) — type `12.40` or `12,40` and both are read as decimals (toggleable per user).
 - **Dates** rendered everywhere in your configured format.
-- **Page tours** — each main page offers a short tour the first time you open it, and the **?** in its header replays it. Settings → General can turn the offers off or reset them.
+- **Page tours** — each main page offers a short tour the first time you open it, and the **?** in its header replays it. Settings → Account can turn the offers off or reset them.
 
 ### Secure & on every device
 
 - **Two-factor authentication (TOTP)** — optional per-user 2FA with authenticator apps (QR enrolment + one-time recovery codes) and a two-step login.
-- **Passkeys** — sign in with a device's fingerprint, face or PIN instead of the password and the code: up to ten per user, kept in Settings › Security, and offered by the browser right in the username field.
+- **Passkeys** — sign in with a device's fingerprint, face or PIN instead of the password and the code: up to ten per user, kept in Settings › Account, and offered by the browser right in the username field.
 - **Personal API tokens** — scoped, revocable bearer tokens for programmatic access, and a wallet summary that **Home Assistant** reads as sensors: bills due, this month's budget, what waits on Review, balances only if you ask ([the guide](docs/home-assistant.md)).
 - **Installable PWA** — a web-app manifest, icons and an offline app shell, so CloudBank installs to your phone's home screen or your desktop. A long press on the icon offers **New expense** and **New income**, and on Android a bank's notification shared with CloudBank opens the entry sheet with its text ([how](docs/pages.md#adding-from-your-phone)).
 - **Notifications where you will see them** — a bell on every page, plus push, email, **Matrix**, **Telegram**, **Discord**, **Slack**, **ntfy**, **Gotify** or a signed **webhook** (Home Assistant included). Choose which events reach which channel — bills, security, problems such as a failing bank sync, money (large expenses, low balances, budgets, goals), weekly and monthly summaries — and when: at once, in a daily digest, or after your quiet hours ([the guide](docs/notifications.md)).
@@ -167,8 +167,8 @@ docker compose up -d
 
 That is the whole install — one container, no external database. Your data lives
 in the `cloudbank-data` volume (a SQLite database under `/data`). Back it up by
-copying that volume, or use the in-app **wallet backup** (Settings → Import &
-export) and the admin **full-database backup**: [docs/backup.md](docs/backup.md)
+copying that volume, or use the in-app **wallet backup** (Settings → Wallet → Backup &
+integrity) and the admin **full-database backup**: [docs/backup.md](docs/backup.md)
 says what each one holds and how to restore it.
 
 Then follow [Getting started](docs/getting-started.md): the administrator, a
@@ -254,7 +254,7 @@ Every guide, grouped by what you are trying to do: **[docs/README.md](docs/READM
 | `CB_MS_CLIENT_ID` | CloudBank's own | The Microsoft application id used to read bank notification mails from an Outlook.com mailbox. Not a secret; set it only to use your own registration. Reading mail also needs `CB_SECRET_KEY`. |
 | `CB_MS_AUTHORITY`, `CB_MS_IMAP` | _(Microsoft's)_ | Testing only: send the Outlook.com sign-in (an `https` URL, or `http` on localhost) and its IMAP connection (`host:port`, TLS unless on localhost) to a pretend Microsoft, as the end-to-end tests do. Leave unset. |
 | `CB_MAIL_LOCAL_IMAP` | _(none)_ | Testing only: one IMAP server on this machine (`host:port`, loopback) that mailboxes connected with an app password may use without TLS, as the end-to-end tests do. Every other server must be on the public internet and encrypted. Leave unset. |
-| `CB_UPDATE_CHECK`   | `true`              | Once a day the server reads the list of published versions on GitHub and tells admins when a newer CloudBank is out. Nothing is sent. Set `false` to turn it off for the whole installation; admins can also turn it off in **Settings → About**. |
+| `CB_UPDATE_CHECK`   | `true`              | Once a day the server reads the list of published versions on GitHub and tells admins when a newer CloudBank is out. Nothing is sent. Set `false` to turn it off for the whole installation; admins can also turn it off in **Settings → Administration**. |
 | `CB_ENABLEBANKING_BASE_URL` | _(Enable Banking's API)_ | Diagnostics and testing only: points Enable Banking calls at another API root. |
 | `CB_BANK_SYNC_DEBUG_PENDING` | _(off)_    | Diagnostics only. When set, each auto-sync makes one extra `transaction_status=PDNG` call per account and logs the provider's exact response, to investigate why an ASPSP returns no pending transactions. Leave off in normal use — the extra call spends the PSD2 daily budget. |
 | `CB_OIDC_ISSUER`    | _(none)_            | OIDC/SSO issuer URL (e.g. `https://auth.example.com/realms/main`). Setting issuer + client id + client secret + redirect URL enables a "Sign in with …" button alongside local login. |

@@ -97,7 +97,7 @@ var plugins = []ImportPlugin{
 ```
 
 That's all the wiring: the plugin then appears in the **Bank** picker of the
-import wizard (**Settings → Import & export → Bank / CSV / QIF / OFX**), and the endpoint runs your `Parse` over the uploaded bytes
+import wizard (**Settings → Wallet → Import**), and the endpoint runs your `Parse` over the uploaded bytes
 before the shared preview pipeline.
 
 ## A minimal worked example

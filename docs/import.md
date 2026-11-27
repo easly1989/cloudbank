@@ -5,7 +5,7 @@ and CAMT.053, plus a few bank-specific formats. Every import goes into **one
 account** that you choose, and nothing is saved until you have seen a preview of
 every row.
 
-Imports live in **Settings → Import & export**, on the **Bank / CSV / QIF / OFX**
+Imports live in **Settings → Wallet → Import**, on the **Bank / CSV / QIF / OFX**
 tab.
 
 > **Coming from HomeBank?** Import your `.xhb` file on the **HomeBank file** tab
@@ -238,6 +238,6 @@ category *Food:Coffee*, so the next import needs no typing.
 
 ## Getting your data out
 
-In **Settings → Import & export**, the **CSV export** tab exports an account as
+In **Settings → Wallet → Export**, the **CSV export** tab exports an account as
 **HomeBank CSV** or **QIF**. The whole wallet can be exported as a HomeBank
 `.xhb` file or a JSON backup under **Backup & integrity**.

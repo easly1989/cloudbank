@@ -61,7 +61,8 @@ Added since:
 - **Page tours** (#421). The boards draw no help at all. Each page with a tour
   has a **?** as the first of its header actions: a default icon button, 44px on
   the register and the overview and 40 elsewhere, like its neighbours. The two
-  settings sections with tours (General, Data) put it beside the section title.
+  settings pages with tours (Personalization, Wallet, Bank sync, Bank mails)
+  put it beside the page title.
   The first time a page is opened, a 320px card in the bottom-right corner
   offers its tour. It is not a dialog, and it sits above the page but below any
   modal.
@@ -69,7 +70,7 @@ Added since:
   and deciding board draws Date · Account, Memo, Category · Payee. By default the
   app instead shows what a transaction needs: Date · Account, Memo, Payment ·
   Category, and the status as a row of icons. Payee waits under More details
-  with the rest. Settings → General → Transaction sheet moves any field either
+  with the rest. Settings → Personalization → Transaction sheet moves any field either
   way, and names the default a new entry takes when the date or the account is
   out of view. The board's "Save and add another" gains a joined toggle on its
   left, which keeps every field for the next entry and relabels the button
@@ -281,3 +282,24 @@ Added since:
   (fingerprint icon, since the password card has the key), and *Manage* opens
   the list in a modal (Mantine `md`). The Users page gains a Passkeys column
   and a *Remove passkeys* action.
+- **Settings after Windows 11** (#800), to an approved mockup (settings-fluent,
+  direction A); it replaces the settings board's rail and long sections. The
+  whole screen sits on a grey canvas (`--cb-shell-bg`) and a card is the
+  ledger's surface (`--cb-ledger-surface`, `--cb-ledger-border`), so both follow
+  the scheme with no new colour. The 300px nav holds the way back, the user
+  block (56px avatar initial, name, role and wallet), *Find a setting* and the
+  eight sections at 38px with an 18px icon; the current one is the card colour
+  with a 3px primary bar on its left. A page has a 28px/600 title, a breadcrumb
+  on a sub-page ("Notifications › Telegram"), 14px/600 group headings, and every
+  setting is a row card: 68px minimum, 12×18 padding, 6px radius, a 20px icon,
+  a 14px title over a 12px dimmed description, the control on the right; a
+  chevron for a page of its own, a down arrow for an expander whose panel joins
+  the card below; 4px between cards. *Related settings* close each page. Home
+  has 280px status tiles. At 390 the nav is the search and the current section,
+  which opens the rest, and a row's control wraps under its words. Every control
+  saves when it changes. The section headers keep the bell and the tour button,
+  which the mockup does not draw. The forms too big for a row (the import
+  wizard, the navigation editor, bank connections, bank mails, the channel
+  setups, the people table) are hosted as they were, under a row or on a page
+  of their own. `e2e/design-size-audit.mjs` and `settings.json` still describe
+  the old settings board.
