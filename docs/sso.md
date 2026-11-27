@@ -33,7 +33,11 @@ once, without a restart.
 - The client secret is stored encrypted, so Settings can save it only when the
   server has `CB_SECRET_KEY` (see the README); without it the form says so and
   single sign-on stays off. The secret is never shown again: leave the field
-  empty to keep the saved one.
+  empty to keep the saved one. A new issuer or client id needs the secret
+  again, so the saved one only ever goes to the provider it was saved for.
+- The server keeps the secret readable only with the `CB_SECRET_KEY` it was
+  saved with. With another key, or none, single sign-on stays off until the
+  secret is saved again; on an SSO-only server CloudBank does not start.
 - Changing the issuer drops the links of the people who signed in through the
   old provider; the form warns first and says how many. Each of them is linked
   again at their next SSO sign-in if the new provider gives the same verified
@@ -42,11 +46,14 @@ once, without a restart.
 - **Turn single sign-on off** forgets the provider. An SSO-only server
   (`CB_PASSWORD_LOGIN=false`) refuses it, since nobody could sign in. SSO only
   is set by the variable alone; Settings has no switch for it.
+- These changes need a browser session: an API token cannot make them.
 
 **With the variables.** If any `CB_OIDC_*` variable is set, the variables win:
 Settings shows their values read-only, each marked with its variable, and
-never the secret. To manage it from Settings instead, remove them all and
-restart.
+never the secret. One variable is enough for this, even
+`CB_OIDC_AUTO_PROVISION` alone: then single sign-on stays off (it needs the
+issuer, client id, client secret and redirect URL) and the log says so. To
+manage it from Settings instead, remove them all and restart.
 
 ## The variables
 

@@ -32,15 +32,36 @@ const off: OidcSettings = {
 describe("saveAction", () => {
   it("turns SSO on once the provider, the client and its secret are there", () => {
     const d = { ...draftFrom(off), issuer: "https://auth.casa.lan", clientId: "cloudbank" };
-    expect(saveAction(off, d)).toEqual({ kind: "turnOn", ready: false, warnLinks: false });
+    expect(saveAction(off, d)).toEqual({
+      kind: "turnOn",
+      ready: false,
+      keepsSecret: false,
+      warnLinks: false,
+    });
     expect(saveAction(off, { ...d, clientSecret: "s" }).ready).toBe(true);
   });
 
   it("saves with the stored secret, and warns only when another issuer drops links", () => {
-    expect(saveAction(on, draftFrom(on))).toEqual({ kind: "save", ready: true, warnLinks: false });
-    const moved = { ...draftFrom(on), issuer: "https://id.esempio.it" };
-    expect(saveAction(on, moved)).toEqual({ kind: "changeProvider", ready: true, warnLinks: true });
+    expect(saveAction(on, draftFrom(on))).toEqual({
+      kind: "save",
+      ready: true,
+      keepsSecret: true,
+      warnLinks: false,
+    });
+    const moved = { ...draftFrom(on), issuer: "https://id.esempio.it", clientSecret: "s" };
+    expect(saveAction(on, moved)).toEqual({
+      kind: "changeProvider",
+      ready: true,
+      keepsSecret: false,
+      warnLinks: true,
+    });
     expect(saveAction({ ...on, linkedUsers: 0 }, moved).warnLinks).toBe(false);
+  });
+
+  it("needs the secret again for another issuer or client", () => {
+    const moved = { ...draftFrom(on), issuer: "https://id.esempio.it" };
+    expect(saveAction(on, moved).ready).toBe(false);
+    expect(saveAction(on, { ...draftFrom(on), clientId: "other" }).ready).toBe(false);
   });
 
   it("cannot save without CB_SECRET_KEY, nor what the variables set", () => {

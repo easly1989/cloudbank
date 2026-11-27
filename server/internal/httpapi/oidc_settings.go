@@ -113,6 +113,9 @@ func (h *oidcHandlers) view(ctx context.Context) (oidcSettingsView, error) {
 }
 
 func (h *oidcHandlers) saveSettings(w http.ResponseWriter, r *http.Request) {
+	if !oidcSession(w, r) {
+		return
+	}
 	if h.env != nil {
 		writeError(w, http.StatusConflict, "set_by_env", "the CB_OIDC_* variables set single sign-on on this server")
 		return
@@ -139,7 +142,10 @@ func (h *oidcHandlers) saveSettings(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusInternalServerError, "internal", "could not read the SSO settings")
 			return
 		}
-		if !ok || saved.ClientSecret == "" {
+		// The saved secret goes only to the provider it was saved for: kept for
+		// another issuer or client, it would be posted to that provider's token
+		// endpoint.
+		if !ok || saved.ClientSecret == "" || saved.Issuer != s.Issuer || saved.ClientID != s.ClientID {
 			writeError(w, http.StatusBadRequest, "invalid", "the client secret is required")
 			return
 		}
@@ -151,9 +157,13 @@ func (h *oidcHandlers) saveSettings(w http.ResponseWriter, r *http.Request) {
 	err := svc.Discover(dctx)
 	cancel()
 	if err != nil {
-		// The detail can carry the provider's own reply: the log has it, the
-		// answer does not.
-		slog.Warn("oidc: provider not found while saving the settings", "issuer", s.Issuer, "error", err)
+		// The detail can carry the reply of whatever answered at that address:
+		// the log keeps its start, the answer none of it.
+		detail := err.Error()
+		if len(detail) > 200 {
+			detail = detail[:200] + "…"
+		}
+		slog.Warn("oidc: provider not found while saving the settings", "issuer", s.Issuer, "error", detail)
 		writeError(w, http.StatusBadGateway, "provider_unreachable", "the provider does not answer at this address")
 		return
 	}
@@ -173,6 +183,9 @@ func (h *oidcHandlers) saveSettings(w http.ResponseWriter, r *http.Request) {
 // turnOff forgets the saved provider. A server that signs in through SSO
 // alone keeps it: without it nobody could sign in.
 func (h *oidcHandlers) turnOff(w http.ResponseWriter, r *http.Request) {
+	if !oidcSession(w, r) {
+		return
+	}
 	if h.env != nil {
 		writeError(w, http.StatusConflict, "set_by_env", "the CB_OIDC_* variables set single sign-on on this server")
 		return
@@ -190,6 +203,16 @@ func (h *oidcHandlers) turnOff(w http.ResponseWriter, r *http.Request) {
 	h.live.Store(&oidcLive{policy: h.policy(oidc.Settings{})})
 	slog.Info("oidc: single sign-on turned off in Settings")
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// oidcSession refuses an API token: like access codes and API tokens, the
+// way everyone signs in is changed from a browser session only.
+func oidcSession(w http.ResponseWriter, r *http.Request) bool {
+	if authViaToken(r.Context()) {
+		writeError(w, http.StatusForbidden, "forbidden", "change single sign-on from a browser session, not an API token")
+		return false
+	}
+	return true
 }
 
 // policy is how an SSO sign-in through s may create or claim an account.

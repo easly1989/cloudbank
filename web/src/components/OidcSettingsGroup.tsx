@@ -165,10 +165,12 @@ function OidcForm({ s, onClose }: { s: OidcSettings; onClose: () => void }) {
   const [issuerFailed, setIssuerFailed] = useState(false);
   const env = s.source === "env";
   const noKey = !env && !s.secretKey;
-  const callback = env ? s.redirectUrl : window.location.origin + CALLBACK_PATH;
+  // A saved address stays: opening Settings from another address (a LAN IP,
+  // localhost) must not move the callback the provider has registered.
+  const callback = s.redirectUrl || window.location.origin + CALLBACK_PATH;
   const action = saveAction(s, d);
   const set = (patch: Partial<OidcDraft>) => setD((prev) => ({ ...prev, ...patch }));
-  const lock = env ? <IconLock size={14} /> : undefined;
+  const lock = env ? <IconLock size={14} aria-hidden /> : undefined;
 
   const done = (next?: OidcSettings) => {
     if (next) qc.setQueryData(["oidcSettings"], next);
@@ -209,8 +211,8 @@ function OidcForm({ s, onClose }: { s: OidcSettings; onClose: () => void }) {
   ) : (
     <PasswordInput
       label={t("sso.secret")}
-      placeholder={s.hasSecret ? t("sso.secretSaved") : t("sso.secretPaste")}
-      description={s.hasSecret ? t("sso.secretKeep") : t("sso.secretNew")}
+      placeholder={action.keepsSecret ? t("sso.secretSaved") : t("sso.secretPaste")}
+      description={action.keepsSecret ? t("sso.secretKeep") : t("sso.secretNew")}
       inputWrapperOrder={["label", "input", "description"]}
       autoComplete="off"
       value={d.clientSecret}
@@ -356,7 +358,7 @@ function OidcForm({ s, onClose }: { s: OidcSettings; onClose: () => void }) {
       ) : (
         <Group justify="space-between" gap="sm">
           <div>
-            {s.enabled && !s.ssoOnly && (
+            {s.source === "settings" && !s.ssoOnly && (
               <Button
                 variant="subtle"
                 color="red"

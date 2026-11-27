@@ -148,6 +148,8 @@ func run() error {
 		}
 		if cfg.OIDCEnabled() {
 			oidcActive = oidcEnv
+		} else {
+			logger.Warn("oidc: a CB_OIDC_* variable is set but not all of CB_OIDC_ISSUER, CB_OIDC_CLIENT_ID, CB_OIDC_CLIENT_SECRET and CB_OIDC_REDIRECT_URL; single sign-on stays off and Settings cannot set it until the variables are removed")
 		}
 	} else if saved, ok, err := oidcStore.Load(context.Background()); err != nil {
 		return err

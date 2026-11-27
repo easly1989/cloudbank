@@ -22,10 +22,12 @@ export const draftFrom = (s: OidcSettings): OidcDraft => ({
 });
 
 /** What the save button does with this draft: turn SSO on, save it, or move
- *  to another provider; whether it can yet; and whether linked users lose
- *  their link on the way. */
+ *  to another provider; whether it can yet; whether an empty secret keeps the
+ *  saved one; and whether linked users lose their link on the way. */
 export function saveAction(s: OidcSettings, d: OidcDraft) {
   const issuerChanged = s.source === "settings" && d.issuer.trim() !== s.issuer;
+  // The saved secret goes only to the provider and client it was saved for.
+  const keepsSecret = s.hasSecret && !issuerChanged && d.clientId.trim() === s.clientId;
   const kind: "turnOn" | "save" | "changeProvider" = !s.enabled
     ? "turnOn"
     : issuerChanged
@@ -36,8 +38,8 @@ export function saveAction(s: OidcSettings, d: OidcDraft) {
     s.source !== "env" &&
     d.issuer.trim() !== "" &&
     d.clientId.trim() !== "" &&
-    (d.clientSecret.trim() !== "" || s.hasSecret);
-  return { kind, ready, warnLinks: issuerChanged && s.linkedUsers > 0 };
+    (d.clientSecret.trim() !== "" || keepsSecret);
+  return { kind, ready, keepsSecret, warnLinks: issuerChanged && s.linkedUsers > 0 };
 }
 
 /** The host of an issuer address, for the row and the warning. */

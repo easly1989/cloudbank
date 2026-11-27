@@ -184,9 +184,19 @@ func TestOIDCSettingsSaveTakesEffectAndKeepsTheSecret(t *testing.T) {
 		t.Fatalf("save without a secret = %+v", v)
 	}
 
-	// Another issuer: the links of the first one go.
+	// Another issuer or client needs its own secret: the saved one is never
+	// sent to a provider it was not saved for.
 	other := newFakeIDP(t)
-	if v, _ := readSSO(t, c.do(http.MethodPut, "/api/v1/admin/oidc", ssoInput(other.srv.URL, ""), true)); v.Issuer != other.srv.URL || v.LinkedUsers != 0 {
+	moved := ssoInput(idp.srv.URL, "")
+	moved["clientId"] = "another-client"
+	for _, in := range []map[string]any{ssoInput(other.srv.URL, ""), moved} {
+		if code := errorCode(t, c.do(http.MethodPut, "/api/v1/admin/oidc", in, true)); code != "invalid" {
+			t.Fatalf("move %v without a secret = %q, want invalid", in, code)
+		}
+	}
+
+	// Another issuer: the links of the first one go.
+	if v, _ := readSSO(t, c.do(http.MethodPut, "/api/v1/admin/oidc", ssoInput(other.srv.URL, "other-secret"), true)); v.Issuer != other.srv.URL || v.LinkedUsers != 0 {
 		t.Fatalf("issuer change = %+v", v)
 	}
 	var left int
@@ -247,6 +257,34 @@ func TestOIDCSettingsAdminOnly(t *testing.T) {
 		resp := bob.do(m, "/api/v1/admin/oidc", ssoInput("https://idp.example", "s"), true)
 		if resp.StatusCode != http.StatusForbidden || errorCode(t, resp) != "forbidden" {
 			t.Errorf("bob %s = %d, want 403 forbidden as on /admin/users", m, resp.StatusCode)
+		}
+	}
+}
+
+// An API token cannot change how everyone signs in, as with access codes.
+func TestOIDCSettingsRefuseAPITokens(t *testing.T) {
+	withSecretKey(t)
+	c := newOIDCSettingsAPI(t, nil)
+	r := c.do(http.MethodPost, "/api/v1/auth/tokens", map[string]any{"name": "w", "scope": "write"}, true)
+	var out struct {
+		Token string `json:"token"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&out)
+	r.Body.Close()
+	if out.Token == "" {
+		t.Fatalf("create token = %d", r.StatusCode)
+	}
+	for _, m := range []string{http.MethodPut, http.MethodDelete} {
+		body, _ := json.Marshal(ssoInput("https://idp.example", "s"))
+		req, _ := http.NewRequest(m, c.base+"/api/v1/admin/oidc", strings.NewReader(string(body)))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+out.Token)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.StatusCode != http.StatusForbidden || errorCode(t, resp) != "forbidden" {
+			t.Errorf("token %s = %d, want 403 forbidden", m, resp.StatusCode)
 		}
 	}
 }
