@@ -148,6 +148,13 @@ type Options struct {
 	// OIDCAdminEmail reserves that first administrator sign-in to the identity
 	// with this verified email (CB_OIDC_ADMIN_EMAIL).
 	OIDCAdminEmail string
+	// OIDCSettings, if non-nil, mounts the admin endpoints that set the
+	// provider from Settings › Security (#796). A save swaps the provider in
+	// at once; OIDC and the fields above are only the one it starts with.
+	OIDCSettings *oidc.Store
+	// OIDCEnv is what the CB_OIDC_* variables set, when any is: it wins, and
+	// the settings show it read-only.
+	OIDCEnv *oidc.Settings
 	// Version is the running build version, surfaced at GET /api/v1/version.
 	Version string
 	// Updates, if non-nil, mounts the admin endpoints of the new-version check
@@ -213,15 +220,16 @@ func New(opts Options) http.Handler {
 			}
 			// OIDC/SSO login (public, pre-auth). /auth/config is always served so
 			// the login page can hide the button when SSO is off.
-			(&oidcHandlers{
-				svc: opts.OIDC, auth: opts.Auth, secure: opts.SecureCookies,
-				ssoOnly: opts.SSOOnly,
-				policy: auth.OIDCPolicy{
-					AutoProvision: opts.OIDCAutoProvision,
-					FirstAdmin:    opts.SSOOnly,
-					AdminEmail:    opts.OIDCAdminEmail,
-				},
-			}).routes(r)
+			oh := &oidcHandlers{
+				auth: opts.Auth, secure: opts.SecureCookies, ssoOnly: opts.SSOOnly,
+				settings: opts.OIDCSettings, env: opts.OIDCEnv,
+			}
+			oh.live.Store(&oidcLive{svc: opts.OIDC, policy: auth.OIDCPolicy{
+				AutoProvision: opts.OIDCAutoProvision,
+				FirstAdmin:    opts.SSOOnly,
+				AdminEmail:    opts.OIDCAdminEmail,
+			}})
+			oh.routes(r)
 			// Authenticated API: one requireAuth group shared by auth-protected
 			// endpoints and the wallet endpoints.
 			r.Group(func(pr chi.Router) {
@@ -250,6 +258,13 @@ func New(opts Options) http.Handler {
 					pr.Group(func(ar chi.Router) {
 						ar.Use(ah.requireAdmin)
 						(&updateHandlers{svc: opts.Updates}).routes(ar)
+					})
+				}
+				// The provider set from Settings (#796); the demo has no admin.
+				if opts.OIDCSettings != nil && dh == nil {
+					pr.Group(func(ar chi.Router) {
+						ar.Use(ah.requireAdmin)
+						oh.settingsRoutes(ar)
 					})
 				}
 				if opts.HotBackup != nil {

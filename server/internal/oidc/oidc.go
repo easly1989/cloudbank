@@ -8,8 +8,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	gooidc "github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
@@ -76,7 +79,9 @@ func (s *Service) client(ctx context.Context) (*oauth2.Config, *gooidc.IDTokenVe
 	if s.oauth != nil {
 		return s.oauth, s.verifier, nil
 	}
-	provider, err := gooidc.NewProvider(ctx, s.cfg.Issuer)
+	// The issuer can come from an admin in Settings, so its replies are kept
+	// small and its redirects few. The keys are fetched through the same client.
+	provider, err := gooidc.NewProvider(gooidc.ClientContext(ctx, providerClient), s.cfg.Issuer)
 	if err != nil {
 		return nil, nil, fmt.Errorf("oidc: discover %q: %w", s.cfg.Issuer, err)
 	}
@@ -90,6 +95,32 @@ func (s *Service) client(ctx context.Context) (*oauth2.Config, *gooidc.IDTokenVe
 		Scopes:       s.scopes,
 	}
 	return s.oauth, s.verifier, nil
+}
+
+// providerClient fetches the discovery document and keys: at most 3
+// redirects and 1 MiB per reply.
+var providerClient = &http.Client{
+	Timeout:   15 * time.Second,
+	Transport: limitedTransport{http.DefaultTransport},
+	CheckRedirect: func(_ *http.Request, via []*http.Request) error {
+		if len(via) >= 3 {
+			return errors.New("oidc: too many redirects")
+		}
+		return nil
+	},
+}
+
+type limitedTransport struct{ next http.RoundTripper }
+
+func (t limitedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := t.next.RoundTrip(req)
+	if err == nil {
+		resp.Body = struct {
+			io.Reader
+			io.Closer
+		}{io.LimitReader(resp.Body, 1<<20), resp.Body}
+	}
+	return resp, err
 }
 
 // Name is the provider label shown on the sign-in button.

@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"sync"
+	"sync/atomic"
 
 	"github.com/go-chi/chi/v5"
 
@@ -19,17 +21,33 @@ import (
 const oidcStateCookie = "cb_oidc"
 const oidcStatePath = "/api/v1/auth/oidc"
 
-// oidcHandlers serves the OIDC/SSO login endpoints. svc is nil when OIDC is not
-// configured; the start/callback endpoints then report that SSO is disabled while
-// /auth/config still answers so the login page can hide the button.
+// oidcHandlers serves the OIDC/SSO login endpoints. With no provider live the
+// start/callback endpoints report that SSO is disabled while /auth/config
+// still answers so the login page can hide the button.
 type oidcHandlers struct {
-	svc    *oidc.Service
 	auth   *auth.Service
 	secure bool
-	policy auth.OIDCPolicy
 	// ssoOnly: the server signs in through SSO alone (#620), so the login
 	// page shows no password form.
 	ssoOnly bool
+	// live is the provider sign-ins go through now. A save in Settings (#796)
+	// swaps it whole, so a request reads it once and sees one provider.
+	live atomic.Pointer[oidcLive]
+
+	// settings, when non-nil, lets an administrator set the provider from
+	// Settings › Security; env, when non-nil, is what the CB_OIDC_* variables
+	// set, which wins and is read-only.
+	settings *oidc.Store
+	env      *oidc.Settings
+	// saveMu keeps one save or turn-off at a time, so the database and live
+	// always end on the same provider.
+	saveMu sync.Mutex
+}
+
+// oidcLive is one provider with its sign-in policy; svc is nil when SSO is off.
+type oidcLive struct {
+	svc    *oidc.Service
+	policy auth.OIDCPolicy
 }
 
 func (h *oidcHandlers) routes(r chi.Router) {
@@ -42,19 +60,20 @@ func (h *oidcHandlers) routes(r chi.Router) {
 // show the SSO button, and whether the password form is there at all.
 func (h *oidcHandlers) config(w http.ResponseWriter, _ *http.Request) {
 	oidcInfo := map[string]any{"enabled": false, "name": ""}
-	if h.svc != nil {
+	if svc := h.live.Load().svc; svc != nil {
 		oidcInfo["enabled"] = true
-		oidcInfo["name"] = h.svc.Name()
+		oidcInfo["name"] = svc.Name()
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"oidc": oidcInfo, "passwordLogin": !h.ssoOnly})
 }
 
 func (h *oidcHandlers) start(w http.ResponseWriter, r *http.Request) {
-	if h.svc == nil {
+	svc := h.live.Load().svc
+	if svc == nil {
 		writeError(w, http.StatusNotFound, "not_found", "SSO is not enabled")
 		return
 	}
-	req, authURL, err := h.svc.Start(r.Context())
+	req, authURL, err := svc.Start(r.Context())
 	if err != nil {
 		// The provider does not answer: back to the login page, which offers
 		// the access recovery code.
@@ -80,7 +99,8 @@ func (h *oidcHandlers) start(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *oidcHandlers) callback(w http.ResponseWriter, r *http.Request) {
-	if h.svc == nil {
+	live := h.live.Load()
+	if live.svc == nil {
 		writeError(w, http.StatusNotFound, "not_found", "SSO is not enabled")
 		return
 	}
@@ -96,13 +116,13 @@ func (h *oidcHandlers) callback(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, "state")
 		return
 	}
-	claims, err := h.svc.Exchange(r.Context(), req, r.URL.Query().Get("code"))
+	claims, err := live.svc.Exchange(r.Context(), req, r.URL.Query().Get("code"))
 	if err != nil {
 		slog.Warn("oidc: token exchange/verify failed", "error", err)
 		h.fail(w, r, "exchange")
 		return
 	}
-	u, err := h.auth.UpsertOIDCUser(r.Context(), claims, h.policy)
+	u, err := h.auth.UpsertOIDCUser(r.Context(), claims, live.policy)
 	if err != nil {
 		slog.Warn("oidc: identity mapping refused", "error", err)
 		h.fail(w, r, "account")

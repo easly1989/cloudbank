@@ -15,6 +15,7 @@ import { AccessCodesCard } from "../../components/AccessCodesCard";
 import { EntryFieldsCard } from "../../components/EntryFieldsCard";
 import { Logo } from "../../components/Logo";
 import { NavLayoutEditor } from "../../components/NavLayoutEditor";
+import { OidcSettingsGroup } from "../../components/OidcSettingsGroup";
 import { PasswordCard } from "../../components/PasswordCard";
 import { TwoFactorCard } from "../../components/TwoFactorCard";
 import { UpdateStatusCard } from "../../components/updates/UpdateStatusCard";
@@ -66,6 +67,7 @@ export function WalletSection() {
 
 export function SecuritySection() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const config = useAuthConfig().data;
   // Signing in through SSO only (#620), there is no password to change and no
   // second step on top of it: the recovery codes take their place.
@@ -85,6 +87,7 @@ export function SecuritySection() {
           <TwoFactorCard />
         </SettingsGroup>
       )}
+      {!__DEMO__ && user?.isAdmin && <OidcSettingsGroup />}
       <SettingsGroup title={t("settings.apiTokens")} hint={t("settings.apiTokensHint")}>
         <ApiTokensPage />
       </SettingsGroup>

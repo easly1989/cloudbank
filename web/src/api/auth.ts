@@ -163,6 +163,44 @@ export interface AuthConfig {
 
 export const getAuthConfig = () => api.get<AuthConfig>("/api/v1/auth/config");
 
+/** Single sign-on as an administrator sets it in Settings (#796). The client
+ *  secret never comes back: hasSecret says whether one is saved. */
+export interface OidcSettings {
+  /** env: the CB_OIDC_* variables set it, read-only. */
+  source: "env" | "settings" | "none";
+  enabled: boolean;
+  reachable: boolean;
+  /** CB_SECRET_KEY is set: without it nothing can be saved. */
+  secretKey: boolean;
+  ssoOnly: boolean;
+  linkedUsers: number;
+  issuer: string;
+  clientId: string;
+  hasSecret: boolean;
+  redirectUrl: string;
+  scopes: string;
+  name: string;
+  autoProvision: boolean;
+  adminEmail: string;
+}
+
+export interface OidcSettingsInput {
+  issuer: string;
+  clientId: string;
+  /** Empty keeps the saved one. */
+  clientSecret: string;
+  redirectUrl: string;
+  scopes: string;
+  name: string;
+  autoProvision: boolean;
+  adminEmail: string;
+}
+
+export const getOidcSettings = () => api.get<OidcSettings>("/api/v1/admin/oidc");
+export const saveOidcSettings = (body: OidcSettingsInput) =>
+  api.put<OidcSettings>("/api/v1/admin/oidc", body);
+export const turnOffOidc = () => api.del<void>("/api/v1/admin/oidc");
+
 export const postSetup = (body: Credentials) => api.post<User>("/api/v1/setup", body);
 
 export const login = (body: Credentials) => api.post<LoginResult>("/api/v1/auth/login", body);

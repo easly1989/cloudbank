@@ -268,3 +268,9 @@ Added since:
   content (⋯ and a right click keep it), the last fill under 920px. The 396px
   sheet holds name, plate and notes, the same four figures and the five newest
   fills. Empty is the three steps, the memo's `d=` and `v=` among them.
+- **Single sign-on is set in a modal** (#796), to an approved mockup; the
+  settings board has no such group. Settings › Security gets an admin-only
+  Single sign-on group with a row like two-factor's (status, provider,
+  Configure or Edit). The fields open in a modal, although `theme.ts` keeps
+  modals for decisions and sends forms to the 396px sheet: the user picked this
+  variant. The modal is 620px wide (Mantine `lg`) and scrolls on a phone.

@@ -45,6 +45,23 @@ services:
       CB_OIDC_ADMIN_EMAIL: "admin@example.com"
     volumes:
       - cb-sso-data:/data
+  # Single sign-on set from Settings (#796): password login, a key to seal
+  # the client secret, and no CB_OIDC_* variables. The spec points it at
+  # fake-idp.
+  cloudbank-sso-settings:
+    image: cloudbank:e2e
+    network_mode: host
+    depends_on:
+      - fake-idp
+    environment:
+      CB_ADDR: ":8083"
+      CB_SECURE_COOKIES: "false"
+      CB_LOG_LEVEL: "info"
+      CB_UPDATE_CHECK: "false"
+      # Seals only the pretend provider's client secret.
+      CB_SECRET_KEY: "e2e-only-not-a-secret"
+    volumes:
+      - cb-sso-settings-data:/data
 
   # Bank mails end to end (#657, #658, #659) and the notification channels
   # (#686), for `npm run test:mail`: a
@@ -101,4 +118,5 @@ services:
 volumes:
   cb-e2e-data:
   cb-sso-data:
+  cb-sso-settings-data:
   cb-mail-data:

@@ -99,3 +99,7 @@ func Seal(s string) string { return def.Seal(s) }
 
 // Open decrypts s with the process-wide cipher.
 func Open(s string) string { return def.Open(s) }
+
+// Sealed reports whether s is still an encrypted value: what Open returns when
+// it has no key, or not the key that sealed it.
+func Sealed(s string) bool { return strings.HasPrefix(s, prefix) }

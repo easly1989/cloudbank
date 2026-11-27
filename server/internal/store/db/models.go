@@ -554,6 +554,19 @@ type NotificationWalletsOff struct {
 	WalletID int64
 }
 
+type OidcSetting struct {
+	ID            int64
+	Issuer        string
+	ClientID      string
+	ClientSecret  string
+	RedirectUrl   string
+	Scopes        string
+	Name          string
+	AutoProvision int64
+	AdminEmail    string
+	UpdatedAt     string
+}
+
 type Payee struct {
 	ID                 int64
 	WalletID           int64

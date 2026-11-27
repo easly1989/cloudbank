@@ -22,5 +22,22 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      name: "chromium",
+      testMatch: /sso-only/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    // Single sign-on set from Settings (#796): a password-login server with
+    // CB_SECRET_KEY and no CB_OIDC_* variables.
+    {
+      name: "settings",
+      testMatch: /sso-settings/,
+      use: {
+        ...devices["Desktop Chrome"],
+        baseURL:
+          process.env.E2E_SSO_SETTINGS_BASE_URL ?? "http://localhost:8083",
+      },
+    },
+  ],
 });
