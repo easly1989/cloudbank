@@ -298,7 +298,7 @@ const CHECKS = [
   ],
   [
     "settings: select",
-    "/settings",
+    "/settings/account",
     null,
     (p) => p.locator(".mantine-Select-input").first(),
     { board: "settings", tag: "select", size: [296, 44] },
@@ -319,7 +319,7 @@ const CHECKS = [
     "settings: accent swatch",
     "/settings/personalization",
     null,
-    role("button", "teal"),
+    role("radio", "teal"),
     { board: "settings", tag: "button", size: [22, 22] },
     true,
   ],

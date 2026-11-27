@@ -53,6 +53,19 @@ export function AutoField({
 
   const commit = async () => {
     if (busy || draft === value || (kind === "password" && draft === "")) return;
+    // An empty or out-of-range number is not sent: the stored one comes back.
+    if (kind === "number") {
+      const n = Number(draft);
+      if (
+        draft.trim() === "" ||
+        !Number.isFinite(n) ||
+        n < (min ?? -Infinity) ||
+        n > (max ?? Infinity)
+      ) {
+        setDraft(value);
+        return;
+      }
+    }
     if (required && draft.trim() === "") {
       setError(t("settings.required"));
       return;

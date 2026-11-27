@@ -1,6 +1,6 @@
 import { Button, Group, Select, Text, TextInput } from "@mantine/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { deleteWallet, listCategories, updateWallet, type WalletInput } from "../../api/client";
@@ -50,16 +50,24 @@ export function WalletSection() {
     enabled: !!w,
   });
 
-  // The server replaces the whole wallet, so a change goes with the rest.
+  // The server replaces the whole wallet, so a change goes with the rest,
+  // and with the changes sent before it that the wallet does not show yet:
+  // a second pick made before the first comes back must not undo it.
+  const sent = useRef<Partial<WalletInput>>({});
+  useEffect(() => {
+    sent.current = {};
+  }, [w]);
   const save = useMutation({
-    mutationFn: (patch: Partial<WalletInput>) =>
-      updateWallet(w!.id, {
+    mutationFn: (patch: Partial<WalletInput>) => {
+      sent.current = { ...sent.current, ...patch };
+      return updateWallet(w!.id, {
         title: w!.title,
         ownerName: w!.ownerName,
         schedulePostMonths: w!.schedulePostMonths,
         billsCategoryId: w!.billsCategoryId ?? null,
-        ...patch,
-      }),
+        ...sent.current,
+      });
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["wallets"] }),
   });
   const pick = (patch: Partial<WalletInput>) =>
