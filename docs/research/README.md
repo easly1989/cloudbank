@@ -7,6 +7,7 @@ question comes back, start here instead of from scratch.
 | Note | Question | Verdict |
 |---|---|---|
 | [sqlite-load-test.md](sqlite-load-test.md) | Does SQLite hold up at 100k transactions, and where does the time go? | Keep SQLite; the slow reports were one non-covering index (#541, #542). |
+| [speed-baseline.md](speed-baseline.md) | Where does the time go on the main pages, how much memory does the server need, and which fixes do the numbers justify? | Not the engine: the whole-account register (19 MB), no 304s under 30 s polling, four `dashboard` calls per load, and an unbounded server under concurrency. Targets and eight ranked fixes for #808. |
 | [turso-libsql.md](turso-libsql.md) | Would turso or libSQL be a better engine than `modernc.org/sqlite`? | Not now: turso lacks explicit window frames and is pre-1.0; libSQL's Go driver needs cgo and has no Windows build. |
 | [i18n-terms.md](i18n-terms.md) | Which terms do personal-finance apps and banks use for CloudBank's concepts in es / fr / de / pt-BR? | Terms found for all 22 concepts; the five open ambiguities were settled in #596, and the result is the [translation glossary](../i18n/glossary.md). |
 | [imap-mail-ingest.md](imap-mail-ingest.md) | Which mail providers let a self-hosted server read a folder over IMAP with an app password, and which Go library to use? | Gmail, Libero, Virgilio, iCloud, Yahoo and Fastmail take app passwords; Outlook.com needs OAuth (device code); `emersion/go-imap` v2 behind a thin interface. |
