@@ -1,9 +1,9 @@
 import { Button, Group, Select, Text, TextInput } from "@mantine/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { deleteWallet, listCategories, updateWallet, type WalletInput } from "../../api/client";
+import { deleteWallet, listCategories, type WalletInput } from "../../api/client";
 import { errorColor } from "../../amountTone";
 import { useAuth } from "../../auth/AuthProvider";
 import { notifyError } from "../../notifyError";
@@ -14,6 +14,8 @@ import { IntegrityRow } from "../IntegrityCard";
 import { AutoField } from "./AutoField";
 import { backupAgeDays, backupAgeText, backupStale } from "./backupAge";
 import { DefaultAccountRow } from "./PreferenceRows";
+import { panelId } from "./sections";
+import { useWalletSave } from "./settingsSaves";
 import { RelatedSettings, SettingRow, SettingsGroup, SettingState } from "./SettingRow";
 
 const AHEAD = ["0", "1", "2", "3"] as const;
@@ -50,26 +52,7 @@ export function WalletSection() {
     enabled: !!w,
   });
 
-  // The server replaces the whole wallet, so a change goes with the rest,
-  // and with the changes sent before it that the wallet does not show yet:
-  // a second pick made before the first comes back must not undo it.
-  const sent = useRef<Partial<WalletInput>>({});
-  useEffect(() => {
-    sent.current = {};
-  }, [w]);
-  const save = useMutation({
-    mutationFn: (patch: Partial<WalletInput>) => {
-      sent.current = { ...sent.current, ...patch };
-      return updateWallet(w!.id, {
-        title: w!.title,
-        ownerName: w!.ownerName,
-        schedulePostMonths: w!.schedulePostMonths,
-        billsCategoryId: w!.billsCategoryId ?? null,
-        ...sent.current,
-      });
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["wallets"] }),
-  });
+  const save = useWalletSave(w?.id ?? 0);
   const pick = (patch: Partial<WalletInput>) =>
     save.mutate(patch, {
       onError: (err) => {
@@ -111,6 +94,11 @@ export function WalletSection() {
               variant="default"
               disabled={!isOwner}
               aria-expanded={editing}
+              aria-controls={panelId("wallet-name")}
+              aria-label={t("settings.actionOn", {
+                action: t("settings.edit"),
+                row: t("settings.row.walletName"),
+              })}
               onClick={() => setEditing((o) => !o)}
             >
               {t("settings.edit")}
@@ -196,6 +184,11 @@ export function WalletSection() {
                 variant="default"
                 c={errorColor}
                 aria-expanded={deleting}
+                aria-controls={panelId("delete-wallet")}
+                aria-label={t("settings.actionOn", {
+                  action: t("settings.delete"),
+                  row: t("wallet.delete"),
+                })}
                 onClick={() => setDeleting((o) => !o)}
               >
                 {t("settings.delete")}

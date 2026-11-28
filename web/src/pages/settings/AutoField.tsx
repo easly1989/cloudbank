@@ -44,11 +44,13 @@ export function AutoField({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // A new stored value (saved here or elsewhere) replaces the draft.
+  // A new stored value (saved here or elsewhere) replaces the draft, but not
+  // while a save is out or after one was refused: what was typed stays, to be
+  // corrected and sent again.
   const [seen, setSeen] = useState(value);
   if (value !== seen) {
     setSeen(value);
-    setDraft(value);
+    if (!busy && error === null) setDraft(value);
   }
 
   const commit = async () => {
@@ -108,6 +110,20 @@ export function AutoField({
       />
     );
   }
-  const Input = kind === "password" ? PasswordInput : TextInput;
-  return <Input {...common} value={draft} onChange={(e) => setDraft(e.currentTarget.value)} />;
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => setDraft(e.currentTarget.value);
+  if (kind === "password") {
+    // A key for another service: no password manager may fill CloudBank's own
+    // password in here, nor offer to save this as one.
+    return (
+      <PasswordInput
+        {...common}
+        value={draft}
+        onChange={onChange}
+        autoComplete="new-password"
+        data-1p-ignore
+        data-lpignore="true"
+      />
+    );
+  }
+  return <TextInput {...common} value={draft} onChange={onChange} />;
 }

@@ -11,7 +11,7 @@ import {
   Switch,
   Text,
 } from "@mantine/core";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -21,10 +21,8 @@ import {
   getAISend,
   getAISettings,
   listAISends,
-  updateAISettings,
   type AIFeature,
   type AISend,
-  type AISettings,
   type AISettingsInput,
 } from "../../api/ai";
 import { AiBox } from "../../components/AiBox";
@@ -32,6 +30,7 @@ import { notifyError } from "../../notifyError";
 import { useWallet } from "../../wallet/WalletProvider";
 import { AutoField } from "./AutoField";
 import { AI_FEATURES } from "./sections";
+import { useAiSave, type AIChange } from "./settingsSaves";
 import { SettingRow, SettingsGroup, SettingState } from "./SettingRow";
 
 // Settings › AI (#696): the provider, which jobs the AI does and on which
@@ -55,50 +54,16 @@ const sentAt = (iso: string, lang: string) =>
     minute: "2-digit",
   }).format(new Date(iso));
 
-/** What the server keeps, as the body of a save; the key stays out. */
-const asInput = (s: AISettings): AISettingsInput => ({
-  enabled: s.enabled,
-  baseUrl: s.baseUrl,
-  model: s.model,
-  features: s.features,
-  walletsOff: s.walletsOff,
-  monthlyLimit: s.monthlyLimit,
-  motion: s.motion,
-  schedule: s.schedule,
-});
-
 export function AiSettings() {
   const { t, i18n } = useTranslation();
-  const qc = useQueryClient();
   const { wallets } = useWallet();
   const query = useQuery({ queryKey: AI_SETTINGS_KEY, queryFn: getAISettings });
   const sends = useQuery({ queryKey: AI_SENDS_KEY, queryFn: () => listAISends(8) });
   const [shown, setShown] = useState<number | null>(null);
 
-  // The server takes the whole object, so a change goes with the rest of what
-  // it keeps. The change shows at once; a refusal puts the stored one back.
-  // The key is sent only when one was typed: an empty one would clear it.
-  const save = useMutation({
-    mutationFn: (patch: Partial<AISettingsInput>) => {
-      const cur = qc.getQueryData<AISettings>(AI_SETTINGS_KEY);
-      if (!cur) throw new Error("AI settings not loaded");
-      return updateAISettings({ ...asInput(cur), ...patch });
-    },
-    onMutate: async (patch) => {
-      await qc.cancelQueries({ queryKey: AI_SETTINGS_KEY });
-      const before = qc.getQueryData<AISettings>(AI_SETTINGS_KEY);
-      const visible = { ...patch };
-      delete visible.apiKey;
-      if (before) qc.setQueryData(AI_SETTINGS_KEY, { ...before, ...visible });
-      return { before };
-    },
-    onSuccess: (s) => qc.setQueryData(AI_SETTINGS_KEY, s),
-    onError: (_err, _patch, ctx) => {
-      if (ctx?.before) qc.setQueryData(AI_SETTINGS_KEY, ctx.before);
-    },
-  });
-  const set = (patch: Partial<AISettingsInput>) => save.mutate(patch, { onError: notifyError });
-  const field = (patch: Partial<AISettingsInput>) => save.mutateAsync(patch);
+  const save = useAiSave();
+  const set = (change: AIChange) => save.mutate(change, { onError: notifyError });
+  const field = (patch: Partial<AISettingsInput>) => save.mutateAsync(() => patch);
 
   const data = query.data;
   if (!data) return <Loader size="sm" />;
@@ -116,7 +81,10 @@ export function AiSettings() {
             <Switch
               aria-label={t("ai.enable")}
               checked={data.enabled}
-              onChange={(e) => set({ enabled: e.currentTarget.checked })}
+              onChange={(e) => {
+                const on = e.currentTarget.checked;
+                set(() => ({ enabled: on }));
+              }}
             />
           }
         />
@@ -163,9 +131,10 @@ export function AiSettings() {
             <Switch
               aria-label={featureName(f.key)}
               checked={data.features[f.key]}
-              onChange={(e) =>
-                set({ features: { ...data.features, [f.key]: e.currentTarget.checked } })
-              }
+              onChange={(e) => {
+                const on = e.currentTarget.checked;
+                set((cur) => ({ features: { ...cur.features, [f.key]: on } }));
+              }}
             />
           );
           // Reports also run on a schedule, chosen under their row.
@@ -179,9 +148,10 @@ export function AiSettings() {
                       key={k}
                       label={t(`ai.schedule.${k}`)}
                       checked={data.schedule[k]}
-                      onChange={(e) =>
-                        set({ schedule: { ...data.schedule, [k]: e.currentTarget.checked } })
-                      }
+                      onChange={(e) => {
+                        const on = e.currentTarget.checked;
+                        set((cur) => ({ schedule: { ...cur.schedule, [k]: on } }));
+                      }}
                     />
                   ))}
                 </Stack>
@@ -212,11 +182,11 @@ export function AiSettings() {
               checked={!data.walletsOff.includes(w.id)}
               onChange={(e) => {
                 const on = e.currentTarget.checked;
-                set({
+                set((cur) => ({
                   walletsOff: on
-                    ? data.walletsOff.filter((id) => id !== w.id)
-                    : [...data.walletsOff, w.id],
-                });
+                    ? cur.walletsOff.filter((id) => id !== w.id)
+                    : [...cur.walletsOff.filter((id) => id !== w.id), w.id],
+                }));
               }}
             />
           ))}
@@ -231,7 +201,10 @@ export function AiSettings() {
             <Switch
               aria-label={t("ai.motion")}
               checked={data.motion}
-              onChange={(e) => set({ motion: e.currentTarget.checked })}
+              onChange={(e) => {
+                const on = e.currentTarget.checked;
+                set(() => ({ motion: on }));
+              }}
             />
           }
         >
