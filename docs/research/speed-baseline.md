@@ -264,7 +264,7 @@ with `docker stats` before it becomes the image's documented limit.
      from 1.7 s to about 0.5 s on desktop.
    - It removes the 2.5 GB memory peak and the 6 MB of polling every
      2 minutes.
-   - Biggest gain, and the biggest change.
+   - It is the biggest gain and also the biggest change.
 2. **Conditional GETs from a wallet revision.** Keep a counter per wallet,
    bumped on every write, and send it as the `ETag` of wallet-scoped GETs. An
    unchanged `If-None-Match` then answers 304 before any query runs.
@@ -319,7 +319,8 @@ Rejected or not needed, by these numbers:
 
 ## Verdict
 
-**The engine is not what makes CloudBank slow. What the app asks of it is.**
+**Keep SQLite. CloudBank is slow where the app asks it for whole data sets,
+too often, or more than once.**
 The fixes fall into three groups:
 - sending less: the register window and conditional GETs;
 - asking less often: `staleTime`, and one revision poll instead of 14;
