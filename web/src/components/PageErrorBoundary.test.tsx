@@ -1,13 +1,30 @@
 import { MantineProvider } from "@mantine/core";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { Link, MemoryRouter, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { ApiError } from "../api/core";
 import i18n from "../i18n";
+import { makeQueryClient } from "../queryClient";
 import { PageErrorBoundary } from "./PageErrorBoundary";
 
 function Broken(): never {
   throw new TypeError("Cannot read properties of null (reading 'map')");
+}
+
+// A page whose data fails to load until `serverUp` is set (#804).
+let serverUp = false;
+function DataPage() {
+  const { data } = useQuery({
+    queryKey: ["report"],
+    queryFn: () =>
+      serverUp
+        ? Promise.resolve("Spent 120 €")
+        : Promise.reject(new ApiError(500, "boom", "internal")),
+    retry: false,
+  });
+  return <p>{data ?? "Spent 0 €"}</p>;
 }
 
 // The shape of AppLayout: navigation that must survive, and the page behind a
@@ -19,6 +36,7 @@ function Shell() {
       <nav>
         <Link to="/fine">Fine page</Link>
         <Link to="/broken">Broken page</Link>
+        <Link to="/data">Data page</Link>
       </nav>
       <PageErrorBoundary resetKey={location.key}>
         <Outlet />
@@ -29,17 +47,20 @@ function Shell() {
 
 function renderAt(path: string) {
   return render(
-    <MantineProvider>
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route element={<Shell />}>
-            <Route path="/" element={<p>Dashboard</p>} />
-            <Route path="/fine" element={<p>Everything is fine</p>} />
-            <Route path="/broken" element={<Broken />} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </MantineProvider>,
+    <QueryClientProvider client={makeQueryClient()}>
+      <MantineProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route element={<Shell />}>
+              <Route path="/" element={<p>Dashboard</p>} />
+              <Route path="/fine" element={<p>Everything is fine</p>} />
+              <Route path="/broken" element={<Broken />} />
+              <Route path="/data" element={<DataPage />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </MantineProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -97,6 +118,36 @@ describe("PageErrorBoundary", () => {
 
     expect(screen.getByText("This page stopped working")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Go to the dashboard" })).toHaveAttribute("href", "/");
+  });
+
+  it("says a page could not load its data, never zero, and loads it again later", async () => {
+    serverUp = false;
+    renderAt("/data");
+
+    expect(await screen.findByText("This page could not load its data")).toBeInTheDocument();
+    expect(screen.queryByText("Spent 0 €")).not.toBeInTheDocument();
+
+    // Leaving clears the failed query, so coming back asks the server again.
+    serverUp = true;
+    fireEvent.click(screen.getByRole("link", { name: "Fine page" }));
+    fireEvent.click(screen.getByRole("link", { name: "Data page" }));
+    expect(await screen.findByText("Spent 120 €")).toBeInTheDocument();
+  });
+
+  it("calls a page chunk that failed to load a broken page, not missing data", () => {
+    function ChunkGone(): never {
+      throw new TypeError("Failed to fetch dynamically imported module: /assets/Budget.js");
+    }
+    render(
+      <MantineProvider>
+        <MemoryRouter>
+          <PageErrorBoundary>
+            <ChunkGone />
+          </PageErrorBoundary>
+        </MemoryRouter>
+      </MantineProvider>,
+    );
+    expect(screen.getByText("This page stopped working")).toBeInTheDocument();
   });
 
   it("renders the page untouched when nothing throws", () => {

@@ -2663,6 +2663,8 @@
     }
   },
   "dashboard": {
+    "widgetError": "This widget could not load its data.",
+    "widgetRetry": "Try again",
     "title": "Dashboard",
     "yourAccounts": "Your accounts",
     "noAccounts": "No accounts to summarize yet.",
@@ -3455,6 +3457,7 @@
   },
   "pageError": {
     "title": "This page stopped working",
+    "loadTitle": "This page could not load its data",
     "body": "Your data has not been touched and the rest of CloudBank works. Reloading usually fixes it.",
     "reload": "Reload the page",
     "home": "Go to the dashboard",

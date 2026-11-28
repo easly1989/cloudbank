@@ -86,7 +86,12 @@ function Panel({ phone, onDone }: { phone: boolean; onDone: () => void }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { currentWallet, setCurrentWalletId } = useWallet();
-  const { data } = useQuery({ queryKey: NOTIFICATIONS_KEY, queryFn: listNotifications });
+  const { data } = useQuery({
+    queryKey: NOTIFICATIONS_KEY,
+    queryFn: listNotifications,
+    // Part of the shell: its failure must not take the page down (queryClient.ts).
+    throwOnError: false,
+  });
   const refresh = () => qc.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
   const markOne = useMutation({ mutationFn: markNotificationRead, onSettled: refresh });
   const markAll = useMutation({ mutationFn: markAllNotificationsRead, onSettled: refresh });
@@ -213,6 +218,8 @@ export function NotificationBell({
   // A light poll: the bell is on every page, and a reminder written by the
   // daily job should show without a reload.
   const { data } = useQuery({
+    // Part of the shell: its failure must not take the page down (queryClient.ts).
+    throwOnError: false,
     queryKey: NOTIFICATIONS_KEY,
     queryFn: listNotifications,
     refetchInterval: 60_000,

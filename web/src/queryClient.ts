@@ -1,4 +1,7 @@
-import { QueryClient } from "@tanstack/react-query";
+import { MutationCache, QueryCache, QueryClient, type Query } from "@tanstack/react-query";
+
+import { AFTER_LOGIN } from "./afterLogin";
+import { ApiError } from "./api/core";
 
 // Data the server changes without this tab's help: a transaction posted from
 // another device, by a bank sync, a bank mail or a schedule, moves all of these.
@@ -26,11 +29,60 @@ const LIVE_ROOTS = new Set([
 // how stale a tab the reader is watching can get.
 export const LIVE_REFETCH_MS = 30_000;
 
-export const makeQueryClient = () =>
-  new QueryClient({
+// What the app reads before anyone is signed in: kept when a session ends, so
+// the sign-in page does not load them again behind a spinner.
+const SIGNED_OUT_ROOTS = new Set(["me", "setup-status", "authConfig"]);
+
+/**
+ * CloudBank answered that this browser has no session any more: it expired, or
+ * it was signed out elsewhere (#804). Every page used to go on showing what its
+ * failed queries left, an empty register and "0,00 €" spent, with nothing to
+ * say why. Go back to sign-in instead, and to this page after it
+ * (afterLogin.ts). The cached data goes too, since the next person to sign in
+ * here may be someone else.
+ *
+ * A wrong password is a 401 too, with another code; a 401 with no code comes
+ * from a sign-in proxy and reloads through it (core.ts).
+ */
+export function sessionLost(qc: QueryClient, err: unknown) {
+  if (!(err instanceof ApiError) || err.status !== 401 || err.code !== "unauthorized") return;
+  // Already signed out, or never signed in: the sign-in page is showing.
+  if (qc.getQueryData(["me"]) == null) return;
+  // A way back already asked for (signing in again to add a passkey) wins.
+  if (!sessionStorage.getItem(AFTER_LOGIN)) {
+    sessionStorage.setItem(
+      AFTER_LOGIN,
+      JSON.stringify({ path: location.pathname + location.search, at: Date.now() }),
+    );
+  }
+  qc.removeQueries({ predicate: (q) => !SIGNED_OUT_ROOTS.has(String(q.queryKey[0])) });
+  qc.setQueryData(["me"], null);
+}
+
+/**
+ * A query that fails before it has any data shows its page's error (#804),
+ * instead of what the page draws from nothing: a zero total, an empty register.
+ * Only a failure counts: a 4xx answers the request (a feature turned off, a
+ * list for admins only) and its component deals with it, and a 401 signs out.
+ * A 502 is CloudBank saying a service it calls (a mailbox, a bank, GitHub) did
+ * not answer, which the component shows as that service's state. A failed
+ * refetch keeps the data already on screen. Queries in the shell, and those
+ * that show their own error, opt out with `throwOnError: false`.
+ */
+export function failsThePage(err: unknown, query: Query): boolean {
+  if (query.state.data !== undefined) return false;
+  return !(err instanceof ApiError) || (err.status >= 500 && err.status !== 502);
+}
+
+export const makeQueryClient = () => {
+  const qc: QueryClient = new QueryClient({
+    queryCache: new QueryCache({ onError: (err) => sessionLost(qc, err) }),
+    mutationCache: new MutationCache({ onError: (err) => sessionLost(qc, err) }),
     defaultOptions: {
       queries: {
-        retry: 1,
+        // No session is not a hiccup: asking again only delays the sign-in.
+        retry: (failures, err) => failures < 1 && !(err instanceof ApiError && err.status === 401),
+        throwOnError: failsThePage,
         refetchOnWindowFocus: true,
         refetchOnReconnect: true,
         refetchInterval: (query) =>
@@ -38,3 +90,5 @@ export const makeQueryClient = () =>
       },
     },
   });
+  return qc;
+};

@@ -34,6 +34,8 @@ export function BillsList({
   const qc = useQueryClient();
 
   const query = useQuery({
+    // Shows its own error, so a failure does not replace the page (queryClient.ts).
+    throwOnError: false,
     queryKey: ["bills", walletId],
     queryFn: () => getBills(walletId),
     enabled: walletId > 0,

@@ -30,6 +30,8 @@ export function showUpdateCard(
 export function useUpdateStatus() {
   const { user } = useAuth();
   return useQuery({
+    // Part of the shell: its failure must not take the page down (queryClient.ts).
+    throwOnError: false,
     queryKey: ["updates"],
     queryFn: getUpdateStatus,
     enabled: !__DEMO__ && !!user?.isAdmin,

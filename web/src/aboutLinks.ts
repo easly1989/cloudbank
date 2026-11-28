@@ -21,6 +21,12 @@ export const API_DOCS_URL = "/api/docs";
 
 /** The running build's version: one query wherever it is shown. */
 export function useVersion(): string | undefined {
-  const { data } = useQuery({ queryKey: ["version"], queryFn: getVersion, staleTime: Infinity });
+  const { data } = useQuery({
+    queryKey: ["version"],
+    queryFn: getVersion,
+    staleTime: Infinity,
+    // The footer sits outside every page's error boundary (queryClient.ts).
+    throwOnError: false,
+  });
   return data?.version;
 }

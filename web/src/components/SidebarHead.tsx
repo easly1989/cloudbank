@@ -41,6 +41,8 @@ export function SidebarHead({
   // The same query the overview runs, so on the overview this costs nothing and
   // elsewhere it is one cached request per wallet.
   const summary = useQuery({
+    // Part of the shell: its failure must not take the page down (queryClient.ts).
+    throwOnError: false,
     queryKey: ["dashboard", walletId, "0001-01-01", "9999-12-31", "category", 12],
     queryFn: () => getDashboard(walletId, "0001-01-01", "9999-12-31", "category", 12),
     enabled: walletId > 0,

@@ -296,6 +296,8 @@ export function PatternSheet({
   const testBody = { ...input, editor: "" };
   const [debounced] = useDebouncedValue(JSON.stringify(testBody), 400);
   const test = useQuery({
+    // Shows its own error, so a failure does not replace the page (queryClient.ts).
+    throwOnError: false,
     queryKey: ["mailPatternTest", walletId, mailboxId, sourceId, debounced],
     queryFn: () => testMailPattern(walletId, source, JSON.parse(debounced) as MailPatternInput),
     enabled: ready && debounced === JSON.stringify(testBody),

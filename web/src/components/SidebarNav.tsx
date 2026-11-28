@@ -70,6 +70,8 @@ export function SidebarNav({
   );
 
   const ai = useQuery({
+    // Part of the shell: its failure must not take the page down (queryClient.ts).
+    throwOnError: false,
     queryKey: AI_SETTINGS_KEY,
     queryFn: getAISettings,
     enabled: !__DEMO__,
@@ -188,6 +190,8 @@ function SidebarBalances() {
   const ids = user?.preferences?.sidebarAccountIds;
 
   const accountsQuery = useQuery({
+    // Part of the shell: its failure must not take the page down (queryClient.ts).
+    throwOnError: false,
     queryKey: ["accounts", walletId],
     queryFn: () => listAccounts(walletId),
     enabled: walletId > 0 && Boolean(ids?.length),
