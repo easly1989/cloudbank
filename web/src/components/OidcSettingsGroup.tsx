@@ -4,7 +4,6 @@ import {
   Badge,
   Box,
   Button,
-  Card,
   CopyButton,
   Divider,
   Grid,
@@ -15,7 +14,6 @@ import {
   Switch,
   Text,
   TextInput,
-  Title,
   Tooltip,
   useComputedColorScheme,
 } from "@mantine/core";
@@ -40,7 +38,7 @@ import {
 } from "../api/client";
 import { notifyError } from "../notifyError";
 import { useConfirm } from "./confirmContext";
-import { SettingsGroup } from "../pages/settings/SettingsLayout";
+import { SettingRow } from "../pages/settings/SettingRow";
 import { draftFrom, issuerHost, saveAction, scopesHaveOpenid, type OidcDraft } from "./oidcForm";
 
 const CALLBACK_PATH = "/api/v1/auth/oidc/callback";
@@ -79,43 +77,43 @@ export function OidcSettingsGroup() {
   );
 
   return (
-    <SettingsGroup title={t("sso.title")} hint={t("sso.hint")} badge={badge}>
-      <Card withBorder data-testid="sso-settings">
-        <Group justify="space-between" align="center" gap="md">
-          <div style={{ minWidth: 0, flex: "1 1 300px" }}>
-            <Group gap="xs" wrap="wrap">
-              <Title order={5}>{s.enabled ? s.name : t("sso.provider")}</Title>
-              <Status s={s} />
-            </Group>
-            <Text size="sm" c="dimmed" maw={560} mt={4}>
-              {s.enabled ? (
-                <Trans
-                  i18nKey="sso.rowOn"
-                  values={{ provider: s.name, host: issuerHost(s.issuer) }}
-                  components={{ b: <b />, code: <Text span ff="monospace" fz="sm" /> }}
-                />
-              ) : (
-                t("sso.rowOff")
-              )}
-            </Text>
-          </div>
-          {env ? (
-            <Button variant="default" onClick={() => setOpen(true)}>
-              {t("sso.view")}
-            </Button>
-          ) : s.enabled ? (
-            <Button variant="default" onClick={() => setOpen(true)}>
-              {t("sso.edit")}
-            </Button>
+    <>
+      <SettingRow
+        id="sso"
+        testId="sso-settings"
+        description={
+          s.enabled ? (
+            <Trans
+              i18nKey="sso.rowOn"
+              values={{ provider: s.name, host: issuerHost(s.issuer) }}
+              components={{ b: <b />, code: <Text span ff="monospace" fz={12} /> }}
+            />
           ) : (
-            <Button onClick={() => setOpen(true)}>{t("sso.configure")}</Button>
-          )}
-        </Group>
-      </Card>
+            t("sso.rowOff")
+          )
+        }
+        control={
+          <>
+            {badge}
+            <Status s={s} />
+            {env ? (
+              <Button variant="default" onClick={() => setOpen(true)}>
+                {t("sso.view")}
+              </Button>
+            ) : s.enabled ? (
+              <Button variant="default" onClick={() => setOpen(true)}>
+                {t("sso.edit")}
+              </Button>
+            ) : (
+              <Button onClick={() => setOpen(true)}>{t("sso.configure")}</Button>
+            )}
+          </>
+        }
+      />
       <Modal opened={open} onClose={() => setOpen(false)} title={t("sso.title")} size="lg">
         <OidcForm s={s} onClose={() => setOpen(false)} />
       </Modal>
-    </SettingsGroup>
+    </>
   );
 }
 

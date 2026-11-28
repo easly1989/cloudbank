@@ -16,7 +16,7 @@ it lands, see [Notifications › Home Assistant](notifications.md#home-assistant
 ## A token for Home Assistant
 
 Home Assistant reads CloudBank with a personal API token, made in
-**Settings › Security › Personal API tokens**:
+**Settings › Account › API tokens**:
 
 1. **Create token**, named for example `Home Assistant`.
 2. Leave **Access** on **Read-only**: Home Assistant only reads.

@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { openEvents } from "./openEvents";
+
 // The money events (#691) on the real server, with the money looked at every
 // two seconds (CB_MONEY_INTERVAL): a balance threshold set on the thresholds
 // page reaches the bell with the amounts, and the email channel the earlier
@@ -38,6 +40,7 @@ test("a low balance reaches the bell with the amount, and the mail without", asy
   // Off by default: turned on for the bell and the email channel.
   for (const channel of ["inapp", "email"]) {
     await page.goto(`/settings/notifications/${channel}`);
+    await openEvents(page);
     const box = page.getByRole("checkbox", { name: "Low balance" });
     await expect(box).not.toBeChecked();
     await box.click();

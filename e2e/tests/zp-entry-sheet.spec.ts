@@ -213,7 +213,7 @@ test("the sheet draws its fields where Settings puts them", async ({
   const accountId = await ready(page, "Layout probe");
 
   await test.step("moving the date out of view says what it will be", async () => {
-    await page.goto("/settings/general");
+    await page.goto("/settings/personalization#entry-fields");
     const card = page.locator("#entry-fields");
     await card
       .getByRole("radiogroup", { name: "Payee" })
@@ -246,7 +246,7 @@ test("the sheet draws its fields where Settings puts them", async ({
   });
 
   await test.step("restoring the defaults puts it back", async () => {
-    await page.goto("/settings/general");
+    await page.goto("/settings/personalization#entry-fields");
     await page.getByRole("button", { name: "Restore the defaults" }).click();
     await expect(
       page

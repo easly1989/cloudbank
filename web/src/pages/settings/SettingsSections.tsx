@@ -1,217 +1,209 @@
-import { Anchor, Card, Group, Stack, Text } from "@mantine/core";
-import { IconExternalLink } from "@tabler/icons-react";
-import { Trans, useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { Navigate } from "react-router-dom";
 
-import {
-  API_DOCS_URL,
-  DONATE_URL,
-  GUIDE_URL,
-  HOMEBANK_URL,
-  SOURCE_URL,
-  useVersion,
-} from "../../aboutLinks";
-
+import { listApiTokens } from "../../api/client";
+import { useAuth, useAuthConfig } from "../../auth/AuthProvider";
 import { AccessCodesCard } from "../../components/AccessCodesCard";
 import { EntryFieldsCard } from "../../components/EntryFieldsCard";
-import { Logo } from "../../components/Logo";
 import { NavLayoutEditor } from "../../components/NavLayoutEditor";
 import { OidcSettingsGroup } from "../../components/OidcSettingsGroup";
 import { PasskeysCard } from "../../components/PasskeysCard";
 import { PasswordCard } from "../../components/PasswordCard";
 import { TwoFactorCard } from "../../components/TwoFactorCard";
 import { UpdateStatusCard } from "../../components/updates/UpdateStatusCard";
-import { useAuth, useAuthConfig } from "../../auth/AuthProvider";
 import { ApiTokensPage } from "../ApiTokensPage";
+import { HotBackupRow } from "../BackupCard";
 import { BankSyncSettings } from "../BankSyncPage";
 import { MailSettings } from "../MailSettings";
-import { PreferencesPage } from "../PreferencesPage";
-import { WalletSettingsPage } from "../WalletSettingsPage";
 import { UsersPage } from "../admin/UsersPage";
 import { AiSettings } from "./AiSettings";
-import { SettingsGroup } from "./SettingsLayout";
+import { AccountPreferenceRows, AppearanceRows } from "./PreferenceRows";
+import { RelatedSettings, SettingRow, SettingsGroup, SettingState } from "./SettingRow";
+import { useBankConnections, useMailStatus } from "./statusHooks";
 
-// One component per section of the settings screen. They are thin on purpose:
-// the work lives in the cards and forms that were already there, and what
-// changes here is only which of them belong together.
-//
-// Where a card moved, it moved because the tile says so. Two-factor and API
-// tokens are both "who can get in", so they share a section; and the navigation
-// layout is appearance, not a page of its own.
+// One component per page of the settings screen (#800). They are thin on
+// purpose: the work lives in the rows and forms that were already there, and
+// what changes here is only which of them belong together. A form too big for
+// a row (the import wizard, the navigation editor, the bank connections) is
+// hosted as it is, under a row or on a page of its own.
 
-export function GeneralSection() {
-  const { t } = useTranslation();
-  return (
-    <Stack gap="xl">
-      <PreferencesPage section="general" />
-      <SettingsGroup title={t("entryFields.title")} hint={t("entryFields.hint")}>
-        <EntryFieldsCard />
-      </SettingsGroup>
-    </Stack>
-  );
-}
-
-export function AppearanceSection() {
-  const { t } = useTranslation();
-  return (
-    <Stack gap="xl">
-      <PreferencesPage section="appearance" />
-      <SettingsGroup title={t("settings.navigation")} hint={t("settings.navigationHint")}>
-        <NavLayoutEditor />
-      </SettingsGroup>
-    </Stack>
-  );
-}
-
-export function WalletSection() {
-  return <WalletSettingsPage only="general" />;
-}
-
-export function SecuritySection() {
-  const { t } = useTranslation();
-  const { user } = useAuth();
-  const config = useAuthConfig().data;
-  // Signing in through SSO only (#620), there is no password to change and no
-  // second step on top of it: the recovery codes take their place.
-  const ssoOnly = config?.passwordLogin === false;
-  return (
-    <Stack gap="xl">
-      {ssoOnly ? (
-        <SettingsGroup
-          title={t("settings.signIn")}
-          hint={t("settings.signInHintSso", { provider: config.oidc.name })}
-        >
-          <AccessCodesCard />
-        </SettingsGroup>
-      ) : (
-        <SettingsGroup
-          title={t("settings.signIn")}
-          hint={config?.passkeys ? t("settings.signInHintPasskeys") : t("settings.signInHint")}
-        >
-          {!__DEMO__ && <PasswordCard />}
-          <TwoFactorCard />
-          {config?.passkeys && <PasskeysCard />}
-        </SettingsGroup>
-      )}
-      {!__DEMO__ && user?.isAdmin && <OidcSettingsGroup />}
-      <SettingsGroup title={t("settings.apiTokens")} hint={t("settings.apiTokensHint")}>
-        <ApiTokensPage />
-      </SettingsGroup>
-    </Stack>
-  );
-}
-
+export { HomeSection } from "./HomeSection";
+export {
+  WalletBackupSection,
+  WalletExportSection,
+  WalletImportSection,
+  WalletSection,
+} from "./WalletPages";
 // Where CloudBank reaches the reader, and with what (#685, #688).
 export { NotificationChannelSection, NotificationsSection } from "./NotificationsPages";
 export { NotificationMoneySection } from "./NotificationMoney";
 export { NotificationTimingSection } from "./NotificationTiming";
 
-// The section's own header already names it, so these three carry no group of
-// the same name.
+export function AccountSection() {
+  const { t } = useTranslation();
+  const config = useAuthConfig().data;
+  // Signing in through SSO only (#620), there is no password to change and no
+  // second step on top of it: the recovery codes take their place.
+  const ssoOnly = config?.passwordLogin === false;
+  const tokens = useQuery({ queryKey: ["apiTokens"], queryFn: listApiTokens, enabled: !__DEMO__ });
+  const count = tokens.data?.length ?? 0;
+  return (
+    <>
+      <SettingsGroup title={t("preferences.title")}>
+        <AccountPreferenceRows />
+      </SettingsGroup>
+      {!__DEMO__ && (
+        <SettingsGroup title={t("settings.signIn")}>
+          {ssoOnly ? (
+            <AccessCodesCard />
+          ) : (
+            <>
+              <PasswordCard />
+              <TwoFactorCard />
+              {config?.passkeys && <PasskeysCard />}
+            </>
+          )}
+          <SettingRow
+            id="api-tokens"
+            control={
+              tokens.isSuccess && (
+                <SettingState tone={count > 0 ? "ok" : "off"}>
+                  {t("settings.tokensCount", { count })}
+                </SettingState>
+              )
+            }
+          />
+        </SettingsGroup>
+      )}
+      <RelatedSettings ids={["notif-inapp", "sso"]} />
+    </>
+  );
+}
+
+export function ApiTokensSection() {
+  return (
+    <>
+      <ApiTokensPage />
+      <RelatedSettings ids={["two-factor", "passkeys"]} />
+    </>
+  );
+}
+
+export function PersonalizationSection() {
+  const { t } = useTranslation();
+  return (
+    <>
+      <SettingsGroup title={t("settings.appearance")}>
+        <AppearanceRows />
+      </SettingsGroup>
+      <SettingsGroup title={t("settings.layoutGroup")}>
+        <SettingRow id="navigation">
+          <NavLayoutEditor />
+        </SettingRow>
+        <SettingRow id="entry-fields" tour="entry-fields">
+          <EntryFieldsCard />
+        </SettingRow>
+      </SettingsGroup>
+      <RelatedSettings ids={["start-screen", "ai-motion"]} />
+    </>
+  );
+}
+
+export function ConnectionsSection() {
+  const { t } = useTranslation();
+  const banks = useBankConnections();
+  const mail = useMailStatus();
+  return (
+    <>
+      <SettingsGroup title={t("settings.connectionsGroup")}>
+        <SettingRow
+          id="bank-sync"
+          control={
+            banks.loaded && (
+              <SettingState tone={banks.count > 0 ? "ok" : "off"}>
+                {t("settings.home.banksLinked", { count: banks.count })}
+              </SettingState>
+            )
+          }
+        />
+        {!__DEMO__ && (
+          <SettingRow
+            id="mail"
+            control={
+              mail.available && (
+                <SettingState tone={mail.review > 0 ? "warn" : mail.mailboxes > 0 ? "ok" : "off"}>
+                  {mail.review > 0
+                    ? t("settings.home.toReview", { count: mail.review })
+                    : t("settings.home.mailboxes", { count: mail.mailboxes })}
+                </SettingState>
+              )
+            }
+          />
+        )}
+      </SettingsGroup>
+      <RelatedSettings ids={["import", "ai-mail", "notif-inapp"]} />
+    </>
+  );
+}
+
 export function BankSyncSection() {
-  return <BankSyncSettings />;
+  return (
+    <>
+      <BankSyncSettings />
+      <RelatedSettings ids={["mail", "import"]} />
+    </>
+  );
 }
 
 export function MailSection() {
-  return <MailSettings />;
+  return (
+    <>
+      <MailSettings />
+      <RelatedSettings ids={["bank-sync", "ai-mail"]} />
+    </>
+  );
 }
 
 export function AiSection() {
-  return <AiSettings />;
+  return (
+    <>
+      <AiSettings />
+      <RelatedSettings ids={["mail", "notif-inapp"]} />
+    </>
+  );
 }
 
-export function DataSection() {
+/** Administration (#800): only an administrator has it. */
+function useAdmin() {
+  return !!useAuth().user?.isAdmin;
+}
+
+export function AdminSection() {
   const { t } = useTranslation();
+  if (!useAdmin()) return <Navigate to="/settings/home" replace />;
   return (
-    <Stack gap="xl">
-      <div data-tour="data-import">
-        <SettingsGroup title={t("settings.sectionImport")} hint={t("settings.importHint")}>
-          <WalletSettingsPage only="import" />
-        </SettingsGroup>
-      </div>
-      <div data-tour="data-backup">
-        <SettingsGroup title={t("settings.sectionBackup")} hint={t("settings.backupHint")}>
-          <WalletSettingsPage only="backup" />
-        </SettingsGroup>
-      </div>
-      <WalletSettingsPage only="danger" />
-    </Stack>
+    <>
+      <SettingsGroup title={t("settings.adminAccess")}>
+        <SettingRow id="people" />
+        {!__DEMO__ && <OidcSettingsGroup />}
+      </SettingsGroup>
+      <SettingsGroup title={t("settings.adminServer")}>
+        {/* Never in the demo (#582). */}
+        {!__DEMO__ && <UpdateStatusCard />}
+        <HotBackupRow />
+      </SettingsGroup>
+      <RelatedSettings ids={["backup", "api-tokens"]} />
+    </>
   );
 }
 
 export function PeopleSection() {
-  return <UsersPage />;
-}
-
-/**
- * What this installation is (#513): the version, the licence in one sentence,
- * and the links the footer carries. It exists so that turning the footer off
- * hides nothing — the AGPL wants the source in reach of whoever uses the app.
- */
-export function AboutSection() {
-  const { t } = useTranslation();
-  const version = useVersion();
-  const { user } = useAuth();
-  const links = [
-    { href: GUIDE_URL, label: t("app.guide"), hint: t("about.guideHint") },
-    { href: SOURCE_URL, label: t("about.source"), hint: "github.com/easly1989/cloudbank" },
-    { href: API_DOCS_URL, label: t("app.apiDocs"), hint: t("about.apiDocsHint") },
-    { href: DONATE_URL, label: t("about.support"), hint: t("about.supportHint") },
-    { href: HOMEBANK_URL, label: "HomeBank", hint: t("about.homebankHint") },
-  ];
+  if (!useAdmin()) return <Navigate to="/settings/home" replace />;
   return (
-    <Stack gap="xl">
-      <SettingsGroup title={t("about.groupVersion")} hint={t("about.groupVersionHint")}>
-        <Card withBorder p={0}>
-          <div className="cb-settings-row">
-            <Group gap={10} wrap="nowrap">
-              <Logo size={24} />
-              <Text fz="sm" fw={600}>
-                {t("app.name")}
-              </Text>
-            </Group>
-            <Text ff="monospace" fz="sm" data-testid="about-version">
-              {t("about.version", { version: version ?? "…" })}
-            </Text>
-          </div>
-          {/* Admins only, and never in the demo (#582). */}
-          {!__DEMO__ && user?.isAdmin && <UpdateStatusCard />}
-        </Card>
-      </SettingsGroup>
-      <SettingsGroup title={t("about.groupLicence")}>
-        <Card withBorder p={0}>
-          <div className="cb-settings-row">
-            <Text fz="sm">
-              <Trans i18nKey="about.licence" components={{ b: <b /> }} />
-            </Text>
-          </div>
-        </Card>
-      </SettingsGroup>
-      <SettingsGroup title={t("about.groupLinks")} hint={t("about.groupLinksHint")}>
-        <Card withBorder p={0} className="cb-about-links">
-          {links.map((l, i) => (
-            <Anchor
-              key={l.href}
-              href={l.href}
-              target="_blank"
-              rel="noreferrer"
-              underline="never"
-              c="inherit"
-              className="cb-about-link"
-              style={
-                i > 0 ? { borderTop: "1px solid var(--mantine-color-default-border)" } : undefined
-              }
-            >
-              <Text fz="sm" fw={600}>
-                {l.label}
-              </Text>
-              <Text fz={13} c="dimmed">
-                {l.hint}
-              </Text>
-              <IconExternalLink size={16} style={{ opacity: 0.6, flexShrink: 0 }} />
-            </Anchor>
-          ))}
-        </Card>
-      </SettingsGroup>
-    </Stack>
+    <>
+      <UsersPage />
+      <RelatedSettings ids={["sso", "database"]} />
+    </>
   );
 }

@@ -22,7 +22,7 @@ type Notifier interface {
 func (s *Service) SetNotify(n Notifier) { s.notify = n }
 
 // alertsURL is where a notification about a connection leads.
-const alertsURL = "/settings/bank-sync"
+const alertsURL = "/settings/connections/bank-sync"
 
 // consentWarning is how long before a bank consent ends its warning comes.
 const consentWarning = 7 * 24 * time.Hour

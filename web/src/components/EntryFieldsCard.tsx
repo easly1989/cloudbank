@@ -11,9 +11,8 @@ import {
 } from "@mantine/core";
 import { IconInfoCircle } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Fragment, useEffect, useRef, type ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router-dom";
 
 import { savePreferences, type Preferences, type User } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
@@ -40,14 +39,6 @@ export function EntryFieldsCard() {
   const prefs = user?.preferences ?? {};
   const place = placements(prefs.entryFields);
   const defaults = prefs.entryDefaults ?? {};
-
-  // The sheet's ⋯ menu links here; the settings body scrolls on its own, so
-  // the browser's jump to an anchor does not reach it.
-  const ref = useRef<HTMLDivElement>(null);
-  const { hash } = useLocation();
-  useEffect(() => {
-    if (hash === "#entry-fields") ref.current?.scrollIntoView({ block: "start" });
-  }, [hash]);
 
   const persist = useMutation({
     mutationFn: (patch: Partial<Preferences>) => savePreferences(qc, patch),
@@ -106,7 +97,7 @@ export function EntryFieldsCard() {
   };
 
   return (
-    <Card withBorder ref={ref} id="entry-fields" data-tour="entry-fields">
+    <Card withBorder>
       <Stack gap="sm">
         {ENTRY_FIELDS.map((f, i) => {
           const label = t(f.labelKey);

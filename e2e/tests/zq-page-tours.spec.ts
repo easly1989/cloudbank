@@ -218,7 +218,8 @@ test("a page offers its tour once, and the ? plays it again", async ({
   });
 
   await test.step("Settings brings every offer back", async () => {
-    await page.goto("/settings/general");
+    // Under the tours row, which a link to it opens (#800).
+    await page.goto("/settings/account#tours");
     await page.getByRole("button", { name: "Show all tours again" }).click();
     await expect(
       page.getByText("Each page will offer its tour again."),
@@ -288,7 +289,8 @@ test("skipping an offered tour can skip them all", async ({ page }) => {
   });
 
   await test.step("Settings brings the offers back", async () => {
-    await page.goto("/settings/general");
+    // Under the tours row, which a link to it opens (#800).
+    await page.goto("/settings/account#tours");
     await page.getByRole("button", { name: "Show all tours again" }).click();
     await expect(
       page.getByText("Each page will offer its tour again."),
@@ -364,10 +366,10 @@ test("every step of every tour points at something on its page", async ({
     ["schedules", "/schedules"],
     ["goals", "/goals"],
     ["vehicles", "/vehicles"],
-    ["bankSync", "/settings/bank-sync"],
+    ["bankSync", "/settings/connections/bank-sync"],
     ["review", "/review"],
-    ["settings", "/settings/general"],
-    ["data", "/settings/data"],
+    ["settings", "/settings/personalization"],
+    ["data", "/settings/wallet"],
   ];
   const card = page.locator("[data-tour-step]");
   for (const [tour, url] of pages) {

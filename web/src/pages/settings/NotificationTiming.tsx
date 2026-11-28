@@ -1,23 +1,8 @@
-import {
-  Anchor,
-  Box,
-  Card,
-  Divider,
-  Group,
-  SegmentedControl,
-  Select,
-  Stack,
-  Switch,
-  Text,
-  Title,
-  UnstyledButton,
-} from "@mantine/core";
+import { Card, Divider, Group, SegmentedControl, Select, Switch, Text } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import { IconChevronLeft, IconChevronRight, IconClock } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 
 import {
   getNotificationPreferences,
@@ -32,7 +17,7 @@ import {
 } from "../../api/client";
 import { notifyError } from "../../notifyError";
 import classes from "./NotificationsPages.module.css";
-import { SettingsGroup } from "./SettingsLayout";
+import { RelatedSettings, SettingRow, SettingsGroup } from "./SettingRow";
 
 // Settings › Notifications › Timing (#692): when notifications reach the
 // reader outside the app. The bell is always at once; push, email and chat
@@ -113,75 +98,76 @@ export function TimingRow() {
           : t("notif.timing.rowQuietOff"),
       ].join(", ")
     : "";
-  return (
-    <Card withBorder p={0}>
-      <UnstyledButton component={Link} to="/settings/notifications/timing" className={classes.row}>
-        <Box className={classes.icon}>
-          <IconClock size={16} />
-        </Box>
-        <Box style={{ flex: 1, minWidth: 0 }}>
-          <Text fz={14} fw={500}>
-            {t("notif.timing.title")}
-          </Text>
-          <Text fz={13} c="dimmed" truncate>
-            {status}
-          </Text>
-        </Box>
-        <IconChevronRight size={16} className={classes.chevron} />
-      </UnstyledButton>
-    </Card>
-  );
+  return <SettingRow id="notif-timing" description={status || undefined} />;
 }
 
-/** The digest time and the quiet hours. */
-function WhenCard() {
+/** The digest time, the quiet hours, and how long a review waits. */
+function WhenRows() {
   const { t, i18n } = useTranslation();
-  const phone = useMediaQuery("(max-width: 47.99em)") ?? false;
   const { settings, save } = useSettings();
   if (!settings) return null;
   return (
-    <Card withBorder p={0}>
-      <Group justify="space-between" wrap={phone ? "wrap" : "nowrap"} px="md" py="sm" gap="sm">
-        <Box style={{ minWidth: 0, flex: phone ? "1 0 100%" : undefined }}>
-          <Text fz={14} fw={500}>
-            {t("notif.timing.digest")}
-          </Text>
-          <Text fz={13} c="dimmed">
-            {t("notif.timing.digestHint", { zone: zoneName(settings.timezone, i18n.language) })}
-          </Text>
-        </Box>
-        <TimeSelect
-          value={settings.digestAt}
-          label={t("notif.timing.digestAt")}
-          onChange={(digestAt) => save({ digestAt })}
-        />
-      </Group>
-      <Divider />
-      <Box px="md" py="sm">
-        <Switch
-          checked={settings.quietHours}
-          onChange={(e) => save({ quietHours: e.currentTarget.checked })}
-          label={t("notif.timing.quiet")}
-          description={settings.quietHours ? t("notif.timing.quietOn") : t("notif.timing.quietOff")}
-        />
-        {settings.quietHours && (
-          <Group gap="xs" mt="sm" ml={phone ? 0 : 54} wrap="nowrap">
-            <Text fz={13}>{t("notif.timing.from")}</Text>
-            <TimeSelect
-              value={settings.quietFrom}
-              label={t("notif.timing.fromLabel")}
-              onChange={(quietFrom) => save({ quietFrom })}
-            />
-            <Text fz={13}>{t("notif.timing.to")}</Text>
-            <TimeSelect
-              value={settings.quietTo}
-              label={t("notif.timing.toLabel")}
-              onChange={(quietTo) => save({ quietTo })}
-            />
-          </Group>
-        )}
-      </Box>
-    </Card>
+    <>
+      <SettingRow
+        id="digest"
+        description={t("notif.timing.digestHint", {
+          zone: zoneName(settings.timezone, i18n.language),
+        })}
+        control={
+          <TimeSelect
+            value={settings.digestAt}
+            label={t("notif.timing.digestAt")}
+            onChange={(digestAt) => save({ digestAt })}
+          />
+        }
+      />
+      <SettingRow
+        id="quiet-hours"
+        description={settings.quietHours ? t("notif.timing.quietOn") : t("notif.timing.quietOff")}
+        open={settings.quietHours}
+        control={
+          <Switch
+            aria-label={t("notif.timing.quiet")}
+            checked={settings.quietHours}
+            onChange={(e) => save({ quietHours: e.currentTarget.checked })}
+          />
+        }
+      >
+        <Group gap="xs" wrap="wrap">
+          <Text fz={13}>{t("notif.timing.from")}</Text>
+          <TimeSelect
+            value={settings.quietFrom}
+            label={t("notif.timing.fromLabel")}
+            onChange={(quietFrom) => save({ quietFrom })}
+          />
+          <Text fz={13}>{t("notif.timing.to")}</Text>
+          <TimeSelect
+            value={settings.quietTo}
+            label={t("notif.timing.toLabel")}
+            onChange={(quietTo) => save({ quietTo })}
+          />
+        </Group>
+      </SettingRow>
+      {/* One wait for every channel (#800): it was on each channel's page. */}
+      <SettingRow
+        id="review-days"
+        control={
+          <Select
+            aria-label={t("notif.timing.reviewDays")}
+            w={140}
+            data={[1, 3, 7, 14].map((n) => ({
+              value: String(n),
+              label: t("notif.timing.days", { count: n }),
+            }))}
+            value={String(settings.reviewDays)}
+            onChange={(v) =>
+              v && save({ reviewDays: Number(v) as NotificationSettings["reviewDays"] })
+            }
+            allowDeselect={false}
+          />
+        }
+      />
+    </>
   );
 }
 
@@ -261,60 +247,18 @@ function ModeList() {
   );
 }
 
-/** "Tell me after N days", under the review event on a channel's page. */
-export function ReviewDays() {
-  const { t } = useTranslation();
-  const { settings, save } = useSettings();
-  if (!settings) return null;
-  return (
-    <Group gap={6} mt={6} ml={34}>
-      <Text fz={13} c="dimmed">
-        {t("notif.timing.reviewAfter")}
-      </Text>
-      <Select
-        aria-label={t("notif.timing.reviewDays")}
-        size="xs"
-        w={120}
-        data={[1, 3, 7, 14].map((n) => ({
-          value: String(n),
-          label: t("notif.timing.days", { count: n }),
-        }))}
-        value={String(settings.reviewDays)}
-        onChange={(v) => v && save({ reviewDays: Number(v) as NotificationSettings["reviewDays"] })}
-        allowDeselect={false}
-      />
-    </Group>
-  );
-}
-
 /** The page of its own, under Settings › Notifications. */
 export function NotificationTimingSection() {
   const { t } = useTranslation();
   return (
-    <Stack gap="xl">
-      <div>
-        <Anchor component={Link} to="/settings/notifications" size="sm">
-          <Group gap={4} component="span">
-            <IconChevronLeft size={14} />
-            {t("notif.title")}
-          </Group>
-        </Anchor>
-        <Group gap="xs" mt="xs" wrap="nowrap">
-          <IconClock size={20} />
-          <Title order={3} fz={20}>
-            {t("notif.timing.title")}
-          </Title>
-        </Group>
-        <Text fz={13} c="dimmed" mt={2}>
-          {t("notif.timing.subtitle")}
-        </Text>
-      </div>
+    <>
       <SettingsGroup title={t("notif.timing.when")} hint={t("notif.timing.whenHint")}>
-        <WhenCard />
+        <WhenRows />
       </SettingsGroup>
       <SettingsGroup title={t("notif.timing.modes")} hint={t("notif.timing.modesHint")}>
         <ModeList />
       </SettingsGroup>
-    </Stack>
+      <RelatedSettings ids={["notif-money", "notif-inapp"]} />
+    </>
   );
 }

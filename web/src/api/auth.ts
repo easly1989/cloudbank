@@ -107,6 +107,9 @@ export interface Preferences {
   demoNoticeSeen?: boolean;
   /** Saved report configurations (Statistics/Trend), scoped per wallet + tab. */
   reportViews?: SavedReportView[];
+  /** When a backup of each wallet was last downloaded from here, by wallet id
+      (#800): the server keeps no such date, and Settings › Home reminds. */
+  lastBackupAt?: Record<string, string>;
 }
 
 /** A named, saved report configuration. `config` is the tab-specific state. */

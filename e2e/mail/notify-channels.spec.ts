@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { openEvents } from "./openEvents";
+
 // The email and webhook channels (#686), against the pretend SMTP server and
 // webhook receiver in ../server/cmd/e2e-mail; an address is confirmed with the
 // code mailed to it (#716). It runs after the other mail
@@ -51,6 +53,7 @@ test("an email channel sends its test through the mail server", async ({
   // The overview lists the channel and opens its page.
   await page.getByRole("link", { name: /^Email/ }).click();
   await expect(page).toHaveURL(/\/settings\/notifications\/email$/);
+  await openEvents(page);
   const email = card(page);
   await email.getByLabel("Address").fill(ADDRESS);
   await email.getByRole("button", { name: "Save" }).click();
@@ -80,6 +83,7 @@ test("a webhook test is signed, and a refusal stays on the page", async ({
 }) => {
   await signIn(page);
   await page.goto("/settings/notifications/webhook");
+  await openEvents(page);
   await expect(
     page.getByRole("checkbox", { name: "Bills due" }),
   ).toBeDisabled();

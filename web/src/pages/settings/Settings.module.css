@@ -1,0 +1,390 @@
+/* The settings screen after Windows 11 Settings (#800, direction A of the
+ * settings-fluent mockup): a grey canvas, the nav on it, and one card per
+ * setting. The numbers are the mockup's. The canvas is the shell's grey and a
+ * card is the ledger's surface, so both follow the scheme with no new colour. */
+
+.screen {
+  display: flex;
+  min-height: 100vh;
+  background: var(--cb-shell-bg);
+}
+
+.nav {
+  width: 300px;
+  flex-shrink: 0;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.back {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 12px;
+  text-decoration: none;
+  border-radius: 6px;
+}
+.back:hover {
+  color: var(--mantine-color-text);
+}
+
+.me {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 12px 18px;
+  min-width: 0;
+}
+.avatar {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--cb-nav-active-bg);
+  color: var(--cb-accent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 20px;
+}
+.meName {
+  font-size: 15px;
+  font-weight: 600;
+}
+.meRole {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+}
+
+.search {
+  margin: 0 4px 12px;
+}
+.searchInput {
+  height: 34px;
+  min-height: 34px;
+  background: var(--cb-ledger-surface);
+  border-bottom-width: 2px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 6px;
+  color: var(--mantine-color-text);
+  text-decoration: none;
+  font-size: 14px;
+  position: relative;
+  width: 100%;
+}
+.navItem:hover {
+  background: var(--mantine-color-default-hover);
+}
+.navItem[aria-current="page"] {
+  background: var(--cb-ledger-surface);
+}
+.navItem[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 11px;
+  bottom: 11px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--mantine-primary-color-filled);
+}
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 40px 100px 24px;
+}
+.inner {
+  max-width: 1000px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 22px;
+}
+.titleLine {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.h1,
+.crumbs {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0;
+}
+.crumbs {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.crumb {
+  color: var(--mantine-color-dimmed);
+  text-decoration: none;
+}
+.crumb:hover {
+  color: var(--mantine-color-text);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.groupHead {
+  margin: 22px 0 6px;
+}
+.groupTitle {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+.groupHint {
+  font-size: 12px;
+  color: var(--mantine-color-dimmed);
+}
+.related {
+  margin-top: 24px;
+}
+
+/* A setting: one card, its words on the left and its control on the right. */
+.row {
+  background: var(--cb-ledger-surface);
+  border: 1px solid var(--cb-ledger-border);
+  border-radius: 6px;
+  min-height: 68px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: inherit;
+  text-decoration: none;
+}
+a.row:focus-visible,
+.crumb:focus-visible,
+.navItem:focus-visible,
+.back:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}
+.chevron:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}
+a.row:hover,
+.row[data-toggle]:hover {
+  background: var(--cb-band-header);
+}
+.row[data-open] {
+  border-radius: 6px 6px 0 0;
+}
+.row[data-toggle] {
+  cursor: pointer;
+}
+.icon {
+  width: 20px;
+  flex-shrink: 0;
+  display: flex;
+}
+.text {
+  flex: 1;
+  min-width: 0;
+}
+.title {
+  font-size: 14px;
+}
+.desc {
+  font-size: 12px;
+  color: var(--mantine-color-dimmed);
+  max-width: 60ch;
+}
+.control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.chevron {
+  flex-shrink: 0;
+  transition: transform 150ms ease;
+}
+.chevron[data-open] {
+  transform: rotate(180deg);
+}
+
+/* What an expander opens, joined to its card. */
+.sub {
+  background: var(--cb-ledger-surface);
+  border: 1px solid var(--cb-ledger-border);
+  border-top: 0;
+  border-radius: 0 0 6px 6px;
+  padding: 14px 18px 16px 54px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.sub > :global(.mantine-Button-root) {
+  align-self: flex-start;
+}
+
+/* A status beside a control: a dot and a word. */
+.state {
+  font-size: 13px;
+  color: var(--mantine-color-dimmed);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  background: var(--cb-positive);
+}
+.dot[data-tone="warn"] {
+  background: var(--cb-attention);
+}
+.dot[data-tone="off"] {
+  background: var(--mantine-color-gray-5);
+}
+.dot[data-tone="error"] {
+  background: var(--cb-error);
+}
+
+/* Home's status tiles. */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.tile {
+  background: var(--cb-ledger-surface);
+  border: 1px solid var(--cb-ledger-border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.tileTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+}
+.tileAction {
+  align-self: flex-start;
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Where a search result or a link lands: the card is outlined for a moment. */
+.flash > .row {
+  animation: cb-row-flash 1.6s ease-out;
+}
+@keyframes cb-row-flash {
+  from {
+    box-shadow: 0 0 0 2px var(--mantine-primary-color-filled);
+  }
+  to {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flash > .row {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--mantine-primary-color-filled);
+  }
+}
+
+@media (pointer: coarse) {
+  .navItem,
+  .back {
+    min-height: 44px;
+  }
+}
+
+/* A phone: the nav is the search and the current section, which opens the
+ * rest; a row's control goes under its words. */
+@media (max-width: 47.99em) {
+  .screen {
+    flex-direction: column;
+  }
+  .nav {
+    width: auto;
+    padding: 10px 12px 4px;
+    position: static;
+    height: auto;
+  }
+  .me {
+    display: none;
+  }
+  .sections:not([data-open]) {
+    display: none;
+  }
+  .main {
+    padding: 8px 12px 100px;
+  }
+  .h1,
+  .crumbs {
+    font-size: 24px;
+  }
+  .row {
+    flex-wrap: wrap;
+    padding: 12px 14px;
+  }
+  .control {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  a.row .control {
+    width: auto;
+  }
+  .sub {
+    padding-left: 14px;
+  }
+}

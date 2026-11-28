@@ -63,7 +63,7 @@ export function saveMe(qc: QueryClient, change: MeChange): Promise<User> {
       const body = preferences
         ? {
             ...account,
-            preferences: { ...(current?.preferences ?? {}), ...preferences },
+            preferences: mergePreferences(current?.preferences ?? {}, preferences),
             ...(typeof revision === "number" ? { preferencesRevision: revision } : {}),
           }
         : account;
@@ -92,12 +92,27 @@ export function saveMe(qc: QueryClient, change: MeChange): Promise<User> {
   return run;
 }
 
+/**
+ * Preferences kept per entry rather than whole (#800): a write names only its
+ * own entries, so two tabs that each back up a wallet keep both dates.
+ */
+const PER_ENTRY = ["lastBackupAt"] as const;
+
+/** stored with patch over it, the per-entry preferences merged entry by entry. */
+function mergePreferences(stored: Preferences, patch: Partial<Preferences>): Preferences {
+  const out: Preferences = { ...stored, ...patch };
+  for (const k of PER_ENTRY) {
+    if (patch[k]) out[k] = { ...(stored[k] ?? {}), ...patch[k] };
+  }
+  return out;
+}
+
 /** user with change applied, as the server will store it. */
 function withChange(user: User, change: MeChange): User {
   const { preferences, ...account } = change;
   const next: User = { ...user, ...account };
   if (preferences) {
-    const merged: Record<string, unknown> = { ...(user.preferences ?? {}), ...preferences };
+    const merged = mergePreferences(user.preferences ?? {}, preferences) as Record<string, unknown>;
     for (const k of Object.keys(merged)) if (merged[k] === undefined) delete merged[k];
     next.preferences = merged as Preferences;
   }

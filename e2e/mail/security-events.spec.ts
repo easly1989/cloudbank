@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { openEvents } from "./openEvents";
+
 // The security events (#690) on the real server: a sign-in from a client the
 // account never used reaches the bell and the email channel the earlier specs
 // confirmed, and leads to the Security page; the bell cannot be turned off
@@ -61,7 +63,7 @@ test("a sign-in from a new client reaches the bell and the mail, and opens Secur
     .toBe(1);
 
   await note.click();
-  await expect(page).toHaveURL(/\/settings\/security$/);
+  await expect(page).toHaveURL(/\/settings\/account$/);
 
   // The browser the earlier specs used is no new device.
   await signIn(page);
@@ -75,6 +77,7 @@ test("a sign-in from a new client reaches the bell and the mail, and opens Secur
 test("security events cannot leave the bell", async ({ page }) => {
   await signIn(page);
   await page.goto("/settings/notifications/inapp");
+  await openEvents(page);
   await expect(
     page.getByText(
       "Always in the bell, so a sign-in you didn't make cannot go unnoticed.",

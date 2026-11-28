@@ -5,7 +5,7 @@ What each page is for and what it can do. New to CloudBank? Start with
 
 The sidebar groups the pages into **Money**, **Planning**, **Insights** and
 **Wallet data**. You can reorder, hide or regroup them under **Settings →
-Appearance → Navigation**.
+Personalization → Navigation**.
 Every page also has a short tour: the **?** in its header plays it.
 
 Beside the **?**, the **eye** turns on privacy mode, for showing CloudBank to
@@ -129,7 +129,7 @@ With CloudBank installed on the phone (**Add to Home screen**, over HTTPS; see
 
 - **Shortcuts (Android).** A long press on CloudBank's icon offers **New
   expense** and **New income**. Either opens the entry sheet in the wallet you
-  last used, on your default account (**Settings → General**), with the sign
+  last used, on your default account (**Settings → Wallet**), with the sign
   already set.
 - **Sharing a notification (Android).** Share the text of your bank's
   notification, or any text, with CloudBank from the share sheet. The entry
@@ -387,7 +387,7 @@ only money coming in.
   - **Remind** records nothing: the occurrence waits under **Needs you**.
 - **Posting months ahead.** The wallet setting **Pre-register scheduled
   transactions** posts upcoming ones up to three months in advance, the way
-  HomeBank does. It is under **Settings →** *your wallet*.
+  HomeBank does. It is under **Settings → Wallet**.
 
 ## Budget
 
@@ -665,18 +665,20 @@ its account's register, searching for what you typed.
 
 ## Settings
 
-The gear at the foot of the sidebar opens Settings. Its sections:
+The gear at the foot of the sidebar opens Settings (#800, after Windows 11
+Settings): a nav with who you are, **Find a setting** (it searches every
+setting's name and description, and a result scrolls to the setting) and eight
+sections. Each setting is a card with its control on the right; a chevron opens
+a page of its own, a down arrow more controls under it. Every setting saves when
+it changes. Each page ends with related settings. Its sections:
 
 | Section | What is there |
 | --- | --- |
-| **General** | Language, date format, start screen, default account, tours; which fields the entry sheet shows |
-| **Appearance** | Theme and accent, the balances shown, account balances in the sidebar, the footer; the sidebar's navigation |
-| *Your wallet* | Name, owner, pre-registered schedules, the bills category the dashboard's Bills widget lists |
-| **Security** | Password, two-factor sign-in, passkeys, API tokens |
-| **Notifications** | Which events reach you, in the bell, by push on this device, by email, in Matrix, Telegram, Discord or Slack, through ntfy or Gotify, or through a webhook ([the guide](notifications.md)); the bell itself sits in every page header |
-| **Bank sync** | Bank connections ([Automatic bank sync](bank-sync.md)) |
-| **Bank mails** | The bank's notification mails, read from the folders of a mailbox you choose, each a source ([the guide](bank-mails.md)) |
+| **Home** | How security (two-factor, passkeys), connections (banks and last sync, bank mails to review) and data (last backup, integrity) stand; what is worth doing now (a backup, a mail to review, two-factor); the version, the licence, the source code and the guide's links |
+| **Account** | Language, date format, start screen, page tours, smart amounts; password, two-factor sign-in, passkeys (recovery codes instead on an SSO-only server); API tokens |
+| **Personalization** | Theme and accent, the footer, account balances in the sidebar, the balances shown on the overview and the register; the sidebar's navigation; which fields the entry sheet shows |
+| **Wallet** | Name and owner, default account, pre-registered schedules and the bills category; Import ([Importing transactions](import.md)), Export, Backup & integrity; deleting the wallet (its owner only) |
+| **Connections** | [Bank sync](bank-sync.md) and [Bank mails](bank-mails.md), each a page of its own |
+| **Notifications** | Which events reach you, in the bell, by push on this device, by email, in Matrix, Telegram, Discord or Slack, through ntfy or Gotify, or through a webhook, a page per channel; thresholds and wallets; timing, digest and how long a review waits ([the guide](notifications.md)); the bell itself sits in every page header |
 | **AI** | The optional AI, with your own key: the provider; which jobs it does (monthly reports, ask your data, budget, subscription, savings, goal and rule proposals, payee cleanup, CSV columns, unusual transactions, category suggestions, quick entry, receipts, reading [bank mails](bank-mails.md)), each saying what it sends; on which wallets; the monthly request limit; the moving colours of the AI box; and the last 90 days of what was sent, word for word. See [the AI guide](ai.md) |
-| **Import & export** | Imports ([Importing transactions](import.md)), exports, backups and a database check |
-| **People** | Administrators only: the people who can sign in |
-| **About** | The version, the licence and the source code; for administrators, whether a newer CloudBank is out and the switch for the daily check ([Upgrading](backup.md#upgrading)) |
+| **Administration** | Administrators only: the people who can sign in, single sign-on, whether a newer CloudBank is out and the switch for the daily check ([Upgrading](backup.md#upgrading)), the full database backup |

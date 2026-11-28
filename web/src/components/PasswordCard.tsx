@@ -1,6 +1,5 @@
-import { Button, Card, Group, PasswordInput, Stack, Text, Title } from "@mantine/core";
+import { Button, Group, PasswordInput, Stack, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconKey } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,6 +7,8 @@ import { useTranslation } from "react-i18next";
 import { ApiError, changePassword } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { notifyError } from "../notifyError";
+import { SettingRow } from "../pages/settings/SettingRow";
+import { panelId } from "../pages/settings/sections";
 
 const MIN_LENGTH = 8;
 
@@ -22,6 +23,7 @@ export function PasswordCard() {
   const [next, setNext] = useState("");
   const [repeat, setRepeat] = useState("");
   const [wrongCurrent, setWrongCurrent] = useState(false);
+  const [open, setOpen] = useState(false);
 
   // Said once the repeat is as long as the new one, not at every keystroke.
   const mismatch = repeat.length >= next.length && repeat.length > 0 && repeat !== next;
@@ -33,6 +35,7 @@ export function PasswordCard() {
       setCurrent("");
       setNext("");
       setRepeat("");
+      setOpen(false);
       notifications.show({ color: "teal", message: t("password.changed") });
     },
     onError: (err: unknown) => {
@@ -49,23 +52,33 @@ export function PasswordCard() {
   };
 
   return (
-    <Card withBorder>
-      <Group gap="xs">
-        <IconKey size={18} />
-        <Title order={5}>{t("password.title")}</Title>
-      </Group>
-      <Text size="sm" c="dimmed" maw={560} mt={4}>
-        {t("password.hint")}
-      </Text>
+    <SettingRow
+      id="password"
+      open={open}
+      onOpenChange={setOpen}
+      control={
+        <Button
+          variant="default"
+          aria-expanded={open}
+          aria-controls={panelId("password")}
+          aria-label={t("settings.actionOn", {
+            action: t("password.change"),
+            row: t("password.title"),
+          })}
+          onClick={() => setOpen((o) => !o)}
+        >
+          {t("password.change")}
+        </Button>
+      }
+    >
       {user?.signsInWithSso && (
-        <Text size="sm" c="dimmed" maw={560} mt={4}>
+        <Text size="sm" c="dimmed" maw={560}>
           {t("password.sso")}
         </Text>
       )}
       <Stack
         component="form"
         gap="sm"
-        mt="md"
         maw={360}
         onSubmit={(e) => {
           e.preventDefault();
@@ -102,6 +115,6 @@ export function PasswordCard() {
           </Button>
         </Group>
       </Stack>
-    </Card>
+    </SettingRow>
   );
 }

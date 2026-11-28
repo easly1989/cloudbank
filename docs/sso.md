@@ -19,7 +19,7 @@ client, so the provider gives it a client secret.
 
 ## Two places to set it
 
-An administrator can set the provider in **Settings › Security › Single
+An administrator can set the provider in **Settings › Administration › Single
 sign-on**, or whoever runs the container can set the `CB_OIDC_*` variables
 below.
 
@@ -177,7 +177,7 @@ Anyone else is sent back to the sign-in page with an error, and a disabled
 account stays out whatever the provider says.
 
 So, without auto-provision, an administrator adds people first: **Settings ›
-People › Create user**. On an SSO-only server that form asks for a username
+Administration › People › Create user**. On an SSO-only server that form asks for a username
 and an email, no password; the person signs in with the provider and is matched
 by that email.
 
@@ -197,7 +197,7 @@ administrator is refused.
 ## If the provider does not answer
 
 On an SSO-only server, every account can keep **ten one-time recovery codes**.
-Make them as soon as you are in: **Settings › Security › Access recovery
+Make them as soon as you are in: **Settings › Account › Access recovery
 codes**. They are shown once; download them as a file and keep them somewhere
 safe, away from CloudBank. The card says how many are left, and making new ones
 voids the old.

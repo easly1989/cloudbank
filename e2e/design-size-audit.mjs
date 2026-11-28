@@ -298,7 +298,7 @@ const CHECKS = [
   ],
   [
     "settings: select",
-    "/settings",
+    "/settings/account",
     null,
     (p) => p.locator(".mantine-Select-input").first(),
     { board: "settings", tag: "select", size: [296, 44] },
@@ -306,7 +306,7 @@ const CHECKS = [
   ],
   [
     "settings: theme choice",
-    "/settings/appearance",
+    "/settings/personalization",
     null,
     (p) => p.locator(".cb-choice").first(),
     { board: "settings", tag: "button", text: "Auto" },
@@ -317,9 +317,9 @@ const CHECKS = [
   ],
   [
     "settings: accent swatch",
-    "/settings/appearance",
+    "/settings/personalization",
     null,
-    role("button", "teal"),
+    role("radio", "teal"),
     { board: "settings", tag: "button", size: [22, 22] },
     true,
   ],

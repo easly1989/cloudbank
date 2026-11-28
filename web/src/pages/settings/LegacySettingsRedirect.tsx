@@ -1,24 +1,17 @@
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 
-import { LEGACY_TABS } from "./sections";
+import { legacyTarget } from "./legacy";
 
 /**
  * Where `/settings` lands, and where an old bookmark lands.
  *
- * Settings used to be one page with a `?tab=` query and, inside the wallet tab,
- * a `?section=`. Those links are in people's browser history and in this repo's
- * own documentation, so they keep working: the tab maps to a section, and the
- * one section that moved elsewhere — import — goes with it.
+ * Settings used to be one page with a `?tab=` query (and, in the wallet tab, a
+ * `?section=`), then eleven sections, now eight (#800). Those links are in
+ * people's browser history, in this repo's documentation and in the app's own
+ * code, so they keep working: each lands where its content went, with its
+ * query and its `#row` kept.
  */
-export function LegacySettingsRedirect() {
-  const [params] = useSearchParams();
-  const tab = params.get("tab");
-  const section = params.get("section");
-  const target =
-    tab === "wallet" && (section === "import" || section === "backup")
-      ? "data"
-      : tab
-        ? (LEGACY_TABS[tab] ?? "general")
-        : "general";
-  return <Navigate to={`/settings/${target}`} replace />;
+export function LegacySettingsRedirect({ from }: { from?: string }) {
+  const { search, hash } = useLocation();
+  return <Navigate to={legacyTarget(from, search, hash)} replace />;
 }

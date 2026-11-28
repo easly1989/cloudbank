@@ -1,37 +1,20 @@
+import { Anchor, Checkbox, Stack, Text } from "@mantine/core";
 import {
-  Anchor,
-  Box,
-  Card,
-  Checkbox,
-  Divider,
-  Group,
-  Stack,
-  Text,
-  Title,
-  UnstyledButton,
-} from "@mantine/core";
-import {
+  IconAlertTriangle,
   IconBell,
-  IconBellRinging,
-  IconBrandDiscord,
-  IconBrandMatrix,
-  IconBrandSlack,
-  IconBrandTelegram,
-  IconChevronLeft,
-  IconChevronRight,
-  IconDeviceMobile,
-  IconMail,
-  IconServer,
-  IconWebhook,
+  IconCoin,
+  IconRobot,
+  IconShieldLock,
+  IconSum,
+  IconUserShield,
   type Icon,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 
 import { GUIDE_BASE_URL } from "../../aboutLinks";
-import { attentionColor, errorColor } from "../../amountTone";
 import {
   getNotificationPreferences,
   NOTIFICATION_PREFERENCES_KEY,
@@ -45,26 +28,14 @@ import { NotificationsCard } from "../../components/NotificationsCard";
 import { notifyError } from "../../notifyError";
 import { currentPushSubscription, pushSupported } from "../../push";
 import { MoneyRow } from "./NotificationMoney";
-import { ReviewDays, TimingRow } from "./NotificationTiming";
-import { SettingsGroup } from "./SettingsLayout";
-import classes from "./NotificationsPages.module.css";
+import { TimingRow } from "./NotificationTiming";
+import { CHANNELS } from "./sections";
+import { RelatedSettings, SettingRow, SettingsGroup, SettingState } from "./SettingRow";
 
 // Settings › Notifications (#688): an overview of every channel, and a page
 // per channel with how it is connected and which events it gets. The demo
 // build has only the bell.
 
-const CHANNELS: { id: NotificationChannel; icon: Icon }[] = [
-  { id: "inapp", icon: IconBell },
-  { id: "push", icon: IconDeviceMobile },
-  { id: "email", icon: IconMail },
-  { id: "matrix", icon: IconBrandMatrix },
-  { id: "telegram", icon: IconBrandTelegram },
-  { id: "discord", icon: IconBrandDiscord },
-  { id: "slack", icon: IconBrandSlack },
-  { id: "ntfy", icon: IconBellRinging },
-  { id: "gotify", icon: IconServer },
-  { id: "webhook", icon: IconWebhook },
-];
 const shown = (id: NotificationChannel) => !__DEMO__ || id === "inapp";
 const addressed = (id: NotificationChannel): id is AddressedChannel =>
   id !== "inapp" && id !== "push";
@@ -101,7 +72,18 @@ function usePushState(): PushState {
 
 type Status = { text: string; error?: boolean; attention?: boolean; active: boolean };
 
-const statusColor = (s: Status) => (s.error ? errorColor : s.attention ? attentionColor : "dimmed");
+const tone = (s: Status) => (s.error ? "error" : s.attention ? "warn" : s.active ? "ok" : "off");
+
+// Each group of events, with the icon its row on a channel's page carries.
+const GROUP_ICON: Record<string, Icon> = {
+  security: IconShieldLock,
+  problems: IconAlertTriangle,
+  bills: IconBell,
+  money: IconCoin,
+  admin: IconUserShield,
+  summaries: IconSum,
+  ai: IconRobot,
+};
 
 /** One line on how a channel stands, and whether it gets anything now. */
 function useStatus(id: NotificationChannel): Status {
@@ -132,38 +114,23 @@ function usePreferences() {
   return data?.events ?? [];
 }
 
-function ChannelRow({
-  id,
-  icon: ChannelIcon,
-  events,
-}: {
-  id: NotificationChannel;
-  icon: Icon;
-  events: NotificationPreference[];
-}) {
+function ChannelRow({ id, events }: { id: NotificationChannel; events: NotificationPreference[] }) {
   const { t } = useTranslation();
   const status = useStatus(id);
   const on = events.filter((e) => e.channels[id]).length;
   return (
-    <UnstyledButton component={Link} to={`/settings/notifications/${id}`} className={classes.row}>
-      <Box className={classes.icon}>
-        <ChannelIcon size={16} />
-      </Box>
-      <Box style={{ flex: 1, minWidth: 0 }}>
-        <Text fz={14} fw={500}>
-          {t(`notif.name.${id}`)}
-        </Text>
-        <Text fz={13} c={statusColor(status)} truncate>
-          {status.text}
-        </Text>
-      </Box>
-      {status.active && events.length > 0 && (
-        <Text fz={13} c="dimmed" visibleFrom="sm">
-          {t("notif.eventCount", { on, total: events.length })}
-        </Text>
-      )}
-      <IconChevronRight size={16} className={classes.chevron} />
-    </UnstyledButton>
+    <SettingRow
+      id={`notif-${id}`}
+      description={
+        <span style={{ color: status.error ? "var(--cb-error)" : undefined }}>{status.text}</span>
+      }
+      control={
+        status.active &&
+        events.length > 0 && (
+          <SettingState>{t("notif.eventCount", { on, total: events.length })}</SettingState>
+        )
+      }
+    />
   );
 }
 
@@ -173,19 +140,18 @@ export function NotificationsSection() {
   const events = usePreferences();
   const channels = CHANNELS.filter((c) => shown(c.id));
   return (
-    <SettingsGroup title={t("notif.channels")} hint={t("notif.channelsHint")}>
-      <Card withBorder p={0}>
-        {channels.map((c, i) => (
-          <Fragment key={c.id}>
-            {i > 0 && <Divider />}
-            <ChannelRow id={c.id} icon={c.icon} events={events} />
-          </Fragment>
+    <>
+      <SettingsGroup title={t("notif.channels")}>
+        {channels.map((c) => (
+          <ChannelRow key={c.id} id={c.id} events={events} />
         ))}
-      </Card>
-      <MoneyRow />
-      {/* Timing is about the channels outside the app, which the demo has none of. */}
-      {!__DEMO__ && <TimingRow />}
-    </SettingsGroup>
+      </SettingsGroup>
+      <SettingsGroup title={t("settings.notifRules")}>
+        <MoneyRow />
+        {/* Timing is about the channels outside the app, which the demo has none of. */}
+        {!__DEMO__ && <TimingRow />}
+      </SettingsGroup>
+    </>
   );
 }
 
@@ -216,78 +182,66 @@ function ChannelEvents({ id, active }: { id: NotificationChannel; active: boolea
   });
   const groups = [...new Set(events.map((e) => e.group))];
   return (
-    <Card withBorder p={0} pb="xs">
+    <>
       {!active && (
-        <Text size="sm" c="dimmed" px="md" pt="sm">
+        <Text size="sm" c="dimmed">
           {t("notif.connectFirst")}
         </Text>
       )}
-      {groups.map((g, i) => (
-        <Fragment key={g}>
-          {i > 0 && <Divider mt="xs" />}
-          <Text fz={13} fw={600} px="md" pt="sm" pb={g === "security" && id === "inapp" ? 0 : 4}>
-            {t(`notif.group.${g}`)}
-          </Text>
-          {g === "security" && id === "inapp" && (
-            <Text fz={12} c="dimmed" px="md" pb={4}>
-              {t("notif.securityAlways")}
-            </Text>
-          )}
-          {events
-            .filter((e) => e.group === g)
-            .map((e) => (
-              <Box key={e.kind} px="md" py="xs">
-                <Checkbox
-                  // A security event always reaches the bell (#690).
-                  disabled={!active || (e.group === "security" && id === "inapp")}
-                  checked={e.channels[id]}
-                  onChange={(ev) => save.mutate({ kind: e.kind, on: ev.currentTarget.checked })}
-                  label={t(`notif.kind.${e.kind}`)}
-                  description={t(`notif.kindHint.${e.kind}`)}
-                />
-                {e.kind === "review_waiting" && <ReviewDays />}
-              </Box>
+      {groups.map((g) => {
+        const list = events.filter((e) => e.group === g);
+        const on = list.filter((e) => e.channels[id]).length;
+        // A security event always reaches the bell (#690).
+        const always = g === "security" && id === "inapp";
+        return (
+          <SettingRow
+            key={g}
+            icon={GROUP_ICON[g] ?? IconBell}
+            title={t(`notif.group.${g}`)}
+            description={
+              always
+                ? t("notif.securityAlways")
+                : list.map((e) => t(`notif.kind.${e.kind}`)).join(", ")
+            }
+            control={
+              <SettingState tone={on > 0 ? "ok" : "off"}>
+                {t("notif.ofTotal", { on, total: list.length })}
+              </SettingState>
+            }
+          >
+            {list.map((e) => (
+              <Checkbox
+                key={e.kind}
+                disabled={!active || always}
+                checked={e.channels[id]}
+                onChange={(ev) => save.mutate({ kind: e.kind, on: ev.currentTarget.checked })}
+                label={t(`notif.kind.${e.kind}`)}
+                description={t(`notif.kindHint.${e.kind}`)}
+              />
             ))}
-        </Fragment>
-      ))}
-    </Card>
+          </SettingRow>
+        );
+      })}
+    </>
   );
 }
 
 /** Settings › Notifications › a channel: how it is connected, what it gets. */
 export function NotificationChannelSection() {
   const { t } = useTranslation();
-  const { channel } = useParams();
+  // The demo has only the bell, on a route of its own.
+  const { channel = "inapp" } = useParams();
   const meta = CHANNELS.find((c) => c.id === channel && shown(c.id));
   // Hooks run before the redirect, so give them a channel either way.
   const id = meta?.id ?? "inapp";
   const status = useStatus(id);
   if (!meta) return <Navigate to="/settings/notifications" replace />;
-  const ChannelIcon = meta.icon;
   const guide = GUIDE[id];
   return (
-    <Stack gap="xl">
-      <div>
-        <Anchor component={Link} to="/settings/notifications" size="sm">
-          <Group gap={4} component="span">
-            <IconChevronLeft size={14} />
-            {t("notif.title")}
-          </Group>
-        </Anchor>
-        <Group gap="xs" mt="xs" wrap="nowrap">
-          <ChannelIcon size={20} />
-          <Title order={3} fz={20}>
-            {t(`notif.name.${id}`)}
-          </Title>
-        </Group>
-        <Text fz={13} c={statusColor(status)} mt={2}>
-          {status.text}
-        </Text>
-      </div>
+    <>
       {id !== "inapp" && (
         <SettingsGroup
           title={t("notif.connection")}
-          hint={t(`notif.about.${id}`)}
           action={
             guide && (
               <Anchor
@@ -301,7 +255,21 @@ export function NotificationChannelSection() {
             )
           }
         >
-          {id === "push" ? <NotificationsCard /> : addressed(id) && <ChannelSetup channel={id} />}
+          <SettingRow
+            icon={meta.icon}
+            title={t(`notif.name.${id}`)}
+            description={t(`notif.about.${id}`)}
+            control={<SettingState tone={tone(status)}>{status.text}</SettingState>}
+            defaultOpen
+          >
+            <Stack gap="sm">
+              {id === "push" ? (
+                <NotificationsCard />
+              ) : (
+                addressed(id) && <ChannelSetup channel={id} />
+              )}
+            </Stack>
+          </SettingRow>
         </SettingsGroup>
       )}
       <SettingsGroup
@@ -311,6 +279,7 @@ export function NotificationChannelSection() {
         {/* Push is per device: its events can be chosen before this one is on. */}
         <ChannelEvents id={id} active={status.active || id === "push"} />
       </SettingsGroup>
-    </Stack>
+      <RelatedSettings ids={["notif-timing", "notif-money"]} />
+    </>
   );
 }

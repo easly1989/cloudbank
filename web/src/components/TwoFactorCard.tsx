@@ -1,6 +1,5 @@
 import {
   Alert,
-  Badge,
   Button,
   Card,
   CopyButton,
@@ -11,7 +10,6 @@ import {
   Stack,
   Text,
   TextInput,
-  Title,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconCheck, IconCopy, IconShieldLock } from "@tabler/icons-react";
@@ -22,10 +20,13 @@ import { useTranslation } from "react-i18next";
 
 import { type TotpSetup, disable2fa, enable2fa, getMe, setup2fa } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
+import { errorColor } from "../amountTone";
 import { notifyError } from "../notifyError";
+import { SettingRow, SettingState } from "../pages/settings/SettingRow";
 
-// TwoFactorCard shows the account's 2FA status and drives enable (QR + confirm →
-// recovery codes) and disable (password re-auth).
+// TwoFactorCard is the account's 2FA row in Settings › Account (#800): its
+// status, and the dialogs that enable it (QR + confirm → recovery codes) and
+// disable it (password re-auth).
 export function TwoFactorCard() {
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -39,35 +40,26 @@ export function TwoFactorCard() {
   const onError = (err: unknown) => notifyError(err);
 
   return (
-    <Card withBorder>
-      <Group justify="space-between" align="flex-start">
-        <div>
-          <Group gap="xs">
-            <IconShieldLock size={18} />
-            <Title order={5}>{t("twofa.title")}</Title>
+    <>
+      <SettingRow
+        id="two-factor"
+        control={
+          <>
+            <SettingState tone={enabled ? "ok" : "off"}>
+              {enabled ? t("twofa.on") : t("twofa.off")}
+            </SettingState>
             {enabled ? (
-              <Badge color="teal" variant="light">
-                {t("twofa.on")}
-              </Badge>
+              <Button variant="default" c={errorColor} onClick={() => setDisableOpen(true)}>
+                {t("twofa.disable")}
+              </Button>
             ) : (
-              <Badge color="gray" variant="light">
-                {t("twofa.off")}
-              </Badge>
+              <Button variant="default" onClick={() => setEnrollOpen(true)}>
+                {t("twofa.enable")}
+              </Button>
             )}
-          </Group>
-          <Text size="sm" c="dimmed" maw={560} mt={4}>
-            {t("twofa.hint")}
-          </Text>
-        </div>
-        {enabled ? (
-          <Button variant="light" color="red" onClick={() => setDisableOpen(true)}>
-            {t("twofa.disable")}
-          </Button>
-        ) : (
-          <Button onClick={() => setEnrollOpen(true)}>{t("twofa.enable")}</Button>
-        )}
-      </Group>
-
+          </>
+        }
+      />
       <EnrollModal
         opened={enrollOpen}
         onClose={() => setEnrollOpen(false)}
@@ -79,7 +71,7 @@ export function TwoFactorCard() {
         onDone={() => void refreshMe()}
         onError={onError}
       />
-    </Card>
+    </>
   );
 }
 

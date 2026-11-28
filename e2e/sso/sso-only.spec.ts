@@ -54,7 +54,7 @@ test("Security keeps recovery codes in place of password and two-factor", async 
 }) => {
   await page.goto("/login");
   await signInAs(page, ADMIN);
-  await page.goto("/settings/security");
+  await page.goto("/settings/account");
   const card = page.getByTestId("access-codes");
   await expect(card).toBeVisible();
   await expect(page.getByText("Two-factor authentication")).toHaveCount(0);

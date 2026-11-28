@@ -15,7 +15,7 @@ const FAKE = process.env.E2E_MAIL_FAKE_URL ?? "http://127.0.0.1:9100";
 const USER = { username: "admin", password: "supersecret1" };
 
 async function open(page: Page, file: string) {
-  await page.goto("/settings/data");
+  await page.goto("/settings/wallet/import");
   await page.getByRole("tab", { name: "Bank / CSV / QIF / OFX" }).click();
   const panel = page.getByRole("tabpanel", { name: "Bank / CSV / QIF / OFX" });
   await panel.getByText("Generic CSV", { exact: true }).click();

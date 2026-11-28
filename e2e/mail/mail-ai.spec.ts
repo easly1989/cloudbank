@@ -69,7 +69,7 @@ test("without AI set up, only the patterns can read the mails", async ({
   page,
 }) => {
   await signIn(page);
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await openSource(card(page));
   await expect(
     card(page).getByRole("link", { name: "Settings › AI" }),
@@ -101,7 +101,7 @@ test("with the AI after the patterns, a mail no pattern reads is written by it",
   });
   expect(ai.ok()).toBe(true);
 
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await openSource(card(page));
   await card(page)
     .getByLabel("How mails are read", { exact: true })
@@ -139,7 +139,7 @@ test("a mail whose sender is not authenticated never reaches the AI", async ({
 }) => {
   await signIn(page);
   await deliver(page, false, "Negozio Falso");
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await card(page).getByRole("button", { name: "Check now" }).click();
   await showMails(card(page));
   await expect(

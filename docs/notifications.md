@@ -70,7 +70,7 @@ exception: it is switched on per device, and its boxes can be set before.
 | Bank consent ending | A bank's PSD2 consent ends within a week and needs renewing. Told once per consent, to every member of the wallet. | Bank sync |
 | A bank mailbox stops | CloudBank can no longer sign in to a [bank mail](bank-mails.md) mailbox, and it needs connecting again. | Bank mails |
 | Bank mails not recognised | Mails arrive that no pattern can read. | Bank mails |
-| Transactions to review | Transactions have waited on the Review page longer than you chose: 1, 3 (the default), 7 or 14 days, set under the event on any channel's page. Told once, and again only when more pass the wait. | Review |
+| Transactions to review | Transactions have waited on the Review page longer than you chose: 1, 3 (the default), 7 or 14 days, set on the Timing page (Settings › Notifications › Timing). Told once, and again only when more pass the wait. | Review |
 | Bills coming due | Scheduled transactions due in the next three days, or already late. | Schedules |
 | Large expense | An expense over the account's threshold. See [Money](#money). | The account's register |
 | Low balance | An account's balance today went below its threshold. | The account's register |

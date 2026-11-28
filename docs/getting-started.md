@@ -37,7 +37,7 @@ steps give it something to show.
 The dashboard offers a six-step tour of the essentials. Each page offers its own
 tour the first time you open it, and the **?** in a page's header plays it again
 whenever you want. If you would rather not be offered them, turn the offers off
-under **Settings → General**.
+under **Settings → Account**.
 
 ## 4. Add your accounts
 
@@ -155,7 +155,7 @@ look at first:
   [Backups, upgrades and restoring](backup.md).
 - **On your phone.** CloudBank installs as an app: see
   [Install as an app](../README.md#install-as-an-app-pwa).
-- **Other people.** An administrator adds them under **Settings → People**. Each
+- **Other people.** An administrator adds them under **Settings → Administration → People**. Each
   person signs in with their own account and keeps their own wallets.
 - **Your preferences.** Language, theme, date format and which balances you see
-  are under **Settings → General** and **Settings → Appearance**.
+  are under **Settings → Account** and **Settings → Personalization**.

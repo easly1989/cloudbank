@@ -18,7 +18,7 @@ type Notify func(ctx context.Context, userID int64, kind, ref, title, body, url 
 func (s *Service) SetNotify(n Notify) { s.notify = n }
 
 // alertsURL is where a notification about a mailbox leads.
-const alertsURL = "/settings/mail"
+const alertsURL = "/settings/connections/mail"
 
 // alertText is the wording of the notifications, one per language
 // (internal/locale's codes); a test asks every listed language for an entry.

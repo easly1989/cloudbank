@@ -16,7 +16,7 @@ without the same key loses those secrets, and they have to be set up again.
 
 | | Full database | Wallet backup | Copy of `/data` |
 | --- | --- | --- | --- |
-| **Where** | Settings → Import & export → Backup & integrity → **Download full database** (administrators) | Settings → Import & export → Backup & integrity → **Download backup** | Outside CloudBank, see below |
+| **Where** | Settings → Administration → **Full database backup** (administrators) | Settings → Wallet → Backup & integrity → **Download backup** | Outside CloudBank, see below |
 | **Holds** | Every wallet, person and setting | One wallet | Everything |
 | **Attachments** | No | Yes | Yes |
 | **Needs the app stopped** | No | No | Yes |
@@ -83,9 +83,9 @@ import or a rule applied to everything. It is not a replacement for the above.
 
 **Knowing when.** Once a day CloudBank looks up the latest published version
 and, when yours is older, tells admins: a card at the foot of the menu, and the
-same news in **Settings → About**. Its **How to update** button shows the steps
+same news in **Settings → Administration**. Its **How to update** button shows the steps
 below. Only the version number is fetched; nothing about you is sent. Turn it
-off in **Settings → About**, or for the whole server with
+off in **Settings → Administration**, or for the whole server with
 `CB_UPDATE_CHECK=false`.
 
 CloudBank does not update itself. Replacing its own container would need
@@ -122,7 +122,7 @@ together with the older image.
 
 ### One wallet, from a wallet backup
 
-In **Settings → Import & export → Backup & integrity**, choose the `.json` file
+In **Settings → Wallet → Backup & integrity**, choose the `.json` file
 under **Restore**. The restore creates a **new wallet**, and never overwrites an
 existing one. If the new wallet replaces an old one, delete the old one
 afterwards, under **Delete wallet** at the bottom of the same page.
@@ -162,6 +162,6 @@ the same `CB_SECRET_KEY`.
 
 ## Checking the data
 
-**Settings → Import & export → Backup & integrity → Run check** looks through
+**Settings → Wallet → Backup & integrity → Run check** looks through
 the current wallet for anything inconsistent. For example, a reconciled
 transaction dated in the future. Each finding comes with a suggested **Fix**.

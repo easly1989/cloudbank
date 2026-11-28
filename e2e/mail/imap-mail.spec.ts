@@ -62,7 +62,7 @@ test("a wrong password or a server off the internet saves nothing", async ({
   page,
 }) => {
   await signIn(page);
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   // bank-mail.spec.ts left its Outlook mailbox.
   await expect(cards(page)).toHaveCount(1);
 
@@ -96,7 +96,7 @@ test("the right app password connects the mailbox, which never gives it back", a
   page,
 }) => {
   await signIn(page);
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   const form = await fillForm(page, GUEST.password);
   await form.getByRole("button", { name: "Connect", exact: true }).click();
   await expect(
@@ -128,7 +128,7 @@ test("the mailbox reads what arrives", async ({ page }) => {
     },
   });
   expect(res.status()).toBe(204);
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await guestCard(page).getByRole("button", { name: "Check now" }).click();
   await expect(
     guestCard(page).getByRole("button", { name: "1 to review" }),
@@ -144,7 +144,7 @@ test("a new app password is checked before it replaces the old one", async ({
   page,
 }) => {
   await signIn(page);
-  await page.goto("/settings/mail");
+  await page.goto("/settings/connections/mail");
   await guestCard(page).getByRole("button", { name: "More" }).click();
   await page.getByRole("menuitem", { name: "New app password" }).click();
   const form = page.getByRole("dialog");

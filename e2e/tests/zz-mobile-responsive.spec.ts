@@ -109,16 +109,22 @@ for (const vp of VIEWPORTS) {
 // went blank (#519) broke on a list the server sent as null, which no test
 // had opened.
 const SETTINGS = [
-  "general",
-  "appearance",
+  "home",
+  "account",
+  "account/tokens",
+  "personalization",
   "wallet",
-  "security",
-  "bank-sync",
-  "mail",
+  "wallet/import",
+  "wallet/export",
+  "wallet/backup",
+  "connections",
+  "connections/bank-sync",
+  "connections/mail",
+  "notifications",
+  "notifications/timing",
   "ai",
-  "data",
-  "people",
-  "about",
+  "admin",
+  "admin/people",
 ].map((s) => `/settings/${s}`);
 
 test.describe("no page breaks", () => {
@@ -127,6 +133,8 @@ test.describe("no page breaks", () => {
   test("every page and settings section renders without an error", async ({
     page,
   }) => {
+    // About 35 screens in one test: past the 30 s default once Settings grew to 17 sections.
+    test.slow();
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(`${page.url()}: ${e.message}`));
     await ensureReady(page);

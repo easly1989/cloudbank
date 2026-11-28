@@ -672,7 +672,7 @@ export function TransactionsPage() {
                   </Menu.Item>
                 </Menu.Dropdown>
               </Menu>
-              <Button component={Link} to="/settings?tab=wallet&section=import" variant="default">
+              <Button component={Link} to="/settings/wallet/import" variant="default">
                 {t("register.import")}
               </Button>
               <Button

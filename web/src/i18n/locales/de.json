@@ -1783,14 +1783,14 @@
     "ssoUnavailable": "{{provider}} antwortet gerade nicht.",
     "recoveryPrompt": "Anmeldung klappt nicht?",
     "recoveryLink": "Wiederherstellungscode verwenden",
-    "recoveryHint": "Nutze einen der Codes, die du unter Einstellungen › Sicherheit gespeichert hast. Jeder Code funktioniert einmal.",
+    "recoveryHint": "Nutze einen der Codes, die du unter Einstellungen › Konto gespeichert hast. Jeder Code funktioniert einmal.",
     "recoveryCode": "Wiederherstellungscode",
     "recoverySubmit": "Mit dem Code anmelden",
     "recoveryInvalid": "Benutzername oder Wiederherstellungscode ist falsch",
     "backToSso": "Stattdessen mit {{provider}} anmelden",
     "recoveryLeft_one": "Du hast dich mit einem Wiederherstellungscode angemeldet. Du hast noch {{count}}.",
     "recoveryLeft_other": "Du hast dich mit einem Wiederherstellungscode angemeldet. Du hast noch {{count}}.",
-    "recoveryNoneLeft": "Du hast dich mit deinem letzten Wiederherstellungscode angemeldet. Erstelle neue unter Einstellungen › Sicherheit.",
+    "recoveryNoneLeft": "Du hast dich mit deinem letzten Wiederherstellungscode angemeldet. Erstelle neue unter Einstellungen › Konto.",
     "tooMany": "Zu viele Versuche. Versuch es in ein paar Minuten noch einmal.",
     "passkeySignIn": "Mit einem Passkey anmelden",
     "passkeyInvalid": "Dieser Passkey ist in CloudBank nicht registriert. Nimm einen anderen Passkey oder Benutzername und Passwort."
@@ -1909,7 +1909,6 @@
     "unread": "Ungelesen",
     "pushTitle": "Push auf diesem Gerät",
     "channels": "Kanäle",
-    "channelsHint": "Wo dich Benachrichtigungen erreichen. Öffne einen Kanal, um ihn zu verbinden und seine Ereignisse zu wählen.",
     "group": {
       "security": "Sicherheit",
       "problems": "Probleme",
@@ -2135,11 +2134,11 @@
       "inDigest": "In der Zusammenfassung",
       "always": "Immer sofort",
       "atDigest": "Zur Uhrzeit der Zusammenfassung",
-      "reviewAfter": "Melden nach",
       "reviewDays": "Tage Wartezeit",
       "days_one": "{{count}} Tag",
       "days_other": "{{count}} Tagen"
-    }
+    },
+    "ofTotal": "{{on}} von {{total}}"
   },
   "ai": {
     "hint": "Ein OpenAI-kompatibler Dienst oder ein Modell in deinem eigenen Netz (Ollama, LM Studio), das nur ein Administrator einrichten kann. Dein Schlüssel bleibt auf dem Server.",
@@ -2150,8 +2149,6 @@
     "apiKeyPlaceholder": "sk-…",
     "keySet": "Ein Schlüssel ist gespeichert. Gib einen neuen ein, um ihn zu ersetzen.",
     "keyNotSet": "Noch kein Schlüssel gespeichert.",
-    "save": "Speichern",
-    "saved": "KI-Einstellungen gespeichert",
     "suggestCategory": "Kategorie vorschlagen",
     "noSuggestion": "Kein Kategorievorschlag für diese Buchung.",
     "quickEntry": "Schnelleingabe",
@@ -2287,7 +2284,6 @@
     "ssoReserved": "Die erste Anmeldung ist der E-Mail-Adresse des Administrators vorbehalten. Melde dich mit diesem Konto an."
   },
   "admin": {
-    "title": "Benutzer",
     "create": "Benutzer hinzufügen",
     "createTitle": "Benutzer anlegen",
     "username": "Benutzername",
@@ -2313,7 +2309,7 @@
     "removePasskeysTitle": "Passkeys von {{username}} entfernen?",
     "removePasskeysBody_one": "{{username}} hat {{count}} Passkey. Danach geht die Anmeldung mit dem Passwort oder einem Wiederherstellungscode, und neue Passkeys lassen sich hinzufügen.",
     "removePasskeysBody_other": "{{username}} hat {{count}} Passkeys. Danach geht die Anmeldung mit dem Passwort oder einem Wiederherstellungscode, und neue Passkeys lassen sich hinzufügen.",
-    "ownPasskeys": "Deine eigenen Passkeys verwaltest du unter Einstellungen › Sicherheit."
+    "ownPasskeys": "Deine eigenen Passkeys verwaltest du unter Einstellungen › Konto."
   },
   "wallet": {
     "firstTitle": "Lege dein erstes Haushaltsbuch an",
@@ -2332,8 +2328,6 @@
     "create": "Haushaltsbuch anlegen",
     "switch": "Haushaltsbuch wechseln",
     "settings": "Einstellungen des Haushaltsbuchs",
-    "save": "Speichern",
-    "saved": "Haushaltsbuch aktualisiert",
     "dangerZone": "Gefahrenbereich",
     "deleteWarning": "Beim Löschen eines Haushaltsbuchs werden alle seine Daten endgültig entfernt. Das lässt sich nicht rückgängig machen.",
     "deleteConfirmLabel": "Gib „{{title}}“ ein, um das Löschen zu bestätigen.",
@@ -2792,8 +2786,7 @@
     },
     "tabs": {
       "xhb": "HomeBank-Datei",
-      "csv": "Bank / CSV / QIF / OFX / CAMT.053",
-      "export": "CSV-Export"
+      "csv": "Bank / CSV / QIF / OFX / CAMT.053"
     }
   },
   "importCsv": {
@@ -2898,13 +2891,9 @@
   },
   "settings": {
     "title": "Einstellungen",
-    "general": "Allgemein",
     "wallet": "Haushaltsbuch",
     "navigation": "Navigation",
     "apiTokens": "API-Tokens",
-    "section": "Bereich",
-    "sectionGeneral": "Allgemein",
-    "sectionImport": "Import und Export",
     "sectionBackup": "Sicherung und Prüfung",
     "nav": {
       "hint": "Passe die Seitenleiste an: Zieh Gruppen und Einträge, um sie neu anzuordnen, zieh einen Eintrag in eine andere Gruppe, blende Einträge ein oder aus, benenne Gruppen um oder füge welche hinzu und setze Trennlinien.",
@@ -2928,31 +2917,107 @@
     "people": "Personen",
     "back": "Zurück zu CloudBank",
     "appearance": "Darstellung",
-    "security": "Sicherheit",
-    "data": "Import und Export",
-    "generalHint": "Wie CloudBank für dich aussieht und sich verhält. Andere Personen auf diesem Server behalten ihre eigenen Einstellungen.",
-    "appearanceHint": "Design, Akzentfarbe und was dir die Seitenleiste und die Buchungen zeigen.",
-    "walletHint": "Einstellungen für dieses Haushaltsbuch und was darin ist.",
-    "securityHint": "Wer hereinkommt und womit.",
-    "dataHint": "Dein Geld in CloudBank hinein und heraus bekommen und eine Kopie aufbewahren.",
-    "peopleHint": "Wer sich anmelden darf, wird hier verwaltet, nicht im Hauptmenü.",
     "navigationHint": "Welche Seiten die Seitenleiste zeigt und in welcher Reihenfolge.",
     "signIn": "Anmeldung",
-    "signInHint": "Das Passwort, mit dem du dich anmeldest, und ein zweiter Schritt obendrauf.",
-    "signInHintSso": "Du meldest dich mit {{provider}} an, der sich um Passwörter und zweite Schritte kümmert.",
     "apiTokensHint": "Mit Tokens kann ein Skript oder eine andere App in deinem Namen handeln. Widerrufst du einen, funktioniert er sofort nicht mehr.",
-    "notificationsHint": "Wo CloudBank dich erreicht, wenn etwas dich braucht.",
     "ai": "KI",
-    "aiHint": "Dein eigener KI-Anbieter: was er tut, für welche Haushaltsbücher, und was ihm geschickt wurde.",
     "bankSyncHint": "Verbindungen zu deinen Banken, mit eigenem Status und Verlauf.",
     "importHint": "Kontoauszüge und die Regeln, die sie einordnen.",
     "backupHint": "Eine Kopie zum Wiederherstellen und eine Prüfung, ob die Datenbank in Ordnung ist.",
     "about": "Über",
-    "aboutHint": "Was dieses CloudBank ist und wo du seinen Code findest.",
-    "signInHintPasskeys": "Das Passwort, ein zweiter Schritt obendrauf und die Passkeys, die es ersetzen."
+    "sections": {
+      "home": "Start",
+      "account": "Konto",
+      "personalization": "Personalisierung",
+      "connections": "Verbindungen",
+      "admin": "Verwaltung"
+    },
+    "search": "Einstellung suchen",
+    "searchClear": "Suche leeren",
+    "searchTitle": "Suchergebnisse",
+    "searchNone": "Keine Einstellung passt zu „{{query}}“.",
+    "related": "Verwandte Einstellungen",
+    "roleAdmin": "Administrator",
+    "roleUser": "Benutzer",
+    "saved": "Gespeichert",
+    "required": "Darf nicht leer sein",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "download": "Herunterladen",
+    "open": "Öffnen",
+    "dataGroup": "Daten",
+    "layoutGroup": "Menü und Buchungsformular",
+    "connectionsGroup": "Wie Buchungen hereinkommen",
+    "notifRules": "Schwellen und Zeiten",
+    "adminAccess": "Wer sich anmeldet",
+    "adminServer": "Dieser Server",
+    "tokensCount_one": "{{count}} Token",
+    "tokensCount_other": "{{count}} Token",
+    "backupNever": "Nie",
+    "backupToday": "Heute",
+    "backupDays_one": "vor {{count}} Tag",
+    "backupDays_other": "vor {{count}} Tagen",
+    "home": {
+      "security": "Sicherheit",
+      "banks": "Banken",
+      "banksLinked_one": "{{count}} verbunden",
+      "banksLinked_other": "{{count}} verbunden",
+      "lastSync": "Letzter Abgleich",
+      "toReview_one": "{{count}} zu prüfen",
+      "toReview_other": "{{count}} zu prüfen",
+      "mailboxes_one": "{{count}} Postfach",
+      "mailboxes_other": "{{count}} Postfächer",
+      "data": "Daten",
+      "lastBackup": "Letzte Sicherung",
+      "issues_one": "{{count}} Problem",
+      "issues_other": "{{count}} Probleme",
+      "ok": "OK",
+      "licence": "Lizenz",
+      "updateOut": "Neue Version verfügbar",
+      "upToDate": "Aktuell",
+      "notChecked": "Nicht geprüft",
+      "recommended": "Empfohlen",
+      "backupTitle": "Eine Sicherung erstellen",
+      "backupNever": "Von hier wurde noch keine Sicherung dieses Haushaltsbuchs heruntergeladen.",
+      "backupOld_one": "Die letzte ist {{count}} Tag alt.",
+      "backupOld_other": "Die letzte ist {{count}} Tage alt.",
+      "mailTitle_one": "{{count}} Bankmail zu prüfen",
+      "mailTitle_other": "{{count}} Bankmails zu prüfen",
+      "mailHint": "Mails, aus denen CloudBank keine Buchung machen konnte.",
+      "twoFactorTitle": "Zwei-Faktor-Authentifizierung einschalten",
+      "nothing": "Gerade gibt es nichts zu tun."
+    },
+    "row": {
+      "languageHint": "Die Sprache der App und ihrer Benachrichtigungen.",
+      "dateHint": "Wie Daten in Kontoblättern und Berichten erscheinen.",
+      "startHint": "Die Seite, die sich nach der Anmeldung öffnet.",
+      "themeHint": "Hell, dunkel oder wie das Gerät.",
+      "accentHint": "Die Farbe von Schaltflächen, Links und der aktuellen Seite.",
+      "entryHint": "Welche Felder das Buchungsformular gleich zeigt und womit eine neue Buchung beginnt.",
+      "codesHint": "Der Weg hinein, wenn der Single-Sign-on-Anbieter nicht antwortet.",
+      "walletName": "Name und Inhaber",
+      "defaultAccountHint": "Das Konto, das jede neue Buchung vorschlägt.",
+      "import": "Importieren",
+      "export": "Exportieren",
+      "exportHint": "Eine CSV-Datei eines Kontos oder des ganzen Haushaltsbuchs.",
+      "digestHint": "Die gesammelten Ereignisse kommen einmal täglich zusammen.",
+      "reviewDays": "Erinnerung an Buchungen zu prüfen",
+      "reviewDaysHint": "Nach wie vielen Tagen Wartezeit sie dich erreicht, auf jedem Kanal.",
+      "baseUrlHint": "Die Adresse des OpenAI-kompatiblen Dienstes.",
+      "modelHint": "Das Modell, an das die Anfragen gehen.",
+      "apiKeyHint": "Bleibt auf dem Server und wird nie wieder angezeigt.",
+      "updates": "Updates",
+      "updatesHint": "Ob ein neueres CloudBank erschienen ist.",
+      "database": "Vollständige Datenbanksicherung",
+      "peopleHint": "Wer sich an diesem Server anmelden darf, und als was."
+    },
+    "actionOn": "{{action}}: {{row}}",
+    "breadcrumb": "Navigationspfad",
+    "sectionsMenu": "Bereiche: {{current}}",
+    "searchCount_one": "{{count}} Einstellung gefunden",
+    "searchCount_other": "{{count}} Einstellungen gefunden"
   },
   "apiTokens": {
-    "title": "Persönliche API-Tokens",
     "hint": "Greif aus Skripten und Integrationen ohne Browser auf die API zu, mit einem Header Authorization: Bearer <token>. Ein Lese-Token kann nur lesen; ein Lese- und Schreib-Token kann auch Änderungen vornehmen. Tokens handeln in deinem Namen – halte sie geheim.",
     "create": "Token erstellen",
     "cancel": "Abbrechen",
@@ -2994,8 +3059,6 @@
     "noDefaultAccount": "Keins",
     "smartAmount": "Intelligente Betragseingabe",
     "smartAmountHint": "Tippe 12.40 oder 12,40 – beides wird als Dezimalzahl gelesen (wie in HomeBank)",
-    "save": "Speichern",
-    "saved": "Einstellungen gespeichert",
     "sidebarAccounts": "Kontostände in der Seitenleiste",
     "sidebarAccountsHint": "Standardmäßig aus. Wähle bis zu {{max}} – es soll ein kurzer Blick bleiben, keine zweite Kontenliste.",
     "balances": "Salden in der Übersicht und über den Buchungen",
@@ -3005,7 +3068,7 @@
     "resetTours": "Rundgänge zurücksetzen",
     "toursReset": "Jede Seite bietet ihren Rundgang wieder an.",
     "showFooter": "Fußzeile anzeigen",
-    "showFooterHint": "Ausgeschaltet stehen Version, Lizenz und Links unter Einstellungen › Über."
+    "showFooterHint": "Ausgeschaltet stehen Version, Lizenz und Links unter Einstellungen › Start."
   },
   "tour": {
     "skip": "Überspringen",
@@ -3060,9 +3123,7 @@
     "restoreHint": "Wiederherstellen legt ein neues Haushaltsbuch an; es überschreibt nie dieses.",
     "restore": "Wiederherstellen",
     "restored": "Haushaltsbuch wiederhergestellt",
-    "adminLabel": "Administrator",
-    "hotHint": "Vollständiger Datenbank-Schnappschuss (alle Haushaltsbücher und Benutzer).",
-    "hotDownload": "Ganze Datenbank herunterladen"
+    "hotHint": "Vollständiger Datenbank-Schnappschuss (alle Haushaltsbücher und Benutzer)."
   },
   "attention": {
     "title_one": "Eine Sache braucht deine Aufmerksamkeit",
@@ -3140,7 +3201,7 @@
     "replay": "Rundgang dieser Seite",
     "skipAsk": {
       "title": "Auch die Rundgänge der anderen Seiten überspringen?",
-      "body": "Das ? oben auf jeder Seite zeigt ihren Rundgang weiterhin jederzeit. Die Angebote kannst du unter Einstellungen › Allgemein wieder einschalten.",
+      "body": "Das ? oben auf jeder Seite zeigt ihren Rundgang weiterhin jederzeit. Die Angebote kannst du unter Einstellungen › Konto wieder einschalten.",
       "onlyThis": "Nur diesen",
       "all": "Alle überspringen"
     },
@@ -3385,18 +3446,12 @@
   },
   "about": {
     "guideHint": "Wie du CloudBank nutzt, Schritt für Schritt",
-    "version": "Version {{version}}",
     "licence": "CloudBank ist freie Software unter der Lizenz <b>AGPL-3.0</b>: Du kannst den Code lesen, ändern und zu denselben Bedingungen weitergeben.",
     "source": "Quellcode",
     "apiDocsHint": "Die API dieser Installation",
     "support": "CloudBank unterstützen",
     "supportHint": "Buy Me a Coffee und die anderen Wege",
-    "homebankHint": "Die Desktop-App, deren Web-Portierung CloudBank ist",
-    "groupVersion": "Version",
-    "groupVersionHint": "Die Version auf diesem Server.",
-    "groupLicence": "Lizenz",
-    "groupLinks": "Links",
-    "groupLinksHint": "Anleitung, Quellcode und API."
+    "homebankHint": "Die Desktop-App, deren Web-Portierung CloudBank ist"
   },
   "pageError": {
     "title": "Diese Seite funktioniert nicht mehr",
@@ -3439,7 +3494,7 @@
     "howTitle": "CloudBank auf {{version}} aktualisieren",
     "howIntro": "CloudBank läuft in Docker, daher geschieht das Update auf dem Server: Neues Image holen und den Container neu starten. Deine Daten bleiben in ihrem Volume, und CloudBank bringt sie beim Start auf den neuesten Stand.",
     "howBackup": "1. Eine Sicherung erstellen",
-    "howBackupBody": "Lade unter <a>Einstellungen → Import und Export</a> eine Sicherung herunter. Eigentlich sollte nichts schiefgehen; sie ist für den Fall, dass doch.",
+    "howBackupBody": "Lade unter <a>Einstellungen → Haushaltsbuch → Sicherung und Prüfung</a> eine Sicherung herunter. Eigentlich sollte nichts schiefgehen; sie ist für den Fall, dass doch.",
     "howCompose": "2. Mit Docker Compose, im Ordner deiner Compose-Datei",
     "howRun": "Oder mit docker run",
     "howRunAfter": "Dann den alten Container stoppen und entfernen und mit denselben Optionen neu starten.",
@@ -3471,7 +3526,8 @@
     "submit": "Passwort ändern",
     "changed": "Passwort geändert. Andere Geräte müssen sich neu anmelden.",
     "wrongCurrent": "Das ist nicht dein aktuelles Passwort.",
-    "mismatch": "Die beiden Passwörter stimmen nicht überein."
+    "mismatch": "Die beiden Passwörter stimmen nicht überein.",
+    "change": "Ändern"
   },
   "errors": {
     "invalid_credentials": "Diese Anmeldedaten stimmen nicht.",

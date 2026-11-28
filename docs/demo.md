@@ -34,7 +34,7 @@ about into it.
 These are not bugs, so please don't report them as bugs:
 
 - **Bank sync talks to a pretend bank.** The demo reaches no real bank. Connect
-  _Demo Bank_ in Settings → Bank sync and each sync makes up a few days of card
+  _Demo Bank_ in Settings → Connections → Bank sync and each sync makes up a few days of card
   payments, which then run through reconciliation and the Review page like the
   real thing. SimpleFIN, Enable Banking and Pluggy are not offered.
 - **No attachments, no AI, no bank mails, no notifications outside the bell, no
@@ -42,8 +42,8 @@ These are not bugs, so please don't report them as bugs:
   a throwaway account should not have: stored files, your API key, your mailbox,
   a device, an address to write to or an identity provider.
 - **No restore, no administration.** You can download a backup or an `.xhb`
-  export of your demo wallet, but not restore one. There is no People section
-  and no admin account.
+  export of your demo wallet, but not restore one. Settings has no
+  Administration section and no AI section, and there is no admin account.
 - **Limits.** At most 3 wallets, 5,000 transactions and 1 MB per upload. Going
   past one says so ("That is as much as the demo allows").
 - **Getting in can be refused.** When too many demos are running, or several

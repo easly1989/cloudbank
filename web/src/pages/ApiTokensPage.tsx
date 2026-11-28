@@ -91,13 +91,11 @@ export function ApiTokensPage() {
 
   return (
     <Stack>
+      {/* The page's title names it (#800): only the hint and the action here. */}
       <Group justify="space-between" align="flex-start">
-        <div>
-          <Text fw={600}>{t("apiTokens.title")}</Text>
-          <Text size="sm" c="dimmed" maw={620}>
-            {t("apiTokens.hint")}
-          </Text>
-        </div>
+        <Text size="sm" c="dimmed" maw={620} style={{ flex: "1 1 300px" }}>
+          {t("apiTokens.hint")}
+        </Text>
         <Button leftSection={<IconPlus size={16} />} onClick={() => setCreateOpen(true)}>
           {t("apiTokens.create")}
         </Button>

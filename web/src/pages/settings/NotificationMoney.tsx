@@ -1,24 +1,9 @@
-import {
-  Anchor,
-  Box,
-  Card,
-  Checkbox,
-  Divider,
-  Group,
-  Stack,
-  Switch,
-  Text,
-  TextInput,
-  Title,
-  UnstyledButton,
-} from "@mantine/core";
+import { Box, Card, Checkbox, Divider, Group, Stack, Switch, Text, TextInput } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconChevronLeft, IconChevronRight, IconCoins } from "@tabler/icons-react";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 
 import {
   getNotificationSettings,
@@ -37,7 +22,7 @@ import { notifyError } from "../../notifyError";
 import { useWallet } from "../../wallet/WalletProvider";
 import { accountFormat } from "../accounts/accountList";
 import classes from "./NotificationsPages.module.css";
-import { SettingsGroup } from "./SettingsLayout";
+import { RelatedSettings, SettingRow, SettingsGroup } from "./SettingRow";
 
 // Settings › Notifications › Thresholds and wallets (#691): when and from
 // where the money events reach the reader. Everything here is the reader's
@@ -67,24 +52,7 @@ export function MoneyRow() {
       : t("notif.money.summaryNone"),
     off > 0 ? t("notif.money.summaryOff", { count: off }) : t("notif.money.summaryAll"),
   ].join(", ");
-  return (
-    <Card withBorder p={0}>
-      <UnstyledButton component={Link} to="/settings/notifications/money" className={classes.row}>
-        <Box className={classes.icon}>
-          <IconCoins size={16} />
-        </Box>
-        <Box style={{ flex: 1, minWidth: 0 }}>
-          <Text fz={14} fw={500}>
-            {t("notif.money.title")}
-          </Text>
-          <Text fz={13} c="dimmed" truncate>
-            {status}
-          </Text>
-        </Box>
-        <IconChevronRight size={16} className={classes.chevron} />
-      </UnstyledButton>
-    </Card>
-  );
+  return <SettingRow id="notif-money" description={status} />;
 }
 
 type Field = "largeOver" | "lowUnder";
@@ -347,24 +315,7 @@ export function NotificationMoneySection() {
   const { t } = useTranslation();
   const { wallets } = useWallet();
   return (
-    <Stack gap="xl">
-      <div>
-        <Anchor component={Link} to="/settings/notifications" size="sm">
-          <Group gap={4} component="span">
-            <IconChevronLeft size={14} />
-            {t("notif.title")}
-          </Group>
-        </Anchor>
-        <Group gap="xs" mt="xs" wrap="nowrap">
-          <IconCoins size={20} />
-          <Title order={3} fz={20}>
-            {t("notif.money.title")}
-          </Title>
-        </Group>
-        <Text fz={13} c="dimmed" mt={2}>
-          {t("notif.money.subtitle")}
-        </Text>
-      </div>
+    <>
       <SettingsGroup title={t("notif.money.thresholds")} hint={t("notif.money.thresholdsHint")}>
         {wallets.map((w) => (
           <WalletThresholds key={w.id} wallet={w} />
@@ -375,6 +326,7 @@ export function NotificationMoneySection() {
       </SettingsGroup>
       <Wallets />
       <Amounts />
-    </Stack>
+      <RelatedSettings ids={["notif-timing", "notif-inapp"]} />
+    </>
   );
 }

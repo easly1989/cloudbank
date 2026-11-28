@@ -566,7 +566,7 @@ export function TransactionForm({
   const customise = async () => {
     if (!(await mayDiscard())) return;
     onClose();
-    navigate("/settings/general#entry-fields");
+    navigate("/settings/personalization#entry-fields");
   };
 
   const saveTemplate = useMutation({

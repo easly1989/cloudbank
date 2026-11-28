@@ -7,7 +7,7 @@ the movement or bank sync brings it. When the bank's own row arrives, through
 [bank sync](bank-sync.md), it is merged into the one the mail wrote instead of
 being added twice.
 
-It lives in **Settings → Bank mails**, and each mailbox belongs to a wallet. The
+It lives in **Settings → Connections → Bank mails**, and each mailbox belongs to a wallet. The
 [demo](demo.md) has it switched off: it would need your mailbox.
 
 - [Before you start](#before-you-start)

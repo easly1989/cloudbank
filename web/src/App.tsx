@@ -13,6 +13,7 @@ import { OnboardingTourProvider } from "./onboarding/TourProvider";
 // eager; every other page is code-split into its own chunk (loaded on demand)
 // to keep the initial bundle small.
 import { LoginPage } from "./pages/LoginPage";
+import { MOVED_SECTIONS } from "./pages/settings/legacy";
 import { SetupPage } from "./pages/SetupPage";
 import { WalletProvider, useWallet } from "./wallet/WalletProvider";
 
@@ -74,20 +75,24 @@ const LegacySettingsRedirect = lazy(() =>
     default: m.LegacySettingsRedirect,
   })),
 );
-const GeneralSection = settingsSection("GeneralSection");
-const AppearanceSection = settingsSection("AppearanceSection");
+const HomeSection = settingsSection("HomeSection");
+const AccountSection = settingsSection("AccountSection");
+const ApiTokensSection = settingsSection("ApiTokensSection");
+const PersonalizationSection = settingsSection("PersonalizationSection");
 const WalletSection = settingsSection("WalletSection");
-const SecuritySection = settingsSection("SecuritySection");
+const WalletImportSection = settingsSection("WalletImportSection");
+const WalletExportSection = settingsSection("WalletExportSection");
+const WalletBackupSection = settingsSection("WalletBackupSection");
+const ConnectionsSection = settingsSection("ConnectionsSection");
+const BankSyncSection = settingsSection("BankSyncSection");
+const MailSection = settingsSection("MailSection");
 const NotificationsSection = settingsSection("NotificationsSection");
 const NotificationChannelSection = settingsSection("NotificationChannelSection");
 const NotificationMoneySection = settingsSection("NotificationMoneySection");
 const NotificationTimingSection = settingsSection("NotificationTimingSection");
-const BankSyncSection = settingsSection("BankSyncSection");
-const MailSection = settingsSection("MailSection");
 const AiSection = settingsSection("AiSection");
-const DataSection = settingsSection("DataSection");
+const AdminSection = settingsSection("AdminSection");
 const PeopleSection = settingsSection("PeopleSection");
-const AboutSection = settingsSection("AboutSection");
 const CurrenciesPage = lazy(() =>
   import("./pages/CurrenciesPage").then((m) => ({ default: m.CurrenciesPage })),
 );
@@ -194,15 +199,18 @@ function AuthenticatedApp() {
           {/* The bank connections live in Settings now (#504); the old address
               still leads there. The callback keeps its path: it is the
               redirect URL people registered with Enable Banking. */}
-          <Route path="bank-sync" element={<Navigate to="/settings/bank-sync" replace />} />
+          <Route
+            path="bank-sync"
+            element={<Navigate to="/settings/connections/bank-sync" replace />}
+          />
           <Route path="bank-sync/callback" element={<BankSyncCallback />} />
           <Route path="review" element={<ReviewPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="insights" element={<InsightsPage />} />
           <Route path="wallet" element={<Navigate to="/settings/wallet" replace />} />
-          <Route path="admin/users" element={<Navigate to="/settings/people" replace />} />
+          <Route path="admin/users" element={<Navigate to="/settings/admin/people" replace />} />
           <Route path="wallet/new" element={<CreateWalletPage />} />
-          <Route path="import" element={<Navigate to="/settings/data" replace />} />
+          <Route path="import" element={<Navigate to="/settings/wallet/import" replace />} />
           <Route path="currencies" element={<CurrenciesPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
@@ -216,24 +224,37 @@ function AuthenticatedApp() {
             </Suspense>
           }
         >
+          {/* /settings itself, and the oldest bookmarks' ?tab=. */}
           <Route index element={<LegacySettingsRedirect />} />
-          <Route path="general" element={<GeneralSection />} />
-          <Route path="appearance" element={<AppearanceSection />} />
+          <Route path="home" element={<HomeSection />} />
+          <Route path="account" element={<AccountSection />} />
+          {!__DEMO__ && <Route path="account/tokens" element={<ApiTokensSection />} />}
+          <Route path="personalization" element={<PersonalizationSection />} />
           <Route path="wallet" element={<WalletSection />} />
-          <Route path="security" element={<SecuritySection />} />
+          <Route path="wallet/import" element={<WalletImportSection />} />
+          <Route path="wallet/export" element={<WalletExportSection />} />
+          <Route path="wallet/backup" element={<WalletBackupSection />} />
+          <Route path="connections" element={<ConnectionsSection />} />
+          <Route path="connections/bank-sync" element={<BankSyncSection />} />
+          {!__DEMO__ && <Route path="connections/mail" element={<MailSection />} />}
           <Route path="notifications" element={<NotificationsSection />} />
           <Route path="notifications/money" element={<NotificationMoneySection />} />
-          <Route path="notifications/timing" element={<NotificationTimingSection />} />
-          <Route path="notifications/:channel" element={<NotificationChannelSection />} />
-          <Route path="bank-sync" element={<BankSyncSection />} />
-          {!__DEMO__ && <Route path="mail" element={<MailSection />} />}
+          {/* The demo has only the bell: no timing, no other channel. */}
+          {!__DEMO__ && (
+            <Route path="notifications/timing" element={<NotificationTimingSection />} />
+          )}
+          <Route
+            path={__DEMO__ ? "notifications/inapp" : "notifications/:channel"}
+            element={<NotificationChannelSection />}
+          />
           {!__DEMO__ && <Route path="ai" element={<AiSection />} />}
-          {/* One section until the bank mails split it in three. */}
-          <Route path="integrations" element={<Navigate to="/settings/bank-sync" replace />} />
-          <Route path="data" element={<DataSection />} />
-          <Route path="people" element={<PeopleSection />} />
-          <Route path="about" element={<AboutSection />} />
-          <Route path="*" element={<Navigate to="/settings/general" replace />} />
+          <Route path="admin" element={<AdminSection />} />
+          <Route path="admin/people" element={<PeopleSection />} />
+          {/* The eleven sections before #800: each lands where its content went. */}
+          {Object.keys(MOVED_SECTIONS).map((from) => (
+            <Route key={from} path={from} element={<LegacySettingsRedirect from={from} />} />
+          ))}
+          <Route path="*" element={<Navigate to="/settings/home" replace />} />
         </Route>
       </Routes>
     </OnboardingTourProvider>
