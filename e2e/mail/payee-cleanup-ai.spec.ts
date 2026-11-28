@@ -1,3 +1,4 @@
+import { uniqueWord } from "./word";
 import { expect, test } from "@playwright/test";
 
 // The payee cleanup (#708) on the real server, the groups asked of the pretend
@@ -35,7 +36,7 @@ test("Clean up names merges raw names into the clean payee; Undo puts them back"
     await get<{ id: number; name: string }[]>("/accounts")
   ).find((a) => a.name === "Checking")!;
   // A word of its own, so a rerun meets none of the last run's payees.
-  const s = Date.now().toString(36);
+  const s = uniqueWord();
   const S = s.toUpperCase();
   const raw1 = await post<{ id: number }>("/payees", {
     name: `KAFFEE ${S} *2K3`,

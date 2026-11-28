@@ -1,3 +1,4 @@
+import { uniqueWord } from "./word";
 import { expect, test } from "@playwright/test";
 
 // Ask your data (#704) on the real server, asked of the pretend AI provider in
@@ -36,7 +37,7 @@ test("a question about the wallet is answered from CloudBank's numbers", async (
     ).json()) as { id: number; name: string }[]
   ).find((a) => a.name === "Checking")!;
   // A category of its own, so a rerun counts only its own transactions.
-  const name = `Dining ${Date.now().toString(36)}`;
+  const name = `Dining ${uniqueWord()}`;
   const cat = await post<{ id: number }>("/categories", { name });
   for (const amount of [-1250, -2000]) {
     await post("/transactions", {

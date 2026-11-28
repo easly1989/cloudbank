@@ -1,3 +1,4 @@
+import { uniqueWord } from "./word";
 import { expect, test } from "@playwright/test";
 
 // Review's bulk categorisation (#706) on the real server, the category asked of
@@ -34,11 +35,7 @@ test("Propose categories fills payee and category in; Confirm files the ticked r
   const checking = (
     await get<{ id: number; name: string }[]>("/accounts")
   ).find((a) => a.name === "Checking")!;
-  // A word of its own, so a rerun meets none of the last run's rows. Letters
-  // only: an "x" next to digits reads as a masked card number and is hidden.
-  const s = Date.now()
-    .toString(36)
-    .replace(/\d/g, (d) => "ABCDEFGHIJ"[Number(d)]);
+  const s = uniqueWord();
   const tea = await post<{ id: number }>("/payees", { name: `Tea house ${s}` });
   const gym = await post<{ id: number }>("/payees", {
     name: `Climbing gym ${s}`,
