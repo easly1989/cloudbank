@@ -134,6 +134,22 @@ describe("PageErrorBoundary", () => {
     expect(await screen.findByText("Spent 120 €")).toBeInTheDocument();
   });
 
+  it("calls a page chunk that failed to load a broken page, not missing data", () => {
+    function ChunkGone(): never {
+      throw new TypeError("Failed to fetch dynamically imported module: /assets/Budget.js");
+    }
+    render(
+      <MantineProvider>
+        <MemoryRouter>
+          <PageErrorBoundary>
+            <ChunkGone />
+          </PageErrorBoundary>
+        </MemoryRouter>
+      </MantineProvider>,
+    );
+    expect(screen.getByText("This page stopped working")).toBeInTheDocument();
+  });
+
   it("renders the page untouched when nothing throws", () => {
     renderAt("/fine");
 

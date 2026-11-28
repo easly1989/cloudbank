@@ -10,6 +10,12 @@ import { ApiError } from "../api/core";
 // payee, an amount), so nothing is filled in on their behalf.
 const REPORT_URL = `${SOURCE_URL}/issues/new`;
 
+// What fetch() throws when the request never got an answer, in Chromium,
+// Firefox and Safari. A page chunk that failed to load ("Failed to fetch
+// dynamically imported module") is the page breaking, not its data.
+const NETWORK_FAILURE =
+  /^(Failed to fetch|NetworkError when attempting to fetch resource\.|Load failed)$/;
+
 function describe(error: unknown): string {
   if (error instanceof Error) return `${error.name}: ${error.message}`;
   return String(error);
@@ -42,7 +48,7 @@ export function PageError({ error, fullPage = false }: { error: unknown; fullPag
               not the page breaking: say which. */}
           {t(
             error instanceof ApiError ||
-              (error instanceof TypeError && /fetch|network|load failed/i.test(error.message))
+              (error instanceof TypeError && NETWORK_FAILURE.test(error.message))
               ? "pageError.loadTitle"
               : "pageError.title",
           )}
