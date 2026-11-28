@@ -48,10 +48,13 @@ export function sessionLost(qc: QueryClient, err: unknown) {
   if (!(err instanceof ApiError) || err.status !== 401 || err.code !== "unauthorized") return;
   // Already signed out, or never signed in: the sign-in page is showing.
   if (qc.getQueryData(["me"]) == null) return;
-  sessionStorage.setItem(
-    AFTER_LOGIN,
-    JSON.stringify({ path: location.pathname + location.search, at: Date.now() }),
-  );
+  // A way back already asked for (signing in again to add a passkey) wins.
+  if (!sessionStorage.getItem(AFTER_LOGIN)) {
+    sessionStorage.setItem(
+      AFTER_LOGIN,
+      JSON.stringify({ path: location.pathname + location.search, at: Date.now() }),
+    );
+  }
   qc.removeQueries({ predicate: (q) => !SIGNED_OUT_ROOTS.has(String(q.queryKey[0])) });
   qc.setQueryData(["me"], null);
 }
@@ -61,12 +64,14 @@ export function sessionLost(qc: QueryClient, err: unknown) {
  * instead of what the page draws from nothing: a zero total, an empty register.
  * Only a failure counts: a 4xx answers the request (a feature turned off, a
  * list for admins only) and its component deals with it, and a 401 signs out.
- * A failed refetch keeps the data already on screen. Queries in the shell, and
- * those that show their own error, opt out with `throwOnError: false`.
+ * A 502 is CloudBank saying a service it calls (a mailbox, a bank, GitHub) did
+ * not answer, which the component shows as that service's state. A failed
+ * refetch keeps the data already on screen. Queries in the shell, and those
+ * that show their own error, opt out with `throwOnError: false`.
  */
 export function failsThePage(err: unknown, query: Query): boolean {
   if (query.state.data !== undefined) return false;
-  return !(err instanceof ApiError) || err.status >= 500;
+  return !(err instanceof ApiError) || (err.status >= 500 && err.status !== 502);
 }
 
 export const makeQueryClient = () => {

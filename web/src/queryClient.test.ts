@@ -9,7 +9,7 @@ describe("failsThePage", () => {
 
   it("fails the page on a server or network error before any data", () => {
     expect(failsThePage(new ApiError(500, "boom"), query(undefined))).toBe(true);
-    expect(failsThePage(new ApiError(502, "bad gateway"), query(undefined))).toBe(true);
+    expect(failsThePage(new ApiError(503, "unavailable"), query(undefined))).toBe(true);
     expect(failsThePage(new TypeError("Failed to fetch"), query(undefined))).toBe(true);
   });
 
@@ -18,7 +18,8 @@ describe("failsThePage", () => {
   });
 
   it("leaves 4xx answers to their components, and a 401 to sign-in", () => {
-    for (const s of [400, 401, 403, 404, 409, 429]) {
+    // 502: a service CloudBank calls (a mailbox, a bank) did not answer.
+    for (const s of [400, 401, 403, 404, 409, 429, 502]) {
       expect(failsThePage(new ApiError(s, "x"), query(undefined))).toBe(false);
     }
   });
@@ -59,6 +60,12 @@ describe("sessionLost", () => {
       expect(qc.getQueryData(["register", 7])).toEqual([{ id: 1 }]);
     }
     expect(sessionStorage.getItem(AFTER_LOGIN)).toBeNull();
+  });
+
+  it("keeps a way back already asked for", () => {
+    sessionStorage.setItem(AFTER_LOGIN, JSON.stringify({ path: "/settings/account", at: 1 }));
+    sessionLost(signedIn(), new ApiError(401, "authentication required", "unauthorized"));
+    expect(JSON.parse(sessionStorage.getItem(AFTER_LOGIN)!).path).toBe("/settings/account");
   });
 
   it("does nothing when nobody is signed in", () => {

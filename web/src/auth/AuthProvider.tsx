@@ -27,6 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // A save in another tab reaches this one as it happens (#576).
   useEffect(() => followOtherTabs(qc), [qc]);
   const meQuery = useQuery({
+    // Above every page's error boundary: its failure must not blank the app (queryClient.ts).
+    throwOnError: false,
     queryKey: ["me"],
     queryFn: async (): Promise<User | null> => {
       try {
@@ -72,7 +74,14 @@ export function useLogin() {
  *  form at all (#620). Read by the login and setup pages before anyone is in. */
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuthConfig() {
-  return useQuery({ queryKey: ["authConfig"], queryFn: getAuthConfig, staleTime: Infinity });
+  return useQuery({
+    queryKey: ["authConfig"],
+    queryFn: getAuthConfig,
+    staleTime: Infinity,
+    // Read by the sign-in page and by Settings' own frame, outside any page
+    // boundary (queryClient.ts); both cope with no data.
+    throwOnError: false,
+  });
 }
 
 /** SSO-only servers: sign in with a username and one access recovery code. */

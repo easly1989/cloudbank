@@ -123,7 +123,12 @@ test("a dashboard widget whose data fails says so in its own card", async ({
   // Once the data comes, Try again brings the widget back.
   await page.unrouteAll();
   const retry = page.getByRole("button", { name: "Try again" });
-  while ((await retry.count()) > 0) await retry.first().click();
+  // One press per failed card; a card can re-render under the click, so press
+  // until none is left.
+  await expect(async () => {
+    if ((await retry.count()) > 0) await retry.first().click({ timeout: 1000 });
+    await expect(retry).toHaveCount(0, { timeout: 1000 });
+  }).toPass();
   await expect(
     page.getByText("This widget could not load its data."),
   ).toHaveCount(0);

@@ -96,6 +96,8 @@ export function ReviewPage() {
   const walletId = currentWallet?.id ?? 0;
 
   const review = useQuery({
+    // Shows its own error, so a failure does not replace the page (queryClient.ts).
+    throwOnError: false,
     queryKey: ["review", walletId],
     queryFn: () => getTransactionReview(walletId),
     enabled: walletId > 0,

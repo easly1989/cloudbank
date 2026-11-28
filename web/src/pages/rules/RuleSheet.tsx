@@ -141,6 +141,8 @@ export function RuleSheet({
   const typed = JSON.stringify({ ...body, id: editing?.id });
   const [probe] = useDebouncedValue(typed, 300);
   const preview = useQuery({
+    // Shows its own error, so a failure does not replace the page (queryClient.ts).
+    throwOnError: false,
     queryKey: ["assignment-test", walletId, probe],
     queryFn: () => testAssignment(walletId, JSON.parse(probe) as AssignmentInput & { id?: number }),
     enabled: opened && pattern.trim() !== "",

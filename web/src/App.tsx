@@ -117,6 +117,8 @@ function ToSetup() {
 
 export function App() {
   const setupStatus = useQuery({
+    // Read before any boundary is set up; a failure falls through to sign-in, as before.
+    throwOnError: false,
     queryKey: ["setup-status"],
     queryFn: getSetupStatus,
     retry: false,
