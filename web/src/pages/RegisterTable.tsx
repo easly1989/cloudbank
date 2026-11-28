@@ -79,6 +79,7 @@ import {
 } from "./registerColumns";
 import {
   BAND_INSET,
+  ROW_ACCENT,
   BAND_PADDING,
   CATEGORY_DOT,
   ROW_ACTION,
@@ -589,6 +590,23 @@ export function RegisterTable({
     ROW_GAP * (tracks.length - 1) +
     BAND_INSET * 2;
 
+  // The width the ledger's own vertical scrollbar takes from its rows: 0 where
+  // scrollbars float over the content (phones, macOS), about 15px on Windows.
+  // The rows get what is left, so the card makes room for it, and the bands
+  // above the rows leave the same room at their end to keep the columns in
+  // line. Without it a row at its narrowest overflowed the ledger by that much,
+  // and the ledger drew a second sideways scrollbar above the card's own.
+  const [gutter, setGutter] = useState(0);
+  useEffect(() => {
+    const ledger = parentRef.current;
+    if (!ledger) return;
+    const check = () => setGutter(ledger.offsetWidth - ledger.clientWidth);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(ledger);
+    return () => ro.disconnect();
+  }, [isEmpty]);
+
   // The pinned cells' width with their gaps and the row's inset.
   const pinWidth =
     tracks.slice(-1 - pinned.size).reduce((sum, track) => sum + trackFloor(track) + ROW_GAP, 0) +
@@ -970,7 +988,7 @@ export function RegisterTable({
             minWidth: 0,
             // How far the pinned cells travel, and how wide they are with their
             // gaps and the row's inset (app.css, .cb-pin).
-            ["--cb-row-min" as string]: `${minRowWidth}px`,
+            ["--cb-row-min" as string]: `${minRowWidth + gutter}px`,
             ["--cb-pin-width" as string]: `${pinWidth}px`,
             // The width a reconciled line's text keeps to (see markLine).
             containerType: "inline-size",
@@ -980,7 +998,7 @@ export function RegisterTable({
             borderRadius: "var(--mantine-radius-md)",
           }}
         >
-          <Box style={{ minWidth: minRowWidth }}>
+          <Box style={{ minWidth: minRowWidth + gutter }}>
             {/* What the filter is hiding is said inside the ledger, because it is
               a fact about these rows and not a page-level announcement. */}
             {notice}
@@ -996,7 +1014,7 @@ export function RegisterTable({
                 display: "grid",
                 gridTemplateColumns: gridTemplate,
                 gap: ROW_GAP,
-                padding: `${BAND_PADDING.header}px ${BAND_INSET}px`,
+                padding: `${BAND_PADDING.header}px ${BAND_INSET + gutter}px ${BAND_PADDING.header}px ${BAND_INSET}px`,
                 background: "var(--cb-band-header)",
                 ["--cb-pin-bg" as string]: "var(--cb-band-header)",
                 ["--cb-pin-pad" as string]: `${BAND_PADDING.header}px`,
@@ -1052,7 +1070,7 @@ export function RegisterTable({
                   display: "grid",
                   gridTemplateColumns: gridTemplate,
                   gap: ROW_GAP,
-                  padding: `${BAND_PADDING.newEntry}px ${BAND_INSET}px`,
+                  padding: `${BAND_PADDING.newEntry}px ${BAND_INSET + gutter}px ${BAND_PADDING.newEntry}px ${BAND_INSET}px`,
                   background: "var(--cb-band-new)",
                   ["--cb-pin-bg" as string]: "var(--cb-band-new)",
                   ["--cb-pin-pad" as string]: `${BAND_PADDING.newEntry}px`,
@@ -1167,13 +1185,15 @@ export function RegisterTable({
                           gridTemplateColumns: gridTemplate,
                           gap: ROW_GAP,
                           alignItems: "center",
-                          padding: `0 ${BAND_INSET}px`,
                           // A left accent marks future (scheduled) rows; transparent on
-                          // past/today rows keeps the content aligned.
+                          // past/today rows keeps the content aligned. It comes out of
+                          // the inset, so the cells line up with the header's and a
+                          // row at its narrowest still fits the ledger.
+                          padding: `0 ${BAND_INSET}px 0 ${BAND_INSET - ROW_ACCENT}px`,
                           borderLeft:
                             r.date > todayStr
-                              ? "3px solid var(--mantine-color-blue-5)"
-                              : "3px solid transparent",
+                              ? `${ROW_ACCENT}px solid var(--mantine-color-blue-5)`
+                              : `${ROW_ACCENT}px solid transparent`,
                           background: tint,
                           // The pinned cells lay the same tint over the card.
                           ["--cb-row-tint" as string]: tint,
