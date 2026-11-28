@@ -53,8 +53,11 @@ These apply to every number below unless a line says otherwise.
 - **Server timings:** p50 and p95 over 30 runs after one warm-up, with gzip as
   the SPA gets it.
 - **Noise floor:** on this machine, about 1 call in 20 to even the cheapest
-  endpoint takes 11–24 ms instead of under 1 ms (Windows timer granularity).
-  A p95 under about 25 ms means "fast". Differences of ±15% are noise.
+  endpoint takes 11–24 ms instead of under 1 ms. The cause is unconfirmed
+  (Windows timer granularity is the likely one). A p95 under about 25 ms
+  means "fast". Differences of ±15% are noise.
+- **Single runs:** the page-to-page navigation and the idle tab figures come
+  from one run each. Everything else is a median or a percentile.
 
 ## Results: the server
 
@@ -65,20 +68,34 @@ Times are p50 / p95 in ms. Sizes are KB, raw / gzip, on the 100k wallet.
 | `dashboard` (all time, 12 months) | 2.6 / 18 | **255 / 274** | 3 / 1 | sidebar header, dashboard (both on every page) |
 | `dashboard` (all time, 0 months) | 2.6 / 3 | **393 / 445** | 9 / 2 | dashboard widget |
 | `dashboard` (default range) | 2.4 / 12 | **289 / 315** | 8 / 2 | dashboard widget |
-| `accounts` | 1.8 / 17 | 76 / 79 | 3 / 1 | every page |
+| `accounts` | 1.8 / 17 | 76 / 79 | 3 / 1 | dashboard, register, scheduled |
 | `transactions/review` | 1.6 / 16 | **246 / 271** | 112 / 14 | dashboard, only for its counts |
 | `transactions/register` (first account) | 3.5 / 18 | **920 / 1005** | **19,432 / 2,076** | register |
 | `transactions?limit=100` | 5.4 / 18 | 8.7 / 27 | 31 / 4 | (not used by the register page) |
 | `budgets/report` (month) | 1.8 / 23 | 95 / 99 | 0 / 0 | dashboard, budget |
-| reports: statistics, trend, balance (10 years) | 1–5 / ≤25 | 123–196 / 127–233 | ≤295 / ≤108 | reports |
+| reports: statistics, trend, balance (10 years) | 1–5 / ≤25 | 123–196 / 127–233 | ≤295 / ≤108 | reports (it opens on two one-month statistics calls, about 200 ms each on 100k, in the browser) |
 | `search` | 2.4 / 16 | 184 / 204 | 34 / 4 | register search |
 | `export/csv` | 2.8 / 19 | 905 / 1016 | 2,911 / 641 | export (not on a page load) |
 | `integrity` | 1.3 / 23 | 163 / 206 | 123 / 53 | settings (not on a page load) |
-| frame: `setup/status`, `auth/me`, `wallets`, `notifications`, `version` | ≤0.7 / ≤17 | ≤0.8 / ≤24 | <1 | every page |
+| frame: `setup/status`, `auth/me`, `wallets`, `notifications`, `version` | ≤0.7 / ≤17 | ≤0.8 / ≤24 | <1 | every page (with `admin/updates`, `ai/settings`, `notifications/settings`) |
 | bills, goals, schedules, templates, payees, categories, tags, vehicles, budgets, currencies | ≤1.3 / ≤23 | ≤1.3 / ≤27 | ≤12 / ≤2 | various |
 
-The 100k numbers match September's within noise: the register is still about
-1 s and 18–19 MB, and the reports are still 120–210 ms.
+**Against September.** `sqlite-load/bench.py`, unchanged, run on the same
+100k wallet gives the register 888 ms (September: 1,045) and the export
+678 ms (837). Some calls are slower than in September:
+
+| Endpoint | September | Now |
+|---|---:|---:|
+| `dashboard`, no parameters | 183 ms | 247 ms |
+| `budgets/report` | 67 ms | 108 ms |
+| statistics by category, 10 years | 209 ms | 255 ms |
+| review | 259 ms | 286 ms |
+
+That is +10% to +60%, past the ±15% noise for three of them. Either these
+endpoints have regressed since September, or the other session's load on the
+machine slowed them (unconfirmed). Rerun on an idle machine before treating
+it as a regression. The SPA's own `dashboard` calls carry other parameters
+and cost 255–393 ms.
 
 **No conditional responses.** No API response carries an `ETag`,
 `Last-Modified` or `Cache-Control` header, and a GET with `If-None-Match`
@@ -115,8 +132,15 @@ calls in all, on the 100k wallet.
 | `transactions/review` | 303 MB | 356 MB | 2.1 s | 8.2 s |
 | `accounts` | 294 MB | 370 MB | 0.4 s | 1.6 s |
 
-Each register response is built whole in memory as about 19 MB of JSON, and
-then gzipped. 25 of them at once need about 2.5 GB. The read pool has no
+Each register response holds all 57k rows in memory, and `writeJSON`
+(`internal/httpapi/router.go`) encodes them with `json.Encoder`, which
+builds the whole 19 MB encoding before it writes any of it. 25 of them at
+once need about 2.5 GB.
+
+One person is a different case. A single client calling every endpoint in
+turn, the register and the export included, peaks at 169 MB (100k) and
+154 MB (demo). The 25-client figures are a stress case, not a typical
+self-hosted load. The read pool has no
 connection limit (`internal/store/store.go`), so 25 requests means 25 SQLite
 connections running together on 12 cores.
 
@@ -179,16 +203,23 @@ Other measurements, on the same pages:
 - **"The dashboard fires many requests": confirmed.** A dashboard load makes
   25–28 API calls. Four of them are the `dashboard` endpoint: two identical
   calls and two other variants.
-  - The query client's `staleTime` is 0, so the sidebar header's query and the
-    dashboard's identical query both run. The comment in `SidebarHead.tsx`
-    says it "costs nothing", but it runs twice.
+  - The query client sets no `staleTime`, so it is 0 for these queries
+    (only `setup-status` in `App.tsx` sets one).
+  - The sidebar header's query ends before the dashboard page mounts with the
+    same key, and the call runs again. The likely cause is that a stale query
+    refetches on mount (unconfirmed). The comment in `SidebarHead.tsx` says
+    it "costs nothing", but it runs twice.
   - On 100k the four calls take about 1.2 s of server time. The full review
     list, 246 ms, is loaded only to count rows needing a category.
   - Requests run in parallel, so one person waits 630 ms. Ten at once wait 4 s.
 - **"The SPA bundle is too big": partly.** Before any page chunk loads, the
-  shell is 1,520 KB raw and 422 KB gzipped. It includes dnd-kit, which only
-  the dashboard editor needs, and a 144 KB shared chunk. ECharts adds
-  194 KB gzipped to the dashboard and reports.
+  shell is 1,520 KB raw and 422 KB gzipped.
+  - It includes dnd-kit (20 KB gzipped), which only `NavLayoutEditor.tsx`
+    imports, and a 144 KB shared chunk.
+  - ECharts adds 194 KB gzipped to the dashboard and reports.
+  - On top of that, the service worker precaches 118 files, 3.1 MB raw, on
+    the first visit. The cold runs blocked it, so a real first visit
+    downloads more than the table shows, though after the page has loaded.
   - On a slow phone, first paint takes about 4.0 s on every page, cold. That
     is the assets: the first API call only starts after 3.2 s.
   - Warm, first paint takes 0.9 s.
@@ -196,9 +227,9 @@ Other measurements, on the same pages:
 
 Two smaller findings:
 
-- **Three round trips before any data.** Every load runs
-  `setup/status` → `auth/me` → `wallets` before a wallet query can start.
-  That is about 0.5 s on the slow phone profile.
+- **Two round trips before any data.** Every load runs `setup/status` and
+  `auth/me` together, then `wallets`, and only then a wallet query can start.
+  That is about 0.35 s on the slow phone profile.
 - **On the demo, `/api/v1/ai/settings` answers 404** (AI is off there), and
   TanStack's retry asks again 1 s later on every page.
 
@@ -209,7 +240,7 @@ conditions above and the same scripts.
 
 | What | Now | Target |
 |---|---:|---:|
-| p95 of every API call a page load makes | 1,005 ms (register), 445 ms (dashboard) | **≤ 150 ms** |
+| p95 of every API call a page load makes | 1,005 ms (register), 445 ms (dashboard), about 200 ms (reports' statistics) | **≤ 150 ms** |
 | p95 of exports and integrity (not on a page load) | 1,016 ms | ≤ 1,000 ms (unchanged) |
 | API calls per dashboard load | 27 | **≤ 12**, none repeated |
 | Page ready, desktop, cold / warm, every main page | up to 1,699 / 1,420 ms | **≤ 800 / 500 ms** |
@@ -217,6 +248,7 @@ conditions above and the same scripts.
 | First paint, slow phone, cold | 4.0 s | ≤ 3 s |
 | Shell JS + CSS, gzipped | 422 KB | ≤ 300 KB |
 | Idle open tab, per minute | 3.2 MB (register) | ≤ 50 KB, with unchanged data answering 304 |
+| Server memory, one person using every page | 169 MB | ≤ 256 MB |
 | Server memory, 25 people loading pages at once | 1.4 GB (dashboard), 2.6 GB (register) | **≤ 512 MB** |
 | Server memory, idle after use | 100 MB, 629 MB after load | ≤ 150 MB |
 
@@ -238,6 +270,9 @@ with `docker stats` before it becomes the image's documented limit.
    unchanged `If-None-Match` then answers 304 before any query runs.
    - Polling becomes almost free for the server and the network.
    - It also helps the register before 1 lands.
+   - The revision alone is not enough for everything: balances "today",
+     the dashboard's ranges and the budget month move with the date, so
+     their ETag must also carry the date.
 3. **Stop the client refetching what it already has.**
    - Give `queryClient.ts` a `staleTime`: 30 s, the polling interval. The
      sidebar and the dashboard then share one `dashboard` call, and moving
@@ -252,21 +287,27 @@ with `docker stats` before it becomes the image's documented limit.
      both compute every balance from all rows, every time.
    - One person's dashboard load should go from 630 ms to about 250 ms, and
      10 people at once from 4 s to about 1.5 s.
+   - Check the September comparison above on an idle machine first: if
+     `dashboard` and `budgets/report` regressed, find the commit.
 5. **Bound the server's memory.**
    - Cap the read pool at about the number of CPUs, so 25 requests queue
      instead of opening 25 connections.
    - Set `GOMEMLIMIT` in the image, from a container limit, so Go collects
      before it grows.
    - Needed for the 512 MB target whatever else lands.
-6. **Trim the shell.**
-   - Load dnd-kit with the dashboard editor.
+6. **Make the reports' statistics cheaper.** A one-month statistics call
+   costs about 200 ms on 100k, about the same as ten years, and the Reports
+   page opens on two of them. This one is needed for the 150 ms target.
+   Start by looking at its query plan.
+7. **Trim the shell.**
+   - Load dnd-kit with the navigation layout editor.
    - Find what the 144 KB shared chunk holds.
    - Import ECharts through `echarts/core` with only the charts used.
    - First paint on a slow phone, cold, should go from 4 s to about 3 s. It
      does nothing for warm loads or desktop.
-7. **One bootstrap call** for setup status, user and wallets, instead of three
-   in a row. It saves about 0.5 s on a slow phone, cold.
-8. **Demo only:** don't ask for `ai/settings` when AI is off, or don't retry a
+8. **One bootstrap call** for setup status, user and wallets, instead of two
+   steps in a row. It saves about 0.35 s on a slow phone, cold.
+9. **Demo only:** don't ask for `ai/settings` when AI is off, or don't retry a
    404. It removes one request per page on the demo.
 
 Rejected or not needed, by these numbers:
@@ -275,6 +316,18 @@ Rejected or not needed, by these numbers:
   work.
 - **Server-side caching of results.** The wallet revision of fix 2 gives most
   of the gain with none of the invalidation risk.
+
+## Verdict
+
+**The engine is not what makes CloudBank slow. What the app asks of it is.**
+The fixes fall into three groups:
+- sending less: the register window and conditional GETs;
+- asking less often: `staleTime`, and one revision poll instead of 14;
+- asking once: one dashboard call per load.
+
+These fixes would bring every main page under 0.8 s cold on desktop and under
+5 s on a slow phone, on a 100k wallet. A memory bound keeps the single
+process safe under concurrency. Fixes 1–3 give most of the gain.
 
 ## Running it again
 
