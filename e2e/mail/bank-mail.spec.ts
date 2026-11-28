@@ -219,7 +219,7 @@ test("the bell says the mails were not recognised, and opens the mailbox", async
   // Once a day per mailbox: how many depends on how the listener heard them.
   await expect(note).toContainText(ADDRESS);
   await note.click();
-  await expect(page).toHaveURL(/\/settings\/mail$/);
+  await expect(page).toHaveURL(/\/settings\/connections\/mail$/);
   // Read now: the badge is gone, and the bell in the Settings header agrees.
   await expect(
     page.getByRole("button", { name: "Notifications", exact: true }),

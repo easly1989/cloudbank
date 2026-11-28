@@ -63,7 +63,7 @@ test("a sign-in from a new client reaches the bell and the mail, and opens Secur
     .toBe(1);
 
   await note.click();
-  await expect(page).toHaveURL(/\/settings\/security$/);
+  await expect(page).toHaveURL(/\/settings\/account$/);
 
   // The browser the earlier specs used is no new device.
   await signIn(page);
