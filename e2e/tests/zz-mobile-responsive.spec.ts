@@ -133,6 +133,8 @@ test.describe("no page breaks", () => {
   test("every page and settings section renders without an error", async ({
     page,
   }) => {
+    // About 35 screens in one test: past the 30 s default once Settings grew to 17 sections.
+    test.slow();
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(`${page.url()}: ${e.message}`));
     await ensureReady(page);
