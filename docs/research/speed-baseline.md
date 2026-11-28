@@ -97,8 +97,9 @@ machine slowed them (unconfirmed). Rerun on an idle machine before treating
 it as a regression. The SPA's own `dashboard` calls carry other parameters
 and cost 255–393 ms.
 
-**No conditional responses.** No API response carries an `ETag`,
-`Last-Modified` or `Cache-Control` header, and a GET with `If-None-Match`
+**No conditional responses.** None of the JSON GETs carries an `ETag`,
+`Last-Modified` or `Cache-Control` header (only the ICS feed sets
+`Cache-Control: private, no-store`), and a GET with `If-None-Match`
 answers 200 with the full body. The SPA shell and `sw.js` are `no-cache` but
 also carry no validator, so they are downloaded in full every time (2 KB, not
 a cost). Hashed assets are `immutable` and are never asked for twice.
@@ -194,8 +195,8 @@ Other measurements, on the same pages:
     19 MB.
   - It is also the biggest memory cost on the server (2.5 GB under 25 clients).
   - The page fetches it again every 30 s while it stays open.
-- **"No 304 responses": confirmed.** No API response carries a validator, so
-  nothing can answer 304.
+- **"No 304 responses": confirmed.** None of the JSON GETs carries a
+  validator, so nothing can answer 304.
   - This matters because of the polling. `queryClient.ts` refetches 14 "live"
     query roots every 30 s: register, accounts, dashboard, review and others.
   - Every poll runs the full query and sends the full body, even when nothing
@@ -302,9 +303,13 @@ with `docker stats` before it becomes the image's documented limit.
 7. **Trim the shell.**
    - Load dnd-kit with the navigation layout editor.
    - Find what the 144 KB shared chunk holds.
-   - Import ECharts through `echarts/core` with only the charts used.
-   - First paint on a slow phone, cold, should go from 4 s to about 3 s. It
-     does nothing for warm loads or desktop.
+   - ECharts already comes in through `echarts/core` with only the bar,
+     line and pie charts (`Chart.tsx`), and it is not in the shell. It still
+     adds 194 KB gzipped to the dashboard and reports, because every chart
+     widget imports `Chart` directly. Loading `Chart` lazily would let the
+     dashboard draw its figures before the chart code arrives (not measured).
+   - First paint on a slow phone, cold, should go from 4 s to about 3 s with
+     the shell trimmed. It does nothing for warm loads or desktop.
 8. **One bootstrap call** for setup status, user and wallets, instead of two
    steps in a row. It saves about 0.35 s on a slow phone, cold.
 9. **Demo only:** don't ask for `ai/settings` when AI is off, or don't retry a

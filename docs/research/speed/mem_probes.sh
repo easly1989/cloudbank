@@ -8,6 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 PORT=8097
 LOAD=../sqlite-load/out
+mkdir -p out
 : > out/mem-probes.jsonl
 for key in dashboard-12m dashboard-0m dashboard-default accounts review register; do
   CB_DATA_DIR=$LOAD/data CB_SECURE_COOKIES=false CB_ADDR=127.0.0.1:$PORT "$LOAD/cloudbank.exe" > out/probe-server.log 2>&1 &
