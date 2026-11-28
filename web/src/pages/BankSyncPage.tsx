@@ -235,6 +235,8 @@ function ConnectionCard({
     enabled: walletId > 0,
   });
   const remote = useQuery({
+    // Shows its own error, so a failure does not replace the page (queryClient.ts).
+    throwOnError: false,
     queryKey: ["bankRemote", walletId, connection.id],
     queryFn: () => listBankRemoteAccounts(walletId, connection.id),
     enabled: walletId > 0,
@@ -1204,6 +1206,8 @@ function EnableBankingConnectModal({
   const [name, setName] = useState("");
 
   const banks = useQuery({
+    // Shows its own error, so a failure does not replace the page (queryClient.ts).
+    throwOnError: false,
     queryKey: ["ebBanks", walletId, country],
     queryFn: () => listEnableBankingBanks(walletId, country),
     enabled: opened && walletId > 0 && country.length >= 2,

@@ -2663,6 +2663,8 @@
     }
   },
   "dashboard": {
+    "widgetError": "Questo widget non è riuscito a caricare i dati.",
+    "widgetRetry": "Riprova",
     "title": "Cruscotto",
     "yourAccounts": "I tuoi conti",
     "noAccounts": "Nessun conto da riepilogare.",
@@ -3455,6 +3457,7 @@
   },
   "pageError": {
     "title": "Questa pagina si è interrotta",
+    "loadTitle": "Questa pagina non è riuscita a caricare i dati",
     "body": "I tuoi dati non sono stati toccati e il resto di CloudBank funziona. Ricaricare di solito basta.",
     "reload": "Ricarica la pagina",
     "home": "Vai al cruscotto",

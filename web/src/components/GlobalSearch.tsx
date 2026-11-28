@@ -65,6 +65,8 @@ export function GlobalSearch({
   useHotkeys([["mod+K", () => open()]]);
 
   const accountsQuery = useQuery({
+    // Part of the shell: its failure must not take the page down (queryClient.ts).
+    throwOnError: false,
     queryKey: ["accounts", walletId],
     queryFn: () => listAccounts(walletId),
     enabled: walletId > 0 && opened,
@@ -79,6 +81,8 @@ export function GlobalSearch({
   }, [accountsQuery.data]);
 
   const searchQuery = useQuery({
+    // Shows its own error, so a failure does not replace the page (queryClient.ts).
+    throwOnError: false,
     queryKey: ["search", walletId, q],
     queryFn: () => searchTransactions(walletId, q, { limit: 50 }),
     enabled: walletId > 0 && opened && q.length >= MIN_CHARS,

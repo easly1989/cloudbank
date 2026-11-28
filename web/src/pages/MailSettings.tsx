@@ -843,6 +843,8 @@ function MicrosoftSignIn({
   });
   const flow = start.data;
   const poll = useQuery({
+    // Shows its own error, so a failure does not replace the page (queryClient.ts).
+    throwOnError: false,
     queryKey: ["mailSignInPoll", flow?.flowId],
     queryFn: () => pollMicrosoftMail(walletId, flow?.flowId ?? ""),
     enabled: !!flow,

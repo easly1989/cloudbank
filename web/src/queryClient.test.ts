@@ -2,7 +2,27 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { AFTER_LOGIN } from "./afterLogin";
 import { ApiError } from "./api/core";
-import { LIVE_REFETCH_MS, makeQueryClient, sessionLost } from "./queryClient";
+import { failsThePage, LIVE_REFETCH_MS, makeQueryClient, sessionLost } from "./queryClient";
+
+describe("failsThePage", () => {
+  const query = (data: unknown) => ({ state: { data } }) as Parameters<typeof failsThePage>[1];
+
+  it("fails the page on a server or network error before any data", () => {
+    expect(failsThePage(new ApiError(500, "boom"), query(undefined))).toBe(true);
+    expect(failsThePage(new ApiError(502, "bad gateway"), query(undefined))).toBe(true);
+    expect(failsThePage(new TypeError("Failed to fetch"), query(undefined))).toBe(true);
+  });
+
+  it("keeps what is on screen when a refetch fails", () => {
+    expect(failsThePage(new ApiError(500, "boom"), query([]))).toBe(false);
+  });
+
+  it("leaves 4xx answers to their components, and a 401 to sign-in", () => {
+    for (const s of [400, 401, 403, 404, 409, 429]) {
+      expect(failsThePage(new ApiError(s, "x"), query(undefined))).toBe(false);
+    }
+  });
+});
 
 describe("sessionLost", () => {
   const signedIn = () => {

@@ -2663,6 +2663,8 @@
     }
   },
   "dashboard": {
+    "widgetError": "Dieses Widget konnte seine Daten nicht laden.",
+    "widgetRetry": "Erneut versuchen",
     "title": "Übersicht",
     "yourAccounts": "Deine Konten",
     "noAccounts": "Noch keine Konten zum Zusammenfassen.",
@@ -3454,6 +3456,7 @@
     "homebankHint": "Die Desktop-App, deren Web-Portierung CloudBank ist"
   },
   "pageError": {
+    "loadTitle": "Diese Seite konnte ihre Daten nicht laden",
     "title": "Diese Seite funktioniert nicht mehr",
     "body": "Deine Daten sind unberührt, und der Rest von CloudBank funktioniert. Neu laden hilft meistens.",
     "reload": "Seite neu laden",

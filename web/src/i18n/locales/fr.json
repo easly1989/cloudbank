@@ -2663,6 +2663,8 @@
     }
   },
   "dashboard": {
+    "widgetError": "Ce widget n’a pas pu charger ses données.",
+    "widgetRetry": "Réessayer",
     "title": "Tableau de bord",
     "yourAccounts": "Vos comptes",
     "noAccounts": "Aucun compte à résumer pour l’instant.",
@@ -3454,6 +3456,7 @@
     "homebankHint": "L’application de bureau dont CloudBank est la version web"
   },
   "pageError": {
+    "loadTitle": "Cette page n’a pas pu charger ses données",
     "title": "Cette page a cessé de fonctionner",
     "body": "Vos données n’ont pas été touchées et le reste de CloudBank fonctionne. Recharger la page règle généralement le problème.",
     "reload": "Recharger la page",

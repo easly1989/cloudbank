@@ -294,6 +294,8 @@ function MergeChoices({
   // The register leaves out tags and the import ref: each row is read whole,
   // keeping the register's names for its payee and category.
   const whole = useQuery({
+    // Shows its own error, so a failure does not replace the page (queryClient.ts).
+    throwOnError: false,
     queryKey: ["merge-rows", walletId, rows[0].id, rows[1].id],
     queryFn: async () => {
       const [a, b] = await Promise.all(rows.map((r) => getTransaction(walletId, r.id)));

@@ -1,3 +1,4 @@
+import { useQueryErrorResetBoundary } from "@tanstack/react-query";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 import { PageError } from "./PageError";
@@ -15,13 +16,20 @@ type Props = {
 type State = { error: unknown; failed: boolean };
 
 /**
- * Catches an error thrown while a page renders and shows {@link PageError} in
- * its place, instead of React unmounting the whole app to a blank page (#518).
- *
- * A class because React still has no hook for this: only a component with
- * `getDerivedStateFromError` can catch a render error below it.
+ * Catches an error thrown while a page renders, or a query that failed before
+ * it had data (queryClient.ts, #804), and shows {@link PageError} in its place,
+ * instead of React unmounting the whole app to a blank page (#518).
  */
-export class PageErrorBoundary extends Component<Props, State> {
+export function PageErrorBoundary(props: Props) {
+  // Clearing the error also lets the failed queries below run again, rather
+  // than throw their old error straight back.
+  const { reset } = useQueryErrorResetBoundary();
+  return <Boundary {...props} onReset={reset} />;
+}
+
+/** A class because React still has no hook for this: only a component with
+ *  `getDerivedStateFromError` can catch a render error below it. */
+class Boundary extends Component<Props & { onReset: () => void }, State> {
   state: State = { error: null, failed: false };
 
   static getDerivedStateFromError(error: unknown): State {
@@ -36,6 +44,7 @@ export class PageErrorBoundary extends Component<Props, State> {
 
   componentDidUpdate(prev: Props) {
     if (this.state.failed && prev.resetKey !== this.props.resetKey) {
+      this.props.onReset();
       this.setState({ error: null, failed: false });
     }
   }

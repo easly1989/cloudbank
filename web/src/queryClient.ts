@@ -1,4 +1,4 @@
-import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
+import { MutationCache, QueryCache, QueryClient, type Query } from "@tanstack/react-query";
 
 import { AFTER_LOGIN } from "./afterLogin";
 import { ApiError } from "./api/core";
@@ -56,6 +56,19 @@ export function sessionLost(qc: QueryClient, err: unknown) {
   qc.setQueryData(["me"], null);
 }
 
+/**
+ * A query that fails before it has any data shows its page's error (#804),
+ * instead of what the page draws from nothing: a zero total, an empty register.
+ * Only a failure counts: a 4xx answers the request (a feature turned off, a
+ * list for admins only) and its component deals with it, and a 401 signs out.
+ * A failed refetch keeps the data already on screen. Queries in the shell, and
+ * those that show their own error, opt out with `throwOnError: false`.
+ */
+export function failsThePage(err: unknown, query: Query): boolean {
+  if (query.state.data !== undefined) return false;
+  return !(err instanceof ApiError) || err.status >= 500;
+}
+
 export const makeQueryClient = () => {
   const qc: QueryClient = new QueryClient({
     queryCache: new QueryCache({ onError: (err) => sessionLost(qc, err) }),
@@ -63,8 +76,8 @@ export const makeQueryClient = () => {
     defaultOptions: {
       queries: {
         // No session is not a hiccup: asking again only delays the sign-in.
-        retry: (failures, err) =>
-          failures < 1 && !(err instanceof ApiError && err.status === 401),
+        retry: (failures, err) => failures < 1 && !(err instanceof ApiError && err.status === 401),
+        throwOnError: failsThePage,
         refetchOnWindowFocus: true,
         refetchOnReconnect: true,
         refetchInterval: (query) =>

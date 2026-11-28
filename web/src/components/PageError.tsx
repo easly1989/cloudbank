@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { SOURCE_URL } from "../aboutLinks";
+import { ApiError } from "../api/core";
 
 // A blank issue, on purpose: the error text can carry the reader's own data (a
 // payee, an amount), so nothing is filled in on their behalf.
@@ -37,7 +38,14 @@ export function PageError({ error, fullPage = false }: { error: unknown; fullPag
           <IconExclamationMark size={24} stroke={2.5} />
         </ThemeIcon>
         <Title order={2} fz={22} fw={700} mt={16} mb={6}>
-          {t("pageError.title")}
+          {/* A query that failed (queryClient.ts) is the data not arriving,
+              not the page breaking: say which. */}
+          {t(
+            error instanceof ApiError ||
+              (error instanceof TypeError && /fetch|network|load failed/i.test(error.message))
+              ? "pageError.loadTitle"
+              : "pageError.title",
+          )}
         </Title>
         <Text c="dimmed">{t("pageError.body")}</Text>
         <Code block mt={16} fz={12.5} style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>

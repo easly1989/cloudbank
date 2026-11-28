@@ -35,6 +35,7 @@ import { UnusualBoxFor } from "../components/UnusualBox";
 import { PageHeader } from "../components/PageHeader";
 import { OverviewFigures } from "../components/dashboard/OverviewFigures";
 import { pickBalances } from "../components/dashboard/overviewFigureModel";
+import { WidgetErrorBoundary } from "../components/dashboard/WidgetErrorBoundary";
 import { NeedsAttention } from "../components/dashboard/NeedsAttention";
 import {
   COLUMNS,
@@ -469,7 +470,11 @@ export function DashboardPage() {
       {/* Above the grid and outside it: the widgets are the reader's to arrange,
         but an overdue bill is not a preference. Something you can remove is
         something the one person who removes it will then miss. */}
-      <NeedsAttention walletId={walletId} />
+      {/* It reads four lists; one of them failing says so here, and the rest
+          of the dashboard stays (#804). */}
+      <WidgetErrorBoundary>
+        <NeedsAttention walletId={walletId} />
+      </WidgetErrorBoundary>
       <BudgetProposalBox walletId={walletId} short />
       <SavingsProposalBox walletId={walletId} short />
       <UnusualBoxFor walletId={walletId} short />
@@ -490,7 +495,7 @@ export function DashboardPage() {
             onResize={(w) => gridApi.current?.resizeWidget(item.id, w)}
             onRemove={() => removeWidget(item.id)}
           >
-            {renderWidget(item)}
+            <WidgetErrorBoundary>{renderWidget(item)}</WidgetErrorBoundary>
           </WidgetFrame>
         )}
       />
