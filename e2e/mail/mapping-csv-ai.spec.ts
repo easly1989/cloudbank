@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { expect, test, type Page } from "@playwright/test";
+import { uniqueWord } from "./word";
 
 // The CSV column mapping (#709) on the real server, asked of the pretend AI
 // provider in ../server/cmd/e2e-mail: the map step of an unknown CSV comes
@@ -70,7 +71,7 @@ test("an unknown CSV comes mapped by the AI, and the next one by memory", async 
     ).used;
 
   // A column name of its own, so a rerun meets no mapping the last one kept.
-  const s = Date.now().toString(36);
+  const s = uniqueWord();
   // And a word in the rows the model must never see.
   const secret = `Q${randomUUID().slice(0, 6)}`;
   const file =
