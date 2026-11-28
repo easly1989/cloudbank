@@ -6,6 +6,67 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
+## [3.14.0] — 2026-11-28
+
+Sign in with a passkey, set up single sign-on from Settings, and a Settings
+screen laid out like the Windows 11 app, with eight sections, search and
+autosave. Bank mails can read several folders per mailbox, and the register
+can merge two rows, duplicate a transfer and select rows with Ctrl and Shift.
+
+### Added
+
+- **Passkeys.** *Sign in with a passkey* on the login page, and the browser
+  offers saved passkeys in the username field. A passkey replaces both the
+  password and the two-factor code, because the device has already checked
+  you with a fingerprint, a face or a PIN. Up to 10 per user, added and
+  removed in Settings › Account; adding one needs a sign-in in the last 10
+  minutes and sends a new-device alert. Not offered when sign-in is SSO only.
+- **Single sign-on from Settings.** An administrator sets OIDC in Settings ›
+  Administration › Single sign-on; a save takes effect without a restart.
+  `CB_OIDC_*` environment variables still win when set, and SSO-only mode
+  stays an environment setting.
+- **Several sources per mailbox.** A bank mailbox reads up to 5 folders, each
+  with its own name, patterns and way of reading (patterns, AI or both).
+- **Merge two rows** in the register into one, choosing each field, and
+  keeping the bank's reference.
+- **Duplicate a transfer** from its row menu: both accounts, the date, the
+  amounts and the memo come filled in.
+- **Ctrl and Shift click** select several rows in the register.
+- **One wide column** in the register: Payee, Category or Note can take the
+  free width (Columns panel, ↔).
+- **IBAN and BIC** on bank, checking and savings accounts, optional and
+  checked, with a copy button.
+- **Snooze a row from a mail** on Review until a day you pick.
+- **Create a payee** from a Bank sync review row by typing its name.
+
+### Changed
+
+- **Settings** follows the Windows 11 Settings app: eight sections (Home,
+  Account, Personalization, Wallet, Connections, Notifications, AI,
+  Administration) instead of eleven, one row per setting, a search over every
+  setting, and changes saved as you make them. Home shows security,
+  connections and the last backup. Old `/settings/...` links and `?tab=`
+  addresses still open the right page.
+- **Latest mails** on each mailbox start folded, behind a "read / to review"
+  badge.
+- Long memos wrap and grow in the transaction sheet instead of being cut.
+- HomeBank 5.10.4 is the tracked release; its file format did not change.
+
+### Fixed
+
+- **Behind a sign-in proxy** (Authelia and similar), a lapsed proxy session
+  now sends the browser to the proxy's login instead of failing until the
+  cache was cleared.
+- The import tab names CAMT.053, which the importer already read; the
+  sidebar's collapse toggle stays at the foot when the sidebar is a rail; the
+  register reaches the bottom of the window when the footer is hidden; and
+  Budget's "today" label no longer makes the page wider than the window.
+
+### Security
+
+- Built with **Go 1.27.4** (GO-2026-6859 in `net/http`), plus the November
+  Go and web dependency updates.
+
 ## [3.13.0] — 2026-11-03
 
 A maintenance release: three dependency updates for security, and two tests
