@@ -204,11 +204,14 @@ export function DefaultAccountRow() {
         <Select
           w={SELECT_W}
           aria-label={t("preferences.defaultAccount")}
-          placeholder={t("preferences.noDefaultAccount")}
-          data={accounts.map((a) => ({ value: String(a.id), label: a.name }))}
-          value={prefs.defaultAccountId ? String(prefs.defaultAccountId) : null}
+          // "None" is a choice like the others, written as one, not a blank.
+          data={[
+            { value: "", label: t("preferences.noDefaultAccount") },
+            ...accounts.map((a) => ({ value: String(a.id), label: a.name })),
+          ]}
+          value={prefs.defaultAccountId ? String(prefs.defaultAccountId) : ""}
           onChange={(v) => save({ preferences: { defaultAccountId: v ? Number(v) : undefined } })}
-          clearable
+          allowDeselect={false}
           searchable
         />
       }

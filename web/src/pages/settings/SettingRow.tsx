@@ -10,7 +10,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 
 import { HINT_VALUES, useRowContext } from "./rowContext";
-import { ROW_BY_ID, rowHref, rowVisible } from "./sections";
+import { panelId, ROW_BY_ID, rowHref, rowVisible, SETTINGS_SECTIONS } from "./sections";
 import classes from "./Settings.module.css";
 
 /**
@@ -61,7 +61,9 @@ export function SettingRow({
 }) {
   const { t } = useTranslation();
   const { hash } = useLocation();
-  const subId = useId();
+  const autoId = useId();
+  // A row's panel has a known id, so a control outside it can name it.
+  const subId = id ? panelId(id) : autoId;
   const def = id ? ROW_BY_ID.get(id) : undefined;
   const RowIcon = icon ?? def?.icon;
   const name = title ?? (def ? t(def.titleKey) : undefined);
@@ -84,7 +86,7 @@ export function SettingRow({
   const chevron = expander && !controlled && (
     <UnstyledButton
       aria-expanded={open}
-      aria-controls={open ? subId : undefined}
+      aria-controls={subId}
       aria-label={typeof name === "string" ? name : undefined}
       onClick={(e) => {
         e.stopPropagation();
@@ -210,8 +212,9 @@ export function RelatedSettings({ ids }: { ids: string[] }) {
           <SettingRow
             key={r.id}
             icon={r.icon}
-            title={t(r.titleKey)}
-            description=""
+            // Where it is, so a name met twice on a page still says which.
+            title={`${t(SETTINGS_SECTIONS.find((s) => s.id === r.section)!.labelKey)} › ${t(r.titleKey)}`}
+            description={t(r.hintKey, HINT_VALUES)}
             to={rowHref(r)}
           />
         ))}

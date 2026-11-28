@@ -3010,7 +3010,12 @@
       "updatesHint": "Si une version plus récente de CloudBank est sortie.",
       "database": "Sauvegarde complète de la base",
       "peopleHint": "Qui peut se connecter à ce serveur, et avec quel rôle."
-    }
+    },
+    "actionOn": "{{action}} : {{row}}",
+    "breadcrumb": "Fil d’Ariane",
+    "sectionsMenu": "Sections : {{current}}",
+    "searchCount_one": "{{count}} paramètre trouvé",
+    "searchCount_other": "{{count}} paramètres trouvés"
   },
   "apiTokens": {
     "hint": "Accédez à l’API depuis des scripts et des intégrations sans navigateur, avec un en-tête Authorization: Bearer <token>. Un jeton en lecture ne peut que lire ; un jeton en lecture-écriture peut aussi modifier. Les jetons agissent en votre nom — gardez-les secrets.",

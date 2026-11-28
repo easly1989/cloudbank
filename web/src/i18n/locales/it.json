@@ -3010,7 +3010,12 @@
       "updatesHint": "Se è uscito un CloudBank più recente.",
       "database": "Backup completo del database",
       "peopleHint": "Chi può entrare in questo server, e con quale ruolo."
-    }
+    },
+    "actionOn": "{{action}}: {{row}}",
+    "breadcrumb": "Percorso",
+    "sectionsMenu": "Sezioni: {{current}}",
+    "searchCount_one": "{{count}} impostazione trovata",
+    "searchCount_other": "{{count}} impostazioni trovate"
   },
   "apiTokens": {
     "hint": "Accedi all'API da script e integrazioni senza browser, usando l'header Authorization: Bearer <token>. Un token di sola lettura può solo leggere; uno in lettura-scrittura può anche modificare. I token agiscono come te — tienili segreti.",

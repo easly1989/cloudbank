@@ -1,4 +1,11 @@
-import { Group, Loader, TextInput, UnstyledButton } from "@mantine/core";
+import {
+  Group,
+  Loader,
+  TextInput,
+  UnstyledButton,
+  VisuallyHidden,
+  useMantineColorScheme,
+} from "@mantine/core";
 import { IconArrowLeft, IconChevronDown, IconSearch, IconX } from "@tabler/icons-react";
 import { Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,6 +27,7 @@ import {
   rowHref,
   searchRows,
   visibleSections,
+  type SettingRowDef,
   type SettingsSection,
 } from "./sections";
 import classes from "./Settings.module.css";
@@ -34,6 +42,8 @@ const PAGE_TOURS: Partial<Record<string, TourId>> = {
   "connections/mail": "mail",
 };
 
+const SECTIONS_ID = "settings-sections";
+
 /**
  * Settings is its own screen, not a page inside the app (#800, after Windows
  * 11 Settings): the app's navigation is replaced by the settings nav, with
@@ -45,10 +55,21 @@ const PAGE_TOURS: Partial<Record<string, TourId>> = {
  * someone, and `#row` scrolls to a row and marks it.
  */
 export function SettingsLayout() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { currentWallet } = useWallet();
   const { pathname, hash, key } = useLocation();
+  const { setColorScheme } = useMantineColorScheme();
+
+  // Settings is outside the app's layout, which applies the stored language
+  // and theme; opened straight from a link it has to apply them itself.
+  useEffect(() => {
+    if (user?.locale && user.locale !== i18n.resolvedLanguage) {
+      void i18n.changeLanguage(user.locale);
+    }
+    if (user?.theme) setColorScheme(user.theme as "auto" | "light" | "dark");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.locale, user?.theme]);
   const ctx = useRowContext();
   const sections = visibleSections(ctx);
   const [query, setQuery] = useState("");
@@ -98,6 +119,9 @@ export function SettingsLayout() {
         ? label(current)
         : "";
   const searching = query.trim() !== "";
+  const found = searching
+    ? searchRows(query, ctx, (r) => `${t(r.titleKey)} ${t(r.hintKey, HINT_VALUES)}`)
+    : [];
 
   return (
     <div className={classes.screen}>
@@ -152,6 +176,8 @@ export function SettingsLayout() {
             hiddenFrom="sm"
             className={classes.navItem}
             aria-expanded={menuOpen}
+            aria-controls={SECTIONS_ID}
+            aria-label={t("settings.sectionsMenu", { current: label(current) })}
             onClick={() => setMenuOpen((o) => !o)}
             data-current
             style={{ background: "var(--cb-ledger-surface)" }}
@@ -165,7 +191,11 @@ export function SettingsLayout() {
             />
           </UnstyledButton>
         )}
-        <div className={classes.sections} data-open={menuOpen || !current || undefined}>
+        <div
+          id={SECTIONS_ID}
+          className={classes.sections}
+          data-open={menuOpen || !current || undefined}
+        >
           {sections.map((s) => (
             <NavLink
               key={s.id}
@@ -189,31 +219,34 @@ export function SettingsLayout() {
             </div>
           )}
           <div className={classes.head}>
-            <h1 className={classes.h1}>
-              {searching ? (
-                t("settings.searchTitle")
-              ) : sub && current ? (
-                <>
+            <div className={classes.titleLine}>
+              {/* A sub-page names its section first, a link back to it. */}
+              {!searching && sub && current && (
+                <nav aria-label={t("settings.breadcrumb")} className={classes.crumbs}>
                   <Link to={`/settings/${current.id}`} className={classes.crumb}>
                     {label(current)}
                   </Link>
                   <span className={classes.crumb} aria-hidden>
                     ›
                   </span>
-                  {title}
-                </>
-              ) : (
-                title
+                </nav>
               )}
-            </h1>
+              <h1 className={classes.h1}>{searching ? t("settings.searchTitle") : title}</h1>
+            </div>
             {/* Settings has its own header, so the bell is here too (#685). */}
             <Group gap="xs" wrap="nowrap">
               <NotificationBell size={40} />
               {tour && !searching && <TourButton id={tour} size={40} />}
             </Group>
           </div>
+          {/* Said aloud as the results change; the list itself is not. */}
+          <VisuallyHidden aria-live="polite">
+            {searching && found.length > 0
+              ? t("settings.searchCount", { count: found.length })
+              : ""}
+          </VisuallyHidden>
           {searching ? (
-            <SearchResults query={query} onPick={() => setQuery("")} />
+            <SearchResults query={query} found={found} onPick={() => setQuery("")} />
           ) : (
             // A page that throws leaves the nav in place (#518).
             <PageErrorBoundary resetKey={key}>
@@ -229,13 +262,19 @@ export function SettingsLayout() {
 }
 
 /** Every row whose name or description matches, by section. */
-function SearchResults({ query, onPick }: { query: string; onPick: () => void }) {
+function SearchResults({
+  query,
+  found,
+  onPick,
+}: {
+  query: string;
+  found: SettingRowDef[];
+  onPick: () => void;
+}) {
   const { t } = useTranslation();
-  const ctx = useRowContext();
-  const found = searchRows(query, ctx, (r) => `${t(r.titleKey)} ${t(r.hintKey, HINT_VALUES)}`);
   if (found.length === 0) {
     return (
-      <p className={classes.groupHint} style={{ fontSize: 14 }}>
+      <p role="status" className={classes.groupHint} style={{ fontSize: 14 }}>
         {t("settings.searchNone", { query: query.trim() })}
       </p>
     );

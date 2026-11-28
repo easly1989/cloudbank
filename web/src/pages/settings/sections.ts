@@ -356,8 +356,12 @@ export function rowVisible(r: SettingRowDef, c: RowContext): boolean {
   return (!section?.when || section.when(c)) && (!r.when || r.when(c));
 }
 
-/** Where a row is, as a link that scrolls to it. */
-export const rowHref = (r: SettingRowDef) => `/settings/${r.page ?? r.section}#${r.id}`;
+/** The id of the panel a row opens, for the control that opens it. */
+export const panelId = (rowId: string) => `${rowId}-panel`;
+
+/** Where a row leads: its own page for a link row, else the row on its page. */
+export const rowHref = (r: SettingRowDef) =>
+  r.to ? `/settings/${r.to}` : `/settings/${r.page ?? r.section}#${r.id}`;
 
 /** Folded for search: lower case, accents off ("integrità" finds "integrita"). */
 export const fold = (s: string) =>

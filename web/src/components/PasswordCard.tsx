@@ -8,6 +8,7 @@ import { ApiError, changePassword } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { notifyError } from "../notifyError";
 import { SettingRow } from "../pages/settings/SettingRow";
+import { panelId } from "../pages/settings/sections";
 
 const MIN_LENGTH = 8;
 
@@ -56,7 +57,16 @@ export function PasswordCard() {
       open={open}
       onOpenChange={setOpen}
       control={
-        <Button variant="default" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <Button
+          variant="default"
+          aria-expanded={open}
+          aria-controls={panelId("password")}
+          aria-label={t("settings.actionOn", {
+            action: t("password.change"),
+            row: t("password.title"),
+          })}
+          onClick={() => setOpen((o) => !o)}
+        >
           {t("password.change")}
         </Button>
       }
