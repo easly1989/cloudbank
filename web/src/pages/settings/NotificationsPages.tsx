@@ -229,7 +229,8 @@ function ChannelEvents({ id, active }: { id: NotificationChannel; active: boolea
 /** Settings › Notifications › a channel: how it is connected, what it gets. */
 export function NotificationChannelSection() {
   const { t } = useTranslation();
-  const { channel } = useParams();
+  // The demo has only the bell, on a route of its own.
+  const { channel = "inapp" } = useParams();
   const meta = CHANNELS.find((c) => c.id === channel && shown(c.id));
   // Hooks run before the redirect, so give them a channel either way.
   const id = meta?.id ?? "inapp";

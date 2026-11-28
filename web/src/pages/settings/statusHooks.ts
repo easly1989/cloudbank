@@ -8,6 +8,8 @@ import { countMails } from "../mail/latestMails";
 // Collegamenti (#800). The query keys are the pages' own, so the numbers and
 // the pages share one fetch.
 
+const MINUTE = 60_000;
+
 export function useBankConnections() {
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
@@ -33,12 +35,15 @@ export function useMailStatus() {
     queryKey: ["mail", walletId],
     queryFn: () => getMailOverview(walletId),
     enabled: walletId > 0 && !__DEMO__,
+    staleTime: MINUTE,
   });
   const mailboxes = overview.data?.available ? overview.data.mailboxes : [];
   const messages = useQueries({
     queries: mailboxes.map((m) => ({
       queryKey: ["mailMessages", walletId, m.id, m.lastMailAt],
       queryFn: () => listMailboxMessages(walletId, m.id),
+      // Home and Connections are passed through often: a minute is fresh enough.
+      staleTime: MINUTE,
     })),
   });
   const review = messages.reduce((n, q) => n + (q.data ? countMails(q.data).review : 0), 0);

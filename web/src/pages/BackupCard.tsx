@@ -33,11 +33,8 @@ export function BackupRows() {
     onSuccess: saved,
     onError,
   });
-  const downloadXhb = useMutation({
-    mutationFn: () => downloadWalletXHB(walletId),
-    onSuccess: saved,
-    onError,
-  });
+  // Only the JSON copy counts as a backup: an .xhb export cannot be restored.
+  const downloadXhb = useMutation({ mutationFn: () => downloadWalletXHB(walletId), onError });
 
   const restore = useMutation({
     mutationFn: async () => {

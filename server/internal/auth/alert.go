@@ -21,7 +21,7 @@ type Notifier interface {
 func (s *Service) SetNotify(n Notifier) { s.notify = n }
 
 // securityURL is where a security notification leads.
-const securityURL = "/settings/security"
+const securityURL = "/settings/account"
 
 // alertText is the wording of the security notifications, one per language
 // (internal/locale's codes); a test asks every listed language for an entry.

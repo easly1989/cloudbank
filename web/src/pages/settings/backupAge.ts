@@ -25,11 +25,12 @@ export function backupAgeText(t: TFunction, days: number | null) {
   return t("settings.backupDays", { count: days });
 }
 
-/** Remember that a backup of the wallet was just downloaded. */
+/**
+ * Remember that a backup of the wallet was just downloaded. Only this wallet's
+ * date is sent; saveMe merges it into the others, on a retry too.
+ */
 export function recordBackup(qc: QueryClient, walletId: number) {
-  const me = qc.getQueryData<User>(["me"]);
-  const prev = me?.preferences?.lastBackupAt ?? {};
   return saveMe(qc, {
-    preferences: { lastBackupAt: { ...prev, [String(walletId)]: new Date().toISOString() } },
+    preferences: { lastBackupAt: { [String(walletId)]: new Date().toISOString() } },
   }).catch(() => undefined);
 }

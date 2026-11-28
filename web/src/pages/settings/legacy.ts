@@ -36,11 +36,14 @@ export function legacyTarget(from: string | undefined, search: string, hash: str
   const params = new URLSearchParams(search);
   let target: string;
   if (from !== undefined) {
-    // General split in two: the entry sheet's fields went to Personalisation.
+    // General split in two: the entry sheet's fields went to Personalisation;
+    // single sign-on left Security for Administration.
     target =
       from === "general" && hash === "#entry-fields"
         ? "personalization"
-        : (MOVED_SECTIONS[from] ?? "home");
+        : from === "security" && hash === "#sso"
+          ? "admin"
+          : (MOVED_SECTIONS[from] ?? "home");
   } else {
     const tab = params.get("tab");
     const section = params.get("section");

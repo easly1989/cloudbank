@@ -41,6 +41,7 @@ describe("settings map", () => {
       search: "?passkeys=add",
       hash: "",
     });
+    expect(legacyTarget("security", "", "#sso").pathname).toBe("/settings/admin");
     expect(legacyTarget(undefined, "?tab=wallet&section=import", "").pathname).toBe(
       "/settings/wallet/import",
     );

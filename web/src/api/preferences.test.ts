@@ -163,6 +163,24 @@ describe("saveMe", () => {
     expect(qc.getQueryData<User>(["me"])?.preferences).toEqual(srv.stored());
   });
 
+  it("keeps another tab's backup date when one is made again over it", async () => {
+    const srv = server({ lastBackupAt: { "1": "2026-11-01T00:00:00Z" } }, 4);
+    qc.setQueryData(["me"], user({ lastBackupAt: { "1": "2026-11-01T00:00:00Z" } }, 4));
+    // Another tab backed up wallet 2 after this one read the settings.
+    srv.elsewhere({
+      lastBackupAt: { "1": "2026-11-01T00:00:00Z", "2": "2026-11-27T10:00:00Z" },
+    });
+    const done = savePreferences(qc, { lastBackupAt: { "1": "2026-11-28T09:00:00Z" } });
+    await settle();
+    await srv.answer(); // refused: started from revision 4
+    await settle();
+    await srv.answer();
+    await done;
+    expect(srv.stored()).toEqual({
+      lastBackupAt: { "1": "2026-11-28T09:00:00Z", "2": "2026-11-27T10:00:00Z" },
+    });
+  });
+
   it("shows a change before the server answers", async () => {
     const srv = server({ tutorialSeen: true });
     const done = savePreferences(qc, { registerColumnWidths: { memo: 240 } });

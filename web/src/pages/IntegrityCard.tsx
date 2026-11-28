@@ -1,6 +1,6 @@
 import { Alert, Badge, Button, Group, List, Stack, Text } from "@mantine/core";
 import { IconAlertTriangle, IconCircleCheck } from "@tabler/icons-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -11,6 +11,7 @@ import { SettingRow } from "./settings/SettingRow";
 
 export function IntegrityRow() {
   const { t } = useTranslation();
+  const qc = useQueryClient();
   const { currentWallet } = useWallet();
   const walletId = currentWallet?.id ?? 0;
   const [issues, setIssues] = useState<IntegrityIssue[] | null>(null);
@@ -23,6 +24,8 @@ export function IntegrityRow() {
     onSuccess: (res) => {
       setError(null);
       setIssues(res.issues);
+      // Settings › Home shows the same check: it now says what this one found.
+      qc.setQueryData(["integrity", walletId], res);
     },
     onError,
   });

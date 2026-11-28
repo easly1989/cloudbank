@@ -63,7 +63,7 @@ func TestARefusedSignInIsAnnouncedOncePerEpisode(t *testing.T) {
 	}
 	// In the language of the person who connected it (the fixture's users
 	// speak Italian), leading to the mailbox's settings.
-	if !strings.Contains(got[0], "Mail della banca ferme") || !strings.Contains(got[0], testUser) || !strings.HasSuffix(got[0], "|/settings/mail") {
+	if !strings.Contains(got[0], "Mail della banca ferme") || !strings.Contains(got[0], testUser) || !strings.HasSuffix(got[0], "|/settings/connections/mail") {
 		t.Fatalf("push = %q", got[0])
 	}
 

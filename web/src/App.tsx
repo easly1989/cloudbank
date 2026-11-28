@@ -239,8 +239,14 @@ function AuthenticatedApp() {
           {!__DEMO__ && <Route path="connections/mail" element={<MailSection />} />}
           <Route path="notifications" element={<NotificationsSection />} />
           <Route path="notifications/money" element={<NotificationMoneySection />} />
-          <Route path="notifications/timing" element={<NotificationTimingSection />} />
-          <Route path="notifications/:channel" element={<NotificationChannelSection />} />
+          {/* The demo has only the bell: no timing, no other channel. */}
+          {!__DEMO__ && (
+            <Route path="notifications/timing" element={<NotificationTimingSection />} />
+          )}
+          <Route
+            path={__DEMO__ ? "notifications/inapp" : "notifications/:channel"}
+            element={<NotificationChannelSection />}
+          />
           {!__DEMO__ && <Route path="ai" element={<AiSection />} />}
           <Route path="admin" element={<AdminSection />} />
           <Route path="admin/people" element={<PeopleSection />} />
