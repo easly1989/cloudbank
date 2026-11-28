@@ -1791,7 +1791,9 @@
     "recoveryLeft_one": "Vous vous êtes connecté avec un code de récupération. Il vous en reste {{count}}.",
     "recoveryLeft_other": "Vous vous êtes connecté avec un code de récupération. Il vous en reste {{count}}.",
     "recoveryNoneLeft": "Vous vous êtes connecté avec votre dernier code de récupération. Créez-en de nouveaux dans Paramètres › Sécurité.",
-    "tooMany": "Trop de tentatives. Réessayez dans quelques minutes."
+    "tooMany": "Trop de tentatives. Réessayez dans quelques minutes.",
+    "passkeySignIn": "Se connecter avec une clé d’accès",
+    "passkeyInvalid": "Cette clé d’accès n’est pas enregistrée dans CloudBank. Utilisez une autre clé d’accès, ou votre nom d’utilisateur et votre mot de passe."
   },
   "twofa": {
     "title": "Authentification à deux facteurs",
@@ -2305,7 +2307,13 @@
     "you": "vous",
     "userCreated": "Utilisateur créé",
     "passwordReset": "Mot de passe réinitialisé",
-    "emailSso": "Il se connecte avec {{provider}}, reconnu par cet e-mail."
+    "emailSso": "Il se connecte avec {{provider}}, reconnu par cet e-mail.",
+    "passkeys": "Clés d’accès",
+    "removePasskeys": "Retirer les clés d’accès",
+    "removePasskeysTitle": "Retirer les clés d’accès de {{username}} ?",
+    "removePasskeysBody_one": "{{username}} a {{count}} clé d’accès. Ensuite, la connexion se fait avec le mot de passe ou un code de récupération, et de nouvelles clés peuvent être ajoutées.",
+    "removePasskeysBody_other": "{{username}} a {{count}} clés d’accès. Ensuite, la connexion se fait avec le mot de passe ou un code de récupération, et de nouvelles clés peuvent être ajoutées.",
+    "ownPasskeys": "Vos propres clés d’accès se gèrent dans Paramètres › Sécurité."
   },
   "wallet": {
     "firstTitle": "Créez votre premier classeur",
@@ -2940,7 +2948,8 @@
     "importHint": "Les relevés, et les règles qui les classent.",
     "backupHint": "Une copie à partir de laquelle restaurer, et une vérification que la base de données est saine.",
     "about": "À propos",
-    "aboutHint": "Ce qu’est ce CloudBank, et où trouver son code."
+    "aboutHint": "Ce qu’est ce CloudBank, et où trouver son code.",
+    "signInHintPasskeys": "Le mot de passe, une seconde étape en plus, et les clés d’accès qui le remplacent."
   },
   "apiTokens": {
     "title": "Jetons d’API personnels",
@@ -3747,5 +3756,36 @@
     "loadFailed": "Impossible de charger les deux lignes.",
     "retry": "Réessayer",
     "pickOtherPlaceholder": "Rechercher par date, bénéficiaire ou montant"
+  },
+  "passkeys": {
+    "title": "Clés d’accès",
+    "count_one": "{{count}} clé d’accès",
+    "count_other": "{{count}} clés d’accès",
+    "none": "Aucune",
+    "hint": "Connectez-vous avec l’empreinte, le visage ou le code PIN de votre appareil, sans mot de passe ni code à 6 chiffres.",
+    "unsupported": "Ce navigateur ne gère pas les clés d’accès. Ouvrez CloudBank dans un navigateur récent (Chrome, Edge, Firefox, Safari), par son nom et non par son IP.",
+    "manage": "Gérer",
+    "add": "Ajouter",
+    "intro": "Une clé d’accès remplace le mot de passe et le code à 6 chiffres sur ce compte. Si vous perdez tous vos appareils, connectez-vous avec le mot de passe ou un code de récupération.",
+    "added": "Clé d’accès ajoutée. Donnez-lui un nom pour la reconnaître plus tard.",
+    "name": "Nom",
+    "nameHint": "Proposé par le navigateur et le système ; changez-le comme vous voulez.",
+    "saveName": "Enregistrer le nom",
+    "suggestedName": "{{browser}} sur {{os}}",
+    "meta": "Ajoutée le {{added}} · utilisée le {{used}}",
+    "metaToday": "Ajoutée le {{added}} · utilisée aujourd’hui",
+    "metaUnused": "Ajoutée le {{added}} · jamais utilisée",
+    "renameOne": "Renommer {{name}}",
+    "removeOne": "Retirer {{name}}",
+    "removeTitle": "Retirer « {{name}} » ?",
+    "removeBody": "Cet appareil ne pourra plus se connecter avec la clé d’accès. La clé reste sur l’appareil, mais ne sert plus : vous pouvez la supprimer du gestionnaire de mots de passe.",
+    "remove": "Retirer",
+    "reauthTitle": "Reconnectez-vous pour ajouter une clé d’accès",
+    "reauthBody": "Pour en ajouter une, il faut une connexion de moins de 10 minutes, afin que personne ne puisse s’en créer une sur un ordinateur resté ouvert. Retirer une clé d’accès reste toujours possible.",
+    "reauth": "Se reconnecter",
+    "of": "{{n}} sur {{max}}",
+    "full": "{{max}} sur {{max}} : retirez-en une pour en ajouter une autre",
+    "addOne": "Ajouter une clé d’accès",
+    "already": "Cet appareil a déjà une clé d’accès pour ce compte."
   }
 }

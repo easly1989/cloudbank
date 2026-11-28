@@ -274,3 +274,10 @@ Added since:
   Configure or Edit). The fields open in a modal, although `theme.ts` keeps
   modals for decisions and sends forms to the 396px sheet: the user picked this
   variant. The modal is 620px wide (Mantine `lg`) and scrolls on a phone.
+- **Passkeys** (#798), to an approved mockup; neither the login board nor the
+  settings board has them. The login form is unchanged, with *Sign in with a
+  passkey* (default button, key icon) under "or", above the provider's button.
+  In Settings › Security a Passkeys card joins Sign-in, like two-factor's
+  (fingerprint icon, since the password card has the key), and *Manage* opens
+  the list in a modal (Mantine `md`). The Users page gains a Passkeys column
+  and a *Remove passkeys* action.

@@ -1791,7 +1791,9 @@
     "recoveryLeft_one": "You signed in with a recovery code. You have {{count}} left.",
     "recoveryLeft_other": "You signed in with a recovery code. You have {{count}} left.",
     "recoveryNoneLeft": "You signed in with your last recovery code. Make new ones in Settings › Security.",
-    "tooMany": "Too many attempts. Try again in a few minutes."
+    "tooMany": "Too many attempts. Try again in a few minutes.",
+    "passkeySignIn": "Sign in with a passkey",
+    "passkeyInvalid": "This passkey is not registered in CloudBank. Use another passkey, or your username and password."
   },
   "twofa": {
     "title": "Two-factor authentication",
@@ -2305,7 +2307,13 @@
     "you": "you",
     "userCreated": "User created",
     "passwordReset": "Password reset",
-    "emailSso": "They sign in with {{provider}}, matched by this email."
+    "emailSso": "They sign in with {{provider}}, matched by this email.",
+    "passkeys": "Passkeys",
+    "removePasskeys": "Remove passkeys",
+    "removePasskeysTitle": "Remove {{username}}'s passkeys?",
+    "removePasskeysBody_one": "{{username}} has {{count}} passkey. Afterwards they sign in with the password or a recovery code, and can add new ones.",
+    "removePasskeysBody_other": "{{username}} has {{count}} passkeys. Afterwards they sign in with the password or a recovery code, and can add new ones.",
+    "ownPasskeys": "You manage your own passkeys in Settings › Security."
   },
   "wallet": {
     "firstTitle": "Create your first wallet",
@@ -2940,7 +2948,8 @@
     "importHint": "Statements, and the rules that file them.",
     "backupHint": "A copy you can restore from, and a check that the database is sound.",
     "about": "About",
-    "aboutHint": "What this CloudBank is, and where to find its code."
+    "aboutHint": "What this CloudBank is, and where to find its code.",
+    "signInHintPasskeys": "The password, the second step on top of it, and the passkeys that replace it."
   },
   "apiTokens": {
     "title": "Personal API tokens",
@@ -3747,5 +3756,36 @@
     "loadFailed": "The two rows could not be loaded.",
     "retry": "Try again",
     "pickOtherPlaceholder": "Search by date, payee or amount"
+  },
+  "passkeys": {
+    "title": "Passkeys",
+    "count_one": "{{count}} passkey",
+    "count_other": "{{count}} passkeys",
+    "none": "None",
+    "hint": "Sign in with your device's fingerprint, face or PIN, without a password or 6-digit code.",
+    "unsupported": "This browser cannot use passkeys. Open CloudBank in a recent browser (Chrome, Edge, Firefox, Safari), at its name rather than its IP.",
+    "manage": "Manage",
+    "add": "Add",
+    "intro": "A passkey replaces the password and the 6-digit code on this account. If you lose every device, sign in with the password or a recovery code.",
+    "added": "Passkey added. Give it a name so you can tell it apart later.",
+    "name": "Name",
+    "nameHint": "Suggested from the browser and the system; change it as you like.",
+    "saveName": "Save the name",
+    "suggestedName": "{{browser}} on {{os}}",
+    "meta": "Added {{added}} · used {{used}}",
+    "metaToday": "Added {{added}} · used today",
+    "metaUnused": "Added {{added}} · never used",
+    "renameOne": "Rename {{name}}",
+    "removeOne": "Remove {{name}}",
+    "removeTitle": "Remove \"{{name}}\"?",
+    "removeBody": "That device will no longer sign in with the passkey. The passkey stays on the device but is of no use: you can delete it from the password manager.",
+    "remove": "Remove",
+    "reauthTitle": "Sign in again to add a passkey",
+    "reauthBody": "Adding one needs a sign-in from the last 10 minutes, so someone who finds the computer unlocked cannot make one of their own. Removing a passkey always works.",
+    "reauth": "Sign in again",
+    "of": "{{n}} of {{max}}",
+    "full": "{{max}} of {{max}}: remove one to add another",
+    "addOne": "Add passkey",
+    "already": "This device already has a passkey for this account."
   }
 }

@@ -26,89 +26,103 @@ const securityURL = "/settings/security"
 // alertText is the wording of the security notifications, one per language
 // (internal/locale's codes); a test asks every listed language for an entry.
 type alertText struct {
-	deviceTitle string
-	device      string // %s: the device
-	on          string // %[1]s: the browser, %[2]s: the system
-	unknown     string // a device the user agent does not name
-	twoFATitle  string
-	twoFA       string
-	tokenTitle  string
-	token       string // %s: the token's name
-	read, write string // the token's scope
+	deviceTitle  string
+	device       string // %s: the device
+	on           string // %[1]s: the browser, %[2]s: the system
+	unknown      string // a device the user agent does not name
+	twoFATitle   string
+	twoFA        string
+	tokenTitle   string
+	token        string // %s: the token's name
+	read, write  string // the token's scope
+	passkeyTitle string
+	passkey      string // %s: the passkey's name
 }
 
 var alertTexts = map[string]alertText{
 	"en": {
-		deviceTitle: "New sign-in",
-		device:      "Someone signed in to your account from %s. If it wasn't you, change your password.",
-		on:          "%[1]s on %[2]s",
-		unknown:     "an unknown device",
-		twoFATitle:  "Two-factor authentication turned off",
-		twoFA:       "Your account now signs in with the password alone. If it wasn't you, change your password.",
-		tokenTitle:  "New API token",
-		token:       "The token “%s” (%s) was created on your account. If it wasn't you, revoke it.",
-		read:        "read only",
-		write:       "read and write",
+		deviceTitle:  "New sign-in",
+		device:       "Someone signed in to your account from %s. If it wasn't you, change your password and remove any passkey you don't know.",
+		on:           "%[1]s on %[2]s",
+		unknown:      "an unknown device",
+		twoFATitle:   "Two-factor authentication turned off",
+		twoFA:        "Your account now signs in with the password alone. If it wasn't you, change your password.",
+		tokenTitle:   "New API token",
+		token:        "The token “%s” (%s) was created on your account. If it wasn't you, revoke it.",
+		read:         "read only",
+		write:        "read and write",
+		passkeyTitle: "New passkey",
+		passkey:      "The passkey “%s” was added to your account. If it wasn't you, remove it and change your password.",
 	},
 	"it": {
-		deviceTitle: "Nuovo accesso",
-		device:      "Qualcuno ha effettuato l’accesso al tuo account da %s. Se non sei stato tu, cambia la password.",
-		on:          "%[1]s su %[2]s",
-		unknown:     "un dispositivo sconosciuto",
-		twoFATitle:  "Autenticazione a due fattori disattivata",
-		twoFA:       "Ora il tuo account accede con la sola password. Se non sei stato tu, cambia la password.",
-		tokenTitle:  "Nuovo token API",
-		token:       "Sul tuo account è stato creato il token «%s» (%s). Se non sei stato tu, revocalo.",
-		read:        "sola lettura",
-		write:       "lettura e scrittura",
+		deviceTitle:  "Nuovo accesso",
+		device:       "Qualcuno ha effettuato l’accesso al tuo account da %s. Se non sei stato tu, cambia la password e rimuovi le passkey che non conosci.",
+		on:           "%[1]s su %[2]s",
+		unknown:      "un dispositivo sconosciuto",
+		twoFATitle:   "Autenticazione a due fattori disattivata",
+		twoFA:        "Ora il tuo account accede con la sola password. Se non sei stato tu, cambia la password.",
+		tokenTitle:   "Nuovo token API",
+		token:        "Sul tuo account è stato creato il token «%s» (%s). Se non sei stato tu, revocalo.",
+		read:         "sola lettura",
+		write:        "lettura e scrittura",
+		passkeyTitle: "Nuova passkey",
+		passkey:      "Sul tuo account è stata aggiunta la passkey «%s». Se non sei stato tu, rimuovila e cambia la password.",
 	},
 	"es": {
-		deviceTitle: "Nuevo inicio de sesión",
-		device:      "Alguien ha iniciado sesión en tu cuenta desde %s. Si no has sido tú, cambia la contraseña.",
-		on:          "%[1]s en %[2]s",
-		unknown:     "un dispositivo desconocido",
-		twoFATitle:  "Autenticación en dos pasos desactivada",
-		twoFA:       "Tu cuenta ahora entra solo con la contraseña. Si no has sido tú, cambia la contraseña.",
-		tokenTitle:  "Nuevo token de API",
-		token:       "Se ha creado el token «%s» (%s) en tu cuenta. Si no has sido tú, revócalo.",
-		read:        "solo lectura",
-		write:       "lectura y escritura",
+		deviceTitle:  "Nuevo inicio de sesión",
+		device:       "Alguien ha iniciado sesión en tu cuenta desde %s. Si no has sido tú, cambia la contraseña y quita las llaves de acceso que no conozcas.",
+		on:           "%[1]s en %[2]s",
+		unknown:      "un dispositivo desconocido",
+		twoFATitle:   "Autenticación en dos pasos desactivada",
+		twoFA:        "Tu cuenta ahora entra solo con la contraseña. Si no has sido tú, cambia la contraseña.",
+		tokenTitle:   "Nuevo token de API",
+		token:        "Se ha creado el token «%s» (%s) en tu cuenta. Si no has sido tú, revócalo.",
+		read:         "solo lectura",
+		write:        "lectura y escritura",
+		passkeyTitle: "Nueva llave de acceso",
+		passkey:      "Se ha añadido la llave de acceso «%s» a tu cuenta. Si no has sido tú, quítala y cambia la contraseña.",
 	},
 	"fr": {
-		deviceTitle: "Nouvelle connexion",
-		device:      "Quelqu’un s’est connecté à votre compte depuis %s. Si ce n’était pas vous, changez votre mot de passe.",
-		on:          "%[1]s sur %[2]s",
-		unknown:     "un appareil inconnu",
-		twoFATitle:  "Authentification à deux facteurs désactivée",
-		twoFA:       "Votre compte se connecte désormais avec le seul mot de passe. Si ce n’était pas vous, changez votre mot de passe.",
-		tokenTitle:  "Nouveau jeton d’API",
-		token:       "Le jeton « %s » (%s) a été créé sur votre compte. Si ce n’était pas vous, révoquez-le.",
-		read:        "lecture seule",
-		write:       "lecture et écriture",
+		deviceTitle:  "Nouvelle connexion",
+		device:       "Quelqu’un s’est connecté à votre compte depuis %s. Si ce n’était pas vous, changez votre mot de passe et retirez les clés d’accès que vous ne connaissez pas.",
+		on:           "%[1]s sur %[2]s",
+		unknown:      "un appareil inconnu",
+		twoFATitle:   "Authentification à deux facteurs désactivée",
+		twoFA:        "Votre compte se connecte désormais avec le seul mot de passe. Si ce n’était pas vous, changez votre mot de passe.",
+		tokenTitle:   "Nouveau jeton d’API",
+		token:        "Le jeton « %s » (%s) a été créé sur votre compte. Si ce n’était pas vous, révoquez-le.",
+		read:         "lecture seule",
+		write:        "lecture et écriture",
+		passkeyTitle: "Nouvelle clé d’accès",
+		passkey:      "La clé d’accès « %s » a été ajoutée à votre compte. Si ce n’était pas vous, retirez-la et changez votre mot de passe.",
 	},
 	"de": {
-		deviceTitle: "Neue Anmeldung",
-		device:      "Jemand hat sich von %s bei deinem Konto angemeldet. Warst du es nicht, ändere dein Passwort.",
-		on:          "%[1]s unter %[2]s",
-		unknown:     "einem unbekannten Gerät",
-		twoFATitle:  "Zwei-Faktor-Authentifizierung ausgeschaltet",
-		twoFA:       "Dein Konto meldet sich jetzt nur mit dem Passwort an. Warst du es nicht, ändere dein Passwort.",
-		tokenTitle:  "Neues API-Token",
-		token:       "Für dein Konto wurde das Token „%s“ (%s) erstellt. Warst du es nicht, widerrufe es.",
-		read:        "nur lesen",
-		write:       "lesen und schreiben",
+		deviceTitle:  "Neue Anmeldung",
+		device:       "Jemand hat sich von %s bei deinem Konto angemeldet. Warst du es nicht, ändere dein Passwort und entferne Passkeys, die du nicht kennst.",
+		on:           "%[1]s unter %[2]s",
+		unknown:      "einem unbekannten Gerät",
+		twoFATitle:   "Zwei-Faktor-Authentifizierung ausgeschaltet",
+		twoFA:        "Dein Konto meldet sich jetzt nur mit dem Passwort an. Warst du es nicht, ändere dein Passwort.",
+		tokenTitle:   "Neues API-Token",
+		token:        "Für dein Konto wurde das Token „%s“ (%s) erstellt. Warst du es nicht, widerrufe es.",
+		read:         "nur lesen",
+		write:        "lesen und schreiben",
+		passkeyTitle: "Neuer Passkey",
+		passkey:      "Deinem Konto wurde der Passkey „%s“ hinzugefügt. Warst du es nicht, entferne ihn und ändere dein Passwort.",
 	},
 	"pt-BR": {
-		deviceTitle: "Novo acesso",
-		device:      "Alguém entrou na sua conta a partir de %s. Se não foi você, troque a senha.",
-		on:          "%[1]s no %[2]s",
-		unknown:     "um dispositivo desconhecido",
-		twoFATitle:  "Autenticação em dois fatores desativada",
-		twoFA:       "Agora sua conta entra só com a senha. Se não foi você, troque a senha.",
-		tokenTitle:  "Novo token de API",
-		token:       "O token “%s” (%s) foi criado na sua conta. Se não foi você, revogue-o.",
-		read:        "somente leitura",
-		write:       "leitura e escrita",
+		deviceTitle:  "Novo acesso",
+		device:       "Alguém entrou na sua conta a partir de %s. Se não foi você, troque a senha e remova as chaves de acesso que você não conhece.",
+		on:           "%[1]s no %[2]s",
+		unknown:      "um dispositivo desconhecido",
+		twoFATitle:   "Autenticação em dois fatores desativada",
+		twoFA:        "Agora sua conta entra só com a senha. Se não foi você, troque a senha.",
+		tokenTitle:   "Novo token de API",
+		token:        "O token “%s” (%s) foi criado na sua conta. Se não foi você, revogue-o.",
+		read:         "somente leitura",
+		write:        "leitura e escrita",
+		passkeyTitle: "Nova chave de acesso",
+		passkey:      "A chave de acesso “%s” foi adicionada à sua conta. Se não foi você, remova-a e troque a senha.",
 	},
 }
 

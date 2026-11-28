@@ -1791,7 +1791,9 @@
     "recoveryLeft_one": "Você entrou com um código de recuperação. Resta {{count}}.",
     "recoveryLeft_other": "Você entrou com um código de recuperação. Restam {{count}}.",
     "recoveryNoneLeft": "Você entrou com o seu último código de recuperação. Gere novos em Configurações › Segurança.",
-    "tooMany": "Tentativas demais. Tente de novo em alguns minutos."
+    "tooMany": "Tentativas demais. Tente de novo em alguns minutos.",
+    "passkeySignIn": "Entrar com uma chave de acesso",
+    "passkeyInvalid": "Esta chave de acesso não está registrada no CloudBank. Use outra chave de acesso ou seu usuário e senha."
   },
   "twofa": {
     "title": "Autenticação em dois fatores",
@@ -2305,7 +2307,13 @@
     "you": "você",
     "userCreated": "Usuário criado",
     "passwordReset": "Senha redefinida",
-    "emailSso": "Entra com {{provider}}, identificado por este e-mail."
+    "emailSso": "Entra com {{provider}}, identificado por este e-mail.",
+    "passkeys": "Chaves de acesso",
+    "removePasskeys": "Remover chaves de acesso",
+    "removePasskeysTitle": "Remover as chaves de acesso de {{username}}?",
+    "removePasskeysBody_one": "{{username}} tem {{count}} chave de acesso. Depois, o acesso é com a senha ou com um código de recuperação, e dá para adicionar chaves novas.",
+    "removePasskeysBody_other": "{{username}} tem {{count}} chaves de acesso. Depois, o acesso é com a senha ou com um código de recuperação, e dá para adicionar chaves novas.",
+    "ownPasskeys": "Suas próprias chaves de acesso ficam em Configurações › Segurança."
   },
   "wallet": {
     "firstTitle": "Crie a sua primeira carteira",
@@ -2940,7 +2948,8 @@
     "importHint": "Extratos, e as regras que os classificam.",
     "backupHint": "Uma cópia da qual você pode restaurar, e uma verificação de que o banco de dados está íntegro.",
     "about": "Sobre",
-    "aboutHint": "O que é este CloudBank, e onde encontrar o código dele."
+    "aboutHint": "O que é este CloudBank, e onde encontrar o código dele.",
+    "signInHintPasskeys": "A senha, uma segunda etapa além dela e as chaves de acesso que a substituem."
   },
   "apiTokens": {
     "title": "Tokens de API pessoais",
@@ -3747,5 +3756,36 @@
     "loadFailed": "Não foi possível carregar as duas linhas.",
     "retry": "Tentar de novo",
     "pickOtherPlaceholder": "Buscar por data, favorecido ou valor"
+  },
+  "passkeys": {
+    "title": "Chaves de acesso",
+    "count_one": "{{count}} chave de acesso",
+    "count_other": "{{count}} chaves de acesso",
+    "none": "Nenhuma",
+    "hint": "Entre com a digital, o rosto ou o PIN do seu dispositivo, sem senha nem código de 6 dígitos.",
+    "unsupported": "Este navegador não usa chaves de acesso. Abra o CloudBank em um navegador recente (Chrome, Edge, Firefox, Safari), pelo nome dele e não pelo IP.",
+    "manage": "Gerenciar",
+    "add": "Adicionar",
+    "intro": "Uma chave de acesso substitui a senha e o código de 6 dígitos nesta conta. Se você perder todos os dispositivos, entre com a senha ou com um código de recuperação.",
+    "added": "Chave de acesso adicionada. Dê um nome a ela para reconhecê-la depois.",
+    "name": "Nome",
+    "nameHint": "Sugerido pelo navegador e pelo sistema; mude como quiser.",
+    "saveName": "Salvar o nome",
+    "suggestedName": "{{browser}} no {{os}}",
+    "meta": "Adicionada em {{added}} · usada em {{used}}",
+    "metaToday": "Adicionada em {{added}} · usada hoje",
+    "metaUnused": "Adicionada em {{added}} · nunca usada",
+    "renameOne": "Renomear {{name}}",
+    "removeOne": "Remover {{name}}",
+    "removeTitle": "Remover “{{name}}”?",
+    "removeBody": "Esse dispositivo não vai mais entrar com a chave de acesso. A chave continua no dispositivo, mas não serve mais: você pode apagá-la do gerenciador de senhas.",
+    "remove": "Remover",
+    "reauthTitle": "Entre de novo para adicionar uma chave de acesso",
+    "reauthBody": "Para adicionar uma, é preciso ter entrado nos últimos 10 minutos, assim quem encontrar o computador aberto não consegue criar uma para si. Remover uma chave de acesso sempre é possível.",
+    "reauth": "Entrar de novo",
+    "of": "{{n}} de {{max}}",
+    "full": "{{max}} de {{max}}: remova uma para adicionar outra",
+    "addOne": "Adicionar chave de acesso",
+    "already": "Este dispositivo já tem uma chave de acesso para esta conta."
   }
 }

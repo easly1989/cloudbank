@@ -114,6 +114,7 @@ CloudBank is an **independent, clean-room reimplementation**. It does not copy o
 ### Secure & on every device
 
 - **Two-factor authentication (TOTP)** — optional per-user 2FA with authenticator apps (QR enrolment + one-time recovery codes) and a two-step login.
+- **Passkeys** — sign in with a device's fingerprint, face or PIN instead of the password and the code: up to ten per user, kept in Settings › Security, and offered by the browser right in the username field.
 - **Personal API tokens** — scoped, revocable bearer tokens for programmatic access, and a wallet summary that **Home Assistant** reads as sensors: bills due, this month's budget, what waits on Review, balances only if you ask ([the guide](docs/home-assistant.md)).
 - **Installable PWA** — a web-app manifest, icons and an offline app shell, so CloudBank installs to your phone's home screen or your desktop. A long press on the icon offers **New expense** and **New income**, and on Android a bank's notification shared with CloudBank opens the entry sheet with its text ([how](docs/pages.md#adding-from-your-phone)).
 - **Notifications where you will see them** — a bell on every page, plus push, email, **Matrix**, **Telegram**, **Discord**, **Slack**, **ntfy**, **Gotify** or a signed **webhook** (Home Assistant included). Choose which events reach which channel — bills, security, problems such as a failing bank sync, money (large expenses, low balances, budgets, goals), weekly and monthly summaries — and when: at once, in a daily digest, or after your quiet hours ([the guide](docs/notifications.md)).
@@ -298,7 +299,7 @@ private: make it public (package → Settings → Change visibility) or
 demo** workflow: with every published release (not prereleases), from the release's tag, and when the
 workflow is run by hand. There is no setup and no login: one button makes an account
 with a year of made-up data. Accounts are deleted after two hours without use and every night at 03:00
-UTC. Admin, restore, attachments, AI, push, API tokens, two-factor and OIDC are switched off, and bank
+UTC. Admin, restore, attachments, AI, push, API tokens, two-factor, passkeys and OIDC are switched off, and bank
 sync talks to a pretend bank. Run it **without a volume**, so a redeploy starts empty; it refuses to
 start on a data directory that holds real accounts. It is tuned with `CB_DEMO_*` variables (see
 `server/internal/config`); behind a proxy, set `CB_DEMO_PROXY_HOPS` so the per-address limit sees

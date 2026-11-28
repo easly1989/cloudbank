@@ -567,6 +567,18 @@ type OidcSetting struct {
 	UpdatedAt     string
 }
 
+type Passkey struct {
+	ID           int64
+	UserID       int64
+	CredentialID []byte
+	UserHandle   []byte
+	RpID         string
+	Name         string
+	Credential   string
+	CreatedAt    string
+	LastUsedAt   string
+}
+
 type Payee struct {
 	ID                 int64
 	WalletID           int64

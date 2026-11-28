@@ -38,7 +38,7 @@ These are not bugs, so please don't report them as bugs:
   payments, which then run through reconciliation and the Review page like the
   real thing. SimpleFIN, Enable Banking and Pluggy are not offered.
 - **No attachments, no AI, no bank mails, no notifications outside the bell, no
-  API tokens, no two-factor sign-in and no SSO.** Each of these needs something
+  API tokens, no two-factor sign-in, no passkeys and no SSO.** Each of these needs something
   a throwaway account should not have: stored files, your API key, your mailbox,
   a device, an address to write to or an identity provider.
 - **No restore, no administration.** You can download a backup or an `.xhb`

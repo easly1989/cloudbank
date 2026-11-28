@@ -1791,7 +1791,9 @@
     "recoveryLeft_one": "Sei entrato con un codice di recupero. Te ne resta {{count}}.",
     "recoveryLeft_other": "Sei entrato con un codice di recupero. Te ne restano {{count}}.",
     "recoveryNoneLeft": "Sei entrato con l'ultimo codice di recupero. Generane di nuovi in Impostazioni › Sicurezza.",
-    "tooMany": "Troppi tentativi. Riprova tra qualche minuto."
+    "tooMany": "Troppi tentativi. Riprova tra qualche minuto.",
+    "passkeySignIn": "Accedi con una passkey",
+    "passkeyInvalid": "Questa passkey non è registrata in CloudBank. Usa un'altra passkey oppure nome utente e password."
   },
   "twofa": {
     "title": "Autenticazione a due fattori",
@@ -2305,7 +2307,13 @@
     "you": "tu",
     "userCreated": "Utente creato",
     "passwordReset": "Password reimpostata",
-    "emailSso": "Entra con {{provider}}, abbinato a questa email."
+    "emailSso": "Entra con {{provider}}, abbinato a questa email.",
+    "passkeys": "Passkey",
+    "removePasskeys": "Rimuovi passkey",
+    "removePasskeysTitle": "Rimuovere le passkey di {{username}}?",
+    "removePasskeysBody_one": "{{username}} ha {{count}} passkey. Dopo, entra con la password o con un codice di recupero, e può aggiungerne di nuove.",
+    "removePasskeysBody_other": "{{username}} ha {{count}} passkey. Dopo, entra con la password o con un codice di recupero, e può aggiungerne di nuove.",
+    "ownPasskeys": "Le tue passkey le gestisci da Impostazioni › Sicurezza."
   },
   "wallet": {
     "firstTitle": "Crea il tuo primo portafoglio",
@@ -2940,7 +2948,8 @@
     "importHint": "Gli estratti conto, e le regole che li archiviano.",
     "backupHint": "Una copia da cui ripristinare, e un controllo che il database sia integro.",
     "about": "Informazioni",
-    "aboutHint": "Cos'è questa installazione di CloudBank e dove trovarne il codice."
+    "aboutHint": "Cos'è questa installazione di CloudBank e dove trovarne il codice.",
+    "signInHintPasskeys": "La password, il secondo passaggio oltre a quella, e le passkey che la sostituiscono."
   },
   "apiTokens": {
     "title": "Token API personali",
@@ -3747,5 +3756,36 @@
     "loadFailed": "Non è stato possibile caricare le due righe.",
     "retry": "Riprova",
     "pickOtherPlaceholder": "Cerca per data, beneficiario o importo"
+  },
+  "passkeys": {
+    "title": "Passkey",
+    "count_one": "{{count}} passkey",
+    "count_other": "{{count}} passkey",
+    "none": "Nessuna",
+    "hint": "Entra con l'impronta, il volto o il PIN del dispositivo, senza password né codice a 6 cifre.",
+    "unsupported": "Questo browser non gestisce le passkey. Apri CloudBank da un browser recente (Chrome, Edge, Firefox, Safari), dal suo nome e non dall'IP.",
+    "manage": "Gestisci",
+    "add": "Aggiungi",
+    "intro": "Una passkey sostituisce password e codice a 6 cifre su questo account. Se perdi tutti i dispositivi, entri con la password o con un codice di recupero.",
+    "added": "Passkey aggiunta. Dalle un nome per riconoscerla dopo.",
+    "name": "Nome",
+    "nameHint": "Proposto dal browser e dal sistema; cambialo come vuoi.",
+    "saveName": "Salva il nome",
+    "suggestedName": "{{browser}} su {{os}}",
+    "meta": "Aggiunta il {{added}} · usata il {{used}}",
+    "metaToday": "Aggiunta il {{added}} · usata oggi",
+    "metaUnused": "Aggiunta il {{added}} · mai usata",
+    "renameOne": "Rinomina {{name}}",
+    "removeOne": "Rimuovi {{name}}",
+    "removeTitle": "Rimuovere «{{name}}»?",
+    "removeBody": "Da quel dispositivo non si potrà più entrare con la passkey. Sul dispositivo la passkey resta, ma non serve più: puoi cancellarla dal gestore delle password.",
+    "remove": "Rimuovi",
+    "reauthTitle": "Entra di nuovo per aggiungere una passkey",
+    "reauthBody": "Per aggiungerne una serve un accesso degli ultimi 10 minuti, così chi trova il computer aperto non può crearsene una sua. Togliere una passkey invece si può sempre.",
+    "reauth": "Entra di nuovo",
+    "of": "{{n}} di {{max}}",
+    "full": "{{max}} di {{max}}: togline una per aggiungerne un'altra",
+    "addOne": "Aggiungi passkey",
+    "already": "Questo dispositivo ha già una passkey per questo account."
   }
 }

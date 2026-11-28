@@ -1791,7 +1791,9 @@
     "recoveryLeft_one": "Du hast dich mit einem Wiederherstellungscode angemeldet. Du hast noch {{count}}.",
     "recoveryLeft_other": "Du hast dich mit einem Wiederherstellungscode angemeldet. Du hast noch {{count}}.",
     "recoveryNoneLeft": "Du hast dich mit deinem letzten Wiederherstellungscode angemeldet. Erstelle neue unter Einstellungen › Sicherheit.",
-    "tooMany": "Zu viele Versuche. Versuch es in ein paar Minuten noch einmal."
+    "tooMany": "Zu viele Versuche. Versuch es in ein paar Minuten noch einmal.",
+    "passkeySignIn": "Mit einem Passkey anmelden",
+    "passkeyInvalid": "Dieser Passkey ist in CloudBank nicht registriert. Nimm einen anderen Passkey oder Benutzername und Passwort."
   },
   "twofa": {
     "title": "Zwei-Faktor-Authentifizierung",
@@ -2305,7 +2307,13 @@
     "you": "du",
     "userCreated": "Benutzer angelegt",
     "passwordReset": "Passwort zurückgesetzt",
-    "emailSso": "Die Anmeldung erfolgt über {{provider}}, zugeordnet über diese E-Mail-Adresse."
+    "emailSso": "Die Anmeldung erfolgt über {{provider}}, zugeordnet über diese E-Mail-Adresse.",
+    "passkeys": "Passkeys",
+    "removePasskeys": "Passkeys entfernen",
+    "removePasskeysTitle": "Passkeys von {{username}} entfernen?",
+    "removePasskeysBody_one": "{{username}} hat {{count}} Passkey. Danach geht die Anmeldung mit dem Passwort oder einem Wiederherstellungscode, und neue Passkeys lassen sich hinzufügen.",
+    "removePasskeysBody_other": "{{username}} hat {{count}} Passkeys. Danach geht die Anmeldung mit dem Passwort oder einem Wiederherstellungscode, und neue Passkeys lassen sich hinzufügen.",
+    "ownPasskeys": "Deine eigenen Passkeys verwaltest du unter Einstellungen › Sicherheit."
   },
   "wallet": {
     "firstTitle": "Lege dein erstes Haushaltsbuch an",
@@ -2940,7 +2948,8 @@
     "importHint": "Kontoauszüge und die Regeln, die sie einordnen.",
     "backupHint": "Eine Kopie zum Wiederherstellen und eine Prüfung, ob die Datenbank in Ordnung ist.",
     "about": "Über",
-    "aboutHint": "Was dieses CloudBank ist und wo du seinen Code findest."
+    "aboutHint": "Was dieses CloudBank ist und wo du seinen Code findest.",
+    "signInHintPasskeys": "Das Passwort, ein zweiter Schritt obendrauf und die Passkeys, die es ersetzen."
   },
   "apiTokens": {
     "title": "Persönliche API-Tokens",
@@ -3747,5 +3756,36 @@
     "loadFailed": "Die beiden Zeilen konnten nicht geladen werden.",
     "retry": "Erneut versuchen",
     "pickOtherPlaceholder": "Nach Datum, Empfänger oder Betrag suchen"
+  },
+  "passkeys": {
+    "title": "Passkeys",
+    "count_one": "{{count}} Passkey",
+    "count_other": "{{count}} Passkeys",
+    "none": "Keine",
+    "hint": "Melde dich mit Fingerabdruck, Gesicht oder PIN deines Geräts an, ohne Passwort und ohne 6-stelligen Code.",
+    "unsupported": "Dieser Browser kann keine Passkeys verwenden. Öffne CloudBank in einem aktuellen Browser (Chrome, Edge, Firefox, Safari) über seinen Namen, nicht über die IP.",
+    "manage": "Verwalten",
+    "add": "Hinzufügen",
+    "intro": "Ein Passkey ersetzt Passwort und 6-stelligen Code für dieses Benutzerkonto. Verlierst du alle Geräte, meldest du dich mit dem Passwort oder einem Wiederherstellungscode an.",
+    "added": "Passkey hinzugefügt. Gib ihm einen Namen, damit du ihn später erkennst.",
+    "name": "Name",
+    "nameHint": "Vorschlag aus Browser und System; ändere ihn nach Belieben.",
+    "saveName": "Namen speichern",
+    "suggestedName": "{{browser}} unter {{os}}",
+    "meta": "Hinzugefügt am {{added}} · zuletzt benutzt am {{used}}",
+    "metaToday": "Hinzugefügt am {{added}} · heute benutzt",
+    "metaUnused": "Hinzugefügt am {{added}} · nie benutzt",
+    "renameOne": "{{name}} umbenennen",
+    "removeOne": "{{name}} entfernen",
+    "removeTitle": "„{{name}}“ entfernen?",
+    "removeBody": "Mit diesem Gerät kann man sich dann nicht mehr per Passkey anmelden. Der Passkey bleibt auf dem Gerät, nützt aber nichts mehr: Du kannst ihn im Passwortmanager löschen.",
+    "remove": "Entfernen",
+    "reauthTitle": "Melde dich erneut an, um einen Passkey hinzuzufügen",
+    "reauthBody": "Dafür braucht es eine Anmeldung aus den letzten 10 Minuten, damit niemand am offen gelassenen Computer einen eigenen anlegen kann. Einen Passkey entfernen geht immer.",
+    "reauth": "Erneut anmelden",
+    "of": "{{n}} von {{max}}",
+    "full": "{{max}} von {{max}}: Entferne einen, um einen weiteren hinzuzufügen",
+    "addOne": "Passkey hinzufügen",
+    "already": "Dieses Gerät hat schon einen Passkey für dieses Benutzerkonto."
   }
 }

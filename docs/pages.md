@@ -672,7 +672,7 @@ The gear at the foot of the sidebar opens Settings. Its sections:
 | **General** | Language, date format, start screen, default account, tours; which fields the entry sheet shows |
 | **Appearance** | Theme and accent, the balances shown, account balances in the sidebar, the footer; the sidebar's navigation |
 | *Your wallet* | Name, owner, pre-registered schedules, the bills category the dashboard's Bills widget lists |
-| **Security** | Two-factor sign-in, API tokens |
+| **Security** | Password, two-factor sign-in, passkeys, API tokens |
 | **Notifications** | Which events reach you, in the bell, by push on this device, by email, in Matrix, Telegram, Discord or Slack, through ntfy or Gotify, or through a webhook ([the guide](notifications.md)); the bell itself sits in every page header |
 | **Bank sync** | Bank connections ([Automatic bank sync](bank-sync.md)) |
 | **Bank mails** | The bank's notification mails, read from the folders of a mailbox you choose, each a source ([the guide](bank-mails.md)) |

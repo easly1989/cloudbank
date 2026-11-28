@@ -30,6 +30,9 @@ type oidcHandlers struct {
 	// ssoOnly: the server signs in through SSO alone (#620), so the login
 	// page shows no password form.
 	ssoOnly bool
+	// passkeys: the login page offers passkeys (#798); off with SSO only and
+	// in the demo.
+	passkeys bool
 	// live is the provider sign-ins go through now. A save in Settings (#796)
 	// swaps it whole, so a request reads it once and sees one provider.
 	live atomic.Pointer[oidcLive]
@@ -64,7 +67,7 @@ func (h *oidcHandlers) config(w http.ResponseWriter, _ *http.Request) {
 		oidcInfo["enabled"] = true
 		oidcInfo["name"] = svc.Name()
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"oidc": oidcInfo, "passwordLogin": !h.ssoOnly})
+	writeJSON(w, http.StatusOK, map[string]any{"oidc": oidcInfo, "passwordLogin": !h.ssoOnly, "passkeys": h.passkeys})
 }
 
 func (h *oidcHandlers) start(w http.ResponseWriter, r *http.Request) {

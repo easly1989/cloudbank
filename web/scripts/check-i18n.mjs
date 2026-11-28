@@ -287,10 +287,12 @@ const SAME_IN = {
     "{{transactions}} in {{groups}}",
     "{{kind}}, in {{group}}",
     "{{kind}} · {{spent}} in {{period}}",
+    "{{count}} passkey",
   ],
   // German borrows these as they are, and capitalizes them as nouns.
   de: [
     "min. {{amount}}",
+    "Passkeys",
     "Median",
     "Homeserver",
     "Server",

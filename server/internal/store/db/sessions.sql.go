@@ -21,8 +21,8 @@ func (q *Queries) CountKnownDevices(ctx context.Context, userID int64) (int64, e
 }
 
 const createSession = `-- name: CreateSession :exec
-INSERT INTO sessions (id, user_id, expires_at, user_agent)
-VALUES (?, ?, ?, ?)
+INSERT INTO sessions (id, user_id, expires_at, user_agent, created_at)
+VALUES (?, ?, ?, ?, ?)
 `
 
 type CreateSessionParams struct {
@@ -30,6 +30,7 @@ type CreateSessionParams struct {
 	UserID    int64
 	ExpiresAt string
 	UserAgent string
+	CreatedAt string
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) error {
@@ -38,6 +39,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) er
 		arg.UserID,
 		arg.ExpiresAt,
 		arg.UserAgent,
+		arg.CreatedAt,
 	)
 	return err
 }
