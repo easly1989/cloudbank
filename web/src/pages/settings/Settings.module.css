@@ -226,6 +226,7 @@ a.row:hover,
 .desc {
   font-size: 12px;
   color: var(--mantine-color-dimmed);
+  max-width: 60ch;
 }
 .control {
   display: flex;
@@ -286,7 +287,7 @@ a.row:hover,
 /* Home's status tiles. */
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 12px;
   margin-bottom: 8px;
 }
@@ -314,6 +315,10 @@ a.row:hover,
 }
 .tileAction {
   align-self: flex-start;
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* Where a search result or a link lands: the card is outlined for a moment. */

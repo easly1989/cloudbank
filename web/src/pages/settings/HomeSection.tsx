@@ -1,4 +1,4 @@
-import { Button, Text } from "@mantine/core";
+import { Anchor, Button, Text } from "@mantine/core";
 import {
   IconBook,
   IconBrandGithub,
@@ -65,15 +65,10 @@ function Tile({
           </Text>
         </div>
       ))}
-      <Button
-        component={Link}
-        to={to}
-        variant="default"
-        className={classes.tileAction}
-        rightSection={<IconChevronRight size={14} />}
-      >
+      <Anchor component={Link} to={to} fz={14} className={classes.tileAction}>
         {action}
-      </Button>
+        <IconChevronRight size={14} aria-hidden />
+      </Anchor>
     </div>
   );
 }
@@ -213,9 +208,10 @@ export function HomeSection() {
           action={t("settings.wallet")}
         />
         <Tile
-          title={`${t("app.name")} ${version ?? "…"}`}
+          title={t("settings.about")}
           testId="about-version"
           lines={[
+            [t("app.name"), version ?? "…"],
             ...(st && !__DEMO__
               ? ([
                   [

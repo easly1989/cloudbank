@@ -44,6 +44,8 @@ import {
   IconShieldCheck,
   IconShieldLock,
   IconSparkles,
+  IconPower,
+  IconCpu,
   IconSunMoon,
   IconTarget,
   IconTrash,
@@ -311,9 +313,9 @@ export const SETTING_ROWS: readonly SettingRowDef[] = [
   ),
 
   // AI: the provider, then each job it can do.
-  row("ai", "ai-enable", IconSparkles, "ai.enable", "ai.enableHint", { when: notDemo }),
+  row("ai", "ai-enable", IconPower, "ai.enable", "ai.enableHint", { when: notDemo }),
   row("ai", "ai-base-url", IconWorld, "ai.baseUrl", "settings.row.baseUrlHint", { when: notDemo }),
-  row("ai", "ai-model", IconSparkles, "ai.model", "settings.row.modelHint", { when: notDemo }),
+  row("ai", "ai-model", IconCpu, "ai.model", "settings.row.modelHint", { when: notDemo }),
   row("ai", "ai-key", IconKey, "ai.apiKey", "settings.row.apiKeyHint", { when: notDemo }),
   ...AI_FEATURES.map((f) =>
     row("ai", `ai-${f.key}`, f.icon, `ai.feature.${f.key}.name`, `ai.feature.${f.key}.sends`, {
@@ -321,7 +323,7 @@ export const SETTING_ROWS: readonly SettingRowDef[] = [
     }),
   ),
   row("ai", "ai-wallets", IconWallet, "ai.wallets", "ai.walletsHint", { when: notDemo }),
-  row("ai", "ai-motion", IconSparkles, "ai.motion", "ai.motionHint", { when: notDemo }),
+  row("ai", "ai-motion", IconPalette, "ai.motion", "ai.motionHint", { when: notDemo }),
   row("ai", "ai-limit", IconChartDots, "ai.limit.label", "ai.limit.note", { when: notDemo }),
 
   // Administration: the server, for whoever runs it.
