@@ -10,8 +10,19 @@ All notable changes to CloudBank are documented here. The format is based on
 
 Sign in with a passkey, set up single sign-on from Settings, and a Settings
 screen laid out like the Windows 11 app, with eight sections, search and
-autosave. Bank mails can read several folders per mailbox, and the register
-can merge two rows, duplicate a transfer and select rows with Ctrl and Shift.
+autosave. A bank mailbox can have several sources, and the register can
+merge two rows, duplicate a transfer and select rows with Ctrl and Shift.
+
+### Upgrading
+
+- Six migrations (0070 to 0075) run at the first start. Take a backup of the
+  data volume before upgrading.
+- Passkeys belong to the hostname people open CloudBank at: they need HTTPS
+  (or localhost), are not offered on a bare IP address, and the reverse proxy
+  must pass the `Origin` header. Moving to a new domain means adding passkeys
+  again. See [docs/reverse-proxy.md](docs/reverse-proxy.md).
+- Saving single sign-on in Settings needs `CB_SECRET_KEY`, which encrypts the
+  client secret; without it the save is refused.
 
 ### Added
 
@@ -20,23 +31,31 @@ can merge two rows, duplicate a transfer and select rows with Ctrl and Shift.
   password and the two-factor code, because the device has already checked
   you with a fingerprint, a face or a PIN. Up to 10 per user, added and
   removed in Settings › Account; adding one needs a sign-in in the last 10
-  minutes and sends a new-device alert. Not offered when sign-in is SSO only.
+  minutes and sends a security notification. Not offered when sign-in is SSO
+  only. An administrator can remove a user's passkeys from Users, which also
+  signs that user out everywhere.
 - **Single sign-on from Settings.** An administrator sets OIDC in Settings ›
   Administration › Single sign-on; a save takes effect without a restart.
   `CB_OIDC_*` environment variables still win when set, and SSO-only mode
-  stays an environment setting.
-- **Several sources per mailbox.** A bank mailbox reads up to 5 folders, each
-  with its own name, patterns and way of reading (patterns, AI or both).
+  stays an environment setting; an SSO-only server can now start on the
+  stored settings alone.
+- **Several sources per mailbox.** A bank mailbox has up to 5 sources, each
+  reading a folder with its own name, patterns and way of reading (patterns,
+  AI or both).
 - **Merge two rows** in the register into one, choosing each field, and
   keeping the bank's reference.
 - **Duplicate a transfer** from its row menu: both accounts, the date, the
   amounts and the memo come filled in.
-- **Ctrl and Shift click** select several rows in the register.
+- **Ctrl and Shift click** select several rows in the register, the import
+  preview and Review's proposed categories.
 - **One wide column** in the register: Payee, Category or Note can take the
   free width (Columns panel, ↔).
 - **IBAN and BIC** on bank, checking and savings accounts, optional and
-  checked, with a copy button.
-- **Snooze a row from a mail** on Review until a day you pick.
+  checked, with a copy button. Linking an account through Enable Banking
+  fills a blank account number with the IBAN the bank reports.
+- **Snooze a row from a mail** on Review until a day you pick, for the whole
+  wallet. Until then it leaves the "to review" badge, the review reminders and
+  Home Assistant's unconfirmed count.
 - **Create a payee** from a Bank sync review row by typing its name.
 
 ### Changed
@@ -45,7 +64,7 @@ can merge two rows, duplicate a transfer and select rows with Ctrl and Shift.
   Account, Personalization, Wallet, Connections, Notifications, AI,
   Administration) instead of eleven, one row per setting, a search over every
   setting, and changes saved as you make them. Home shows security,
-  connections and the last backup. Old `/settings/...` links and `?tab=`
+  connections and the date of the wallet's last JSON backup download. Old `/settings/...` links and `?tab=`
   addresses still open the right page.
 - **Latest mails** on each mailbox start folded, behind a "read / to review"
   badge.
