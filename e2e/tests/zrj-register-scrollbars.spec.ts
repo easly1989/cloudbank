@@ -121,3 +121,22 @@ for (const width of [1100, 1440, 2200]) {
     expect(Math.abs(m.headerEnd - m.rowEnd)).toBeLessThanOrEqual(1);
   });
 }
+
+// At 125% scaling the scrollbar is a fraction of a pixel wide in CSS pixels,
+// and a width rounded down left the row that fraction short.
+test("the register has one sideways scrollbar at 125% scaling", async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { width: 1100, height: 900 },
+    deviceScaleFactor: 1.25,
+  });
+  const page = await context.newPage();
+  await openRegister(page);
+  const m = await measure(page);
+  expect(m.gutter).toBeGreaterThan(0);
+  expect(m.overflow).toBeLessThanOrEqual(0);
+  await context.close();
+});

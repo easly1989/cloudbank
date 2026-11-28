@@ -596,11 +596,14 @@ export function RegisterTable({
   // above the rows leave the same room at their end to keep the columns in
   // line. Without it a row at its narrowest overflowed the ledger by that much,
   // and the ledger drew a second sideways scrollbar above the card's own.
+  // Rounded up from the unrounded width: at 125% scaling the bar is about
+  // 13.6px, and rounding down left the row that fraction short.
   const [gutter, setGutter] = useState(0);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const ledger = parentRef.current;
     if (!ledger) return;
-    const check = () => setGutter(ledger.offsetWidth - ledger.clientWidth);
+    const check = () =>
+      setGutter(Math.ceil(ledger.getBoundingClientRect().width - ledger.clientWidth));
     check();
     const ro = new ResizeObserver(check);
     ro.observe(ledger);
@@ -630,7 +633,7 @@ export function RegisterTable({
     const ro = new ResizeObserver(check);
     ro.observe(card);
     return () => ro.disconnect();
-  }, [minRowWidth, pinWidth, isEmpty]);
+  }, [minRowWidth, pinWidth, gutter, isEmpty]);
 
   // Without scroll timelines (Firefox, Safari before 26) the card's scroll moves the
   // pinned cells from here instead. Chromium never attaches the listener. The
@@ -989,7 +992,7 @@ export function RegisterTable({
             // How far the pinned cells travel, and how wide they are with their
             // gaps and the row's inset (app.css, .cb-pin).
             ["--cb-row-min" as string]: `${minRowWidth + gutter}px`,
-            ["--cb-pin-width" as string]: `${pinWidth}px`,
+            ["--cb-pin-width" as string]: `${pinWidth + gutter}px`,
             // The width a reconciled line's text keeps to (see markLine).
             containerType: "inline-size",
             // The ledger is a card, and every band below sits inside it.
