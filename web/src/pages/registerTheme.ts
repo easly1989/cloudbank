@@ -48,6 +48,8 @@ export const ROW_SELECT_WIDTH = "34px";
 /** Space between cells, and the inset of every band inside the ledger card. */
 export const ROW_GAP = 12;
 export const BAND_INSET = 18;
+/** The accent on a row's left edge (future rows), taken out of BAND_INSET. */
+export const ROW_ACCENT = 3;
 
 /** Vertical padding of each band, from the boards. */
 export const BAND_PADDING = {
