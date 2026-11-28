@@ -6,6 +6,13 @@ All notable changes to CloudBank are documented here. The format is based on
 
 ## [Unreleased]
 
+## [3.14.1] — 2026-11-28
+
+### Fixed
+
+- The register no longer shows two sideways scrollbars where scrollbars take
+  room (Windows), and its header lines up with the rows there (#826).
+
 ## [3.14.0] — 2026-11-28
 
 Sign in with a passkey, set up single sign-on from Settings, and a Settings
@@ -1328,7 +1335,9 @@ HomeBank feature parity, shipped as a single Docker container.
 - CI (lint, race tests, build, Docker smoke, Playwright e2e) and automated GHCR
   publishing (`:latest` nightly, `:main` stable, `:vX.Y.Z` per release).
 
-[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.13.0...HEAD
+[Unreleased]: https://github.com/easly1989/cloudbank/compare/v3.14.1...HEAD
+[3.14.1]: https://github.com/easly1989/cloudbank/compare/v3.14.0...v3.14.1
+[3.14.0]: https://github.com/easly1989/cloudbank/compare/v3.13.0...v3.14.0
 [3.13.0]: https://github.com/easly1989/cloudbank/compare/v3.12.0...v3.13.0
 [3.12.0]: https://github.com/easly1989/cloudbank/compare/v3.11.0...v3.12.0
 [3.11.0]: https://github.com/easly1989/cloudbank/compare/v3.10.0...v3.11.0
